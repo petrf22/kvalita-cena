@@ -1,0 +1,56 @@
+# --- Backend (Gradle / Java) ---
+backend/HELP.md
+backend/.gradle
+backend/build/
+!backend/gradle/wrapper/gradle-wrapper.jar
+!backend/**/src/main/**/build/
+!backend/**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### VS Code ###
+.vscode/
+
+### Lokální konfigurace, která se nesdílí ###
+backend/src/main/resources/application-local.yml
+backend/.env
+.env
+
+# --- Frontend (Angular / Node) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/npm-debug.log*
+
+# --- Mobil (Android / Gradle) ---
+mobile/.gradle/
+mobile/build/
+mobile/*/build/
+mobile/.idea/
+mobile/local.properties
+mobile/*.iml
+mobile/.cxx/
+mobile/captures/
+
+# --- OS ---
+.DS_Store
+Thumbs.db

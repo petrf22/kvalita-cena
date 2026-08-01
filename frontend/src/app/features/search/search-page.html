@@ -1,0 +1,36 @@
+<h1>Kolik to stojí?</h1>
+<p class="search-intro">
+  Vyhledej zboží a podívej se, jak se liší cena mezi obchody — bez přihlášení, bez sledování.
+</p>
+
+<div class="search-box">
+  <input
+    nz-input
+    name="query"
+    placeholder="Např. máslo, chléb, mléko…"
+    [ngModel]="query()"
+    (ngModelChange)="query.set($event)"
+    (keyup.enter)="search()"
+  />
+  <button nz-button nzType="primary" [nzLoading]="loading()" (click)="search()">
+    <span nz-icon nzType="search"></span>
+    Hledat
+  </button>
+</div>
+
+@if (searched() && results().length === 0 && !loading()) {
+  <nz-empty nzNotFoundContent="Nic jsme nenašli — zkus jiné slovo." />
+}
+
+@if (results().length > 0) {
+  <nz-list [nzDataSource]="results()" [nzRenderItem]="item">
+    <ng-template #item let-product>
+      <nz-list-item (click)="openProduct(product)" class="search-result">
+        <nz-list-item-meta
+          [nzTitle]="product.name"
+          [nzDescription]="product.brand?.name ?? product.category.name"
+        />
+      </nz-list-item>
+    </ng-template>
+  </nz-list>
+}

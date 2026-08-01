@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Jednoduchý placeholder (cenovka) — vlastní vizuální identita appky přijde později. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,30 L64,30 L80,46 L80,74 C80,77 77,80 74,80 L40,80 C37,80 34,77 34,74 Z" />
+    <path
+        android:fillColor="#1677FF"
+        android:pathData="M50,50 m-6,0 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0" />
+</vector>

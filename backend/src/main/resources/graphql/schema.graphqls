@@ -1,0 +1,173 @@
+"""
+Etapa 1 (MVP) — jen tolik, kolik potřebuje prochozí kostra: hledání zboží, ceny po
+obchodech, dohledání nejbližších provozoven a zápis ceny. Recenze, skupiny důvěry,
+notifikace a dodavatelé přijdou v etapě 2/3 (viz plán založení projektu).
+"""
+scalar Long
+scalar BigDecimal
+scalar DateTime
+
+type Query {
+  "Fulltextové hledání podle názvu (core.product, idx_product_name_fts)."
+  searchProducts(query: String!, first: Int = 20): [Product!]!
+
+  product(id: ID!): Product
+
+  """
+  Dohledání produktu podle naskenovaného čárového kódu (EAN). Backend kód normalizuje na
+  GTIN-14 (docs/datovy-model.md) — mobil posílá kód přesně tak, jak ho přečetl skener.
+  """
+  productByCode(code: String!): Product
+
+  """
+  Provozovny v okolí zadaného bodu. Souřadnice se používají JEN jako parametry dotazu
+  a nikam se neukládají — viz docs/soukromi.md.
+  """
+  nearbyStores(lat: Float!, lon: Float!, radiusKm: Float = 3): [Store!]!
+}
+
+type Mutation {
+  "Zápis cenového záznamu — funguje i anonymně (nižší váha, viz docs/reputace.md)."
+  submitObservation(input: SubmitObservationInput!): PriceObservation!
+}
+
+type Brand {
+  id: ID!
+  name: String!
+  slug: String!
+}
+
+type Category {
+  id: ID!
+  name: String!
+  slug: String!
+  path: String!
+}
+
+enum UnitBase {
+  MASS
+  VOLUME
+  COUNT
+}
+
+enum NetContentUom {
+  G
+  KG
+  ML
+  L
+  PCS
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  MERGED
+  REJECTED
+}
+
+type Product {
+  id: ID!
+  name: String!
+  brand: Brand
+  category: Category!
+  unitBase: UnitBase!
+  netContentValue: BigDecimal
+  netContentUom: NetContentUom
+  netContentBase: BigDecimal!
+  piecesInPack: Int
+  isVariableWeight: Boolean!
+  status: ProductStatus!
+  "Aktuální ceny po jednotlivých obchodech (agg.price_current)."
+  prices: [PriceCurrent!]!
+}
+
+enum ChainType {
+  CHAIN
+  INDEPENDENT
+  FARM_SHOP
+  MARKET
+  ONLINE
+}
+
+type RetailChain {
+  id: ID!
+  name: String!
+  chainType: ChainType!
+}
+
+type Store {
+  id: ID!
+  chain: RetailChain
+  name: String!
+  street: String
+  city: String!
+  postalCode: String
+  country: String!
+  lat: Float!
+  lon: Float!
+}
+
+enum PriceKind {
+  REGULAR
+  PROMO
+  CLUB_CARD
+  CLEARANCE
+  MULTIBUY
+}
+
+enum Confidence {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+type PriceCurrent {
+  store: Store!
+  priceKind: PriceKind!
+  unitPrice: BigDecimal
+  priceAmount: BigDecimal
+  nObs: Int!
+  "Kishova efektivní velikost vzorku — viz docs/reputace.md."
+  nEff: BigDecimal!
+  lastObservedAt: DateTime
+  confidence: Confidence!
+}
+
+enum QuantityBasis {
+  PACKAGE
+  PER_KG
+  PER_L
+  PER_PIECE
+}
+
+enum ObservationStatus {
+  ACTIVE
+  PENDING
+  DISPUTED
+  REJECTED
+}
+
+type PriceObservation {
+  id: ID!
+  product: Product!
+  store: Store!
+  priceAmount: BigDecimal!
+  priceKind: PriceKind!
+  quantityBasis: QuantityBasis!
+  unitPrice: BigDecimal
+  observedAt: DateTime!
+  status: ObservationStatus!
+}
+
+input SubmitObservationInput {
+  productId: ID!
+  storeId: ID!
+  priceAmount: BigDecimal!
+  priceKind: PriceKind = REGULAR
+  quantityBasis: QuantityBasis = PACKAGE
+  "Povinné jen pro MULTIBUY (např. '3 za 50')."
+  multibuyQty: Int
+  multibuyTotal: BigDecimal
+  "Kdy uživatel cenu viděl — chybí-li, použije se teď (docs/datovy-model.md, observed_at ≠ created_at)."
+  observedAt: DateTime
+}

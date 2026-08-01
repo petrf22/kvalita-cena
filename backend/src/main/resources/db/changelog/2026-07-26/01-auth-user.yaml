@@ -1,0 +1,80 @@
+# 01-auth-user.yaml — identita bez osobních údajů, viz docs/soukromi.md
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-26-01-create-auth-app-user
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: auth
+            tableName: app_user
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  # Používá se v API i jako JWT sub — nikdy DB id, aby nešlo počítat uživatele.
+                  name: public_uid
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  # HMAC-SHA256(pepper z env, normalizovaný e-mail) — jen k vyhledání účtu.
+                  name: email_hash
+                  type: BYTEA
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  # AES-256-GCM, klíč mimo DB — nutné pro odeslání OTP a notifikací.
+                  name: email_enc
+                  type: BYTEA
+                  constraints:
+                    nullable: false
+              - column:
+                  name: email_domain
+                  type: VARCHAR(64)
+              - column:
+                  # Generovaný výchozí handle ("Modrý čáp #4271") — veřejná identita bez jména.
+                  name: public_handle
+                  type: VARCHAR(40)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: display_name
+                  type: VARCHAR(40)
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+              - column:
+                  # Inkrement zneplatní všechny access tokeny bez nutnosti revokačního seznamu.
+                  name: token_version
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_login_at
+                  type: TIMESTAMPTZ
+
+        - sql:
+            comment: Uzavřený výčet stavů účtu
+            sql: |
+              ALTER TABLE auth.app_user
+                ADD CONSTRAINT chk_app_user_status
+                CHECK (status IN ('ACTIVE', 'SUSPENDED', 'ANONYMIZED'));

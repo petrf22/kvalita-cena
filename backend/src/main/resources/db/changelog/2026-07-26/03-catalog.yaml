@@ -1,0 +1,318 @@
+# 03-catalog.yaml — komunitní katalog zboží
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-26-03-create-core-brand
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: brand
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: slug
+                  type: VARCHAR(140)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 2026-07-26-03-create-core-category
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: category
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: parent_id
+                  type: BIGINT
+              - column:
+                  name: name
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: slug
+                  type: VARCHAR(140)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: path
+                  type: VARCHAR(400)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sort_order
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_category_parent
+            baseTableSchemaName: core
+            baseTableName: category
+            baseColumnNames: parent_id
+            referencedTableSchemaName: core
+            referencedTableName: category
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createIndex:
+            schemaName: core
+            tableName: category
+            indexName: idx_category_path
+            columns:
+              - column:
+                  name: path
+
+  - changeSet:
+      id: 2026-07-26-03-create-core-product
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: product
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: brand_id
+                  type: BIGINT
+              - column:
+                  name: category_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_base
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: net_content_value
+                  type: NUMERIC(12,3)
+              - column:
+                  name: net_content_uom
+                  type: VARCHAR(5)
+              - column:
+                  # Vždy v základní jednotce (kg / l / ks) — z ní se počítá jednotková cena.
+                  name: net_content_base
+                  type: NUMERIC(12,6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pieces_in_pack
+                  type: INT
+              - column:
+                  name: is_variable_weight
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: merged_into_id
+                  type: BIGINT
+              - column:
+                  # OWN | OFF_DERIVED — viz docs/datovy-model.md, oddělení ODbL dat.
+                  name: data_origin
+                  type: VARCHAR(20)
+                  defaultValue: OWN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by_user_id
+                  type: BIGINT
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_product_brand
+            baseTableSchemaName: core
+            baseTableName: product
+            baseColumnNames: brand_id
+            referencedTableSchemaName: core
+            referencedTableName: brand
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            constraintName: fk_product_category
+            baseTableSchemaName: core
+            baseTableName: product
+            baseColumnNames: category_id
+            referencedTableSchemaName: core
+            referencedTableName: category
+            referencedColumnNames: id
+            onDelete: RESTRICT
+        - addForeignKeyConstraint:
+            constraintName: fk_product_merged_into
+            baseTableSchemaName: core
+            baseTableName: product
+            baseColumnNames: merged_into_id
+            referencedTableSchemaName: core
+            referencedTableName: product
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            constraintName: fk_product_created_by
+            baseTableSchemaName: core
+            baseTableName: product
+            baseColumnNames: created_by_user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createIndex:
+            schemaName: core
+            tableName: product
+            indexName: idx_product_category_status
+            columns:
+              - column:
+                  name: category_id
+              - column:
+                  name: status
+        - sql:
+            sql: |
+              ALTER TABLE core.product
+                ADD CONSTRAINT chk_product_unit_base CHECK (unit_base IN ('MASS', 'VOLUME', 'COUNT')),
+                ADD CONSTRAINT chk_product_net_content_uom
+                  CHECK (net_content_uom IS NULL OR net_content_uom IN ('G', 'KG', 'ML', 'L', 'PCS')),
+                ADD CONSTRAINT chk_product_status
+                  CHECK (status IN ('DRAFT', 'ACTIVE', 'MERGED', 'REJECTED')),
+                ADD CONSTRAINT chk_product_data_origin CHECK (data_origin IN ('OWN', 'OFF_DERIVED'));
+
+              -- Fulltextové hledání podle názvu (jednoduchá konfigurace, čeština bez slovníku ISpell v MVP).
+              CREATE INDEX idx_product_name_fts ON core.product USING gin (to_tsvector('simple', name));
+
+  - changeSet:
+      id: 2026-07-26-03-create-core-product-code
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: product_code
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  # EAN normalizovaný na GTIN-14 (doplněný nulami zleva) u code_type = GTIN.
+                  name: code
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  # STORE_INTERNAL kódy nesou v sobě cenu a platí jen v rámci chain_id —
+                  # NIKDY se nesmí použít jako globální identifikátor napříč řetězci.
+                  name: code_type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: chain_id
+                  type: BIGINT
+              - column:
+                  name: is_primary
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_product_code_product
+            baseTableSchemaName: core
+            baseTableName: product_code
+            baseColumnNames: product_id
+            referencedTableSchemaName: core
+            referencedTableName: product
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_product_code_chain
+            baseTableSchemaName: core
+            baseTableName: product_code
+            baseColumnNames: chain_id
+            referencedTableSchemaName: core
+            referencedTableName: retail_chain
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            schemaName: core
+            tableName: product_code
+            indexName: idx_product_code_code
+            columns:
+              - column:
+                  name: code
+        - sql:
+            sql: |
+              ALTER TABLE core.product_code
+                ADD CONSTRAINT chk_product_code_type CHECK (code_type IN ('GTIN', 'PLU', 'STORE_INTERNAL')),
+                ADD CONSTRAINT chk_product_code_chain_scope
+                  CHECK (code_type != 'STORE_INTERNAL' OR chain_id IS NOT NULL);
+
+              -- chain_id může být NULL (globální GTIN) — COALESCE drží unikátnost i v tom případě.
+              CREATE UNIQUE INDEX uq_product_code_code_type_chain
+                ON core.product_code (code, code_type, COALESCE(chain_id, 0));

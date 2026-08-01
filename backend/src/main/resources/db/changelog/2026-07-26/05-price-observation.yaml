@@ -1,0 +1,205 @@
+# 05-price-observation.yaml — core.price_observation je jádro celé aplikace, viz docs/datovy-model.md
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-26-05-create-core-price-observation
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: price_observation
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: store_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price_amount
+                  type: NUMERIC(10,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  defaultValue: CZK
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price_kind
+                  type: VARCHAR(12)
+                  defaultValue: REGULAR
+                  constraints:
+                    nullable: false
+              - column:
+                  name: quantity_basis
+                  type: VARCHAR(12)
+                  defaultValue: PACKAGE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: multibuy_qty
+                  type: INT
+              - column:
+                  name: multibuy_total
+                  type: NUMERIC(10,2)
+              - column:
+                  # SNAPSHOT gramáže/objemu produktu v době zápisu — pozdější oprava produktu
+                  # nesmí zpětně přepsat jednotkové ceny historie (viz docs/datovy-model.md).
+                  name: net_content_base
+                  type: NUMERIC(12,6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: promo_valid_to
+                  type: DATE
+              - column:
+                  # Kdy to uživatel VIDĚL — liší se od created_at kvůli offline zápisu z mobilu.
+                  name: observed_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  # NULL po pseudonymizaci (180 dní) — viz docs/soukromi.md.
+                  name: submitter_id
+                  type: BIGINT
+              - column:
+                  name: submitter_kind
+                  type: VARCHAR(12)
+                  defaultValue: REGISTERED
+                  constraints:
+                    nullable: false
+              - column:
+                  name: submitter_cohort
+                  type: SMALLINT
+              - column:
+                  name: frozen_weight
+                  type: NUMERIC(6,4)
+              - column:
+                  name: status
+                  type: VARCHAR(12)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: agreement
+                  type: VARCHAR(12)
+                  defaultValue: PENDING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: VARCHAR(10)
+                  defaultValue: MOBILE
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_price_observation_product
+            baseTableSchemaName: core
+            baseTableName: price_observation
+            baseColumnNames: product_id
+            referencedTableSchemaName: core
+            referencedTableName: product
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_price_observation_store
+            baseTableSchemaName: core
+            baseTableName: price_observation
+            baseColumnNames: store_id
+            referencedTableSchemaName: core
+            referencedTableName: store
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_price_observation_submitter
+            baseTableSchemaName: core
+            baseTableName: price_observation
+            baseColumnNames: submitter_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createIndex:
+            schemaName: core
+            tableName: price_observation
+            indexName: idx_price_observation_store_observed
+            columns:
+              - column:
+                  name: store_id
+              - column:
+                  name: observed_at
+                  descending: true
+        - createIndex:
+            schemaName: core
+            tableName: price_observation
+            indexName: idx_price_observation_submitter_created
+            columns:
+              - column:
+                  name: submitter_id
+              - column:
+                  name: created_at
+        - sql:
+            sql: |
+              ALTER TABLE core.price_observation
+                ADD CONSTRAINT chk_price_observation_price_kind
+                  CHECK (price_kind IN ('REGULAR', 'PROMO', 'CLUB_CARD', 'CLEARANCE', 'MULTIBUY')),
+                ADD CONSTRAINT chk_price_observation_quantity_basis
+                  CHECK (quantity_basis IN ('PACKAGE', 'PER_KG', 'PER_L', 'PER_PIECE')),
+                ADD CONSTRAINT chk_price_observation_submitter_kind
+                  CHECK (submitter_kind IN ('REGISTERED', 'ANONYMOUS')),
+                ADD CONSTRAINT chk_price_observation_status
+                  CHECK (status IN ('ACTIVE', 'PENDING', 'DISPUTED', 'REJECTED')),
+                ADD CONSTRAINT chk_price_observation_agreement
+                  CHECK (agreement IN ('PENDING', 'AGREE', 'DISAGREE', 'NEUTRAL')),
+                ADD CONSTRAINT chk_price_observation_source CHECK (source IN ('MOBILE', 'WEB', 'IMPORT'));
+
+              -- Jednotková cena je GENERATED STORED sloupec — Liquibase createTable ho neumí
+              -- vyjádřit přímo, proto samostatný ALTER TABLE. Kč/kg, Kč/l nebo Kč/ks podle
+              -- quantity_basis (viz docs/datovy-model.md).
+              ALTER TABLE core.price_observation
+                ADD COLUMN unit_price NUMERIC(12,4)
+                  GENERATED ALWAYS AS (price_amount / NULLIF(net_content_base, 0)) STORED;
+
+              CREATE INDEX idx_price_observation_product_store_observed
+                ON core.price_observation (product_id, store_id, observed_at DESC)
+                WHERE status = 'ACTIVE';
+
+              -- date_trunc(text, timestamptz) je jen STABLE (závisí na timezone session), ne
+              -- IMMUTABLE, takže ho nejde použít přímo ve výrazu indexu — obalíme vlastní
+              -- immutable funkcí s pevným UTC.
+              CREATE OR REPLACE FUNCTION core.day_utc(ts TIMESTAMPTZ)
+                RETURNS DATE
+                LANGUAGE sql
+                IMMUTABLE
+                PARALLEL SAFE
+              AS $$
+                SELECT (ts AT TIME ZONE 'UTC')::date
+              $$;
+
+              -- 1 záznam / uživatel / produkt / obchod / den — hrubá síla na spamování nefunguje.
+              CREATE UNIQUE INDEX uq_price_observation_submitter_per_day
+                ON core.price_observation (product_id, store_id, submitter_id, core.day_utc(observed_at))
+                WHERE submitter_id IS NOT NULL;
+          rollback:
+            - sql:
+                sql: |
+                  DROP INDEX IF EXISTS core.uq_price_observation_submitter_per_day;
+                  DROP FUNCTION IF EXISTS core.day_utc(TIMESTAMPTZ);

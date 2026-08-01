@@ -1,0 +1,26 @@
+.product-meta {
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 24px;
+}
+
+.prices-card,
+.submit-card {
+  margin-bottom: 24px;
+}
+
+.no-prices {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.store-picker {
+  display: flex;
+  gap: 8px;
+}
+
+.store-select {
+  flex: 1;
+}
+
+.submit-alert {
+  margin-bottom: 16px;
+}

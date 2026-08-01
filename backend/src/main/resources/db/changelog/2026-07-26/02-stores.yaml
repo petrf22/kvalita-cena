@@ -1,0 +1,171 @@
+# 02-stores.yaml — řetězce a provozovny
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-26-02-create-core-retail-chain
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: retail_chain
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: slug
+                  type: VARCHAR(140)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: chain_type
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: country
+                  type: VARCHAR(2)
+                  defaultValue: CZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: website
+                  type: VARCHAR(300)
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: |
+              ALTER TABLE core.retail_chain
+                ADD CONSTRAINT chk_retail_chain_type
+                CHECK (chain_type IN ('CHAIN', 'INDEPENDENT', 'FARM_SHOP', 'MARKET', 'ONLINE'));
+
+  - changeSet:
+      id: 2026-07-26-02-create-core-store
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: store
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: chain_id
+                  type: BIGINT
+              - column:
+                  name: name
+                  type: VARCHAR(160)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: street
+                  type: VARCHAR(160)
+              - column:
+                  name: city
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: postal_code
+                  type: VARCHAR(10)
+              - column:
+                  name: country
+                  type: VARCHAR(2)
+                  defaultValue: CZ
+                  constraints:
+                    nullable: false
+              - column:
+                  # Souřadnice PROVOZOVNY jsou veřejný fakt, ne osobní údaj (docs/soukromi.md).
+                  # Souřadnice UŽIVATELE se v aplikaci neukládají nikde.
+                  name: lat
+                  type: NUMERIC(9,6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lon
+                  type: NUMERIC(9,6)
+                  constraints:
+                    nullable: false
+              - column:
+                  # COMMUNITY = zadal uživatel, OSM = převzato z OpenStreetMap (ODbL, schéma osm.*)
+                  name: geo_source
+                  type: VARCHAR(10)
+                  defaultValue: COMMUNITY
+                  constraints:
+                    nullable: false
+              - column:
+                  name: osm_ref
+                  type: VARCHAR(32)
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by_user_id
+                  type: BIGINT
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_store_chain
+            baseTableSchemaName: core
+            baseTableName: store
+            baseColumnNames: chain_id
+            referencedTableSchemaName: core
+            referencedTableName: retail_chain
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            constraintName: fk_store_created_by
+            baseTableSchemaName: core
+            baseTableName: store
+            baseColumnNames: created_by_user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createIndex:
+            schemaName: core
+            tableName: store
+            indexName: idx_store_chain
+            columns:
+              - column:
+                  name: chain_id
+        - createIndex:
+            schemaName: core
+            tableName: store
+            indexName: idx_store_city
+            columns:
+              - column:
+                  name: city
+        - sql:
+            sql: |
+              ALTER TABLE core.store
+                ADD CONSTRAINT chk_store_geo_source CHECK (geo_source IN ('COMMUNITY', 'OSM')),
+                ADD CONSTRAINT chk_store_status CHECK (status IN ('ACTIVE', 'CLOSED', 'PENDING'));
+
+              -- "provozovny do N km" bez nutnosti PostGIS, viz 00-schemas.yaml
+              CREATE INDEX idx_store_geo ON core.store USING gist (ll_to_earth(lat, lon));

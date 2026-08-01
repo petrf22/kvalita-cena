@@ -1,0 +1,207 @@
+# 04-auth-tokens.yaml — passwordless auth (OTP + refresh token rotace), viz plán projektu
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-26-04-create-auth-login-challenge
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: auth
+            tableName: login_challenge
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  # Vrací se klientovi; jeho znalost je nutná podmínka pro ověření kódu, takže
+                  # znalost cizího e-mailu sama o sobě nestačí (viz docs/soukromi.md).
+                  name: challenge_uid
+                  type: UUID
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: email_hash
+                  type: BYTEA
+                  constraints:
+                    nullable: false
+              - column:
+                  # Argon2id hash kódu (textová podoba, ne BYTEA — Argon2 kóduje parametry do stringu).
+                  name: code_hash
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: purpose
+                  type: VARCHAR(20)
+                  defaultValue: LOGIN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: consumed_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: attempts
+                  type: SMALLINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: max_attempts
+                  type: SMALLINT
+                  defaultValueNumeric: 5
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ip_hash
+                  type: BYTEA
+              - column:
+                  name: client_kind
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+        - createIndex:
+            schemaName: auth
+            tableName: login_challenge
+            indexName: idx_login_challenge_email_created
+            columns:
+              - column:
+                  name: email_hash
+              - column:
+                  name: created_at
+                  descending: true
+        - createIndex:
+            schemaName: auth
+            tableName: login_challenge
+            indexName: idx_login_challenge_expires
+            columns:
+              - column:
+                  name: expires_at
+        - sql:
+            sql: |
+              ALTER TABLE auth.login_challenge
+                ADD CONSTRAINT chk_login_challenge_purpose
+                  CHECK (purpose IN ('LOGIN', 'EMAIL_CHANGE', 'DELETE_ACCOUNT')),
+                ADD CONSTRAINT chk_login_challenge_client_kind
+                  CHECK (client_kind IN ('WEB', 'ANDROID'));
+
+  - changeSet:
+      id: 2026-07-26-04-create-auth-refresh-token
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: auth
+            tableName: refresh_token
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  # Společný identifikátor celého řetězu rotací — při detekci reuse se
+                  # revokuje celá rodina, ne jen jeden token.
+                  name: family_uid
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_hash
+                  type: BYTEA
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: parent_id
+                  type: BIGINT
+              - column:
+                  name: client_kind
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: device_label
+                  type: VARCHAR(60)
+              - column:
+                  name: issued_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: used_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: revoked_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: revoke_reason
+                  type: VARCHAR(20)
+        - addForeignKeyConstraint:
+            constraintName: fk_refresh_token_user
+            baseTableSchemaName: auth
+            baseTableName: refresh_token
+            baseColumnNames: user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_refresh_token_parent
+            baseTableSchemaName: auth
+            baseTableName: refresh_token
+            baseColumnNames: parent_id
+            referencedTableSchemaName: auth
+            referencedTableName: refresh_token
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - createIndex:
+            schemaName: auth
+            tableName: refresh_token
+            indexName: idx_refresh_token_family
+            columns:
+              - column:
+                  name: family_uid
+        - createIndex:
+            schemaName: auth
+            tableName: refresh_token
+            indexName: idx_refresh_token_user_revoked
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: revoked_at
+        - sql:
+            sql: |
+              ALTER TABLE auth.refresh_token
+                ADD CONSTRAINT chk_refresh_token_client_kind CHECK (client_kind IN ('WEB', 'ANDROID')),
+                ADD CONSTRAINT chk_refresh_token_revoke_reason
+                  CHECK (revoke_reason IS NULL
+                    OR revoke_reason IN ('ROTATED', 'REUSE_DETECTED', 'LOGOUT', 'USER_REVOKED', 'EXPIRED'));

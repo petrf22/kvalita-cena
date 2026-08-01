@@ -1,0 +1,22 @@
+.search-intro {
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 24px;
+}
+
+.search-box {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.search-box input {
+  flex: 1;
+}
+
+.search-result {
+  cursor: pointer;
+}
+
+.search-result:hover {
+  background: #fafafa;
+}

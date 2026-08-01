@@ -1,0 +1,85 @@
+spring:
+  application:
+    name: kvalita-a-cena
+
+  # Lokální Postgres z compose.yaml v kořeni repozitáře. Boot si ho přes
+  # spring-boot-docker-compose sám nastartuje (developmentOnly), pokud ještě neběží.
+  docker:
+    compose:
+      file: ../compose.yaml
+      lifecycle-management: start-only
+
+  datasource:
+    url: jdbc:postgresql://localhost:5437/kvalitaacena
+    username: postgres
+    password: 1234
+
+  jpa:
+    hibernate:
+      ddl-auto: validate # schéma spravuje výhradně Liquibase
+    # Pro GraphQL záměrně true (Spring Boot default): GraphQL vyhodnocuje vnořená pole
+    # (Product.brand, Product.category, ...) jako samostatné data fetchery PO návratu z
+    # kořenového @QueryMapping, mimo jeho transakci — bez otevřené session přes celý request
+    # by lazy JPA vztahy padaly na LazyInitializationException. U REST endpointů (auth) by
+    # bylo bezpečnější open-in-view=false, ale je to jedna appka s jedním datasourcem.
+    open-in-view: true
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  graphql:
+    graphiql:
+      enabled: true # jen pro dev profil, viz application-local.yml
+    schema:
+      introspection:
+        enabled: true # v produkci vypnout (docs/soukromi.md, docs/datovy-model.md)
+
+  mail:
+    host: localhost
+    port: 1025 # MailHog/Mailpit pro lokální vývoj — viz app.auth.otp.mail-enabled níže
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    mail:
+      # V etapě 1 se OTP loguje do konzole (app.auth.otp.mail-enabled=false), SMTP neběží.
+      enabled: false
+
+logging:
+  level:
+    cz.kvalitacena: DEBUG
+
+app:
+  jwt:
+    # Jen pro lokální vývoj — v produkci povinně přes proměnnou prostředí JWT_SECRET.
+    secret: ${JWT_SECRET:VGVudG9LbGljTmVuaVByb1Byb2R1a2NpUG91emVFbnZWYXJKV1RTZWNyZXQ=}
+    access-token-ttl: PT10M
+  security:
+    # HMAC-SHA256 pepper pro email_hash a AES-256-GCM klíč pro email_enc (docs/soukromi.md).
+    # Oba jen pro lokální vývoj — v produkci povinně přes proměnné prostředí, mimo databázi.
+    email-hash-pepper: ${EMAIL_HASH_PEPPER:3h1brFxufkFk4TeZkGz/O9SyCbfC3tSMTGvC49lRzMs=}
+    email-enc-key: ${EMAIL_ENC_KEY:u1h1L4+4CDYrvpImNDJzSnpXwUOHW5OvMHmd+THqhzQ=}
+  auth:
+    otp:
+      # V MVP (etapa 1) se kód místo odesílání e-mailem loguje do konzole (viz OtpService).
+      mail-enabled: false
+      code-ttl: PT10M
+      resend-cooldown: PT1M
+      max-attempts: 5
+    refresh-token:
+      web-ttl: P30D
+      android-ttl: P180D
+      reuse-grace-period: PT30S

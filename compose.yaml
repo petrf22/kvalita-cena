@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: 'postgres:17'
+    environment:
+      - 'POSTGRES_DB=kvalitaacena'
+      - 'POSTGRES_PASSWORD=1234'
+      - 'POSTGRES_USER=postgres'
+    ports:
+      # Nestandardní port, ať neběží proti "prani" (5436) na stejném stroji.
+      - '127.0.0.1:5437:5432'
+    volumes:
+      - kvalita-a-cena-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  kvalita-a-cena-postgres-data:

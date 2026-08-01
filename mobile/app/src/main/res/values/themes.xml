@@ -1,0 +1,5 @@
+<resources>
+    <!-- Vzhled appky je celý v Compose (ui/theme) — tohle je jen okenní téma před prvním
+         vykreslením (splash/status bar), Android XML pro to pořád vyžaduje parent styl. -->
+    <style name="Theme.KvalitaACena" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

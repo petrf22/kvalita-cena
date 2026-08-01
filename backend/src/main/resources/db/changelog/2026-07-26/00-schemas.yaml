@@ -1,0 +1,48 @@
+# 00-schemas.yaml
+#
+# Fyzické oddělení schémat je hlavní obrana proti kontaminaci vlastních dat
+# share-alike licencí (ODbL) Open Food Facts a OpenStreetMap — viz docs/datovy-model.md.
+#
+#   core  — vlastní komunitní data (katalog, obchody, ceny, recenze, ...)
+#   auth  — účty, přihlašovací výzvy, tokeny
+#   agg   — předpočítané agregáty pro grafy (viz docs/reputace.md, §agregace)
+#   off   — data z Open Food Facts (ODbL), nikdy se nekopírují do core.*
+#   osm   — souřadnice provozoven z OpenStreetMap (ODbL)
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-26-00-create-schemas
+      author: Petr F.
+      changes:
+        - sql:
+            comment: Schémata pro oddělení vlastních a externích (ODbL) dat
+            sql: |
+              CREATE SCHEMA IF NOT EXISTS core;
+              CREATE SCHEMA IF NOT EXISTS auth;
+              CREATE SCHEMA IF NOT EXISTS agg;
+              CREATE SCHEMA IF NOT EXISTS off;
+              CREATE SCHEMA IF NOT EXISTS osm;
+      rollback:
+        - sql:
+            sql: |
+              DROP SCHEMA IF EXISTS osm CASCADE;
+              DROP SCHEMA IF EXISTS off CASCADE;
+              DROP SCHEMA IF EXISTS agg CASCADE;
+              DROP SCHEMA IF EXISTS auth CASCADE;
+              DROP SCHEMA IF EXISTS core CASCADE;
+
+  - changeSet:
+      id: 2026-07-26-00-create-extensions
+      author: Petr F.
+      comment: >
+        cube + earthdistance stačí na "provozovny do N km" a jsou pod licencí PostgreSQL
+        (na rozdíl od PostGIS, které je GPLv2) — viz plán založení projektu.
+      changes:
+        - sql:
+            sql: |
+              CREATE EXTENSION IF NOT EXISTS cube;
+              CREATE EXTENSION IF NOT EXISTS earthdistance;
+      rollback:
+        - sql:
+            sql: |
+              DROP EXTENSION IF EXISTS earthdistance;
+              DROP EXTENSION IF EXISTS cube;

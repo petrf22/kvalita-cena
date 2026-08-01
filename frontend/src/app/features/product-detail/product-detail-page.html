@@ -1,0 +1,138 @@
+<a routerLink="/">&larr; Zpět na hledání</a>
+
+@if (loading()) {
+  <p>Načítám…</p>
+} @else if (!product()) {
+  <nz-alert nzType="error" nzMessage="Produkt se nepodařilo najít." nzShowIcon />
+} @else {
+  <h1>{{ product()!.name }}</h1>
+  <p class="product-meta">
+    @if (product()!.brand) {
+      {{ product()!.brand!.name }} ·
+    }
+    {{ product()!.category.name }}
+    @if (product()!.netContentValue) {
+      · {{ product()!.netContentValue }} g
+    }
+  </p>
+
+  <nz-card nzTitle="Aktuální ceny po obchodech" class="prices-card">
+    @if (product()!.prices.length === 0) {
+      <p class="no-prices">Zatím tu nikdo cenu nezadal — buď první.</p>
+    } @else {
+      <nz-table #pricesTable [nzData]="product()!.prices" [nzShowPagination]="false" nzSize="small">
+        <thead>
+          <tr>
+            <th>Obchod</th>
+            <th>Druh ceny</th>
+            <th>Cena</th>
+            <th>Kč / jednotka</th>
+            <th>Spolehlivost</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (price of pricesTable.data; track price.store.id + price.priceKind) {
+            <tr>
+              <td>{{ price.store.name }}</td>
+              <td>{{ priceKindLabels[price.priceKind] }}</td>
+              <td>{{ price.priceAmount }} Kč</td>
+              <td>{{ price.unitPrice }} Kč</td>
+              <td>
+                <nz-tag
+                  [nzColor]="
+                    price.confidence === 'HIGH' ? 'green' : price.confidence === 'MEDIUM' ? 'orange' : 'default'
+                  "
+                >
+                  {{ price.nObs }} {{ price.nObs === 1 ? 'záznam' : 'záznamy' }}
+                </nz-tag>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    }
+  </nz-card>
+
+  <nz-card nzTitle="Zadat cenu" class="submit-card">
+    @if (submitSuccess()) {
+      <nz-alert nzType="success" nzMessage="Cena byla zapsána, díky!" nzShowIcon class="submit-alert" />
+    }
+    @if (submitError()) {
+      <nz-alert nzType="error" [nzMessage]="submitError()" nzShowIcon class="submit-alert" />
+    }
+    @if (locationError()) {
+      <nz-alert nzType="warning" [nzMessage]="locationError()" nzShowIcon class="submit-alert" />
+    }
+
+    <form nz-form nzLayout="vertical" (ngSubmit)="submitPrice()">
+      <nz-form-item>
+        <nz-form-label>Obchod</nz-form-label>
+        <nz-form-control>
+          <div class="store-picker">
+            <nz-select
+              class="store-select"
+              [ngModel]="selectedStoreId()"
+              (ngModelChange)="selectedStoreId.set($event)"
+              name="storeId"
+              nzPlaceHolder="Vyber obchod"
+            >
+              @for (store of nearbyStores(); track store.id) {
+                <nz-option [nzValue]="store.id" [nzLabel]="store.name + ' — ' + store.city" />
+              }
+            </nz-select>
+            <button
+              nz-button
+              type="button"
+              [nzLoading]="locating()"
+              (click)="findNearbyStores()"
+            >
+              <span nz-icon nzType="environment"></span>
+              Najít v okolí
+            </button>
+          </div>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Druh ceny</nz-form-label>
+        <nz-form-control>
+          <nz-select
+            [ngModel]="priceKind()"
+            (ngModelChange)="priceKind.set($event)"
+            name="priceKind"
+          >
+            <nz-option nzValue="REGULAR" nzLabel="Běžná cena" />
+            <nz-option nzValue="PROMO" nzLabel="Akce" />
+            <nz-option nzValue="CLUB_CARD" nzLabel="Klubová karta" />
+            <nz-option nzValue="CLEARANCE" nzLabel="Výprodej" />
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>Cena (Kč)</nz-form-label>
+        <nz-form-control>
+          <nz-input-number
+            [ngModel]="priceAmount()"
+            (ngModelChange)="priceAmount.set($event)"
+            name="priceAmount"
+            [nzMin]="0"
+            [nzStep]="0.5"
+            style="width: 100%"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <button
+        nz-button
+        nzType="primary"
+        nzBlock
+        type="submit"
+        [nzLoading]="submitting()"
+        [disabled]="!selectedStoreId() || priceAmount() == null"
+      >
+        Zapsat cenu
+      </button>
+    </form>
+  </nz-card>
+}

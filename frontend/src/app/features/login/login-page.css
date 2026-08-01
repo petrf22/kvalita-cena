@@ -1,0 +1,13 @@
+.login-card {
+  max-width: 420px;
+  margin: 48px auto 0;
+}
+
+.login-alert {
+  margin-bottom: 16px;
+}
+
+.login-hint {
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 16px;
+}

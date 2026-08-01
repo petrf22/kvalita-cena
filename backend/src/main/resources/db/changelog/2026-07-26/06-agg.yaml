@@ -1,0 +1,157 @@
+# 06-agg.yaml — agregáty jako tabulky, ne materialized view (viz docs/datovy-model.md).
+# Váhy záznamů se mění zpětně (klesne reputace, odhalí se sybil klastr), takže je potřeba
+# cílený přepočet konkrétních buněk přes recompute_queue, ne REFRESH MATERIALIZED VIEW.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-07-26-06-create-agg-price-current
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: agg
+            tableName: price_current
+            columns:
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: store_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price_kind
+                  type: VARCHAR(12)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_price
+                  type: NUMERIC(12,4)
+              - column:
+                  name: price_amount
+                  type: NUMERIC(10,2)
+              - column:
+                  name: n_obs
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  # Kishova efektivní velikost vzorku — zobrazovaná uživateli jako obrana
+                  # proti manipulaci (viz docs/reputace.md).
+                  name: n_eff
+                  type: NUMERIC(8,3)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sum_weight
+                  type: NUMERIC(10,4)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: last_observed_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: confidence
+                  type: VARCHAR(10)
+                  defaultValue: LOW
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            schemaName: agg
+            tableName: price_current
+            columnNames: product_id, store_id, price_kind
+            constraintName: pk_agg_price_current
+        - addForeignKeyConstraint:
+            constraintName: fk_agg_price_current_product
+            baseTableSchemaName: agg
+            baseTableName: price_current
+            baseColumnNames: product_id
+            referencedTableSchemaName: core
+            referencedTableName: product
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_agg_price_current_store
+            baseTableSchemaName: agg
+            baseTableName: price_current
+            baseColumnNames: store_id
+            referencedTableSchemaName: core
+            referencedTableName: store
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            schemaName: agg
+            tableName: price_current
+            indexName: idx_agg_price_current_product_kind_price
+            columns:
+              - column:
+                  name: product_id
+              - column:
+                  name: price_kind
+              - column:
+                  name: unit_price
+        - sql:
+            sql: |
+              ALTER TABLE agg.price_current
+                ADD CONSTRAINT chk_agg_price_current_kind
+                  CHECK (price_kind IN ('REGULAR', 'PROMO', 'CLUB_CARD', 'CLEARANCE', 'MULTIBUY')),
+                ADD CONSTRAINT chk_agg_price_current_confidence
+                  CHECK (confidence IN ('LOW', 'MEDIUM', 'HIGH'));
+
+  - changeSet:
+      id: 2026-07-26-06-create-agg-recompute-queue
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: agg
+            tableName: recompute_queue
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: store_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enqueued_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processed_at
+                  type: TIMESTAMPTZ
+        - createIndex:
+            schemaName: agg
+            tableName: recompute_queue
+            indexName: idx_recompute_queue_pending
+            columns:
+              - column:
+                  name: processed_at
+              - column:
+                  name: enqueued_at
+        - sql:
+            sql: |
+              ALTER TABLE agg.recompute_queue
+                ADD CONSTRAINT chk_recompute_queue_reason
+                  CHECK (reason IN ('NEW_OBS', 'WEIGHT_CHANGE', 'MODERATION'));

@@ -1,0 +1,9 @@
+# db.changelog-master.yaml
+databaseChangeLog:
+  - include: { file: 2026-07-26/00-schemas.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-07-26/01-auth-user.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-07-26/02-stores.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-07-26/03-catalog.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-07-26/04-auth-tokens.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-07-26/05-price-observation.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-07-26/06-agg.yaml, relativeToChangelogFile: true }
