@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+# Žádný job nic nezapisuje zpět do repa (jen checkout + build/test) — GITHUB_TOKEN proto
+# jen ke čtení, viz CodeQL "missing-workflow-permissions".
+permissions:
+  contents: read
+
 jobs:
   backend:
     name: Backend (Spring Boot)
