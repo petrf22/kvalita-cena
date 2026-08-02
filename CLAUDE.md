@@ -77,9 +77,10 @@ npm run build
 
 ### Mobil (`mobile/`)
 
-Vlastní Gradle wrapper (9.6.1 — AGP 9.2.1 vyžaduje ≥ 9.4.1, backend má jinou verzi 9.2.1) a
-vlastní JDK přes `org.gradle.java.home` v `gradle.properties` (JDK 21, ne systémové JDK 25 —
-méně riskantní kombinace s tak novým AGP). **AGP 9+ už nepotřebuje plugin
+Vlastní Gradle wrapper (9.6.1, AGP vyžaduje ≥ 9.4.1 — stejná verze jako backend). Volba JDK je
+přenositelná přes Gradle toolchain (`kotlin { jvmToolchain(17) }` v `app/build.gradle.kts`,
+`foojay-resolver-convention` v `settings.gradle.kts` dotáhne chybějící JDK samo), ne přes
+`org.gradle.java.home` — ten by na cizím stroji (i v CI) build hned na startu shodil. **AGP 9+ už nepotřebuje plugin
 `org.jetbrains.kotlin.android`** (Kotlin podpora je vestavěná) — nepřidávej ho zpět, build by
 rovnou spadl. `compileSdk 37` (víc novějších knihoven — activity-compose, core-ktx,
 okhttp-android — to vyžaduje), `minSdk 26`, `targetSdk 35`; AGP chybějící SDK komponenty
