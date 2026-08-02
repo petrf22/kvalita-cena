@@ -19,9 +19,9 @@ jobs:
           distribution: temurin
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v6
-      # Testy zatím neexistují (etapa 1), `build` ale ověří aspoň kompilaci a to, že se
-      # Liquibase changelogy parsují. DB není potřeba — spring-boot-docker-compose je jen
-      # developmentOnly a žádný test nestartuje Spring context.
+      # `build` spouští i testy (unit, bez DB — spring-boot-docker-compose je jen
+      # developmentOnly a žádný test nestartuje Spring context) a ověří, že se Liquibase
+      # changelogy parsují.
       - run: ./gradlew build
 
   frontend:
