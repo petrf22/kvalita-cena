@@ -26,6 +26,12 @@ updates:
         patterns:
           - '@angular/*'
           - 'ng-zorro-antd'
+    ignore:
+      # @angular/build@22.0.8 vyžaduje peer typescript@">=6.0 <6.1" — TS 7 (nativní přepis
+      # kompilátoru) zatím s Angularem 22 nejde, npm ci padá na ERESOLVE. Odemknout, až
+      # Angular TS 7 podpoří.
+      - dependency-name: 'typescript'
+        versions: ['>=7.0.0']
 
   - package-ecosystem: github-actions
     directory: /
