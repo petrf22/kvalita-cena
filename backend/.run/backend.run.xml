@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Backend (DB z terminálu)"
+                 type="Application" factoryName="Application"
+                 nameIsGenerated="false">
+    <envs>
+      <env name="SPRING_DOCKER_COMPOSE_ENABLED" value="false" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="cz.kvalitacena.KvalitaACenaApplication" />
+    <module name="kvalita-a-cena-backend.main" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

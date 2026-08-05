@@ -33,7 +33,9 @@ docker compose exec postgres psql -U postgres -d kvalitaacena
 
 Tenhle krok je ve skutečnosti nepovinný — `./gradlew bootRun` má `spring-boot-docker-compose`
 a spustí si Postgres sám. Rozdíl je jen v tom, že `lifecycle-management: start-only` znamená, že
-po vypnutí backendu DB dál běží na pozadí (nezastaví se s appkou).
+po vypnutí backendu DB dál běží na pozadí (nezastaví se s appkou). Výjimka je spuštění z IDE
+nainstalovaného jako Flatpak (typicky IntelliJ IDEA) — viz sekce **2. Backend** níže, tam je krok
+povinný.
 
 ## 2. Backend
 
@@ -47,6 +49,20 @@ Naběhne na `http://localhost:8080`. Liquibase při prvním startu vytvoří sch
 ani řetězce; to je záměr, seed dat nepatří do migrací).
 
 Ověření, že appka žije: `curl http://localhost:8080/actuator/health` → `{"status":"UP"}`.
+
+### Spuštění z IntelliJ IDEA
+
+Pokud je IDEA nainstalovaná jako Flatpak, běží appka i Gradle daemon v sandboxu, který nevidí
+hostovský `docker` — `spring-boot-docker-compose` pak selže na `Cannot run program "docker"`.
+Řešení: databázi nastartuj ručně (`docker compose up -d`, viz výše) a appku spouštěj přes sdílenou
+run konfiguraci **Backend (DB z terminálu)** z `backend/.run/backend.run.xml` (IDEA ji po otevření
+projektu s `backend/` jako kořenem nabídne automaticky) — ta má `SPRING_DOCKER_COMPOSE_ENABLED=false`.
+Musí se spustit **výběrem této konfigurace z rozbalovací nabídky v toolbaru**, ne přes zelenou
+šipku u `main()` — ta by si vytvořila vlastní ad-hoc konfiguraci a proměnnou by ignorovala.
+Konfigurace je typu obyčejná `Application` (ne Spring Boot) — plugin Spring Boot je jen
+v IntelliJ IDEA Ultimate, v Community edici by ji IDE hlásilo jako nenačitatelnou. Ve vlastní
+konfiguraci stačí tu samou proměnnou prostředí přidat ručně. Terminálový `./gradlew bootRun` tímhle
+dotčený není, tam docker integrace funguje beze změny.
 
 ## 3. Ukázková data
 
@@ -230,3 +246,4 @@ Mobil zatím nemá žádné testy (`mobile/app/src` obsahuje jen `main`).
 | `nearbyStores`/select provozovny v detailu je prázdný | mimo souřadnice ze seedu (Brno/Praha) nebo zamítnutá poloha | přepiš polohu v DevTools, nebo přidej vlastní provozovnu do `dev/seed.sql` |
 | Port `5437` obsazený | jiný projekt na stejném stroji na něm už běží | zastav ho, nebo změň port v `compose.yaml` i `application.yml` |
 | Backend hlásí chybu schématu po ruční změně DB | `ddl-auto: validate` — schéma smí měnit jen Liquibase | vrať se k migracím, neuprav tabulku ručně |
+| `Cannot run program "docker"` při spuštění z IDE | IDE (např. IntelliJ IDEA) běží jako Flatpak, sandbox nevidí hostovský docker | spusť `docker compose up -d` ručně a appku pouštěj přes run konfiguraci s `SPRING_DOCKER_COMPOSE_ENABLED=false` — viz sekce **2. Backend** |
