@@ -2,8 +2,10 @@ package cz.kvalitacena.ui.price
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,11 +23,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +38,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,6 +49,10 @@ import cz.kvalitacena.AppContainer
 import cz.kvalitacena.location.getCurrentLocation
 import cz.kvalitacena.network.Store
 import kotlinx.coroutines.launch
+
+// Čísla a nejvýš jedna desetinná čárka nebo tečka — obojí se dál akceptuje shodně
+// (PriceEntryViewModel.submit() převádí čárku na tečku před parsováním).
+private val PRICE_INPUT_PATTERN = Regex("^\\d*[.,]?\\d*$")
 
 private val PRICE_KIND_LABELS = mapOf(
   "REGULAR" to "Běžná cena",
@@ -93,6 +103,15 @@ fun PriceEntryScreen(barcode: String, onScanAnother: () -> Unit) {
       val location = getCurrentLocation(context)
       if (location != null) viewModel.onLocationResolved(location.latitude, location.longitude)
       else viewModel.onLocationUnavailable()
+    }
+  }
+
+  // Po úspěšném zápisu se obrazovka rovnou opouští (návrat na sken) — hláška o úspěchu by na ní
+  // jen problikla, proto potvrzujeme Toastem, který přežije i tuhle navigaci.
+  LaunchedEffect(viewModel.submitSuccess) {
+    if (viewModel.submitSuccess) {
+      Toast.makeText(context, "Cena byla zapsána, díky!", Toast.LENGTH_SHORT).show()
+      onScanAnother()
     }
   }
 
@@ -152,10 +171,6 @@ fun PriceEntryScreen(barcode: String, onScanAnother: () -> Unit) {
           Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
           Gap()
         }
-        if (viewModel.submitSuccess) {
-          Text("Cena byla zapsána, díky!", color = MaterialTheme.colorScheme.primary)
-          Gap()
-        }
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
           StoreDropdown(
@@ -176,8 +191,13 @@ fun PriceEntryScreen(barcode: String, onScanAnother: () -> Unit) {
 
         OutlinedTextField(
           value = viewModel.priceAmount,
-          onValueChange = { viewModel.priceAmount = it },
+          onValueChange = { input ->
+            if (input.matches(PRICE_INPUT_PATTERN)) viewModel.priceAmount = input
+          },
           label = { Text("Cena (Kč)") },
+          // Desetinná čárka i tečka se přijímají obě — viz PriceEntryViewModel.submit().
+          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+          textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.End),
           modifier = Modifier.fillMaxWidth(),
         )
         Gap()

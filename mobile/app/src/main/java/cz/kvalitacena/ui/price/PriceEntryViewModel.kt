@@ -109,9 +109,9 @@ class PriceEntryViewModel(
             priceKind = priceKind,
           ),
         )
+        // Obrazovka po úspěchu mizí (návrat na sken), takže není potřeba dohánět stav
+        // (obnova produktu, čištění pole) — ViewModel se zahodí spolu s ní.
         submitSuccess = true
-        priceAmount = ""
-        loadProduct() // obnoví agregované ceny po zápisu
       } catch (e: Exception) {
         submitError = "Zápis se nepovedl, zkus to prosím znovu."
       } finally {
