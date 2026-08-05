@@ -33,6 +33,19 @@ Podrobný návod — přihlášení (OTP kód se v etapě 1 čte z logu backendu
 mobilu v emulátoru a řešení běžných potíží — je v [`docs/spusteni.md`](docs/spusteni.md).
 Podrobnosti k vývoji a architektuře jsou v [`CLAUDE.md`](CLAUDE.md).
 
+## Rychlý stop
+
+Frontend i backend se ukončí `Ctrl+C` v jejich terminálu. Databáze v Dockeru běží dál na
+pozadí — backend si ji sice sám spustí, ale sám ji nezastaví (`lifecycle-management:
+start-only`), takže port `5437` zůstane obsazený, dokud ji nezastavíš ručně:
+
+```bash
+docker compose stop                               # zastaví PostgreSQL, data zůstanou
+docker compose down                               # + odstraní kontejner (volume s daty zůstává)
+docker compose down -v                            # + smaže i data — příště se seed pouští znovu
+adb emu kill                                      # ukončí případný běžící emulátor
+```
+
 ## Licence
 
 Kód je pod [GNU AGPL-3.0](LICENSE). Kdo aplikaci provozuje jako veřejnou službu, musí
