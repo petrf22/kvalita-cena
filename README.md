@@ -20,11 +20,17 @@ uživatelů se neukládají — ukládá se jen to, co je nutné pro fungování
 ## Rychlý start
 
 ```bash
-docker compose up -d                 # PostgreSQL na 127.0.0.1:5437
-cd backend && ./gradlew bootRun      # backend na :8080
-cd frontend && npm install && npm start   # web na :4200
+docker compose up -d                              # PostgreSQL na 127.0.0.1:5437
+cd backend && ./gradlew bootRun                   # backend na :8080
+docker compose exec -T postgres psql -U postgres -d kvalitaacena < dev/seed.sql   # ukázková data
+source ~/.nvm/nvm.sh && nvm use 24                # Angular 22 potřebuje Node ≥ 22.22.3
+cd frontend && npm install && npm start           # web na :4200
 ```
 
+Mobilní appka (Android) se staví přes `cd mobile && ./gradlew :app:assembleDebug`.
+
+Podrobný návod — přihlášení (OTP kód se v etapě 1 čte z logu backendu), GraphiQL dotazy, spuštění
+mobilu v emulátoru a řešení běžných potíží — je v [`docs/spusteni.md`](docs/spusteni.md).
 Podrobnosti k vývoji a architektuře jsou v [`CLAUDE.md`](CLAUDE.md).
 
 ## Licence
