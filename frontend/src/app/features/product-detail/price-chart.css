@@ -1,0 +1,63 @@
+:host {
+  display: block;
+}
+
+.chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart-empty {
+  color: rgba(0, 0, 0, 0.45);
+  text-align: center;
+  padding: 48px 0;
+  margin: 0;
+}
+
+.chart-grid-line {
+  stroke: #f0f0f0;
+  stroke-width: 1;
+}
+
+.chart-series-line {
+  stroke: #1677ff;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-area {
+  fill: #1677ff;
+  fill-opacity: 0.1;
+  stroke: none;
+}
+
+.chart-marker-ring {
+  fill: #fff;
+}
+
+.chart-marker {
+  fill: #1677ff;
+}
+
+.chart-crosshair {
+  stroke: rgba(0, 0, 0, 0.45);
+  stroke-width: 1;
+}
+
+.chart-overlay {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.chart-label {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  margin: 4px 0 0;
+}
+
+.chart-label-selected {
+  color: #1677ff;
+}

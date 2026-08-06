@@ -12,6 +12,7 @@ public class GraphQlConfig {
     return wiringBuilder -> wiringBuilder
         .scalar(GraphQlScalars.longScalar())
         .scalar(GraphQlScalars.bigDecimalScalar())
-        .scalar(GraphQlScalars.dateTimeScalar());
+        .scalar(GraphQlScalars.dateTimeScalar())
+        .scalar(GraphQlScalars.dateScalar());
   }
 }

@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 /** Obrazovky 2–4 flow "sken → cena → výběr provozovny → odeslání" (viz plán projektu). */
 class PriceEntryViewModel(
   private val graphQlClient: GraphQlClient,
-  private val barcode: String,
+  private val target: PriceEntryTarget,
 ) : ViewModel() {
 
   var loading by mutableStateOf(true)
@@ -50,7 +50,10 @@ class PriceEntryViewModel(
     loading = true
     viewModelScope.launch {
       try {
-        val found = graphQlClient.productByCode(barcode)
+        val found = when (target) {
+          is PriceEntryTarget.ByBarcode -> graphQlClient.productByCode(target.barcode)
+          is PriceEntryTarget.ById -> graphQlClient.productById(target.productId)
+        }
         product = found
         notFound = found == null
       } catch (e: Exception) {

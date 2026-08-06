@@ -30,6 +30,24 @@ tedy reputaci nijak nemění.
 Pro uživatele to znamená: „moje příspěvky" ukazují jen posledních 180 dní. To je vlastnost,
 ne omezení — starší nákupy už o něm nikdo nedohledá.
 
+### Výjimka: hodnocení kvality zboží vazbu nepseudonymizuje
+
+`core.product_quality_rating.user_id` (etapa 1, jen známka 1–5 — viz `datovy-model.md` a
+`reputace.md`) je jediné místo v `core.*`, kde tohle pravidlo neplatí. Bez trvalé vazby by
+nešlo vynutit „jedna známka na uživatele a produkt" (unikátní index `(product_id, user_id)`).
+Je to vědomé zhoršení, ne přehlédnutí — zmírněné třemi věcmi:
+
+- **Ven přes API jde jen agregát** (`ProductQuality.average`/`count`), nikdy seznam „kdo co
+  ohodnotil" — `user_id` se z DB nedostane ven ani nepřímo.
+- **`ON DELETE CASCADE`, ne `SET NULL`** — smazání účtu známky rovnou odstraní, na rozdíl od
+  `price_observation.submitter_id`, kde observace zůstávají jako pseudonymizovaná statistika
+  ve veřejném zájmu. Známka bez vlastníka nemá tenhle veřejný zájem, který by odůvodnil
+  přežití záznamu po smazání účtu.
+- **`pg_dump --schema=core` musí sloupec vynechat nebo hashovat** — jinak „čistý" export
+  (`datovy-model.md`) tiše prolomí záruku z tohoto dokumentu. Až vznikne skutečný GDPR
+  export/výmaz (`GET /api/me/export`, `POST /api/me/delete` níže), hodnocení kvality do
+  něj patří stejně jako cenové záznamy.
+
 ## Identita bez osobních údajů
 
 `auth.app_user` nemá pole pro jméno, adresu ani telefon — v API pro ně neexistuje místo.

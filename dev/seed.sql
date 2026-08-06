@@ -92,4 +92,67 @@ FROM (VALUES
 JOIN core.product p ON p.name = s.product_name
 ON CONFLICT (code, code_type, COALESCE(chain_id, 0)) DO NOTHING;
 
+-- Historie cen za posledních ~60 dní pro tři dvojice (produkt, obchod), aby šel v UI hned vidět
+-- graf vývoje ceny (agg.price_daily). Na rozdíl od zbytku souboru se observace tady vkládají
+-- PŘÍMO, ne přes GraphQL mutaci submitObservation — 60 dní historie by přes ruční mutace bylo
+-- nepraktické; jednorázový zápis přes UI/API zůstává vyzkoušený jinak (viz komentář nahoře).
+-- source = 'IMPORT' odlišuje tahle data od skutečných zápisů a slouží zároveň jako idempotence
+-- klíč (WHERE NOT EXISTS níže), aby šel skript spustit opakovaně bez duplicit.
+WITH targets AS (
+  SELECT p.id AS product_id, p.net_content_base, st.id AS store_id, base.base_price
+  FROM (VALUES
+    ('Máslo čerstvé',   'Albert Brno-Střed',      42.90),
+    ('Máslo čerstvé',   'Lidl Brno-Královo Pole', 39.90),
+    ('Mléko polotučné', 'Albert Brno-Střed',      24.90)
+  ) AS base(product_name, store_name, base_price)
+  JOIN core.product p ON p.name = base.product_name
+  JOIN core.store st ON st.name = base.store_name
+), days AS (
+  SELECT generate_series(0, 60, 4) AS offset_days
+), rows AS (
+  SELECT
+    t.product_id, t.store_id, t.net_content_base,
+    -- Mírný trend + malá oscilace, ať je na grafu vidět víc než rovná čára.
+    ROUND(t.base_price + (d.offset_days::numeric / 10)
+      - (3 * SIN(d.offset_days::double precision / 6.0))::numeric, 2) AS price_amount,
+    (now() - (d.offset_days || ' days')::interval) AS observed_at
+  FROM targets t CROSS JOIN days d
+)
+INSERT INTO core.price_observation
+  (product_id, store_id, price_amount, price_kind, quantity_basis, net_content_base,
+   observed_at, submitter_id, submitter_kind, status, agreement, source)
+SELECT r.product_id, r.store_id, r.price_amount, 'REGULAR', 'PACKAGE', r.net_content_base,
+       r.observed_at, NULL, 'ANONYMOUS', 'ACTIVE', 'NEUTRAL', 'IMPORT'
+FROM rows r
+WHERE NOT EXISTS (
+  SELECT 1 FROM core.price_observation po
+  WHERE po.product_id = r.product_id AND po.store_id = r.store_id
+    AND po.observed_at = r.observed_at AND po.source = 'IMPORT'
+);
+
+-- Zařadit dotčené buňky do fronty přepočtu — PriceAggregationService.processQueue() (běží každých
+-- 5 s) je zpracuje do agg.price_current i agg.price_daily.
+INSERT INTO agg.recompute_queue (product_id, store_id, reason)
+SELECT DISTINCT po.product_id, po.store_id, 'NEW_OBS'
+FROM core.price_observation po
+WHERE po.source = 'IMPORT'
+  AND NOT EXISTS (
+    SELECT 1 FROM agg.recompute_queue q
+    WHERE q.product_id = po.product_id AND q.store_id = po.store_id AND q.processed_at IS NULL
+  );
+
+-- Pár hodnocení kvality — jen pokud už existuje aspoň jeden uživatel (seed běží typicky i před
+-- prvním přihlášením, kdy je auth.app_user prázdná; anonymní hodnocení kvality API nedovolí,
+-- vyžaduje přihlášení stejně jako submitObservation ho nevyžaduje).
+INSERT INTO core.product_quality_rating (product_id, user_id, grade)
+SELECT p.id, u.id, g.grade
+FROM (VALUES
+  ('Máslo čerstvé', 1),
+  ('Mléko polotučné', 2),
+  ('Chléb konzumní kmínový', 3)
+) AS g(product_name, grade)
+JOIN core.product p ON p.name = g.product_name
+CROSS JOIN (SELECT id FROM auth.app_user ORDER BY id LIMIT 1) u
+ON CONFLICT (product_id, user_id) DO NOTHING;
+
 COMMIT;

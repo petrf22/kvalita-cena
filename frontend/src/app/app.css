@@ -15,12 +15,53 @@
   font-size: 18px;
   font-weight: 600;
   color: rgba(0, 0, 0, 0.88);
+  flex-shrink: 0;
+  margin-right: 24px;
 }
 
+.app-menu {
+  border-bottom: none;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* Seznam hledání má víc sloupců než dřívější jednoduchý výpis — 720px bylo na tabulku úzké. */
 .app-content {
   padding: 24px;
-  max-width: 720px;
+  max-width: 1080px;
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Na mobilním prohlížeči se stejné menu chová jako klasické spodní menu (viz zadání). */
+@media (max-width: 600px) {
+  .app-title {
+    display: none;
+  }
+
+  .app-header {
+    padding: 0;
+  }
+
+  .app-menu {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    justify-content: space-around;
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+  }
+
+  .app-menu-label {
+    display: block;
+    font-size: 11px;
+  }
+
+  .app-content {
+    padding: 16px;
+    padding-bottom: 72px; /* místo pro fixní spodní menu */
+  }
 }

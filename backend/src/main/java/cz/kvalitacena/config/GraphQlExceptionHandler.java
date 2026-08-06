@@ -1,6 +1,7 @@
 package cz.kvalitacena.config;
 
 import cz.kvalitacena.exception.NotFoundException;
+import cz.kvalitacena.exception.UnauthorizedException;
 import graphql.GraphQLError;
 import graphql.GraphqlErrorBuilder;
 import graphql.schema.DataFetchingEnvironment;
@@ -23,6 +24,12 @@ public class GraphQlExceptionHandler extends DataFetcherExceptionResolverAdapter
     if (ex instanceof IllegalArgumentException) {
       return GraphqlErrorBuilder.newError(env)
           .errorType(ErrorType.BAD_REQUEST)
+          .message(ex.getMessage())
+          .build();
+    }
+    if (ex instanceof UnauthorizedException) {
+      return GraphqlErrorBuilder.newError(env)
+          .errorType(ErrorType.UNAUTHORIZED)
           .message(ex.getMessage())
           .build();
     }

@@ -11,9 +11,13 @@ import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { PriceKind, Product, Store } from '../../models/catalog';
+import { PriceKind, PricePoint, Product, Store } from '../../models/catalog';
+import { AuthService } from '../../services/auth-service';
 import { ProductService } from '../../services/product-service';
 import { StoreService } from '../../services/store-service';
+import { QualityBadge } from '../../shared/quality-badge';
+import { formatRelativeDate } from '../../shared/relative-date';
+import { PriceChart } from './price-chart';
 
 const PRICE_KIND_LABELS: Record<PriceKind, string> = {
   REGULAR: 'Běžná cena',
@@ -22,6 +26,8 @@ const PRICE_KIND_LABELS: Record<PriceKind, string> = {
   CLEARANCE: 'Výprodej',
   MULTIBUY: 'Množstevní sleva',
 };
+
+const CHART_RANGES = [7, 30, 90, 365];
 
 @Component({
   selector: 'app-product-detail-page',
@@ -38,6 +44,8 @@ const PRICE_KIND_LABELS: Record<PriceKind, string> = {
     NzInputModule,
     NzInputNumberModule,
     NzAlertModule,
+    QualityBadge,
+    PriceChart,
   ],
   templateUrl: './product-detail-page.html',
   styleUrl: './product-detail-page.css',
@@ -46,11 +54,21 @@ export class ProductDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly productService = inject(ProductService);
   private readonly storeService = inject(StoreService);
+  protected readonly auth = inject(AuthService);
 
   protected readonly priceKindLabels = PRICE_KIND_LABELS;
+  protected readonly chartRanges = CHART_RANGES;
+  protected readonly formatRelativeDate = formatRelativeDate;
 
   protected readonly product = signal<Product | null>(null);
   protected readonly loading = signal(true);
+
+  protected readonly historyPoints = signal<PricePoint[]>([]);
+  protected readonly historyLoading = signal(false);
+  protected readonly selectedDays = signal(90);
+  protected readonly selectedPriceKind = signal<PriceKind>('REGULAR');
+
+  protected readonly ratingError = signal<string | null>(null);
 
   protected readonly nearbyStores = signal<Store[]>([]);
   protected readonly locating = signal(false);
@@ -74,9 +92,55 @@ export class ProductDetailPage {
       next: (product) => {
         this.product.set(product);
         this.loading.set(false);
+        if (product) this.loadHistory();
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  private loadHistory(): void {
+    const product = this.product();
+    if (!product) return;
+    this.historyLoading.set(true);
+    this.productService.priceHistory(product.id, this.selectedPriceKind(), this.selectedDays()).subscribe({
+      next: (history) => {
+        this.historyPoints.set(history.points);
+        this.historyLoading.set(false);
+      },
+      error: () => {
+        this.historyPoints.set([]);
+        this.historyLoading.set(false);
+      },
+    });
+  }
+
+  onDaysChange(days: number): void {
+    this.selectedDays.set(days);
+    this.loadHistory();
+  }
+
+  onPriceKindChange(kind: PriceKind): void {
+    this.selectedPriceKind.set(kind);
+    this.loadHistory();
+  }
+
+  rate(grade: number): void {
+    const product = this.product();
+    if (!product) return;
+
+    this.ratingError.set(null);
+    this.productService.rateProduct(product.id, grade).subscribe({
+      next: (quality) => {
+        this.product.set({ ...product, quality, myQualityRating: grade });
+      },
+      error: () => {
+        this.ratingError.set('Hodnocení kvality vyžaduje přihlášení — přejdi do záložky Účet.');
+      },
+    });
+  }
+
+  osmUrl(store: Store): string {
+    return `https://www.openstreetmap.org/?mlat=${store.lat}&mlon=${store.lon}#map=18/${store.lat}/${store.lon}`;
   }
 
   /**
@@ -133,7 +197,7 @@ export class ProductDetailPage {
           this.submitting.set(false);
           this.submitSuccess.set(true);
           this.priceAmount.set(null);
-          this.loadProduct(product.id); // obnoví agregované ceny v tabulce
+          this.loadProduct(product.id); // obnoví agregované ceny v tabulce i graf
         },
         error: () => {
           this.submitting.set(false);

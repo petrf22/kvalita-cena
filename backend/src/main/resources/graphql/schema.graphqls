@@ -1,15 +1,41 @@
 """
-Etapa 1 (MVP) — jen tolik, kolik potřebuje prochozí kostra: hledání zboží, ceny po
-obchodech, dohledání nejbližších provozoven a zápis ceny. Recenze, skupiny důvěry,
-notifikace a dodavatelé přijdou v etapě 2/3 (viz plán založení projektu).
+Etapa 1 (MVP) — hledání zboží s filtry a řazením, ceny po obchodech, hodnocení kvality
+(jen známka 1–5, bez textů), denní historie ceny pro graf, dohledání nejbližších provozoven
+a zápis ceny. Textové recenze, skupiny důvěry, notifikace a dodavatelé přijdou v etapě 2/3
+(viz plán založení projektu).
 """
 scalar Long
 scalar BigDecimal
 scalar DateTime
+scalar Date
+
+enum ProductSort {
+  "Výchozí — nejvíc potvrzené zboží nahoře (součet agg.price_current.n_obs)."
+  REPORT_COUNT
+  PRICE_ASC
+  "1 = nejlepší, tedy vzestupně."
+  QUALITY
+  LAST_REPORTED
+  NAME
+}
 
 type Query {
-  "Fulltextové hledání podle názvu (core.product, idx_product_name_fts)."
-  searchProducts(query: String!, first: Int = 20): [Product!]!
+  """
+  Fulltextové hledání podle názvu (core.product, idx_product_name_fts) s volitelným filtrem
+  na obchod nebo město a řazením. storeId/city omezují i agregáty v ProductSearchItem — s
+  filtrem na město ukazuje seznam cenu a počet hlášení jen za dané město, ne celostátně.
+  """
+  searchProducts(
+    query: String!
+    storeId: ID
+    city: String
+    sort: ProductSort = REPORT_COUNT
+    first: Int = 20
+    offset: Int = 0
+  ): ProductSearchResult!
+
+  "Číselník pro filtry hledání — jen obchody a města, kde nějaká cena skutečně je."
+  searchFacets(query: String): SearchFacets!
 
   product(id: ID!): Product
 
@@ -24,11 +50,27 @@ type Query {
   a nikam se neukládají — viz docs/soukromi.md.
   """
   nearbyStores(lat: Float!, lon: Float!, radiusKm: Float = 3): [Store!]!
+
+  """
+  Denní řada z agg.price_daily. Graf NIKDY nečte core.price_observation
+  (docs/datovy-model.md). Bez storeId je to medián mediánů přes provozovny
+  (docs/reputace.md), se storeId jedna provozovna.
+  """
+  priceHistory(productId: ID!, priceKind: PriceKind = REGULAR, storeId: ID, days: Int = 90): PriceHistory!
+
+  "Veřejná identita přihlášeného uživatele — bez e-mailu a bez DB id (docs/soukromi.md)."
+  me: Viewer
 }
 
 type Mutation {
   "Zápis cenového záznamu — funguje i anonymně (nižší váha, viz docs/reputace.md)."
   submitObservation(input: SubmitObservationInput!): PriceObservation!
+
+  """
+  Známka kvality jako ve škole: 1 nejlepší … 5 nejhorší. Jeden záznam na uživatele a produkt
+  — opakované volání předchozí známku přepíše. Vyžaduje přihlášení.
+  """
+  rateProduct(productId: ID!, grade: Int!): ProductQuality!
 }
 
 type Brand {
@@ -79,6 +121,113 @@ type Product {
   status: ProductStatus!
   "Aktuální ceny po jednotlivých obchodech (agg.price_current)."
   prices: [PriceCurrent!]!
+  codes: [ProductCode!]!
+  "Primární GTIN-14 (doplněný nulami zleva) — z něj se skládají externí odkazy."
+  gtin: String
+  stats: ProductStats!
+  quality: ProductQuality!
+  "Známka přihlášeného uživatele, null pro anonyma i pro nehodnocený produkt."
+  myQualityRating: Int
+  externalLinks: [ExternalLink!]!
+}
+
+enum CodeType {
+  GTIN
+  PLU
+  STORE_INTERNAL
+}
+
+type ProductCode {
+  code: String!
+  codeType: CodeType!
+  "Povinný u STORE_INTERNAL — ten kód NIKDY neplatí napříč řetězci (docs/datovy-model.md)."
+  chain: RetailChain
+  primary: Boolean!
+}
+
+type ProductStats {
+  observationCount: Int!
+  storeCount: Int!
+  lastObservedAt: DateTime
+  "Nejnižší běžná (REGULAR) cena napříč obchody a kde."
+  bestPrice: BigDecimal
+  bestUnitPrice: BigDecimal
+  cheapestStore: Store
+}
+
+"Průměrná známka 1,00–5,00 (1 nejlepší). Null, dokud nikdo nehodnotil."
+type ProductQuality {
+  average: BigDecimal
+  count: Int!
+}
+
+enum ExternalLinkKind {
+  OPEN_FOOD_FACTS
+  E_NUMBERS
+}
+
+"""
+Odkaz do cizí otevřené databáze. Server data z OFF/OSM NIKDY nestahuje do core.* — posílá
+jen URL a povinný text zdroje/licence, který UI MUSÍ zobrazit (docs/datovy-model.md, ODbL).
+"""
+type ExternalLink {
+  kind: ExternalLinkKind!
+  label: String!
+  url: String!
+  attribution: String!
+}
+
+type ProductSearchResult {
+  items: [ProductSearchItem!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
+"""
+Řádek seznamu hledání. Agregáty jsou spočítané jedním dotazem spolu s hledáním a respektují
+zvolený filtr (obchod/město) — proto nejsou jen polem na Product, kde by filtr nebyl vidět.
+"""
+type ProductSearchItem {
+  product: Product!
+  "Počet hlášení celkem (součet agg.price_current.n_obs) v rozsahu filtru."
+  observationCount: Int!
+  "Nejnižší běžná (REGULAR) cena v rozsahu filtru a obchod, kde je."
+  bestPrice: BigDecimal
+  bestUnitPrice: BigDecimal
+  cheapestStore: Store
+  "Počet hlášení právě té nejlevnější buňky — kolik lidí potvrdilo tuhle konkrétní cenu."
+  bestPriceObservations: Int
+  lastObservedAt: DateTime
+  qualityAverage: BigDecimal
+  qualityCount: Int!
+}
+
+type SearchFacets {
+  stores: [Store!]!
+  cities: [String!]!
+}
+
+type PriceHistory {
+  priceKind: PriceKind!
+  store: Store
+  "Skutečně vrácené okno ve dnech — může být kratší než požadované (odstupňování přístupu)."
+  days: Int!
+  points: [PricePoint!]!
+}
+
+type PricePoint {
+  day: Date!
+  priceAmount: BigDecimal
+  unitPrice: BigDecimal!
+  nObs: Int!
+  "Z kolika provozoven medián vznikl (1 při filtru na obchod)."
+  storeCount: Int!
+}
+
+type Viewer {
+  publicHandle: String!
+  displayName: String
+  createdAt: DateTime!
 }
 
 enum ChainType {

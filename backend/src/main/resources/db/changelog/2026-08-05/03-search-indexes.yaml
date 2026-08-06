@@ -1,0 +1,14 @@
+# 03-search-indexes.yaml — index chybějící pro nové hledání s filtrem na obchod/město.
+# idx_store_city (2026-07-26/02-stores.yaml) už existuje, není potřeba přidávat.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-05-03-create-idx-agg-price-current-store
+      author: Petr F.
+      changes:
+        - createIndex:
+            schemaName: agg
+            tableName: price_current
+            indexName: idx_agg_price_current_store
+            columns:
+              - column:
+                  name: store_id

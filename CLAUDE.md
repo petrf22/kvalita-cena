@@ -35,11 +35,24 @@ Každá část má vlastní build nástroj a vlastní `README`/konvence; sdílen
 ## Stav implementace (etapa 1 — prochozí kostra)
 
 Hotovo a ověřeno end-to-end (backend přes curl, web i mobil živě v prohlížeči/emulátoru):
-passwordless auth (OTP + refresh rotace), GraphQL `searchProducts`/`product`/`productByCode`/
-`nearbyStores`/`submitObservation`, vážený medián v `PriceAggregationService`, Angular stránky
-hledání/detail/přihlášení, Android obrazovky sken/cena/přihlášení. Neimplementováno (etapa 2/3):
-recenze, skupiny důvěry, plný reputační vzorec, notifikace, lokální dodavatelé, OFF synchronizace,
-`agg.price_daily`, offline fronta v mobilu — viz konec plánu založení projektu pro rozpis.
+passwordless auth (OTP + refresh rotace), GraphQL `searchProducts` (filtr obchod/město, řazení,
+stránkování, agregáty v `ProductSearchItem`) / `searchFacets` / `product` / `productByCode` /
+`nearbyStores` / `priceHistory` / `me` / `submitObservation` / `rateProduct`, vážený medián
+i denní agregace v `PriceAggregationService` (`agg.price_current` + `agg.price_daily`),
+hodnocení kvality jako známka 1–5 (`core.product_quality_rating`, `QualityRatingService` —
+jen průměr a počet, žádné texty, žádná viditelnost).
+
+Angular: menu Hledání/Nastavení/Účet (na mobilním prohlížeči spodní lišta), stránka hledání
+s filtry a tabulkou, detail produktu s SVG grafem vývoje ceny (`price-chart-geometry.ts`,
+testováno Vitestem), stránka nastavení. Android: bottom navigation ze 4 záložek (Sken/Hledat/
+Nastavení/Účet — `ui/navigation/AppDestinations.kt`), hledání, detail s Canvas grafem
+(`PriceChartGeometry.kt`, testováno JUnitem), zápis ceny ze skenu i z detailu, mapa/OFF odkazy.
+
+Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
+`PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext`), skupiny důvěry, plný reputační vzorec (jen
+složka `L`), notifikace, lokální dodavatelé, OFF synchronizace, `agg.price_weekly_national`,
+offline fronta v mobilu — viz konec plánu založení projektu pro rozpis a `docs/reputace.md`
+pro poznámku o hodnocení kvality vs. dodavatelích.
 
 ## Příkazy
 

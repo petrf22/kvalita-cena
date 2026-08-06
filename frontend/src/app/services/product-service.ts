@@ -1,10 +1,24 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { GraphQlService } from './graphql-service';
-import { Product, PriceObservation, SubmitObservationInput } from '../models/catalog';
+import {
+  Product,
+  PriceHistory,
+  PriceKind,
+  PriceObservation,
+  ProductQuality,
+  ProductSearchResult,
+  ProductSort,
+  SearchFacets,
+  SubmitObservationInput,
+} from '../models/catalog';
+
+const STORE_FIELDS = `
+  id name street city postalCode country lat lon chain { id name chainType }
+`;
 
 const PRICE_CURRENT_FIELDS = `
-  store { id name street city postalCode country lat lon chain { id name chainType } }
+  store { ${STORE_FIELDS} }
   priceKind
   unitPrice
   priceAmount
@@ -28,28 +42,114 @@ const PRODUCT_FIELDS = `
   prices { ${PRICE_CURRENT_FIELDS} }
 `;
 
+/** Navíc oproti PRODUCT_FIELDS — jen pro detail, aby hledání netahalo zbytečně moc. */
+const PRODUCT_DETAIL_FIELDS = `
+  ${PRODUCT_FIELDS}
+  gtin
+  stats { observationCount storeCount lastObservedAt bestPrice bestUnitPrice cheapestStore { ${STORE_FIELDS} } }
+  quality { average count }
+  myQualityRating
+  externalLinks { kind label url attribution }
+`;
+
+const PRODUCT_SUMMARY_FIELDS = `
+  id
+  name
+  brand { id name slug }
+  category { id name slug path }
+`;
+
+const SEARCH_ITEM_FIELDS = `
+  product { ${PRODUCT_SUMMARY_FIELDS} }
+  observationCount
+  bestPrice
+  bestUnitPrice
+  bestPriceObservations
+  lastObservedAt
+  qualityAverage
+  qualityCount
+  cheapestStore { ${STORE_FIELDS} }
+`;
+
+export interface SearchCriteria {
+  query: string;
+  storeId?: string | null;
+  city?: string | null;
+  sort?: ProductSort;
+  first?: number;
+  offset?: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private readonly graphQl = inject(GraphQlService);
 
-  search(query: string, first = 20): Observable<Product[]> {
+  /** Hledání s volitelným filtrem obchod/město a řazením — viz zadání a schema.graphqls. */
+  searchProducts(criteria: SearchCriteria): Observable<ProductSearchResult> {
     const gql = `
-      query SearchProducts($query: String!, $first: Int) {
-        searchProducts(query: $query, first: $first) { ${PRODUCT_FIELDS} }
+      query SearchProducts($query: String!, $storeId: ID, $city: String, $sort: ProductSort, $first: Int, $offset: Int) {
+        searchProducts(query: $query, storeId: $storeId, city: $city, sort: $sort, first: $first, offset: $offset) {
+          totalCount
+          hasMore
+          items { ${SEARCH_ITEM_FIELDS} }
+        }
       }
     `;
     return this.graphQl
-      .execute<{ searchProducts: Product[] }>(gql, { query, first })
+      .execute<{ searchProducts: ProductSearchResult }>(gql, {
+        query: criteria.query,
+        storeId: criteria.storeId ?? null,
+        city: criteria.city ?? null,
+        sort: criteria.sort ?? 'REPORT_COUNT',
+        first: criteria.first ?? 20,
+        offset: criteria.offset ?? 0,
+      })
       .pipe(map((data) => data.searchProducts));
   }
 
+  /** Číselník obchodů/měst pro filtr hledání (jen ty, kde je skutečně nějaká cena). */
+  searchFacets(): Observable<SearchFacets> {
+    const gql = `{ searchFacets { cities stores { ${STORE_FIELDS} } } }`;
+    return this.graphQl.execute<{ searchFacets: SearchFacets }>(gql).pipe(map((data) => data.searchFacets));
+  }
+
+  /** Plný detail produktu (karta produktu) — na rozdíl od searchProducts tahá i stats/quality/externalLinks. */
   getById(id: string): Observable<Product | null> {
     const gql = `
       query Product($id: ID!) {
-        product(id: $id) { ${PRODUCT_FIELDS} }
+        product(id: $id) { ${PRODUCT_DETAIL_FIELDS} }
       }
     `;
     return this.graphQl.execute<{ product: Product | null }>(gql, { id }).pipe(map((data) => data.product));
+  }
+
+  /** Denní řada z agg.price_daily pro graf vývoje ceny — NIKDY ze syrových observací. */
+  priceHistory(productId: string, priceKind: PriceKind = 'REGULAR', days = 90): Observable<PriceHistory> {
+    const gql = `
+      query PriceHistory($productId: ID!, $priceKind: PriceKind, $days: Int) {
+        priceHistory(productId: $productId, priceKind: $priceKind, days: $days) {
+          priceKind
+          days
+          store { ${STORE_FIELDS} }
+          points { day priceAmount unitPrice nObs storeCount }
+        }
+      }
+    `;
+    return this.graphQl
+      .execute<{ priceHistory: PriceHistory }>(gql, { productId, priceKind, days })
+      .pipe(map((data) => data.priceHistory));
+  }
+
+  /** Známka kvality 1–5 (1 nejlepší, jako ve škole) — vyžaduje přihlášení, jinak GraphQL UNAUTHORIZED. */
+  rateProduct(productId: string, grade: number): Observable<ProductQuality> {
+    const gql = `
+      mutation RateProduct($productId: ID!, $grade: Int!) {
+        rateProduct(productId: $productId, grade: $grade) { average count }
+      }
+    `;
+    return this.graphQl
+      .execute<{ rateProduct: ProductQuality }>(gql, { productId, grade })
+      .pipe(map((data) => data.rateProduct));
   }
 
   submitObservation(input: SubmitObservationInput): Observable<PriceObservation> {

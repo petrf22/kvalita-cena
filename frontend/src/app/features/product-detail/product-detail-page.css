@@ -1,11 +1,89 @@
 .product-meta {
   color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 16px;
+}
+
+.quality-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.quality-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.login-hint {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  margin: 4px 0 16px;
+}
+
+.rating-alert {
+  margin-bottom: 16px;
+}
+
+.chart-card,
+.cheapest-card,
+.prices-card,
+.links-card,
+.submit-card {
   margin-bottom: 24px;
 }
 
-.prices-card,
-.submit-card {
-  margin-bottom: 24px;
+.chart-controls {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.chart-control-group {
+  display: flex;
+  gap: 6px;
+}
+
+.cheapest-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cheapest-store-name {
+  display: block;
+  font-weight: 600;
+}
+
+.cheapest-store-city {
+  display: block;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
+.cheapest-price {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.external-link {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.external-link-label {
+  display: block;
+  font-weight: 600;
+}
+
+.external-link-attribution {
+  display: block;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
 }
 
 .no-prices {

@@ -6,17 +6,57 @@
 .search-box {
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .search-box input {
   flex: 1;
 }
 
-.search-result {
+.filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.filter-select {
+  min-width: 180px;
+  flex: 1;
+}
+
+.search-hint {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.search-result-row {
   cursor: pointer;
 }
 
-.search-result:hover {
+.search-result-row:hover {
   background: #fafafa;
+}
+
+.product-name {
+  font-weight: 600;
+}
+
+.product-subtitle {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
+.confirmations {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.unknown-price {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.results-pagination {
+  margin-top: 16px;
+  text-align: right;
 }

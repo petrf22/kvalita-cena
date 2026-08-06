@@ -83,3 +83,17 @@ app:
       web-ttl: P30D
       android-ttl: P180D
       reuse-grace-period: PT30S
+  history:
+    # Odstupňování přístupu (docs/reputace.md, T0 vs. T1) — anonymní okno je v etapě 1 vědomě
+    # velkorysejší než dokument uvádí (7 dní): studený start je větší riziko než parazitování
+    # na datech. Odchylka je poznamenaná i v docs/reputace.md.
+    max-days: 730
+    anonymous-max-days: 90
+  quality:
+    # Pod tímto počtem hodnocení klienti známku zobrazí ztlumeně jako "orientační" — obdoba
+    # pravidla n_eff < 2 u cen (docs/reputace.md).
+    min-ratings-for-badge: 3
+  external:
+    open-food-facts:
+      product-url-template: "https://cz.openfoodfacts.org/product/{barcode}"
+      attribution: "Zdroj: Open Food Facts, licence ODbL"

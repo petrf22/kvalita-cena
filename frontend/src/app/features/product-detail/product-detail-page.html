@@ -16,6 +16,76 @@
     }
   </p>
 
+  <div class="quality-section">
+    <app-quality-badge [average]="product()!.quality?.average ?? null" [count]="product()!.quality?.count ?? 0" />
+    <div class="quality-buttons">
+      @for (grade of [1, 2, 3, 4, 5]; track grade) {
+        <button
+          nz-button
+          [nzType]="product()!.myQualityRating === grade ? 'primary' : 'default'"
+          nzShape="circle"
+          (click)="rate(grade)"
+        >
+          {{ grade }}
+        </button>
+      }
+    </div>
+  </div>
+  @if (!auth.isLoggedIn()) {
+    <p class="login-hint">Hodnocení kvality vyžaduje přihlášení — přejdi na stránku Účet.</p>
+  }
+  @if (ratingError()) {
+    <nz-alert nzType="warning" [nzMessage]="ratingError()" nzShowIcon class="rating-alert" />
+  }
+
+  <nz-card nzTitle="Vývoj ceny" class="chart-card">
+    <div class="chart-controls">
+      <div class="chart-control-group">
+        @for (days of chartRanges; track days) {
+          <button
+            nz-button
+            [nzType]="selectedDays() === days ? 'primary' : 'default'"
+            nzSize="small"
+            (click)="onDaysChange(days)"
+          >
+            {{ days }} dní
+          </button>
+        }
+      </div>
+      <div class="chart-control-group">
+        <button
+          nz-button
+          [nzType]="selectedPriceKind() === 'REGULAR' ? 'primary' : 'default'"
+          nzSize="small"
+          (click)="onPriceKindChange('REGULAR')"
+        >
+          Běžná cena
+        </button>
+        <button
+          nz-button
+          [nzType]="selectedPriceKind() === 'PROMO' ? 'primary' : 'default'"
+          nzSize="small"
+          (click)="onPriceKindChange('PROMO')"
+        >
+          Akce
+        </button>
+      </div>
+    </div>
+    <app-price-chart [points]="historyPoints()" />
+  </nz-card>
+
+  @if (product()!.stats?.bestPrice != null && product()!.stats?.cheapestStore) {
+    <nz-card nzTitle="Nejlevněji" class="cheapest-card">
+      <a [href]="osmUrl(product()!.stats!.cheapestStore!)" target="_blank" rel="noopener" class="cheapest-row">
+        <span>
+          <span class="cheapest-store-name">{{ product()!.stats!.cheapestStore!.name }}</span>
+          <span class="cheapest-store-city">{{ product()!.stats!.cheapestStore!.city }}</span>
+        </span>
+        <span class="cheapest-price">{{ product()!.stats!.bestPrice }} Kč</span>
+      </a>
+    </nz-card>
+  }
+
   <nz-card nzTitle="Aktuální ceny po obchodech" class="prices-card">
     @if (product()!.prices.length === 0) {
       <p class="no-prices">Zatím tu nikdo cenu nezadal — buď první.</p>
@@ -28,12 +98,15 @@
             <th>Cena</th>
             <th>Kč / jednotka</th>
             <th>Spolehlivost</th>
+            <th>Poslední hlášení</th>
           </tr>
         </thead>
         <tbody>
           @for (price of pricesTable.data; track price.store.id + price.priceKind) {
             <tr>
-              <td>{{ price.store.name }}</td>
+              <td>
+                <a [href]="osmUrl(price.store)" target="_blank" rel="noopener">{{ price.store.name }}</a>
+              </td>
               <td>{{ priceKindLabels[price.priceKind] }}</td>
               <td>{{ price.priceAmount }} Kč</td>
               <td>{{ price.unitPrice }} Kč</td>
@@ -46,12 +119,28 @@
                   {{ price.nObs }} {{ price.nObs === 1 ? 'záznam' : 'záznamy' }}
                 </nz-tag>
               </td>
+              <td>{{ formatRelativeDate(price.lastObservedAt) }}</td>
             </tr>
           }
         </tbody>
       </nz-table>
     }
   </nz-card>
+
+  @if (product()!.externalLinks && product()!.externalLinks!.length > 0) {
+    <nz-card nzTitle="Další informace" class="links-card">
+      @for (link of product()!.externalLinks; track link.url) {
+        <a [href]="link.url" target="_blank" rel="noopener" class="external-link">
+          <span nz-icon nzType="link"></span>
+          <span>
+            <span class="external-link-label">{{ link.label }}</span>
+            <!-- Atribuce zdroje/licence MUSÍ být vidět — ODbL (docs/datovy-model.md). -->
+            <span class="external-link-attribution">{{ link.attribution }}</span>
+          </span>
+        </a>
+      }
+    </nz-card>
+  }
 
   <nz-card nzTitle="Zadat cenu" class="submit-card">
     @if (submitSuccess()) {

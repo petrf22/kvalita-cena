@@ -16,6 +16,11 @@ class BarcodeAnalyzer(
     paused = true
   }
 
+  /** Znovu povolí detekci po návratu na obrazovku skenu — bez toho zůstane po prvním skenu trvale mrtvá. */
+  fun resume() {
+    paused = false
+  }
+
   override fun analyze(image: ImageProxy) {
     if (paused) {
       image.close()

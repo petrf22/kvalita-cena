@@ -2,9 +2,16 @@ import {
   ArrowLeftOutline,
   CheckCircleOutline,
   EnvironmentOutline,
+  FilterOutline,
+  LinkOutline,
   LoadingOutline,
+  LogoutOutline,
   SearchOutline,
+  SettingOutline,
   ShopOutline,
+  SortAscendingOutline,
+  StarOutline,
+  UserOutline,
 } from '@ant-design/icons-angular/icons';
 
 export const icons = [
@@ -14,4 +21,11 @@ export const icons = [
   LoadingOutline,
   CheckCircleOutline,
   ShopOutline,
+  SettingOutline,
+  UserOutline,
+  LinkOutline,
+  StarOutline,
+  LogoutOutline,
+  FilterOutline,
+  SortAscendingOutline,
 ];

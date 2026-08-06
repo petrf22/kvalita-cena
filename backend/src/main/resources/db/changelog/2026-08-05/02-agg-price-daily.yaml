@@ -1,0 +1,107 @@
+# 02-agg-price-daily.yaml — denní agregace pro graf vývoje ceny (etapa 2 z docs/datovy-model.md,
+# doplněná dřív, protože ji potřebuje detail produktu). Graf se čte VŽDY odsud, nikdy ze syrových
+# core.price_observation (docs/datovy-model.md, "Agregace jsou tabulky, ne materialized view").
+# Plní se přes stávající agg.recompute_queue v PriceAggregationService, stejně jako price_current.
+#
+# "Den" = core.day_utc(observed_at), tatáž funkce jako u uq_price_observation_submitter_per_day
+# (2026-07-26/05-price-observation.yaml) — aby "den" znamenal v celé databázi jednu věc.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-05-02-create-agg-price-daily
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: agg
+            tableName: price_daily
+            columns:
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: store_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: price_kind
+                  type: VARCHAR(12)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: day
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: unit_price
+                  type: NUMERIC(12,4)
+              - column:
+                  name: price_amount
+                  type: NUMERIC(10,2)
+              - column:
+                  name: n_obs
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: n_eff
+                  type: NUMERIC(8,3)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sum_weight
+                  type: NUMERIC(10,4)
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: computed_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            schemaName: agg
+            tableName: price_daily
+            columnNames: product_id, store_id, price_kind, day
+            constraintName: pk_agg_price_daily
+        - addForeignKeyConstraint:
+            constraintName: fk_agg_price_daily_product
+            baseTableSchemaName: agg
+            baseTableName: price_daily
+            baseColumnNames: product_id
+            referencedTableSchemaName: core
+            referencedTableName: product
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_agg_price_daily_store
+            baseTableSchemaName: agg
+            baseTableName: price_daily
+            baseColumnNames: store_id
+            referencedTableSchemaName: core
+            referencedTableName: store
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            # Přesně tvar dotazu na celostátní graf: WHERE product_id = ? AND price_kind = ?
+            # AND day >= ? — index-only scan.
+            schemaName: agg
+            tableName: price_daily
+            indexName: idx_agg_price_daily_product_kind_day
+            columns:
+              - column:
+                  name: product_id
+              - column:
+                  name: price_kind
+              - column:
+                  name: day
+        - sql:
+            sql: |
+              ALTER TABLE agg.price_daily
+                ADD CONSTRAINT chk_agg_price_daily_kind
+                CHECK (price_kind IN ('REGULAR', 'PROMO', 'CLUB_CARD', 'CLEARANCE', 'MULTIBUY'));

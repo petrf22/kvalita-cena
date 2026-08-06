@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Kvalita a cena</string>
+    <string name="tab_scan">Sken</string>
+    <string name="tab_search">Hledat</string>
+    <string name="tab_settings">Nastavení</string>
+    <string name="tab_account">Účet</string>
 </resources>

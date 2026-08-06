@@ -15,8 +15,12 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
+private val STORE_FIELDS = """
+  id name street city postalCode country lat lon chain { id name chainType }
+"""
+
 private val PRICE_CURRENT_FIELDS = """
-  store { id name street city postalCode country lat lon chain { id name chainType } }
+  store { $STORE_FIELDS }
   priceKind unitPrice priceAmount nObs nEff lastObservedAt confidence
 """
 
@@ -26,6 +30,28 @@ private val PRODUCT_FIELDS = """
   category { id name slug path }
   unitBase netContentValue netContentBase piecesInPack isVariableWeight status
   prices { $PRICE_CURRENT_FIELDS }
+"""
+
+/** Navíc oproti PRODUCT_FIELDS — jen pro obrazovku detailu, aby seznam hledání netahal zbytečně moc. */
+private val PRODUCT_DETAIL_FIELDS = """
+  $PRODUCT_FIELDS
+  stats { observationCount storeCount lastObservedAt bestPrice bestUnitPrice cheapestStore { $STORE_FIELDS } }
+  quality { average count }
+  myQualityRating
+  externalLinks { kind label url attribution }
+"""
+
+private val PRODUCT_SUMMARY_FIELDS = """
+  id name
+  brand { id name slug }
+  category { id name slug path }
+"""
+
+private val SEARCH_ITEM_FIELDS = """
+  product { $PRODUCT_SUMMARY_FIELDS }
+  observationCount bestPrice bestUnitPrice bestPriceObservations lastObservedAt
+  qualityAverage qualityCount
+  cheapestStore { $STORE_FIELDS }
 """
 
 /**
@@ -44,8 +70,9 @@ class GraphQlClient(private val authRepository: AuthRepository) {
     return execute(query, variables, GraphQlResponse.serializer(ProductByCodeData.serializer())).productByCode
   }
 
+  /** Plný detail produktu (karta produktu) — na rozdíl od productByCode tahá i stats/quality/externalLinks. */
   suspend fun productById(id: String): Product? {
-    val query = "query(${'$'}id: ID!) { product(id: ${'$'}id) { $PRODUCT_FIELDS } }"
+    val query = "query(${'$'}id: ID!) { product(id: ${'$'}id) { $PRODUCT_DETAIL_FIELDS } }"
     val variables = buildJsonObject { put("id", id) }
     return execute(query, variables, GraphQlResponse.serializer(ProductData.serializer())).product
   }
@@ -53,9 +80,7 @@ class GraphQlClient(private val authRepository: AuthRepository) {
   suspend fun nearbyStores(lat: Double, lon: Double, radiusKm: Double = 5.0): List<Store> {
     val query = """
       query(${'$'}lat: Float!, ${'$'}lon: Float!, ${'$'}radiusKm: Float) {
-        nearbyStores(lat: ${'$'}lat, lon: ${'$'}lon, radiusKm: ${'$'}radiusKm) {
-          id name street city postalCode country lat lon chain { id name chainType }
-        }
+        nearbyStores(lat: ${'$'}lat, lon: ${'$'}lon, radiusKm: ${'$'}radiusKm) { $STORE_FIELDS }
       }
     """
     val variables = buildJsonObject {
@@ -64,6 +89,88 @@ class GraphQlClient(private val authRepository: AuthRepository) {
       put("radiusKm", radiusKm)
     }
     return execute(query, variables, GraphQlResponse.serializer(NearbyStoresData.serializer())).nearbyStores
+  }
+
+  /**
+   * Hledání s volitelným filtrem obchod/město a řazením — mobilní protějšek k
+   * frontend product-service.ts. storeId/city null = bez filtru.
+   */
+  suspend fun searchProducts(
+    query: String,
+    storeId: String? = null,
+    city: String? = null,
+    sort: String = "REPORT_COUNT",
+    first: Int = 20,
+    offset: Int = 0,
+  ): ProductSearchResult {
+    val gql = """
+      query(${'$'}query: String!, ${'$'}storeId: ID, ${'$'}city: String, ${'$'}sort: ProductSort, ${'$'}first: Int, ${'$'}offset: Int) {
+        searchProducts(query: ${'$'}query, storeId: ${'$'}storeId, city: ${'$'}city, sort: ${'$'}sort, first: ${'$'}first, offset: ${'$'}offset) {
+          totalCount hasMore
+          items { $SEARCH_ITEM_FIELDS }
+        }
+      }
+    """
+    val variables = buildJsonObject {
+      put("query", query)
+      put("storeId", storeId)
+      put("city", city)
+      put("sort", sort)
+      put("first", first)
+      put("offset", offset)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(SearchProductsData.serializer())).searchProducts
+  }
+
+  /** Číselník obchodů/měst pro filtr hledání (jen ty, kde je skutečně nějaká cena). */
+  suspend fun searchFacets(): SearchFacets {
+    val gql = "{ searchFacets { cities stores { $STORE_FIELDS } } }"
+    return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(SearchFacetsData.serializer())).searchFacets
+  }
+
+  /** Denní řada z agg.price_daily pro graf vývoje ceny — viz priceHistory v schema.graphqls. */
+  suspend fun priceHistory(
+    productId: String,
+    priceKind: String = "REGULAR",
+    storeId: String? = null,
+    days: Int = 90,
+  ): PriceHistory {
+    val gql = """
+      query(${'$'}productId: ID!, ${'$'}priceKind: PriceKind, ${'$'}storeId: ID, ${'$'}days: Int) {
+        priceHistory(productId: ${'$'}productId, priceKind: ${'$'}priceKind, storeId: ${'$'}storeId, days: ${'$'}days) {
+          priceKind days
+          store { $STORE_FIELDS }
+          points { day priceAmount unitPrice nObs storeCount }
+        }
+      }
+    """
+    val variables = buildJsonObject {
+      put("productId", productId)
+      put("priceKind", priceKind)
+      put("storeId", storeId)
+      put("days", days)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(PriceHistoryData.serializer())).priceHistory
+  }
+
+  /** Známka kvality 1–5 (1 nejlepší, jako ve škole) — vyžaduje přihlášení, jinak GraphQL UNAUTHORIZED. */
+  suspend fun rateProduct(productId: String, grade: Int): ProductQuality {
+    val gql = """
+      mutation(${'$'}productId: ID!, ${'$'}grade: Int!) {
+        rateProduct(productId: ${'$'}productId, grade: ${'$'}grade) { average count }
+      }
+    """
+    val variables = buildJsonObject {
+      put("productId", productId)
+      put("grade", grade)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(RateProductData.serializer())).rateProduct
+  }
+
+  /** Veřejná identita přihlášeného uživatele — null pro anonyma. */
+  suspend fun me(): Viewer? {
+    val gql = "{ me { publicHandle displayName createdAt } }"
+    return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(MeData.serializer())).me
   }
 
   suspend fun submitObservation(input: SubmitObservationInput): PriceObservation {

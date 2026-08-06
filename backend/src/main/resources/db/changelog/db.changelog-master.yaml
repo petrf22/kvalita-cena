@@ -7,3 +7,6 @@ databaseChangeLog:
   - include: { file: 2026-07-26/04-auth-tokens.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-07-26/05-price-observation.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-07-26/06-agg.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-05/01-product-quality-rating.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-05/02-agg-price-daily.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-05/03-search-indexes.yaml, relativeToChangelogFile: true }

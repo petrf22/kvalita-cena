@@ -1,0 +1,62 @@
+@if (points().length === 0) {
+  <p class="chart-empty">Zatím nemáme dost hlášení na graf</p>
+} @else {
+  <svg
+    class="chart-svg"
+    [attr.viewBox]="'0 0 ' + width + ' ' + height"
+    role="img"
+    [attr.aria-label]="'Graf vývoje ceny, ' + points().length + ' měření'"
+  >
+    <!-- Mřížka — vlasové PLNÉ čáry, nikdy čárkované (dataviz konvence projektu). -->
+    @for (y of gridTicks(); track y) {
+      <line class="chart-grid-line" [attr.x1]="padding" [attr.y1]="y" [attr.x2]="width - padding" [attr.y2]="y" />
+    }
+
+    @if (geometry().markers.length === 1) {
+      <line
+        class="chart-series-line"
+        [attr.x1]="padding"
+        [attr.y1]="geometry().markers[0].y"
+        [attr.x2]="width - padding"
+        [attr.y2]="geometry().markers[0].y"
+      />
+    } @else {
+      <path class="chart-area" [attr.d]="areaD()" />
+      <path class="chart-series-line" [attr.d]="pathD()" />
+    }
+
+    <!-- Značky na skutečných dnech měření — bílý prstenec, ať vynikne nad čárou. -->
+    @for (marker of geometry().markers; track $index) {
+      <circle class="chart-marker-ring" [attr.cx]="marker.x" [attr.cy]="marker.y" r="6" />
+      <circle class="chart-marker" [attr.cx]="marker.x" [attr.cy]="marker.y" r="4" />
+    }
+
+    @if (hoveredX(); as x) {
+      <line class="chart-crosshair" [attr.x1]="x" [attr.y1]="padding" [attr.x2]="x" [attr.y2]="height - padding" />
+    }
+
+    <!-- Průhledný overlay přes celou plochu — dotyková/hover plocha je celý graf, ne malé puntíky. -->
+    <rect
+      class="chart-overlay"
+      x="0"
+      y="0"
+      [attr.width]="width"
+      [attr.height]="height"
+      (pointermove)="onPointerMove($event)"
+      (pointerleave)="onPointerLeave()"
+    />
+  </svg>
+
+  <!-- Popisky nikdy v barvě dat — přímo se píše jen poslední bod, extrém a vybraný bod;
+       tabulka cen pod grafem zůstává hlavním zdrojem čísel (tooltip není jediná cesta k hodnotě). -->
+  <p class="chart-label">Poslední: {{ formatUnitPrice(lastPoint()) }} ({{ lastPoint()?.day }})</p>
+  <p class="chart-label">
+    Nejníž: {{ formatUnitPrice(minPoint()) }} ({{ minPoint()?.day }}) · Nejvýš:
+    {{ formatUnitPrice(maxPoint()) }} ({{ maxPoint()?.day }})
+  </p>
+  @if (hoveredPoint(); as point) {
+    <p class="chart-label chart-label-selected">
+      Vybráno: {{ formatUnitPrice(point) }} · {{ point.day }} · {{ point.nObs }}× potvrzeno
+    </p>
+  }
+}

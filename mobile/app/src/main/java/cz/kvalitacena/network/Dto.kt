@@ -65,6 +65,97 @@ data class Product(
   val isVariableWeight: Boolean,
   val status: String,
   val prices: List<PriceCurrent> = emptyList(),
+  // Jen v detailu (PRODUCT_DETAIL_FIELDS) — productByCode je nežádá, viz GraphQlClient.
+  val stats: ProductStats? = null,
+  val quality: ProductQuality? = null,
+  val myQualityRating: Int? = null,
+  val externalLinks: List<ExternalLink> = emptyList(),
+)
+
+/** Lehčí varianta Product pro řádek seznamu hledání — bez cen a bez agregátů (ty jsou na ProductSearchItem). */
+@Serializable
+data class ProductSummary(
+  val id: String,
+  val name: String,
+  val brand: Brand? = null,
+  val category: Category,
+)
+
+@Serializable
+data class ProductStats(
+  val observationCount: Int,
+  val storeCount: Int,
+  val lastObservedAt: String? = null,
+  val bestPrice: Double? = null,
+  val bestUnitPrice: Double? = null,
+  val cheapestStore: Store? = null,
+)
+
+/** Průměrná známka 1,00–5,00 (1 nejlepší, jako ve škole). average je null, dokud nikdo nehodnotil. */
+@Serializable
+data class ProductQuality(
+  val average: Double? = null,
+  val count: Int = 0,
+)
+
+@Serializable
+data class ExternalLink(
+  val kind: String,
+  val label: String,
+  val url: String,
+  val attribution: String,
+)
+
+/** Řádek seznamu hledání — agregáty v rozsahu zvoleného filtru (obchod/město), viz backend ProductSearchItem. */
+@Serializable
+data class ProductSearchItem(
+  val product: ProductSummary,
+  val observationCount: Int,
+  val bestPrice: Double? = null,
+  val bestUnitPrice: Double? = null,
+  val cheapestStore: Store? = null,
+  val bestPriceObservations: Int? = null,
+  val lastObservedAt: String? = null,
+  val qualityAverage: Double? = null,
+  val qualityCount: Int = 0,
+)
+
+@Serializable
+data class ProductSearchResult(
+  val items: List<ProductSearchItem> = emptyList(),
+  val totalCount: Int = 0,
+  val hasMore: Boolean = false,
+)
+
+@Serializable
+data class SearchFacets(
+  val stores: List<Store> = emptyList(),
+  val cities: List<String> = emptyList(),
+)
+
+@Serializable
+data class PricePoint(
+  val day: String,
+  val priceAmount: Double? = null,
+  val unitPrice: Double,
+  val nObs: Int,
+  val storeCount: Int,
+)
+
+@Serializable
+data class PriceHistory(
+  val priceKind: String,
+  val store: Store? = null,
+  val days: Int,
+  val points: List<PricePoint> = emptyList(),
+)
+
+/** Veřejná identita přihlášeného uživatele — bez e-mailu a bez DB id (docs/soukromi.md). */
+@Serializable
+data class Viewer(
+  val publicHandle: String,
+  val displayName: String? = null,
+  val createdAt: String,
 )
 
 @Serializable
@@ -100,6 +191,21 @@ data class NearbyStoresData(val nearbyStores: List<Store> = emptyList())
 
 @Serializable
 data class SubmitObservationData(val submitObservation: PriceObservation)
+
+@Serializable
+data class SearchProductsData(val searchProducts: ProductSearchResult)
+
+@Serializable
+data class SearchFacetsData(val searchFacets: SearchFacets)
+
+@Serializable
+data class PriceHistoryData(val priceHistory: PriceHistory)
+
+@Serializable
+data class RateProductData(val rateProduct: ProductQuality)
+
+@Serializable
+data class MeData(val me: Viewer? = null)
 
 @Serializable
 data class GraphQlError(val message: String)

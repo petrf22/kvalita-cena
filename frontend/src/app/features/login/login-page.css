@@ -11,3 +11,8 @@
   color: rgba(0, 0, 0, 0.45);
   margin-bottom: 16px;
 }
+
+.viewer-handle {
+  font-size: 16px;
+  font-weight: 600;
+}

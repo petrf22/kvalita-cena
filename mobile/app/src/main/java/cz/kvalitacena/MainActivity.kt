@@ -5,31 +5,45 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import cz.kvalitacena.ui.login.LoginScreen
+import androidx.navigation.navArgument
+import cz.kvalitacena.ui.account.AccountScreen
+import cz.kvalitacena.ui.detail.ProductDetailScreen
+import cz.kvalitacena.ui.navigation.ARG_BARCODE
+import cz.kvalitacena.ui.navigation.ARG_PRODUCT_ID
+import cz.kvalitacena.ui.navigation.ROUTE_PRICE_ENTRY
+import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_DETAIL
+import cz.kvalitacena.ui.navigation.TopLevelDestination
+import cz.kvalitacena.ui.navigation.priceEntryRouteByBarcode
+import cz.kvalitacena.ui.navigation.priceEntryRouteByProductId
+import cz.kvalitacena.ui.navigation.productDetailRoute
 import cz.kvalitacena.ui.price.PriceEntryScreen
+import cz.kvalitacena.ui.price.PriceEntryTarget
 import cz.kvalitacena.ui.scan.ScanScreen
+import cz.kvalitacena.ui.search.SearchScreen
+import cz.kvalitacena.ui.settings.SettingsScreen
 import cz.kvalitacena.ui.theme.KvalitaACenaTheme
 import kotlinx.coroutines.launch
-
-private const val ROUTE_SCAN = "scan"
-private const val ROUTE_LOGIN = "login"
-private const val ROUTE_PRICE_ENTRY = "price_entry/{barcode}"
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,53 +66,102 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun AppScaffold() {
   val navController = rememberNavController()
-  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
-  val scope = rememberCoroutineScope()
 
   Scaffold(
     topBar = {
       CenterAlignedTopAppBar(
-        title = { Text("Kvalita a cena") },
-        actions = {
-          if (accessToken != null) {
-            Button(onClick = { scope.launch { AppContainer.authRepository.logout() } }) {
-              Text("Odhlásit se")
-            }
-          } else {
-            Button(onClick = { navController.navigate(ROUTE_LOGIN) { launchSingleTop = true } }) {
-              Text("Přihlásit se")
-            }
-          }
-        },
+        title = { Text(stringResource(R.string.app_name)) },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(),
       )
     },
+    bottomBar = { AppBottomBar(navController) },
   ) { padding ->
     NavHost(
       navController = navController,
-      startDestination = ROUTE_SCAN,
+      // Hledání je "úvodní obrazovka" (zadání), i když sken je v baru první — systémové Zpět
+      // z libovolné záložky tak vede na hledání a odtud ven z appky, standardní chování.
+      startDestination = TopLevelDestination.SEARCH.route,
       modifier = Modifier.padding(padding),
     ) {
-      composable(ROUTE_SCAN) {
+      composable(TopLevelDestination.SCAN.route) {
         ScanScreen(
-          onBarcodeDetected = { code ->
-            navController.navigate("price_entry/$code")
+          onBarcodeDetected = { code -> navController.navigate(priceEntryRouteByBarcode(code)) },
+        )
+      }
+      composable(TopLevelDestination.SEARCH.route) {
+        SearchScreen(
+          onProductClick = { productId -> navController.navigate(productDetailRoute(productId)) },
+        )
+      }
+      composable(TopLevelDestination.SETTINGS.route) {
+        SettingsScreen()
+      }
+      composable(TopLevelDestination.ACCOUNT.route) {
+        AccountScreen()
+      }
+      composable(
+        ROUTE_PRODUCT_DETAIL,
+        arguments = listOf(navArgument(ARG_PRODUCT_ID) { type = NavType.StringType }),
+      ) { backStackEntry ->
+        val productId = backStackEntry.arguments?.getString(ARG_PRODUCT_ID).orEmpty()
+        ProductDetailScreen(
+          productId = productId,
+          onWriteObservation = { navController.navigate(priceEntryRouteByProductId(productId)) },
+          onNavigateToAccount = {
+            navController.navigate(TopLevelDestination.ACCOUNT.route) { launchSingleTop = true }
           },
         )
       }
-      composable(ROUTE_LOGIN) {
-        // popBackStack() by odpojilo jen jeden záznam — nespolehlivé, pokud se "login" na
-        // zásobník naskládal víckrát (navigate() sem nemá launchSingleTop). Vrátit se vždy
-        // až na scan je robustnější, stejný princip jako u onScanAnother.
-        LoginScreen(onLoggedIn = { navController.popBackStack(ROUTE_SCAN, inclusive = false) })
+      composable(
+        ROUTE_PRICE_ENTRY,
+        arguments = listOf(
+          navArgument(ARG_BARCODE) { type = NavType.StringType; nullable = true; defaultValue = null },
+          navArgument(ARG_PRODUCT_ID) { type = NavType.StringType; nullable = true; defaultValue = null },
+        ),
+      ) { backStackEntry ->
+        val barcode = backStackEntry.arguments?.getString(ARG_BARCODE)
+        val productId = backStackEntry.arguments?.getString(ARG_PRODUCT_ID)
+        val target = when {
+          !productId.isNullOrBlank() -> PriceEntryTarget.ById(productId)
+          !barcode.isNullOrBlank() -> PriceEntryTarget.ByBarcode(barcode)
+          else -> null
+        }
+        if (target != null) {
+          PriceEntryScreen(target = target, onDone = { navController.popBackStack() })
+        }
       }
-      composable(ROUTE_PRICE_ENTRY) { backStackEntry ->
-        val barcode = backStackEntry.arguments?.getString("barcode").orEmpty()
-        PriceEntryScreen(
-          barcode = barcode,
-          onScanAnother = { navController.popBackStack(ROUTE_SCAN, inclusive = false) },
-        )
-      }
+    }
+  }
+}
+
+/**
+ * Čtyři čtvercové ikony podle zadání. Přepínání zachovává stav jednotlivých záložek
+ * (`saveState`/`restoreState`) — standardní vzor pro bottom navigation.
+ */
+@Composable
+private fun AppBottomBar(navController: NavHostController) {
+  val backStackEntry by navController.currentBackStackEntryAsState()
+  val currentRoute = backStackEntry?.destination?.route
+
+  NavigationBar {
+    TopLevelDestination.entries.forEach { destination ->
+      NavigationBarItem(
+        selected = currentRoute == destination.route,
+        onClick = {
+          navController.navigate(destination.route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+          }
+        },
+        icon = {
+          Icon(
+            painter = painterResource(destination.iconRes),
+            contentDescription = stringResource(destination.labelRes),
+          )
+        },
+        label = { Text(stringResource(destination.labelRes)) },
+      )
     }
   }
 }

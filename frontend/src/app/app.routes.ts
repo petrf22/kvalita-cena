@@ -14,5 +14,9 @@ export const routes: Routes = [
     path: 'prihlaseni',
     loadComponent: () => import('./features/login/login-page').then((m) => m.LoginPage),
   },
+  {
+    path: 'nastaveni',
+    loadComponent: () => import('./features/settings/settings-page').then((m) => m.SettingsPage),
+  },
   { path: '**', redirectTo: '' },
 ];

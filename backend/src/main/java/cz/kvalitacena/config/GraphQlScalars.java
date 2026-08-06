@@ -10,6 +10,7 @@ import graphql.schema.CoercingSerializeException;
 import graphql.schema.GraphQLScalarType;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 
@@ -128,6 +129,47 @@ final class GraphQlScalars {
               return OffsetDateTime.parse(s);
             } catch (DateTimeParseException e) {
               throw onError.apply("Neplatné datum a čas (očekáván ISO-8601 s časovým pásmem): " + s, e);
+            }
+          }
+        })
+        .build();
+  }
+
+  /**
+   * Kalendářní den bez času a pásma — pro agg.price_daily.day (graf vývoje ceny). DateTime
+   * s časem 00:00 by nutil klienty řešit pásma, což den v grafu jen zbytečně komplikuje.
+   */
+  static GraphQLScalarType dateScalar() {
+    return GraphQLScalarType.newScalar()
+        .name("Date")
+        .description("Kalendářní den v ISO-8601 (RFC 3339 date), např. 2026-07-26")
+        .coercing(new Coercing<LocalDate, String>() {
+          @Override
+          public String serialize(Object value) {
+            if (value instanceof LocalDate date) return date.toString();
+            throw new CoercingSerializeException("Očekáváno LocalDate, přišlo: " + value);
+          }
+
+          @Override
+          public LocalDate parseValue(Object input) {
+            if (input instanceof LocalDate date) return date;
+            if (input instanceof String s) return parse(s, CoercingParseValueException::new);
+            throw new CoercingParseValueException("Očekáván ISO-8601 řetězec, přišlo: " + input);
+          }
+
+          @Override
+          public LocalDate parseLiteral(Object input) {
+            if (input instanceof StringValue stringValue) {
+              return parse(stringValue.getValue(), CoercingParseLiteralException::new);
+            }
+            throw new CoercingParseLiteralException("Očekáván ISO-8601 řetězec, přišlo: " + input);
+          }
+
+          private LocalDate parse(String s, java.util.function.BiFunction<String, Throwable, RuntimeException> onError) {
+            try {
+              return LocalDate.parse(s);
+            } catch (DateTimeParseException e) {
+              throw onError.apply("Neplatné datum (očekáván ISO-8601): " + s, e);
             }
           }
         })

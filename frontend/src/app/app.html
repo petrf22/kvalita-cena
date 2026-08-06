@@ -1,15 +1,25 @@
 <nz-layout class="app-layout">
   <nz-header class="app-header">
     <a routerLink="/" class="app-title">Kvalita a cena</a>
-    <div class="app-header-actions">
-      @if (auth.isLoggedIn()) {
-        <button nz-button nzType="text" (click)="logout()">Odhlásit se</button>
-      } @else {
-        <a routerLink="/prihlaseni">
-          <button nz-button nzType="primary">Přihlásit se</button>
-        </a>
-      }
-    </div>
+    <ul nz-menu nzMode="horizontal" nzTheme="light" class="app-menu">
+      <li
+        nz-menu-item
+        routerLink="/"
+        routerLinkActive="ant-menu-item-selected"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        <span nz-icon nzType="search"></span>
+        <span class="app-menu-label">Hledání</span>
+      </li>
+      <li nz-menu-item routerLink="/nastaveni" routerLinkActive="ant-menu-item-selected">
+        <span nz-icon nzType="setting"></span>
+        <span class="app-menu-label">Nastavení</span>
+      </li>
+      <li nz-menu-item routerLink="/prihlaseni" routerLinkActive="ant-menu-item-selected">
+        <span nz-icon nzType="user"></span>
+        <span class="app-menu-label">{{ auth.isLoggedIn() ? 'Účet' : 'Přihlášení' }}</span>
+      </li>
+    </ul>
   </nz-header>
   <nz-content class="app-content">
     <router-outlet />

@@ -2,6 +2,7 @@ package cz.kvalitacena.service;
 
 import cz.kvalitacena.db.entity.*;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
+import cz.kvalitacena.db.repo.PriceDailyRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.RecomputeQueueRepository;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +39,8 @@ class PriceAggregationServiceTest {
   private PriceObservationRepository priceObservationRepository;
   @Mock
   private PriceCurrentRepository priceCurrentRepository;
+  @Mock
+  private PriceDailyRepository priceDailyRepository;
 
   @Captor
   private ArgumentCaptor<PriceCurrent> priceCurrentCaptor;
@@ -44,12 +48,15 @@ class PriceAggregationServiceTest {
   private PriceAggregationService service;
 
   private void givenQueuedCell() {
-    service = new PriceAggregationService(recomputeQueueRepository, priceObservationRepository, priceCurrentRepository);
+    service = new PriceAggregationService(recomputeQueueRepository, priceObservationRepository,
+        priceCurrentRepository, priceDailyRepository);
     RecomputeQueue queued = RecomputeQueue.builder()
         .productId(PRODUCT_ID).storeId(STORE_ID).reason(RecomputeReason.NEW_OBS).build();
     when(recomputeQueueRepository.findTop200ByProcessedAtIsNullOrderByEnqueuedAtAsc())
         .thenReturn(List.of(queued));
-    when(priceCurrentRepository.findById(any())).thenReturn(Optional.empty());
+    // lenient: testy s prázdným seznamem observací (rejectedObservationsClearExistingDailyRow)
+    // nikdy neupsertují agg.price_current, takže findById by tam byl "unnecessary stubbing".
+    lenient().when(priceCurrentRepository.findById(any())).thenReturn(Optional.empty());
   }
 
   private static PriceObservation observation(BigDecimal unitPrice, SubmitterKind submitterKind,
@@ -137,5 +144,70 @@ class PriceAggregationServiceTest {
         .extracting(PriceCurrent::getUnitPrice).first().isEqualTo(new BigDecimal("20"));
     assertThat(saved).filteredOn(pc -> pc.getPriceKind() == PriceKind.PROMO)
         .extracting(PriceCurrent::getUnitPrice).first().isEqualTo(new BigDecimal("15"));
+  }
+
+  @Test
+  void dailyAggregateUsesSameWeightsAsCurrentPrice() {
+    givenQueuedCell();
+    // Stejné rozložení (dva registrovaní + anonymní odlehlá hodnota) jako u
+    // weightedMedianFavorsRegisteredSubmittersOverAnonymousOutlier, ale všechno v jednom dni —
+    // f_recency se na historii neaplikuje, takže výsledek musí být totožný jako u agg.price_current.
+    OffsetDateTime morning = OffsetDateTime.parse("2026-07-01T08:00:00Z");
+    OffsetDateTime noon = OffsetDateTime.parse("2026-07-01T12:00:00Z");
+    OffsetDateTime evening = OffsetDateTime.parse("2026-07-01T20:00:00Z");
+    List<PriceObservation> observations = List.of(
+        observation(new BigDecimal("10"), SubmitterKind.REGISTERED, PriceKind.REGULAR, morning),
+        observation(new BigDecimal("12"), SubmitterKind.REGISTERED, PriceKind.REGULAR, noon),
+        observation(new BigDecimal("20"), SubmitterKind.ANONYMOUS, PriceKind.REGULAR, evening));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(observations);
+
+    service.processQueue();
+
+    verify(priceDailyRepository).deleteByProductIdAndStoreId(PRODUCT_ID, STORE_ID);
+    ArgumentCaptor<PriceDaily> dailyCaptor = ArgumentCaptor.forClass(PriceDaily.class);
+    verify(priceDailyRepository).save(dailyCaptor.capture());
+    PriceDaily saved = dailyCaptor.getValue();
+    assertThat(saved.getDay()).isEqualTo(LocalDate.of(2026, 7, 1));
+    assertThat(saved.getPriceKind()).isEqualTo(PriceKind.REGULAR);
+    assertThat(saved.getUnitPrice()).isEqualByComparingTo("12"); // stejný medián jako u price_current
+    assertThat(saved.getNObs()).isEqualTo(3);
+  }
+
+  @Test
+  void dailyRowsAreSplitByDayAndPriceKind() {
+    givenQueuedCell();
+    OffsetDateTime day1 = OffsetDateTime.parse("2026-07-01T10:00:00Z");
+    OffsetDateTime day2 = OffsetDateTime.parse("2026-07-02T10:00:00Z");
+    List<PriceObservation> observations = List.of(
+        observation(new BigDecimal("10"), SubmitterKind.REGISTERED, PriceKind.REGULAR, day1),
+        observation(new BigDecimal("9"), SubmitterKind.REGISTERED, PriceKind.PROMO, day1),
+        observation(new BigDecimal("11"), SubmitterKind.REGISTERED, PriceKind.REGULAR, day2));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(observations);
+
+    service.processQueue();
+
+    ArgumentCaptor<PriceDaily> dailyCaptor = ArgumentCaptor.forClass(PriceDaily.class);
+    verify(priceDailyRepository, times(3)).save(dailyCaptor.capture());
+    List<PriceDaily> saved = dailyCaptor.getAllValues();
+    assertThat(saved).extracting(PriceDaily::getDay)
+        .containsExactlyInAnyOrder(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 2));
+    assertThat(saved).extracting(PriceDaily::getPriceKind)
+        .containsExactlyInAnyOrder(PriceKind.REGULAR, PriceKind.PROMO, PriceKind.REGULAR);
+  }
+
+  @Test
+  void rejectedObservationsClearExistingDailyRow() {
+    givenQueuedCell();
+    // Poslední aktivní observace zmizela (zamítnutí/moderace) — recompute dostane prázdný
+    // seznam. Denní řádek z předchozího přepočtu musí zmizet, ne zůstat jako duch.
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(List.of());
+
+    service.processQueue();
+
+    verify(priceDailyRepository).deleteByProductIdAndStoreId(PRODUCT_ID, STORE_ID);
+    verify(priceDailyRepository, never()).save(any());
   }
 }

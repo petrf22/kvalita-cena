@@ -1,0 +1,85 @@
+# 01-product-quality-rating.yaml — hodnocení kvality zboží, jen známka 1–5 (jako ve škole,
+# 1 nejlepší). ŽÁDNÉ texty recenzí, žádná viditelnost PUBLIC/GROUPS/PRIVATE — core.product_review
+# a ViewerContext zůstávají na etapu 2 (docs/datovy-model.md, CLAUDE.md).
+#
+# Na rozdíl od core.price_observation tahle tabulka vazbu uživatel → záznam NEPSEUDONYMIZUJE
+# po 180 dnech — bez ní by nešlo vynutit "jedna známka na uživatele a produkt". Je to vědomé
+# zhoršení proti docs/soukromi.md, viz poznámka tamtéž. user_id proto i CASCADE maže (smazání
+# účtu má známky odstranit), na rozdíl od price_observation, kde submitter_id jde na SET NULL.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-05-01-create-core-product-quality-rating
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: product_quality_rating
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  # 1 = nejlepší, 5 = nejhorší (jako známky ve škole) — viz CHECK níže.
+                  name: grade
+                  type: SMALLINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_product_quality_rating_product
+            baseTableSchemaName: core
+            baseTableName: product_quality_rating
+            baseColumnNames: product_id
+            referencedTableSchemaName: core
+            referencedTableName: product
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_product_quality_rating_user
+            baseTableSchemaName: core
+            baseTableName: product_quality_rating
+            baseColumnNames: user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            schemaName: core
+            tableName: product_quality_rating
+            indexName: uq_product_quality_rating_user
+            unique: true
+            columns:
+              - column:
+                  name: product_id
+              - column:
+                  name: user_id
+        - sql:
+            sql: |
+              ALTER TABLE core.product_quality_rating
+                ADD CONSTRAINT chk_product_quality_rating_grade
+                CHECK (grade BETWEEN 1 AND 5);

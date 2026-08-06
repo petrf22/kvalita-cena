@@ -18,19 +18,101 @@
   </button>
 </div>
 
-@if (searched() && results().length === 0 && !loading()) {
-  <nz-empty nzNotFoundContent="Nic jsme nenašli — zkus jiné slovo." />
+<div class="filter-row">
+  <nz-select
+    class="filter-select"
+    [ngModel]="storeId()"
+    (ngModelChange)="storeId.set($event); onFilterChange()"
+    nzAllowClear
+    nzPlaceHolder="Obchod: vše"
+  >
+    @for (store of facets().stores; track store.id) {
+      <nz-option [nzValue]="store.id" [nzLabel]="store.name + ' — ' + store.city" />
+    }
+  </nz-select>
+
+  <nz-select
+    class="filter-select"
+    [ngModel]="city()"
+    (ngModelChange)="city.set($event); onFilterChange()"
+    nzAllowClear
+    nzPlaceHolder="Město: vše"
+  >
+    @for (c of facets().cities; track c) {
+      <nz-option [nzValue]="c" [nzLabel]="c" />
+    }
+  </nz-select>
+
+  <nz-select
+    class="filter-select"
+    [ngModel]="sort()"
+    (ngModelChange)="sort.set($event); onFilterChange()"
+  >
+    @for (option of sortOptions; track option.value) {
+      <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+    }
+  </nz-select>
+</div>
+
+@if (hasSearched() && items().length === 0 && !loading()) {
+  <nz-empty nzNotFoundContent="Nic jsme nenašli — zkus jiné slovo nebo filtr." />
 }
 
-@if (results().length > 0) {
-  <nz-list [nzDataSource]="results()" [nzRenderItem]="item">
-    <ng-template #item let-product>
-      <nz-list-item (click)="openProduct(product)" class="search-result">
-        <nz-list-item-meta
-          [nzTitle]="product.name"
-          [nzDescription]="product.brand?.name ?? product.category.name"
-        />
-      </nz-list-item>
-    </ng-template>
-  </nz-list>
+@if (!hasSearched() && items().length === 0) {
+  <p class="search-hint">Zadej, co hledáš.</p>
+}
+
+@if (items().length > 0) {
+  <nz-table
+    #resultsTable
+    [nzData]="items()"
+    [nzFrontPagination]="false"
+    [nzShowPagination]="false"
+    [nzLoading]="loading()"
+  >
+    <thead>
+      <tr>
+        <th>Zboží</th>
+        <th>Cena</th>
+        <th>Nejlevněji</th>
+        <th>Hlášení celkem</th>
+        <th>Poslední</th>
+        <th>Kvalita</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (item of resultsTable.data; track item.product.id) {
+        <tr (click)="openProduct(item)" class="search-result-row">
+          <td>
+            <div class="product-name">{{ item.product.name }}</div>
+            <div class="product-subtitle">
+              {{ item.product.brand?.name ?? item.product.category.name }}
+            </div>
+          </td>
+          <td>
+            @if (item.bestPrice != null) {
+              {{ item.bestPrice | currency: 'CZK' }}
+              @if (item.bestPriceObservations) {
+                <span class="confirmations">×{{ item.bestPriceObservations }} potvrzení</span>
+              }
+            } @else {
+              <span class="unknown-price">cena neznámá</span>
+            }
+          </td>
+          <td>{{ item.cheapestStore?.name ?? '–' }}</td>
+          <td>{{ item.observationCount }}</td>
+          <td>{{ formatRelativeDate(item.lastObservedAt) }}</td>
+          <td><app-quality-badge [average]="item.qualityAverage" [count]="item.qualityCount" /></td>
+        </tr>
+      }
+    </tbody>
+  </nz-table>
+
+  <nz-pagination
+    class="results-pagination"
+    [nzPageIndex]="pageIndex()"
+    [nzTotal]="totalCount()"
+    [nzPageSize]="20"
+    (nzPageIndexChange)="onPageIndexChange($event)"
+  />
 }

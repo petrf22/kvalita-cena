@@ -23,10 +23,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,8 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -48,6 +46,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.location.getCurrentLocation
 import cz.kvalitacena.network.Store
+import cz.kvalitacena.ui.common.SingleLineTextField
 import kotlinx.coroutines.launch
 
 // Čísla a nejvýš jedna desetinná čárka nebo tečka — obojí se dál akceptuje shodně
@@ -61,13 +60,18 @@ private val PRICE_KIND_LABELS = mapOf(
   "CLEARANCE" to "Výprodej",
 )
 
-/** Obrazovky 2–4 flow "sken → cena → výběr provozovny → odeslání" (viz plán projektu). */
+/**
+ * Obrazovky 2–4 flow "sken → cena → výběr provozovny → odeslání" (viz plán projektu). Vstupem
+ * je buď naskenovaný kód, nebo id produktu z detailu (tlačítko "Zapsat cenu") — viz
+ * [PriceEntryTarget]. `onDone` se volá po úspěšném zápisu i po "zpět" z neznámého kódu; vede
+ * vždy tam, odkud se na tuhle obrazovku přišlo (sken nebo detail).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PriceEntryScreen(barcode: String, onScanAnother: () -> Unit) {
+fun PriceEntryScreen(target: PriceEntryTarget, onDone: () -> Unit) {
   val viewModel: PriceEntryViewModel = viewModel(
     factory = viewModelFactory {
-      initializer { PriceEntryViewModel(AppContainer.graphQlClient, barcode) }
+      initializer { PriceEntryViewModel(AppContainer.graphQlClient, target) }
     },
   )
   val context = LocalContext.current
@@ -106,12 +110,12 @@ fun PriceEntryScreen(barcode: String, onScanAnother: () -> Unit) {
     }
   }
 
-  // Po úspěšném zápisu se obrazovka rovnou opouští (návrat na sken) — hláška o úspěchu by na ní
-  // jen problikla, proto potvrzujeme Toastem, který přežije i tuhle navigaci.
+  // Po úspěšném zápisu se obrazovka rovnou opouští (návrat tam, odkud se přišlo) — hláška
+  // o úspěchu by na ní jen problikla, proto potvrzujeme Toastem, který přežije i tuhle navigaci.
   LaunchedEffect(viewModel.submitSuccess) {
     if (viewModel.submitSuccess) {
       Toast.makeText(context, "Cena byla zapsána, díky!", Toast.LENGTH_SHORT).show()
-      onScanAnother()
+      onDone()
     }
   }
 
@@ -126,9 +130,13 @@ fun PriceEntryScreen(barcode: String, onScanAnother: () -> Unit) {
       }
 
       viewModel.notFound -> {
-        Text("Kód $barcode zatím v katalogu neznáme.", style = MaterialTheme.typography.bodyLarge)
+        val message = when (target) {
+          is PriceEntryTarget.ByBarcode -> "Kód ${target.barcode} zatím v katalogu neznáme."
+          is PriceEntryTarget.ById -> "Tohle zboží se nepodařilo najít."
+        }
+        Text(message, style = MaterialTheme.typography.bodyLarge)
         Gap()
-        Button(onClick = onScanAnother) { Text("Naskenovat jiné zboží") }
+        Button(onClick = onDone) { Text("Zpět") }
       }
 
       else -> {
@@ -189,15 +197,14 @@ fun PriceEntryScreen(barcode: String, onScanAnother: () -> Unit) {
         PriceKindDropdown(selected = viewModel.priceKind, onSelect = { viewModel.priceKind = it })
         Gap()
 
-        OutlinedTextField(
+        SingleLineTextField(
           value = viewModel.priceAmount,
           onValueChange = { input ->
             if (input.matches(PRICE_INPUT_PATTERN)) viewModel.priceAmount = input
           },
-          label = { Text("Cena (Kč)") },
+          label = "Cena (Kč)",
           // Desetinná čárka i tečka se přijímají obě — viz PriceEntryViewModel.submit().
-          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-          textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.End),
+          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
           modifier = Modifier.fillMaxWidth(),
         )
         Gap()
@@ -227,11 +234,11 @@ private fun StoreDropdown(
   val selectedLabel = stores.find { it.id == selectedStoreId }?.let { "${it.name} — ${it.city}" } ?: "Vyber obchod"
 
   ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }, modifier = modifier) {
-    OutlinedTextField(
+    SingleLineTextField(
       value = selectedLabel,
       onValueChange = {},
       readOnly = true,
-      label = { Text("Obchod") },
+      label = "Obchod",
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
       modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
     )
@@ -255,11 +262,11 @@ private fun PriceKindDropdown(selected: String, onSelect: (String) -> Unit) {
   var expanded by remember { mutableStateOf(false) }
 
   ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-    OutlinedTextField(
+    SingleLineTextField(
       value = PRICE_KIND_LABELS[selected] ?: selected,
       onValueChange = {},
       readOnly = true,
-      label = { Text("Druh ceny") },
+      label = "Druh ceny",
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
       modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
     )

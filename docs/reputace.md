@@ -150,3 +150,33 @@ Limity patří do konfigurace (budoucí `core.access_policy`), ne natvrdo do kó
 nastavené velkoryse, protože **studený start je větší riziko než parazitování na datech**:
 prázdná appka nikoho nezaujme, přísná reciprocita od prvního dne ji zabije dřív, než ji
 někdo stihne ocenit.
+
+> **Zaznamenaná odchylka od tabulky:** `priceHistory` v etapě 1 dává anonymovi 90 dní
+> historie (`app.history.anonymous-max-days` v `application.yml`), ne 7 dní jako tabulka výš.
+> Mechanismus odstupňování existuje (`PriceHistoryService` ořezává okno podle přihlášení),
+> jen je práh zatím nastavený velkoryse ze stejného důvodu jako limity výš — je to úmysl,
+> ne rozjetí kódu s dokumentem. Zpřísnit na 7 dní je jen změna jedné konstanty, až/pokud
+> bude důvod.
+
+## Hodnocení kvality zboží (etapa 1)
+
+Jen známka 1–5 (jako ve škole, 1 nejlepší), bez textů, bez skupin důvěry — implementace
+`core.product_quality_rating`, popis tabulky v `datovy-model.md`. Vědomá zjednodušení
+oproti zbytku téhle stránky:
+
+- **Průměr se NEVÁŽÍ reputací `S`** — v etapě 1 je to prostý aritmetický průměr přes všechny
+  známky (`AVG(grade)`), protože `S` samo je zatím jen složka `L` (viz úvod dokumentu) a
+  vážit průměr neúplným vzorcem by budilo falešný dojem přesnosti. Až bude `S` implementované
+  celé, patří sem vážený průměr stejnou logikou jako vážený medián cen výše.
+- **Práh `min-ratings-for-badge = 3`** (`app.quality.min-ratings-for-badge`) — pod tímhle
+  počtem hodnocení klienti (mobil i web) zobrazí známku jako „orientační", obdoba pravidla
+  `n_eff < 2` u cen. Jedna naštvaná (nebo jedna nadšená) známka tak neurčí veřejný obrázek
+  produktu, dokud se nesejde víc hlasů.
+
+**Vztah k „žádné veřejné negativní hodnocení uživatelů" výše:** známka je hodnocení VĚCI
+(produktu z katalogu), ne ČLOVĚKA, takže s pravidlem nekoliduje. Riziko je blízké, ne stejné:
+až v etapě 3 přibudou lokální dodavatelé (`core.supplier`, `core.supplier_offer`), známka „5"
+na výrobek malého farmáře bude fakticky veřejné negativní hodnocení konkrétního člověka —
+se všemi důsledky popsanými výš (odvetné spirály, právní expozice). Rozhodnutí „hodnotí se
+jen zboží z katalogu, ne nabídky dodavatelů" je proto potřeba **znovu vědomě potvrdit nebo
+přepracovat před založením `core.supplier`**, ne jen automaticky rozšířit stejný mechanismus.
