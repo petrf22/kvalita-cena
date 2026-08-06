@@ -1,0 +1,122 @@
+<form nz-form nzLayout="vertical" (ngSubmit)="submit()">
+  <nz-form-item>
+    <nz-form-label>Název zboží</nz-form-label>
+    <nz-form-control>
+      <input
+        nz-input
+        name="name"
+        [ngModel]="name()"
+        (ngModelChange)="onNameChange($event)"
+        required
+      />
+    </nz-form-control>
+  </nz-form-item>
+
+  @if (suggestions().length > 0) {
+    <nz-alert nzType="info" nzMessage="Není to už některá z těchhle položek?" [nzDescription]="suggestionsTemplate" nzShowIcon class="form-alert" />
+    <ng-template #suggestionsTemplate>
+      <ul class="suggestion-list">
+        @for (item of suggestions(); track item.id) {
+          <li>
+            <button nz-button nzType="link" type="button" (click)="useExisting(item)">
+              {{ item.name }}
+              @if (item.isGeneric) {
+                <span class="generic-tag">(druhová položka)</span>
+              }
+              — {{ item.brand?.name ? item.brand!.name + ' · ' : '' }}{{ item.category.name }}
+            </button>
+          </li>
+        }
+      </ul>
+    </ng-template>
+  }
+
+  <nz-form-item>
+    <nz-form-label>Kategorie</nz-form-label>
+    <nz-form-control>
+      <nz-select [ngModel]="selectedCategoryId()" (ngModelChange)="selectedCategoryId.set($event)" name="category" nzPlaceHolder="Vyber kategorii">
+        @for (category of categories(); track category.id) {
+          <nz-option [nzValue]="category.id" [nzLabel]="category.name" />
+        }
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+
+  <nz-form-item>
+    <nz-form-label>Značka (volitelné)</nz-form-label>
+    <nz-form-control>
+      <input nz-input name="brandName" [ngModel]="brandName()" (ngModelChange)="brandName.set($event)" />
+    </nz-form-control>
+  </nz-form-item>
+
+  <nz-form-item>
+    <nz-form-label>Základní jednotka</nz-form-label>
+    <nz-form-control>
+      <nz-radio-group [ngModel]="unitBase()" (ngModelChange)="unitBase.set($event)" name="unitBase">
+        @for (option of unitBaseOptions; track option.value) {
+          <label nz-radio [nzValue]="option.value">{{ option.label }}</label>
+        }
+      </nz-radio-group>
+    </nz-form-control>
+  </nz-form-item>
+
+  @if (unitBase() !== 'COUNT') {
+    <nz-form-item>
+      <nz-form-label>Váhové zboží (cena vždy za kg/l, bez pevné gramáže)</nz-form-label>
+      <nz-form-control>
+        <nz-switch [ngModel]="isVariableWeight()" (ngModelChange)="isVariableWeight.set($event)" name="isVariableWeight" />
+      </nz-form-control>
+    </nz-form-item>
+
+    @if (!isVariableWeight()) {
+      <nz-form-item>
+        <nz-form-label>{{ unitBase() === 'MASS' ? 'Hmotnost balení (kg)' : 'Objem balení (l)' }}</nz-form-label>
+        <nz-form-control>
+          <nz-input-number
+            [ngModel]="netContentValue()"
+            (ngModelChange)="netContentValue.set($event)"
+            name="netContentValue"
+            [nzMin]="0"
+            [nzStep]="0.05"
+            style="width: 100%"
+          />
+        </nz-form-control>
+      </nz-form-item>
+    }
+  }
+
+  <nz-form-item>
+    <nz-form-label>Kusů v balení (volitelné)</nz-form-label>
+    <nz-form-control>
+      <nz-input-number
+        [ngModel]="piecesInPack()"
+        (ngModelChange)="piecesInPack.set($event)"
+        name="piecesInPack"
+        [nzMin]="1"
+        style="width: 100%"
+      />
+    </nz-form-control>
+  </nz-form-item>
+
+  <nz-form-item>
+    <nz-form-label>Čárový kód (volitelné)</nz-form-label>
+    <nz-form-control>
+      <input nz-input name="code" [ngModel]="code()" (ngModelChange)="code.set($event)" />
+      <div class="field-hint">
+        Bez kódu vznikne druhová položka (např. „pečivo za 45 Kč“ z účtenky) — s nižší
+        důvěryhodností dat, ale zapsat se dá i tak.
+      </div>
+    </nz-form-control>
+  </nz-form-item>
+
+  @if (saveError()) {
+    <nz-alert nzType="error" [nzMessage]="saveError()" nzShowIcon class="form-alert" />
+  }
+
+  <div class="form-actions">
+    <button nz-button nzType="primary" type="submit" [nzLoading]="saving()" [disabled]="!isValid()">
+      Založit zboží
+    </button>
+    <button nz-button type="button" (click)="cancelled.emit()" [disabled]="saving()">Zrušit</button>
+  </div>
+</form>

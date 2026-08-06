@@ -93,7 +93,38 @@ app:
     # Pod tímto počtem hodnocení klienti známku zobrazí ztlumeně jako "orientační" — obdoba
     # pravidla n_eff < 2 u cen (docs/reputace.md).
     min-ratings-for-badge: 3
+  catalog:
+    # Zakládání katalogu (docs/reputace.md, "Limity patří do konfigurace") — velkoryse jako
+    # ostatní limity v MVP, studený start je větší riziko než zneužití.
+    max-stores-per-day: 20
+    max-products-per-day: 20
+    # Kolik různých přispěvatelů musí bezkódovou (DRAFT) položku / PENDING obchod potvrdit,
+    # než se stanou ACTIVE.
+    draft-confirmations: 3
+  trust:
+    # Práh důvěry autora pro okamžité zveřejnění nového záznamu (docs/reputace.md, etapa-1
+    # aproximace úrovně T2) — pod prahem vidí nový obchod/zboží jen autor, dokud ho nepotvrdí
+    # draft-confirmations jiných přispěvatelů.
+    min-account-age-days: 7
+    min-observations: 5
+  moderation:
+    # Kolik různých nahlášení skryje záznam a pošle ho k přezkumu (docs/reputace.md,
+    # "Nesouhlas se vyjadřuje k faktu, ne k člověku").
+    flags-to-hide: 3
   external:
     open-food-facts:
       product-url-template: "https://cz.openfoodfacts.org/product/{barcode}"
       attribution: "Zdroj: Open Food Facts, licence ODbL"
+    nominatim:
+      # Usage policy Nominatimu vyžaduje identifikovatelný User-Agent — v produkci nahradit
+      # reálným kontaktem (viz https://operations.osmfoundation.org/policies/nominatim/).
+      base-url: https://nominatim.openstreetmap.org
+      # V produkci nahradit reálným kontaktním e-mailem.
+      user-agent: "KvalitaACena/0.1 (dev@example.com)"
+      timeout: PT5S
+      cache-ttl: P1D
+      attribution: "Zdroj: © OpenStreetMap contributors, licence ODbL"
+    ares:
+      # Veřejný rejstřík ekonomických subjektů ČR — ne ODbL, jen předvyplnění formuláře.
+      base-url: https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty
+      timeout: PT5S

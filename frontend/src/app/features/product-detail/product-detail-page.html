@@ -16,6 +16,24 @@
     }
   </p>
 
+  <div class="status-badges">
+    @if (!product()!.verified) {
+      <nz-tag>Neověřeno</nz-tag>
+    }
+    @if (product()!.editedByMe) {
+      <nz-tag nzColor="blue">Vaše úprava</nz-tag>
+    }
+    @if (auth.isLoggedIn()) {
+      <button nz-button nzType="text" nzSize="small" [nzLoading]="flagging()" (click)="flagProduct()">
+        <span nz-icon nzType="flag"></span>
+        Nahlásit
+      </button>
+    }
+  </div>
+  @if (flagMessage()) {
+    <nz-alert nzType="info" [nzMessage]="flagMessage()" nzShowIcon class="flag-alert" />
+  }
+
   <div class="quality-section">
     <app-quality-badge [average]="product()!.quality?.average ?? null" [count]="product()!.quality?.count ?? 0" />
     <div class="quality-buttons">
@@ -76,13 +94,23 @@
 
   @if (product()!.stats?.bestPrice != null && product()!.stats?.cheapestStore) {
     <nz-card nzTitle="Nejlevněji" class="cheapest-card">
-      <a [href]="osmUrl(product()!.stats!.cheapestStore!)" target="_blank" rel="noopener" class="cheapest-row">
-        <span>
-          <span class="cheapest-store-name">{{ product()!.stats!.cheapestStore!.name }}</span>
-          <span class="cheapest-store-city">{{ product()!.stats!.cheapestStore!.city }}</span>
-        </span>
-        <span class="cheapest-price">{{ product()!.stats!.bestPrice }} Kč</span>
-      </a>
+      @if (osmUrl(product()!.stats!.cheapestStore!); as url) {
+        <a [href]="url" target="_blank" rel="noopener" class="cheapest-row">
+          <span>
+            <span class="cheapest-store-name">{{ product()!.stats!.cheapestStore!.name }}</span>
+            <span class="cheapest-store-city">{{ product()!.stats!.cheapestStore!.city }}</span>
+          </span>
+          <span class="cheapest-price">{{ product()!.stats!.bestPrice }} Kč</span>
+        </a>
+      } @else {
+        <div class="cheapest-row">
+          <span>
+            <span class="cheapest-store-name">{{ product()!.stats!.cheapestStore!.name }}</span>
+            <span class="cheapest-store-city">{{ product()!.stats!.cheapestStore!.city }}</span>
+          </span>
+          <span class="cheapest-price">{{ product()!.stats!.bestPrice }} Kč</span>
+        </div>
+      }
     </nz-card>
   }
 
@@ -105,7 +133,11 @@
           @for (price of pricesTable.data; track price.store.id + price.priceKind) {
             <tr>
               <td>
-                <a [href]="osmUrl(price.store)" target="_blank" rel="noopener">{{ price.store.name }}</a>
+                @if (osmUrl(price.store); as url) {
+                  <a [href]="url" target="_blank" rel="noopener">{{ price.store.name }}</a>
+                } @else {
+                  {{ price.store.name }}
+                }
               </td>
               <td>{{ priceKindLabels[price.priceKind] }}</td>
               <td>{{ price.priceAmount }} Kč</td>
@@ -126,6 +158,19 @@
       </nz-table>
     }
   </nz-card>
+
+  @if (product()!.myPrices && product()!.myPrices!.length > 0) {
+    <nz-card nzTitle="Vaše cena" class="my-prices-card">
+      <ul class="my-prices-list">
+        @for (mp of product()!.myPrices!; track mp.store.id + mp.priceKind) {
+          <li>
+            {{ mp.store.name }} — {{ priceKindLabels[mp.priceKind] }}: {{ mp.priceAmount }} Kč
+            <span class="my-price-date">({{ formatRelativeDate(mp.observedAt) }})</span>
+          </li>
+        }
+      </ul>
+    </nz-card>
+  }
 
   @if (product()!.externalLinks && product()!.externalLinks!.length > 0) {
     <nz-card nzTitle="Další informace" class="links-card">
@@ -149,36 +194,15 @@
     @if (submitError()) {
       <nz-alert nzType="error" [nzMessage]="submitError()" nzShowIcon class="submit-alert" />
     }
-    @if (locationError()) {
-      <nz-alert nzType="warning" [nzMessage]="locationError()" nzShowIcon class="submit-alert" />
-    }
 
     <form nz-form nzLayout="vertical" (ngSubmit)="submitPrice()">
       <nz-form-item>
         <nz-form-label>Obchod</nz-form-label>
         <nz-form-control>
-          <div class="store-picker">
-            <nz-select
-              class="store-select"
-              [ngModel]="selectedStoreId()"
-              (ngModelChange)="selectedStoreId.set($event)"
-              name="storeId"
-              nzPlaceHolder="Vyber obchod"
-            >
-              @for (store of nearbyStores(); track store.id) {
-                <nz-option [nzValue]="store.id" [nzLabel]="store.name + ' — ' + store.city" />
-              }
-            </nz-select>
-            <button
-              nz-button
-              type="button"
-              [nzLoading]="locating()"
-              (click)="findNearbyStores()"
-            >
-              <span nz-icon nzType="environment"></span>
-              Najít v okolí
-            </button>
-          </div>
+          <app-store-picker
+            [selectedStoreId]="selectedStoreId()"
+            (selectedStoreIdChange)="selectedStoreId.set($event)"
+          />
         </nz-form-control>
       </nz-form-item>
 

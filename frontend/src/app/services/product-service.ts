@@ -2,6 +2,9 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { GraphQlService } from './graphql-service';
 import {
+  Category,
+  CreateProductInput,
+  FlagResult,
   Product,
   PriceHistory,
   PriceKind,
@@ -9,12 +12,15 @@ import {
   ProductQuality,
   ProductSearchResult,
   ProductSort,
+  ProductSummary,
   SearchFacets,
   SubmitObservationInput,
+  UpdateProductInput,
 } from '../models/catalog';
 
 const STORE_FIELDS = `
-  id name street city postalCode country lat lon chain { id name chainType }
+  id name street city postalCode country lat lon geoSource ico chain { id name chainType }
+  verified editedByMe pendingConfirmation
 `;
 
 const PRICE_CURRENT_FIELDS = `
@@ -39,6 +45,9 @@ const PRODUCT_FIELDS = `
   piecesInPack
   isVariableWeight
   status
+  isGeneric
+  verified
+  editedByMe
   prices { ${PRICE_CURRENT_FIELDS} }
 `;
 
@@ -50,6 +59,7 @@ const PRODUCT_DETAIL_FIELDS = `
   quality { average count }
   myQualityRating
   externalLinks { kind label url attribution }
+  myPrices { store { ${STORE_FIELDS} } priceKind priceAmount unitPrice observedAt }
 `;
 
 const PRODUCT_SUMMARY_FIELDS = `
@@ -57,6 +67,9 @@ const PRODUCT_SUMMARY_FIELDS = `
   name
   brand { id name slug }
   category { id name slug path }
+  isGeneric
+  verified
+  editedByMe
 `;
 
 const SEARCH_ITEM_FIELDS = `
@@ -121,6 +134,79 @@ export class ProductService {
       }
     `;
     return this.graphQl.execute<{ product: Product | null }>(gql, { id }).pipe(map((data) => data.product));
+  }
+
+  /** Dohledání podle naskenovaného/opsaného čárového kódu — backend normalizuje na GTIN-14. */
+  getByCode(code: string): Observable<Product | null> {
+    const gql = `
+      query ProductByCode($code: String!) {
+        productByCode(code: $code) { ${PRODUCT_DETAIL_FIELDS} }
+      }
+    `;
+    return this.graphQl
+      .execute<{ productByCode: Product | null }>(gql, { code })
+      .pipe(map((data) => data.productByCode));
+  }
+
+  /**
+   * Podobné zboží podle názvu — nabídne existující druhové položky před založením nového
+   * (docs/reputace.md, "Zboží bez čárového kódu") i jako "našli jsme podobné" krok obecně.
+   */
+  suggestions(name: string, first = 10): Observable<ProductSummary[]> {
+    const gql = `
+      query ProductSuggestions($name: String!, $first: Int) {
+        productSuggestions(name: $name, first: $first) { ${PRODUCT_SUMMARY_FIELDS} }
+      }
+    `;
+    return this.graphQl
+      .execute<{ productSuggestions: ProductSummary[] }>(gql, { name, first })
+      .pipe(map((data) => data.productSuggestions));
+  }
+
+  /** Plochý seznam kategorií pro formulář nového zboží. */
+  categories(): Observable<Category[]> {
+    const gql = `{ categories { id name slug path } }`;
+    return this.graphQl.execute<{ categories: Category[] }>(gql).pipe(map((data) => data.categories));
+  }
+
+  /** Založení zboží — s naskenovaným EANem i bez něj (bezkódová druhová položka). Vyžaduje přihlášení. */
+  createProduct(input: CreateProductInput): Observable<Product> {
+    const gql = `
+      mutation CreateProduct($input: CreateProductInput!) {
+        createProduct(input: $input) { ${PRODUCT_FIELDS} }
+      }
+    `;
+    return this.graphQl
+      .execute<{ createProduct: Product }>(gql, { input })
+      .pipe(map((data) => data.createProduct));
+  }
+
+  /**
+   * Úprava existujícího zboží jako patch nad core.product_user_edit — globální řádek se
+   * nemění, úpravu vidí jen autor (docs/datovy-model.md, "Uživatelská vrstva nad globálními
+   * daty"). Vyžaduje přihlášení.
+   */
+  updateProduct(id: string, input: UpdateProductInput): Observable<Product> {
+    const gql = `
+      mutation UpdateProduct($id: ID!, $input: UpdateProductInput!) {
+        updateProduct(id: $id, input: $input) { ${PRODUCT_DETAIL_FIELDS} }
+      }
+    `;
+    return this.graphQl
+      .execute<{ updateProduct: Product }>(gql, { id, input })
+      .pipe(map((data) => data.updateProduct));
+  }
+
+  /** Nahlášení zboží jako podezřelého/nesmyslného — hlasuje se o faktu, ne o člověku (docs/reputace.md). */
+  flagProduct(id: string, reason?: string): Observable<FlagResult> {
+    const gql = `
+      mutation FlagProduct($recordId: ID!, $reason: String) {
+        flagRecord(recordType: PRODUCT, recordId: $recordId, reason: $reason) { flagCount hidden }
+      }
+    `;
+    return this.graphQl
+      .execute<{ flagRecord: FlagResult }>(gql, { recordId: id, reason: reason ?? null })
+      .pipe(map((data) => data.flagRecord));
   }
 
   /** Denní řada z agg.price_daily pro graf vývoje ceny — NIKDY ze syrových observací. */

@@ -3,9 +3,11 @@ import {
   CheckCircleOutline,
   EnvironmentOutline,
   FilterOutline,
+  FlagOutline,
   LinkOutline,
   LoadingOutline,
   LogoutOutline,
+  PlusCircleOutline,
   SearchOutline,
   SettingOutline,
   ShopOutline,
@@ -28,4 +30,6 @@ export const icons = [
   LogoutOutline,
   FilterOutline,
   SortAscendingOutline,
+  PlusCircleOutline,
+  FlagOutline,
 ];

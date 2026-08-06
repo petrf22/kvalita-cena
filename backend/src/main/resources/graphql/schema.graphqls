@@ -37,6 +37,39 @@ type Query {
   "Číselník pro filtry hledání — jen obchody a města, kde nějaká cena skutečně je."
   searchFacets(query: String): SearchFacets!
 
+  """
+  Našeptávač obchodů podle názvu/města (core.norm_text, pg_trgm) — doplněk k nearbyStores pro
+  zápis ceny bez sdílení polohy nebo zpětně z domova (docs/datovy-model.md, "Identita
+  provozovny"). Na rozdíl od nearbyStores najde i obchody bez souřadnic.
+  """
+  searchStores(query: String, city: String, first: Int = 20, offset: Int = 0): StoreSearchResult!
+
+  """
+  Podobné zboží podle názvu (pg_trgm) — druhové položky (Product.isGeneric) i zboží s kódem.
+  Slouží k nabídnutí existující druhové položky při bezkódovém zápisu i jako povinná kontrola
+  duplicit před založením nového zboží (docs/reputace.md, "Zboží bez čárového kódu").
+  """
+  productSuggestions(name: String!, first: Int = 10): [Product!]!
+
+  "Plochý seznam kategorií pro zakládání zboží — hierarchii nese Category.path."
+  categories: [Category!]!
+
+  """
+  Souřadnice k zadané adrese přes OpenStreetMap Nominatim. Dotaz jde VŽDY ze serveru, nikdy
+  z klienta (docs/soukromi.md — jinak by šla přímo IP uživatele) a odpověď se necachuje do
+  core.*/osm.* — ukládá se jen zvolený bod jako core.store.lat/lon + osmRef s geoSource=OSM.
+  UI MUSÍ zobrazit attribution. Výpadek Nominatimu vrací prázdný seznam kandidátů, nikdy chybu
+  — založení obchodu bez souřadnic musí projít i tak.
+  """
+  geocodeAddress(street: String, city: String!, postalCode: String, country: String = "CZ"): GeocodeResult!
+
+  """
+  Údaje o firmě z veřejného rejstříku ARES podle IČO — předvyplnění formuláře obchodu. ARES
+  není ODbL data (je to veřejný rejstřík, ne OSM/OFF), takže se nemusí držet stranou core.*.
+  Vrací null, když IČO neexistuje nebo je ARES nedostupný.
+  """
+  companyByIco(ico: String!): CompanyInfo
+
   product(id: ID!): Product
 
   """
@@ -71,6 +104,118 @@ type Mutation {
   — opakované volání předchozí známku přepíše. Vyžaduje přihlášení.
   """
   rateProduct(productId: ID!, grade: Int!): ProductQuality!
+
+  """
+  Založení provozovny — pro zápis ceny bez sdílení polohy nebo zpětně z domova. Vyžaduje
+  přihlášení (docs/reputace.md, T1) a rovnou zakládá ACTIVE záznam; klient si před voláním
+  MUSÍ ověřit searchStores(name, city) a nabídnout uživateli případné shody (uq_store_identity
+  je až poslední pojistka, ne jediná obrana proti duplicitám).
+  """
+  createStore(input: CreateStoreInput!): Store!
+
+  """
+  Založení zboží — s naskenovaným kódem i bez něj (bezkódová druhová položka, docs/reputace.md,
+  "Zboží bez čárového kódu"). Vyžaduje přihlášení. Bez kódu vzniká jako status DRAFT a
+  isGeneric=true; klient by měl nejdřív zkusit productSuggestions(name), ať nezaloží duplikát
+  existující druhové položky.
+  """
+  createProduct(input: CreateProductInput!): Product!
+
+  """
+  Úprava existujícího zboží jako patch nad core.product_user_edit — globální řádek se nemění,
+  úpravu vidí jen autor (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty").
+  Vyžaduje přihlášení. Pole s hodnotou null v inputu zůstává nezměněné.
+  """
+  updateProduct(id: ID!, input: UpdateProductInput!): Product!
+
+  """
+  Úprava existující provozovny jako patch nad core.store_user_edit — stejný princip jako
+  updateProduct. Vyžaduje přihlášení.
+  """
+  updateStore(id: ID!, input: UpdateStoreInput!): Store!
+
+  """
+  Nahlášení zboží/obchodu jako podezřelého nebo nesmyslného — hlasuje se o FAKTU, nikdy o
+  ČLOVĚKU (docs/reputace.md, "Nesouhlas se vyjadřuje k faktu, ne k člověku"). Po dosažení
+  app.moderation.flags-to-hide různých nahlášení se záznam skryje a čeká na přezkum. Vyžaduje
+  přihlášení; opakované nahlášení stejným člověkem nic nemění.
+  """
+  flagRecord(recordType: RecordType!, recordId: ID!, reason: String): FlagResult!
+}
+
+enum RecordType {
+  PRODUCT
+  STORE
+}
+
+input UpdateProductInput {
+  name: String
+  brandName: String
+  "True smaže značku (vrátí zboží na 'bez značky') — jinak se posílá brandName."
+  clearBrand: Boolean = false
+  categoryId: ID
+  unitBase: UnitBase
+  netContentValue: BigDecimal
+  netContentUom: NetContentUom
+  piecesInPack: Int
+  clearPiecesInPack: Boolean = false
+  isVariableWeight: Boolean
+}
+
+input UpdateStoreInput {
+  name: String
+  chainId: ID
+  clearChain: Boolean = false
+  street: String
+  clearStreet: Boolean = false
+  city: String
+  postalCode: String
+  clearPostalCode: Boolean = false
+  country: String
+  "8 číslic, ověří se kontrolním součtem — viz docs/soukromi.md."
+  ico: String
+  clearIco: Boolean = false
+  lat: Float
+  lon: Float
+  geoSource: GeoSource
+  osmRef: String
+}
+
+type FlagResult {
+  "Kolik různých lidí záznam zatím nahlásilo."
+  flagCount: Int!
+  "True, pokud nahlášení právě teď (nebo už dřív) záznam skrylo."
+  hidden: Boolean!
+}
+
+input CreateStoreInput {
+  name: String!
+  chainId: ID
+  street: String
+  city: String!
+  postalCode: String
+  country: String = "CZ"
+  "8 číslic, ověří se v ARES (companyByIco) — viz docs/soukromi.md."
+  ico: String
+  "Volitelné — bez souřadnic obchod nenajde nearbyStores, jen searchStores."
+  lat: Float
+  lon: Float
+  geoSource: GeoSource
+  osmRef: String
+}
+
+input CreateProductInput {
+  name: String!
+  "Volný text značky — pokud neexistuje, založí se nová core.brand."
+  brandName: String
+  categoryId: ID!
+  unitBase: UnitBase!
+  netContentValue: BigDecimal
+  netContentUom: NetContentUom
+  piecesInPack: Int
+  isVariableWeight: Boolean = false
+  "Naskenovaný EAN — bez něj vzniká bezkódová druhová položka (isGeneric=true, status=DRAFT)."
+  code: String
 }
 
 type Brand {
@@ -119,6 +264,11 @@ type Product {
   piecesInPack: Int
   isVariableWeight: Boolean!
   status: ProductStatus!
+  """
+  Druhová položka bez čárového kódu ('Chléb konzumní') — confidence agregátu je pro ni
+  zastropovaná na MEDIUM, viz docs/reputace.md, 'Zboží bez čárového kódu'.
+  """
+  isGeneric: Boolean!
   "Aktuální ceny po jednotlivých obchodech (agg.price_current)."
   prices: [PriceCurrent!]!
   codes: [ProductCode!]!
@@ -129,6 +279,27 @@ type Product {
   "Známka přihlášeného uživatele, null pro anonyma i pro nehodnocený produkt."
   myQualityRating: Int
   externalLinks: [ExternalLink!]!
+  """
+  Konsolidační job zatím neběží (docs/datovy-model.md, "Uživatelská vrstva nad globálními
+  daty") — v etapě 1 je vždy false, klient zobrazí štítek "neověřeno".
+  """
+  verified: Boolean!
+  "True, pokud pro tenhle produkt existuje uživatelův patch (core.product_user_edit)."
+  editedByMe: Boolean!
+  """
+  Poslední vlastní zápisy přihlášeného uživatele (na obchod a druh ceny) — zobrazí se jako
+  "Vaše cena" vedle komunitního agregátu (prices), i dřív než je zpracuje agregace. Prázdné
+  pole pro anonyma i pro produkt bez vlastního zápisu.
+  """
+  myPrices: [MyPrice!]!
+}
+
+type MyPrice {
+  store: Store!
+  priceKind: PriceKind!
+  priceAmount: BigDecimal!
+  unitPrice: BigDecimal
+  observedAt: DateTime!
 }
 
 enum CodeType {
@@ -228,6 +399,8 @@ type Viewer {
   publicHandle: String!
   displayName: String
   createdAt: DateTime!
+  "Práh důvěry (docs/reputace.md) — vysvětluje klientovi, proč nový obchod/zboží zatím vidí jen on."
+  trusted: Boolean!
 }
 
 enum ChainType {
@@ -244,6 +417,13 @@ type RetailChain {
   chainType: ChainType!
 }
 
+enum GeoSource {
+  "Souřadnice zadal/potvrdil uživatel (ručně, nebo výběrem geokódovaného kandidáta)."
+  COMMUNITY
+  "Souřadnice převzaté z OpenStreetMap Nominatim — jen lat/lon a osm_ref, nic dalšího z OSM."
+  OSM
+}
+
 type Store {
   id: ID!
   chain: RetailChain
@@ -252,8 +432,55 @@ type Store {
   city: String!
   postalCode: String
   country: String!
+  "Nullable — provozovna zadaná bez GPS (zápis doma) může souřadnice dosud nemít."
+  lat: Float
+  lon: Float
+  geoSource: GeoSource!
+  "Volitelný identifikátor provozovatele (podniková prodejna, OSVČ) — 8 číslic, viz docs/soukromi.md."
+  ico: String
+  "Konsolidační job zatím neběží — v etapě 1 vždy false, klient zobrazí štítek 'neověřeno'."
+  verified: Boolean!
+  "True, pokud pro tuhle provozovnu existuje uživatelův patch (core.store_user_edit)."
+  editedByMe: Boolean!
+  """
+  Provozovna od nedůvěryhodného autora čeká na potvrzení dalších přispěvatelů
+  (docs/reputace.md) — vidí ji jen autor. Klient tím umí vysvětlit, proč zatím nikdo jiný
+  obchod nevidí.
+  """
+  pendingConfirmation: Boolean!
+}
+
+type StoreSearchResult {
+  items: [Store!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
+"""
+Kandidát ze serveru OpenStreetMap Nominatim — nic z tohohle se neukládá do core.* kromě
+lat/lon a osmRef zvoleného kandidáta (docs/datovy-model.md, oddělení ODbL dat).
+"""
+type GeocodeCandidate {
   lat: Float!
   lon: Float!
+  displayName: String!
+  "Formát '{typ}/{id}' (např. 'way/123456') — ukládá se do core.store.osm_ref při výběru."
+  osmRef: String!
+}
+
+type GeocodeResult {
+  candidates: [GeocodeCandidate!]!
+  "Povinný text zdroje/licence (ODbL) — UI ho musí zobrazit vedle výsledků."
+  attribution: String!
+}
+
+"Údaje o firmě z veřejného rejstříku ARES — ne ODbL data, jen předvyplnění formuláře."
+type CompanyInfo {
+  ico: String!
+  name: String!
+  street: String
+  city: String
+  postalCode: String
 }
 
 enum PriceKind {

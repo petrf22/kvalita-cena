@@ -37,6 +37,11 @@ class ProductDetailViewModel(
   var ratingError by mutableStateOf<String?>(null)
     private set
 
+  var flagging by mutableStateOf(false)
+    private set
+  var flagMessage by mutableStateOf<String?>(null)
+    private set
+
   init {
     loadProduct()
   }
@@ -88,6 +93,26 @@ class ProductDetailViewModel(
         product = product?.copy(quality = quality, myQualityRating = grade)
       } catch (e: Exception) {
         ratingError = "Hodnocení kvality vyžaduje přihlášení — dokonči ho v záložce Účet."
+      }
+    }
+  }
+
+  /** Hlasuje se o FAKTU, nikdy o ČLOVĚKU (docs/reputace.md, "Nesouhlas se vyjadřuje k faktu"). */
+  fun flagProduct() {
+    flagging = true
+    flagMessage = null
+    viewModelScope.launch {
+      try {
+        val result = graphQlClient.flagRecord("PRODUCT", productId)
+        flagMessage = if (result.hidden) {
+          "Díky za nahlášení — položka je teď skrytá a čeká na přezkum."
+        } else {
+          "Díky za nahlášení, zaznamenali jsme ho."
+        }
+      } catch (e: Exception) {
+        flagMessage = "Nahlášení se nepovedlo, zkus to prosím znovu."
+      } finally {
+        flagging = false
       }
     }
   }

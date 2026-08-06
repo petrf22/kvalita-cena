@@ -1,0 +1,73 @@
+# 01-text-normalization.yaml — normalizace textu pro našeptávače a kontrolu duplicit
+# (obchody, druhové zboží bez EANu). Obě rozšíření jsou pod licencí PostgreSQL (stejný
+# důvod jako cube/earthdistance v 00-schemas.yaml, viz docs/datovy-model.md).
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-06-01-create-extensions
+      author: Petr F.
+      comment: >
+        unaccent (odstranění diakritiky) a pg_trgm (podobnost řetězců) pro fulltextové
+        našeptávače a "našli jsme podobné" kontrolu před založením obchodu/zboží.
+      changes:
+        - sql:
+            sql: |
+              CREATE EXTENSION IF NOT EXISTS unaccent;
+              CREATE EXTENSION IF NOT EXISTS pg_trgm;
+      rollback:
+        - sql:
+            sql: |
+              DROP EXTENSION IF EXISTS pg_trgm;
+              DROP EXTENSION IF EXISTS unaccent;
+
+  - changeSet:
+      id: 2026-08-06-01-create-core-norm-text
+      author: Petr F.
+      comment: >
+        Immutable wrapper nad unaccent, potřebný ve výrazových indexech (uq_store_identity,
+        uq_product_generic_name, idx_*_trgm) — past podobná date_trunc u core.day_utc
+        (docs/datovy-model.md, "Past: date_trunc není IMMUTABLE"), ale o úroveň zákeřnější:
+        OBĚ varianty unaccent() — jednoargumentová i dvouargumentová s regdictionary — jsou
+        ve skutečnosti STABLE (`SELECT provolatile FROM pg_proc WHERE proname='unaccent'`
+        vrací 's' u obou), přestože dvouargumentová bývá po síti mylně označovaná za
+        IMMUTABLE. Deklarovat obalovou funkci jako IMMUTABLE navzdory tomu Postgres při
+        prostém volání nerozporuje, ale při CREATE INDEX ji zkusí inlinovat — a v tu chvíli
+        selže na "text search dictionary unaccent does not exist", protože se `'unaccent'::
+        regdictionary` a bezejmenné `unaccent(...)` musí dohledat podle search_path v
+        kontextu inliningu, kde 'public' není k dispozici. Řešení: slovník i schéma
+        rozšíření se vyhledají JEDNOU při běhu migrace (`pg_ts_dict`/`pg_extension`) a jejich
+        OID/jméno se natvrdo vloží do textu definice funkce (`format(..., dict_oid, ext_schema)`
+        + `EXECUTE`) — ve výsledném těle funkce je pak jen numerický OID a plně kvalifikované
+        jméno funkce, žádné jméno závislé na search_path, takže inlining nemá co selhat.
+        Přejmenování/výměna slovníku 'unaccent' by i tak vyžadovala přegenerování funkce
+        a reindex všech indexů, které ji používají.
+
+        Druhá past, tentokrát v Liquibase, ne v Postgresu: výchozí dělení SQL bloku na
+        příkazy podle strojek nerozezná vnořené dolarové uvozovky s RŮZNÝMI značkami
+        ($outer$ a $body$ v jednom bloku — na rozdíl od jediné značky $$ u core.day_utc
+        v 05-price-observation.yaml, které defaultní dělení zvládá) a příkaz uřízne v
+        půlce ("Unterminated dollar quote started at position 3"). Řešení je
+        `splitStatements: false` — celý DO blok je stejně jeden příkaz, není co dělit.
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $outer$
+              DECLARE
+                dict_oid oid;
+                ext_schema text;
+              BEGIN
+                SELECT oid INTO dict_oid FROM pg_ts_dict WHERE dictname = 'unaccent';
+                SELECT nspname INTO ext_schema
+                  FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
+                  WHERE e.extname = 'unaccent';
+                EXECUTE format(
+                  'CREATE FUNCTION core.norm_text(t TEXT) RETURNS TEXT
+                     LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS
+                     $body$ SELECT lower(%I.unaccent(%L::regdictionary, regexp_replace(trim($1), ''\s+'', '' '', ''g''))) $body$',
+                  ext_schema, dict_oid);
+              END
+              $outer$;
+      rollback:
+        - sql:
+            sql: |
+              DROP FUNCTION IF EXISTS core.norm_text(TEXT);

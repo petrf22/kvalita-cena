@@ -1,23 +1,35 @@
 package cz.kvalitacena.controller;
 
 import cz.kvalitacena.config.ExternalLinkProperties;
+import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.CodeType;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.PriceCurrent;
 import cz.kvalitacena.db.entity.PriceKind;
 import cz.kvalitacena.db.entity.ProductCode;
+import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.Store;
+import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
 import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ProductSort;
 import cz.kvalitacena.db.repo.StoreRepository;
+import cz.kvalitacena.security.ViewerContext;
+import cz.kvalitacena.security.ViewerContextResolver;
+import cz.kvalitacena.service.CatalogEditService;
+import cz.kvalitacena.service.GtinNormalization;
+import cz.kvalitacena.service.MyPriceService;
+import cz.kvalitacena.service.ProductCatalogService;
+import cz.kvalitacena.service.ProductOverlayService;
 import cz.kvalitacena.service.ProductSearchService;
 import cz.kvalitacena.service.QualityRatingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.BatchMapping;
+import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 
 import java.math.BigDecimal;
@@ -37,20 +49,28 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductGraphQlController {
 
-  private static final int GTIN_14_LENGTH = 14;
+  private static final int MAX_SUGGESTIONS = 30;
 
   private final ProductRepository productRepository;
   private final PriceCurrentRepository priceCurrentRepository;
   private final ProductCodeRepository productCodeRepository;
   private final StoreRepository storeRepository;
+  private final CategoryRepository categoryRepository;
   private final ProductSearchService productSearchService;
   private final QualityRatingService qualityRatingService;
+  private final ProductCatalogService productCatalogService;
+  private final ProductOverlayService productOverlayService;
+  private final CatalogEditService catalogEditService;
+  private final MyPriceService myPriceService;
+  private final ViewerContextResolver viewerContextResolver;
   private final ExternalLinkProperties externalLinkProperties;
 
   @QueryMapping
   public ProductSearchResult searchProducts(@Argument String query, @Argument Long storeId,
-      @Argument String city, @Argument ProductSort sort, @Argument Integer first, @Argument Integer offset) {
-    return productSearchService.search(query, storeId, city, sort, first, offset);
+      @Argument String city, @Argument ProductSort sort, @Argument Integer first, @Argument Integer offset,
+      Authentication authentication) {
+    ViewerContext viewer = viewerContextResolver.resolve(authentication);
+    return productSearchService.search(query, storeId, city, sort, first, offset, viewer.userId());
   }
 
   @QueryMapping
@@ -59,22 +79,86 @@ public class ProductGraphQlController {
   }
 
   @QueryMapping
-  public Product product(@Argument Long id) {
-    return productRepository.findById(id).orElse(null);
-  }
-
-  @QueryMapping
-  public Product productByCode(@Argument String code) {
-    return productCodeRepository.findFirstByCodeAndCodeType(normalizeToGtin14(code), CodeType.GTIN)
-        .map(ProductCode::getProduct)
+  public Product product(@Argument Long id, Authentication authentication) {
+    ViewerContext viewer = viewerContextResolver.resolve(authentication);
+    return productRepository.findById(id)
+        .filter(p -> isVisible(p, viewer))
+        .map(p -> productOverlayService.applyOverlay(p, viewer.userId()))
         .orElse(null);
   }
 
-  /** EAN-8/EAN-13 doplněný nulami zleva na GTIN-14 — viz docs/datovy-model.md. */
-  private String normalizeToGtin14(String code) {
-    String digits = code.trim();
-    if (digits.length() >= GTIN_14_LENGTH) return digits;
-    return "0".repeat(GTIN_14_LENGTH - digits.length()) + digits;
+  @QueryMapping
+  public Product productByCode(@Argument String code, Authentication authentication) {
+    ViewerContext viewer = viewerContextResolver.resolve(authentication);
+    return productCodeRepository.findFirstByCodeAndCodeType(GtinNormalization.toGtin14(code), CodeType.GTIN)
+        .map(ProductCode::getProduct)
+        .filter(p -> isVisible(p, viewer))
+        .map(p -> productOverlayService.applyOverlay(p, viewer.userId()))
+        .orElse(null);
+  }
+
+  /**
+   * Viditelnost pod prahem důvěry (docs/reputace.md) — globální ACTIVE vidí každý, vlastní
+   * DRAFT jen autor. Skryté (nahlášené, hidden_at) vidí jen autor, ostatním se tváří jako
+   * neexistující — nikdy FORBIDDEN, aby existenci skrytého záznamu nešlo odvodit (CLAUDE.md,
+   * pravidlo o neviditelných recenzích platí i tady).
+   */
+  private boolean isVisible(Product product, ViewerContext viewer) {
+    boolean ownerOrActive = product.getStatus() == ProductStatus.ACTIVE
+        || (product.getStatus() == ProductStatus.DRAFT && sameUser(product.getCreatedByUserId(), viewer));
+    if (!ownerOrActive) return false;
+    return product.getHiddenAt() == null || sameUser(product.getCreatedByUserId(), viewer);
+  }
+
+  private boolean sameUser(Long createdByUserId, ViewerContext viewer) {
+    return createdByUserId != null && createdByUserId.equals(viewer.userId());
+  }
+
+  @MutationMapping
+  public Product createProduct(@Argument CreateProductInput input, Authentication authentication) {
+    return productCatalogService.create(input, viewerContextResolver.resolve(authentication).publicUid());
+  }
+
+  @MutationMapping
+  public Product updateProduct(@Argument Long id, @Argument UpdateProductInput input,
+      Authentication authentication) {
+    return catalogEditService.updateProduct(id, input, viewerContextResolver.resolve(authentication).publicUid());
+  }
+
+  @BatchMapping(typeName = "Product", field = "myPrices")
+  public Map<Product, List<MyPrice>> myPrices(List<Product> products, Authentication authentication) {
+    Long viewerId = viewerContextResolver.resolve(authentication).userId();
+    Map<Long, List<MyPrice>> byProduct = myPriceService.myPricesByProductId(productIds(products), viewerId);
+    Map<Product, List<MyPrice>> result = new LinkedHashMap<>();
+    for (Product p : products) {
+      result.put(p, byProduct.getOrDefault(p.getId(), List.of()));
+    }
+    return result;
+  }
+
+  /**
+   * Podobné zboží podle názvu (idx_product_name_trgm) — nabídne existující druhové položky
+   * dřív, než uživatel založí bezkódový duplikát, a slouží i jako "našli jsme podobné" krok
+   * u nového zboží s kódem (docs/reputace.md, "Zboží bez čárového kódu"). Na rozdíl od
+   * {@link #product}/{@link #searchProducts} tu DRAFT položky vidí VŠICHNI, ne jen autor —
+   * účel je zabránit duplicitám napříč uživateli, ne skrýt nepotvrzené zboží. Skryté
+   * (nahlášené) položky se přesto vynechávají.
+   */
+  @QueryMapping
+  public List<Product> productSuggestions(@Argument String name, @Argument Integer first,
+      Authentication authentication) {
+    if (name == null || name.isBlank()) return List.of();
+    ViewerContext viewer = viewerContextResolver.resolve(authentication);
+    int limit = Math.max(1, Math.min(first == null ? 10 : first, MAX_SUGGESTIONS));
+    List<Product> matches = productRepository.findSimilarByName(name.trim(), limit).stream()
+        .filter(p -> p.getHiddenAt() == null || sameUser(p.getCreatedByUserId(), viewer))
+        .toList();
+    return productOverlayService.applyOverlay(matches, viewer.userId());
+  }
+
+  @QueryMapping
+  public List<Category> categories() {
+    return categoryRepository.findAllByOrderByPathAsc();
   }
 
   /** Opak normalizace — GTIN-14 zpět na EAN bez vedoucích nul, jak ho zná Open Food Facts. */

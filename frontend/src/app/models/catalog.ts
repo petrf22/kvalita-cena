@@ -25,6 +25,8 @@ export interface RetailChain {
   chainType: string;
 }
 
+export type GeoSource = 'COMMUNITY' | 'OSM';
+
 export interface Store {
   id: string;
   chain: RetailChain | null;
@@ -33,8 +35,19 @@ export interface Store {
   city: string;
   postalCode: string | null;
   country: string;
-  lat: number;
-  lon: number;
+  // Nullable — provozovna zadaná bez GPS (zápis doma) může souřadnice dosud nemít
+  // (docs/datovy-model.md, "Identita provozovny").
+  lat: number | null;
+  lon: number | null;
+  geoSource: GeoSource;
+  ico: string | null;
+  // Uživatelská vrstva nad globálními daty (docs/datovy-model.md) — konsolidační job zatím
+  // neběží, takže verified je v etapě 1 vždy false.
+  verified: boolean;
+  editedByMe: boolean;
+  // Provozovna od nedůvěryhodného autora čeká na potvrzení dalších přispěvatelů — vidí ji jen
+  // autor (docs/reputace.md).
+  pendingConfirmation: boolean;
 }
 
 export interface PriceCurrent {
@@ -59,6 +72,8 @@ export interface Product {
   piecesInPack: number | null;
   isVariableWeight: boolean;
   status: ProductStatus;
+  // Druhová položka bez čárového kódu — viz docs/reputace.md, "Zboží bez čárového kódu".
+  isGeneric: boolean;
   prices: PriceCurrent[];
   // Jen v detailu (fragment PRODUCT_DETAIL_FIELDS) — hledání je nežádá, viz product-service.
   gtin?: string | null;
@@ -66,6 +81,21 @@ export interface Product {
   quality?: ProductQuality;
   myQualityRating?: number | null;
   externalLinks?: ExternalLink[];
+  // Uživatelská vrstva nad globálními daty (docs/datovy-model.md) — konsolidační job zatím
+  // neběží, takže verified je v etapě 1 vždy false.
+  verified: boolean;
+  editedByMe: boolean;
+  // Jen v detailu — vlastní poslední zápisy ("Vaše cena"), viz PRODUCT_DETAIL_FIELDS.
+  myPrices?: MyPrice[];
+}
+
+/** "Vaše cena" — poslední vlastní zápis přihlášeného uživatele, i dřív než ho zpracuje agregace. */
+export interface MyPrice {
+  store: Store;
+  priceKind: PriceKind;
+  priceAmount: number;
+  unitPrice: number | null;
+  observedAt: string;
 }
 
 /** Lehčí varianta Product pro řádek seznamu hledání — bez cen a agregátů (ty jsou na ProductSearchItem). */
@@ -74,6 +104,9 @@ export interface ProductSummary {
   name: string;
   brand: Brand | null;
   category: Category;
+  isGeneric: boolean;
+  verified: boolean;
+  editedByMe: boolean;
 }
 
 export interface ProductStats {
@@ -155,4 +188,99 @@ export interface SubmitObservationInput {
   quantityBasis?: QuantityBasis;
   multibuyQty?: number;
   multibuyTotal?: number;
+  observedAt?: string;
+}
+
+export interface StoreSearchResult {
+  items: Store[];
+  totalCount: number;
+  hasMore: boolean;
+}
+
+/** Kandidát ze serveru OpenStreetMap Nominatim — nic z tohohle se neukládá kromě lat/lon/osmRef zvoleného kandidáta. */
+export interface GeocodeCandidate {
+  lat: number;
+  lon: number;
+  displayName: string;
+  osmRef: string;
+}
+
+export interface GeocodeResult {
+  candidates: GeocodeCandidate[];
+  attribution: string;
+}
+
+/** Údaje o firmě z veřejného rejstříku ARES podle IČO — předvyplnění formuláře obchodu. */
+export interface CompanyInfo {
+  ico: string;
+  name: string;
+  street: string | null;
+  city: string | null;
+  postalCode: string | null;
+}
+
+export interface CreateStoreInput {
+  name: string;
+  chainId?: string | null;
+  street?: string | null;
+  city: string;
+  postalCode?: string | null;
+  country?: string;
+  ico?: string | null;
+  lat?: number | null;
+  lon?: number | null;
+  geoSource?: GeoSource | null;
+  osmRef?: string | null;
+}
+
+export interface CreateProductInput {
+  name: string;
+  brandName?: string | null;
+  categoryId: string;
+  unitBase: UnitBase;
+  netContentValue?: number | null;
+  netContentUom?: string | null;
+  piecesInPack?: number | null;
+  isVariableWeight?: boolean;
+  code?: string | null;
+}
+
+/** Patch nad core.product_user_edit — pole null = nezměněno (docs/datovy-model.md). */
+export interface UpdateProductInput {
+  name?: string | null;
+  brandName?: string | null;
+  clearBrand?: boolean;
+  categoryId?: string | null;
+  unitBase?: UnitBase | null;
+  netContentValue?: number | null;
+  netContentUom?: string | null;
+  piecesInPack?: number | null;
+  clearPiecesInPack?: boolean;
+  isVariableWeight?: boolean | null;
+}
+
+/** Patch nad core.store_user_edit — pole null = nezměněno. */
+export interface UpdateStoreInput {
+  name?: string | null;
+  chainId?: string | null;
+  clearChain?: boolean;
+  street?: string | null;
+  clearStreet?: boolean;
+  city?: string | null;
+  postalCode?: string | null;
+  clearPostalCode?: boolean;
+  country?: string | null;
+  ico?: string | null;
+  clearIco?: boolean;
+  lat?: number | null;
+  lon?: number | null;
+  geoSource?: GeoSource | null;
+  osmRef?: string | null;
+}
+
+export type RecordType = 'PRODUCT' | 'STORE';
+
+export interface FlagResult {
+  flagCount: number;
+  hidden: boolean;
 }

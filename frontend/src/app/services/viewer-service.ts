@@ -9,7 +9,7 @@ export class ViewerService {
 
   /** Veřejná identita přihlášeného uživatele — null pro anonyma. */
   me(): Observable<Viewer | null> {
-    const gql = `{ me { publicHandle displayName createdAt } }`;
+    const gql = `{ me { publicHandle displayName createdAt trusted } }`;
     return this.graphQl.execute<{ me: Viewer | null }>(gql).pipe(map((data) => data.me));
   }
 }

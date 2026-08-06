@@ -11,6 +11,10 @@ export const routes: Routes = [
       import('./features/product-detail/product-detail-page').then((m) => m.ProductDetailPage),
   },
   {
+    path: 'zadat-cenu',
+    loadComponent: () => import('./features/price-entry/price-entry-page').then((m) => m.PriceEntryPage),
+  },
+  {
     path: 'prihlaseni',
     loadComponent: () => import('./features/login/login-page').then((m) => m.LoginPage),
   },

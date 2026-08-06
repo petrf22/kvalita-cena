@@ -36,8 +36,19 @@ data class Store(
   val city: String,
   val postalCode: String? = null,
   val country: String,
-  val lat: Double,
-  val lon: Double,
+  // Nullable — provozovna zadaná bez GPS (zápis doma) může souřadnice dosud nemít
+  // (docs/datovy-model.md, "Identita provozovny").
+  val lat: Double? = null,
+  val lon: Double? = null,
+  val geoSource: String = "COMMUNITY",
+  val ico: String? = null,
+  // Uživatelská vrstva nad globálními daty (docs/datovy-model.md) — konsolidační job zatím
+  // neběží, takže verified je v etapě 1 vždy false.
+  val verified: Boolean = false,
+  val editedByMe: Boolean = false,
+  // Provozovna od nedůvěryhodného autora čeká na potvrzení dalších přispěvatelů — vidí ji
+  // jen autor (docs/reputace.md).
+  val pendingConfirmation: Boolean = false,
 )
 
 @Serializable
@@ -64,12 +75,30 @@ data class Product(
   val piecesInPack: Int? = null,
   val isVariableWeight: Boolean,
   val status: String,
+  // Druhová položka bez čárového kódu — viz docs/reputace.md, "Zboží bez čárového kódu".
+  val isGeneric: Boolean = false,
   val prices: List<PriceCurrent> = emptyList(),
   // Jen v detailu (PRODUCT_DETAIL_FIELDS) — productByCode je nežádá, viz GraphQlClient.
   val stats: ProductStats? = null,
   val quality: ProductQuality? = null,
   val myQualityRating: Int? = null,
   val externalLinks: List<ExternalLink> = emptyList(),
+  // Uživatelská vrstva nad globálními daty (docs/datovy-model.md) — konsolidační job zatím
+  // neběží, takže verified je v etapě 1 vždy false.
+  val verified: Boolean = false,
+  val editedByMe: Boolean = false,
+  // Jen v detailu — vlastní poslední zápisy ("Vaše cena"), viz PRODUCT_DETAIL_FIELDS.
+  val myPrices: List<MyPrice> = emptyList(),
+)
+
+/** "Vaše cena" — poslední vlastní zápis přihlášeného uživatele, i dřív než ho zpracuje agregace. */
+@Serializable
+data class MyPrice(
+  val store: Store,
+  val priceKind: String,
+  val priceAmount: Double,
+  val unitPrice: Double? = null,
+  val observedAt: String,
 )
 
 /** Lehčí varianta Product pro řádek seznamu hledání — bez cen a bez agregátů (ty jsou na ProductSearchItem). */
@@ -79,6 +108,9 @@ data class ProductSummary(
   val name: String,
   val brand: Brand? = null,
   val category: Category,
+  val isGeneric: Boolean = false,
+  val verified: Boolean = false,
+  val editedByMe: Boolean = false,
 )
 
 @Serializable
@@ -156,6 +188,8 @@ data class Viewer(
   val publicHandle: String,
   val displayName: String? = null,
   val createdAt: String,
+  // Práh důvěry (docs/reputace.md) — vysvětluje, proč nový obchod/zboží zatím vidí jen viewer sám.
+  val trusted: Boolean = false,
 )
 
 @Serializable
@@ -165,6 +199,108 @@ data class SubmitObservationInput(
   val priceAmount: Double,
   val priceKind: String = "REGULAR",
   val quantityBasis: String = "PACKAGE",
+)
+
+@Serializable
+data class StoreSearchResult(
+  val items: List<Store> = emptyList(),
+  val totalCount: Int = 0,
+  val hasMore: Boolean = false,
+)
+
+/** Kandidát ze serveru OpenStreetMap Nominatim — nic z tohohle se neukládá kromě lat/lon/osmRef zvoleného kandidáta. */
+@Serializable
+data class GeocodeCandidate(
+  val lat: Double,
+  val lon: Double,
+  val displayName: String,
+  val osmRef: String,
+)
+
+@Serializable
+data class GeocodeResult(
+  val candidates: List<GeocodeCandidate> = emptyList(),
+  val attribution: String,
+)
+
+/** Údaje o firmě z veřejného rejstříku ARES podle IČO — předvyplnění formuláře obchodu. */
+@Serializable
+data class CompanyInfo(
+  val ico: String,
+  val name: String,
+  val street: String? = null,
+  val city: String? = null,
+  val postalCode: String? = null,
+)
+
+@Serializable
+data class CreateStoreInput(
+  val name: String,
+  val chainId: String? = null,
+  val street: String? = null,
+  val city: String,
+  val postalCode: String? = null,
+  val country: String = "CZ",
+  val ico: String? = null,
+  val lat: Double? = null,
+  val lon: Double? = null,
+  val geoSource: String? = null,
+  val osmRef: String? = null,
+)
+
+@Serializable
+data class CreateProductInput(
+  val name: String,
+  val brandName: String? = null,
+  val categoryId: String,
+  val unitBase: String,
+  val netContentValue: Double? = null,
+  val netContentUom: String? = null,
+  val piecesInPack: Int? = null,
+  val isVariableWeight: Boolean = false,
+  val code: String? = null,
+)
+
+/** Patch nad core.product_user_edit — pole null = nezměněno (docs/datovy-model.md). */
+@Serializable
+data class UpdateProductInput(
+  val name: String? = null,
+  val brandName: String? = null,
+  val clearBrand: Boolean = false,
+  val categoryId: String? = null,
+  val unitBase: String? = null,
+  val netContentValue: Double? = null,
+  val netContentUom: String? = null,
+  val piecesInPack: Int? = null,
+  val clearPiecesInPack: Boolean = false,
+  val isVariableWeight: Boolean? = null,
+)
+
+/** Patch nad core.store_user_edit — pole null = nezměněno. */
+@Serializable
+data class UpdateStoreInput(
+  val name: String? = null,
+  val chainId: String? = null,
+  val clearChain: Boolean = false,
+  val street: String? = null,
+  val clearStreet: Boolean = false,
+  val city: String? = null,
+  val postalCode: String? = null,
+  val clearPostalCode: Boolean = false,
+  val country: String? = null,
+  val ico: String? = null,
+  val clearIco: Boolean = false,
+  val lat: Double? = null,
+  val lon: Double? = null,
+  val geoSource: String? = null,
+  val osmRef: String? = null,
+)
+
+/** Výsledek flagRecord — kolik různých lidí záznam nahlásilo a jestli je teď skrytý. */
+@Serializable
+data class FlagResult(
+  val flagCount: Int,
+  val hidden: Boolean,
 )
 
 @Serializable
@@ -206,6 +342,36 @@ data class RateProductData(val rateProduct: ProductQuality)
 
 @Serializable
 data class MeData(val me: Viewer? = null)
+
+@Serializable
+data class SearchStoresData(val searchStores: StoreSearchResult)
+
+@Serializable
+data class ProductSuggestionsData(val productSuggestions: List<ProductSummary> = emptyList())
+
+@Serializable
+data class CategoriesData(val categories: List<Category> = emptyList())
+
+@Serializable
+data class GeocodeAddressData(val geocodeAddress: GeocodeResult)
+
+@Serializable
+data class CompanyByIcoData(val companyByIco: CompanyInfo? = null)
+
+@Serializable
+data class CreateStoreData(val createStore: Store)
+
+@Serializable
+data class CreateProductData(val createProduct: Product)
+
+@Serializable
+data class UpdateProductData(val updateProduct: Product)
+
+@Serializable
+data class UpdateStoreData(val updateStore: Store)
+
+@Serializable
+data class FlagRecordData(val flagRecord: FlagResult)
 
 @Serializable
 data class GraphQlError(val message: String)

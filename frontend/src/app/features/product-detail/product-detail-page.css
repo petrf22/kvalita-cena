@@ -25,12 +25,34 @@
   margin-bottom: 16px;
 }
 
+.status-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.flag-alert {
+  margin-bottom: 16px;
+}
+
 .chart-card,
 .cheapest-card,
 .prices-card,
+.my-prices-card,
 .links-card,
 .submit-card {
   margin-bottom: 24px;
+}
+
+.my-prices-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.my-price-date {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
 }
 
 .chart-controls {
@@ -88,15 +110,6 @@
 
 .no-prices {
   color: rgba(0, 0, 0, 0.45);
-}
-
-.store-picker {
-  display: flex;
-  gap: 8px;
-}
-
-.store-select {
-  flex: 1;
 }
 
 .submit-alert {

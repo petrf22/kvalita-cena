@@ -16,7 +16,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 private val STORE_FIELDS = """
-  id name street city postalCode country lat lon chain { id name chainType }
+  id name street city postalCode country lat lon geoSource ico chain { id name chainType }
+  verified editedByMe pendingConfirmation
 """
 
 private val PRICE_CURRENT_FIELDS = """
@@ -28,7 +29,8 @@ private val PRODUCT_FIELDS = """
   id name
   brand { id name slug }
   category { id name slug path }
-  unitBase netContentValue netContentBase piecesInPack isVariableWeight status
+  unitBase netContentValue netContentBase piecesInPack isVariableWeight status isGeneric
+  verified editedByMe
   prices { $PRICE_CURRENT_FIELDS }
 """
 
@@ -39,12 +41,15 @@ private val PRODUCT_DETAIL_FIELDS = """
   quality { average count }
   myQualityRating
   externalLinks { kind label url attribution }
+  myPrices { store { $STORE_FIELDS } priceKind priceAmount unitPrice observedAt }
 """
 
 private val PRODUCT_SUMMARY_FIELDS = """
   id name
   brand { id name slug }
   category { id name slug path }
+  isGeneric
+  verified editedByMe
 """
 
 private val SEARCH_ITEM_FIELDS = """
@@ -169,7 +174,7 @@ class GraphQlClient(private val authRepository: AuthRepository) {
 
   /** Veřejná identita přihlášeného uživatele — null pro anonyma. */
   suspend fun me(): Viewer? {
-    val gql = "{ me { publicHandle displayName createdAt } }"
+    val gql = "{ me { publicHandle displayName createdAt trusted } }"
     return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(MeData.serializer())).me
   }
 
@@ -185,6 +190,156 @@ class GraphQlClient(private val authRepository: AuthRepository) {
       put("input", json.encodeToJsonElement(SubmitObservationInput.serializer(), input))
     }
     return execute(query, variables, GraphQlResponse.serializer(SubmitObservationData.serializer())).submitObservation
+  }
+
+  /**
+   * Našeptávač obchodů podle názvu/města — doplněk k nearbyStores pro zápis ceny bez sdílení
+   * polohy nebo zpětně z domova (docs/datovy-model.md, "Identita provozovny").
+   */
+  suspend fun searchStores(query: String? = null, city: String? = null, first: Int = 20): StoreSearchResult {
+    val gql = """
+      query(${'$'}query: String, ${'$'}city: String, ${'$'}first: Int) {
+        searchStores(query: ${'$'}query, city: ${'$'}city, first: ${'$'}first) {
+          totalCount hasMore
+          items { $STORE_FIELDS }
+        }
+      }
+    """
+    val variables = buildJsonObject {
+      put("query", query)
+      put("city", city)
+      put("first", first)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(SearchStoresData.serializer())).searchStores
+  }
+
+  /** Podobné zboží podle názvu — nabídne existující druhové položky před založením nového (docs/reputace.md). */
+  suspend fun productSuggestions(name: String, first: Int = 10): List<ProductSummary> {
+    val gql = """
+      query(${'$'}name: String!, ${'$'}first: Int) {
+        productSuggestions(name: ${'$'}name, first: ${'$'}first) { $PRODUCT_SUMMARY_FIELDS }
+      }
+    """
+    val variables = buildJsonObject {
+      put("name", name)
+      put("first", first)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(ProductSuggestionsData.serializer())).productSuggestions
+  }
+
+  /** Plochý seznam kategorií pro formulář nového zboží. */
+  suspend fun categories(): List<Category> {
+    val gql = "{ categories { id name slug path } }"
+    return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(CategoriesData.serializer())).categories
+  }
+
+  /**
+   * Geokódování adresy přes server (nikdy přímo z appky, viz docs/soukromi.md). Chyba/výpadek
+   * na backendu se vždy projeví jako prázdný seznam kandidátů, ne jako výjimka.
+   */
+  suspend fun geocodeAddress(street: String?, city: String, postalCode: String?): GeocodeResult {
+    val gql = """
+      query(${'$'}street: String, ${'$'}city: String!, ${'$'}postalCode: String) {
+        geocodeAddress(street: ${'$'}street, city: ${'$'}city, postalCode: ${'$'}postalCode) {
+          attribution
+          candidates { lat lon displayName osmRef }
+        }
+      }
+    """
+    val variables = buildJsonObject {
+      put("street", street)
+      put("city", city)
+      put("postalCode", postalCode)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(GeocodeAddressData.serializer())).geocodeAddress
+  }
+
+  /** Předvyplnění formuláře obchodu z veřejného rejstříku ARES — null, když IČO neexistuje nebo je ARES nedostupný. */
+  suspend fun companyByIco(ico: String): CompanyInfo? {
+    val gql = """
+      query(${'$'}ico: String!) {
+        companyByIco(ico: ${'$'}ico) { ico name street city postalCode }
+      }
+    """
+    val variables = buildJsonObject { put("ico", ico) }
+    return execute(gql, variables, GraphQlResponse.serializer(CompanyByIcoData.serializer())).companyByIco
+  }
+
+  /** Založení provozovny — vyžaduje přihlášení (docs/reputace.md, T1). */
+  suspend fun createStore(input: CreateStoreInput): Store {
+    val gql = """
+      mutation(${'$'}input: CreateStoreInput!) {
+        createStore(input: ${'$'}input) { $STORE_FIELDS }
+      }
+    """
+    val variables = buildJsonObject {
+      put("input", json.encodeToJsonElement(CreateStoreInput.serializer(), input))
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(CreateStoreData.serializer())).createStore
+  }
+
+  /** Založení zboží — s naskenovaným EANem i bez něj (bezkódová druhová položka). Vyžaduje přihlášení. */
+  suspend fun createProduct(input: CreateProductInput): Product {
+    val gql = """
+      mutation(${'$'}input: CreateProductInput!) {
+        createProduct(input: ${'$'}input) { $PRODUCT_FIELDS }
+      }
+    """
+    val variables = buildJsonObject {
+      put("input", json.encodeToJsonElement(CreateProductInput.serializer(), input))
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(CreateProductData.serializer())).createProduct
+  }
+
+  /**
+   * Úprava existujícího zboží jako patch nad core.product_user_edit — globální řádek se
+   * nemění, úpravu vidí jen autor (docs/datovy-model.md, "Uživatelská vrstva nad globálními
+   * daty"). Vyžaduje přihlášení.
+   */
+  suspend fun updateProduct(id: String, input: UpdateProductInput): Product {
+    val gql = """
+      mutation(${'$'}id: ID!, ${'$'}input: UpdateProductInput!) {
+        updateProduct(id: ${'$'}id, input: ${'$'}input) { $PRODUCT_DETAIL_FIELDS }
+      }
+    """
+    val variables = buildJsonObject {
+      put("id", id)
+      put("input", json.encodeToJsonElement(UpdateProductInput.serializer(), input))
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(UpdateProductData.serializer())).updateProduct
+  }
+
+  /** Úprava existující provozovny jako patch nad core.store_user_edit — vyžaduje přihlášení. */
+  suspend fun updateStore(id: String, input: UpdateStoreInput): Store {
+    val gql = """
+      mutation(${'$'}id: ID!, ${'$'}input: UpdateStoreInput!) {
+        updateStore(id: ${'$'}id, input: ${'$'}input) { $STORE_FIELDS }
+      }
+    """
+    val variables = buildJsonObject {
+      put("id", id)
+      put("input", json.encodeToJsonElement(UpdateStoreInput.serializer(), input))
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(UpdateStoreData.serializer())).updateStore
+  }
+
+  /**
+   * Nahlášení zboží/obchodu jako podezřelého nebo nesmyslného — hlasuje se o faktu, nikdy o
+   * člověku (docs/reputace.md, "Nesouhlas se vyjadřuje k faktu, ne k člověku"). Vyžaduje
+   * přihlášení; opakované nahlášení stejným člověkem nic nemění.
+   */
+  suspend fun flagRecord(recordType: String, recordId: String, reason: String? = null): FlagResult {
+    val gql = """
+      mutation(${'$'}recordType: RecordType!, ${'$'}recordId: ID!, ${'$'}reason: String) {
+        flagRecord(recordType: ${'$'}recordType, recordId: ${'$'}recordId, reason: ${'$'}reason) { flagCount hidden }
+      }
+    """
+    val variables = buildJsonObject {
+      put("recordType", recordType)
+      put("recordId", recordId)
+      put("reason", reason)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(FlagRecordData.serializer())).flagRecord
   }
 
   private suspend fun <T> execute(

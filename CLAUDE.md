@@ -42,17 +42,57 @@ i denní agregace v `PriceAggregationService` (`agg.price_current` + `agg.price_
 hodnocení kvality jako známka 1–5 (`core.product_quality_rating`, `QualityRatingService` —
 jen průměr a počet, žádné texty, žádná viditelnost).
 
-Angular: menu Hledání/Nastavení/Účet (na mobilním prohlížeči spodní lišta), stránka hledání
-s filtry a tabulkou, detail produktu s SVG grafem vývoje ceny (`price-chart-geometry.ts`,
-testováno Vitestem), stránka nastavení. Android: bottom navigation ze 4 záložek (Sken/Hledat/
+Zakládání katalogu bez skenování/GPS (`docs/datovy-model.md`, „Identita provozovny"):
+`searchStores`/`createStore` (`StoreService` — vyžaduje přihlášení, `uq_store_identity` jako
+pojistka proti duplicitám, volitelné IČO s kontrolním součtem + `companyByIco` přes ARES,
+volitelné souřadnice přes `geocodeAddress`/OpenStreetMap Nominatim vždy ze serveru) a
+`productSuggestions`/`categories`/`createProduct` (`ProductCatalogService` — zboží s EANem
+i bez něj; bezkódová druhová položka vzniká jako `DRAFT`/`isGeneric`, po potvrzení
+`app.catalog.draft-confirmations` různými přispěvateli se překlopí na `ACTIVE`, confidence
+agregátu má zastropovaná na `MEDIUM` — `docs/reputace.md`, „Zboží bez čárového kódu").
+
+Angular: menu Hledání/Zadat cenu/Nastavení/Účet (na mobilním prohlížeči spodní lišta), stránka
+hledání s filtry a tabulkou, detail produktu s SVG grafem vývoje ceny (`price-chart-geometry.ts`,
+testováno Vitestem) a formulářem zápisu ceny přes sdílený `shared/store-picker.ts`, samostatná
+stránka „Zadat cenu" (`features/price-entry`) hledá zboží podle názvu i kódu a umí založit nové
+zboží/obchod (`features/product-form`, `shared/store-form.ts`) včetně zpětného data
+(`observedAt`), stránka nastavení. Android: bottom navigation ze 4 záložek (Sken/Hledat/
 Nastavení/Účet — `ui/navigation/AppDestinations.kt`), hledání, detail s Canvas grafem
-(`PriceChartGeometry.kt`, testováno JUnitem), zápis ceny ze skenu i z detailu, mapa/OFF odkazy.
+(`PriceChartGeometry.kt`, testováno JUnitem), zápis ceny ze skenu i z detailu přes sdílený
+`ui/common/StorePicker.kt` (napovídání podle názvu/města, ne jen GPS), založení obchodu
+(`ui/store/StoreFormScreen.kt`) i zboží (`ui/product/ProductFormScreen.kt`), mapa/OFF odkazy.
+
+**Uživatelská vrstva nad globálními daty** (`docs/datovy-model.md`, „Uživatelská vrstva nad
+globálními daty"; práh důvěry a nahlašování v `docs/reputace.md`): úprava existujícího zboží/
+obchodu jde do vedlejších patch tabulek (`core.product_user_edit`/`core.store_user_edit`,
+`CatalogEditService.updateProduct`/`updateStore`), globální řádek se nemění — vidí ji jen autor,
+dokud neproběhne (zatím nenapsaný) konsolidační job. Nový záznam se zveřejní podle prahu
+důvěry autora (`TrustLevelService`, stáří účtu + `auth.app_user.observation_count`) — pod
+prahem je vidět jen autorovi, dokud ho nepotvrdí `app.catalog.draft-confirmations` jiných
+přispěvatelů (leave-one-out, stejně jako bezkódové zboží výš). Nahlášení (`core.record_flag`,
+`RecordFlagService`, `flagRecord`) skryje záznam po `app.moderation.flags-to-hide` různých
+hlasů — hlasuje se o záznamu, nikdy o autorovi. Čtení s překryvem (`ProductOverlayService`/
+`StoreOverlayService`, `ViewerContext`/`ViewerContextResolver`) vrací vždy DETACHED kopii
+entity (`toBuilder()`), nikdy nepřepisuje spravovanou entitu uvnitř transakce — Product/Store
+mají proto GraphQL pole `verified`/`editedByMe` (Store navíc `pendingConfirmation`), Product
+`myPrices` („Vaše cena" vedle komunitního agregátu, i dřív než ji zpracuje agregace). Angular
+i Android odráží čtecí stranu stejným rozsahem (badge „neověřeno"/„vaše úprava", „Vaše cena",
+tlačítko „Nahlásit", gating zakládání pro anonyma — web `store-picker`/`price-entry-page`,
+mobil `ui/common/StorePicker.kt`/`ui/price/PriceEntryScreen.kt`) — **inline úprava existujícího
+zboží/obchodu v UI (`updateProduct`/`updateStore` z formulářů) na žádném z klientů zatím
+chybí**, i když `GraphQlClient.updateProduct`/`updateStore`/`flagRecord` (mobil) a
+`ProductService.updateProduct`/`StoreService.update`/`flag` (web) i backend mutace jsou hotové
+a otestované — jen je zatím nevolá žádná obrazovka.
 
 Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
-`PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext`), skupiny důvěry, plný reputační vzorec (jen
-složka `L`), notifikace, lokální dodavatelé, OFF synchronizace, `agg.price_weekly_national`,
-offline fronta v mobilu — viz konec plánu založení projektu pro rozpis a `docs/reputace.md`
-pro poznámku o hodnocení kvality vs. dodavatelích.
+`PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec
+(jen složka `L`), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo jednorázové
+geokódování adresy, `agg.price_weekly_national`, offline fronta v mobilu, výběr řetězce při
+zakládání obchodu (`chainId` v `CreateStoreInput` existuje, ale klienti zatím nenabízí číselník
+řetězců k výběru), konsolidační job nad uživatelskou vrstvou (jen datový model a fronta,
+vyhodnocovací pravidlo zatím není známé — viz výš), inline edit UI pro zboží/obchod na obou
+klientech (mutace jsou hotové, jen je zatím nevolá žádná obrazovka) — viz konec plánu založení
+projektu pro rozpis a `docs/reputace.md` pro poznámku o hodnocení kvality vs. dodavatelích.
 
 ## Příkazy
 

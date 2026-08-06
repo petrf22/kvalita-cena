@@ -4,6 +4,7 @@ import cz.kvalitacena.db.entity.*;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
 import cz.kvalitacena.db.repo.PriceDailyRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
+import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.RecomputeQueueRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +45,7 @@ public class PriceAggregationService {
   private final PriceObservationRepository priceObservationRepository;
   private final PriceCurrentRepository priceCurrentRepository;
   private final PriceDailyRepository priceDailyRepository;
+  private final ProductRepository productRepository;
 
   @Transactional
   public void enqueueRecompute(Long productId, Long storeId, RecomputeReason reason) {
@@ -83,16 +85,23 @@ public class PriceAggregationService {
         .filter(o -> o.getUnitPrice() != null)
         .toList();
 
-    recomputeCurrent(productId, storeId, observations);
+    // Bezkódová druhová položka (Product.isGeneric) nemá jednoznačný identifikátor jako EAN,
+    // takže i shoda víc lidí na stejné ceně je slabší důkaz — confidence buňky se pro ni
+    // zastropuje na MEDIUM (docs/reputace.md, "Zboží bez čárového kódu"). Váhu jednotlivého
+    // záznamu (weightFor) to záměrně NEMĚNÍ: je konstantní násobek napříč celou buňkou, takže
+    // by na vážený medián i Kishovo n_eff nemělo žádný vliv.
+    boolean generic = productRepository.findById(productId).map(Product::isGeneric).orElse(false);
+
+    recomputeCurrent(productId, storeId, observations, generic);
     recomputeDaily(productId, storeId, observations);
   }
 
-  private void recomputeCurrent(Long productId, Long storeId, List<PriceObservation> observations) {
+  private void recomputeCurrent(Long productId, Long storeId, List<PriceObservation> observations, boolean generic) {
     Map<PriceKind, List<PriceObservation>> byKind = observations.stream()
         .collect(Collectors.groupingBy(PriceObservation::getPriceKind));
 
     for (Map.Entry<PriceKind, List<PriceObservation>> entry : byKind.entrySet()) {
-      upsertPriceCurrent(productId, storeId, entry.getKey(), entry.getValue());
+      upsertPriceCurrent(productId, storeId, entry.getKey(), entry.getValue(), generic);
     }
 
     // Osiřelé řádky: druh ceny, který dřív měl agregát, ale teď už nemá žádnou ACTIVE observaci
@@ -106,7 +115,7 @@ public class PriceAggregationService {
   }
 
   private void upsertPriceCurrent(Long productId, Long storeId, PriceKind priceKind,
-      List<PriceObservation> observations) {
+      List<PriceObservation> observations, boolean generic) {
     WeightedStats stats = computeWeighted(observations);
 
     OffsetDateTime lastObservedAt = observations.stream()
@@ -124,7 +133,7 @@ public class PriceAggregationService {
     priceCurrent.setNEff(stats.nEff());
     priceCurrent.setSumWeight(stats.sumWeight());
     priceCurrent.setLastObservedAt(lastObservedAt);
-    priceCurrent.setConfidence(confidenceFor(stats.nEff()));
+    priceCurrent.setConfidence(confidenceFor(stats.nEff(), generic));
 
     priceCurrentRepository.save(priceCurrent);
   }
@@ -220,10 +229,13 @@ public class PriceAggregationService {
     return new WeightedStats(weightedMedian, medianAmount, totalWeight, nEff, values.size());
   }
 
-  private Confidence confidenceFor(BigDecimal nEff) {
-    return nEff.compareTo(BigDecimal.valueOf(5)) >= 0 ? Confidence.HIGH
+  private Confidence confidenceFor(BigDecimal nEff, boolean generic) {
+    Confidence raw = nEff.compareTo(BigDecimal.valueOf(5)) >= 0 ? Confidence.HIGH
         : nEff.compareTo(BigDecimal.valueOf(2)) >= 0 ? Confidence.MEDIUM
         : Confidence.LOW;
+    // Bezkódová položka nemá jednoznačný identifikátor jako EAN — i shoda víc lidí na stejné
+    // ceně je slabší důkaz, proto strop MEDIUM bez ohledu na n_eff (docs/reputace.md).
+    return generic && raw == Confidence.HIGH ? Confidence.MEDIUM : raw;
   }
 
   private BigDecimal weightFor(PriceObservation observation) {

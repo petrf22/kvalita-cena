@@ -1,0 +1,386 @@
+# 04-user-layer.yaml — uživatelská vrstva nad globálními daty (docs/datovy-model.md, sekce
+# "Uživatelská vrstva nad globálními daty"). Globální core.product/core.store zůstávají beze
+# změny identity; úpravy jednotlivých uživatelů jdou do vedlejších "patch" tabulek s jen
+# změněnými poli, aby nešlo rozbít uq_product_code_code_type_chain ani agregaci cen kopií
+# řádku. verified_at/processed_at/hidden_at na globálních tabulkách připravují budoucí
+# konsolidační job (vyhodnocovací pravidlo zatím není známé, viz plán).
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-06-04-product-add-user-layer-columns
+      author: Petr F.
+      comment: >
+        verified_at = job uznal záznam za globální (NULL ⇒ klient zobrazí "neověřeno", dnes
+        tedy vše kromě seedu). processed_at = job se na záznam podíval (zpracováno ≠ uznáno).
+        hidden_at = skryto po nahlášení (core.record_flag), čeká na přezkum.
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: product
+            columns:
+              - column:
+                  name: verified_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: processed_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: hidden_at
+                  type: TIMESTAMPTZ
+
+  - changeSet:
+      id: 2026-08-06-04-store-add-user-layer-columns
+      author: Petr F.
+      comment: >
+        core.store na rozdíl od core.product zatím nemá updated_at — doplňuje se spolu se
+        stejnými třemi sloupci jako u product (verified_at/processed_at/hidden_at).
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: store
+            columns:
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: verified_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: processed_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: hidden_at
+                  type: TIMESTAMPTZ
+
+  - changeSet:
+      id: 2026-08-06-04-app-user-add-observation-count
+      author: Petr F.
+      comment: >
+        Nedecay-ovaný čítač vlastních cenových záznamů, nutný pro práh důvěry (TrustLevelService)
+        — price_observation.submitter_id se po 180 dnech nuluje (docs/soukromi.md), takže
+        COUNT(*) nad observacemi by zavedenému uživateli po pauze tiše sebral důvěru.
+      changes:
+        - addColumn:
+            schemaName: auth
+            tableName: app_user
+            columns:
+              - column:
+                  name: observation_count
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 2026-08-06-04-create-core-product-user-edit
+      author: Petr F.
+      comment: >
+        Jen změněná pole, NULL = nezměněno. cleared_fields odlišuje "nezměněno" od "uživatel
+        volitelné pole vymazal" (např. chybné IČO nejde smazat zápisem NULL, protože NULL už
+        znamená nezměněno). ON DELETE CASCADE na user_id — uživatelova pracovní data nemají po
+        smazání účtu veřejný zájem, který by zdůvodnil přežití (stejná úvaha jako u
+        core.product_quality_rating, docs/soukromi.md).
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: product_user_edit
+            columns:
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(200)
+              - column:
+                  name: brand_id
+                  type: BIGINT
+              - column:
+                  name: category_id
+                  type: BIGINT
+              - column:
+                  name: unit_base
+                  type: VARCHAR(10)
+              - column:
+                  name: net_content_value
+                  type: NUMERIC(12,3)
+              - column:
+                  name: net_content_uom
+                  type: VARCHAR(5)
+              - column:
+                  name: net_content_base
+                  type: NUMERIC(12,6)
+              - column:
+                  name: pieces_in_pack
+                  type: INT
+              - column:
+                  name: is_variable_weight
+                  type: BOOLEAN
+              - column:
+                  # Pole, která uživatel vědomě vymazal (na rozdíl od "nezměněno" = NULL výše).
+                  name: cleared_fields
+                  type: TEXT[]
+                  defaultValue: "{}"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  # Vyplňuje budoucí konsolidační job — fronta je index níže.
+                  name: processed_at
+                  type: TIMESTAMPTZ
+        - addPrimaryKey:
+            schemaName: core
+            tableName: product_user_edit
+            columnNames: product_id, user_id
+            constraintName: pk_product_user_edit
+        - addForeignKeyConstraint:
+            constraintName: fk_product_user_edit_product
+            baseTableSchemaName: core
+            baseTableName: product_user_edit
+            baseColumnNames: product_id
+            referencedTableSchemaName: core
+            referencedTableName: product
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_product_user_edit_user
+            baseTableSchemaName: core
+            baseTableName: product_user_edit
+            baseColumnNames: user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_product_user_edit_brand
+            baseTableSchemaName: core
+            baseTableName: product_user_edit
+            baseColumnNames: brand_id
+            referencedTableSchemaName: core
+            referencedTableName: brand
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            constraintName: fk_product_user_edit_category
+            baseTableSchemaName: core
+            baseTableName: product_user_edit
+            baseColumnNames: category_id
+            referencedTableSchemaName: core
+            referencedTableName: category
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - sql:
+            sql: |
+              ALTER TABLE core.product_user_edit
+                ADD CONSTRAINT chk_product_user_edit_unit_base
+                CHECK (unit_base IS NULL OR unit_base IN ('MASS', 'VOLUME', 'COUNT'));
+
+              -- Fronta pro budoucí konsolidační job — jen nezpracované řádky.
+              CREATE INDEX idx_product_user_edit_unprocessed ON core.product_user_edit (processed_at)
+                WHERE processed_at IS NULL;
+
+  - changeSet:
+      id: 2026-08-06-04-create-core-store-user-edit
+      author: Petr F.
+      comment: >
+        Stejný vzor jako core.product_user_edit, jen pro core.store. lat/lon patch nesmí ovlivnit
+        nearbyStores (idx_store_geo pracuje jen s globálními souřadnicemi) — jen zobrazenou
+        hodnotu, viz ProductSearchRepositoryImpl a StoreRepository v backend etapě 2.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: store_user_edit
+            columns:
+              - column:
+                  name: store_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(160)
+              - column:
+                  name: chain_id
+                  type: BIGINT
+              - column:
+                  name: street
+                  type: VARCHAR(160)
+              - column:
+                  name: city
+                  type: VARCHAR(120)
+              - column:
+                  name: postal_code
+                  type: VARCHAR(10)
+              - column:
+                  name: country
+                  type: VARCHAR(2)
+              - column:
+                  name: ico
+                  type: VARCHAR(8)
+              - column:
+                  name: lat
+                  type: NUMERIC(9,6)
+              - column:
+                  name: lon
+                  type: NUMERIC(9,6)
+              - column:
+                  name: geo_source
+                  type: VARCHAR(10)
+              - column:
+                  name: osm_ref
+                  type: VARCHAR(32)
+              - column:
+                  name: cleared_fields
+                  type: TEXT[]
+                  defaultValue: "{}"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: processed_at
+                  type: TIMESTAMPTZ
+        - addPrimaryKey:
+            schemaName: core
+            tableName: store_user_edit
+            columnNames: store_id, user_id
+            constraintName: pk_store_user_edit
+        - addForeignKeyConstraint:
+            constraintName: fk_store_user_edit_store
+            baseTableSchemaName: core
+            baseTableName: store_user_edit
+            baseColumnNames: store_id
+            referencedTableSchemaName: core
+            referencedTableName: store
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_store_user_edit_user
+            baseTableSchemaName: core
+            baseTableName: store_user_edit
+            baseColumnNames: user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_store_user_edit_chain
+            baseTableSchemaName: core
+            baseTableName: store_user_edit
+            baseColumnNames: chain_id
+            referencedTableSchemaName: core
+            referencedTableName: retail_chain
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - sql:
+            sql: |
+              ALTER TABLE core.store_user_edit
+                ADD CONSTRAINT chk_store_user_edit_geo_source
+                CHECK (geo_source IS NULL OR geo_source IN ('COMMUNITY', 'OSM'));
+
+              CREATE INDEX idx_store_user_edit_unprocessed ON core.store_user_edit (processed_at)
+                WHERE processed_at IS NULL;
+
+  - changeSet:
+      id: 2026-08-06-04-create-core-record-flag
+      author: Petr F.
+      comment: >
+        Nahlášení míří na záznam, nikdy na člověka (docs/reputace.md, "Nesouhlas se vyjadřuje
+        k faktu, ne k člověku") — proto tu není žádný "flagged user", jen (typ, id) záznamu.
+        user_id slouží výhradně k vynucení "jeden hlas na člověka" (uq_record_flag_user), z API
+        ven nejde stejně jako u product_quality_rating.user_id.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: record_flag
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: record_type
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: record_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reason
+                  type: VARCHAR(500)
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_record_flag_user
+            baseTableSchemaName: core
+            baseTableName: record_flag
+            baseColumnNames: user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            schemaName: core
+            tableName: record_flag
+            indexName: uq_record_flag_user
+            unique: true
+            columns:
+              - column:
+                  name: record_type
+              - column:
+                  name: record_id
+              - column:
+                  name: user_id
+        - sql:
+            sql: |
+              ALTER TABLE core.record_flag
+                ADD CONSTRAINT chk_record_flag_type CHECK (record_type IN ('PRODUCT', 'STORE'));

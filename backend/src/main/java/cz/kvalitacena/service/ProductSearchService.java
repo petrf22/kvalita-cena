@@ -35,14 +35,16 @@ public class ProductSearchService {
 
   private final ProductRepository productRepository;
   private final StoreRepository storeRepository;
+  private final ProductOverlayService productOverlayService;
 
   @Transactional(readOnly = true)
   public ProductSearchResult search(String query, Long storeId, String city, ProductSort sort,
-      Integer first, Integer offset) {
+      Integer first, Integer offset, Long viewerId) {
     int limitedFirst = clamp(first == null ? 20 : first, 1, MAX_FIRST);
     int limitedOffset = clamp(offset == null ? 0 : offset, 0, MAX_OFFSET);
     ProductSearchCriteria criteria = new ProductSearchCriteria(
-        query, storeId, city, sort == null ? ProductSort.REPORT_COUNT : sort, limitedFirst, limitedOffset);
+        query, storeId, city, sort == null ? ProductSort.REPORT_COUNT : sort, limitedFirst, limitedOffset,
+        viewerId);
 
     List<ProductSearchRow> rows = productRepository.search(criteria);
     if (rows.isEmpty()) {
@@ -51,7 +53,9 @@ public class ProductSearchService {
     }
 
     List<Long> productIds = rows.stream().map(ProductSearchRow::productId).toList();
-    Map<Long, Product> productsById = productRepository.findWithBrandAndCategoryByIdIn(productIds).stream()
+    List<Product> products = productOverlayService.applyOverlay(
+        productRepository.findWithBrandAndCategoryByIdIn(productIds), viewerId);
+    Map<Long, Product> productsById = products.stream()
         .collect(Collectors.toMap(Product::getId, Function.identity()));
 
     Set<Long> storeIds = rows.stream()

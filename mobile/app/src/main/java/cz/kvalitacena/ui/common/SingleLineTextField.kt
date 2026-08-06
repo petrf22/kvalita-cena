@@ -6,6 +6,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.VisualTransformation
 
 /**
  * Jednořádkový vstup pro celou appku — dosavadní `OutlinedTextField` neměly `singleLine`, takže
@@ -23,6 +24,10 @@ fun SingleLineTextField(
   keyboardActions: KeyboardActions = KeyboardActions.Default,
   trailingIcon: (@Composable () -> Unit)? = null,
   isError: Boolean = false,
+  // Chybová/nápovědní hláška pod polem — doteď šly chyby jen jako samostatný Text nad
+  // formulářem (viz PriceEntryScreen), což se nehodí k poli, kterého se konkrétně týkají.
+  supportingText: (@Composable () -> Unit)? = null,
+  visualTransformation: VisualTransformation = VisualTransformation.None,
 ) {
   OutlinedTextField(
     value = value,
@@ -35,5 +40,7 @@ fun SingleLineTextField(
     keyboardActions = keyboardActions,
     trailingIcon = trailingIcon,
     isError = isError,
+    supportingText = supportingText,
+    visualTransformation = visualTransformation,
   )
 }

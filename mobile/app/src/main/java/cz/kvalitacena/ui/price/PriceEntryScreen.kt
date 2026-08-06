@@ -8,7 +8,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -46,19 +45,21 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.location.getCurrentLocation
-import cz.kvalitacena.network.Store
+import cz.kvalitacena.ui.common.NavigationResults
+import cz.kvalitacena.ui.common.PRICE_KIND_LABELS
 import cz.kvalitacena.ui.common.SingleLineTextField
+import cz.kvalitacena.ui.common.StorePicker
 import kotlinx.coroutines.launch
 
 // Čísla a nejvýš jedna desetinná čárka nebo tečka — obojí se dál akceptuje shodně
 // (PriceEntryViewModel.submit() převádí čárku na tečku před parsováním).
 private val PRICE_INPUT_PATTERN = Regex("^\\d*[.,]?\\d*$")
 
-private val PRICE_KIND_LABELS = mapOf(
-  "REGULAR" to "Běžná cena",
-  "PROMO" to "Akce",
-  "CLUB_CARD" to "Klubová karta",
-  "CLEARANCE" to "Výprodej",
+private val QUANTITY_BASIS_LABELS = mapOf(
+  "PACKAGE" to "Za balení",
+  "PER_KG" to "Za kilogram",
+  "PER_L" to "Za litr",
+  "PER_PIECE" to "Za kus",
 )
 
 /**
@@ -69,7 +70,12 @@ private val PRICE_KIND_LABELS = mapOf(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PriceEntryScreen(target: PriceEntryTarget, onDone: () -> Unit) {
+fun PriceEntryScreen(
+  target: PriceEntryTarget,
+  onDone: () -> Unit,
+  onAddStore: () -> Unit,
+  onAddProduct: (barcode: String?) -> Unit,
+) {
   val viewModel: PriceEntryViewModel = viewModel(
     factory = viewModelFactory {
       initializer { PriceEntryViewModel(AppContainer.graphQlClient, target) }
@@ -77,6 +83,22 @@ fun PriceEntryScreen(target: PriceEntryTarget, onDone: () -> Unit) {
   )
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
+  val isLoggedIn = AppContainer.authRepository.accessToken.value != null
+
+  // Vyzvednutí výsledku z formuláře obchodu/zboží po návratu na tuhle obrazovku — viz
+  // NavigationResults. LaunchedEffect(Unit) proběhne znovu pokaždé, když se sem znovu vstoupí
+  // (navigation-compose composable{} obrazovku při odchodu z kompozice úplně zahodí a při
+  // návratu postaví znovu, ViewModel ale přežívá ve svém NavBackStackEntry).
+  LaunchedEffect(Unit) {
+    NavigationResults.newStore?.let {
+      viewModel.onNewStoreCreated(it)
+      NavigationResults.newStore = null
+    }
+    NavigationResults.newProduct?.let {
+      viewModel.onNewProductCreated(it)
+      NavigationResults.newProduct = null
+    }
+  }
 
   val locationPermissionLauncher = rememberLauncherForActivityResult(
     ActivityResultContracts.RequestPermission(),
@@ -137,7 +159,24 @@ fun PriceEntryScreen(target: PriceEntryTarget, onDone: () -> Unit) {
         }
         Text(message, style = MaterialTheme.typography.bodyLarge)
         Gap()
-        Button(onClick = onDone) { Text("Zpět") }
+        // Dřív tu bylo jen "Zpět" — slepá ulička pro neznámý kód. Teď jde zboží rovnou založit,
+        // s předvyplněným EANem (docs/reputace.md, "Zboží bez čárového kódu" — tohle je ale
+        // varianta SE známým kódem, na rozdíl od bezkódové druhové položky z formuláře hledání).
+        // Založení vyžaduje přihlášení (backend ProductCatalogService) — anonymovi se nabídne
+        // jen "Zpět", ne formulář, který by na odeslání skončil UNAUTHORIZED.
+        if (isLoggedIn) {
+          Button(onClick = { onAddProduct(viewModel.barcodeForNewProduct()) }, modifier = Modifier.fillMaxWidth()) {
+            Text("Založit zboží")
+          }
+        } else {
+          Text(
+            "Založení nového zboží vyžaduje přihlášení — přejdi do záložky Účet.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
+        Gap()
+        OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) { Text("Zpět") }
       }
 
       else -> {
@@ -181,22 +220,28 @@ fun PriceEntryScreen(target: PriceEntryTarget, onDone: () -> Unit) {
           Gap()
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-          StoreDropdown(
-            stores = viewModel.nearbyStores,
-            selectedStoreId = viewModel.selectedStoreId,
-            onSelect = { viewModel.selectedStoreId = it },
-            modifier = Modifier.weight(1f),
-          )
-          Button(onClick = { findNearbyStores() }) {
-            if (viewModel.locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-            else Text("Najít v okolí")
-          }
-        }
+        StorePicker(
+          query = viewModel.storeQuery,
+          onQueryChange = viewModel::onStoreQueryChange,
+          suggestions = viewModel.storeSuggestions,
+          searching = viewModel.storeSearching,
+          selectedStoreId = viewModel.selectedStore?.id,
+          onSelect = viewModel::onStoreSelected,
+          onFindNearby = { findNearbyStores() },
+          locating = viewModel.locating,
+          onAddNew = onAddStore,
+          isLoggedIn = isLoggedIn,
+          modifier = Modifier.fillMaxWidth(),
+        )
         Gap()
 
         PriceKindDropdown(selected = viewModel.priceKind, onSelect = { viewModel.priceKind = it })
         Gap()
+
+        if (product.isVariableWeight) {
+          QuantityBasisDropdown(selected = viewModel.quantityBasis, onSelect = { viewModel.quantityBasis = it })
+          Gap()
+        }
 
         SingleLineTextField(
           value = viewModel.priceAmount,
@@ -212,7 +257,7 @@ fun PriceEntryScreen(target: PriceEntryTarget, onDone: () -> Unit) {
 
         Button(
           onClick = { viewModel.submit() },
-          enabled = viewModel.selectedStoreId != null && viewModel.priceAmount.isNotBlank() && !viewModel.submitting,
+          enabled = viewModel.selectedStore != null && viewModel.priceAmount.isNotBlank() && !viewModel.submitting,
           modifier = Modifier.fillMaxWidth(),
         ) {
           if (viewModel.submitting) CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -236,40 +281,6 @@ fun PriceEntryScreen(target: PriceEntryTarget, onDone: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StoreDropdown(
-  stores: List<Store>,
-  selectedStoreId: String?,
-  onSelect: (String) -> Unit,
-  modifier: Modifier = Modifier,
-) {
-  var expanded by remember { mutableStateOf(false) }
-  val selectedLabel = stores.find { it.id == selectedStoreId }?.let { "${it.name} — ${it.city}" } ?: "Vyber obchod"
-
-  ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }, modifier = modifier) {
-    SingleLineTextField(
-      value = selectedLabel,
-      onValueChange = {},
-      readOnly = true,
-      label = "Obchod",
-      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-      modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-    )
-    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-      stores.forEach { store ->
-        DropdownMenuItem(
-          text = { Text("${store.name} — ${store.city}") },
-          onClick = {
-            onSelect(store.id)
-            expanded = false
-          },
-        )
-      }
-    }
-  }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
 private fun PriceKindDropdown(selected: String, onSelect: (String) -> Unit) {
   var expanded by remember { mutableStateOf(false) }
 
@@ -284,6 +295,35 @@ private fun PriceKindDropdown(selected: String, onSelect: (String) -> Unit) {
     )
     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
       PRICE_KIND_LABELS.forEach { (value, label) ->
+        DropdownMenuItem(
+          text = { Text(label) },
+          onClick = {
+            onSelect(value)
+            expanded = false
+          },
+        )
+      }
+    }
+  }
+}
+
+/** Jen pro váhové zboží (product.isVariableWeight) — cena na cedulce bývá za kg/l, ne za balení. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun QuantityBasisDropdown(selected: String, onSelect: (String) -> Unit) {
+  var expanded by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+    SingleLineTextField(
+      value = QUANTITY_BASIS_LABELS[selected] ?: selected,
+      onValueChange = {},
+      readOnly = true,
+      label = "Cena je uvedená",
+      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+      modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+    )
+    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+      QUANTITY_BASIS_LABELS.forEach { (value, label) ->
         DropdownMenuItem(
           text = { Text(label) },
           onClick = {

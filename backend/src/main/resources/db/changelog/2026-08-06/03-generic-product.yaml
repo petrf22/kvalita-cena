@@ -1,0 +1,46 @@
+# 03-generic-product.yaml — druhové zboží bez čárového kódu ("Chléb konzumní", "Brambory
+# konzumní"), pro místa, kde EAN neexistuje (pekárna napsala jen "pečivo" na účtenku,
+# podniková prodejna zemědělského družstva). Viz docs/reputace.md, "Zboží bez čárového kódu".
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-06-03-product-add-is-generic
+      author: Petr F.
+      comment: >
+        is_generic je jiná informace než "produkt zatím nemá vyplněný kód" — druhová položka
+        se cíleně zakládá jako sdílený "koš" pro bezkódové zápisy, takže jich má v katalogu
+        být málo a stabilních (na rozdíl od běžného produktu, kterému kód jen chybí, protože
+        ho ještě nikdo nepřidal).
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: product
+            columns:
+              - column:
+                  name: is_generic
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 2026-08-06-03-product-search-indexes
+      author: Petr F.
+      comment: >
+        uq_product_generic_name drží jednu druhovou položku na (název, kategorie) — bez ní by
+        každé "založit nové" u bezkódového zápisu vyrobilo další "Chléb konzumní" vedle
+        existujícího. idx_product_name_trgm doplňuje stávající idx_product_name_fts
+        (to_tsvector('simple', name), přesná slova) o podobnostní hledání pro "našli jsme
+        podobné" a překlepy.
+      changes:
+        - sql:
+            sql: |
+              CREATE UNIQUE INDEX uq_product_generic_name ON core.product
+                (core.norm_text(name), category_id)
+                WHERE is_generic AND status <> 'MERGED';
+
+              CREATE INDEX idx_product_name_trgm ON core.product USING gin (core.norm_text(name) gin_trgm_ops);
+      rollback:
+        - sql:
+            sql: |
+              DROP INDEX IF EXISTS core.idx_product_name_trgm;
+              DROP INDEX IF EXISTS core.uq_product_generic_name;

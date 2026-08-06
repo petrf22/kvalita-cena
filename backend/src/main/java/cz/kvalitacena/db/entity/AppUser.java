@@ -61,6 +61,13 @@ public class AppUser implements Persistable<Long> {
   @Column(name = "last_login_at", columnDefinition = "TIMESTAMPTZ")
   private OffsetDateTime lastLoginAt;
 
+  // Nedecay-ovaný čítač vlastních cenových záznamů — nutný pro TrustLevelService, protože
+  // price_observation.submitter_id se po 180 dnech nuluje (docs/soukromi.md). Inkrementuje
+  // ho PriceObservationService.submit(), nikdy se nepočítá zpětně z historie observací.
+  @Column(name = "observation_count", nullable = false)
+  @Builder.Default
+  private int observationCount = 0;
+
   @PrePersist
   protected void onCreate() {
     if (publicUid == null) publicUid = UUID.randomUUID();

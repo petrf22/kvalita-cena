@@ -8,6 +8,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideNzNativeDateAdapter } from 'ng-zorro-antd/core/time';
 import { cs_CZ, provideNzI18n } from 'ng-zorro-antd/i18n';
 import { provideNzIcons } from 'ng-zorro-antd/icon';
 
@@ -28,6 +29,9 @@ export const appConfig: ApplicationConfig = {
     { provide: LOCALE_ID, useValue: 'cs-CZ' },
     provideNzI18n(cs_CZ),
     provideNzIcons(icons),
+    // Vyžaduje ng-zorro-antd v22+ pro nz-date-picker (price-entry-page, observed_at) — appka
+    // nepoužívá date-fns, nativní adaptér nad vestavěným Date stačí.
+    provideNzNativeDateAdapter(),
     provideHttpClient(withInterceptors([tokenInterceptor])),
     provideAppInitializer(authInitializer()),
   ],

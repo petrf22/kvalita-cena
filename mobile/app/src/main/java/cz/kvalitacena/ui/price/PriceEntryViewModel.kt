@@ -9,7 +9,12 @@ import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.Store
 import cz.kvalitacena.network.SubmitObservationInput
+import cz.kvalitacena.ui.common.storeLabel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+private const val STORE_SEARCH_DEBOUNCE_MS = 300L
 
 /** Obrazovky 2–4 flow "sken → cena → výběr provozovny → odeslání" (viz plán projektu). */
 class PriceEntryViewModel(
@@ -24,16 +29,28 @@ class PriceEntryViewModel(
   var notFound by mutableStateOf(false)
     private set
 
-  var nearbyStores by mutableStateOf<List<Store>>(emptyList())
+  // Obchod se dá vybrat třemi cestami — napsat název/město (storeQuery → searchStores),
+  // "Najít v okolí" (nearbyStores, dosavadní chování) nebo založit nový. Všechny tři plní
+  // stejný `storeSuggestions`, ať má obrazovka jeden zdroj pravdy pro nabídku (StorePicker).
+  var storeQuery by mutableStateOf("")
+  var storeSuggestions by mutableStateOf<List<Store>>(emptyList())
     private set
+  var storeSearching by mutableStateOf(false)
+    private set
+  var selectedStore by mutableStateOf<Store?>(null)
+    private set
+  private var storeSearchJob: Job? = null
+
   var locating by mutableStateOf(false)
     private set
   var locationError by mutableStateOf<String?>(null)
     private set
 
-  var selectedStoreId by mutableStateOf<String?>(null)
   var priceAmount by mutableStateOf("")
   var priceKind by mutableStateOf("REGULAR")
+  // Jen pro váhové zboží (product.isVariableWeight) — jinak zůstává PACKAGE, viz backend
+  // PriceObservationService (PER_KG/PER_L znamená "cena na cedulce je už za kg/l").
+  var quantityBasis by mutableStateOf("PACKAGE")
 
   var submitting by mutableStateOf(false)
     private set
@@ -64,17 +81,58 @@ class PriceEntryViewModel(
     }
   }
 
+  /** Naskenovaný/zadaný kód pro předvyplnění formuláře nového zboží — null u vstupu z detailu. */
+  fun barcodeForNewProduct(): String? = (target as? PriceEntryTarget.ByBarcode)?.barcode
+
+  /** Návrat z formuláře nového zboží (ProductFormScreen) — obrazovka rovnou pokračuje se zápisem ceny. */
+  fun onNewProductCreated(newProduct: Product) {
+    product = newProduct
+    notFound = false
+  }
+
+  fun onStoreQueryChange(query: String) {
+    storeQuery = query
+    storeSearchJob?.cancel()
+    if (query.isBlank()) {
+      storeSuggestions = emptyList()
+      return
+    }
+    storeSearchJob = viewModelScope.launch {
+      delay(STORE_SEARCH_DEBOUNCE_MS)
+      storeSearching = true
+      try {
+        storeSuggestions = graphQlClient.searchStores(query = query).items
+      } catch (e: Exception) {
+        // Chyba našeptávače nesmí blokovat zápis — "Najít v okolí" a ruční výběr fungují dál.
+      } finally {
+        storeSearching = false
+      }
+    }
+  }
+
+  fun onStoreSelected(store: Store) {
+    selectedStore = store
+    storeQuery = storeLabel(store)
+  }
+
+  /** Návrat z formuláře nového obchodu (StoreFormScreen) — rovnou ho vybrat. */
+  fun onNewStoreCreated(store: Store) {
+    selectedStore = store
+    storeQuery = storeLabel(store)
+    storeSuggestions = emptyList()
+  }
+
   fun onLocationResolved(lat: Double, lon: Double) {
     locating = true
     locationError = null
     viewModelScope.launch {
       try {
         val stores = graphQlClient.nearbyStores(lat, lon)
-        nearbyStores = stores
+        storeSuggestions = stores
         if (stores.isEmpty()) {
           locationError = "V okolí jsme nenašli žádný obchod."
         } else {
-          selectedStoreId = stores.first().id
+          onStoreSelected(stores.first())
         }
       } catch (e: Exception) {
         locationError = "Nepodařilo se najít obchody v okolí."
@@ -96,7 +154,7 @@ class PriceEntryViewModel(
 
   fun submit() {
     val currentProduct = product ?: return
-    val storeId = selectedStoreId ?: return
+    val storeId = selectedStore?.id ?: return
     val amount = priceAmount.replace(',', '.').toDoubleOrNull() ?: return
 
     submitting = true
@@ -110,6 +168,7 @@ class PriceEntryViewModel(
             storeId = storeId,
             priceAmount = amount,
             priceKind = priceKind,
+            quantityBasis = if (currentProduct.isVariableWeight) quantityBasis else "PACKAGE",
           ),
         )
         // Obrazovka po úspěchu mizí (návrat na sken), takže není potřeba dohánět stav

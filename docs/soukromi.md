@@ -15,6 +15,13 @@ Souřadnice **provozovny** (`core.store.lat/lon`) jsou veřejný fakt, ne osobn�
 je to totéž, co je na ceduli u vchodu. Osobní údaj by vznikl teprve spojením souřadnic
 s konkrétním uživatelem a časem, a to se v datovém modelu nikde neděje.
 
+Stejné pravidlo platí pro **geokódování adresy při zakládání obchodu** (`geocodeAddress`,
+backend `GeocodingService`): dotaz na OpenStreetMap Nominatim jde VŽDY ze serveru, nikdy
+z mobilu nebo z prohlížeče — kdyby appka volala Nominatim přímo z klienta, šla by mu přímo
+IP uživatele (a u mobilu i síťové metadata operátora), přesně to, čemu se `nearbyStores`
+výše vyhýbá. Odpověď se do `core.store` nekopíruje celá — jen lat/lon a `osm_ref`
+**zvoleného** kandidáta, s `geo_source = 'OSM'` jako značkou původu.
+
 ## Retence vazby observace → uživatel: 180 dní
 
 | Fáze | Doba | Co je uloženo |
@@ -48,6 +55,24 @@ Je to vědomé zhoršení, ne přehlédnutí — zmírněné třemi věcmi:
   export/výmaz (`GET /api/me/export`, `POST /api/me/delete` níže), hodnocení kvality do
   něj patří stejně jako cenové záznamy.
 
+### Druhá výjimka: uživatelská vrstva nad globálními daty vazbu nepseudonymizuje
+
+`core.product_user_edit`/`core.store_user_edit.user_id` (etapa 1 — viz `datovy-model.md`,
+"Uživatelská vrstva nad globálními daty") je druhé místo v `core.*`, kde 180denní pravidlo
+neplatí. Bez trvalé vazby by uživateli po půl roce tiše zmizely jeho vlastní opravy (název,
+gramáž, adresa) — patch by se přestal zobrazovat, protože ho backend neumí spárovat s
+žádným viewerem. Zmírněné stejně jako u `product_quality_rating` výš:
+
+- **Ven přes API jde jen efektivní hodnota** (globální nebo přepsaná patchem, podle toho, kdo
+  se ptá) — seznam "kdo co upravil" v API neexistuje.
+- **`ON DELETE CASCADE`** — smazání účtu patch rovnou odstraní, záznam se vrátí na globální
+  hodnotu. Stejná úvaha jako u `product_quality_rating`: uživatelova pracovní data nemají po
+  smazání účtu veřejný zájem, který by zdůvodnil přežití (na rozdíl od `price_observation`).
+- **`pg_dump --schema=core` musí sloupec `user_id` vynechat nebo hashovat** stejně jako u
+  `product_quality_rating.user_id` — jinak "čistý" export tiše prolomí tuhle záruku.
+- Až vznikne skutečný GDPR export/výmaz (níže), vlastní patche do něj patří stejně jako
+  cenové záznamy a hodnocení kvality.
+
 ## Identita bez osobních údajů
 
 `auth.app_user` nemá pole pro jméno, adresu ani telefon — v API pro ně neexistuje místo.
@@ -64,6 +89,12 @@ Je to vědomé zhoršení, ne přehlédnutí — zmírněné třemi věcmi:
   (`display_name`), nikdy ne na reálné jméno.
 
 Únik databázového dumpu bez pepperu a šifrovacího klíče z env tedy neodhalí jediný e-mail.
+
+**IČO provozovny (`core.store.ico`) není osobní údaj uživatele appky** — je to identifikátor
+z veřejného rejstříku ekonomických subjektů (ARES), fakt o provozovateli obchodu, ne o
+člověku, který obchod v appce založil (ten zůstává jen v `store.created_by_user_id`, stejná
+pseudonymizační logika jako jinde v `core.*`). Volitelné potvrzení přes `companyByIco` čte
+jen z veřejného ARES, nic z appky do ARES neposílá.
 
 ## Passwordless auth (e-mail → OTP kód → token)
 

@@ -4,6 +4,7 @@ import cz.kvalitacena.db.entity.*;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
 import cz.kvalitacena.db.repo.PriceDailyRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
+import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.RecomputeQueueRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,6 +42,8 @@ class PriceAggregationServiceTest {
   private PriceCurrentRepository priceCurrentRepository;
   @Mock
   private PriceDailyRepository priceDailyRepository;
+  @Mock
+  private ProductRepository productRepository;
 
   @Captor
   private ArgumentCaptor<PriceCurrent> priceCurrentCaptor;
@@ -48,8 +51,12 @@ class PriceAggregationServiceTest {
   private PriceAggregationService service;
 
   private void givenQueuedCell() {
+    givenQueuedCell(false);
+  }
+
+  private void givenQueuedCell(boolean generic) {
     service = new PriceAggregationService(recomputeQueueRepository, priceObservationRepository,
-        priceCurrentRepository, priceDailyRepository);
+        priceCurrentRepository, priceDailyRepository, productRepository);
     RecomputeQueue queued = RecomputeQueue.builder()
         .productId(PRODUCT_ID).storeId(STORE_ID).reason(RecomputeReason.NEW_OBS).build();
     when(recomputeQueueRepository.findTop200ByProcessedAtIsNullOrderByEnqueuedAtAsc())
@@ -57,6 +64,8 @@ class PriceAggregationServiceTest {
     // lenient: testy s prázdným seznamem observací (rejectedObservationsClearExistingDailyRow)
     // nikdy neupsertují agg.price_current, takže findById by tam byl "unnecessary stubbing".
     lenient().when(priceCurrentRepository.findById(any())).thenReturn(Optional.empty());
+    lenient().when(productRepository.findById(PRODUCT_ID))
+        .thenReturn(Optional.of(Product.builder().id(PRODUCT_ID).generic(generic).build()));
   }
 
   private static PriceObservation observation(BigDecimal unitPrice, SubmitterKind submitterKind,
@@ -120,6 +129,32 @@ class PriceAggregationServiceTest {
     PriceCurrent saved = priceCurrentCaptor.getValue();
     assertThat(saved.getUnitPrice()).isEqualByComparingTo("12");
     assertThat(saved.getConfidence()).isEqualTo(Confidence.HIGH);
+  }
+
+  @Test
+  void confidenceIsCappedAtMediumForGenericProductEvenWithHighSampleSize() {
+    // Stejných pět registrovaných jako confidenceIsHighWhenEffectiveSampleSizeReachesThreshold
+    // (nEff=5, jinak by vyšlo HIGH), ale produkt je bezkódová druhová položka (isGeneric) —
+    // confidence se zastropuje na MEDIUM (docs/reputace.md, "Zboží bez čárového kódu").
+    // Váhu jednotlivého záznamu (a tedy medián i n_eff) to NESMÍ ovlivnit.
+    givenQueuedCell(true);
+    OffsetDateTime now = OffsetDateTime.now();
+
+    List<PriceObservation> observations = List.of(
+        observation(new BigDecimal("10"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now),
+        observation(new BigDecimal("11"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now),
+        observation(new BigDecimal("12"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now),
+        observation(new BigDecimal("13"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now),
+        observation(new BigDecimal("14"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(observations);
+
+    service.processQueue();
+
+    verify(priceCurrentRepository).save(priceCurrentCaptor.capture());
+    PriceCurrent saved = priceCurrentCaptor.getValue();
+    assertThat(saved.getUnitPrice()).isEqualByComparingTo("12");
+    assertThat(saved.getConfidence()).isEqualTo(Confidence.MEDIUM);
   }
 
   @Test

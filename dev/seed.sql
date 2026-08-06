@@ -46,7 +46,8 @@ INSERT INTO core.category (parent_id, name, slug, path, sort_order)
 SELECT p.id, s.name, s.slug, s.path, s.sort_order
 FROM (VALUES
   ('pecivo', 'Pečivo', 'pecivo', '/potraviny/pecivo', 1),
-  ('mlecne', 'Mléčné výrobky', 'mlecne', '/potraviny/mlecne', 2)
+  ('mlecne', 'Mléčné výrobky', 'mlecne', '/potraviny/mlecne', 2),
+  ('zelenina', 'Ovoce a zelenina', 'zelenina', '/potraviny/zelenina', 3)
 ) AS s(parent_slug, name, slug, path, sort_order)
 JOIN core.category p ON p.slug = 'potraviny'
 ON CONFLICT (slug) DO NOTHING;
@@ -91,6 +92,24 @@ FROM (VALUES
 ) AS s(product_name, ean13)
 JOIN core.product p ON p.name = s.product_name
 ON CONFLICT (code, code_type, COALESCE(chain_id, 0)) DO NOTHING;
+
+-- Druhové položky bez čárového kódu (core.product.is_generic) — sdílený "koš" pro bezkódový
+-- zápis ceny, typicky z podnikové prodejny zemědělského družstva nebo z účtenky bez EANu
+-- ("pečivo za 45 Kč"). Rovnou status ACTIVE (na rozdíl od skutečně nově založených položek
+-- v appce, které začínají jako DRAFT, viz ProductCatalogService) — je to demonstrační seed dat,
+-- ne simulace prvního zápisu. Ceny se udávají za základní jednotku (kg/l/ks), ne za konkrétní
+-- balení, protože u bezkódového zboží balení nikdo nezná.
+INSERT INTO core.product (name, brand_id, category_id, unit_base, net_content_value, net_content_uom, net_content_base, is_generic)
+SELECT s.name, NULL, cat.id, s.unit_base, s.net_content_value, s.net_content_uom, s.net_content_base, true
+FROM (VALUES
+  ('Chléb konzumní',    'pecivo',   'MASS',  1::numeric, 'KG', 1::numeric),
+  ('Rohlík',            'pecivo',   'COUNT', 1::numeric, 'PCS', 1::numeric),
+  ('Brambory konzumní', 'zelenina', 'MASS',  1::numeric, 'KG', 1::numeric),
+  ('Mléko',             'mlecne',   'VOLUME', 1::numeric, 'L', 1::numeric),
+  ('Vejce',             'mlecne',   'COUNT', 1::numeric, 'PCS', 1::numeric)
+) AS s(name, category_slug, unit_base, net_content_value, net_content_uom, net_content_base)
+JOIN core.category cat ON cat.slug = s.category_slug
+WHERE NOT EXISTS (SELECT 1 FROM core.product existing WHERE existing.name = s.name AND existing.is_generic);
 
 -- Historie cen za posledních ~60 dní pro tři dvojice (produkt, obchod), aby šel v UI hned vidět
 -- graf vývoje ceny (agg.price_daily). Na rozdíl od zbytku souboru se observace tady vkládají

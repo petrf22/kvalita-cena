@@ -46,6 +46,11 @@
   font-size: 12px;
 }
 
+.unverified-tag {
+  margin-left: 6px;
+  font-weight: normal;
+}
+
 .confirmations {
   color: rgba(0, 0, 0, 0.45);
   font-size: 12px;

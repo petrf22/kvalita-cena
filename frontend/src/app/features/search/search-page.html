@@ -84,7 +84,12 @@
       @for (item of resultsTable.data; track item.product.id) {
         <tr (click)="openProduct(item)" class="search-result-row">
           <td>
-            <div class="product-name">{{ item.product.name }}</div>
+            <div class="product-name">
+              {{ item.product.name }}
+              @if (!item.product.verified) {
+                <nz-tag class="unverified-tag">Neověřeno</nz-tag>
+              }
+            </div>
             <div class="product-subtitle">
               {{ item.product.brand?.name ?? item.product.category.name }}
             </div>

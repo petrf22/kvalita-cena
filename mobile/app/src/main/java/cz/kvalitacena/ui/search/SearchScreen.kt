@@ -170,7 +170,17 @@ private fun SearchResultRow(item: ProductSearchItem, onClick: () -> Unit) {
       .clickable(onClick = onClick)
       .padding(horizontal = 16.dp, vertical = 12.dp),
   ) {
-    Text(item.product.name, style = MaterialTheme.typography.titleMedium)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Text(item.product.name, style = MaterialTheme.typography.titleMedium)
+      if (!item.product.verified) {
+        Text(
+          "Neověřeno",
+          style = MaterialTheme.typography.labelSmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          modifier = Modifier.padding(start = 6.dp),
+        )
+      }
+    }
     val subtitle = listOfNotNull(item.product.brand?.name, item.product.category.name).joinToString(" · ")
     if (subtitle.isNotBlank()) {
       Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -1,0 +1,88 @@
+# 02-store-identity.yaml — zakládání provozovny bez polohy (zápis ceny doma zpětně, bez GPS),
+# IČO jako volitelný jednoznačný identifikátor podnikové prodejny/OSVČ, a hledatelnost
+# obchodů podle názvu/města (viz docs/datovy-model.md, sekce "Identita provozovny").
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-06-02-store-lat-lon-nullable
+      author: Petr F.
+      comment: >
+        Obchod zadaný doma (bez geokódování a bez souhlasu s polohou) musí jít založit i bez
+        souřadnic — doplní je až geokodér (core.store.geo_source='OSM') nebo někdo, kdo u
+        obchodu fyzicky stojí. core.norm_text(name)/core.norm_text(city) drží jednoznačnost
+        identity, ne souřadnice.
+      changes:
+        - dropNotNullConstraint:
+            schemaName: core
+            tableName: store
+            columnName: lat
+            columnDataType: NUMERIC(9,6)
+        - dropNotNullConstraint:
+            schemaName: core
+            tableName: store
+            columnName: lon
+            columnDataType: NUMERIC(9,6)
+
+  - changeSet:
+      id: 2026-08-06-02-store-add-ico-and-merge
+      author: Petr F.
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: store
+            columns:
+              - column:
+                  # Volitelné IČO provozovatele — jednoznačná identifikace podnikové prodejny
+                  # zemědělského družstva nebo OSVČ, kde samotný název/město/ulice nestačí.
+                  name: ico
+                  type: VARCHAR(8)
+              - column:
+                  # Kdy backend IČO potvrdil v ARES (core.norm_text se sem netýká — ARES je
+                  # veřejný rejstřík, ne ODbL data, viz docs/soukromi.md). NULL = zadané ručně,
+                  # dosud neověřené.
+                  name: ico_verified_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: merged_into_id
+                  type: BIGINT
+        - addForeignKeyConstraint:
+            constraintName: fk_store_merged_into
+            baseTableSchemaName: core
+            baseTableName: store
+            baseColumnNames: merged_into_id
+            referencedTableSchemaName: core
+            referencedTableName: store
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - sql:
+            sql: |
+              ALTER TABLE core.store
+                ADD CONSTRAINT chk_store_ico CHECK (ico IS NULL OR ico ~ '^[0-9]{8}$');
+
+              ALTER TABLE core.store DROP CONSTRAINT chk_store_status;
+              ALTER TABLE core.store
+                ADD CONSTRAINT chk_store_status CHECK (status IN ('ACTIVE', 'CLOSED', 'PENDING', 'MERGED'));
+
+  - changeSet:
+      id: 2026-08-06-02-store-search-indexes
+      author: Petr F.
+      comment: >
+        uq_store_identity je tvrdá pojistka proti nejhrubším duplicitám (klient si musí před
+        uložením povinně prohlédnout searchStores() — viz backend StoreService), ne jediná
+        obrana. Sloučené provozovny (status='MERGED') se z unikátnosti vyjímají, aby šlo
+        později založit novou provozovnu se stejným jménem/městem/ulicí, kam se ta stará
+        sloučila.
+      changes:
+        - sql:
+            sql: |
+              CREATE UNIQUE INDEX uq_store_identity ON core.store
+                (core.norm_text(name), core.norm_text(city), COALESCE(core.norm_text(street), ''))
+                WHERE status <> 'MERGED';
+
+              CREATE INDEX idx_store_name_trgm ON core.store USING gin (core.norm_text(name) gin_trgm_ops);
+              CREATE INDEX idx_store_city_trgm ON core.store USING gin (core.norm_text(city) gin_trgm_ops);
+      rollback:
+        - sql:
+            sql: |
+              DROP INDEX IF EXISTS core.idx_store_city_trgm;
+              DROP INDEX IF EXISTS core.idx_store_name_trgm;
+              DROP INDEX IF EXISTS core.uq_store_identity;

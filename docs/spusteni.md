@@ -68,8 +68,10 @@ dotčený není, tam docker integrace funguje beze změny.
 
 Bez dat se v UI nedá nic vyzkoušet — hledání by bylo prázdné a detail produktu by neexistoval.
 Proto je v repu `dev/seed.sql`: pár řetězců (Albert, Lidl a lokální „Farma Sedlák"), pět provozoven
-v Brně a Praze se skutečnými souřadnicemi, tři kategorie a šest produktů se skutečně vypadajícími
-EAN kódy (rohlík, chléb, máslo, mléko, jogurt, vejce).
+v Brně a Praze se skutečnými souřadnicemi, kategorie, šest produktů se skutečně vypadajícími
+EAN kódy (rohlík, chléb, máslo, mléko, jogurt, vejce) a pět bezkódových druhových položek
+(chléb, rohlík, brambory, mléko, vejce — `core.product.is_generic`, viz `docs/reputace.md`,
+„Zboží bez čárového kódu") pro vyzkoušení bezkódového zápisu ceny.
 
 Spustit **až po prvním startu backendu** (musí existovat schémata):
 
@@ -187,14 +189,15 @@ Dev server na `http://localhost:4200`, `proxy.conf.json` přeposílá `/api` a `
 Routy:
 - `/` — hledání produktů,
 - `/produkt/:id` — detail, tabulka cen podle typu (běžná/akce/klubová/výprodej/množstevní), formulář na zápis ceny,
+- `/zadat-cenu` — samostatná stránka: najdi/založ zboží (podle názvu i EANu) → najdi/založ obchod → zapiš cenu (i zpětně datovanou),
 - `/prihlaseni` — stejný OTP flow jako výše, jen přes formulář (kód se pořád čte z konzole backendu).
 
-**Past, na kterou narazíš hned:** výběr provozovny v detailu produktu se plní **výhradně**
-z geolokace prohlížeče (`findNearbyStores()` volá `navigator.geolocation`) — žádné ruční
-vyhledání obchodu v UI zatím není. Pokud polohu zamítneš nebo nejsi poblíž Brna/Prahy (souřadnice
-ze seedu), select zůstane prázdný a cenu nepůjde zapsat. Pro dev to nejsnazší obejít přes
-DevTools → Sensors → Location a nastavit vlastní souřadnice (např. 49.1996, 16.6089 pro Albert
-Brno-Střed ze seedu).
+Výběr provozovny (`shared/store-picker.ts`, použitý v obou formulářích výše) umí tři cesty:
+napsat název nebo město (`searchStores`), stisknout „Najít v okolí" (`nearbyStores`, potřebuje
+geolokaci prohlížeče) nebo rovnou založit nový obchod (`shared/store-form.ts` — volitelně IČO
+s předvyplněním z ARES, volitelně souřadnice přes geokódování adresy nad OpenStreetMap
+Nominatim). Zakládání obchodu i zboží (`features/product-form`) vyžaduje přihlášení — vyzkoušej
+si nejdřív krok 4 níže.
 
 ## 7. Mobil (Android)
 
@@ -231,10 +234,10 @@ Flow v appce: sken (kamera + ZXing) → zadání ceny a typu → výběr provozo
 cd backend && ./gradlew test                    # všechny
 ./gradlew test --tests "*.PriceAggregationServiceTest"   # jeden
 
-cd frontend && npm test -- --watch=false         # Vitest, zatím jen 2 základní testy v app.spec.ts
-```
+cd frontend && npm test -- --watch=false         # Vitest
 
-Mobil zatím nemá žádné testy (`mobile/app/src` obsahuje jen `main`).
+cd mobile && ./gradlew :app:testDebugUnitTest    # JUnit, jen čistá logika (geometrie grafu, popisek obchodu, validace formulářů)
+```
 
 ## Časté potíže
 
@@ -247,3 +250,4 @@ Mobil zatím nemá žádné testy (`mobile/app/src` obsahuje jen `main`).
 | Port `5437` obsazený | jiný projekt na stejném stroji na něm už běží | zastav ho, nebo změň port v `compose.yaml` i `application.yml` |
 | Backend hlásí chybu schématu po ruční změně DB | `ddl-auto: validate` — schéma smí měnit jen Liquibase | vrať se k migracím, neuprav tabulku ručně |
 | `Cannot run program "docker"` při spuštění z IDE | IDE (např. IntelliJ IDEA) běží jako Flatpak, sandbox nevidí hostovský docker | spusť `docker compose up -d` ručně a appku pouštěj přes run konfiguraci s `SPRING_DOCKER_COMPOSE_ENABLED=false` — viz sekce **2. Backend** |
+| `geocodeAddress` vždy vrátí prázdné `candidates` | Nominatim často blokuje datacentrové/sdílené IP (`403 Access denied`, viz jeho usage policy) | obchod jde uložit i bez souřadnic — doplní se později; pro reálné testování geokódování je potřeba běžná domácí IP |

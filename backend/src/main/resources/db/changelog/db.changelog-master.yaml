@@ -10,3 +10,7 @@ databaseChangeLog:
   - include: { file: 2026-08-05/01-product-quality-rating.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-05/02-agg-price-daily.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-05/03-search-indexes.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-06/01-text-normalization.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-06/02-store-identity.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-06/03-generic-product.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-06/04-user-layer.yaml, relativeToChangelogFile: true }

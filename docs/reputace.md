@@ -158,6 +158,52 @@ někdo stihne ocenit.
 > ne rozjetí kódu s dokumentem. Zpřísnit na 7 dní je jen změna jedné konstanty, až/pokud
 > bude důvod.
 
+## Práh důvěry pro zveřejnění nového záznamu (etapa 1)
+
+Nový obchod nebo zboží od nedůvěryhodného autora se hned nezveřejní všem — je vidět jen jemu,
+dokud ho nepotvrdí víc přispěvatelů (`TrustLevelService`, `app.trust.*`). Důvod je stejný jako
+u prahu T2 výš (`≥5 záznamů nebo 1 recenze, ≥7 dní`), jen implementovaný dřív a jednodušeji,
+protože etapa 1 nemá recenze ani plný vzorec `S`:
+
+```
+isTrusted(user) = user.createdAt < now − app.trust.min-account-age-days
+                  AND user.observationCount ≥ app.trust.min-observations
+```
+
+Výchozí `min-account-age-days = 7`, `min-observations = 5` — schválně stejná čísla jako T2,
+je to jeho etapa-1 aproximace, ne nezávisle vymyšlený práh. Až přibude plný vzorec `S`
+(etapa 2/3), tahle funkce se nahradí `S ≥ práh_T2`, ne zdvojí vedle sebe.
+
+**`observationCount` je čítač na účtu (`auth.app_user.observation_count`), ne `COUNT(*)` nad
+`core.price_observation`** — ze stejného důvodu jako čítače s útlumem v úvodu dokumentu:
+`submitter_id` se po 180 dnech nuluje (`soukromi.md`), takže počítání přes historii by
+zavedenému uživateli po pauze tiše sebralo důvěru, kterou si dřív vybudoval.
+
+Efekt prahu:
+- **Nad prahem** — nový záznam je hned vidět všem, se štítkem "neověřeno" (`verified_at`
+  je `NULL`, dokud neproběhne konsolidační job, viz `datovy-model.md`).
+- **Pod prahem** — vidí ho jen autor (`ProductGraphQlController`/`StoreGraphQlController`,
+  predikát `status = ACTIVE OR createdByUserId = viewerId`), dokud ho nepotvrdí
+  `app.catalog.draft-confirmations` (výchozí 3) DALŠÍCH přispěvatelů — leave-one-out stejně
+  jako souhlas cen výš: obchod počítá jen potvrzení od JINÝCH uživatelů než autora
+  (`countDistinctContributorsExcluding`), jinak by si zakladatel odemkl vlastní záznam sám
+  třemi vlastními zápisy.
+
+## Nahlášení záznamu (etapa 1) — hlasuje se o faktu, ne o člověku
+
+`core.record_flag` (`RecordFlagService`) je etapa-1 implementace principu z "Proč žádné
+veřejné negativní hodnocení uživatelů" výš, jen aplikovaná na KATALOGOVÉ záznamy (zboží,
+obchody), ne na cenové spory: nahlášení cílí na `(recordType, recordId)`, nikdy na autora.
+Kdo záznam založil, se z API ven nedostane o nic snáz, než dřív — nahlášení jen řekne "tenhle
+konkrétní záznam je podezřelý", stejně jako `user_id` u `product_quality_rating` slouží
+výhradně k vynucení "jeden hlas na člověka" a jinak z DB nikam neuniká (`soukromi.md`).
+
+Po dosažení `app.moderation.flags-to-hide` (výchozí 3) RŮZNÝCH nahlášení se záznam skryje
+(`hidden_at`) a čeká na přezkum — vidí ho dál jen autor, se stejným důvodem jako u DRAFT/
+PENDING výš (autor musí vědět, co se s jeho příspěvkem děje). Druhé nahlášení od téhož
+člověka nic nezmění (`uq_record_flag_user`, `INSERT ... ON CONFLICT DO NOTHING`) — bez týhle
+pojistky by šlo záznam skrýt jedním účtem opakovaným klikáním.
+
 ## Hodnocení kvality zboží (etapa 1)
 
 Jen známka 1–5 (jako ve škole, 1 nejlepší), bez textů, bez skupin důvěry — implementace
@@ -180,3 +226,33 @@ na výrobek malého farmáře bude fakticky veřejné negativní hodnocení konk
 se všemi důsledky popsanými výš (odvetné spirály, právní expozice). Rozhodnutí „hodnotí se
 jen zboží z katalogu, ne nabídky dodavatelů" je proto potřeba **znovu vědomě potvrdit nebo
 přepracovat před založením `core.supplier`**, ne jen automaticky rozšířit stejný mechanismus.
+
+## Zboží bez čárového kódu
+
+Ne všechno zboží má EAN — účtenka z pekárny umí napsat jen "pečivo za 45 Kč", podniková
+prodejna zemědělského družstva na vsi často nemá vůbec žádný pokladní systém s čárovými kódy.
+Takový zápis má menší cenu než zápis s EANem (žádný jednoznačný identifikátor napříč obchody),
+ale je lepší mít ho s nižší důvěryhodností než ho odmítnout úplně — proto `createProduct` bez
+`code` založí **druhovou položku** (`core.product.is_generic`, `ProductCatalogService`):
+sdílený "koš" pro bezkódové zápisy stejného druhu zboží ("Chléb konzumní", "Brambory
+konzumní"), ne nový záznam pro každý jednotlivý zápis.
+
+**Nová položka vzniká jako `status = DRAFT`**, dokud ji nepotvrdí aspoň
+`app.catalog.draft-confirmations` (výchozí 3) různých přispěvatelů — počítáno jako
+`COUNT(DISTINCT COALESCE(submitter_id, observation_id))`, protože anonymní zápisy nejdou
+mezi sebou rozlišit (`submitter_id` je vždy `NULL`, docs/soukromi.md) a každý se tak pesimisticky
+počítá jako samostatný přispěvatel. Jakmile práh padne, `PriceObservationService.submit()`
+položku po zápisu ceny rovnou překlopí na `ACTIVE` (`ProductCatalogService.promoteIfConfirmed`) —
+žádný plánovač navíc.
+
+**Confidence buňky (`agg.price_current.confidence`) je pro druhovou položku zastropovaná na
+`MEDIUM`**, bez ohledu na `n_eff` (`PriceAggregationService.confidenceFor()`) — chybějící EAN
+je slabší důkaz totožnosti zboží než u položky s kódem, i kdyby se na ceně shodlo hodně lidí.
+
+**Tohle vědomě NENÍ multiplikativní faktor váhy jednotlivého záznamu** (uvažovaný a zavržený
+`f_catalog` z plánu založení projektu). Agregace běží vždy uvnitř buňky `(produkt, obchod)` a
+faktor odvozený z produktu by byl v celé buňce konstantní — jak vážený medián, tak Kishovo
+`n_eff = (Σw)²/Σw²` jsou vůči přeškálování **všech** vah v buňce stejným číslem invariantní,
+takže by `agg.price_current` vyšlo bit po bitu stejně jako bez něj. Efekt "bezkódové zboží je
+méně důvěryhodné" proto patří tam, kde skutečně něco mění — do stropu confidence a do statusu
+DRAFT/ACTIVE, ne do váhy záznamu.

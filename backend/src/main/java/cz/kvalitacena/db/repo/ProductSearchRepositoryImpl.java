@@ -14,12 +14,20 @@ import java.util.List;
 
 /**
  * Jeden nativní dotaz přes čtyři CTE: {@code matched} (dnešní fulltext přes
- * idx_product_name_fts) → {@code scoped} (agg.price_current v rozsahu filtru obchod/město) →
- * {@code totals}/{@code best} (agregáty) → {@code quality} (známky). {@code storeId}/{@code
- * city} se posílají jako parametry a porovnávají v SQL, ne konkatenují — jediné, co se skládá
- * jako text, je JOIN typ ({@code totals} musí být INNER, když je filtr aktivní, jinak by filtr
- * "Brno" vracel i zboží, které tam nikdo nezapsal) a ORDER BY, a obojí je whitelist z pevné
- * množiny (boolean / {@link ProductSort}), nikdy hodnota od uživatele.
+ * idx_product_name_fts, s uživatelskou vrstvou nad globálními daty) → {@code scoped}
+ * (agg.price_current v rozsahu filtru obchod/město) → {@code totals}/{@code best} (agregáty)
+ * → {@code quality} (známky). {@code storeId}/{@code city}/{@code viewerId} se posílají jako
+ * parametry a porovnávají v SQL, ne konkatenují — jediné, co se skládá jako text, je JOIN typ
+ * ({@code totals} musí být INNER, když je filtr aktivní, jinak by filtr "Brno" vracel i zboží,
+ * které tam nikdo nezapsal) a ORDER BY, a obojí je whitelist z pevné množiny (boolean /
+ * {@link ProductSort}), nikdy hodnota od uživatele.
+ *
+ * <p>{@code matched} nese i viditelnost podle viewera (docs/datovy-model.md, "Uživatelská
+ * vrstva nad globálními daty"): globální ACTIVE zboží vidí každý, vlastní DRAFT jen autor,
+ * skryté (nahlášené) zboží nevidí nikdo (autor má zvlášť {@code product(id)} s příznakem).
+ * Fulltextová podmínka je záměrně DVOUVĚTVÁ — {@code to_tsvector('simple', COALESCE(e.name,
+ * p.name))} by obešel idx_product_name_fts a vynutil seq scan; takhle první větev pořád běží
+ * přes index a druhá (přes patch) skenuje jen pár řádků z LEFT JOINu pro jednoho viewera.
  */
 @Repository
 @RequiredArgsConstructor
@@ -27,9 +35,14 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
 
   private static final String CTE = """
       WITH matched AS (
-        SELECT p.id, p.name FROM core.product p
-        WHERE p.status = 'ACTIVE'
-          AND to_tsvector('simple', p.name) @@ plainto_tsquery('simple', :query)
+        SELECT p.id, COALESCE(e.name, p.name) AS name FROM core.product p
+        LEFT JOIN core.product_user_edit e
+          ON e.product_id = p.id AND e.user_id = CAST(:viewerId AS BIGINT)
+        WHERE (p.status = 'ACTIVE'
+               OR (p.status = 'DRAFT' AND p.created_by_user_id = CAST(:viewerId AS BIGINT)))
+          AND p.hidden_at IS NULL
+          AND ( to_tsvector('simple', p.name) @@ plainto_tsquery('simple', :query)
+             OR to_tsvector('simple', e.name) @@ plainto_tsquery('simple', :query) )
       ), scoped AS (
         SELECT pc.* FROM agg.price_current pc
         JOIN core.store s ON s.id = pc.store_id
@@ -96,6 +109,7 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
     nativeQuery.setParameter("query", criteria.query());
     nativeQuery.setParameter("storeId", criteria.storeId());
     nativeQuery.setParameter("city", criteria.city());
+    nativeQuery.setParameter("viewerId", criteria.viewerId());
   }
 
   /** Whitelist fragmentů podle {@link ProductSort} — nikdy konkatenace uživatelského vstupu. */

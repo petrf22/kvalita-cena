@@ -1,0 +1,113 @@
+<form nz-form nzLayout="vertical" (ngSubmit)="submit()">
+  <nz-form-item>
+    <nz-form-label>Název obchodu</nz-form-label>
+    <nz-form-control>
+      <input
+        nz-input
+        name="name"
+        [ngModel]="name()"
+        (ngModelChange)="name.set($event); onNameOrCityChange()"
+        required
+      />
+    </nz-form-control>
+  </nz-form-item>
+
+  <nz-form-item>
+    <nz-form-label>Ulice a číslo (volitelné)</nz-form-label>
+    <nz-form-control>
+      <input nz-input name="street" [ngModel]="street()" (ngModelChange)="street.set($event)" />
+    </nz-form-control>
+  </nz-form-item>
+
+  <nz-form-item>
+    <nz-form-label>Město</nz-form-label>
+    <nz-form-control>
+      <input
+        nz-input
+        name="city"
+        [ngModel]="city()"
+        (ngModelChange)="city.set($event); onNameOrCityChange()"
+        required
+      />
+    </nz-form-control>
+  </nz-form-item>
+
+  <nz-form-item>
+    <nz-form-label>PSČ (volitelné)</nz-form-label>
+    <nz-form-control>
+      <input nz-input name="postalCode" [ngModel]="postalCode()" (ngModelChange)="postalCode.set($event)" />
+    </nz-form-control>
+  </nz-form-item>
+
+  @if (similarStores().length > 0) {
+    <nz-alert
+      nzType="warning"
+      nzMessage="Nemyslíš spíš některý z už existujících obchodů?"
+      [nzDescription]="similarStoresTemplate"
+      nzShowIcon
+      class="form-alert"
+    />
+    <ng-template #similarStoresTemplate>
+      <ul class="similar-list">
+        @for (store of similarStores(); track store.id) {
+          <li>{{ store.name }} — {{ store.city }}{{ store.street ? ', ' + store.street : '' }}</li>
+        }
+      </ul>
+    </ng-template>
+  }
+
+  <h4 class="section-title">IČO (volitelné)</h4>
+  <p class="section-hint">Pro podnikovou prodejnu nebo OSVČ, kde samotný název nestačí k jednoznačné identifikaci.</p>
+  <nz-form-item>
+    <nz-form-control [nzValidateStatus]="isIcoShapeValid() ? '' : 'error'">
+      <div class="ico-row">
+        <input nz-input name="ico" [ngModel]="ico()" (ngModelChange)="ico.set($event)" placeholder="8 číslic" />
+        <button nz-button type="button" [nzLoading]="icoLoading()" (click)="lookupIco()">Načíst z ARES</button>
+      </div>
+      @if (icoError()) {
+        <div class="field-error">{{ icoError() }}</div>
+      }
+    </nz-form-control>
+  </nz-form-item>
+
+  <h4 class="section-title">Souřadnice (volitelné)</h4>
+  <p class="section-hint">
+    Bez souřadnic obchod nenajde vyhledávání v okolí, jen ruční hledání podle názvu — dají se doplnit i později.
+  </p>
+  <div class="geo-actions">
+    <button nz-button type="button" [nzLoading]="geocoding()" [disabled]="!city().trim()" (click)="geocode()">
+      <span nz-icon nzType="environment"></span>
+      Najít souřadnice
+    </button>
+    <button nz-button type="button" (click)="useMyLocation()">Použít mou polohu</button>
+  </div>
+
+  @if (geocodeCandidates().length > 0) {
+    <nz-radio-group
+      [ngModel]="selectedCandidateRef()"
+      (ngModelChange)="selectCandidate($event)"
+      name="geocodeCandidate"
+      class="candidate-list"
+    >
+      @for (candidate of geocodeCandidates(); track candidate.osmRef) {
+        <label nz-radio [nzValue]="candidate">{{ candidate.displayName }}</label>
+      }
+    </nz-radio-group>
+    <p class="attribution">{{ geocodeAttribution() }}</p>
+  }
+
+  @if (manualLat() != null) {
+    <p class="section-hint">Použije se tvoje aktuální poloha.</p>
+  }
+
+  @if (saveError()) {
+    <nz-alert nzType="error" [nzMessage]="saveError()" nzShowIcon class="form-alert" />
+  }
+
+  <div class="form-actions">
+    <button nz-button nzType="primary" type="submit" [nzLoading]="saving()" [disabled]="!isValid()">
+      Založit obchod
+    </button>
+    <button nz-button type="button" (click)="cancelled.emit()" [disabled]="saving()">Zrušit</button>
+  </div>
+</form>

@@ -31,6 +31,8 @@ public class PriceObservationService {
   private final AppUserRepository appUserRepository;
   private final PriceObservationRepository priceObservationRepository;
   private final PriceAggregationService priceAggregationService;
+  private final ProductCatalogService productCatalogService;
+  private final StoreService storeService;
   private final EntityManager entityManager;
 
   @Transactional
@@ -85,7 +87,23 @@ public class PriceObservationService {
     // entityManager.refresh() vynutí skutečné znovunačtení z DB (viz PriceObservation).
     entityManager.refresh(observation);
 
+    // Čítač pro TrustLevelService — NEpočítá se zpětně z historie observací, protože
+    // submitter_id se po 180 dnech nuluje (docs/soukromi.md).
+    if (submitter != null) {
+      submitter.setObservationCount(submitter.getObservationCount() + 1);
+      appUserRepository.save(submitter);
+    }
+
     priceAggregationService.enqueueRecompute(product.getId(), store.getId(), RecomputeReason.NEW_OBS);
+
+    // Bezkódová (DRAFT) položka / provozovna od nedůvěryhodného autora (PENDING) se překlopí
+    // na ACTIVE, jakmile ji potvrdí dost různých přispěvatelů — viz docs/reputace.md.
+    if (product.getStatus() == ProductStatus.DRAFT) {
+      productCatalogService.promoteIfConfirmed(product.getId());
+    }
+    if (store.getStatus() == StoreStatus.PENDING) {
+      storeService.promoteIfConfirmed(store.getId());
+    }
 
     return observation;
   }

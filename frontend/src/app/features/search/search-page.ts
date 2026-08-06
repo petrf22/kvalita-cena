@@ -9,6 +9,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 import { ProductSearchItem, ProductSort, SearchFacets } from '../../models/catalog';
 import { ProductService } from '../../services/product-service';
 import { QualityBadge } from '../../shared/quality-badge';
@@ -41,6 +42,7 @@ const SORT_OPTIONS: { value: ProductSort; label: string }[] = [
     NzEmptyModule,
     NzSelectModule,
     NzPaginationModule,
+    NzTagModule,
     QualityBadge,
   ],
   templateUrl: './search-page.html',

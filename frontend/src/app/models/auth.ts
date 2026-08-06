@@ -15,4 +15,6 @@ export interface Viewer {
   publicHandle: string;
   displayName: string | null;
   createdAt: string;
+  // Práh důvěry (docs/reputace.md) — vysvětluje, proč nový obchod/zboží zatím vidí jen viewer sám.
+  trusted: boolean;
 }

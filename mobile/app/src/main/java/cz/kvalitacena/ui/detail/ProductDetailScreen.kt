@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
@@ -18,6 +19,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -30,20 +32,13 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.network.ExternalLink
 import cz.kvalitacena.network.PriceCurrent
+import cz.kvalitacena.ui.common.PRICE_KIND_LABELS
 import cz.kvalitacena.ui.common.QualityBadge
 import cz.kvalitacena.ui.common.formatRelativeDate
 import cz.kvalitacena.ui.common.openMap
 import cz.kvalitacena.ui.common.openUrl
 import java.text.NumberFormat
 import java.util.Locale
-
-private val PRICE_KIND_LABELS = mapOf(
-  "REGULAR" to "Běžná cena",
-  "PROMO" to "Akce",
-  "CLUB_CARD" to "Klubová karta",
-  "CLEARANCE" to "Výprodej",
-  "MULTIBUY" to "Multipack",
-)
 
 private val CZK_FORMAT: NumberFormat = NumberFormat.getCurrencyInstance(Locale("cs", "CZ"))
 
@@ -81,6 +76,24 @@ fun ProductDetailScreen(
         Text(product.name, style = MaterialTheme.typography.headlineSmall)
         val subtitle = listOfNotNull(product.brand?.name, product.category.name).joinToString(" · ")
         if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodyMedium)
+
+        // --- Štítky uživatelské vrstvy (docs/datovy-model.md) + nahlášení ---
+        Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+          if (!product.verified) {
+            AssistChip(onClick = {}, label = { Text("Neověřeno") })
+          }
+          if (product.editedByMe) {
+            AssistChip(onClick = {}, label = { Text("Vaše úprava") })
+          }
+          if (isLoggedIn) {
+            TextButton(onClick = { viewModel.flagProduct() }, enabled = !viewModel.flagging) {
+              Text("Nahlásit")
+            }
+          }
+        }
+        viewModel.flagMessage?.let {
+          Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         Gap()
 
         // --- Kvalita ---
@@ -148,11 +161,20 @@ fun ProductDetailScreen(
         Text("Nejlevněji", style = MaterialTheme.typography.titleMedium)
         if (stats?.bestPrice != null && stats.cheapestStore != null) {
           val store = stats.cheapestStore
+          val lat = store.lat
+          val lon = store.lon
+          // Provozovna zadaná bez GPS (zápis doma) souřadnice mít nemusí — pak se řádek jen
+          // nedá otevřít na mapě, ne že appka spadne (docs/datovy-model.md).
+          val mapModifier = if (lat != null && lon != null) {
+            Modifier.clickable { openMap(context, lat, lon, store.name) }
+          } else {
+            Modifier
+          }
           Row(
             modifier = Modifier
               .fillMaxWidth()
               .padding(top = 4.dp)
-              .clickable { openMap(context, store.lat, store.lon, store.name) },
+              .then(mapModifier),
             horizontalArrangement = Arrangement.SpaceBetween,
           ) {
             Column {
@@ -174,10 +196,41 @@ fun ProductDetailScreen(
           Text("Zatím tu nikdo cenu nezadal — buď první.", style = MaterialTheme.typography.bodyMedium)
         } else {
           Column(modifier = Modifier.padding(top = 8.dp)) {
-            product.prices.forEach { price -> PriceRow(price, onClick = { openMap(context, price.store.lat, price.store.lon, price.store.name) }) }
+            product.prices.forEach { price ->
+              PriceRow(
+                price,
+                onClick = {
+                  // Provozovna bez GPS (zápis doma) nemusí mít souřadnice — klik pak jen nic neudělá.
+                  val lat = price.store.lat
+                  val lon = price.store.lon
+                  if (lat != null && lon != null) openMap(context, lat, lon, price.store.name)
+                },
+              )
+            }
           }
         }
         Gap()
+
+        // --- Vaše cena (poslední vlastní zápisy, i dřív než je zpracuje agregace) ---
+        if (product.myPrices.isNotEmpty()) {
+          HorizontalDivider()
+          Gap()
+          Text("Vaše cena", style = MaterialTheme.typography.titleMedium)
+          Column(modifier = Modifier.padding(top = 8.dp)) {
+            product.myPrices.forEach { mp ->
+              Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Text("${mp.store.name} — ${PRICE_KIND_LABELS[mp.priceKind] ?: mp.priceKind}")
+                Text(CZK_FORMAT.format(mp.priceAmount))
+              }
+              Text(
+                formatRelativeDate(mp.observedAt),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
+          }
+          Gap()
+        }
 
         // --- Další informace (odkazy do otevřených databází) ---
         if (product.externalLinks.isNotEmpty()) {

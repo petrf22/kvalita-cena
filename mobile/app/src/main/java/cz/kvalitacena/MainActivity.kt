@@ -33,15 +33,20 @@ import cz.kvalitacena.ui.navigation.ARG_BARCODE
 import cz.kvalitacena.ui.navigation.ARG_PRODUCT_ID
 import cz.kvalitacena.ui.navigation.ROUTE_PRICE_ENTRY
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_DETAIL
+import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_FORM
+import cz.kvalitacena.ui.navigation.ROUTE_STORE_FORM
 import cz.kvalitacena.ui.navigation.TopLevelDestination
 import cz.kvalitacena.ui.navigation.priceEntryRouteByBarcode
 import cz.kvalitacena.ui.navigation.priceEntryRouteByProductId
 import cz.kvalitacena.ui.navigation.productDetailRoute
+import cz.kvalitacena.ui.navigation.productFormRoute
 import cz.kvalitacena.ui.price.PriceEntryScreen
 import cz.kvalitacena.ui.price.PriceEntryTarget
+import cz.kvalitacena.ui.product.ProductFormScreen
 import cz.kvalitacena.ui.scan.ScanScreen
 import cz.kvalitacena.ui.search.SearchScreen
 import cz.kvalitacena.ui.settings.SettingsScreen
+import cz.kvalitacena.ui.store.StoreFormScreen
 import cz.kvalitacena.ui.theme.KvalitaACenaTheme
 import kotlinx.coroutines.launch
 
@@ -127,8 +132,23 @@ private fun AppScaffold() {
           else -> null
         }
         if (target != null) {
-          PriceEntryScreen(target = target, onDone = { navController.popBackStack() })
+          PriceEntryScreen(
+            target = target,
+            onDone = { navController.popBackStack() },
+            onAddStore = { navController.navigate(ROUTE_STORE_FORM) },
+            onAddProduct = { newBarcode -> navController.navigate(productFormRoute(newBarcode)) },
+          )
         }
+      }
+      composable(ROUTE_STORE_FORM) {
+        StoreFormScreen(onDone = { navController.popBackStack() })
+      }
+      composable(
+        ROUTE_PRODUCT_FORM,
+        arguments = listOf(navArgument(ARG_BARCODE) { type = NavType.StringType; nullable = true; defaultValue = null }),
+      ) { backStackEntry ->
+        val barcode = backStackEntry.arguments?.getString(ARG_BARCODE)
+        ProductFormScreen(barcode = barcode, onDone = { navController.popBackStack() })
       }
     }
   }

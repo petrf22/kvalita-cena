@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class Product implements Persistable<Long> {
 
   @Id
@@ -53,6 +53,13 @@ public class Product implements Persistable<Long> {
   @Builder.Default
   private boolean variableWeight = false;
 
+  // Druhová položka bez čárového kódu ("Chléb konzumní", "Brambory konzumní") — sdílený
+  // koš pro bezkódové zápisy, ne totéž co "produktu zatím chybí kód". Confidence agregátu
+  // je pro ni zastropovaná na MEDIUM, viz PriceAggregationService (docs/reputace.md).
+  @Column(name = "is_generic", nullable = false)
+  @Builder.Default
+  private boolean generic = false;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
   @Builder.Default
@@ -76,6 +83,25 @@ public class Product implements Persistable<Long> {
   @Column(name = "updated_at", nullable = false, columnDefinition = "TIMESTAMPTZ")
   private OffsetDateTime updatedAt;
 
+  // Uživatelská vrstva nad globálními daty (docs/datovy-model.md) — job zatím neběží, takže
+  // je v etapě 1 vždy NULL a klient vše zobrazuje jako "neověřeno".
+  @Column(name = "verified_at", columnDefinition = "TIMESTAMPTZ")
+  private OffsetDateTime verifiedAt;
+
+  @Column(name = "processed_at", columnDefinition = "TIMESTAMPTZ")
+  private OffsetDateTime processedAt;
+
+  // Skryto po nahlášení (core.record_flag) — vidí jen autor, čeká na přezkum.
+  @Column(name = "hidden_at", columnDefinition = "TIMESTAMPTZ")
+  private OffsetDateTime hiddenAt;
+
+  // Nastavuje ProductOverlayService PO načtení, na detached kopii (toBuilder()) — NIKDY na
+  // spravované entitě uvnitř transakce, jinak by to Hibernate propsalo zpátky do DB
+  // (CLAUDE.md, "autorizace je predikát v dotazu, ne filtr v resolveru").
+  @Transient
+  @Builder.Default
+  private boolean editedByMe = false;
+
   @PrePersist
   protected void onCreate() {
     createdAt = OffsetDateTime.now();
@@ -90,5 +116,10 @@ public class Product implements Persistable<Long> {
   @Override
   public boolean isNew() {
     return id == null;
+  }
+
+  /** Job zatím neběží (etapa 2/3) — dokud je verifiedAt NULL, klient zobrazí "neověřeno". */
+  public boolean isVerified() {
+    return verifiedAt != null;
   }
 }
