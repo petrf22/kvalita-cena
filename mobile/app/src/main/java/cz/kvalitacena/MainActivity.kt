@@ -148,10 +148,15 @@ private fun AppBottomBar(navController: NavHostController) {
       NavigationBarItem(
         selected = currentRoute == destination.route,
         onClick = {
+          // Vždy čistý zásobník — jen jedna položka menu. Standardní vzor se saveState/
+          // restoreState (obnova stavu při návratu na záložku) se tu ukázal nespolehlivý:
+          // návrat na "search" (startDestination) se za určitých stavů zásobníku vůbec
+          // neprovedl, appka zůstala viset na předchozí obrazovce. `inclusive = true` smaže
+          // celý zásobník včetně startDestination a založí ho znovu — o kus dražší (ztrácí
+          // se např. rozepsaný dotaz v hledání), ale spolehlivé, a to tu má přednost.
           navController.navigate(destination.route) {
-            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
             launchSingleTop = true
-            restoreState = true
           }
         },
         icon = {

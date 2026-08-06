@@ -25,6 +25,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -216,6 +217,17 @@ fun PriceEntryScreen(target: PriceEntryTarget, onDone: () -> Unit) {
         ) {
           if (viewModel.submitting) CircularProgressIndicator(modifier = Modifier.size(20.dp))
           else Text("Zapsat cenu")
+        }
+        Gap()
+
+        // Odchod bez zápisu — uživatel nesmí být nucený něco vyplnit jen proto, že sem
+        // omylem naskenoval kód nebo si to rozmyslel (žádný nesmyslný údaj "jen aby prošel").
+        OutlinedButton(
+          onClick = onDone,
+          enabled = !viewModel.submitting,
+          modifier = Modifier.fillMaxWidth(),
+        ) {
+          Text("Zpět bez zadání ceny")
         }
       }
     }
