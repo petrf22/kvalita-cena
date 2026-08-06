@@ -1,0 +1,126 @@
+{
+  // Všechny úlohy jedou přes `bash -lc`, aby se natáhl `~/.bashrc` a s ním nvm — na tomhle
+  // stroji není žádný systémový Node, jen přes nvm (viz frontend/.nvmrc a README.md).
+  "version": "2.0.0",
+  "options": {
+    "shell": {
+      "executable": "bash",
+      "args": ["-lc"]
+    }
+  },
+  "tasks": [
+    {
+      "label": "web: dev server",
+      "type": "shell",
+      "command": "source \"${NVM_DIR:-$HOME/.nvm}/nvm.sh\" && nvm use --silent && npm start",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "typescript",
+        "pattern": "$tsc",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": {
+            "regexp": "(Changes detected|Building\\.\\.\\.)"
+          },
+          "endsPattern": {
+            "regexp": "Application bundle generation (complete|failed)"
+          }
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "web: testy (watch)",
+      "type": "shell",
+      "command": "source \"${NVM_DIR:-$HOME/.nvm}/nvm.sh\" && nvm use --silent && npm test",
+      "isBackground": true,
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": {
+        "owner": "typescript",
+        "pattern": "$tsc",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": {
+            "regexp": "(Changes detected|Building\\.\\.\\.)"
+          },
+          "endsPattern": {
+            "regexp": "Application bundle generation (complete|failed)"
+          }
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "web: testy (jednorázově)",
+      "type": "shell",
+      "command": "source \"${NVM_DIR:-$HOME/.nvm}/nvm.sh\" && nvm use --silent && npm test -- --watch=false",
+      "problemMatcher": []
+    },
+    {
+      "label": "web: build",
+      "type": "shell",
+      "command": "source \"${NVM_DIR:-$HOME/.nvm}/nvm.sh\" && nvm use --silent && npm run build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "web: install",
+      "type": "shell",
+      "command": "source \"${NVM_DIR:-$HOME/.nvm}/nvm.sh\" && nvm use --silent && npm install",
+      "problemMatcher": []
+    },
+    {
+      "label": "backend: bootRun",
+      "type": "shell",
+      "command": "./gradlew bootRun",
+      "options": {
+        "cwd": "${workspaceFolder}/../backend",
+        "shell": {
+          "executable": "bash",
+          "args": ["-lc"]
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "java",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "file": 1,
+          "location": 1,
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": {
+            "regexp": "Starting .*Application"
+          },
+          "endsPattern": {
+            "regexp": "Started .*Application.* in .* seconds"
+          }
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "stack: backend + web",
+      "dependsOn": ["backend: bootRun", "web: dev server"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}

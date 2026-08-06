@@ -29,6 +29,8 @@ out/
 
 ### VS Code ###
 .vscode/
+!frontend/.vscode/
+# konkrétní soubory ve frontend/.vscode/ řeší frontend/.gitignore
 
 ### Lokální konfigurace, která se nesdílí ###
 backend/src/main/resources/application-local.yml

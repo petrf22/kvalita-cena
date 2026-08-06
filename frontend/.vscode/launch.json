@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Web: dev server + Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "preLaunchTask": "web: dev server",
+      "url": "http://localhost:4200/",
+      "webRoot": "${workspaceFolder}"
+    },
+    {
+      "name": "Web: Chrome (server už běží)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:4200/",
+      "webRoot": "${workspaceFolder}"
+    },
+    {
+      "name": "Testy: Vitest (ladění)",
+      "type": "node",
+      "request": "launch",
+      // Na stroji není systémový Node, jen přes nvm — js-debug si "runtimeVersion" umí
+      // sám dohledat přes nvm (viz frontend/.nvmrc).
+      "runtimeVersion": "24",
+      "program": "${workspaceFolder}/node_modules/@angular/cli/bin/ng.js",
+      "args": ["test", "--watch=false"],
+      "autoAttachChildProcesses": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    }
+  ]
+}
