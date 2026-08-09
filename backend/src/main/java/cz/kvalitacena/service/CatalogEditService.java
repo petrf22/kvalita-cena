@@ -19,8 +19,10 @@ import cz.kvalitacena.db.repo.ProductUserEditRepository;
 import cz.kvalitacena.db.repo.RetailChainRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.db.repo.StoreUserEditRepository;
+import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.UnauthorizedException;
+import cz.kvalitacena.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,16 +55,16 @@ public class CatalogEditService {
   private final StoreRepository storeRepository;
   private final StoreUserEditRepository storeUserEditRepository;
   private final RetailChainRepository retailChainRepository;
-  private final IcoValidator icoValidator;
+  private final CompanyIdValidators companyIdValidators;
   private final StoreOverlayService storeOverlayService;
 
   private final AppUserRepository appUserRepository;
 
   @Transactional
   public Product updateProduct(Long productId, UpdateProductInput input, UUID viewerPublicUid) {
-    AppUser user = requireUser(viewerPublicUid, "Úprava zboží vyžaduje přihlášení");
+    AppUser user = requireUser(viewerPublicUid, ErrorCode.PRODUCT_EDIT_REQUIRES_LOGIN);
     Product product = productRepository.findById(productId)
-        .orElseThrow(() -> new NotFoundException("Produkt s tímto id neexistuje"));
+        .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
 
     Optional<ProductUserEdit> existing = productUserEditRepository.findByProductIdAndUserId(productId, user.getId());
     ProductUserEdit edit = existing.orElseGet(() ->
@@ -71,7 +73,7 @@ public class CatalogEditService {
 
     if (input.name() != null) {
       String trimmed = input.name().trim();
-      if (trimmed.isEmpty()) throw new IllegalArgumentException("Název zboží nesmí být prázdný");
+      if (trimmed.isEmpty()) throw new ValidationException(ErrorCode.PRODUCT_NAME_EMPTY);
       edit.setName(trimmed.equals(product.getName()) ? null : trimmed);
     }
 
@@ -88,7 +90,7 @@ public class CatalogEditService {
 
     if (input.categoryId() != null) {
       Category category = categoryRepository.findById(input.categoryId())
-          .orElseThrow(() -> new NotFoundException("Kategorie s tímto id neexistuje"));
+          .orElseThrow(() -> new NotFoundException(ErrorCode.CATEGORY_NOT_FOUND));
       edit.setCategoryId(category.getId().equals(product.getCategory().getId()) ? null : category.getId());
     }
 
@@ -137,9 +139,9 @@ public class CatalogEditService {
 
   @Transactional
   public Store updateStore(Long storeId, UpdateStoreInput input, UUID viewerPublicUid) {
-    AppUser user = requireUser(viewerPublicUid, "Úprava obchodu vyžaduje přihlášení");
+    AppUser user = requireUser(viewerPublicUid, ErrorCode.STORE_EDIT_REQUIRES_LOGIN);
     Store store = storeRepository.findById(storeId)
-        .orElseThrow(() -> new NotFoundException("Obchod s tímto id neexistuje"));
+        .orElseThrow(() -> new NotFoundException(ErrorCode.STORE_NOT_FOUND));
 
     Optional<StoreUserEdit> existing = storeUserEditRepository.findByStoreIdAndUserId(storeId, user.getId());
     StoreUserEdit edit = existing.orElseGet(() ->
@@ -148,13 +150,13 @@ public class CatalogEditService {
 
     if (input.name() != null) {
       String trimmed = input.name().trim();
-      if (trimmed.isEmpty()) throw new IllegalArgumentException("Název obchodu nesmí být prázdný");
+      if (trimmed.isEmpty()) throw new ValidationException(ErrorCode.STORE_NAME_EMPTY);
       edit.setName(trimmed.equals(store.getName()) ? null : trimmed);
     }
 
     if (input.chainId() != null) {
       RetailChain chain = retailChainRepository.findById(input.chainId())
-          .orElseThrow(() -> new NotFoundException("Řetězec s tímto id neexistuje"));
+          .orElseThrow(() -> new NotFoundException(ErrorCode.CHAIN_NOT_FOUND));
       Long globalChainId = store.getChain() == null ? null : store.getChain().getId();
       edit.setChainId(chain.getId().equals(globalChainId) ? null : chain.getId());
       cleared.remove("chain");
@@ -174,7 +176,7 @@ public class CatalogEditService {
 
     if (input.city() != null) {
       String trimmed = input.city().trim();
-      if (trimmed.isEmpty()) throw new IllegalArgumentException("Město nesmí být prázdné");
+      if (trimmed.isEmpty()) throw new ValidationException(ErrorCode.STORE_CITY_EMPTY);
       edit.setCity(trimmed.equals(store.getCity()) ? null : trimmed);
     }
 
@@ -194,9 +196,14 @@ public class CatalogEditService {
 
     if (input.ico() != null) {
       String trimmed = input.ico().trim();
-      if (!icoValidator.isValid(trimmed)) {
-        throw new IllegalArgumentException("IČO nemá platný tvar (8 číslic, špatný kontrolní součet)");
-      }
+      // Země patchované v TÉTO úpravě má přednost před globální (uživatel může měnit obojí
+      // najednou), jinak validátor podle aktuální globální země obchodu.
+      String effectiveCountry = input.country() != null ? input.country().trim() : store.getCountry();
+      companyIdValidators.forCountry(effectiveCountry).ifPresent(validator -> {
+        if (!validator.isValid(trimmed)) {
+          throw new ValidationException(ErrorCode.COMPANY_ID_INVALID);
+        }
+      });
       edit.setIco(trimmed.equals(store.getIco()) ? null : trimmed);
       cleared.remove("ico");
     } else if (Boolean.TRUE.equals(input.clearIco())) {
@@ -228,12 +235,12 @@ public class CatalogEditService {
     return storeOverlayService.applyOverlay(store, user.getId());
   }
 
-  private AppUser requireUser(UUID viewerPublicUid, String message) {
+  private AppUser requireUser(UUID viewerPublicUid, ErrorCode requiresLoginCode) {
     if (viewerPublicUid == null) {
-      throw new UnauthorizedException(message);
+      throw new UnauthorizedException(requiresLoginCode);
     }
     return appUserRepository.findByPublicUid(viewerPublicUid)
-        .orElseThrow(() -> new UnauthorizedException("Účet už neexistuje"));
+        .orElseThrow(() -> new UnauthorizedException(ErrorCode.ACCOUNT_GONE));
   }
 
   /** Přidá/odebere pole ze seznamu vymazaných podle toho, jestli globální hodnota vůbec byla čím mazat. */

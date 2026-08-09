@@ -16,5 +16,7 @@ public record ProductSearchItem(
     Integer bestPriceObservations,
     OffsetDateTime lastObservedAt,
     BigDecimal qualityAverage,
-    int qualityCount) {
+    int qualityCount,
+    // Měna bestPrice/bestUnitPrice — null, jen když je bestPrice null (docs/lokalizace.md).
+    String currency) {
 }

@@ -6,6 +6,7 @@ import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
+import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.NotFoundException;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -33,15 +34,16 @@ public class PriceObservationService {
   private final PriceAggregationService priceAggregationService;
   private final ProductCatalogService productCatalogService;
   private final StoreService storeService;
+  private final CurrencyResolver currencyResolver;
   private final EntityManager entityManager;
 
   @Transactional
   public PriceObservation submit(SubmitObservationInput input, UUID authenticatedPublicUid,
       ObservationSource source) {
     Product product = productRepository.findById(input.productId())
-        .orElseThrow(() -> new NotFoundException("Produkt s tímto id neexistuje"));
+        .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
     Store store = storeRepository.findById(input.storeId())
-        .orElseThrow(() -> new NotFoundException("Obchod s tímto id neexistuje"));
+        .orElseThrow(() -> new NotFoundException(ErrorCode.STORE_NOT_FOUND));
 
     AppUser submitter = authenticatedPublicUid == null
         ? null
@@ -66,10 +68,19 @@ public class PriceObservationService {
       }
     }
 
+    // Měna je vlastnost PROVOZOVNY, ne přání zapisujícího (docs/lokalizace.md) — input.currency
+    // je jen výjimka pro příhraniční prodejny, které cení v jiné měně než země obchodu, a musí
+    // projít whitelistem (currencyResolver.isSupported), jinak by neplatná hodnota od klienta
+    // proklouzla rovnou do agregátu.
+    String currency = input.currency() != null && currencyResolver.isSupported(input.currency())
+        ? input.currency()
+        : currencyResolver.forStore(store);
+
     PriceObservation observation = PriceObservation.builder()
         .product(product)
         .store(store)
         .priceAmount(priceAmount)
+        .currency(currency)
         .priceKind(kind)
         .quantityBasis(basis)
         .multibuyQty(input.multibuyQty())

@@ -11,5 +11,6 @@ public record ProductStats(
     OffsetDateTime lastObservedAt,
     BigDecimal bestPrice,
     BigDecimal bestUnitPrice,
-    Store cheapestStore) {
+    Store cheapestStore,
+    String bestPriceCurrency) {
 }

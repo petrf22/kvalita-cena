@@ -7,6 +7,7 @@ import cz.kvalitacena.db.repo.ProductQualityRatingRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.UnauthorizedException;
+import cz.kvalitacena.exception.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -58,9 +59,9 @@ class QualityRatingServiceTest {
   void gradeMustBeBetweenOneAndFive() {
     QualityRatingService service = service();
     assertThatThrownBy(() -> service.rate(PRODUCT_ID, 0, PUBLIC_UID))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(ValidationException.class);
     assertThatThrownBy(() -> service.rate(PRODUCT_ID, 6, PUBLIC_UID))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(ValidationException.class);
   }
 
   @Test

@@ -1,6 +1,7 @@
 package cz.kvalitacena.service;
 
 import cz.kvalitacena.config.CatalogProperties;
+import cz.kvalitacena.config.I18nProperties;
 import cz.kvalitacena.controller.CreateStoreInput;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.GeoSource;
@@ -12,9 +13,11 @@ import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.RetailChainRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.exception.DuplicateException;
+import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.TooManyRequestsException;
 import cz.kvalitacena.exception.UnauthorizedException;
+import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.security.CatalogRateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -37,29 +40,38 @@ public class StoreService {
   private final RetailChainRepository retailChainRepository;
   private final AppUserRepository appUserRepository;
   private final PriceObservationRepository priceObservationRepository;
-  private final IcoValidator icoValidator;
+  private final CompanyIdValidators companyIdValidators;
   private final CatalogRateLimiter catalogRateLimiter;
   private final DuplicateLookupService duplicateLookupService;
   private final TrustLevelService trustLevelService;
   private final CatalogProperties catalogProperties;
+  private final I18nProperties i18nProperties;
 
   @Transactional
   public Store create(CreateStoreInput input, UUID viewerPublicUid) {
     if (viewerPublicUid == null) {
-      throw new UnauthorizedException("Založení obchodu vyžaduje přihlášení");
+      throw new UnauthorizedException(ErrorCode.STORE_CREATE_REQUIRES_LOGIN);
     }
     AppUser user = appUserRepository.findByPublicUid(viewerPublicUid)
-        .orElseThrow(() -> new UnauthorizedException("Účet už neexistuje"));
+        .orElseThrow(() -> new UnauthorizedException(ErrorCode.ACCOUNT_GONE));
 
     if (input.name() == null || input.name().isBlank()) {
-      throw new IllegalArgumentException("Název obchodu je povinný");
+      throw new ValidationException(ErrorCode.STORE_NAME_REQUIRED);
     }
     if (input.city() == null || input.city().isBlank()) {
-      throw new IllegalArgumentException("Město je povinné");
+      throw new ValidationException(ErrorCode.STORE_CITY_REQUIRED);
     }
+    String country = input.country() == null || input.country().isBlank()
+        ? i18nProperties.getDefaultCountry() : input.country().trim();
     String ico = normalizeIco(input.ico());
-    if (ico != null && !icoValidator.isValid(ico)) {
-      throw new IllegalArgumentException("IČO nemá platný tvar (8 číslic, špatný kontrolní součet)");
+    // Pro zemi bez validátoru (zatím žádnou jinou než CZ/SK/PL) se IČO/NIP uloží bez kontroly
+    // tvaru — lepší než odmítnout zápis kvůli algoritmu, který appka ještě nezná.
+    if (ico != null) {
+      companyIdValidators.forCountry(country).ifPresent(validator -> {
+        if (!validator.isValid(ico)) {
+          throw new ValidationException(ErrorCode.COMPANY_ID_INVALID);
+        }
+      });
     }
     if (!catalogRateLimiter.tryAcquireStoreCreation(viewerPublicUid)) {
       throw new TooManyRequestsException();
@@ -68,7 +80,7 @@ public class StoreService {
     RetailChain chain = null;
     if (input.chainId() != null) {
       chain = retailChainRepository.findById(input.chainId())
-          .orElseThrow(() -> new NotFoundException("Řetězec s tímto id neexistuje"));
+          .orElseThrow(() -> new NotFoundException(ErrorCode.CHAIN_NOT_FOUND));
     }
 
     // Práh důvěry (docs/reputace.md, etapa-1 aproximace T2) — nedůvěryhodný autor založí
@@ -84,7 +96,7 @@ public class StoreService {
         .street(blankToNull(input.street()))
         .city(input.city().trim())
         .postalCode(blankToNull(input.postalCode()))
-        .country(input.country() == null || input.country().isBlank() ? "CZ" : input.country().trim())
+        .country(country)
         .ico(ico)
         .lat(input.lat())
         .lon(input.lon())
@@ -125,8 +137,7 @@ public class StoreService {
     // transakce na úrovni Postgresu "aborted", dotaz nad stejnou session by spadl.
     List<Store> similar = duplicateLookupService.findSimilarStores(input.name().trim(), input.city().trim());
     Long existingId = similar.isEmpty() ? null : similar.get(0).getId();
-    return new DuplicateException(
-        "Obchod s tímto názvem a městem už v katalogu existuje", existingId);
+    return new DuplicateException(ErrorCode.DUPLICATE_STORE, existingId);
   }
 
   private String normalizeIco(String ico) {

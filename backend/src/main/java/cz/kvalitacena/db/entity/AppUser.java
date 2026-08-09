@@ -40,11 +40,31 @@ public class AppUser implements Persistable<Long> {
   @Column(name = "email_domain", length = 64)
   private String emailDomain;
 
+  // Kanonický, jazykově neutrální klíč ("blue-stork-4271") — na tomhle tvaru visí unique
+  // constraint, ne na vyrenderovaném textu (viz HandleGenerator, docs/lokalizace.md).
   @Column(name = "public_handle", nullable = false, unique = true, length = 40)
   private String publicHandle;
 
+  @Column(name = "handle_adjective", length = 24)
+  private String handleAdjective;
+
+  @Column(name = "handle_noun", length = 24)
+  private String handleNoun;
+
+  @Column(name = "handle_number")
+  private Short handleNumber;
+
   @Column(name = "display_name", length = 40)
   private String displayName;
+
+  // Preference jazyka/země pro ASYNCHRONNÍ výstup (OTP e-mail, později notifikace) —
+  // NULL = "uživatel se nevyjádřil", jiný stav než "chce češtinu" (docs/lokalizace.md).
+  // Synchronní odpovědi API se řídí Accept-Language, ne tímhle sloupcem.
+  @Column(name = "locale", length = 5)
+  private String locale;
+
+  @Column(name = "country", length = 2)
+  private String country;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)

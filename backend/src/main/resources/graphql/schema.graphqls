@@ -24,18 +24,24 @@ type Query {
   Fulltextové hledání podle názvu (core.product, idx_product_name_fts) s volitelným filtrem
   na obchod nebo město a řazením. storeId/city omezují i agregáty v ProductSearchItem — s
   filtrem na město ukazuje seznam cenu a počet hlášení jen za dané město, ne celostátně.
+
+  country omezuje na provozovny v jedné zemi/měně (docs/lokalizace.md) — bez toho by
+  ProductSort.PRICE_ASC řadilo CZK vedle PLN v jednom sloupci a "nejlevnější obchod" by
+  porovnával nesrovnatelné částky. Bez zadání se použije země přihlášeného uživatele, jinak
+  app.i18n.default-country — NIKDY neomezené celosvětové hledání.
   """
   searchProducts(
     query: String!
     storeId: ID
     city: String
+    country: String
     sort: ProductSort = REPORT_COUNT
     first: Int = 20
     offset: Int = 0
   ): ProductSearchResult!
 
-  "Číselník pro filtry hledání — jen obchody a města, kde nějaká cena skutečně je."
-  searchFacets(query: String): SearchFacets!
+  "Číselník pro filtry hledání — jen obchody a města, kde nějaká cena skutečně je. country viz searchProducts."
+  searchFacets(query: String, country: String): SearchFacets!
 
   """
   Našeptávač obchodů podle názvu/města (core.norm_text, pg_trgm) — doplněk k nearbyStores pro
@@ -67,8 +73,11 @@ type Query {
   core.*/osm.* — ukládá se jen zvolený bod jako core.store.lat/lon + osmRef s geoSource=OSM.
   UI MUSÍ zobrazit attribution. Výpadek Nominatimu vrací prázdný seznam kandidátů, nikdy chybu
   — založení obchodu bez souřadnic musí projít i tak.
+
+  country bez zadání NEZNAMENÁ "celý svět" — server dosadí zemi přihlášeného uživatele, jinak
+  app.i18n.default-country (docs/lokalizace.md), nikdy neomezené celosvětové hledání.
   """
-  geocodeAddress(street: String, city: String!, postalCode: String, country: String = "CZ"): GeocodeResult!
+  geocodeAddress(street: String, city: String!, postalCode: String, country: String): GeocodeResult!
 
   """
   Opačný směr než geocodeAddress — souřadnice na adresu, pro tlačítko "Použít mou polohu" při
@@ -80,11 +89,12 @@ type Query {
   reverseGeocode(lat: Float!, lon: Float!): ReverseGeocodeResult!
 
   """
-  Údaje o firmě z veřejného rejstříku ARES podle IČO — předvyplnění formuláře obchodu. ARES
-  není ODbL data (je to veřejný rejstřík, ne OSM/OFF), takže se nemusí držet stranou core.*.
-  Vrací null, když IČO neexistuje nebo je ARES nedostupný.
+  Údaje o firmě z veřejného rejstříku podle IČO/NIP — předvyplnění formuláře obchodu (zatím jen
+  ARES pro CZ, docs/lokalizace.md). Není ODbL data (je to veřejný rejstřík, ne OSM/OFF), takže
+  se nemusí držet stranou core.*. Vrací null, když IČO/NIP neexistuje, je registr nedostupný,
+  nebo appka pro danou zemi žádný registr nezná (klient pak schová tlačítko "Načíst z registru").
   """
-  companyByIco(ico: String!): CompanyInfo
+  companyByIco(ico: String!, country: String): CompanyInfo
 
   product(id: ID!): Product
 
@@ -104,8 +114,11 @@ type Query {
   Denní řada z agg.price_daily. Graf NIKDY nečte core.price_observation
   (docs/datovy-model.md). Bez storeId je to medián mediánů přes provozovny
   (docs/reputace.md), se storeId jedna provozovna.
+
+  currency omezí (nebo přepíše) měnu grafu — bez zadání se národní graf ukáže v měně
+  s nejvíc záznamy za dané období (docs/lokalizace.md).
   """
-  priceHistory(productId: ID!, priceKind: PriceKind = REGULAR, storeId: ID, days: Int = 90): PriceHistory!
+  priceHistory(productId: ID!, priceKind: PriceKind = REGULAR, storeId: ID, days: Int = 90, currency: String): PriceHistory!
 
   "Veřejná identita přihlášeného uživatele — bez e-mailu a bez DB id (docs/soukromi.md)."
   me: Viewer
@@ -166,6 +179,14 @@ type Mutation {
 
   "Smazání vlastní fotky (core.media i soubor v MediaStorage). Jen autor."
   deletePhoto(id: ID!): Boolean!
+
+  """
+  Uloží preferovaný jazyk a zemi přihlášeného uživatele — používá se VÝHRADNĚ pro asynchronní
+  výstup (OTP e-mail, později notifikace). Synchronní odpovědi tohoto API se vždy řídí hlavičkou
+  Accept-Language, ne touhle hodnotou (docs/lokalizace.md). Volba jazyka je autoritativně na
+  klientovi, tahle mutace ji jen posílá na server. Vyžaduje přihlášení.
+  """
+  setLocale(locale: String!, country: String): Viewer!
 }
 
 enum RecordType {
@@ -349,6 +370,7 @@ type MyPrice {
   priceAmount: BigDecimal!
   unitPrice: BigDecimal
   observedAt: DateTime!
+  currency: String!
 }
 
 enum CodeType {
@@ -373,6 +395,8 @@ type ProductStats {
   bestPrice: BigDecimal
   bestUnitPrice: BigDecimal
   cheapestStore: Store
+  "Měna bestPrice/bestUnitPrice — null, jen když je bestPrice null (docs/lokalizace.md)."
+  bestPriceCurrency: String
 }
 
 "Průměrná známka 1,00–5,00 (1 nejlepší). Null, dokud nikdo nehodnotil."
@@ -420,6 +444,8 @@ type ProductSearchItem {
   lastObservedAt: DateTime
   qualityAverage: BigDecimal
   qualityCount: Int!
+  "Měna bestPrice/bestUnitPrice — null, jen když je bestPrice null (docs/lokalizace.md)."
+  currency: String
 }
 
 type SearchFacets {
@@ -432,6 +458,8 @@ type PriceHistory {
   store: Store
   "Skutečně vrácené okno ve dnech — může být kratší než požadované (odstupňování přístupu)."
   days: Int!
+  "VŽDY vyplněná (docs/lokalizace.md) — bez storeId je to měna s nejvíc záznamy za dané období."
+  currency: String!
   points: [PricePoint!]!
 }
 
@@ -450,6 +478,10 @@ type Viewer {
   createdAt: DateTime!
   "Práh důvěry (docs/reputace.md) — vysvětluje klientovi, proč nový obchod/zboží zatím vidí jen on."
   trusted: Boolean!
+  "Uložená preference jazyka (setLocale) — null, dokud si ji uživatel nenastaví (docs/lokalizace.md)."
+  locale: String
+  "Uložená preference země — null, dokud si ji uživatel nenastaví."
+  country: String
 }
 
 enum ChainType {
@@ -573,6 +605,7 @@ type PriceCurrent {
   nEff: BigDecimal!
   lastObservedAt: DateTime
   confidence: Confidence!
+  currency: String!
 }
 
 enum QuantityBasis {
@@ -594,6 +627,7 @@ type PriceObservation {
   product: Product!
   store: Store!
   priceAmount: BigDecimal!
+  currency: String!
   priceKind: PriceKind!
   quantityBasis: QuantityBasis!
   unitPrice: BigDecimal
@@ -612,4 +646,64 @@ input SubmitObservationInput {
   multibuyTotal: BigDecimal
   "Kdy uživatel cenu viděl — chybí-li, použije se teď (docs/datovy-model.md, observed_at ≠ created_at)."
   observedAt: DateTime
+  """
+  ISO-4217 kód měny — chybí-li, dosadí se podle země obchodu (docs/lokalizace.md). Volitelný
+  jen kvůli příhraničním prodejnám, které občas cení v jiné měně, než je země provozovny;
+  server hodnotu validuje proti podporovaným měnám, neplatnou tiše ignoruje a dosadí zemi obchodu.
+  """
+  currency: String
+}
+
+"""
+Strojově čitelný kód chyby (docs/lokalizace.md) — jde jen do GraphQL extensions.code, NIKDY
+do žádného pole typu. Existuje ve schématu čistě proto, aby ho graphql-codegen vygeneroval
+jako TS konstanty (frontend/codegen.ts, onlyEnums) — frontend nad ním postaví Record<ErrorCode,
+string>, stejný trik jako PRICE_KIND_LABELS, takže chybějící překlad kódu shodí kompilaci.
+Musí se shodovat s cz.kvalitacena.exception.ErrorCode (viz backendový test MessageBundleTest).
+"""
+enum ErrorCode {
+  PRODUCT_NOT_FOUND
+  STORE_NOT_FOUND
+  CATEGORY_NOT_FOUND
+  CHAIN_NOT_FOUND
+  PRODUCT_NAME_REQUIRED
+  PRODUCT_NAME_EMPTY
+  PRODUCT_CATEGORY_REQUIRED
+  PRODUCT_UNIT_BASE_REQUIRED
+  STORE_NAME_REQUIRED
+  STORE_NAME_EMPTY
+  STORE_CITY_REQUIRED
+  STORE_CITY_EMPTY
+  COMPANY_ID_INVALID
+  PRODUCT_CREATE_REQUIRES_LOGIN
+  PRODUCT_EDIT_REQUIRES_LOGIN
+  STORE_CREATE_REQUIRES_LOGIN
+  STORE_EDIT_REQUIRES_LOGIN
+  DUPLICATE_PRODUCT_CODE
+  DUPLICATE_GENERIC_PRODUCT
+  DUPLICATE_STORE
+  PHOTO_UPLOAD_REQUIRES_LOGIN
+  PHOTO_ACTION_REQUIRES_LOGIN
+  PHOTO_CANNOT_ATTACH_TO_PHOTO
+  PHOTO_LIMIT_REACHED
+  PHOTO_DELETE_NOT_OWNER
+  PHOTO_UPDATE_NOT_OWNER
+  PHOTO_NOT_FOUND
+  PHOTO_TARGET_RECORD_NOT_FOUND
+  PHOTO_TOO_LARGE
+  PHOTO_UNSUPPORTED_FORMAT
+  PHOTO_UNREADABLE
+  PHOTO_RESOLUTION_TOO_HIGH
+  QUALITY_REQUIRES_LOGIN
+  QUALITY_GRADE_OUT_OF_RANGE
+  FLAG_REQUIRES_LOGIN
+  FLAG_RECORD_NOT_FOUND
+  INVALID_CHALLENGE
+  SESSION_EXPIRED
+  LOCALE_REQUIRES_LOGIN
+  LOCALE_UNSUPPORTED
+  ACCOUNT_GONE
+  TOO_MANY_REQUESTS
+  UOM_MISMATCH
+  VALIDATION_FAILED
 }

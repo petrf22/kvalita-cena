@@ -23,9 +23,8 @@ class GeocodingServiceTest {
     properties.setUserAgent("KvalitaACenaTest/0.1 (test@example.com)");
     properties.setTimeout(Duration.ofSeconds(1));
     properties.setCacheTtl(Duration.ofDays(1));
-    properties.setAttribution("Zdroj: © OpenStreetMap contributors, licence ODbL");
 
-    GeocodingService service = new GeocodingService(properties);
+    GeocodingService service = new GeocodingService(properties, TestMessages.instance());
 
     ReverseGeocodeResult result = service.reverseGeocode(50.08, 14.42);
 
@@ -33,7 +32,8 @@ class GeocodingServiceTest {
     assertThat(result.city()).isNull();
     assertThat(result.postalCode()).isNull();
     assertThat(result.osmRef()).isNull();
-    // Atribuce se ukazuje i u prázdného výsledku — UI ji musí umět zobrazit vždy stejně.
-    assertThat(result.attribution()).isEqualTo(properties.getAttribution());
+    // Atribuce se ukazuje i u prázdného výsledku — UI ji musí umět zobrazit vždy stejně
+    // (docs/lokalizace.md — text jde přes Messages/messages/attribution*.properties).
+    assertThat(result.attribution()).isEqualTo(TestMessages.instance().get("attribution.osm"));
   }
 }

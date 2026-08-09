@@ -1,5 +1,6 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.exception.ValidationException;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifIFD0Directory;
@@ -62,21 +63,21 @@ class ImageProcessingServiceTest {
   @Test
   void rejectsUnknownFormat() {
     byte[] notAnImage = "tohle neni obrazek".getBytes(StandardCharsets.UTF_8);
-    assertThatThrownBy(() -> service.process(notAnImage)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> service.process(notAnImage)).isInstanceOf(ValidationException.class);
   }
 
   @Test
   void rejectsOversizedUpload() throws IOException {
     mediaProperties.setMaxUploadBytes(10);
     byte[] raw = createJpeg(40, 20);
-    assertThatThrownBy(() -> service.process(raw)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> service.process(raw)).isInstanceOf(ValidationException.class);
   }
 
   @Test
   void rejectsTooManyPixels() throws IOException {
     mediaProperties.setMaxPixels(100); // 40 × 20 = 800 pixelů, přes limit
     byte[] raw = createJpeg(40, 20);
-    assertThatThrownBy(() -> service.process(raw)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> service.process(raw)).isInstanceOf(ValidationException.class);
   }
 
   @Test

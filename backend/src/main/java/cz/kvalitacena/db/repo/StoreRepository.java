@@ -77,15 +77,18 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
       + "LIMIT 5", nativeQuery = true)
   List<Store> findSimilar(@Param("name") String name, @Param("city") String city);
 
-  /** Číselník pro filtr hledání (searchFacets) — přes idx_store_city, jen obchody se skutečnou cenou. */
+  /**
+   * Číselník pro filtr hledání (searchFacets) — přes idx_store_city, jen obchody se skutečnou
+   * cenou. Filtr na zemi (docs/lokalizace.md) — bez něj by dropdown měst míchal ČR se SK/PL.
+   */
   @Query(value = "SELECT DISTINCT s.city FROM core.store s "
       + "JOIN agg.price_current pc ON pc.store_id = s.id "
-      + "WHERE s.status = 'ACTIVE' ORDER BY s.city", nativeQuery = true)
-  List<String> findDistinctCitiesWithPrices();
+      + "WHERE s.status = 'ACTIVE' AND s.country = :country ORDER BY s.city", nativeQuery = true)
+  List<String> findDistinctCitiesWithPrices(@Param("country") String country);
 
-  /** Obchody se skutečnou cenou, pro dropdown filtru hledání. */
+  /** Obchody se skutečnou cenou v dané zemi, pro dropdown filtru hledání. */
   @Query(value = "SELECT DISTINCT s.* FROM core.store s "
       + "JOIN agg.price_current pc ON pc.store_id = s.id "
-      + "WHERE s.status = 'ACTIVE' ORDER BY s.name", nativeQuery = true)
-  List<Store> findDistinctWithPrices();
+      + "WHERE s.status = 'ACTIVE' AND s.country = :country ORDER BY s.name", nativeQuery = true)
+  List<Store> findDistinctWithPrices(@Param("country") String country);
 }

@@ -34,6 +34,12 @@ public class PriceCurrent {
   @Column(name = "price_kind", length = 12)
   private PriceKind priceKind;
 
+  // Součást PK (viz 2026-08-09/01-agg-currency.yaml) — bez toho by se u příhraniční prodejny
+  // s částí záznamů v CZK a částí v EUR smíchaly obě měny do jednoho řádku.
+  @Id
+  @Column(name = "currency", length = 3)
+  private String currency;
+
   @Column(name = "unit_price", precision = 12, scale = 4)
   private BigDecimal unitPrice;
 

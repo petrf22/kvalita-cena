@@ -19,6 +19,7 @@ import cz.kvalitacena.exception.DuplicateException;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.TooManyRequestsException;
 import cz.kvalitacena.exception.UnauthorizedException;
+import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.security.CatalogRateLimiter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -99,7 +100,7 @@ class ProductCatalogServiceTest {
     givenLoggedInUser();
     CreateProductInput blank = new CreateProductInput(" ", null, CATEGORY_ID, UnitBase.MASS,
         null, null, null, false, null);
-    assertThatThrownBy(() -> service().create(blank, PUBLIC_UID)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> service().create(blank, PUBLIC_UID)).isInstanceOf(ValidationException.class);
   }
 
   @Test
@@ -107,7 +108,7 @@ class ProductCatalogServiceTest {
     givenLoggedInUser();
     CreateProductInput noCategory = new CreateProductInput("Chléb", null, null, UnitBase.MASS,
         null, null, null, false, null);
-    assertThatThrownBy(() -> service().create(noCategory, PUBLIC_UID)).isInstanceOf(IllegalArgumentException.class);
+    assertThatThrownBy(() -> service().create(noCategory, PUBLIC_UID)).isInstanceOf(ValidationException.class);
   }
 
   @Test
@@ -212,7 +213,7 @@ class ProductCatalogServiceTest {
         UnitBase.VOLUME, new BigDecimal("1"), NetContentUom.G, null, false, null);
 
     assertThatThrownBy(() -> service().create(mismatched, PUBLIC_UID))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(ValidationException.class);
   }
 
   @Test

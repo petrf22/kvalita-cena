@@ -1,13 +1,15 @@
 package cz.kvalitacena.controller;
 
+import cz.kvalitacena.config.I18nProperties;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.entity.StoreStatus;
+import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.security.ViewerContext;
 import cz.kvalitacena.security.ViewerContextResolver;
-import cz.kvalitacena.service.AresService;
 import cz.kvalitacena.service.CatalogEditService;
+import cz.kvalitacena.service.CompanyRegistries;
 import cz.kvalitacena.service.GeocodingService;
 import cz.kvalitacena.service.MediaService;
 import cz.kvalitacena.service.StoreOverlayService;
@@ -39,7 +41,9 @@ public class StoreGraphQlController {
   private final MediaService mediaService;
   private final ViewerContextResolver viewerContextResolver;
   private final GeocodingService geocodingService;
-  private final AresService aresService;
+  private final CompanyRegistries companyRegistries;
+  private final AppUserRepository appUserRepository;
+  private final I18nProperties i18nProperties;
 
   @QueryMapping
   public List<Store> nearbyStores(@Argument double lat, @Argument double lon, @Argument Double radiusKm,
@@ -92,15 +96,35 @@ public class StoreGraphQlController {
     return catalogEditService.updateStore(id, input, viewerContextResolver.resolve(authentication).publicUid());
   }
 
+  /**
+   * {@code country} nemá ve schématu literální default "CZ" — server dosadí zemi zakládaného
+   * obchodu (v budoucnu, až ji bude formulář posílat), jinak zemi přihlášeného uživatele,
+   * a až v poslední instanci app.i18n.default-country (docs/lokalizace.md).
+   */
   @QueryMapping
   public GeocodeResult geocodeAddress(@Argument String street, @Argument String city,
-      @Argument String postalCode, @Argument String country) {
-    return geocodingService.geocode(street, city, postalCode, country);
+      @Argument String postalCode, @Argument String country, Authentication authentication) {
+    return geocodingService.geocode(street, city, postalCode, resolveCountry(country, authentication));
+  }
+
+  private String resolveCountry(String explicit, Authentication authentication) {
+    if (explicit != null && !explicit.isBlank()) {
+      return explicit;
+    }
+    ViewerContext viewer = viewerContextResolver.resolve(authentication);
+    if (viewer.userId() != null) {
+      String userCountry = appUserRepository.findById(viewer.userId()).map(u -> u.getCountry()).orElse(null);
+      if (userCountry != null && !userCountry.isBlank()) {
+        return userCountry;
+      }
+    }
+    return i18nProperties.getDefaultCountry();
   }
 
   @QueryMapping
-  public CompanyInfo companyByIco(@Argument String ico) {
-    return aresService.lookup(ico);
+  public CompanyInfo companyByIco(@Argument String ico, @Argument String country, Authentication authentication) {
+    String resolvedCountry = resolveCountry(country, authentication);
+    return companyRegistries.forCountry(resolvedCountry).map(registry -> registry.lookup(ico)).orElse(null);
   }
 
   @QueryMapping

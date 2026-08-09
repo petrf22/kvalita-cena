@@ -44,9 +44,13 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
           AND ( to_tsvector('simple', p.name) @@ plainto_tsquery('simple', :query)
              OR to_tsvector('simple', e.name) @@ plainto_tsquery('simple', :query) )
       ), scoped AS (
+        -- country je NIKDY null v praxi (ProductGraphQlController.resolveCountry vždy dosadí
+        -- konkrétní zemi) — díky tomu je scoped už jednoměnový a "best" níž smí bezpečně
+        -- porovnávat unit_price napříč řádky, aniž by míchal CZK s PLN (docs/lokalizace.md).
         SELECT pc.* FROM agg.price_current pc
         JOIN core.store s ON s.id = pc.store_id
         WHERE pc.product_id IN (SELECT id FROM matched)
+          AND s.country = :country
           AND (CAST(:storeId AS BIGINT) IS NULL OR pc.store_id = CAST(:storeId AS BIGINT))
           AND (CAST(:city AS TEXT) IS NULL OR s.city = CAST(:city AS TEXT))
       ), totals AS (
@@ -56,7 +60,7 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
       ), best AS (
         -- Jen REGULAR: PROMO/CLUB_CARD by vždy vyhrálo a "nejlevnější obchod" by porovnával
         -- nesrovnatelné (docs/datovy-model.md — price_kind se nemíchá).
-        SELECT DISTINCT ON (product_id) product_id, store_id, unit_price, price_amount, n_obs
+        SELECT DISTINCT ON (product_id) product_id, store_id, unit_price, price_amount, n_obs, currency
         FROM scoped WHERE price_kind = 'REGULAR' AND unit_price IS NOT NULL
         ORDER BY product_id, unit_price ASC, store_id ASC
       ), quality AS (
@@ -75,7 +79,7 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
 
     String sql = CTE + """
         SELECT m.id, COALESCE(t.n_obs_total, 0), b.price_amount, b.unit_price, b.store_id, b.n_obs,
-               t.last_observed_at, q.avg_grade, COALESCE(q.rating_count, 0)
+               t.last_observed_at, q.avg_grade, COALESCE(q.rating_count, 0), b.currency
         FROM matched m
         """ + totalsJoin + """
          totals t  ON t.product_id = m.id
@@ -109,6 +113,7 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
     nativeQuery.setParameter("query", criteria.query());
     nativeQuery.setParameter("storeId", criteria.storeId());
     nativeQuery.setParameter("city", criteria.city());
+    nativeQuery.setParameter("country", criteria.country());
     nativeQuery.setParameter("viewerId", criteria.viewerId());
   }
 
@@ -133,7 +138,8 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
         asInteger(row[5]),
         asOffsetDateTime(row[6]),
         asBigDecimal(row[7]),
-        asLong(row[8]));
+        asLong(row[8]),
+        (String) row[9]);
   }
 
   private Long asLong(Object value) {

@@ -9,9 +9,11 @@ import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
+import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.TooManyRequestsException;
 import cz.kvalitacena.exception.UnauthorizedException;
+import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.security.CatalogRateLimiter;
 import cz.kvalitacena.security.ViewerContext;
 import lombok.RequiredArgsConstructor;
@@ -46,17 +48,18 @@ public class MediaService {
   private final ImageProcessingService imageProcessingService;
   private final CatalogRateLimiter catalogRateLimiter;
   private final MediaProperties mediaProperties;
+  private final Messages messages;
 
   @Transactional
   public Media upload(RecordType recordType, Long recordId, byte[] raw, String caption, UUID viewerPublicUid) {
     if (viewerPublicUid == null) {
-      throw new UnauthorizedException("Nahrání fotky vyžaduje přihlášení");
+      throw new UnauthorizedException(ErrorCode.PHOTO_UPLOAD_REQUIRES_LOGIN);
     }
     if (recordType == RecordType.PHOTO) {
-      throw new IllegalArgumentException("Fotku nejde připojit k fotce");
+      throw new ValidationException(ErrorCode.PHOTO_CANNOT_ATTACH_TO_PHOTO);
     }
     AppUser user = appUserRepository.findByPublicUid(viewerPublicUid)
-        .orElseThrow(() -> new UnauthorizedException("Účet už neexistuje"));
+        .orElseThrow(() -> new UnauthorizedException(ErrorCode.ACCOUNT_GONE));
     requireRecordExists(recordType, recordId);
     if (!catalogRateLimiter.tryAcquireMediaUpload(viewerPublicUid)) {
       throw new TooManyRequestsException();
@@ -64,7 +67,7 @@ public class MediaService {
 
     long existingCount = mediaRepository.countByRecordTypeAndRecordId(recordType, recordId);
     if (existingCount >= mediaProperties.getMaxPhotosPerRecord()) {
-      throw new IllegalArgumentException("Záznam už má maximální povolený počet fotek");
+      throw new ValidationException(ErrorCode.PHOTO_LIMIT_REACHED, mediaProperties.getMaxPhotosPerRecord());
     }
 
     ImageProcessingService.ProcessedImage processed = imageProcessingService.process(raw);
@@ -96,14 +99,14 @@ public class MediaService {
 
   @Transactional
   public void delete(Long mediaId, UUID viewerPublicUid) {
-    Media media = requireOwnMedia(mediaId, viewerPublicUid, "smazat");
+    Media media = requireOwnMedia(mediaId, viewerPublicUid, ErrorCode.PHOTO_DELETE_NOT_OWNER);
     mediaStorage.delete(media.getStorageKey());
     mediaRepository.delete(media);
   }
 
   @Transactional
   public Media update(Long mediaId, String caption, Integer sortOrder, UUID viewerPublicUid) {
-    Media media = requireOwnMedia(mediaId, viewerPublicUid, "upravit");
+    Media media = requireOwnMedia(mediaId, viewerPublicUid, ErrorCode.PHOTO_UPDATE_NOT_OWNER);
     if (caption != null) {
       media.setCaption(blankToNull(caption));
     }
@@ -134,19 +137,21 @@ public class MediaService {
     boolean mine = viewer.userId() != null && media.getUploadedByUserId().equals(viewer.userId());
     return new Photo(media.getId(), "/api/media/" + media.getId(), "/api/media/" + media.getId() + "/thumb",
         media.getWidth(), media.getHeight(), media.getCaption(), mine, media.isHidden(),
-        mediaProperties.getAttribution());
+        messages.get("attribution.media"));
   }
 
-  private Media requireOwnMedia(Long mediaId, UUID viewerPublicUid, String action) {
+  private Media requireOwnMedia(Long mediaId, UUID viewerPublicUid, ErrorCode notOwnerCode) {
     if (viewerPublicUid == null) {
-      throw new UnauthorizedException("Tahle akce vyžaduje přihlášení");
+      throw new UnauthorizedException(ErrorCode.PHOTO_ACTION_REQUIRES_LOGIN);
     }
     AppUser user = appUserRepository.findByPublicUid(viewerPublicUid)
-        .orElseThrow(() -> new UnauthorizedException("Účet už neexistuje"));
+        .orElseThrow(() -> new UnauthorizedException(ErrorCode.ACCOUNT_GONE));
     Media media = mediaRepository.findById(mediaId)
-        .orElseThrow(() -> new NotFoundException("Fotka neexistuje"));
+        .orElseThrow(() -> new NotFoundException(ErrorCode.PHOTO_NOT_FOUND));
     if (!media.getUploadedByUserId().equals(user.getId())) {
-      throw new UnauthorizedException("Fotku smí " + action + " jen autor");
+      // Rozpad na dva kódy (mazání/úprava), NE interpolace "Fotku smí " + action + " jen autor"
+      // — v pl/sk se mění slovosled i vazba slovesa (viz AppException).
+      throw new UnauthorizedException(notOwnerCode);
     }
     return media;
   }
@@ -162,7 +167,7 @@ public class MediaService {
       case PHOTO -> false;
     };
     if (!exists) {
-      throw new NotFoundException("Záznam pro fotku neexistuje");
+      throw new NotFoundException(ErrorCode.PHOTO_TARGET_RECORD_NOT_FOUND);
     }
   }
 

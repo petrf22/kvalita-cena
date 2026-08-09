@@ -6,6 +6,8 @@ import com.drew.metadata.Metadata;
 import com.drew.metadata.MetadataException;
 import com.drew.metadata.exif.ExifIFD0Directory;
 import cz.kvalitacena.config.MediaProperties;
+import cz.kvalitacena.exception.ErrorCode;
+import cz.kvalitacena.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,7 +53,7 @@ public class ImageProcessingService {
 
   public ProcessedImage process(byte[] raw) {
     if (raw.length == 0 || raw.length > mediaProperties.getMaxUploadBytes()) {
-      throw new IllegalArgumentException("Fotka je příliš velká nebo prázdná");
+      throw new ValidationException(ErrorCode.PHOTO_TOO_LARGE);
     }
     requireKnownFormat(raw);
     checkPixelBudget(raw);
@@ -75,7 +77,7 @@ public class ImageProcessingService {
     boolean png = raw.length >= 8
         && (raw[0] & 0xFF) == 0x89 && raw[1] == 0x50 && raw[2] == 0x4E && raw[3] == 0x47;
     if (!jpeg && !png) {
-      throw new IllegalArgumentException("Podporované jsou jen fotky JPEG nebo PNG");
+      throw new ValidationException(ErrorCode.PHOTO_UNSUPPORTED_FORMAT);
     }
   }
 
@@ -86,24 +88,24 @@ public class ImageProcessingService {
   private void checkPixelBudget(byte[] raw) {
     try (ImageInputStream iis = ImageIO.createImageInputStream(new ByteArrayInputStream(raw))) {
       if (iis == null) {
-        throw new IllegalArgumentException("Fotku se nepodařilo přečíst");
+        throw new ValidationException(ErrorCode.PHOTO_UNREADABLE);
       }
       Iterator<ImageReader> readers = ImageIO.getImageReaders(iis);
       if (!readers.hasNext()) {
-        throw new IllegalArgumentException("Fotku se nepodařilo přečíst");
+        throw new ValidationException(ErrorCode.PHOTO_UNREADABLE);
       }
       ImageReader reader = readers.next();
       try {
         reader.setInput(iis);
         long pixels = (long) reader.getWidth(0) * (long) reader.getHeight(0);
         if (pixels > mediaProperties.getMaxPixels()) {
-          throw new IllegalArgumentException("Fotka má příliš velké rozlišení");
+          throw new ValidationException(ErrorCode.PHOTO_RESOLUTION_TOO_HIGH);
         }
       } finally {
         reader.dispose();
       }
     } catch (IOException e) {
-      throw new IllegalArgumentException("Fotku se nepodařilo přečíst", e);
+      throw new ValidationException(ErrorCode.PHOTO_UNREADABLE, e);
     }
   }
 
@@ -111,11 +113,11 @@ public class ImageProcessingService {
     try {
       BufferedImage image = ImageIO.read(new ByteArrayInputStream(raw));
       if (image == null) {
-        throw new IllegalArgumentException("Fotku se nepodařilo přečíst");
+        throw new ValidationException(ErrorCode.PHOTO_UNREADABLE);
       }
       return image;
     } catch (IOException e) {
-      throw new IllegalArgumentException("Fotku se nepodařilo přečíst", e);
+      throw new ValidationException(ErrorCode.PHOTO_UNREADABLE, e);
     }
   }
 

@@ -9,12 +9,14 @@ import cz.kvalitacena.exception.TooManyRequestsException;
 import cz.kvalitacena.service.OtpMailSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -73,7 +75,16 @@ public class OtpService {
     challenge = challengeRepository.save(challenge);
 
     if (properties.isMailEnabled()) {
-      mailSender.sendOtpCode(rawEmail, code);
+      // Uložená preference existujícího účtu, jinak Accept-Language requestu (LocaleContextHolder
+      // je v tuhle chvíli vyplněný z UserAwareLocaleResolveru) — nový uživatel žádnou preferenci
+      // ještě nemá. Nerozlišuje se od "účet neexistuje" navenek (docs/soukromi.md), liší se jen
+      // jazyk e-mailu, který vidí výhradně majitel schránky.
+      Locale locale = appUserRepository.findByEmailHash(emailHash)
+          .map(AppUser::getLocale)
+          .filter(l -> l != null && !l.isBlank())
+          .map(Locale::forLanguageTag)
+          .orElseGet(LocaleContextHolder::getLocale);
+      mailSender.sendOtpCode(rawEmail, code, locale);
     } else {
       log.info("[DEV] OTP kód pro e-mail {} (challenge {}): {}",
           emailCipher.normalize(rawEmail), challenge.getChallengeUid(), code);
@@ -125,11 +136,15 @@ public class OtpService {
     AppUser user = appUserRepository.findByEmailHash(emailHash).orElse(null);
     if (user == null) {
       isNewUser = true;
+      HandleGenerator.GeneratedHandle handle = handleGenerator.generateUnique();
       user = AppUser.builder()
           .emailHash(emailHash)
           .emailEnc(emailCipher.encrypt(email))
           .emailDomain(emailCipher.extractDomain(email))
-          .publicHandle(handleGenerator.generateUnique())
+          .publicHandle(handle.canonicalHandle())
+          .handleAdjective(handle.adjective())
+          .handleNoun(handle.noun().key())
+          .handleNumber((short) handle.number())
           .status(AppUserStatus.ACTIVE)
           .tokenVersion(0)
           .build();

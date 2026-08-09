@@ -22,9 +22,14 @@ import java.net.http.HttpClient;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AresService {
+public class AresService implements CompanyRegistry {
 
   private final AresProperties aresProperties;
+
+  @Override
+  public String country() {
+    return "CZ";
+  }
 
   // Líné vytvoření až při prvním použití — viz GeocodingService, stejný důvod (pořadí
   // @ConfigurationProperties binding vs. @PostConstruct na @Component beanu není zaručené).
@@ -46,6 +51,7 @@ public class AresService {
   }
 
   /** @return údaje o firmě, nebo {@code null} — IČO neexistuje, nebo je ARES nedostupný. */
+  @Override
   public CompanyInfo lookup(String ico) {
     try {
       AresResponse response = restClient().get().uri("/{ico}", ico).retrieve().body(AresResponse.class);

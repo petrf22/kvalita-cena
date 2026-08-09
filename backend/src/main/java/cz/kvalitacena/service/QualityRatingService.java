@@ -5,8 +5,10 @@ import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.ProductQualityRatingRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
+import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.UnauthorizedException;
+import cz.kvalitacena.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,16 +36,16 @@ public class QualityRatingService {
   @Transactional
   public ProductQuality rate(Long productId, int grade, UUID viewerPublicUid) {
     if (viewerPublicUid == null) {
-      throw new UnauthorizedException("Hodnocení kvality vyžaduje přihlášení");
+      throw new UnauthorizedException(ErrorCode.QUALITY_REQUIRES_LOGIN);
     }
     if (grade < 1 || grade > 5) {
-      throw new IllegalArgumentException("Známka musí být 1 až 5");
+      throw new ValidationException(ErrorCode.QUALITY_GRADE_OUT_OF_RANGE, 1, 5);
     }
     if (!productRepository.existsById(productId)) {
-      throw new NotFoundException("Produkt s tímto id neexistuje");
+      throw new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND);
     }
     AppUser user = appUserRepository.findByPublicUid(viewerPublicUid)
-        .orElseThrow(() -> new UnauthorizedException("Účet už neexistuje"));
+        .orElseThrow(() -> new UnauthorizedException(ErrorCode.ACCOUNT_GONE));
 
     qualityRatingRepository.upsert(productId, user.getId(), (short) grade);
 

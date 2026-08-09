@@ -38,12 +38,12 @@ public class ProductSearchService {
   private final ProductOverlayService productOverlayService;
 
   @Transactional(readOnly = true)
-  public ProductSearchResult search(String query, Long storeId, String city, ProductSort sort,
+  public ProductSearchResult search(String query, Long storeId, String city, String country, ProductSort sort,
       Integer first, Integer offset, Long viewerId) {
     int limitedFirst = clamp(first == null ? 20 : first, 1, MAX_FIRST);
     int limitedOffset = clamp(offset == null ? 0 : offset, 0, MAX_OFFSET);
     ProductSearchCriteria criteria = new ProductSearchCriteria(
-        query, storeId, city, sort == null ? ProductSort.REPORT_COUNT : sort, limitedFirst, limitedOffset,
+        query, storeId, city, country, sort == null ? ProductSort.REPORT_COUNT : sort, limitedFirst, limitedOffset,
         viewerId);
 
     List<ProductSearchRow> rows = productRepository.search(criteria);
@@ -77,8 +77,9 @@ public class ProductSearchService {
   }
 
   @Transactional(readOnly = true)
-  public SearchFacets facets() {
-    return new SearchFacets(storeRepository.findDistinctWithPrices(), storeRepository.findDistinctCitiesWithPrices());
+  public SearchFacets facets(String country) {
+    return new SearchFacets(storeRepository.findDistinctWithPrices(country),
+        storeRepository.findDistinctCitiesWithPrices(country));
   }
 
   private ProductSearchItem toItem(ProductSearchRow row, Map<Long, Product> productsById, Map<Long, Store> storesById) {
@@ -91,7 +92,8 @@ public class ProductSearchService {
         row.bestPriceObservations(),
         row.lastObservedAt(),
         row.qualityAverage(),
-        (int) row.qualityCount());
+        (int) row.qualityCount(),
+        row.currency());
   }
 
   private int clamp(int value, int min, int max) {

@@ -14,9 +14,11 @@ import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.exception.DuplicateException;
+import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.TooManyRequestsException;
 import cz.kvalitacena.exception.UnauthorizedException;
+import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.security.CatalogRateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -54,28 +56,28 @@ public class ProductCatalogService {
   @Transactional
   public Product create(CreateProductInput input, UUID viewerPublicUid) {
     if (viewerPublicUid == null) {
-      throw new UnauthorizedException("Založení zboží vyžaduje přihlášení");
+      throw new UnauthorizedException(ErrorCode.PRODUCT_CREATE_REQUIRES_LOGIN);
     }
     AppUser user = appUserRepository.findByPublicUid(viewerPublicUid)
-        .orElseThrow(() -> new UnauthorizedException("Účet už neexistuje"));
+        .orElseThrow(() -> new UnauthorizedException(ErrorCode.ACCOUNT_GONE));
 
     if (input.name() == null || input.name().isBlank()) {
-      throw new IllegalArgumentException("Název zboží je povinný");
+      throw new ValidationException(ErrorCode.PRODUCT_NAME_REQUIRED);
     }
     if (input.categoryId() == null) {
-      throw new IllegalArgumentException("Kategorie je povinná");
+      throw new ValidationException(ErrorCode.PRODUCT_CATEGORY_REQUIRED);
     }
     if (input.unitBase() == null) {
-      throw new IllegalArgumentException("Základní jednotka (kg/l/ks) je povinná");
+      throw new ValidationException(ErrorCode.PRODUCT_UNIT_BASE_REQUIRED);
     }
     Category category = categoryRepository.findById(input.categoryId())
-        .orElseThrow(() -> new NotFoundException("Kategorie s tímto id neexistuje"));
+        .orElseThrow(() -> new NotFoundException(ErrorCode.CATEGORY_NOT_FOUND));
 
     String code = blankToNull(input.code());
     String gtin14 = code == null ? null : GtinNormalization.toGtin14(code);
     if (gtin14 != null) {
       productCodeRepository.findFirstByCodeAndCodeType(gtin14, CodeType.GTIN).ifPresent(existing -> {
-        throw new DuplicateException("Tenhle kód už v katalogu existuje", existing.getProduct().getId());
+        throw new DuplicateException(ErrorCode.DUPLICATE_PRODUCT_CODE, existing.getProduct().getId());
       });
     }
     if (!catalogRateLimiter.tryAcquireProductCreation(viewerPublicUid)) {
@@ -146,7 +148,7 @@ public class ProductCatalogService {
     // Vlastní transakce (DuplicateLookupService) — viz StoreService.duplicateOf, stejný důvod.
     List<Product> similar = duplicateLookupService.findSimilarProducts(name);
     Long existingId = similar.isEmpty() ? null : similar.get(0).getId();
-    return new DuplicateException("Tahle druhová položka už v katalogu existuje", existingId);
+    return new DuplicateException(ErrorCode.DUPLICATE_GENERIC_PRODUCT, existingId);
   }
 
   private String blankToNull(String value) {

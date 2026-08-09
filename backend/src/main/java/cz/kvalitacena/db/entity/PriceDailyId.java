@@ -15,5 +15,6 @@ public class PriceDailyId implements Serializable {
   private Long productId;
   private Long storeId;
   private PriceKind priceKind;
+  private String currency;
   private LocalDate day;
 }

@@ -33,6 +33,6 @@ public class MyPriceService {
 
   private MyPrice toMyPrice(PriceObservation observation) {
     return new MyPrice(observation.getStore(), observation.getPriceKind(), observation.getPriceAmount(),
-        observation.getUnitPrice(), observation.getObservedAt());
+        observation.getUnitPrice(), observation.getObservedAt(), observation.getCurrency());
   }
 }

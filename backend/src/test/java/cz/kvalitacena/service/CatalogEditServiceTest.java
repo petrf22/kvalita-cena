@@ -19,6 +19,7 @@ import cz.kvalitacena.db.repo.RetailChainRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.db.repo.StoreUserEditRepository;
 import cz.kvalitacena.exception.UnauthorizedException;
+import cz.kvalitacena.exception.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -26,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -71,12 +73,12 @@ class CatalogEditServiceTest {
   @Mock
   private AppUserRepository appUserRepository;
 
-  private final IcoValidator icoValidator = new IcoValidator();
+  private final CompanyIdValidators companyIdValidators = new CompanyIdValidators(List.of(new IcoValidator()));
 
   private CatalogEditService service() {
     return new CatalogEditService(productRepository, productUserEditRepository, categoryRepository,
         brandResolutionService, productOverlayService, storeRepository, storeUserEditRepository,
-        retailChainRepository, icoValidator, storeOverlayService, appUserRepository);
+        retailChainRepository, companyIdValidators, storeOverlayService, appUserRepository);
   }
 
   private Product existingProduct() {
@@ -183,6 +185,6 @@ class CatalogEditServiceTest {
     UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
         null, "12345678", null, null, null, null, null);
     assertThatThrownBy(() -> service().updateStore(STORE_ID, input, PUBLIC_UID))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(ValidationException.class);
   }
 }

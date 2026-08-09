@@ -1,10 +1,13 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.config.OtpProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+
+import java.util.Locale;
 
 /** Skutečné odeslání přes SMTP (spring-boot-starter-mail) — zapíná se app.auth.otp.mail-enabled=true. */
 @Service
@@ -13,14 +16,17 @@ import org.springframework.stereotype.Service;
 public class SmtpOtpMailSender implements OtpMailSender {
 
   private final JavaMailSender javaMailSender;
+  private final Messages messages;
+  private final OtpProperties otpProperties;
 
   @Override
-  public void sendOtpCode(String email, String code) {
+  public void sendOtpCode(String email, String code, Locale locale) {
     SimpleMailMessage message = new SimpleMailMessage();
     message.setTo(email);
-    message.setSubject("Přihlašovací kód — Kvalita a cena");
-    message.setText("Tvůj přihlašovací kód je: " + code
-        + "\n\nKód platí 10 minut. Pokud sis o něj nežádal(a), tuto zprávu ignoruj.");
+    message.setSubject(messages.get("mail.otp.subject", locale));
+    // Platnost se čte z konfigurace, ne natvrdo — dřív text tvrdil "10 minut" bez ohledu na
+    // skutečnou hodnotu app.auth.otp.code-ttl.
+    message.setText(messages.get("mail.otp.body", locale, code, otpProperties.getCodeTtl().toMinutes()));
     javaMailSender.send(message);
   }
 }

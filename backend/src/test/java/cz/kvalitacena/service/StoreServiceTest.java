@@ -1,6 +1,7 @@
 package cz.kvalitacena.service;
 
 import cz.kvalitacena.config.CatalogProperties;
+import cz.kvalitacena.config.I18nProperties;
 import cz.kvalitacena.controller.CreateStoreInput;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.GeoSource;
@@ -13,6 +14,7 @@ import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.exception.DuplicateException;
 import cz.kvalitacena.exception.TooManyRequestsException;
 import cz.kvalitacena.exception.UnauthorizedException;
+import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.security.CatalogRateLimiter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,14 +59,16 @@ class StoreServiceTest {
   @Mock
   private TrustLevelService trustLevelService;
 
-  private final IcoValidator icoValidator = new IcoValidator();
+  private final CompanyIdValidators companyIdValidators = new CompanyIdValidators(List.of(new IcoValidator()));
   private final CatalogProperties catalogProperties = new CatalogProperties();
+  private final I18nProperties i18nProperties = new I18nProperties();
 
   private StoreService service() {
     catalogProperties.setDraftConfirmations(3);
+    i18nProperties.setDefaultCountry("CZ");
     return new StoreService(storeRepository, retailChainRepository, appUserRepository,
-        priceObservationRepository, icoValidator, catalogRateLimiter, duplicateLookupService,
-        trustLevelService, catalogProperties);
+        priceObservationRepository, companyIdValidators, catalogRateLimiter, duplicateLookupService,
+        trustLevelService, catalogProperties, i18nProperties);
   }
 
   private CreateStoreInput input(String name, String city) {
@@ -82,14 +86,14 @@ class StoreServiceTest {
   void blankNameIsRejected() {
     givenLoggedInUser();
     assertThatThrownBy(() -> service().create(input("  ", "Brno"), PUBLIC_UID))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(ValidationException.class);
   }
 
   @Test
   void blankCityIsRejected() {
     givenLoggedInUser();
     assertThatThrownBy(() -> service().create(input("Obchod", " "), PUBLIC_UID))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(ValidationException.class);
   }
 
   @Test
@@ -98,7 +102,7 @@ class StoreServiceTest {
     CreateStoreInput bad = new CreateStoreInput("Obchod", null, null, "Brno", null, "CZ",
         "123", null, null, null, null);
     assertThatThrownBy(() -> service().create(bad, PUBLIC_UID))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(ValidationException.class);
   }
 
   @Test

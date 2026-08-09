@@ -5,5 +5,6 @@ import cz.kvalitacena.db.entity.Store;
 
 import java.util.List;
 
-public record PriceHistory(PriceKind priceKind, Store store, int days, List<PricePoint> points) {
+/** {@code currency} je VŽDY vyplněná (docs/lokalizace.md) — graf tím ví, čím popsat osu. */
+public record PriceHistory(PriceKind priceKind, Store store, int days, String currency, List<PricePoint> points) {
 }

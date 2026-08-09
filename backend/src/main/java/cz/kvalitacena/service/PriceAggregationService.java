@@ -96,25 +96,33 @@ public class PriceAggregationService {
     recomputeDaily(productId, storeId, observations);
   }
 
-  private void recomputeCurrent(Long productId, Long storeId, List<PriceObservation> observations, boolean generic) {
-    Map<PriceKind, List<PriceObservation>> byKind = observations.stream()
-        .collect(Collectors.groupingBy(PriceObservation::getPriceKind));
+  /** Druh ceny + měna dohromady — akční/klubová/běžná cena se nikdy nemíchá (viz docs/datovy-model.md)
+   *  a stejně tak se nesmí míchat ani měna (docs/lokalizace.md, příhraniční prodejna CZK/EUR). */
+  private record KindCurrency(PriceKind priceKind, String currency) {
+  }
 
-    for (Map.Entry<PriceKind, List<PriceObservation>> entry : byKind.entrySet()) {
+  private void recomputeCurrent(Long productId, Long storeId, List<PriceObservation> observations, boolean generic) {
+    Map<KindCurrency, List<PriceObservation>> byKindCurrency = observations.stream()
+        .collect(Collectors.groupingBy(o -> new KindCurrency(o.getPriceKind(), o.getCurrency())));
+
+    for (Map.Entry<KindCurrency, List<PriceObservation>> entry : byKindCurrency.entrySet()) {
       upsertPriceCurrent(productId, storeId, entry.getKey(), entry.getValue(), generic);
     }
 
-    // Osiřelé řádky: druh ceny, který dřív měl agregát, ale teď už nemá žádnou ACTIVE observaci
-    // (poslední záznam byl zamítnut/smazán) — jinak by UI dál ukazovalo neexistující cenu.
+    // Osiřelé řádky: dvojice (druh ceny, měna), která dřív měla agregát, ale teď už nemá
+    // žádnou ACTIVE observaci (poslední záznam byl zamítnut/smazán) — jinak by UI dál
+    // ukazovalo neexistující cenu. Porovnává se PÁR, ne jen priceKind — jinak by se při
+    // osiření CZK řádku smazal i platný EUR řádek stejného druhu ceny.
     List<PriceCurrent> orphaned = priceCurrentRepository.findByProductId(productId).stream()
-        .filter(pc -> Objects.equals(pc.getStoreId(), storeId) && !byKind.containsKey(pc.getPriceKind()))
+        .filter(pc -> Objects.equals(pc.getStoreId(), storeId)
+            && !byKindCurrency.containsKey(new KindCurrency(pc.getPriceKind(), pc.getCurrency())))
         .toList();
     if (!orphaned.isEmpty()) {
       priceCurrentRepository.deleteAll(orphaned);
     }
   }
 
-  private void upsertPriceCurrent(Long productId, Long storeId, PriceKind priceKind,
+  private void upsertPriceCurrent(Long productId, Long storeId, KindCurrency kindCurrency,
       List<PriceObservation> observations, boolean generic) {
     WeightedStats stats = computeWeighted(observations);
 
@@ -123,9 +131,10 @@ public class PriceAggregationService {
         .max(Comparator.naturalOrder())
         .orElse(null);
 
-    PriceCurrentId id = new PriceCurrentId(productId, storeId, priceKind);
+    PriceCurrentId id = new PriceCurrentId(productId, storeId, kindCurrency.priceKind(), kindCurrency.currency());
     PriceCurrent priceCurrent = priceCurrentRepository.findById(id).orElseGet(() ->
-        PriceCurrent.builder().productId(productId).storeId(storeId).priceKind(priceKind).build());
+        PriceCurrent.builder().productId(productId).storeId(storeId)
+            .priceKind(kindCurrency.priceKind()).currency(kindCurrency.currency()).build());
 
     priceCurrent.setUnitPrice(stats.unitPrice());
     priceCurrent.setPriceAmount(stats.priceAmount());
@@ -152,11 +161,11 @@ public class PriceAggregationService {
   private void recomputeDaily(Long productId, Long storeId, List<PriceObservation> observations) {
     priceDailyRepository.deleteByProductIdAndStoreId(productId, storeId);
 
-    record DayKey(PriceKind priceKind, LocalDate day) {
+    record DayKey(PriceKind priceKind, String currency, LocalDate day) {
     }
 
     Map<DayKey, List<PriceObservation>> byDay = observations.stream()
-        .collect(Collectors.groupingBy(o -> new DayKey(o.getPriceKind(), utcDay(o.getObservedAt()))));
+        .collect(Collectors.groupingBy(o -> new DayKey(o.getPriceKind(), o.getCurrency(), utcDay(o.getObservedAt()))));
 
     byDay.forEach((key, group) -> {
       WeightedStats stats = computeWeighted(group);
@@ -164,6 +173,7 @@ public class PriceAggregationService {
           .productId(productId)
           .storeId(storeId)
           .priceKind(key.priceKind())
+          .currency(key.currency())
           .day(key.day())
           .unitPrice(stats.unitPrice())
           .priceAmount(stats.priceAmount())

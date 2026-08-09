@@ -14,5 +14,6 @@ public record SubmitObservationInput(
     QuantityBasis quantityBasis,
     Integer multibuyQty,
     BigDecimal multibuyTotal,
-    OffsetDateTime observedAt) {
+    OffsetDateTime observedAt,
+    String currency) {
 }

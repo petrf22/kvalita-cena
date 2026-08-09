@@ -4,6 +4,9 @@ public record ProductSearchCriteria(
     String query,
     Long storeId,
     String city,
+    // Nikdy null v praxi (ProductGraphQlController.resolveCountry vždy dosadí konkrétní
+    // hodnotu) — bez ní by ProductSort.PRICE_ASC řadilo napříč měnami (docs/lokalizace.md).
+    String country,
     ProductSort sort,
     int first,
     int offset,

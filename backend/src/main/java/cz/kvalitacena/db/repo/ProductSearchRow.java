@@ -13,5 +13,6 @@ public record ProductSearchRow(
     Integer bestPriceObservations,
     OffsetDateTime lastObservedAt,
     BigDecimal qualityAverage,
-    long qualityCount) {
+    long qualityCount,
+    String currency) {
 }

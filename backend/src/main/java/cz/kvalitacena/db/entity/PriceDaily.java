@@ -36,6 +36,11 @@ public class PriceDaily {
   @Column(name = "price_kind", length = 12)
   private PriceKind priceKind;
 
+  // Součást PK, stejný důvod jako u PriceCurrent (viz 2026-08-09/01-agg-currency.yaml).
+  @Id
+  @Column(name = "currency", length = 3)
+  private String currency;
+
   @Id
   @Column(name = "day")
   private LocalDate day;

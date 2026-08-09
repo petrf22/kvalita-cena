@@ -1,7 +1,9 @@
 package cz.kvalitacena.controller;
 
 import cz.kvalitacena.config.ExternalLinkProperties;
+import cz.kvalitacena.config.I18nProperties;
 import cz.kvalitacena.db.entity.Category;
+import cz.kvalitacena.db.entity.CategoryI18n;
 import cz.kvalitacena.db.entity.CodeType;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.PriceCurrent;
@@ -10,6 +12,8 @@ import cz.kvalitacena.db.entity.ProductCode;
 import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.entity.Store;
+import cz.kvalitacena.db.repo.AppUserRepository;
+import cz.kvalitacena.db.repo.CategoryI18nRepository;
 import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
 import cz.kvalitacena.db.repo.ProductCodeRepository;
@@ -23,6 +27,7 @@ import cz.kvalitacena.service.GtinNormalization;
 import cz.kvalitacena.service.MediaService;
 import cz.kvalitacena.service.MyPriceService;
 import cz.kvalitacena.service.ProductCatalogService;
+import cz.kvalitacena.service.Messages;
 import cz.kvalitacena.service.ProductOverlayService;
 import cz.kvalitacena.service.ProductSearchService;
 import cz.kvalitacena.service.QualityRatingService;
@@ -30,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.BatchMapping;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -58,6 +64,7 @@ public class ProductGraphQlController {
   private final ProductCodeRepository productCodeRepository;
   private final StoreRepository storeRepository;
   private final CategoryRepository categoryRepository;
+  private final CategoryI18nRepository categoryI18nRepository;
   private final ProductSearchService productSearchService;
   private final QualityRatingService qualityRatingService;
   private final ProductCatalogService productCatalogService;
@@ -67,18 +74,40 @@ public class ProductGraphQlController {
   private final MediaService mediaService;
   private final ViewerContextResolver viewerContextResolver;
   private final ExternalLinkProperties externalLinkProperties;
+  private final Messages messages;
+  private final AppUserRepository appUserRepository;
+  private final I18nProperties i18nProperties;
 
   @QueryMapping
   public ProductSearchResult searchProducts(@Argument String query, @Argument Long storeId,
-      @Argument String city, @Argument ProductSort sort, @Argument Integer first, @Argument Integer offset,
-      Authentication authentication) {
+      @Argument String city, @Argument String country, @Argument ProductSort sort,
+      @Argument Integer first, @Argument Integer offset, Authentication authentication) {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
-    return productSearchService.search(query, storeId, city, sort, first, offset, viewer.userId());
+    return productSearchService.search(query, storeId, city, resolveCountry(country, viewer), sort, first,
+        offset, viewer.userId());
   }
 
   @QueryMapping
-  public SearchFacets searchFacets(@Argument String query) {
-    return productSearchService.facets();
+  public SearchFacets searchFacets(@Argument String query, @Argument String country, Authentication authentication) {
+    ViewerContext viewer = viewerContextResolver.resolve(authentication);
+    return productSearchService.facets(resolveCountry(country, viewer));
+  }
+
+  /**
+   * country bez zadání NEZNAMENÁ "celý svět" (docs/lokalizace.md) — bez filtru by
+   * ProductSort.PRICE_ASC řadilo CZK vedle PLN v jednom sloupci.
+   */
+  private String resolveCountry(String explicit, ViewerContext viewer) {
+    if (explicit != null && !explicit.isBlank()) {
+      return explicit;
+    }
+    if (viewer.userId() != null) {
+      String userCountry = appUserRepository.findById(viewer.userId()).map(u -> u.getCountry()).orElse(null);
+      if (userCountry != null && !userCountry.isBlank()) {
+        return userCountry;
+      }
+    }
+    return i18nProperties.getDefaultCountry();
   }
 
   @QueryMapping
@@ -164,6 +193,26 @@ public class ProductGraphQlController {
     return categoryRepository.findAllByOrderByPathAsc();
   }
 
+  /**
+   * Lokalizovaný název kategorie (docs/lokalizace.md) — core.category.name je česky (zdroj +
+   * fallback), core.category_i18n nese jen jiné jazyky. Přepisuje se tady, na výstupu, NIKDY
+   * na spravované entitě uvnitř transakce (stejné pravidlo jako u ostatního "čtení s
+   * překryvem" v projektu). Platí pro KAŽDÉ pole typu Category ve schématu — categories()
+   * i vnořené Product.category, obojí prochází přes tenhle resolver.
+   */
+  @BatchMapping(typeName = "Category", field = "name")
+  public Map<Category, String> categoryName(List<Category> categories) {
+    String locale = LocaleContextHolder.getLocale().getLanguage();
+    List<Long> ids = categories.stream().map(Category::getId).toList();
+    Map<Long, String> localizedById = categoryI18nRepository.findByCategoryIdInAndLocale(ids, locale).stream()
+        .collect(Collectors.toMap(CategoryI18n::getCategoryId, CategoryI18n::getName));
+    Map<Category, String> result = new LinkedHashMap<>();
+    for (Category category : categories) {
+      result.put(category, localizedById.getOrDefault(category.getId(), category.getName()));
+    }
+    return result;
+  }
+
   /** Opak normalizace — GTIN-14 zpět na EAN bez vedoucích nul, jak ho zná Open Food Facts. */
   private String stripLeadingZeros(String gtin) {
     String stripped = gtin.replaceFirst("^0+(?!$)", "");
@@ -205,7 +254,7 @@ public class ProductGraphQlController {
     Map<Long, List<PriceCurrent>> byProduct = pricesByProductId(products);
 
     record Raw(int observationCount, int storeCount, OffsetDateTime lastObservedAt,
-               BigDecimal bestPrice, BigDecimal bestUnitPrice, Long cheapestStoreId) {
+               BigDecimal bestPrice, BigDecimal bestUnitPrice, Long cheapestStoreId, String bestPriceCurrency) {
     }
 
     Map<Long, Raw> rawByProduct = new HashMap<>();
@@ -219,14 +268,22 @@ public class ProductGraphQlController {
           .max(Comparator.naturalOrder())
           .orElse(null);
       // Jen REGULAR — PROMO by vždy vyhrálo (docs/datovy-model.md, price_kind se nemíchá).
-      PriceCurrent cheapest = prices.stream()
+      // Uvnitř REGULAR ještě dominantní měna (nejvíc n_obs) — bez tohohle by .min() přes
+      // PriceCurrent.unitPrice srovnávalo číslo v CZK s číslem v EUR, jako by to byla stejná
+      // měna, a "nejlevnější" by bylo jen náhodou nejmenší číslo (docs/lokalizace.md).
+      Map<String, List<PriceCurrent>> regularByCurrency = prices.stream()
           .filter(pc -> pc.getPriceKind() == PriceKind.REGULAR && pc.getUnitPrice() != null)
+          .collect(Collectors.groupingBy(PriceCurrent::getCurrency));
+      PriceCurrent cheapest = regularByCurrency.values().stream()
+          .max(Comparator.comparingInt(group -> group.stream().mapToInt(PriceCurrent::getNObs).sum()))
+          .orElse(List.<PriceCurrent>of()).stream()
           .min(Comparator.comparing(PriceCurrent::getUnitPrice))
           .orElse(null);
       rawByProduct.put(p.getId(), new Raw(observationCount, storeCount, lastObservedAt,
           cheapest == null ? null : cheapest.getPriceAmount(),
           cheapest == null ? null : cheapest.getUnitPrice(),
-          cheapest == null ? null : cheapest.getStoreId()));
+          cheapest == null ? null : cheapest.getStoreId(),
+          cheapest == null ? null : cheapest.getCurrency()));
     }
 
     Set<Long> storeIds = rawByProduct.values().stream()
@@ -240,7 +297,7 @@ public class ProductGraphQlController {
       Raw raw = rawByProduct.get(p.getId());
       Store cheapestStore = raw.cheapestStoreId() == null ? null : storesById.get(raw.cheapestStoreId());
       result.put(p, new ProductStats(raw.observationCount(), raw.storeCount(), raw.lastObservedAt(),
-          raw.bestPrice(), raw.bestUnitPrice(), cheapestStore));
+          raw.bestPrice(), raw.bestUnitPrice(), cheapestStore, raw.bestPriceCurrency()));
     }
     return result;
   }
@@ -286,7 +343,7 @@ public class ProductGraphQlController {
         ExternalLinkKind.OPEN_FOOD_FACTS,
         "Open Food Facts",
         off.getProductUrlTemplate().replace("{barcode}", ean),
-        off.getAttribution()));
+        messages.get("attribution.off")));
     return links;
   }
 

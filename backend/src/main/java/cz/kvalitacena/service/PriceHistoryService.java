@@ -18,6 +18,8 @@ import java.util.List;
 /**
  * Denní řada z agg.price_daily pro graf vývoje ceny — NIKDY ze syrových core.price_observation
  * (docs/datovy-model.md). Bez storeId je to medián mediánů přes provozovny (docs/reputace.md).
+ * {@link PriceHistory#currency} je VŽDY vyplněná (docs/lokalizace.md) — graf tím vždy ví, čím
+ * popsat osu, a nikdy nesmíchá dvě měnové řady.
  */
 @Service
 @RequiredArgsConstructor
@@ -26,10 +28,11 @@ public class PriceHistoryService {
   private final PriceDailyRepository priceDailyRepository;
   private final StoreRepository storeRepository;
   private final PriceHistoryProperties properties;
+  private final CurrencyResolver currencyResolver;
 
   @Transactional(readOnly = true)
   public PriceHistory history(Long productId, PriceKind priceKind, Long storeId, Integer requestedDays,
-      boolean authenticated) {
+      String requestedCurrency, boolean authenticated) {
     int cap = authenticated ? properties.getMaxDays() : properties.getAnonymousMaxDays();
     int requested = requestedDays == null ? 90 : requestedDays;
     int days = Math.max(1, Math.min(requested, cap));
@@ -38,17 +41,28 @@ public class PriceHistoryService {
 
     if (storeId != null) {
       Store store = storeRepository.findById(storeId).orElse(null);
+      // Volitelný override (requestedCurrency) na store-scoped historii nedává moc smysl —
+      // provozovna má svou měnu — ale je to konzistentní s priceHistory(currency) argumentem.
+      String currency = requestedCurrency != null && currencyResolver.isSupported(requestedCurrency)
+          ? requestedCurrency
+          : store != null ? currencyResolver.forStore(store) : currencyResolver.defaultCurrency();
       List<PricePoint> points = priceDailyRepository
-          .findByProductIdAndStoreIdAndPriceKindAndDayGreaterThanEqualOrderByDayAsc(productId, storeId, kind, fromDay)
+          .findByProductIdAndStoreIdAndPriceKindAndCurrencyAndDayGreaterThanEqualOrderByDayAsc(
+              productId, storeId, kind, currency, fromDay)
           .stream()
           .map(d -> new PricePoint(d.getDay(), d.getPriceAmount(), d.getUnitPrice(), d.getNObs(), 1))
           .toList();
-      return new PriceHistory(kind, store, days, points);
+      return new PriceHistory(kind, store, days, currency, points);
     }
 
-    List<PricePoint> points = priceDailyRepository.nationalHistory(productId, kind.name(), fromDay).stream()
+    String currency = requestedCurrency != null && currencyResolver.isSupported(requestedCurrency)
+        ? requestedCurrency
+        : priceDailyRepository.dominantCurrency(productId, kind.name(), fromDay)
+            .orElseGet(currencyResolver::defaultCurrency);
+
+    List<PricePoint> points = priceDailyRepository.nationalHistory(productId, kind.name(), currency, fromDay).stream()
         .map(row -> new PricePoint(row.getDay(), row.getPriceAmount(), row.getUnitPrice(), row.getNObs(), row.getStoreCount()))
         .toList();
-    return new PriceHistory(kind, null, days, points);
+    return new PriceHistory(kind, null, days, currency, points);
   }
 }

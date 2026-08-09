@@ -12,6 +12,7 @@ import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.TooManyRequestsException;
 import cz.kvalitacena.exception.UnauthorizedException;
+import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.security.CatalogRateLimiter;
 import cz.kvalitacena.security.ViewerContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,9 +69,8 @@ class MediaServiceTest {
   void setUp() {
     mediaProperties = new MediaProperties();
     mediaProperties.setMaxPhotosPerRecord(5);
-    mediaProperties.setAttribution("Foto: přispěvatelé Kvalita a cena, licence CC BY-SA 4.0");
     service = new MediaService(mediaRepository, appUserRepository, productRepository, storeRepository,
-        mediaStorage, imageProcessingService, catalogRateLimiter, mediaProperties);
+        mediaStorage, imageProcessingService, catalogRateLimiter, mediaProperties, TestMessages.instance());
   }
 
   private void givenLoggedInUser() {
@@ -110,7 +110,7 @@ class MediaServiceTest {
     when(mediaRepository.countByRecordTypeAndRecordId(RecordType.PRODUCT, PRODUCT_ID)).thenReturn(5L);
 
     assertThatThrownBy(() -> service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, null, PUBLIC_UID))
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(ValidationException.class);
     verify(imageProcessingService, never()).process(any());
   }
 

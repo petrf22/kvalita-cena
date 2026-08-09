@@ -2,6 +2,8 @@ package cz.kvalitacena.service;
 
 import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.UnitBase;
+import cz.kvalitacena.exception.ErrorCode;
+import cz.kvalitacena.exception.ValidationException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -48,7 +50,9 @@ final class NetContentCalculator {
       case COUNT -> uom == NetContentUom.PCS;
     };
     if (!ok) {
-      throw new IllegalArgumentException("Jednotka " + uom + " neodpovídá typu " + unitBase);
+      // Symbolická jména enumu do args, NIKDY přeložený popisek (viz AppException) — klient
+      // si hezčí verzi složí z extensions.params vlastním enum.netContentUom.* klíčem.
+      throw new ValidationException(ErrorCode.UOM_MISMATCH, uom.name(), unitBase.name());
     }
   }
 }

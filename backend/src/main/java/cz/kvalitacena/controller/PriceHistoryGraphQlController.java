@@ -16,7 +16,8 @@ public class PriceHistoryGraphQlController {
 
   @QueryMapping
   public PriceHistory priceHistory(@Argument Long productId, @Argument PriceKind priceKind,
-      @Argument Long storeId, @Argument Integer days, Authentication authentication) {
-    return priceHistoryService.history(productId, priceKind, storeId, days, authentication != null);
+      @Argument Long storeId, @Argument Integer days, @Argument String currency,
+      Authentication authentication) {
+    return priceHistoryService.history(productId, priceKind, storeId, days, currency, authentication != null);
   }
 }

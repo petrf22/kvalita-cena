@@ -8,7 +8,8 @@ import jakarta.validation.constraints.Pattern;
 import java.util.UUID;
 
 public record OtpVerifyRequest(
-    @NotNull UUID challengeUid,
-    @NotBlank @Pattern(regexp = "\\d{6}") String code,
-    @NotBlank @Email String email) {
+    @NotNull(message = "{validation.challengeUid.required}") UUID challengeUid,
+    @NotBlank(message = "{validation.code.notBlank}")
+    @Pattern(regexp = "\\d{6}", message = "{validation.code.invalid}") String code,
+    @NotBlank(message = "{validation.email.notBlank}") @Email(message = "{validation.email.invalid}") String email) {
 }

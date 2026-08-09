@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class GeocodingService {
 
   private final NominatimProperties nominatimProperties;
+  private final Messages messages;
 
   // Líné vytvoření napřímo v konstruktoru by narazilo na pořadí Spring bean lifecycle —
   // @ConfigurationProperties se na @Component beanu binduje ve stejné fázi jako @PostConstruct
@@ -90,7 +91,7 @@ public class GeocodingService {
     String key = String.join("|",
         n(street), n(city), n(postalCode), n(country));
     List<GeocodeCandidate> candidates = cache().get(key, k -> fetchFromNominatim(street, city, postalCode, country));
-    return new GeocodeResult(candidates, nominatimProperties.getAttribution());
+    return new GeocodeResult(candidates, attribution());
   }
 
   /**
@@ -105,7 +106,20 @@ public class GeocodingService {
     // Zaokrouhlení klíče na ~11 m (4 desetinná místa) — dost pro cache hit při opakovaném
     // "Použít mou polohu" ze stejného místa, beze ztráty přesnosti pro Nominatim samotný.
     String key = String.format(Locale.ROOT, "%.4f|%.4f", lat, lon);
-    return reverseCache().get(key, k -> fetchReverseFromNominatim(lat, lon));
+    // Cachovaná hodnota NENESE atribuci (viz fetchReverseFromNominatim níž) — text je
+    // lokalizovaný (docs/lokalizace.md) a cache klíč locale nezná, takže by se jinak zamrzl
+    // na jazyku prvního requestu pro dané souřadnice až do vypršení TTL.
+    ReverseGeocodeResult cached = reverseCache().get(key, k -> fetchReverseFromNominatim(lat, lon));
+    return withAttribution(cached);
+  }
+
+  private ReverseGeocodeResult withAttribution(ReverseGeocodeResult result) {
+    return new ReverseGeocodeResult(result.street(), result.city(), result.postalCode(),
+        result.country(), result.osmRef(), attribution());
+  }
+
+  private String attribution() {
+    return messages.get("attribution.osm");
   }
 
   private ReverseGeocodeResult fetchReverseFromNominatim(double lat, double lon) {
@@ -145,12 +159,12 @@ public class GeocodingService {
         ? result.osmType() + "/" + result.osmId()
         : null;
     String country = address.countryCode() != null ? address.countryCode().toUpperCase(Locale.ROOT) : null;
-    return new ReverseGeocodeResult(street, city, address.postcode(), country, osmRef,
-        nominatimProperties.getAttribution());
+    // attribution=null schválně — viz reverseGeocode(), doplní se AŽ po vytažení z cache.
+    return new ReverseGeocodeResult(street, city, address.postcode(), country, osmRef, null);
   }
 
   private ReverseGeocodeResult emptyReverseResult() {
-    return new ReverseGeocodeResult(null, null, null, null, null, nominatimProperties.getAttribution());
+    return new ReverseGeocodeResult(null, null, null, null, null, null);
   }
 
   private String firstNonBlank(String... values) {

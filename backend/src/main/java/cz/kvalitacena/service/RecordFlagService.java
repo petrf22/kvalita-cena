@@ -9,6 +9,7 @@ import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.RecordFlagRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
+import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.UnauthorizedException;
 import lombok.RequiredArgsConstructor;
@@ -39,10 +40,10 @@ public class RecordFlagService {
   @Transactional
   public FlagResult flag(RecordType recordType, Long recordId, String reason, UUID viewerPublicUid) {
     if (viewerPublicUid == null) {
-      throw new UnauthorizedException("Nahlášení vyžaduje přihlášení");
+      throw new UnauthorizedException(ErrorCode.FLAG_REQUIRES_LOGIN);
     }
     AppUser user = appUserRepository.findByPublicUid(viewerPublicUid)
-        .orElseThrow(() -> new UnauthorizedException("Účet už neexistuje"));
+        .orElseThrow(() -> new UnauthorizedException(ErrorCode.ACCOUNT_GONE));
     requireRecordExists(recordType, recordId);
 
     // ON CONFLICT DO NOTHING nad uq_record_flag_user — druhý hlas téhož člověka nic nezmění.
@@ -74,7 +75,7 @@ public class RecordFlagService {
       case PHOTO -> mediaRepository.existsById(recordId);
     };
     if (!exists) {
-      throw new NotFoundException("Nahlašovaný záznam neexistuje");
+      throw new NotFoundException(ErrorCode.FLAG_RECORD_NOT_FOUND);
     }
   }
 
