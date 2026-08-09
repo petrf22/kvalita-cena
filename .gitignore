@@ -53,6 +53,10 @@ backend/data/
 mobile/*.iml
 mobile/.cxx/
 mobile/captures/
+# Podpisový klíč (docs/vydani.md) — nikdy do repa, hesla jsou v ~/.gradle/gradle.properties.
+*.jks
+*.keystore
+mobile/keystore.properties
 
 # --- OS ---
 .DS_Store

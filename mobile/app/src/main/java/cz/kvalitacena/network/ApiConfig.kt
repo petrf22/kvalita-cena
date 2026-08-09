@@ -1,10 +1,13 @@
 package cz.kvalitacena.network
 
+import cz.kvalitacena.BuildConfig
+
 /**
- * 10.0.2.2 je alias emulátoru na localhost hostitelského stroje — viz
- * network_security_config.xml (cleartext povolený jen pro tuhle a localhost adresu).
- * V produkci se přepne na skutečnou HTTPS adresu backendu.
+ * Adresa backendu je per-buildType `buildConfigField` (viz app/build.gradle.kts) — debug
+ * `http://10.0.2.2:8080` (10.0.2.2 je alias emulátoru na localhost hostitelského stroje,
+ * cleartext povolený jen tady, viz src/debug/res/xml/network_security_config.xml), release
+ * `https://api.kvalitacena.cz` (docs/vydani.md — zatím neexistující produkční backend).
  */
 object ApiConfig {
-  const val BASE_URL = "http://10.0.2.2:8080"
+  val BASE_URL: String = BuildConfig.BASE_URL
 }

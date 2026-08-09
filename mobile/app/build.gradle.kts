@@ -4,6 +4,18 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+// Podpisový klíč pro release (docs/vydani.md) — hesla z Gradle properties
+// (~/.gradle/gradle.properties nebo -P na příkazové řádce), nikdy natvrdo v buildu. Chybí-li
+// kterákoli hodnota, signingConfig se vůbec nezaloží a assembleRelease vyrobí nepodepsané APK
+// místo pádu — build musí projít i na cizím stroji a v CI, stejná logika jako jvmToolchain(17)
+// místo org.gradle.java.home v gradle.properties.
+val releaseStoreFile = findProperty("KVALITACENA_STORE_FILE") as String?
+val releaseStorePassword = findProperty("KVALITACENA_STORE_PASSWORD") as String?
+val releaseKeyAlias = findProperty("KVALITACENA_KEY_ALIAS") as String?
+val releaseKeyPassword = findProperty("KVALITACENA_KEY_PASSWORD") as String?
+val hasReleaseSigning = releaseStoreFile != null && releaseStorePassword != null &&
+    releaseKeyAlias != null && releaseKeyPassword != null
+
 android {
     namespace = "cz.kvalitacena"
     compileSdk = 37
@@ -11,14 +23,40 @@ android {
     defaultConfig {
         applicationId = "cz.kvalitacena"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            // Emulátor → hostitel; cleartext povolený jen tady
+            // (src/debug/res/xml/network_security_config.xml).
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080\"")
+        }
         release {
-            isMinifyEnabled = false
+            // Zatím neexistující produkční backend (docs/vydani.md) — release build je
+            // od teď "release-ready", ne že appka má kam mluvit.
+            buildConfigField("String", "BASE_URL", "\"https://api.kvalitacena.cz\"")
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

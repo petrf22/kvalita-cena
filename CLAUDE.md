@@ -19,8 +19,8 @@ Dvě zadání, která jdou proti samozřejmým řešením a určují celou archi
    bylo technicky nejjednodušší. Detaily: `docs/reputace.md`.
 
 Plán založení a odůvodnění klíčových rozhodnutí: `docs/` (jednotlivé dokumenty datový model,
-reputace, soukromí, AI — odkaz na samostatný plánovací soubor mimo repo tu dřív byl, ale ten
-soubor už neexistuje).
+reputace, soukromí, AI, vydání — odkaz na samostatný plánovací soubor mimo repo tu dřív byl, ale
+ten soubor už neexistuje).
 
 ## Monorepo — tři samostatné aplikace
 
@@ -28,7 +28,7 @@ soubor už neexistuje).
 backend/    Spring Boot 4, Java 25, Gradle (Groovy DSL) — API pro web i mobil
 frontend/   Angular 22 + ng-zorro-antd — webové rozhraní
 mobile/     Kotlin + Jetpack Compose — nativní Android
-docs/       datový model, reputace, soukromí, AI — jeden zdroj pravdy pro vzorce a prahy
+docs/       datový model, reputace, soukromí, AI, vydání — jeden zdroj pravdy pro vzorce a prahy
 ```
 
 Každá část má vlastní build nástroj a vlastní `README`/konvence; sdílený je jen kontrakt API
@@ -163,16 +163,17 @@ přenositelná přes Gradle toolchain (`kotlin { jvmToolchain(17) }` v `app/buil
 `org.gradle.java.home` — ten by na cizím stroji (i v CI) build hned na startu shodil. **AGP 9+ už nepotřebuje plugin
 `org.jetbrains.kotlin.android`** (Kotlin podpora je vestavěná) — nepřidávej ho zpět, build by
 rovnou spadl. `compileSdk 37` (víc novějších knihoven — activity-compose, core-ktx,
-okhttp-android — to vyžaduje), `minSdk 26`, `targetSdk 35`; AGP chybějící SDK komponenty
-(platformy, build-tools) při buildu sám dostáhne.
+okhttp-android — to vyžaduje), `minSdk 26`, `targetSdk 36` (Play od 31. 8. 2026 odmítá nižší,
+viz `docs/vydani.md`); AGP chybějící SDK komponenty (platformy, build-tools) při buildu sám
+dostáhne.
 
 ```bash
 ./gradlew :app:assembleDebug
 ./gradlew :app:compileDebugKotlin     # rychlejší kontrola bez balení APK
 ```
 
-Emulátor (AVD `Medium_Phone`) je vyzkoušený a funkční — `~/Android/Sdk/emulator/emulator -avd
-Medium_Phone -no-snapshot -no-boot-anim -gpu swiftshader_indirect` (Mesa/X11 GPU passthrough
+Emulátor (AVD `Pixel_6_API_30`) je vyzkoušený a funkční — `~/Android/Sdk/emulator/emulator -avd
+Pixel_6_API_30 -no-snapshot -no-boot-anim -gpu swiftshader_indirect` (Mesa/X11 GPU passthrough
 v tomto stroji párkrát spadl s X errorem, `swiftshader_indirect` /software renderování/ je
 spolehlivější). Instalace/spuštění: `adb install -r app/build/outputs/apk/debug/app-debug.apk`
 + `adb shell am start -n cz.kvalitacena/.MainActivity`. Emulátor vidí hostitelský

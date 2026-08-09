@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cleartext HTTP (10.0.2.2, localhost) smí jen debug build — src/debug/res/xml/
+     network_security_config.xml v release variantu vůbec neexistuje, takže se atribut
+     nesmí objevit v src/main (release manifest merger by řval na chybějící resource). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:networkSecurityConfig="@xml/network_security_config" />
+</manifest>
