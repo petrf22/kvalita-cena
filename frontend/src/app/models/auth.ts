@@ -1,3 +1,6 @@
+import type { MeQuery } from './generated/graphql';
+
+// REST DTO (auth přes /api/auth/*, ne GraphQL) — schema.graphqls o nich nic neví.
 export interface OtpRequestResponse {
   challengeUid: string;
   expiresInSec: number;
@@ -11,10 +14,4 @@ export interface TokenResponse {
 }
 
 /** Veřejná identita přihlášeného uživatele — bez e-mailu a bez DB id (docs/soukromi.md). */
-export interface Viewer {
-  publicHandle: string;
-  displayName: string | null;
-  createdAt: string;
-  // Práh důvěry (docs/reputace.md) — vysvětluje, proč nový obchod/zboží zatím vidí jen viewer sám.
-  trusted: boolean;
-}
+export type Viewer = NonNullable<MeQuery['me']>;

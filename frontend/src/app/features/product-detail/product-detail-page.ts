@@ -14,19 +14,12 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { PriceKind, PricePoint, Product } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
 import { ProductService } from '../../services/product-service';
+import { PRICE_KIND_LABELS, SELECTABLE_PRICE_KINDS } from '../../shared/enum-labels';
 import { PhotoGallery } from '../../shared/photo-gallery';
 import { QualityBadge } from '../../shared/quality-badge';
 import { formatRelativeDate } from '../../shared/relative-date';
 import { StorePicker } from '../../shared/store-picker';
 import { PriceChart } from './price-chart';
-
-const PRICE_KIND_LABELS: Record<PriceKind, string> = {
-  REGULAR: 'Běžná cena',
-  PROMO: 'Akce',
-  CLUB_CARD: 'Klubová karta',
-  CLEARANCE: 'Výprodej',
-  MULTIBUY: 'Množstevní sleva',
-};
 
 const CHART_RANGES = [7, 30, 90, 365];
 
@@ -59,6 +52,7 @@ export class ProductDetailPage {
   protected readonly auth = inject(AuthService);
 
   protected readonly priceKindLabels = PRICE_KIND_LABELS;
+  protected readonly selectablePriceKinds = SELECTABLE_PRICE_KINDS;
   protected readonly chartRanges = CHART_RANGES;
   protected readonly formatRelativeDate = formatRelativeDate;
 
@@ -103,16 +97,18 @@ export class ProductDetailPage {
     const product = this.product();
     if (!product) return;
     this.historyLoading.set(true);
-    this.productService.priceHistory(product.id, this.selectedPriceKind(), this.selectedDays()).subscribe({
-      next: (history) => {
-        this.historyPoints.set(history.points);
-        this.historyLoading.set(false);
-      },
-      error: () => {
-        this.historyPoints.set([]);
-        this.historyLoading.set(false);
-      },
-    });
+    this.productService
+      .priceHistory(product.id, this.selectedPriceKind(), this.selectedDays())
+      .subscribe({
+        next: (history) => {
+          this.historyPoints.set(history.points);
+          this.historyLoading.set(false);
+        },
+        error: () => {
+          this.historyPoints.set([]);
+          this.historyLoading.set(false);
+        },
+      });
   }
 
   onDaysChange(days: number): void {

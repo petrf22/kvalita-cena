@@ -3,7 +3,11 @@
 @if (!selectedProduct() && !showProductForm()) {
   <nz-form-item>
     <nz-form-control>
-      <nz-radio-group [ngModel]="searchMode()" (ngModelChange)="searchMode.set($event)" name="searchMode">
+      <nz-radio-group
+        [ngModel]="searchMode()"
+        (ngModelChange)="searchMode.set($event)"
+        name="searchMode"
+      >
         <label nz-radio nzValue="name">Podle názvu</label>
         <label nz-radio nzValue="code">Podle čárového kódu</label>
       </nz-radio-group>
@@ -20,7 +24,9 @@
         (ngModelChange)="nameQuery.set($event)"
         (keyup.enter)="searchByName()"
       />
-      <button nz-button nzType="primary" [nzLoading]="searching()" (click)="searchByName()">Hledat</button>
+      <button nz-button nzType="primary" [nzLoading]="searching()" (click)="searchByName()">
+        Hledat
+      </button>
     </div>
   } @else {
     <div class="search-row">
@@ -32,7 +38,9 @@
         (ngModelChange)="codeQuery.set($event)"
         (keyup.enter)="searchByCode()"
       />
-      <button nz-button nzType="primary" [nzLoading]="searching()" (click)="searchByCode()">Hledat</button>
+      <button nz-button nzType="primary" [nzLoading]="searching()" (click)="searchByCode()">
+        Hledat
+      </button>
     </div>
   }
 
@@ -68,7 +76,9 @@
   <p class="add-new-hint">
     @if (auth.isLoggedIn()) {
       Zboží nenašel(a)?
-      <button nz-button nzType="link" type="button" (click)="openProductForm()">Založit nové</button>
+      <button nz-button nzType="link" type="button" (click)="openProductForm()">
+        Založit nové
+      </button>
     } @else {
       Zboží nenašel(a)? Založení nového zboží vyžaduje přihlášení — přejdi na stránku Účet.
     }
@@ -77,7 +87,11 @@
 
 @if (showProductForm()) {
   <h2 class="section-title">Nové zboží</h2>
-  <app-product-form [barcode]="codeQuery()" (created)="onProductCreated($event)" (cancelled)="showProductForm.set(false)" />
+  <app-product-form
+    [barcode]="codeQuery()"
+    (created)="onProductCreated($event)"
+    (cancelled)="showProductForm.set(false)"
+  />
 }
 
 @if (loadingProduct()) {
@@ -102,7 +116,10 @@
   @if (product.prices.length > 0) {
     <ul class="current-prices">
       @for (price of product.prices; track price.store.id + price.priceKind) {
-        <li>{{ price.store.name }} — {{ priceKindLabels[price.priceKind] }}: {{ price.priceAmount }} Kč</li>
+        <li>
+          {{ price.store.name }} — {{ priceKindLabels[price.priceKind] }}:
+          {{ price.priceAmount }} Kč
+        </li>
       }
     </ul>
   }
@@ -118,7 +135,10 @@
     <nz-form-item>
       <nz-form-label>Obchod</nz-form-label>
       <nz-form-control>
-        <app-store-picker [selectedStoreId]="selectedStoreId()" (selectedStoreIdChange)="selectedStoreId.set($event)" />
+        <app-store-picker
+          [selectedStoreId]="selectedStoreId()"
+          (selectedStoreIdChange)="selectedStoreId.set($event)"
+        />
       </nz-form-control>
     </nz-form-item>
 
@@ -126,10 +146,9 @@
       <nz-form-label>Druh ceny</nz-form-label>
       <nz-form-control>
         <nz-select [ngModel]="priceKind()" (ngModelChange)="priceKind.set($event)" name="priceKind">
-          <nz-option nzValue="REGULAR" nzLabel="Běžná cena" />
-          <nz-option nzValue="PROMO" nzLabel="Akce" />
-          <nz-option nzValue="CLUB_CARD" nzLabel="Klubová karta" />
-          <nz-option nzValue="CLEARANCE" nzLabel="Výprodej" />
+          @for (kind of selectablePriceKinds; track kind) {
+            <nz-option [nzValue]="kind" [nzLabel]="priceKindLabels[kind]" />
+          }
         </nz-select>
       </nz-form-control>
     </nz-form-item>
@@ -138,10 +157,14 @@
       <nz-form-item>
         <nz-form-label>Cena je uvedená</nz-form-label>
         <nz-form-control>
-          <nz-select [ngModel]="quantityBasis()" (ngModelChange)="quantityBasis.set($event)" name="quantityBasis">
-            <nz-option nzValue="PER_KG" nzLabel="Za kilogram" />
-            <nz-option nzValue="PER_L" nzLabel="Za litr" />
-            <nz-option nzValue="PER_PIECE" nzLabel="Za kus" />
+          <nz-select
+            [ngModel]="quantityBasis()"
+            (ngModelChange)="quantityBasis.set($event)"
+            name="quantityBasis"
+          >
+            @for (basis of selectableVariableWeightQuantityBases; track basis) {
+              <nz-option [nzValue]="basis" [nzLabel]="quantityBasisLabels[basis]" />
+            }
           </nz-select>
         </nz-form-control>
       </nz-form-item>

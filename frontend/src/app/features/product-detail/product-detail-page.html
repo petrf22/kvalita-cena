@@ -7,7 +7,11 @@
 } @else {
   <h1>{{ product()!.name }}</h1>
 
-  <app-photo-gallery recordType="PRODUCT" [recordId]="product()!.id" [photos]="product()!.photos ?? []" />
+  <app-photo-gallery
+    recordType="PRODUCT"
+    [recordId]="product()!.id"
+    [photos]="product()!.photos ?? []"
+  />
 
   <p class="product-meta">
     @if (product()!.brand) {
@@ -27,7 +31,13 @@
       <nz-tag nzColor="blue">Vaše úprava</nz-tag>
     }
     @if (auth.isLoggedIn()) {
-      <button nz-button nzType="text" nzSize="small" [nzLoading]="flagging()" (click)="flagProduct()">
+      <button
+        nz-button
+        nzType="text"
+        nzSize="small"
+        [nzLoading]="flagging()"
+        (click)="flagProduct()"
+      >
         <span nz-icon nzType="flag"></span>
         Nahlásit
       </button>
@@ -38,7 +48,10 @@
   }
 
   <div class="quality-section">
-    <app-quality-badge [average]="product()!.quality?.average ?? null" [count]="product()!.quality?.count ?? 0" />
+    <app-quality-badge
+      [average]="product()!.quality?.average ?? null"
+      [count]="product()!.quality?.count ?? 0"
+    />
     <div class="quality-buttons">
       @for (grade of [1, 2, 3, 4, 5]; track grade) {
         <button
@@ -134,7 +147,11 @@
               <td>
                 <nz-tag
                   [nzColor]="
-                    price.confidence === 'HIGH' ? 'green' : price.confidence === 'MEDIUM' ? 'orange' : 'default'
+                    price.confidence === 'HIGH'
+                      ? 'green'
+                      : price.confidence === 'MEDIUM'
+                        ? 'orange'
+                        : 'default'
                   "
                 >
                   {{ price.nObs }} {{ price.nObs === 1 ? 'záznam' : 'záznamy' }}
@@ -178,7 +195,12 @@
 
   <nz-card nzTitle="Zadat cenu" class="submit-card">
     @if (submitSuccess()) {
-      <nz-alert nzType="success" nzMessage="Cena byla zapsána, díky!" nzShowIcon class="submit-alert" />
+      <nz-alert
+        nzType="success"
+        nzMessage="Cena byla zapsána, díky!"
+        nzShowIcon
+        class="submit-alert"
+      />
     }
     @if (submitError()) {
       <nz-alert nzType="error" [nzMessage]="submitError()" nzShowIcon class="submit-alert" />
@@ -203,10 +225,9 @@
             (ngModelChange)="priceKind.set($event)"
             name="priceKind"
           >
-            <nz-option nzValue="REGULAR" nzLabel="Běžná cena" />
-            <nz-option nzValue="PROMO" nzLabel="Akce" />
-            <nz-option nzValue="CLUB_CARD" nzLabel="Klubová karta" />
-            <nz-option nzValue="CLEARANCE" nzLabel="Výprodej" />
+            @for (kind of selectablePriceKinds; track kind) {
+              <nz-option [nzValue]="kind" [nzLabel]="priceKindLabels[kind]" />
+            }
           </nz-select>
         </nz-form-control>
       </nz-form-item>

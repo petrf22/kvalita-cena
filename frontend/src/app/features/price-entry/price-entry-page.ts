@@ -12,23 +12,14 @@ import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { PriceKind, Product, ProductSearchItem, QuantityBasis } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
 import { ProductService } from '../../services/product-service';
+import {
+  PRICE_KIND_LABELS,
+  QUANTITY_BASIS_LABELS,
+  SELECTABLE_PRICE_KINDS,
+  SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES,
+} from '../../shared/enum-labels';
 import { StorePicker } from '../../shared/store-picker';
 import { ProductForm } from '../product-form/product-form';
-
-const PRICE_KIND_LABELS: Record<PriceKind, string> = {
-  REGULAR: 'Běžná cena',
-  PROMO: 'Akce',
-  CLUB_CARD: 'Klubová karta',
-  CLEARANCE: 'Výprodej',
-  MULTIBUY: 'Množstevní sleva',
-};
-
-const QUANTITY_BASIS_LABELS: Record<QuantityBasis, string> = {
-  PACKAGE: 'Za balení',
-  PER_KG: 'Za kilogram',
-  PER_L: 'Za litr',
-  PER_PIECE: 'Za kus',
-};
 
 /**
  * Samostatná stránka "Zadat cenu" — na rozdíl od formuláře v detailu produktu (který
@@ -62,6 +53,9 @@ export class PriceEntryPage {
 
   protected readonly priceKindLabels = PRICE_KIND_LABELS;
   protected readonly quantityBasisLabels = QUANTITY_BASIS_LABELS;
+  protected readonly selectablePriceKinds = SELECTABLE_PRICE_KINDS;
+  protected readonly selectableVariableWeightQuantityBases =
+    SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES;
 
   protected readonly searchMode = signal<'name' | 'code'>('name');
   protected readonly nameQuery = signal('');
@@ -181,7 +175,9 @@ export class PriceEntryPage {
           this.submitSuccess.set(true);
           this.priceAmount.set(null);
           // Obnoví agregované ceny na vybraném produktu (stejný princip jako product-detail-page).
-          this.productService.getById(product.id).subscribe({ next: (p) => p && this.selectedProduct.set(p) });
+          this.productService
+            .getById(product.id)
+            .subscribe({ next: (p) => p && this.selectedProduct.set(p) });
         },
         error: () => {
           this.submitting.set(false);

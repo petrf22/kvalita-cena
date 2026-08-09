@@ -1,8 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { map } from 'rxjs';
 import { GraphQlService } from './graphql-service';
-import { Photo, RecordType } from '../models/catalog';
+import { graphql } from '../models/generated';
+import type { PhotoFieldsFragment } from '../models/generated/graphql';
+import type { RecordType } from '../models/generated/enums';
 
 /**
  * Fotky zboží a provozoven (core.media). Upload jde přes REST multipart (backend
@@ -16,48 +18,51 @@ export class MediaService {
   private readonly http = inject(HttpClient);
   private readonly graphQl = inject(GraphQlService);
 
-  upload(recordType: RecordType, recordId: string, file: File, caption?: string | null): Observable<Photo> {
+  upload(recordType: RecordType, recordId: string, file: File, caption?: string | null) {
     const formData = new FormData();
     formData.append('file', file);
     if (caption) {
       formData.append('caption', caption);
     }
-    return this.http.post<Photo>(`/api/media/${recordType}/${recordId}`, formData);
+    return this.http.post<PhotoFieldsFragment>(`/api/media/${recordType}/${recordId}`, formData);
   }
 
   /** Popisek a pořadí (nejnižší sortOrder = hlavní fotka záznamu). Jen autor fotky. */
-  update(id: string, caption: string | null, sortOrder: number | null): Observable<Photo> {
-    const gql = `
+  update(id: string, caption: string | null, sortOrder: number | null) {
+    const document = graphql(`
       mutation UpdatePhoto($id: ID!, $caption: String, $sortOrder: Int) {
         updatePhoto(id: $id, caption: $caption, sortOrder: $sortOrder) {
-          id url thumbnailUrl width height caption mine hidden attribution
+          ...PhotoFields
         }
       }
-    `;
+    `);
     return this.graphQl
-      .execute<{ updatePhoto: Photo }>(gql, { id, caption, sortOrder })
+      .execute(document, { id, caption, sortOrder })
       .pipe(map((data) => data.updatePhoto));
   }
 
   /** Smazání vlastní fotky. Jen autor. */
-  remove(id: string): Observable<boolean> {
-    const gql = `
+  remove(id: string) {
+    const document = graphql(`
       mutation DeletePhoto($id: ID!) {
         deletePhoto(id: $id)
       }
-    `;
-    return this.graphQl.execute<{ deletePhoto: boolean }>(gql, { id }).pipe(map((data) => data.deletePhoto));
+    `);
+    return this.graphQl.execute(document, { id }).pipe(map((data) => data.deletePhoto));
   }
 
   /** Nahlášení fotky jako nevhodné — jedno nahlášení stačí (docs/reputace.md). */
-  flag(id: string, reason?: string): Observable<{ flagCount: number; hidden: boolean }> {
-    const gql = `
+  flag(id: string, reason?: string) {
+    const document = graphql(`
       mutation FlagPhoto($recordId: ID!, $reason: String) {
-        flagRecord(recordType: PHOTO, recordId: $recordId, reason: $reason) { flagCount hidden }
+        flagRecord(recordType: PHOTO, recordId: $recordId, reason: $reason) {
+          flagCount
+          hidden
+        }
       }
-    `;
+    `);
     return this.graphQl
-      .execute<{ flagRecord: { flagCount: number; hidden: boolean } }>(gql, { recordId: id, reason: reason ?? null })
+      .execute(document, { recordId: id, reason: reason ?? null })
       .pipe(map((data) => data.flagRecord));
   }
 }

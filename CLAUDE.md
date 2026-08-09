@@ -32,7 +32,10 @@ docs/       datový model, reputace, soukromí, AI, vydání — jeden zdroj pra
 ```
 
 Každá část má vlastní build nástroj a vlastní `README`/konvence; sdílený je jen kontrakt API
-(GraphQL schéma `backend/src/main/resources/graphql/schema.graphqls`).
+(GraphQL schéma `backend/src/main/resources/graphql/schema.graphqls`). Frontend z něj přes
+`graphql-codegen` (`frontend/codegen.ts`) generuje TypeScript typy a konstanty enumů do
+`frontend/src/app/models/generated/` — čte schéma přímo z backendu, žádná kopie. Mobil zatím
+typy z GraphQL schématu negeneruje (`network/Dto.kt` mapuje enumy ručně na `String`).
 
 ## Stav implementace (etapa 1 — prochozí kostra)
 
@@ -150,10 +153,18 @@ Node se neměnil — viz `.bashrc`). `npm start` používá `proxy.conf.json`, k
 
 ```bash
 npm install
+npm run codegen                      # typy z backend/.../schema.graphqls do models/generated/ (viz codegen.ts)
 npm start                            # dev server na :4200 (s proxy na backend)
 npm test                             # Vitest (Angular 22 default, ne Karma/Jasmine)
 npm run build
 ```
+
+`npm run codegen` spusť po každé změně `schema.graphqls` nebo dotazu v `graphql(...)` volání —
+výstup v `src/app/models/generated/` se commituje, CI ho přegeneruje a shodí build, pokud se
+rozejde (`git diff --exit-code`). Pozor na pořadí: `graphql(...)` matchuje dotaz na přesný
+string zachycený při generování, takže Prettier (nebo jakákoli jiná změna whitespace uvnitř
+těch template literálů) musí proběhnout **před** posledním `npm run codegen`, jinak typová
+kontrola i běhový match spadnou.
 
 ### Mobil (`mobile/`)
 
@@ -245,8 +256,12 @@ vlastního záznamu uživatele), jinak si osamělý přispěvatel vždy "potvrd�
   rostoucí sadě služeb v security/auth vrstvě)
 - Liquibase YAML, `db/changelog/<datum>/NNN-nazev.yaml` + master changelog; entity `Persistable<Long>`,
   sloupce `TIMESTAMPTZ` ↔ `OffsetDateTime`
-- Angular: standalone komponenty, signály, bez state managementu, bez Apollo (`provideHttpClient`
-  s funkcionálními interceptory), `LOCALE_ID: 'cs-CZ'`; Prettier `printWidth: 100`, `singleQuote: true`
+- Angular: standalone komponenty, signály, bez state managementu, bez Apollo v runtime
+  (`provideHttpClient` s funkcionálními interceptory, jeden POST `/graphql` v
+  `services/graphql-service.ts`) — typy a tvary dotazů generuje `graphql-codegen` ze
+  `schema.graphqls` do `src/app/models/generated/` (`npm run codegen`, commituje se), `graphql`
+  balíček je tak jen build-time závislost, ne runtime; `LOCALE_ID: 'cs-CZ'`; Prettier
+  `printWidth: 100`, `singleQuote: true`
 - Odsazení 2 mezery, kromě Kotlinu (4 mezery) — viz `.editorconfig`
 - Android: jeden Activity + Compose Navigation (`ui/<feature>/XxxScreen.kt` + `XxxViewModel.kt`),
   ruční DI přes `AppContainer` (bez Hiltu — appka je malá), skener schovaný za

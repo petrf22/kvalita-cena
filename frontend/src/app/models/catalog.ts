@@ -1,315 +1,106 @@
-export type UnitBase = 'MASS' | 'VOLUME' | 'COUNT';
-export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'MERGED' | 'REJECTED';
-export type PriceKind = 'REGULAR' | 'PROMO' | 'CLUB_CARD' | 'CLEARANCE' | 'MULTIBUY';
-export type QuantityBasis = 'PACKAGE' | 'PER_KG' | 'PER_L' | 'PER_PIECE';
-export type Confidence = 'LOW' | 'MEDIUM' | 'HIGH';
-export type ProductSort = 'REPORT_COUNT' | 'PRICE_ASC' | 'QUALITY' | 'LAST_REPORTED' | 'NAME';
-export type ExternalLinkKind = 'OPEN_FOOD_FACTS' | 'E_NUMBERS';
+/**
+ * Typy odvozené z generovaného GraphQL kontraktu (`npm run codegen`, viz `../../../codegen.ts`
+ * a CLAUDE.md) — jediný zdroj pravdy je `backend/src/main/resources/graphql/schema.graphqls`.
+ * Tenhle soubor sám žádný typ nedefinuje, jen z generovaných typů/fragmentů skládá pohodlnější
+ * jména pro zbytek appky, ať 18 souborů, co odtud importuje, nemusí sahat přímo do
+ * `models/generated/`. Doménové komentáře (proč je `lat` nullable, co znamená `verified`
+ * apod.) jsou teď přímo ve `schema.graphqls` jako docstringy a codegen je propsal do
+ * generovaných typů.
+ */
+import type {
+  CompanyByIcoQuery,
+  CreateProductInput,
+  CreateStoreInput,
+  FlagProductMutation,
+  GeocodeAddressQuery,
+  PhotoFieldsFragment,
+  PriceCurrentFieldsFragment,
+  PriceHistoryQuery,
+  ProductDetailFieldsFragment,
+  ProductSummaryFieldsFragment,
+  ReverseGeocodeQuery,
+  SearchFacetsQuery,
+  SearchItemFieldsFragment,
+  SearchProductsQuery,
+  SearchStoresQuery,
+  StoreDetailFieldsFragment,
+  StoreFieldsFragment,
+  SubmitObservationInput,
+  SubmitObservationMutation,
+  UpdateProductInput,
+  UpdateStoreInput,
+} from './generated/graphql';
 
-export interface Brand {
-  id: string;
-  name: string;
-  slug: string;
-}
+export {
+  Confidence,
+  ExternalLinkKind,
+  GeoSource,
+  PriceKind,
+  ProductSort,
+  ProductStatus,
+  QuantityBasis,
+  RecordType,
+  UnitBase,
+} from './generated/enums';
 
-export interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  path: string;
-}
+export type {
+  CreateProductInput,
+  CreateStoreInput,
+  SubmitObservationInput,
+  UpdateProductInput,
+  UpdateStoreInput,
+};
 
-export interface RetailChain {
-  id: string;
-  name: string;
-  chainType: string;
-}
-
-export type GeoSource = 'COMMUNITY' | 'OSM';
-
-export interface Store {
-  id: string;
-  chain: RetailChain | null;
-  name: string;
-  street: string | null;
-  city: string;
-  postalCode: string | null;
-  country: string;
-  // Nullable — provozovna zadaná bez GPS (zápis doma) může souřadnice dosud nemít
-  // (docs/datovy-model.md, "Identita provozovny").
-  lat: number | null;
-  lon: number | null;
-  geoSource: GeoSource;
-  ico: string | null;
-  // Uživatelská vrstva nad globálními daty (docs/datovy-model.md) — konsolidační job zatím
-  // neběží, takže verified je v etapě 1 vždy false.
-  verified: boolean;
-  editedByMe: boolean;
-  // Provozovna od nedůvěryhodného autora čeká na potvrzení dalších přispěvatelů — vidí ji jen
-  // autor (docs/reputace.md).
-  pendingConfirmation: boolean;
-  // Jen v detailu obchodu (STORE_DETAIL_FIELDS) — hledání/výběr obchodu je nežádá.
-  photos?: Photo[];
-}
+export type Brand = NonNullable<ProductSummaryFieldsFragment['brand']>;
+export type Category = ProductSummaryFieldsFragment['category'];
+export type RetailChain = NonNullable<StoreFieldsFragment['chain']>;
 
 /** Fotka zboží nebo provozovny (core.media) — nahrává se přes REST, ne přes tuhle mutaci. */
-export interface Photo {
-  id: string;
-  url: string;
-  thumbnailUrl: string;
-  width: number;
-  height: number;
-  caption: string | null;
-  // Nahrál ji přihlášený uživatel — smí ji smazat a upravit popisek.
-  mine: boolean;
-  // Skrytá po nahlášení (docs/reputace.md) — vidí ji dál už jen autor.
-  hidden: boolean;
-  attribution: string;
-}
+export type Photo = PhotoFieldsFragment;
 
-export interface PriceCurrent {
-  store: Store;
-  priceKind: PriceKind;
-  unitPrice: number | null;
-  priceAmount: number | null;
-  nObs: number;
-  nEff: number;
-  lastObservedAt: string | null;
-  confidence: Confidence;
-}
+/**
+ * Obchod bez fotek (StoreFields) — pro řádky cen, výsledky hledání apod. `photos` je tu jen
+ * optional, ať se dá stejný typ použít i pro `StoreDetailFields` (detail obchodu, kde fotky
+ * skutečně přijdou); kde je fragment lehčí, pole prostě chybí.
+ */
+export type Store = StoreFieldsFragment & Partial<Pick<StoreDetailFieldsFragment, 'photos'>>;
 
-export interface Product {
-  id: string;
-  name: string;
-  brand: Brand | null;
-  category: Category;
-  unitBase: UnitBase;
-  netContentValue: number | null;
-  netContentBase: number;
-  piecesInPack: number | null;
-  isVariableWeight: boolean;
-  status: ProductStatus;
-  // Druhová položka bez čárového kódu — viz docs/reputace.md, "Zboží bez čárového kódu".
-  isGeneric: boolean;
-  prices: PriceCurrent[];
-  // Jen v detailu (fragment PRODUCT_DETAIL_FIELDS) — hledání je nežádá, viz product-service.
-  gtin?: string | null;
-  stats?: ProductStats;
-  quality?: ProductQuality;
-  myQualityRating?: number | null;
-  externalLinks?: ExternalLink[];
-  // Uživatelská vrstva nad globálními daty (docs/datovy-model.md) — konsolidační job zatím
-  // neběží, takže verified je v etapě 1 vždy false.
-  verified: boolean;
-  editedByMe: boolean;
-  // Jen v detailu — vlastní poslední zápisy ("Vaše cena"), viz PRODUCT_DETAIL_FIELDS.
-  myPrices?: MyPrice[];
-  // Jen v detailu — fotky zboží (core.media), první (nejnižší sortOrder) je hlavní.
-  photos?: Photo[];
-}
+export type PriceCurrent = PriceCurrentFieldsFragment;
+
+/** Plný detail produktu (karta produktu) — vždy z fragmentu ProductDetailFields. */
+export type Product = ProductDetailFieldsFragment;
 
 /** "Vaše cena" — poslední vlastní zápis přihlášeného uživatele, i dřív než ho zpracuje agregace. */
-export interface MyPrice {
-  store: Store;
-  priceKind: PriceKind;
-  priceAmount: number;
-  unitPrice: number | null;
-  observedAt: string;
-}
+export type MyPrice = ProductDetailFieldsFragment['myPrices'][number];
 
 /** Lehčí varianta Product pro řádek seznamu hledání — bez cen a agregátů (ty jsou na ProductSearchItem). */
-export interface ProductSummary {
-  id: string;
-  name: string;
-  brand: Brand | null;
-  category: Category;
-  isGeneric: boolean;
-  verified: boolean;
-  editedByMe: boolean;
-}
+export type ProductSummary = ProductSummaryFieldsFragment;
 
-export interface ProductStats {
-  observationCount: number;
-  storeCount: number;
-  lastObservedAt: string | null;
-  bestPrice: number | null;
-  bestUnitPrice: number | null;
-  cheapestStore: Store | null;
-}
+export type ProductStats = ProductDetailFieldsFragment['stats'];
 
 /** Průměrná známka 1,00–5,00 (1 nejlepší, jako ve škole). average je null, dokud nikdo nehodnotil. */
-export interface ProductQuality {
-  average: number | null;
-  count: number;
-}
+export type ProductQuality = ProductDetailFieldsFragment['quality'];
 
-export interface ExternalLink {
-  kind: ExternalLinkKind;
-  label: string;
-  url: string;
-  attribution: string;
-}
+export type ExternalLink = ProductDetailFieldsFragment['externalLinks'][number];
 
 /** Řádek seznamu hledání — agregáty spočítané spolu s hledáním, respektují filtr obchod/město. */
-export interface ProductSearchItem {
-  product: ProductSummary;
-  observationCount: number;
-  bestPrice: number | null;
-  bestUnitPrice: number | null;
-  cheapestStore: Store | null;
-  bestPriceObservations: number | null;
-  lastObservedAt: string | null;
-  qualityAverage: number | null;
-  qualityCount: number;
-}
+export type ProductSearchItem = SearchItemFieldsFragment;
 
-export interface ProductSearchResult {
-  items: ProductSearchItem[];
-  totalCount: number;
-  hasMore: boolean;
-}
-
-export interface SearchFacets {
-  stores: Store[];
-  cities: string[];
-}
-
-export interface PricePoint {
-  day: string;
-  priceAmount: number | null;
-  unitPrice: number;
-  nObs: number;
-  storeCount: number;
-}
-
-export interface PriceHistory {
-  priceKind: PriceKind;
-  store: Store | null;
-  days: number;
-  points: PricePoint[];
-}
-
-export interface PriceObservation {
-  id: string;
-  priceAmount: number;
-  unitPrice: number | null;
-  priceKind: PriceKind;
-  quantityBasis: QuantityBasis;
-  observedAt: string;
-  status: string;
-}
-
-export interface SubmitObservationInput {
-  productId: string;
-  storeId: string;
-  priceAmount: number;
-  priceKind?: PriceKind;
-  quantityBasis?: QuantityBasis;
-  multibuyQty?: number;
-  multibuyTotal?: number;
-  observedAt?: string;
-}
-
-export interface StoreSearchResult {
-  items: Store[];
-  totalCount: number;
-  hasMore: boolean;
-}
+export type ProductSearchResult = SearchProductsQuery['searchProducts'];
+export type SearchFacets = SearchFacetsQuery['searchFacets'];
+export type PricePoint = PriceHistoryQuery['priceHistory']['points'][number];
+export type PriceHistory = PriceHistoryQuery['priceHistory'];
+export type PriceObservation = SubmitObservationMutation['submitObservation'];
+export type StoreSearchResult = SearchStoresQuery['searchStores'];
 
 /** Kandidát ze serveru OpenStreetMap Nominatim — nic z tohohle se neukládá kromě lat/lon/osmRef zvoleného kandidáta. */
-export interface GeocodeCandidate {
-  lat: number;
-  lon: number;
-  displayName: string;
-  osmRef: string;
-}
-
-export interface GeocodeResult {
-  candidates: GeocodeCandidate[];
-  attribution: string;
-}
+export type GeocodeCandidate = GeocodeAddressQuery['geocodeAddress']['candidates'][number];
+export type GeocodeResult = GeocodeAddressQuery['geocodeAddress'];
 
 /** Opačný směr — souřadnice na adresu, pro tlačítko "Použít mou polohu" při editaci obchodu. */
-export interface ReverseGeocodeResult {
-  street: string | null;
-  city: string | null;
-  postalCode: string | null;
-  country: string | null;
-  osmRef: string | null;
-  attribution: string;
-}
+export type ReverseGeocodeResult = ReverseGeocodeQuery['reverseGeocode'];
 
 /** Údaje o firmě z veřejného rejstříku ARES podle IČO — předvyplnění formuláře obchodu. */
-export interface CompanyInfo {
-  ico: string;
-  name: string;
-  street: string | null;
-  city: string | null;
-  postalCode: string | null;
-}
+export type CompanyInfo = NonNullable<CompanyByIcoQuery['companyByIco']>;
 
-export interface CreateStoreInput {
-  name: string;
-  chainId?: string | null;
-  street?: string | null;
-  city: string;
-  postalCode?: string | null;
-  country?: string;
-  ico?: string | null;
-  lat?: number | null;
-  lon?: number | null;
-  geoSource?: GeoSource | null;
-  osmRef?: string | null;
-}
-
-export interface CreateProductInput {
-  name: string;
-  brandName?: string | null;
-  categoryId: string;
-  unitBase: UnitBase;
-  netContentValue?: number | null;
-  netContentUom?: string | null;
-  piecesInPack?: number | null;
-  isVariableWeight?: boolean;
-  code?: string | null;
-}
-
-/** Patch nad core.product_user_edit — pole null = nezměněno (docs/datovy-model.md). */
-export interface UpdateProductInput {
-  name?: string | null;
-  brandName?: string | null;
-  clearBrand?: boolean;
-  categoryId?: string | null;
-  unitBase?: UnitBase | null;
-  netContentValue?: number | null;
-  netContentUom?: string | null;
-  piecesInPack?: number | null;
-  clearPiecesInPack?: boolean;
-  isVariableWeight?: boolean | null;
-}
-
-/** Patch nad core.store_user_edit — pole null = nezměněno. */
-export interface UpdateStoreInput {
-  name?: string | null;
-  chainId?: string | null;
-  clearChain?: boolean;
-  street?: string | null;
-  clearStreet?: boolean;
-  city?: string | null;
-  postalCode?: string | null;
-  clearPostalCode?: boolean;
-  country?: string | null;
-  ico?: string | null;
-  clearIco?: boolean;
-  lat?: number | null;
-  lon?: number | null;
-  geoSource?: GeoSource | null;
-  osmRef?: string | null;
-}
-
-export type RecordType = 'PRODUCT' | 'STORE' | 'PHOTO';
-
-export interface FlagResult {
-  flagCount: number;
-  hidden: boolean;
-}
+export type FlagResult = FlagProductMutation['flagRecord'];
