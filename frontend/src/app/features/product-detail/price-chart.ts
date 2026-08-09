@@ -1,5 +1,7 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { PricePoint } from '../../models/catalog';
+import { FormatService } from '../../services/format-service';
 import { ChartPoint, computeGeometry } from './price-chart-geometry';
 
 const WIDTH = 640;
@@ -14,11 +16,17 @@ const GRID_LINES = 4;
  */
 @Component({
   selector: 'app-price-chart',
+  imports: [TranslocoPipe],
   templateUrl: './price-chart.html',
   styleUrl: './price-chart.css',
 })
 export class PriceChart {
+  private readonly transloco = inject(TranslocoService);
+  private readonly format = inject(FormatService);
+
   readonly points = input.required<PricePoint[]>();
+  /** Vždy vyplněná na volající straně (docs/lokalizace.md) — graf jednu řadu nikdy nemíchá napříč měnami. */
+  readonly currency = input<string | null>(null);
 
   protected readonly width = WIDTH;
   protected readonly height = HEIGHT;
@@ -26,11 +34,16 @@ export class PriceChart {
 
   protected readonly hoveredIndex = signal<number | null>(null);
 
-  protected readonly geometry = computed(() => computeGeometry(this.points(), WIDTH, HEIGHT, PADDING));
+  protected readonly geometry = computed(() =>
+    computeGeometry(this.points(), WIDTH, HEIGHT, PADDING),
+  );
 
   protected readonly gridTicks = computed(() => {
     const plotHeight = HEIGHT - 2 * PADDING;
-    return Array.from({ length: GRID_LINES + 1 }, (_, i) => PADDING + (plotHeight * i) / GRID_LINES);
+    return Array.from(
+      { length: GRID_LINES + 1 },
+      (_, i) => PADDING + (plotHeight * i) / GRID_LINES,
+    );
   });
 
   protected readonly pathD = computed(() => this.toPathD(this.geometry().stepPath));
@@ -49,8 +62,12 @@ export class PriceChart {
     return points.length > 0 ? points[points.length - 1] : null;
   });
 
-  protected readonly minPoint = computed<PricePoint | null>(() => this.extremePoint((a, b) => a.unitPrice < b.unitPrice));
-  protected readonly maxPoint = computed<PricePoint | null>(() => this.extremePoint((a, b) => a.unitPrice > b.unitPrice));
+  protected readonly minPoint = computed<PricePoint | null>(() =>
+    this.extremePoint((a, b) => a.unitPrice < b.unitPrice),
+  );
+  protected readonly maxPoint = computed<PricePoint | null>(() =>
+    this.extremePoint((a, b) => a.unitPrice > b.unitPrice),
+  );
 
   protected readonly hoveredPoint = computed<PricePoint | null>(() => {
     const index = this.hoveredIndex();
@@ -91,7 +108,22 @@ export class PriceChart {
   }
 
   protected formatUnitPrice(point: PricePoint | null): string {
-    return point ? `${point.unitPrice.toFixed(2)} Kč/jednotka` : '';
+    if (!point) return '';
+    const suffix = this.transloco.translate('product-detail.perUnit');
+    return `${this.format.money(point.unitPrice, this.currency())}${suffix}`;
+  }
+
+  protected timesConfirmed(point: PricePoint | null): string {
+    if (!point) return '';
+    return this.transloco.translate('product-detail.timesConfirmed', { count: point.nObs });
+  }
+
+  // Metoda, ne computed() — translate() není signálově reaktivní, na změnu jazyka reaguje
+  // appka přes reRenderOnLangChange (app.config.ts), který vynutí novou change detection.
+  protected ariaLabel(): string {
+    return this.transloco.translate('product-detail.chartAriaLabel', {
+      count: this.points().length,
+    });
   }
 
   private toPathD(path: ChartPoint[]): string {

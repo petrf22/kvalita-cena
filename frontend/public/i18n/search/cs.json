@@ -1,0 +1,19 @@
+{
+  "title": "Kolik to stojí?",
+  "intro": "Vyhledej zboží a podívej se, jak se liší cena mezi obchody — bez přihlášení, bez sledování.",
+  "searchPlaceholder": "Např. máslo, chléb, mléko…",
+  "search": "Hledat",
+  "storeFilter": "Obchod: vše",
+  "cityFilter": "Město: vše",
+  "notFound": "Nic jsme nenašli — zkus jiné slovo nebo filtr.",
+  "hint": "Zadej, co hledáš.",
+  "colProduct": "Zboží",
+  "colPrice": "Cena",
+  "colCheapest": "Nejlevněji",
+  "colTotalReports": "Hlášení celkem",
+  "colLast": "Poslední",
+  "colQuality": "Kvalita",
+  "unverified": "Neověřeno",
+  "confirmations": "×{{count}} potvrzení",
+  "unknownPrice": "cena neznámá"
+}

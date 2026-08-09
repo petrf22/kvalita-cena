@@ -25,7 +25,12 @@ const MS_PER_DAY = 86_400_000;
  * Osa X je skutečný čas (počet dní od prvního bodu), NE index bodu — v agg.price_daily jsou
  * jen dny, kdy někdo hlásil, indexová osa by z týdenní mezery udělala jeden krok a graf by lhal.
  */
-export function computeGeometry(points: PricePoint[], width: number, height: number, padding: number): ChartGeometry {
+export function computeGeometry(
+  points: PricePoint[],
+  width: number,
+  height: number,
+  padding: number,
+): ChartGeometry {
   if (points.length === 0) return EMPTY_GEOMETRY;
 
   const days = points.map((p) => Date.parse(`${p.day}T00:00:00Z`));

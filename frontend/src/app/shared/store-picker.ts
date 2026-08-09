@@ -30,6 +30,8 @@ export class StorePicker {
 
   readonly selectedStoreId = input<string | null>(null);
   @Output() readonly selectedStoreIdChange = new EventEmitter<string | null>();
+  /** Celý objekt vedle ID — price-entry-page ho potřebuje kvůli store.country (měna zápisu). */
+  @Output() readonly selectedStoreChange = new EventEmitter<Store | null>();
 
   protected readonly suggestions = signal<Store[]>([]);
   protected readonly selectedStore = signal<Store | null>(null);
@@ -69,6 +71,7 @@ export class StorePicker {
     const store = this.displayOptions().find((s) => s.id === id) ?? null;
     this.selectedStore.set(store);
     this.selectedStoreIdChange.emit(id);
+    this.selectedStoreChange.emit(store);
   }
 
   findNearby(): void {

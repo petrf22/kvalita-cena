@@ -1,7 +1,7 @@
-import { CurrencyPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { TranslocoDirective, TranslocoPipe, provideTranslocoScope } from '@jsverse/transloco';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzIconModule } from 'ng-zorro-antd/icon';
@@ -12,18 +12,16 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { ProductSearchItem, ProductSort, SearchFacets } from '../../models/catalog';
 import { ProductService } from '../../services/product-service';
+import { PRODUCT_SORT_KEYS } from '../../shared/enum-labels';
+import { MoneyPipe } from '../../shared/money.pipe';
 import { QualityBadge } from '../../shared/quality-badge';
-import { formatRelativeDate } from '../../shared/relative-date';
+import { RelativeDatePipe } from '../../shared/relative-date.pipe';
 
 const PAGE_SIZE = 20;
 
-const SORT_OPTIONS: { value: ProductSort; label: string }[] = [
-  { value: 'REPORT_COUNT', label: 'Podle počtu hlášení' },
-  { value: 'PRICE_ASC', label: 'Podle ceny' },
-  { value: 'QUALITY', label: 'Podle kvality' },
-  { value: 'LAST_REPORTED', label: 'Podle posledního hlášení' },
-  { value: 'NAME', label: 'Podle názvu' },
-];
+// Pořadí zobrazení ve filtru — hodnoty samotné (a jejich popisky) drží PRODUCT_SORT_KEYS,
+// jediný zdroj pravdy nad generovaným enumem (docs/lokalizace.md).
+const SORT_ORDER = ['REPORT_COUNT', 'PRICE_ASC', 'QUALITY', 'LAST_REPORTED', 'NAME'] as const;
 
 /**
  * Hledání s filtrem obchod/město a řazením (viz zadání) — mobilní protějšek:
@@ -34,7 +32,6 @@ const SORT_OPTIONS: { value: ProductSort; label: string }[] = [
   selector: 'app-search-page',
   imports: [
     FormsModule,
-    CurrencyPipe,
     NzInputModule,
     NzButtonModule,
     NzTableModule,
@@ -44,7 +41,12 @@ const SORT_OPTIONS: { value: ProductSort; label: string }[] = [
     NzPaginationModule,
     NzTagModule,
     QualityBadge,
+    RelativeDatePipe,
+    MoneyPipe,
+    TranslocoDirective,
+    TranslocoPipe,
   ],
+  providers: [provideTranslocoScope('search')],
   templateUrl: './search-page.html',
   styleUrl: './search-page.css',
 })
@@ -52,8 +54,8 @@ export class SearchPage {
   private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
 
-  protected readonly sortOptions = SORT_OPTIONS;
-  protected readonly formatRelativeDate = formatRelativeDate;
+  protected readonly sortOrder = SORT_ORDER;
+  protected readonly sortKeys = PRODUCT_SORT_KEYS;
 
   protected readonly query = signal('');
   protected readonly storeId = signal<string | null>(null);
@@ -128,6 +130,6 @@ export class SearchPage {
   }
 
   openProduct(item: ProductSearchItem): void {
-    this.router.navigate(['/produkt', item.product.id]);
+    this.router.navigate(['/product', item.product.id]);
   }
 }

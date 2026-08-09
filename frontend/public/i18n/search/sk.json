@@ -1,0 +1,19 @@
+{
+  "title": "Koľko to stojí?",
+  "intro": "Vyhľadaj tovar a pozri sa, ako sa líši cena medzi obchodmi — bez prihlásenia, bez sledovania.",
+  "searchPlaceholder": "Napr. maslo, chlieb, mlieko…",
+  "search": "Hľadať",
+  "storeFilter": "Obchod: všetky",
+  "cityFilter": "Mesto: všetky",
+  "notFound": "Nič sme nenašli — skús iné slovo alebo filter.",
+  "hint": "Zadaj, čo hľadáš.",
+  "colProduct": "Tovar",
+  "colPrice": "Cena",
+  "colCheapest": "Najlacnejšie",
+  "colTotalReports": "Hlásenia spolu",
+  "colLast": "Posledné",
+  "colQuality": "Kvalita",
+  "unverified": "Neoverené",
+  "confirmations": "×{{count}} potvrdení",
+  "unknownPrice": "cena neznáma"
+}

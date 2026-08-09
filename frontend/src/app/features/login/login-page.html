@@ -1,20 +1,21 @@
+<ng-container *transloco="let t; scope: 'login'">
 @if (auth.isLoggedIn()) {
-  <nz-card class="login-card" nzTitle="Účet">
+  <nz-card class="login-card" [nzTitle]="t('login.accountTitle')">
     @if (viewerLoading()) {
-      <p>Načítám…</p>
+      <p>{{ t('login.loading') }}</p>
     } @else {
-      <p class="viewer-handle">{{ viewer()?.publicHandle ?? 'Přihlášen' }}</p>
+      <p class="viewer-handle">{{ viewer()?.publicHandle ?? t('login.loggedIn') }}</p>
       @if (viewer()?.displayName) {
         <p>{{ viewer()!.displayName }}</p>
       }
     }
     <button nz-button nzType="primary" (click)="logout()">
       <span nz-icon nzType="logout"></span>
-      Odhlásit se
+      {{ t('login.logout') }}
     </button>
   </nz-card>
 } @else {
-  <nz-card class="login-card" nzTitle="Přihlášení">
+  <nz-card class="login-card" [nzTitle]="t('login.loginTitle')">
     @if (errorMessage()) {
       <nz-alert nzType="error" [nzMessage]="errorMessage()" class="login-alert" nzShowIcon />
     }
@@ -22,29 +23,29 @@
     @if (step() === 'email') {
       <form nz-form nzLayout="vertical" (ngSubmit)="requestCode()">
         <nz-form-item>
-          <nz-form-label>E-mail</nz-form-label>
+          <nz-form-label>{{ t('login.emailLabel') }}</nz-form-label>
           <nz-form-control>
             <input
               nz-input
               type="email"
               name="email"
-              placeholder="jan.novak@example.com"
+              [placeholder]="t('login.emailPlaceholder')"
               [ngModel]="email()"
               (ngModelChange)="email.set($event)"
               required
             />
           </nz-form-control>
         </nz-form-item>
-        <p class="login-hint">Pošleme ti na e-mail šestimístný kód, žádné heslo si nemusíš pamatovat.</p>
+        <p class="login-hint">{{ t('login.otpHint') }}</p>
         <button nz-button nzType="primary" nzBlock [nzLoading]="loading()" type="submit">
-          Poslat kód
+          {{ t('login.sendCode') }}
         </button>
       </form>
     } @else {
       <form nz-form nzLayout="vertical" (ngSubmit)="verifyCode()">
-        <p class="login-hint">Kód jsme poslali na {{ email() }}.</p>
+        <p class="login-hint">{{ t('login.codeHint', { email: email() }) }}</p>
         <nz-form-item>
-          <nz-form-label>Kód z e-mailu</nz-form-label>
+          <nz-form-label>{{ t('login.codeLabel') }}</nz-form-label>
           <nz-form-control>
             <input
               nz-input
@@ -58,12 +59,13 @@
           </nz-form-control>
         </nz-form-item>
         <button nz-button nzType="primary" nzBlock [nzLoading]="loading()" type="submit">
-          Přihlásit se
+          {{ t('login.signIn') }}
         </button>
         <button nz-button nzType="link" nzBlock type="button" (click)="backToEmail()">
-          Zadat jiný e-mail
+          {{ t('login.changeEmail') }}
         </button>
       </form>
     }
   </nz-card>
 }
+</ng-container>

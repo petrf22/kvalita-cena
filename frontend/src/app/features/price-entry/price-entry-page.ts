@@ -1,5 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import {
+  TranslocoDirective,
+  TranslocoPipe,
+  TranslocoService,
+  provideTranslocoScope,
+} from '@jsverse/transloco';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
@@ -9,15 +15,19 @@ import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
-import { PriceKind, Product, ProductSearchItem, QuantityBasis } from '../../models/catalog';
+import { PriceKind, Product, ProductSearchItem, QuantityBasis, Store } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
+import { FormatService } from '../../services/format-service';
 import { ProductService } from '../../services/product-service';
+import { currencyForCountry } from '../../shared/country-currency';
+import { translateError } from '../../shared/error-message';
 import {
-  PRICE_KIND_LABELS,
-  QUANTITY_BASIS_LABELS,
+  PRICE_KIND_KEYS,
+  QUANTITY_BASIS_KEYS,
   SELECTABLE_PRICE_KINDS,
   SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES,
 } from '../../shared/enum-labels';
+import { MoneyPipe } from '../../shared/money.pipe';
 import { StorePicker } from '../../shared/store-picker';
 import { ProductForm } from '../product-form/product-form';
 
@@ -43,16 +53,22 @@ import { ProductForm } from '../product-form/product-form';
     NzDatePickerModule,
     StorePicker,
     ProductForm,
+    TranslocoDirective,
+    TranslocoPipe,
+    MoneyPipe,
   ],
+  providers: [provideTranslocoScope('price-entry')],
   templateUrl: './price-entry-page.html',
   styleUrl: './price-entry-page.css',
 })
 export class PriceEntryPage {
   private readonly productService = inject(ProductService);
+  private readonly transloco = inject(TranslocoService);
   protected readonly auth = inject(AuthService);
+  protected readonly format = inject(FormatService);
 
-  protected readonly priceKindLabels = PRICE_KIND_LABELS;
-  protected readonly quantityBasisLabels = QUANTITY_BASIS_LABELS;
+  protected readonly priceKindKeys = PRICE_KIND_KEYS;
+  protected readonly quantityBasisKeys = QUANTITY_BASIS_KEYS;
   protected readonly selectablePriceKinds = SELECTABLE_PRICE_KINDS;
   protected readonly selectableVariableWeightQuantityBases =
     SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES;
@@ -70,6 +86,7 @@ export class PriceEntryPage {
   protected readonly loadingProduct = signal(false);
 
   protected readonly selectedStoreId = signal<string | null>(null);
+  protected readonly selectedStoreCurrency = signal<string>('CZK');
   protected readonly priceAmount = signal<number | null>(null);
   protected readonly priceKind = signal<PriceKind>('REGULAR');
   protected readonly quantityBasis = signal<QuantityBasis>('PACKAGE');
@@ -81,6 +98,11 @@ export class PriceEntryPage {
 
   /** observed_at nesmí být v budoucnosti — uživatel zapisuje cenu, kterou už viděl. */
   protected readonly isFutureDate = (date: Date): boolean => date.getTime() > Date.now();
+
+  /** Jen popisek pole "Cena (Kč/€/zł)" — o skutečně uložené měně rozhoduje server (docs/lokalizace.md). */
+  onStoreChange(store: Store | null): void {
+    this.selectedStoreCurrency.set(currencyForCountry(store?.country));
+  }
 
   searchByName(): void {
     const query = this.nameQuery().trim();
@@ -96,7 +118,7 @@ export class PriceEntryPage {
       error: () => {
         this.results.set([]);
         this.searching.set(false);
-        this.searchError.set('Hledání se nepovedlo, zkus to prosím znovu.');
+        this.searchError.set(this.transloco.translate('price-entry.searchFailed'));
       },
     });
   }
@@ -116,7 +138,7 @@ export class PriceEntryPage {
       },
       error: () => {
         this.searching.set(false);
-        this.searchError.set('Hledání se nepovedlo, zkus to prosím znovu.');
+        this.searchError.set(this.transloco.translate('price-entry.searchFailed'));
       },
     });
   }
@@ -179,9 +201,9 @@ export class PriceEntryPage {
             .getById(product.id)
             .subscribe({ next: (p) => p && this.selectedProduct.set(p) });
         },
-        error: () => {
+        error: (err: unknown) => {
           this.submitting.set(false);
-          this.submitError.set('Zápis se nepovedl, zkus to prosím znovu.');
+          this.submitError.set(translateError(err, this.transloco));
         },
       });
   }

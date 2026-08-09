@@ -1,211 +1,231 @@
-<h1>Zadat cenu</h1>
+<ng-container *transloco="let t; scope: 'price-entry'">
+  <h1>{{ t('price-entry.title') }}</h1>
 
-@if (!selectedProduct() && !showProductForm()) {
-  <nz-form-item>
-    <nz-form-control>
-      <nz-radio-group
-        [ngModel]="searchMode()"
-        (ngModelChange)="searchMode.set($event)"
-        name="searchMode"
-      >
-        <label nz-radio nzValue="name">Podle názvu</label>
-        <label nz-radio nzValue="code">Podle čárového kódu</label>
-      </nz-radio-group>
-    </nz-form-control>
-  </nz-form-item>
+  @if (!selectedProduct() && !showProductForm()) {
+    <nz-form-item>
+      <nz-form-control>
+        <nz-radio-group
+          [ngModel]="searchMode()"
+          (ngModelChange)="searchMode.set($event)"
+          name="searchMode"
+        >
+          <label nz-radio nzValue="name">{{ t('price-entry.byName') }}</label>
+          <label nz-radio nzValue="code">{{ t('price-entry.byCode') }}</label>
+        </nz-radio-group>
+      </nz-form-control>
+    </nz-form-item>
 
-  @if (searchMode() === 'name') {
-    <div class="search-row">
-      <input
-        nz-input
-        placeholder="Co hledáš?"
-        name="nameQuery"
-        [ngModel]="nameQuery()"
-        (ngModelChange)="nameQuery.set($event)"
-        (keyup.enter)="searchByName()"
+    @if (searchMode() === 'name') {
+      <div class="search-row">
+        <input
+          nz-input
+          [placeholder]="t('price-entry.namePlaceholder')"
+          name="nameQuery"
+          [ngModel]="nameQuery()"
+          (ngModelChange)="nameQuery.set($event)"
+          (keyup.enter)="searchByName()"
+        />
+        <button nz-button nzType="primary" [nzLoading]="searching()" (click)="searchByName()">
+          {{ t('price-entry.search') }}
+        </button>
+      </div>
+    } @else {
+      <div class="search-row">
+        <input
+          nz-input
+          [placeholder]="t('price-entry.codePlaceholder')"
+          name="codeQuery"
+          [ngModel]="codeQuery()"
+          (ngModelChange)="codeQuery.set($event)"
+          (keyup.enter)="searchByCode()"
+        />
+        <button nz-button nzType="primary" [nzLoading]="searching()" (click)="searchByCode()">
+          {{ t('price-entry.search') }}
+        </button>
+      </div>
+    }
+
+    @if (searchError()) {
+      <nz-alert nzType="error" [nzMessage]="searchError()" nzShowIcon class="form-alert" />
+    }
+
+    @if (codeNotFound()) {
+      <nz-alert
+        nzType="info"
+        [nzMessage]="t('price-entry.codeNotFound')"
+        nzShowIcon
+        class="form-alert"
       />
-      <button nz-button nzType="primary" [nzLoading]="searching()" (click)="searchByName()">
-        Hledat
-      </button>
-    </div>
-  } @else {
-    <div class="search-row">
-      <input
-        nz-input
-        placeholder="Čárový kód"
-        name="codeQuery"
-        [ngModel]="codeQuery()"
-        (ngModelChange)="codeQuery.set($event)"
-        (keyup.enter)="searchByCode()"
-      />
-      <button nz-button nzType="primary" [nzLoading]="searching()" (click)="searchByCode()">
-        Hledat
-      </button>
-    </div>
+    }
+
+    @if (results().length > 0) {
+      <ul class="result-list">
+        @for (item of results(); track item.product.id) {
+          <li>
+            <button nz-button nzType="link" type="button" (click)="selectFromResults(item)">
+              {{ item.product.name }}
+              @if (item.product.brand) {
+                — {{ item.product.brand!.name }}
+              }
+              · {{ item.product.category.name }}
+            </button>
+          </li>
+        }
+      </ul>
+    }
+
+    <p class="add-new-hint">
+      @if (auth.isLoggedIn()) {
+        {{ t('price-entry.addNewHint') }}
+        <button nz-button nzType="link" type="button" (click)="openProductForm()">
+          {{ t('price-entry.addNewButton') }}
+        </button>
+      } @else {
+        {{ t('price-entry.addNewRequiresLogin') }}
+      }
+    </p>
   }
 
-  @if (searchError()) {
-    <nz-alert nzType="error" [nzMessage]="searchError()" nzShowIcon class="form-alert" />
-  }
-
-  @if (codeNotFound()) {
-    <nz-alert
-      nzType="info"
-      nzMessage="Tenhle kód zatím v katalogu neznáme."
-      nzShowIcon
-      class="form-alert"
+  @if (showProductForm()) {
+    <h2 class="section-title">{{ t('price-entry.newProductTitle') }}</h2>
+    <app-product-form
+      [barcode]="codeQuery()"
+      (created)="onProductCreated($event)"
+      (cancelled)="showProductForm.set(false)"
     />
   }
 
-  @if (results().length > 0) {
-    <ul class="result-list">
-      @for (item of results(); track item.product.id) {
-        <li>
-          <button nz-button nzType="link" type="button" (click)="selectFromResults(item)">
-            {{ item.product.name }}
-            @if (item.product.brand) {
-              — {{ item.product.brand!.name }}
-            }
-            · {{ item.product.category.name }}
-          </button>
-        </li>
-      }
-    </ul>
+  @if (loadingProduct()) {
+    <nz-spin />
   }
 
-  <p class="add-new-hint">
-    @if (auth.isLoggedIn()) {
-      Zboží nenašel(a)?
-      <button nz-button nzType="link" type="button" (click)="openProductForm()">
-        Založit nové
+  @if (selectedProduct(); as product) {
+    <div class="selected-product">
+      <div>
+        <strong>{{ product.name }}</strong>
+        @if (product.brand) {
+          — {{ product.brand.name }}
+        }
+        · {{ product.category.name }}
+        @if (product.isGeneric) {
+          <span class="generic-tag">{{ t('price-entry.genericTag') }}</span>
+        }
+      </div>
+      <button nz-button nzType="link" type="button" (click)="changeProduct()">
+        {{ t('price-entry.changeProduct') }}
       </button>
-    } @else {
-      Zboží nenašel(a)? Založení nového zboží vyžaduje přihlášení — přejdi na stránku Účet.
-    }
-  </p>
-}
-
-@if (showProductForm()) {
-  <h2 class="section-title">Nové zboží</h2>
-  <app-product-form
-    [barcode]="codeQuery()"
-    (created)="onProductCreated($event)"
-    (cancelled)="showProductForm.set(false)"
-  />
-}
-
-@if (loadingProduct()) {
-  <nz-spin />
-}
-
-@if (selectedProduct(); as product) {
-  <div class="selected-product">
-    <div>
-      <strong>{{ product.name }}</strong>
-      @if (product.brand) {
-        — {{ product.brand.name }}
-      }
-      · {{ product.category.name }}
-      @if (product.isGeneric) {
-        <span class="generic-tag">(druhová položka)</span>
-      }
     </div>
-    <button nz-button nzType="link" type="button" (click)="changeProduct()">Změnit zboží</button>
-  </div>
 
-  @if (product.prices.length > 0) {
-    <ul class="current-prices">
-      @for (price of product.prices; track price.store.id + price.priceKind) {
-        <li>
-          {{ price.store.name }} — {{ priceKindLabels[price.priceKind] }}:
-          {{ price.priceAmount }} Kč
-        </li>
-      }
-    </ul>
-  }
+    @if (product.prices.length > 0) {
+      <ul class="current-prices">
+        @for (price of product.prices; track price.store.id + price.priceKind) {
+          <li>
+            {{ price.store.name }} — {{ priceKindKeys[price.priceKind] | transloco }}:
+            {{ price.priceAmount | money: price.currency }}
+          </li>
+        }
+      </ul>
+    }
 
-  @if (submitSuccess()) {
-    <nz-alert nzType="success" nzMessage="Cena byla zapsána, díky!" nzShowIcon class="form-alert" />
-  }
-  @if (submitError()) {
-    <nz-alert nzType="error" [nzMessage]="submitError()" nzShowIcon class="form-alert" />
-  }
+    @if (submitSuccess()) {
+      <nz-alert
+        nzType="success"
+        [nzMessage]="t('price-entry.submitSuccess')"
+        nzShowIcon
+        class="form-alert"
+      />
+    }
+    @if (submitError()) {
+      <nz-alert nzType="error" [nzMessage]="submitError()" nzShowIcon class="form-alert" />
+    }
 
-  <form nz-form nzLayout="vertical" (ngSubmit)="submit()">
-    <nz-form-item>
-      <nz-form-label>Obchod</nz-form-label>
-      <nz-form-control>
-        <app-store-picker
-          [selectedStoreId]="selectedStoreId()"
-          (selectedStoreIdChange)="selectedStoreId.set($event)"
-        />
-      </nz-form-control>
-    </nz-form-item>
-
-    <nz-form-item>
-      <nz-form-label>Druh ceny</nz-form-label>
-      <nz-form-control>
-        <nz-select [ngModel]="priceKind()" (ngModelChange)="priceKind.set($event)" name="priceKind">
-          @for (kind of selectablePriceKinds; track kind) {
-            <nz-option [nzValue]="kind" [nzLabel]="priceKindLabels[kind]" />
-          }
-        </nz-select>
-      </nz-form-control>
-    </nz-form-item>
-
-    @if (product.isVariableWeight) {
+    <form nz-form nzLayout="vertical" (ngSubmit)="submit()">
       <nz-form-item>
-        <nz-form-label>Cena je uvedená</nz-form-label>
+        <nz-form-label>{{ t('price-entry.storeLabel') }}</nz-form-label>
+        <nz-form-control>
+          <app-store-picker
+            [selectedStoreId]="selectedStoreId()"
+            (selectedStoreIdChange)="selectedStoreId.set($event)"
+            (selectedStoreChange)="onStoreChange($event)"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <nz-form-item>
+        <nz-form-label>{{ t('price-entry.priceKindLabel') }}</nz-form-label>
         <nz-form-control>
           <nz-select
-            [ngModel]="quantityBasis()"
-            (ngModelChange)="quantityBasis.set($event)"
-            name="quantityBasis"
+            [ngModel]="priceKind()"
+            (ngModelChange)="priceKind.set($event)"
+            name="priceKind"
           >
-            @for (basis of selectableVariableWeightQuantityBases; track basis) {
-              <nz-option [nzValue]="basis" [nzLabel]="quantityBasisLabels[basis]" />
+            @for (kind of selectablePriceKinds; track kind) {
+              <nz-option [nzValue]="kind" [nzLabel]="priceKindKeys[kind] | transloco" />
             }
           </nz-select>
         </nz-form-control>
       </nz-form-item>
-    }
 
-    <nz-form-item>
-      <nz-form-label>Cena (Kč)</nz-form-label>
-      <nz-form-control>
-        <nz-input-number
-          [ngModel]="priceAmount()"
-          (ngModelChange)="priceAmount.set($event)"
-          name="priceAmount"
-          [nzMin]="0"
-          [nzStep]="0.5"
-          style="width: 100%"
-        />
-      </nz-form-control>
-    </nz-form-item>
+      @if (product.isVariableWeight) {
+        <nz-form-item>
+          <nz-form-label>{{ t('price-entry.quantityBasisLabel') }}</nz-form-label>
+          <nz-form-control>
+            <nz-select
+              [ngModel]="quantityBasis()"
+              (ngModelChange)="quantityBasis.set($event)"
+              name="quantityBasis"
+            >
+              @for (basis of selectableVariableWeightQuantityBases; track basis) {
+                <nz-option [nzValue]="basis" [nzLabel]="quantityBasisKeys[basis] | transloco" />
+              }
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+      }
 
-    <nz-form-item>
-      <nz-form-label>Kdy jsi cenu viděl(a) (volitelné — jinak teď)</nz-form-label>
-      <nz-form-control>
-        <nz-date-picker
-          [ngModel]="observedAt()"
-          (ngModelChange)="observedAt.set($event)"
-          name="observedAt"
-          [nzDisabledDate]="isFutureDate"
-          style="width: 100%"
-        />
-      </nz-form-control>
-    </nz-form-item>
+      <nz-form-item>
+        <nz-form-label>
+          {{
+            t('price-entry.priceAmountLabel', {
+              currency: format.currencySymbol(selectedStoreCurrency()),
+            })
+          }}
+        </nz-form-label>
+        <nz-form-control>
+          <nz-input-number
+            [ngModel]="priceAmount()"
+            (ngModelChange)="priceAmount.set($event)"
+            name="priceAmount"
+            [nzMin]="0"
+            [nzStep]="0.5"
+            style="width: 100%"
+          />
+        </nz-form-control>
+      </nz-form-item>
 
-    <button
-      nz-button
-      nzType="primary"
-      nzBlock
-      type="submit"
-      [nzLoading]="submitting()"
-      [disabled]="!selectedStoreId() || priceAmount() == null"
-    >
-      Zapsat cenu
-    </button>
-  </form>
-}
+      <nz-form-item>
+        <nz-form-label>{{ t('price-entry.observedAtLabel') }}</nz-form-label>
+        <nz-form-control>
+          <nz-date-picker
+            [ngModel]="observedAt()"
+            (ngModelChange)="observedAt.set($event)"
+            name="observedAt"
+            [nzDisabledDate]="isFutureDate"
+            style="width: 100%"
+          />
+        </nz-form-control>
+      </nz-form-item>
+
+      <button
+        nz-button
+        nzType="primary"
+        nzBlock
+        type="submit"
+        [nzLoading]="submitting()"
+        [disabled]="!selectedStoreId() || priceAmount() == null"
+      >
+        {{ t('price-entry.submit') }}
+      </button>
+    </form>
+  }
+</ng-container>

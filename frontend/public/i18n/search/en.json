@@ -1,0 +1,19 @@
+{
+  "title": "How much does it cost?",
+  "intro": "Search for a product and see how the price differs between stores — no sign-in, no tracking.",
+  "searchPlaceholder": "E.g. butter, bread, milk…",
+  "search": "Search",
+  "storeFilter": "Store: all",
+  "cityFilter": "City: all",
+  "notFound": "We didn't find anything — try a different word or filter.",
+  "hint": "Type what you're looking for.",
+  "colProduct": "Product",
+  "colPrice": "Price",
+  "colCheapest": "Cheapest at",
+  "colTotalReports": "Total reports",
+  "colLast": "Last",
+  "colQuality": "Quality",
+  "unverified": "Unverified",
+  "confirmations": "×{{count}} confirmations",
+  "unknownPrice": "price unknown"
+}

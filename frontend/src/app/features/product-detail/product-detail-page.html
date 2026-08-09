@@ -1,261 +1,279 @@
-<a routerLink="/">&larr; Zpět na hledání</a>
+<ng-container *transloco="let t; scope: 'product-detail'">
+  <a routerLink="/">&larr; {{ t('product-detail.backToSearch') }}</a>
 
-@if (loading()) {
-  <p>Načítám…</p>
-} @else if (!product()) {
-  <nz-alert nzType="error" nzMessage="Produkt se nepodařilo najít." nzShowIcon />
-} @else {
-  <h1>{{ product()!.name }}</h1>
+  @if (loading()) {
+    <p>{{ t('product-detail.loading') }}</p>
+  } @else if (!product()) {
+    <nz-alert nzType="error" [nzMessage]="t('product-detail.notFound')" nzShowIcon />
+  } @else {
+    <h1>{{ product()!.name }}</h1>
 
-  <app-photo-gallery
-    recordType="PRODUCT"
-    [recordId]="product()!.id"
-    [photos]="product()!.photos ?? []"
-  />
-
-  <p class="product-meta">
-    @if (product()!.brand) {
-      {{ product()!.brand!.name }} ·
-    }
-    {{ product()!.category.name }}
-    @if (product()!.netContentValue) {
-      · {{ product()!.netContentValue }} g
-    }
-  </p>
-
-  <div class="status-badges">
-    @if (!product()!.verified) {
-      <nz-tag>Neověřeno</nz-tag>
-    }
-    @if (product()!.editedByMe) {
-      <nz-tag nzColor="blue">Vaše úprava</nz-tag>
-    }
-    @if (auth.isLoggedIn()) {
-      <button
-        nz-button
-        nzType="text"
-        nzSize="small"
-        [nzLoading]="flagging()"
-        (click)="flagProduct()"
-      >
-        <span nz-icon nzType="flag"></span>
-        Nahlásit
-      </button>
-    }
-  </div>
-  @if (flagMessage()) {
-    <nz-alert nzType="info" [nzMessage]="flagMessage()" nzShowIcon class="flag-alert" />
-  }
-
-  <div class="quality-section">
-    <app-quality-badge
-      [average]="product()!.quality?.average ?? null"
-      [count]="product()!.quality?.count ?? 0"
+    <app-photo-gallery
+      recordType="PRODUCT"
+      [recordId]="product()!.id"
+      [photos]="product()!.photos ?? []"
     />
-    <div class="quality-buttons">
-      @for (grade of [1, 2, 3, 4, 5]; track grade) {
+
+    <p class="product-meta">
+      @if (product()!.brand) {
+        {{ product()!.brand!.name }} ·
+      }
+      {{ product()!.category.name }}
+      @if (product()!.netContentValue && product()!.netContentUom) {
+        · {{ product()!.netContentValue }}
+        {{ netContentUomKeys[product()!.netContentUom!] | transloco }}
+      }
+    </p>
+
+    <div class="status-badges">
+      @if (!product()!.verified) {
+        <nz-tag>{{ t('product-detail.unverified') }}</nz-tag>
+      }
+      @if (product()!.editedByMe) {
+        <nz-tag nzColor="blue">{{ t('product-detail.yourEdit') }}</nz-tag>
+      }
+      @if (auth.isLoggedIn()) {
         <button
           nz-button
-          [nzType]="product()!.myQualityRating === grade ? 'primary' : 'default'"
-          nzShape="circle"
-          (click)="rate(grade)"
+          nzType="text"
+          nzSize="small"
+          [nzLoading]="flagging()"
+          (click)="flagProduct()"
         >
-          {{ grade }}
+          <span nz-icon nzType="flag"></span>
+          {{ t('product-detail.report') }}
         </button>
       }
     </div>
-  </div>
-  @if (!auth.isLoggedIn()) {
-    <p class="login-hint">Hodnocení kvality vyžaduje přihlášení — přejdi na stránku Účet.</p>
-  }
-  @if (ratingError()) {
-    <nz-alert nzType="warning" [nzMessage]="ratingError()" nzShowIcon class="rating-alert" />
-  }
+    @if (flagMessage()) {
+      <nz-alert nzType="info" [nzMessage]="flagMessage()" nzShowIcon class="flag-alert" />
+    }
 
-  <nz-card nzTitle="Vývoj ceny" class="chart-card">
-    <div class="chart-controls">
-      <div class="chart-control-group">
-        @for (days of chartRanges; track days) {
+    <div class="quality-section">
+      <app-quality-badge
+        [average]="product()!.quality?.average ?? null"
+        [count]="product()!.quality?.count ?? 0"
+      />
+      <div class="quality-buttons">
+        @for (grade of [1, 2, 3, 4, 5]; track grade) {
           <button
             nz-button
-            [nzType]="selectedDays() === days ? 'primary' : 'default'"
-            nzSize="small"
-            (click)="onDaysChange(days)"
+            [nzType]="product()!.myQualityRating === grade ? 'primary' : 'default'"
+            nzShape="circle"
+            (click)="rate(grade)"
           >
-            {{ days }} dní
+            {{ grade }}
           </button>
         }
       </div>
-      <div class="chart-control-group">
-        <button
-          nz-button
-          [nzType]="selectedPriceKind() === 'REGULAR' ? 'primary' : 'default'"
-          nzSize="small"
-          (click)="onPriceKindChange('REGULAR')"
-        >
-          Běžná cena
-        </button>
-        <button
-          nz-button
-          [nzType]="selectedPriceKind() === 'PROMO' ? 'primary' : 'default'"
-          nzSize="small"
-          (click)="onPriceKindChange('PROMO')"
-        >
-          Akce
-        </button>
-      </div>
     </div>
-    <app-price-chart [points]="historyPoints()" />
-  </nz-card>
-
-  @if (product()!.stats?.bestPrice != null && product()!.stats?.cheapestStore) {
-    <nz-card nzTitle="Nejlevněji" class="cheapest-card">
-      <a [routerLink]="['/obchod', product()!.stats!.cheapestStore!.id]" class="cheapest-row">
-        <span>
-          <span class="cheapest-store-name">{{ product()!.stats!.cheapestStore!.name }}</span>
-          <span class="cheapest-store-city">{{ product()!.stats!.cheapestStore!.city }}</span>
-        </span>
-        <span class="cheapest-price">{{ product()!.stats!.bestPrice }} Kč</span>
-      </a>
-    </nz-card>
-  }
-
-  <nz-card nzTitle="Aktuální ceny po obchodech" class="prices-card">
-    @if (product()!.prices.length === 0) {
-      <p class="no-prices">Zatím tu nikdo cenu nezadal — buď první.</p>
-    } @else {
-      <nz-table #pricesTable [nzData]="product()!.prices" [nzShowPagination]="false" nzSize="small">
-        <thead>
-          <tr>
-            <th>Obchod</th>
-            <th>Druh ceny</th>
-            <th>Cena</th>
-            <th>Kč / jednotka</th>
-            <th>Spolehlivost</th>
-            <th>Poslední hlášení</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (price of pricesTable.data; track price.store.id + price.priceKind) {
-            <tr>
-              <td>
-                <a [routerLink]="['/obchod', price.store.id]">{{ price.store.name }}</a>
-              </td>
-              <td>{{ priceKindLabels[price.priceKind] }}</td>
-              <td>{{ price.priceAmount }} Kč</td>
-              <td>{{ price.unitPrice }} Kč</td>
-              <td>
-                <nz-tag
-                  [nzColor]="
-                    price.confidence === 'HIGH'
-                      ? 'green'
-                      : price.confidence === 'MEDIUM'
-                        ? 'orange'
-                        : 'default'
-                  "
-                >
-                  {{ price.nObs }} {{ price.nObs === 1 ? 'záznam' : 'záznamy' }}
-                </nz-tag>
-              </td>
-              <td>{{ formatRelativeDate(price.lastObservedAt) }}</td>
-            </tr>
-          }
-        </tbody>
-      </nz-table>
+    @if (!auth.isLoggedIn()) {
+      <p class="login-hint">{{ t('product-detail.qualityLoginHint') }}</p>
     }
-  </nz-card>
+    @if (ratingError()) {
+      <nz-alert nzType="warning" [nzMessage]="ratingError()" nzShowIcon class="rating-alert" />
+    }
 
-  @if (product()!.myPrices && product()!.myPrices!.length > 0) {
-    <nz-card nzTitle="Vaše cena" class="my-prices-card">
-      <ul class="my-prices-list">
-        @for (mp of product()!.myPrices!; track mp.store.id + mp.priceKind) {
-          <li>
-            {{ mp.store.name }} — {{ priceKindLabels[mp.priceKind] }}: {{ mp.priceAmount }} Kč
-            <span class="my-price-date">({{ formatRelativeDate(mp.observedAt) }})</span>
-          </li>
-        }
-      </ul>
+    <nz-card [nzTitle]="t('product-detail.priceChartTitle')" class="chart-card">
+      <div class="chart-controls">
+        <div class="chart-control-group">
+          @for (days of chartRanges; track days) {
+            <button
+              nz-button
+              [nzType]="selectedDays() === days ? 'primary' : 'default'"
+              nzSize="small"
+              (click)="onDaysChange(days)"
+            >
+              {{ t('product-detail.days', { count: days }) }}
+            </button>
+          }
+        </div>
+        <div class="chart-control-group">
+          <button
+            nz-button
+            [nzType]="selectedPriceKind() === 'REGULAR' ? 'primary' : 'default'"
+            nzSize="small"
+            (click)="onPriceKindChange('REGULAR')"
+          >
+            {{ priceKindKeys.REGULAR | transloco }}
+          </button>
+          <button
+            nz-button
+            [nzType]="selectedPriceKind() === 'PROMO' ? 'primary' : 'default'"
+            nzSize="small"
+            (click)="onPriceKindChange('PROMO')"
+          >
+            {{ priceKindKeys.PROMO | transloco }}
+          </button>
+        </div>
+      </div>
+      <app-price-chart [points]="historyPoints()" [currency]="historyCurrency()" />
     </nz-card>
-  }
 
-  @if (product()!.externalLinks && product()!.externalLinks!.length > 0) {
-    <nz-card nzTitle="Další informace" class="links-card">
-      @for (link of product()!.externalLinks; track link.url) {
-        <a [href]="link.url" target="_blank" rel="noopener" class="external-link">
-          <span nz-icon nzType="link"></span>
+    @if (product()!.stats?.bestPrice != null && product()!.stats?.cheapestStore) {
+      <nz-card [nzTitle]="t('product-detail.cheapestTitle')" class="cheapest-card">
+        <a [routerLink]="['/store', product()!.stats!.cheapestStore!.id]" class="cheapest-row">
           <span>
-            <span class="external-link-label">{{ link.label }}</span>
-            <!-- Atribuce zdroje/licence MUSÍ být vidět — ODbL (docs/datovy-model.md). -->
-            <span class="external-link-attribution">{{ link.attribution }}</span>
+            <span class="cheapest-store-name">{{ product()!.stats!.cheapestStore!.name }}</span>
+            <span class="cheapest-store-city">{{ product()!.stats!.cheapestStore!.city }}</span>
           </span>
+          <span class="cheapest-price">{{
+            product()!.stats!.bestPrice | money: product()!.stats!.bestPriceCurrency
+          }}</span>
         </a>
+      </nz-card>
+    }
+
+    <nz-card [nzTitle]="t('product-detail.currentPricesTitle')" class="prices-card">
+      @if (product()!.prices.length === 0) {
+        <p class="no-prices">{{ t('product-detail.noPrices') }}</p>
+      } @else {
+        <nz-table
+          #pricesTable
+          [nzData]="product()!.prices"
+          [nzShowPagination]="false"
+          nzSize="small"
+        >
+          <thead>
+            <tr>
+              <th>{{ t('product-detail.colStore') }}</th>
+              <th>{{ t('product-detail.colPriceKind') }}</th>
+              <th>{{ t('product-detail.colPrice') }}</th>
+              <th>{{ t('product-detail.colUnitPrice') }}</th>
+              <th>{{ t('product-detail.colConfidence') }}</th>
+              <th>{{ t('product-detail.colLastReported') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (price of pricesTable.data; track price.store.id + price.priceKind) {
+              <tr>
+                <td>
+                  <a [routerLink]="['/store', price.store.id]">{{ price.store.name }}</a>
+                </td>
+                <td>{{ priceKindKeys[price.priceKind] | transloco }}</td>
+                <td>{{ price.priceAmount | money: price.currency }}</td>
+                <td>{{ price.unitPrice | money: price.currency }}</td>
+                <td>
+                  <nz-tag
+                    [nzColor]="
+                      price.confidence === 'HIGH'
+                        ? 'green'
+                        : price.confidence === 'MEDIUM'
+                          ? 'orange'
+                          : 'default'
+                    "
+                  >
+                    {{ t('product-detail.observationCount', { count: price.nObs }) }}
+                  </nz-tag>
+                </td>
+                <td>{{ price.lastObservedAt | relativeDate }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
       }
     </nz-card>
+
+    @if (product()!.myPrices && product()!.myPrices!.length > 0) {
+      <nz-card [nzTitle]="t('product-detail.myPricesTitle')" class="my-prices-card">
+        <ul class="my-prices-list">
+          @for (mp of product()!.myPrices!; track mp.store.id + mp.priceKind) {
+            <li>
+              {{ mp.store.name }} — {{ priceKindKeys[mp.priceKind] | transloco }}:
+              {{ mp.priceAmount | money: mp.currency }}
+              <span class="my-price-date">({{ mp.observedAt | relativeDate }})</span>
+            </li>
+          }
+        </ul>
+      </nz-card>
+    }
+
+    @if (product()!.externalLinks && product()!.externalLinks!.length > 0) {
+      <nz-card [nzTitle]="t('product-detail.externalLinksTitle')" class="links-card">
+        @for (link of product()!.externalLinks; track link.url) {
+          <a [href]="link.url" target="_blank" rel="noopener" class="external-link">
+            <span nz-icon nzType="link"></span>
+            <span>
+              <span class="external-link-label">{{ link.label }}</span>
+              <!-- Atribuce zdroje/licence MUSÍ být vidět — ODbL (docs/datovy-model.md). -->
+              <span class="external-link-attribution">{{ link.attribution }}</span>
+            </span>
+          </a>
+        }
+      </nz-card>
+    }
+
+    <nz-card [nzTitle]="t('product-detail.submitTitle')" class="submit-card">
+      @if (submitSuccess()) {
+        <nz-alert
+          nzType="success"
+          [nzMessage]="t('product-detail.submitSuccess')"
+          nzShowIcon
+          class="submit-alert"
+        />
+      }
+      @if (submitError()) {
+        <nz-alert nzType="error" [nzMessage]="submitError()" nzShowIcon class="submit-alert" />
+      }
+
+      <form nz-form nzLayout="vertical" (ngSubmit)="submitPrice()">
+        <nz-form-item>
+          <nz-form-label>{{ t('product-detail.storeLabel') }}</nz-form-label>
+          <nz-form-control>
+            <app-store-picker
+              [selectedStoreId]="selectedStoreId()"
+              (selectedStoreIdChange)="selectedStoreId.set($event)"
+              (selectedStoreChange)="onStoreChange($event)"
+            />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>{{ t('product-detail.priceKindLabel') }}</nz-form-label>
+          <nz-form-control>
+            <nz-select
+              [ngModel]="priceKind()"
+              (ngModelChange)="priceKind.set($event)"
+              name="priceKind"
+            >
+              @for (kind of selectablePriceKinds; track kind) {
+                <nz-option [nzValue]="kind" [nzLabel]="priceKindKeys[kind] | transloco" />
+              }
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>
+            {{
+              t('product-detail.priceAmountLabel', {
+                currency: format.currencySymbol(selectedStoreCurrency()),
+              })
+            }}
+          </nz-form-label>
+          <nz-form-control>
+            <nz-input-number
+              [ngModel]="priceAmount()"
+              (ngModelChange)="priceAmount.set($event)"
+              name="priceAmount"
+              [nzMin]="0"
+              [nzStep]="0.5"
+              style="width: 100%"
+            />
+          </nz-form-control>
+        </nz-form-item>
+
+        <button
+          nz-button
+          nzType="primary"
+          nzBlock
+          type="submit"
+          [nzLoading]="submitting()"
+          [disabled]="!selectedStoreId() || priceAmount() == null"
+        >
+          {{ t('product-detail.submit') }}
+        </button>
+      </form>
+    </nz-card>
   }
-
-  <nz-card nzTitle="Zadat cenu" class="submit-card">
-    @if (submitSuccess()) {
-      <nz-alert
-        nzType="success"
-        nzMessage="Cena byla zapsána, díky!"
-        nzShowIcon
-        class="submit-alert"
-      />
-    }
-    @if (submitError()) {
-      <nz-alert nzType="error" [nzMessage]="submitError()" nzShowIcon class="submit-alert" />
-    }
-
-    <form nz-form nzLayout="vertical" (ngSubmit)="submitPrice()">
-      <nz-form-item>
-        <nz-form-label>Obchod</nz-form-label>
-        <nz-form-control>
-          <app-store-picker
-            [selectedStoreId]="selectedStoreId()"
-            (selectedStoreIdChange)="selectedStoreId.set($event)"
-          />
-        </nz-form-control>
-      </nz-form-item>
-
-      <nz-form-item>
-        <nz-form-label>Druh ceny</nz-form-label>
-        <nz-form-control>
-          <nz-select
-            [ngModel]="priceKind()"
-            (ngModelChange)="priceKind.set($event)"
-            name="priceKind"
-          >
-            @for (kind of selectablePriceKinds; track kind) {
-              <nz-option [nzValue]="kind" [nzLabel]="priceKindLabels[kind]" />
-            }
-          </nz-select>
-        </nz-form-control>
-      </nz-form-item>
-
-      <nz-form-item>
-        <nz-form-label>Cena (Kč)</nz-form-label>
-        <nz-form-control>
-          <nz-input-number
-            [ngModel]="priceAmount()"
-            (ngModelChange)="priceAmount.set($event)"
-            name="priceAmount"
-            [nzMin]="0"
-            [nzStep]="0.5"
-            style="width: 100%"
-          />
-        </nz-form-control>
-      </nz-form-item>
-
-      <button
-        nz-button
-        nzType="primary"
-        nzBlock
-        type="submit"
-        [nzLoading]="submitting()"
-        [disabled]="!selectedStoreId() || priceAmount() == null"
-      >
-        Zapsat cenu
-      </button>
-    </form>
-  </nz-card>
-}
+</ng-container>

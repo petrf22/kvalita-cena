@@ -1,0 +1,19 @@
+{
+  "title": "Ile to kosztuje?",
+  "intro": "Wyszukaj produkt i zobacz, jak różni się cena między sklepami — bez logowania, bez śledzenia.",
+  "searchPlaceholder": "Np. masło, chleb, mleko…",
+  "search": "Szukaj",
+  "storeFilter": "Sklep: wszystkie",
+  "cityFilter": "Miasto: wszystkie",
+  "notFound": "Nic nie znaleźliśmy — spróbuj innego słowa lub filtra.",
+  "hint": "Wpisz, czego szukasz.",
+  "colProduct": "Produkt",
+  "colPrice": "Cena",
+  "colCheapest": "Najtaniej w",
+  "colTotalReports": "Zgłoszeń łącznie",
+  "colLast": "Ostatnie",
+  "colQuality": "Jakość",
+  "unverified": "Niezweryfikowane",
+  "confirmations": "×{{count}} potwierdzeń",
+  "unknownPrice": "cena nieznana"
+}

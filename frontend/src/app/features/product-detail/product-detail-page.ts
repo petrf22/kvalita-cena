@@ -1,6 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import {
+  TranslocoDirective,
+  TranslocoPipe,
+  TranslocoService,
+  provideTranslocoScope,
+} from '@jsverse/transloco';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -11,13 +17,21 @@ import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { PriceKind, PricePoint, Product } from '../../models/catalog';
+import { PriceKind, PricePoint, Product, Store } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
+import { FormatService } from '../../services/format-service';
 import { ProductService } from '../../services/product-service';
-import { PRICE_KIND_LABELS, SELECTABLE_PRICE_KINDS } from '../../shared/enum-labels';
+import { currencyForCountry } from '../../shared/country-currency';
+import { translateError } from '../../shared/error-message';
+import {
+  NET_CONTENT_UOM_KEYS,
+  PRICE_KIND_KEYS,
+  SELECTABLE_PRICE_KINDS,
+} from '../../shared/enum-labels';
+import { MoneyPipe } from '../../shared/money.pipe';
 import { PhotoGallery } from '../../shared/photo-gallery';
 import { QualityBadge } from '../../shared/quality-badge';
-import { formatRelativeDate } from '../../shared/relative-date';
+import { RelativeDatePipe } from '../../shared/relative-date.pipe';
 import { StorePicker } from '../../shared/store-picker';
 import { PriceChart } from './price-chart';
 
@@ -42,25 +56,33 @@ const CHART_RANGES = [7, 30, 90, 365];
     StorePicker,
     PriceChart,
     PhotoGallery,
+    TranslocoDirective,
+    TranslocoPipe,
+    MoneyPipe,
+    RelativeDatePipe,
   ],
+  providers: [provideTranslocoScope('product-detail')],
   templateUrl: './product-detail-page.html',
   styleUrl: './product-detail-page.css',
 })
 export class ProductDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly productService = inject(ProductService);
+  private readonly transloco = inject(TranslocoService);
   protected readonly auth = inject(AuthService);
+  protected readonly format = inject(FormatService);
 
-  protected readonly priceKindLabels = PRICE_KIND_LABELS;
+  protected readonly priceKindKeys = PRICE_KIND_KEYS;
+  protected readonly netContentUomKeys = NET_CONTENT_UOM_KEYS;
   protected readonly selectablePriceKinds = SELECTABLE_PRICE_KINDS;
   protected readonly chartRanges = CHART_RANGES;
-  protected readonly formatRelativeDate = formatRelativeDate;
 
   protected readonly product = signal<Product | null>(null);
   protected readonly loading = signal(true);
 
   protected readonly historyPoints = signal<PricePoint[]>([]);
   protected readonly historyLoading = signal(false);
+  protected readonly historyCurrency = signal<string | null>(null);
   protected readonly selectedDays = signal(90);
   protected readonly selectedPriceKind = signal<PriceKind>('REGULAR');
 
@@ -70,6 +92,7 @@ export class ProductDetailPage {
   protected readonly flagMessage = signal<string | null>(null);
 
   protected readonly selectedStoreId = signal<string | null>(null);
+  protected readonly selectedStoreCurrency = signal<string>('CZK');
   protected readonly priceAmount = signal<number | null>(null);
   protected readonly priceKind = signal<PriceKind>('REGULAR');
   protected readonly submitting = signal(false);
@@ -102,6 +125,7 @@ export class ProductDetailPage {
       .subscribe({
         next: (history) => {
           this.historyPoints.set(history.points);
+          this.historyCurrency.set(history.currency);
           this.historyLoading.set(false);
         },
         error: () => {
@@ -121,6 +145,11 @@ export class ProductDetailPage {
     this.loadHistory();
   }
 
+  /** Jen popisek pole "Cena (Kč/€/zł)" — o skutečně uložené měně rozhoduje server (docs/lokalizace.md). */
+  onStoreChange(store: Store | null): void {
+    this.selectedStoreCurrency.set(currencyForCountry(store?.country));
+  }
+
   rate(grade: number): void {
     const product = this.product();
     if (!product) return;
@@ -131,7 +160,7 @@ export class ProductDetailPage {
         this.product.set({ ...product, quality, myQualityRating: grade });
       },
       error: () => {
-        this.ratingError.set('Hodnocení kvality vyžaduje přihlášení — přejdi do záložky Účet.');
+        this.ratingError.set(this.transloco.translate('product-detail.qualityLoginHint'));
       },
     });
   }
@@ -146,14 +175,14 @@ export class ProductDetailPage {
       next: (result) => {
         this.flagging.set(false);
         this.flagMessage.set(
-          result.hidden
-            ? 'Díky za nahlášení — položka je teď skrytá a čeká na přezkum.'
-            : 'Díky za nahlášení, zaznamenali jsme ho.',
+          this.transloco.translate(
+            result.hidden ? 'product-detail.flagSuccessHidden' : 'product-detail.flagSuccess',
+          ),
         );
       },
       error: () => {
         this.flagging.set(false);
-        this.flagMessage.set('Nahlášení se nepovedlo, zkus to prosím znovu.');
+        this.flagMessage.set(this.transloco.translate('product-detail.flagFailed'));
       },
     });
   }
@@ -181,9 +210,9 @@ export class ProductDetailPage {
           this.priceAmount.set(null);
           this.loadProduct(product.id); // obnoví agregované ceny v tabulce i graf
         },
-        error: () => {
+        error: (err: unknown) => {
           this.submitting.set(false);
-          this.submitError.set('Zápis se nepovedl, zkus to prosím znovu.');
+          this.submitError.set(translateError(err, this.transloco));
         },
       });
   }

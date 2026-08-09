@@ -1,0 +1,17 @@
+{
+  "accountTitle": "Konto",
+  "loading": "Ładowanie…",
+  "loggedIn": "Zalogowano",
+  "logout": "Wyloguj się",
+  "loginTitle": "Logowanie",
+  "emailLabel": "E-mail",
+  "emailPlaceholder": "jan.nowak@example.com",
+  "otpHint": "Wyślemy na Twój e-mail sześciocyfrowy kod, nie musisz pamiętać hasła.",
+  "sendCode": "Wyślij kod",
+  "codeHint": "Wysłaliśmy kod na {{email}}.",
+  "codeLabel": "Kod z e-maila",
+  "signIn": "Zaloguj się",
+  "changeEmail": "Podaj inny e-mail",
+  "requestFailed": "Nie udało się wysłać kodu. Spróbuj ponownie za chwilę.",
+  "verifyFailed": "Kod jest nieprawidłowy lub wygasł. Spróbuj ponownie."
+}

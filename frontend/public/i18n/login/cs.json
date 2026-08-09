@@ -1,0 +1,17 @@
+{
+  "accountTitle": "Účet",
+  "loading": "Načítám…",
+  "loggedIn": "Přihlášen",
+  "logout": "Odhlásit se",
+  "loginTitle": "Přihlášení",
+  "emailLabel": "E-mail",
+  "emailPlaceholder": "jan.novak@example.com",
+  "otpHint": "Pošleme ti na e-mail šestimístný kód, žádné heslo si nemusíš pamatovat.",
+  "sendCode": "Poslat kód",
+  "codeHint": "Kód jsme poslali na {{email}}.",
+  "codeLabel": "Kód z e-mailu",
+  "signIn": "Přihlásit se",
+  "changeEmail": "Zadat jiný e-mail",
+  "requestFailed": "Nepodařilo se odeslat kód. Zkus to prosím znovu za chvíli.",
+  "verifyFailed": "Kód je neplatný nebo vypršel. Zkus to prosím znovu."
+}

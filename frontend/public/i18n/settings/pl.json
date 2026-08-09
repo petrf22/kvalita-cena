@@ -1,0 +1,8 @@
+{
+  "title": "Ustawienia",
+  "languageLabel": "Język",
+  "sourcesTitle": "Źródła danych",
+  "sourcesText": "Ceny i oceny jakości to własne dane społeczności. Odnośniki do Open Food Facts są zgodne z licencją ODbL (Open Database License) — dane nigdy nie są kopiowane, aplikacja tylko odsyła do źródła.",
+  "sourcesNote": "Współrzędne sklepów pochodzą z OpenStreetMap © współtwórcy OpenStreetMap, licencja ODbL.",
+  "appVersionLabel": "Wersja aplikacji {{version}}"
+}

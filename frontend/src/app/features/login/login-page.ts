@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslocoDirective, TranslocoService, provideTranslocoScope } from '@jsverse/transloco';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -18,13 +19,24 @@ import { ViewerService } from '../../services/viewer-service';
  */
 @Component({
   selector: 'app-login-page',
-  imports: [FormsModule, NzCardModule, NzFormModule, NzInputModule, NzButtonModule, NzAlertModule, NzIconModule],
+  imports: [
+    FormsModule,
+    NzCardModule,
+    NzFormModule,
+    NzInputModule,
+    NzButtonModule,
+    NzAlertModule,
+    NzIconModule,
+    TranslocoDirective,
+  ],
+  providers: [provideTranslocoScope('login')],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })
 export class LoginPage {
   protected readonly auth = inject(AuthService);
   private readonly viewerService = inject(ViewerService);
+  private readonly transloco = inject(TranslocoService);
 
   protected readonly step = signal<'email' | 'code'>('email');
   protected readonly email = signal('');
@@ -67,7 +79,7 @@ export class LoginPage {
         this.loading.set(false);
       },
       error: () => {
-        this.errorMessage.set('Nepodařilo se odeslat kód. Zkus to prosím znovu za chvíli.');
+        this.errorMessage.set(this.transloco.translate('login.requestFailed'));
         this.loading.set(false);
       },
     });
@@ -87,7 +99,7 @@ export class LoginPage {
         this.loadViewer();
       },
       error: () => {
-        this.errorMessage.set('Kód je neplatný nebo vypršel. Zkus to prosím znovu.');
+        this.errorMessage.set(this.transloco.translate('login.verifyFailed'));
         this.loading.set(false);
       },
     });

@@ -1,15 +1,21 @@
 @if (points().length === 0) {
-  <p class="chart-empty">Zatím nemáme dost hlášení na graf</p>
+  <p class="chart-empty">{{ 'product-detail.chartEmpty' | transloco }}</p>
 } @else {
   <svg
     class="chart-svg"
     [attr.viewBox]="'0 0 ' + width + ' ' + height"
     role="img"
-    [attr.aria-label]="'Graf vývoje ceny, ' + points().length + ' měření'"
+    [attr.aria-label]="ariaLabel()"
   >
     <!-- Mřížka — vlasové PLNÉ čáry, nikdy čárkované (dataviz konvence projektu). -->
     @for (y of gridTicks(); track y) {
-      <line class="chart-grid-line" [attr.x1]="padding" [attr.y1]="y" [attr.x2]="width - padding" [attr.y2]="y" />
+      <line
+        class="chart-grid-line"
+        [attr.x1]="padding"
+        [attr.y1]="y"
+        [attr.x2]="width - padding"
+        [attr.y2]="y"
+      />
     }
 
     @if (geometry().markers.length === 1) {
@@ -32,7 +38,13 @@
     }
 
     @if (hoveredX(); as x) {
-      <line class="chart-crosshair" [attr.x1]="x" [attr.y1]="padding" [attr.x2]="x" [attr.y2]="height - padding" />
+      <line
+        class="chart-crosshair"
+        [attr.x1]="x"
+        [attr.y1]="padding"
+        [attr.x2]="x"
+        [attr.y2]="height - padding"
+      />
     }
 
     <!-- Průhledný overlay přes celou plochu — dotyková/hover plocha je celý graf, ne malé puntíky. -->
@@ -49,14 +61,23 @@
 
   <!-- Popisky nikdy v barvě dat — přímo se píše jen poslední bod, extrém a vybraný bod;
        tabulka cen pod grafem zůstává hlavním zdrojem čísel (tooltip není jediná cesta k hodnotě). -->
-  <p class="chart-label">Poslední: {{ formatUnitPrice(lastPoint()) }} ({{ lastPoint()?.day }})</p>
   <p class="chart-label">
-    Nejníž: {{ formatUnitPrice(minPoint()) }} ({{ minPoint()?.day }}) · Nejvýš:
-    {{ formatUnitPrice(maxPoint()) }} ({{ maxPoint()?.day }})
+    {{ 'product-detail.chartLast' | transloco }}: {{ formatUnitPrice(lastPoint()) }} ({{
+      lastPoint()?.day
+    }})
+  </p>
+  <p class="chart-label">
+    {{ 'product-detail.chartLowest' | transloco }}: {{ formatUnitPrice(minPoint()) }} ({{
+      minPoint()?.day
+    }}) · {{ 'product-detail.chartHighest' | transloco }}: {{ formatUnitPrice(maxPoint()) }} ({{
+      maxPoint()?.day
+    }})
   </p>
   @if (hoveredPoint(); as point) {
     <p class="chart-label chart-label-selected">
-      Vybráno: {{ formatUnitPrice(point) }} · {{ point.day }} · {{ point.nObs }}× potvrzeno
+      {{ 'product-detail.chartSelected' | transloco }}: {{ formatUnitPrice(point) }} ·
+      {{ point.day }} ·
+      {{ timesConfirmed(point) }}
     </p>
   }
 }

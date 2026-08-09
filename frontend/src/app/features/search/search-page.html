@@ -1,20 +1,19 @@
-<h1>Kolik to stojí?</h1>
-<p class="search-intro">
-  Vyhledej zboží a podívej se, jak se liší cena mezi obchody — bez přihlášení, bez sledování.
-</p>
+<ng-container *transloco="let t; scope: 'search'">
+<h1>{{ t('search.title') }}</h1>
+<p class="search-intro">{{ t('search.intro') }}</p>
 
 <div class="search-box">
   <input
     nz-input
     name="query"
-    placeholder="Např. máslo, chléb, mléko…"
+    [placeholder]="t('search.searchPlaceholder')"
     [ngModel]="query()"
     (ngModelChange)="query.set($event)"
     (keyup.enter)="search()"
   />
   <button nz-button nzType="primary" [nzLoading]="loading()" (click)="search()">
     <span nz-icon nzType="search"></span>
-    Hledat
+    {{ t('search.search') }}
   </button>
 </div>
 
@@ -24,7 +23,7 @@
     [ngModel]="storeId()"
     (ngModelChange)="storeId.set($event); onFilterChange()"
     nzAllowClear
-    nzPlaceHolder="Obchod: vše"
+    [nzPlaceHolder]="t('search.storeFilter')"
   >
     @for (store of facets().stores; track store.id) {
       <nz-option [nzValue]="store.id" [nzLabel]="store.name + ' — ' + store.city" />
@@ -36,7 +35,7 @@
     [ngModel]="city()"
     (ngModelChange)="city.set($event); onFilterChange()"
     nzAllowClear
-    nzPlaceHolder="Město: vše"
+    [nzPlaceHolder]="t('search.cityFilter')"
   >
     @for (c of facets().cities; track c) {
       <nz-option [nzValue]="c" [nzLabel]="c" />
@@ -48,18 +47,18 @@
     [ngModel]="sort()"
     (ngModelChange)="sort.set($event); onFilterChange()"
   >
-    @for (option of sortOptions; track option.value) {
-      <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+    @for (value of sortOrder; track value) {
+      <nz-option [nzValue]="value" [nzLabel]="sortKeys[value] | transloco" />
     }
   </nz-select>
 </div>
 
 @if (hasSearched() && items().length === 0 && !loading()) {
-  <nz-empty nzNotFoundContent="Nic jsme nenašli — zkus jiné slovo nebo filtr." />
+  <nz-empty [nzNotFoundContent]="t('search.notFound')" />
 }
 
 @if (!hasSearched() && items().length === 0) {
-  <p class="search-hint">Zadej, co hledáš.</p>
+  <p class="search-hint">{{ t('search.hint') }}</p>
 }
 
 @if (items().length > 0) {
@@ -72,12 +71,12 @@
   >
     <thead>
       <tr>
-        <th>Zboží</th>
-        <th>Cena</th>
-        <th>Nejlevněji</th>
-        <th>Hlášení celkem</th>
-        <th>Poslední</th>
-        <th>Kvalita</th>
+        <th>{{ t('search.colProduct') }}</th>
+        <th>{{ t('search.colPrice') }}</th>
+        <th>{{ t('search.colCheapest') }}</th>
+        <th>{{ t('search.colTotalReports') }}</th>
+        <th>{{ t('search.colLast') }}</th>
+        <th>{{ t('search.colQuality') }}</th>
       </tr>
     </thead>
     <tbody>
@@ -87,7 +86,7 @@
             <div class="product-name">
               {{ item.product.name }}
               @if (!item.product.verified) {
-                <nz-tag class="unverified-tag">Neověřeno</nz-tag>
+                <nz-tag class="unverified-tag">{{ t('search.unverified') }}</nz-tag>
               }
             </div>
             <div class="product-subtitle">
@@ -96,17 +95,17 @@
           </td>
           <td>
             @if (item.bestPrice != null) {
-              {{ item.bestPrice | currency: 'CZK' }}
+              {{ item.bestPrice | money: item.currency }}
               @if (item.bestPriceObservations) {
-                <span class="confirmations">×{{ item.bestPriceObservations }} potvrzení</span>
+                <span class="confirmations">{{ t('search.confirmations', { count: item.bestPriceObservations }) }}</span>
               }
             } @else {
-              <span class="unknown-price">cena neznámá</span>
+              <span class="unknown-price">{{ t('search.unknownPrice') }}</span>
             }
           </td>
           <td>{{ item.cheapestStore?.name ?? '–' }}</td>
           <td>{{ item.observationCount }}</td>
-          <td>{{ formatRelativeDate(item.lastObservedAt) }}</td>
+          <td>{{ item.lastObservedAt | relativeDate }}</td>
           <td><app-quality-badge [average]="item.qualityAverage" [count]="item.qualityCount" /></td>
         </tr>
       }
@@ -121,3 +120,4 @@
     (nzPageIndexChange)="onPageIndexChange($event)"
   />
 }
+</ng-container>

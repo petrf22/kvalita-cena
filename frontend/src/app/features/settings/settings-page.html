@@ -1,15 +1,28 @@
-<h1>Nastavení</h1>
-<p>Zatím tu nic nastavovat není.</p>
+<ng-container *transloco="let t; scope: 'settings'">
+  <h1>{{ t('settings.title') }}</h1>
 
-<nz-card nzTitle="Zdroje dat" class="sources-card">
-  <p>
-    Ceny a hodnocení kvality jsou vlastní komunitní data. Odkazy do Open Food Facts jsou podle
-    licence ODbL (Open Database License) — data se nikam nekopírují, appka jen odkazuje na
-    zdroj.
-  </p>
-  <p class="sources-note">
-    Souřadnice provozoven vycházejí z OpenStreetMap © přispěvatelé OpenStreetMap, licence ODbL.
-  </p>
-</nz-card>
+  <form nz-form nzLayout="vertical">
+    <nz-form-item>
+      <nz-form-label>{{ t('settings.languageLabel') }}</nz-form-label>
+      <nz-form-control>
+        <nz-select
+          [ngModel]="language.lang()"
+          (ngModelChange)="onLanguageChange($event)"
+          name="language"
+          style="width: 200px"
+        >
+          @for (option of languageOptions; track option.value) {
+            <nz-option [nzValue]="option.value" [nzLabel]="option.label" />
+          }
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
+  </form>
 
-<p class="app-version">Verze appky {{ appVersion }}</p>
+  <nz-card [nzTitle]="t('settings.sourcesTitle')" class="sources-card">
+    <p>{{ t('settings.sourcesText') }}</p>
+    <p class="sources-note">{{ t('settings.sourcesNote') }}</p>
+  </nz-card>
+
+  <p class="app-version">{{ t('settings.appVersionLabel', { version: appVersion }) }}</p>
+</ng-container>
