@@ -1,0 +1,7 @@
+# Konce řádků drží repo, ne nastavení core.autocrlf konkrétního stroje — jinak se gradlew
+# po checkoutu vyklonuje s CRLF a shell ho odmítne spustit (\r v shebangu).
+* text=auto eol=lf
+# Dávkové soubory Windows si CRLF nesou už v gitu (i/crlf) — nechat je být, jinak by
+# renormalizace vyrobila zbytečný diff v obou gradlew.bat.
+*.bat -text
+*.jar binary
