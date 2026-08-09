@@ -21,5 +21,4 @@ public class NominatimProperties {
   private String userAgent;
   private Duration timeout;
   private Duration cacheTtl;
-  private String attribution;
 }

@@ -27,6 +27,4 @@ public class MediaProperties {
   private int thumbnailDimension;
   private int maxPhotosPerRecord;
   private int maxUploadsPerDay;
-  /** Povinný text licence/atribuce, klient ho MUSÍ zobrazit u galerie. */
-  private String attribution;
 }

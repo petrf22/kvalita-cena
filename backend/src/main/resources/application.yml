@@ -132,11 +132,11 @@ app:
     thumbnail-dimension: 400
     max-photos-per-record: 5
     max-uploads-per-day: 30
-    attribution: "Foto: přispěvatelé Kvalita a cena, licence CC BY-SA 4.0"
+    # Atribuce se od 2026-08-09 nečte odsud, ale z messages/attribution*.properties
+    # (lokalizovaná, docs/lokalizace.md) — viz Messages, MediaService.toPhoto.
   external:
     open-food-facts:
       product-url-template: "https://cz.openfoodfacts.org/product/{barcode}"
-      attribution: "Zdroj: Open Food Facts, licence ODbL"
     nominatim:
       # Usage policy Nominatimu vyžaduje identifikovatelný User-Agent — v produkci nahradit
       # reálným kontaktem (viz https://operations.osmfoundation.org/policies/nominatim/).
@@ -145,8 +145,20 @@ app:
       user-agent: "KvalitaACena/0.1 (dev@example.com)"
       timeout: PT5S
       cache-ttl: P1D
-      attribution: "Zdroj: © OpenStreetMap contributors, licence ODbL"
     ares:
       # Veřejný rejstřík ekonomických subjektů ČR — ne ODbL, jen předvyplnění formuláře.
       base-url: https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty
       timeout: PT5S
+
+  i18n:
+    default-locale: cs
+    supported-locales: [cs, sk, en, pl]
+    default-country: CZ
+    country-currency:
+      CZ: CZK
+      SK: EUR
+      PL: PLN
+    country-locale:
+      CZ: cs
+      SK: sk
+      PL: pl

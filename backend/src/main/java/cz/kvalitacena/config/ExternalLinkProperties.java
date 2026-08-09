@@ -18,6 +18,5 @@ public class ExternalLinkProperties {
   @Data
   public static class OpenFoodFacts {
     private String productUrlTemplate;
-    private String attribution;
   }
 }
