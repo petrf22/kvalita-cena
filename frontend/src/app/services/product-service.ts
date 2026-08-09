@@ -14,6 +14,8 @@ export interface SearchCriteria {
   query: string;
   storeId?: string | null;
   city?: string | null;
+  /** Nezadáno = server dosadí zemi přihlášeného uživatele, jinak app.i18n.default-country (docs/lokalizace.md). */
+  country?: string | null;
   sort?: ProductSort;
   first?: number;
   offset?: number;
@@ -30,6 +32,7 @@ export class ProductService {
         $query: String!
         $storeId: ID
         $city: String
+        $country: String
         $sort: ProductSort
         $first: Int
         $offset: Int
@@ -38,6 +41,7 @@ export class ProductService {
           query: $query
           storeId: $storeId
           city: $city
+          country: $country
           sort: $sort
           first: $first
           offset: $offset
@@ -55,6 +59,7 @@ export class ProductService {
         query: criteria.query,
         storeId: criteria.storeId ?? null,
         city: criteria.city ?? null,
+        country: criteria.country ?? null,
         sort: criteria.sort ?? 'REPORT_COUNT',
         first: criteria.first ?? 20,
         offset: criteria.offset ?? 0,
@@ -62,11 +67,11 @@ export class ProductService {
       .pipe(map((data) => data.searchProducts));
   }
 
-  /** Číselník obchodů/měst pro filtr hledání (jen ty, kde je skutečně nějaká cena). */
-  searchFacets() {
+  /** Číselník obchodů/měst pro filtr hledání (jen ty, kde je skutečně nějaká cena). country viz searchProducts. */
+  searchFacets(country?: string | null) {
     const document = graphql(`
-      query SearchFacets {
-        searchFacets {
+      query SearchFacets($country: String) {
+        searchFacets(country: $country) {
           cities
           stores {
             ...StoreFields
@@ -74,7 +79,9 @@ export class ProductService {
         }
       }
     `);
-    return this.graphQl.execute(document).pipe(map((data) => data.searchFacets));
+    return this.graphQl
+      .execute(document, { country: country ?? null })
+      .pipe(map((data) => data.searchFacets));
   }
 
   /** Plný detail produktu (karta produktu) — na rozdíl od searchProducts tahá i stats/quality/externalLinks. */
@@ -183,6 +190,7 @@ export class ProductService {
         priceHistory(productId: $productId, priceKind: $priceKind, days: $days) {
           priceKind
           days
+          currency
           store {
             ...StoreFields
           }
@@ -222,6 +230,7 @@ export class ProductService {
         submitObservation(input: $input) {
           id
           priceAmount
+          currency
           unitPrice
           priceKind
           quantityBasis

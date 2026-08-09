@@ -1,0 +1,120 @@
+{
+  "common": {
+    "never": "never",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "nav": {
+    "search": "Search",
+    "price": "Add price",
+    "settings": "Settings",
+    "account": "Account",
+    "login": "Sign in"
+  },
+  "errors": {
+    "generic": "Something went wrong, please try again.",
+    "PRODUCT_NOT_FOUND": "Product with this id does not exist",
+    "STORE_NOT_FOUND": "Store with this id does not exist",
+    "CATEGORY_NOT_FOUND": "Category with this id does not exist",
+    "CHAIN_NOT_FOUND": "Chain with this id does not exist",
+    "PRODUCT_NAME_REQUIRED": "Product name is required",
+    "PRODUCT_NAME_EMPTY": "Product name must not be empty",
+    "PRODUCT_CATEGORY_REQUIRED": "Category is required",
+    "PRODUCT_UNIT_BASE_REQUIRED": "Base unit (kg/l/pcs) is required",
+    "STORE_NAME_REQUIRED": "Store name is required",
+    "STORE_NAME_EMPTY": "Store name must not be empty",
+    "STORE_CITY_REQUIRED": "City is required",
+    "STORE_CITY_EMPTY": "City must not be empty",
+    "COMPANY_ID_INVALID": "Company ID has an invalid format (8 digits, wrong check digit)",
+    "PRODUCT_CREATE_REQUIRES_LOGIN": "Creating a product requires signing in",
+    "PRODUCT_EDIT_REQUIRES_LOGIN": "Editing a product requires signing in",
+    "STORE_CREATE_REQUIRES_LOGIN": "Creating a store requires signing in",
+    "STORE_EDIT_REQUIRES_LOGIN": "Editing a store requires signing in",
+    "DUPLICATE_PRODUCT_CODE": "This code already exists in the catalog",
+    "DUPLICATE_GENERIC_PRODUCT": "This generic item already exists in the catalog",
+    "DUPLICATE_STORE": "A store with this name and city already exists in the catalog",
+    "PHOTO_UPLOAD_REQUIRES_LOGIN": "Uploading a photo requires signing in",
+    "PHOTO_ACTION_REQUIRES_LOGIN": "This action requires signing in",
+    "PHOTO_CANNOT_ATTACH_TO_PHOTO": "A photo can't be attached to another photo",
+    "PHOTO_LIMIT_REACHED": "This record already has the maximum of {{p0}} photos.",
+    "PHOTO_DELETE_NOT_OWNER": "Only the author can delete this photo",
+    "PHOTO_UPDATE_NOT_OWNER": "Only the author can edit this photo",
+    "PHOTO_NOT_FOUND": "Photo does not exist",
+    "PHOTO_TARGET_RECORD_NOT_FOUND": "The record for this photo does not exist",
+    "PHOTO_TOO_LARGE": "The photo is too large or empty",
+    "PHOTO_UNSUPPORTED_FORMAT": "Only JPEG or PNG photos are supported",
+    "PHOTO_UNREADABLE": "The photo could not be read",
+    "PHOTO_RESOLUTION_TOO_HIGH": "The photo's resolution is too high",
+    "QUALITY_REQUIRES_LOGIN": "Rating quality requires signing in",
+    "QUALITY_GRADE_OUT_OF_RANGE": "The grade must be between {{p0}} and {{p1}}",
+    "FLAG_REQUIRES_LOGIN": "Reporting requires signing in",
+    "FLAG_RECORD_NOT_FOUND": "The reported record does not exist",
+    "INVALID_CHALLENGE": "The code is invalid or has expired",
+    "SESSION_EXPIRED": "Your session has expired, please sign in again",
+    "LOCALE_REQUIRES_LOGIN": "Saving your language requires signing in",
+    "LOCALE_UNSUPPORTED": "The app does not support the {{p0}} language yet",
+    "ACCOUNT_GONE": "This account no longer exists",
+    "TOO_MANY_REQUESTS": "Too many requests, please try again later",
+    "UOM_MISMATCH": "Unit {{p0}} does not match type {{p1}}",
+    "VALIDATION_FAILED": "The submitted data is invalid"
+  },
+  "enum": {
+    "priceKind": {
+      "REGULAR": "Regular price",
+      "PROMO": "Promotion",
+      "CLUB_CARD": "Club card",
+      "CLEARANCE": "Clearance",
+      "MULTIBUY": "Multibuy discount"
+    },
+    "quantityBasis": {
+      "PACKAGE": "Per package",
+      "PER_KG": "Per kilogram",
+      "PER_L": "Per litre",
+      "PER_PIECE": "Per piece"
+    },
+    "unitBase": {
+      "MASS": "Weight",
+      "VOLUME": "Volume",
+      "COUNT": "Piece"
+    },
+    "productSort": {
+      "REPORT_COUNT": "By number of reports",
+      "PRICE_ASC": "By price",
+      "QUALITY": "By quality",
+      "LAST_REPORTED": "By last report",
+      "NAME": "By name"
+    },
+    "confidence": {
+      "HIGH": "High confidence",
+      "MEDIUM": "Medium confidence",
+      "LOW": "Low confidence"
+    },
+    "netContentUom": {
+      "G": "g",
+      "KG": "kg",
+      "ML": "ml",
+      "L": "l",
+      "PCS": "pcs"
+    },
+    "externalLinkKind": {
+      "OPEN_FOOD_FACTS": "Open Food Facts",
+      "E_NUMBERS": "E-numbers"
+    },
+    "geoSource": {
+      "COMMUNITY": "Entered manually",
+      "OSM": "OpenStreetMap"
+    },
+    "recordType": {
+      "PRODUCT": "Product",
+      "STORE": "Store",
+      "PHOTO": "Photo"
+    }
+  }
+}

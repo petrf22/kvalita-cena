@@ -1,30 +1,46 @@
 import { Routes } from '@angular/router';
 
+/**
+ * Anglické, jazykově neutrální segmenty (docs/lokalizace.md) — lokalizované cesty per jazyk
+ * (`/cs/produkt/:id`, `/sk/produkt/:id`, …) by při RUNTIME přepnutí jazyka (LanguageService)
+ * musely přepisovat aktuální URL včetně historie a routerLinkActive, a zisk (SEO) je dnes
+ * nulový (frontend nemá SSR ani žádnou konfiguraci nasazení). Staré české cesty zůstávají
+ * jako trvalé redirecty kvůli existujícím odkazům/záložkám. Až přijde SSR/prerender, mají se
+ * lokalizované aliasy přidat jako ADITIVUM, ne náhrada.
+ */
 export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./features/search/search-page').then((m) => m.SearchPage),
   },
   {
-    path: 'produkt/:id',
+    path: 'product/:id',
     loadComponent: () =>
       import('./features/product-detail/product-detail-page').then((m) => m.ProductDetailPage),
   },
   {
-    path: 'obchod/:id',
-    loadComponent: () => import('./features/store-detail/store-detail-page').then((m) => m.StoreDetailPage),
+    path: 'store/:id',
+    loadComponent: () =>
+      import('./features/store-detail/store-detail-page').then((m) => m.StoreDetailPage),
   },
   {
-    path: 'zadat-cenu',
-    loadComponent: () => import('./features/price-entry/price-entry-page').then((m) => m.PriceEntryPage),
+    path: 'price',
+    loadComponent: () =>
+      import('./features/price-entry/price-entry-page').then((m) => m.PriceEntryPage),
   },
   {
-    path: 'prihlaseni',
+    path: 'login',
     loadComponent: () => import('./features/login/login-page').then((m) => m.LoginPage),
   },
   {
-    path: 'nastaveni',
+    path: 'settings',
     loadComponent: () => import('./features/settings/settings-page').then((m) => m.SettingsPage),
   },
+  // Staré české cesty — zachovány kvůli existujícím odkazům/záložkám.
+  { path: 'produkt/:id', redirectTo: 'product/:id' },
+  { path: 'obchod/:id', redirectTo: 'store/:id' },
+  { path: 'zadat-cenu', redirectTo: 'price' },
+  { path: 'prihlaseni', redirectTo: 'login' },
+  { path: 'nastaveni', redirectTo: 'settings' },
   { path: '**', redirectTo: '' },
 ];

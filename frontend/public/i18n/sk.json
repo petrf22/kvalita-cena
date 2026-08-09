@@ -1,0 +1,120 @@
+{
+  "common": {
+    "never": "zatiaľ nikdy",
+    "loading": "Načítavanie…",
+    "save": "Uložiť",
+    "cancel": "Zrušiť",
+    "close": "Zavrieť",
+    "delete": "Zmazať",
+    "edit": "Upraviť",
+    "back": "Späť",
+    "yes": "Áno",
+    "no": "Nie"
+  },
+  "nav": {
+    "search": "Hľadanie",
+    "price": "Zadať cenu",
+    "settings": "Nastavenia",
+    "account": "Účet",
+    "login": "Prihlásenie"
+  },
+  "errors": {
+    "generic": "Niečo sa pokazilo, skús to prosím znova.",
+    "PRODUCT_NOT_FOUND": "Produkt s týmto id neexistuje",
+    "STORE_NOT_FOUND": "Obchod s týmto id neexistuje",
+    "CATEGORY_NOT_FOUND": "Kategória s týmto id neexistuje",
+    "CHAIN_NOT_FOUND": "Reťazec s týmto id neexistuje",
+    "PRODUCT_NAME_REQUIRED": "Názov tovaru je povinný",
+    "PRODUCT_NAME_EMPTY": "Názov tovaru nesmie byť prázdny",
+    "PRODUCT_CATEGORY_REQUIRED": "Kategória je povinná",
+    "PRODUCT_UNIT_BASE_REQUIRED": "Základná jednotka (kg/l/ks) je povinná",
+    "STORE_NAME_REQUIRED": "Názov obchodu je povinný",
+    "STORE_NAME_EMPTY": "Názov obchodu nesmie byť prázdny",
+    "STORE_CITY_REQUIRED": "Mesto je povinné",
+    "STORE_CITY_EMPTY": "Mesto nesmie byť prázdne",
+    "COMPANY_ID_INVALID": "IČO nemá platný tvar (8 číslic, nesprávny kontrolný súčet)",
+    "PRODUCT_CREATE_REQUIRES_LOGIN": "Založenie tovaru vyžaduje prihlásenie",
+    "PRODUCT_EDIT_REQUIRES_LOGIN": "Úprava tovaru vyžaduje prihlásenie",
+    "STORE_CREATE_REQUIRES_LOGIN": "Založenie obchodu vyžaduje prihlásenie",
+    "STORE_EDIT_REQUIRES_LOGIN": "Úprava obchodu vyžaduje prihlásenie",
+    "DUPLICATE_PRODUCT_CODE": "Tento kód už v katalógu existuje",
+    "DUPLICATE_GENERIC_PRODUCT": "Táto druhová položka už v katalógu existuje",
+    "DUPLICATE_STORE": "Obchod s týmto názvom a mestom už v katalógu existuje",
+    "PHOTO_UPLOAD_REQUIRES_LOGIN": "Nahratie fotky vyžaduje prihlásenie",
+    "PHOTO_ACTION_REQUIRES_LOGIN": "Táto akcia vyžaduje prihlásenie",
+    "PHOTO_CANNOT_ATTACH_TO_PHOTO": "Fotku nemožno pripojiť k fotke",
+    "PHOTO_LIMIT_REACHED": "Záznam smie mať najviac {{p0}} fotiek.",
+    "PHOTO_DELETE_NOT_OWNER": "Fotku smie zmazať len autor",
+    "PHOTO_UPDATE_NOT_OWNER": "Fotku smie upraviť len autor",
+    "PHOTO_NOT_FOUND": "Fotka neexistuje",
+    "PHOTO_TARGET_RECORD_NOT_FOUND": "Záznam pre fotku neexistuje",
+    "PHOTO_TOO_LARGE": "Fotka je príliš veľká alebo prázdna",
+    "PHOTO_UNSUPPORTED_FORMAT": "Podporované sú len fotky JPEG alebo PNG",
+    "PHOTO_UNREADABLE": "Fotku sa nepodarilo prečítať",
+    "PHOTO_RESOLUTION_TOO_HIGH": "Fotka má príliš veľké rozlíšenie",
+    "QUALITY_REQUIRES_LOGIN": "Hodnotenie kvality vyžaduje prihlásenie",
+    "QUALITY_GRADE_OUT_OF_RANGE": "Známka musí byť {{p0}} až {{p1}}",
+    "FLAG_REQUIRES_LOGIN": "Nahlásenie vyžaduje prihlásenie",
+    "FLAG_RECORD_NOT_FOUND": "Nahlasovaný záznam neexistuje",
+    "INVALID_CHALLENGE": "Kód je neplatný alebo vypršal",
+    "SESSION_EXPIRED": "Prihlásenie vypršalo, prihlás sa prosím znova",
+    "LOCALE_REQUIRES_LOGIN": "Uloženie jazyka vyžaduje prihlásenie",
+    "LOCALE_UNSUPPORTED": "Jazyk {{p0}} aplikácia zatiaľ nepodporuje",
+    "ACCOUNT_GONE": "Účet už neexistuje",
+    "TOO_MANY_REQUESTS": "Príliš veľa požiadaviek, skús to prosím neskôr",
+    "UOM_MISMATCH": "Jednotka {{p0}} nezodpovedá typu {{p1}}",
+    "VALIDATION_FAILED": "Zadané údaje nie sú platné"
+  },
+  "enum": {
+    "priceKind": {
+      "REGULAR": "Bežná cena",
+      "PROMO": "Akcia",
+      "CLUB_CARD": "Klubová karta",
+      "CLEARANCE": "Výpredaj",
+      "MULTIBUY": "Množstevná zľava"
+    },
+    "quantityBasis": {
+      "PACKAGE": "Za balenie",
+      "PER_KG": "Za kilogram",
+      "PER_L": "Za liter",
+      "PER_PIECE": "Za kus"
+    },
+    "unitBase": {
+      "MASS": "Hmotnosť",
+      "VOLUME": "Objem",
+      "COUNT": "Kus"
+    },
+    "productSort": {
+      "REPORT_COUNT": "Podľa počtu hlásení",
+      "PRICE_ASC": "Podľa ceny",
+      "QUALITY": "Podľa kvality",
+      "LAST_REPORTED": "Podľa posledného hlásenia",
+      "NAME": "Podľa názvu"
+    },
+    "confidence": {
+      "HIGH": "Vysoká spoľahlivosť",
+      "MEDIUM": "Stredná spoľahlivosť",
+      "LOW": "Nízka spoľahlivosť"
+    },
+    "netContentUom": {
+      "G": "g",
+      "KG": "kg",
+      "ML": "ml",
+      "L": "l",
+      "PCS": "ks"
+    },
+    "externalLinkKind": {
+      "OPEN_FOOD_FACTS": "Open Food Facts",
+      "E_NUMBERS": "Éčka"
+    },
+    "geoSource": {
+      "COMMUNITY": "Zadané ručne",
+      "OSM": "OpenStreetMap"
+    },
+    "recordType": {
+      "PRODUCT": "Tovar",
+      "STORE": "Obchod",
+      "PHOTO": "Fotka"
+    }
+  }
+}

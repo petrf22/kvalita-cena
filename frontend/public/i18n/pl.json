@@ -1,0 +1,120 @@
+{
+  "common": {
+    "never": "nigdy",
+    "loading": "Ładowanie…",
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "close": "Zamknij",
+    "delete": "Usuń",
+    "edit": "Edytuj",
+    "back": "Wstecz",
+    "yes": "Tak",
+    "no": "Nie"
+  },
+  "nav": {
+    "search": "Wyszukiwanie",
+    "price": "Dodaj cenę",
+    "settings": "Ustawienia",
+    "account": "Konto",
+    "login": "Logowanie"
+  },
+  "errors": {
+    "generic": "Coś poszło nie tak, spróbuj ponownie.",
+    "PRODUCT_NOT_FOUND": "Produkt o tym id nie istnieje",
+    "STORE_NOT_FOUND": "Sklep o tym id nie istnieje",
+    "CATEGORY_NOT_FOUND": "Kategoria o tym id nie istnieje",
+    "CHAIN_NOT_FOUND": "Sieć o tym id nie istnieje",
+    "PRODUCT_NAME_REQUIRED": "Nazwa produktu jest wymagana",
+    "PRODUCT_NAME_EMPTY": "Nazwa produktu nie może być pusta",
+    "PRODUCT_CATEGORY_REQUIRED": "Kategoria jest wymagana",
+    "PRODUCT_UNIT_BASE_REQUIRED": "Jednostka podstawowa (kg/l/szt) jest wymagana",
+    "STORE_NAME_REQUIRED": "Nazwa sklepu jest wymagana",
+    "STORE_NAME_EMPTY": "Nazwa sklepu nie może być pusta",
+    "STORE_CITY_REQUIRED": "Miasto jest wymagane",
+    "STORE_CITY_EMPTY": "Miasto nie może być puste",
+    "COMPANY_ID_INVALID": "Numer identyfikacyjny ma nieprawidłowy format",
+    "PRODUCT_CREATE_REQUIRES_LOGIN": "Dodanie produktu wymaga zalogowania",
+    "PRODUCT_EDIT_REQUIRES_LOGIN": "Edycja produktu wymaga zalogowania",
+    "STORE_CREATE_REQUIRES_LOGIN": "Dodanie sklepu wymaga zalogowania",
+    "STORE_EDIT_REQUIRES_LOGIN": "Edycja sklepu wymaga zalogowania",
+    "DUPLICATE_PRODUCT_CODE": "Ten kod już istnieje w katalogu",
+    "DUPLICATE_GENERIC_PRODUCT": "Ta pozycja rodzajowa już istnieje w katalogu",
+    "DUPLICATE_STORE": "Sklep o tej nazwie i mieście już istnieje w katalogu",
+    "PHOTO_UPLOAD_REQUIRES_LOGIN": "Przesłanie zdjęcia wymaga zalogowania",
+    "PHOTO_ACTION_REQUIRES_LOGIN": "Ta czynność wymaga zalogowania",
+    "PHOTO_CANNOT_ATTACH_TO_PHOTO": "Nie można dołączyć zdjęcia do zdjęcia",
+    "PHOTO_LIMIT_REACHED": "Ten wpis ma już maksymalną liczbę {{p0}} zdjęć.",
+    "PHOTO_DELETE_NOT_OWNER": "Zdjęcie może usunąć tylko autor",
+    "PHOTO_UPDATE_NOT_OWNER": "Zdjęcie może edytować tylko autor",
+    "PHOTO_NOT_FOUND": "Zdjęcie nie istnieje",
+    "PHOTO_TARGET_RECORD_NOT_FOUND": "Wpis dla tego zdjęcia nie istnieje",
+    "PHOTO_TOO_LARGE": "Zdjęcie jest zbyt duże lub puste",
+    "PHOTO_UNSUPPORTED_FORMAT": "Obsługiwane są tylko zdjęcia JPEG lub PNG",
+    "PHOTO_UNREADABLE": "Nie udało się odczytać zdjęcia",
+    "PHOTO_RESOLUTION_TOO_HIGH": "Zdjęcie ma zbyt dużą rozdzielczość",
+    "QUALITY_REQUIRES_LOGIN": "Ocena jakości wymaga zalogowania",
+    "QUALITY_GRADE_OUT_OF_RANGE": "Ocena musi być w zakresie od {{p0}} do {{p1}}",
+    "FLAG_REQUIRES_LOGIN": "Zgłoszenie wymaga zalogowania",
+    "FLAG_RECORD_NOT_FOUND": "Zgłaszany wpis nie istnieje",
+    "INVALID_CHALLENGE": "Kod jest nieprawidłowy lub wygasł",
+    "SESSION_EXPIRED": "Sesja wygasła, zaloguj się ponownie",
+    "LOCALE_REQUIRES_LOGIN": "Zapisanie języka wymaga zalogowania",
+    "LOCALE_UNSUPPORTED": "Aplikacja jeszcze nie obsługuje języka {{p0}}",
+    "ACCOUNT_GONE": "Konto już nie istnieje",
+    "TOO_MANY_REQUESTS": "Zbyt wiele żądań, spróbuj ponownie później",
+    "UOM_MISMATCH": "Jednostka {{p0}} nie pasuje do typu {{p1}}",
+    "VALIDATION_FAILED": "Podane dane są nieprawidłowe"
+  },
+  "enum": {
+    "priceKind": {
+      "REGULAR": "Cena regularna",
+      "PROMO": "Promocja",
+      "CLUB_CARD": "Karta klubowa",
+      "CLEARANCE": "Wyprzedaż",
+      "MULTIBUY": "Rabat ilościowy"
+    },
+    "quantityBasis": {
+      "PACKAGE": "Za opakowanie",
+      "PER_KG": "Za kilogram",
+      "PER_L": "Za litr",
+      "PER_PIECE": "Za sztukę"
+    },
+    "unitBase": {
+      "MASS": "Waga",
+      "VOLUME": "Objętość",
+      "COUNT": "Sztuka"
+    },
+    "productSort": {
+      "REPORT_COUNT": "Według liczby zgłoszeń",
+      "PRICE_ASC": "Według ceny",
+      "QUALITY": "Według jakości",
+      "LAST_REPORTED": "Według ostatniego zgłoszenia",
+      "NAME": "Według nazwy"
+    },
+    "confidence": {
+      "HIGH": "Wysoka wiarygodność",
+      "MEDIUM": "Średnia wiarygodność",
+      "LOW": "Niska wiarygodność"
+    },
+    "netContentUom": {
+      "G": "g",
+      "KG": "kg",
+      "ML": "ml",
+      "L": "l",
+      "PCS": "szt"
+    },
+    "externalLinkKind": {
+      "OPEN_FOOD_FACTS": "Open Food Facts",
+      "E_NUMBERS": "Symbole E"
+    },
+    "geoSource": {
+      "COMMUNITY": "Wprowadzone ręcznie",
+      "OSM": "OpenStreetMap"
+    },
+    "recordType": {
+      "PRODUCT": "Produkt",
+      "STORE": "Sklep",
+      "PHOTO": "Zdjęcie"
+    }
+  }
+}

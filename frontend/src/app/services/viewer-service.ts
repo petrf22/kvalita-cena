@@ -16,9 +16,28 @@ export class ViewerService {
           displayName
           createdAt
           trusted
+          locale
+          country
         }
       }
     `);
     return this.graphQl.execute(document).pipe(map((data) => data.me));
+  }
+
+  /**
+   * Uloží preferovaný jazyk (a volitelně zemi) na server — VÝHRADNĚ pro asynchronní výstup
+   * (OTP e-mail, později notifikace), viz LanguageService a docs/lokalizace.md. Synchronní
+   * odpovědi API se řídí hlavičkou Accept-Language, ne touhle hodnotou.
+   */
+  setLocale(locale: string, country?: string) {
+    const document = graphql(`
+      mutation SetLocale($locale: String!, $country: String) {
+        setLocale(locale: $locale, country: $country) {
+          locale
+          country
+        }
+      }
+    `);
+    return this.graphQl.execute(document, { locale, country }).pipe(map((data) => data.setLocale));
   }
 }

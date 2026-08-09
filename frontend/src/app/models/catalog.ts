@@ -35,6 +35,7 @@ export {
   Confidence,
   ExternalLinkKind,
   GeoSource,
+  NetContentUom,
   PriceKind,
   ProductSort,
   ProductStatus,

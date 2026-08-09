@@ -66,6 +66,7 @@ export const priceCurrentFieldsFragment = graphql(`
     priceKind
     unitPrice
     priceAmount
+    currency
     nObs
     nEff
     lastObservedAt
@@ -90,6 +91,7 @@ export const productFieldsFragment = graphql(`
     }
     unitBase
     netContentValue
+    netContentUom
     netContentBase
     piecesInPack
     isVariableWeight
@@ -114,6 +116,7 @@ export const productDetailFieldsFragment = graphql(`
       lastObservedAt
       bestPrice
       bestUnitPrice
+      bestPriceCurrency
       cheapestStore {
         ...StoreFields
       }
@@ -136,6 +139,7 @@ export const productDetailFieldsFragment = graphql(`
       priceKind
       priceAmount
       unitPrice
+      currency
       observedAt
     }
     photos {
@@ -173,6 +177,7 @@ export const searchItemFieldsFragment = graphql(`
     observationCount
     bestPrice
     bestUnitPrice
+    currency
     bestPriceObservations
     lastObservedAt
     qualityAverage
