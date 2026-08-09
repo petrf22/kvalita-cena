@@ -8,11 +8,11 @@ import lombok.Getter;
  * nabídnout "použít existující" místo pouhého "zkus jiný název" — viz GraphQlExceptionHandler.
  */
 @Getter
-public class DuplicateException extends RuntimeException {
+public class DuplicateException extends AppException {
   private final Long existingId;
 
-  public DuplicateException(String message, Long existingId) {
-    super(message);
+  public DuplicateException(ErrorCode code, Long existingId) {
+    super(code);
     this.existingId = existingId;
   }
 }
