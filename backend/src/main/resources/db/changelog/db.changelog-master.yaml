@@ -15,3 +15,7 @@ databaseChangeLog:
   - include: { file: 2026-08-06/03-generic-product.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-06/04-user-layer.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-08/01-media.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-09/01-agg-currency.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-09/02-user-locale.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-09/03-category-i18n.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-09/04-user-handle-parts.yaml, relativeToChangelogFile: true }

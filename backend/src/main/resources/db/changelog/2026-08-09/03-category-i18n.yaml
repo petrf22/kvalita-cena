@@ -1,0 +1,46 @@
+# 03-category-i18n.yaml — lokalizace core.category (docs/lokalizace.md). core.category.name
+# zůstává ČESKY jako zdroj a fallback; category_i18n nese jen JINÉ jazyky (žádný cs řádek).
+# slug/path se NEPŘEKLÁDAJÍ — path ("potraviny/mlecne/maslo") slouží k filtrování podle větve
+# stromu a musí být napříč jazyky totožná.
+#
+# Bez seed dat: core.category je v etapě 1 stále prázdná (seed číselníku je samostatný úkol,
+# viz CLAUDE.md "Neimplementováno") — tahle migrace jen připravuje infrastrukturu, aby seed
+# (až vznikne) mohl rovnou přijít i se sk/en/pl překlady přes Liquibase loadData.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-09-03-create-core-category-i18n
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: category_i18n
+            columns:
+              - column:
+                  name: category_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: locale
+                  type: VARCHAR(5)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(120)
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            schemaName: core
+            tableName: category_i18n
+            columnNames: category_id, locale
+            constraintName: pk_category_i18n
+        - addForeignKeyConstraint:
+            constraintName: fk_category_i18n_category
+            baseTableSchemaName: core
+            baseTableName: category_i18n
+            baseColumnNames: category_id
+            referencedTableSchemaName: core
+            referencedTableName: category
+            referencedColumnNames: id
+            onDelete: CASCADE

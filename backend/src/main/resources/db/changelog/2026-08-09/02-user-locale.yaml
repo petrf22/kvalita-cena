@@ -1,0 +1,19 @@
+# 02-user-locale.yaml — preference jazyka/země pro asynchronní výstup (OTP e-mail, později
+# notifikace), viz docs/lokalizace.md. NULL záměrně: "uživatel se nevyjádřil" je jiný stav než
+# "chce češtinu" — s defaultem 'cs' by nešlo rozlišit Poláka, který si jazyk nikdy neměnil, od
+# toho, kdo si češtinu vybral. Synchronní odpovědi API se řídí Accept-Language, ne tímhle sloupcem.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-09-02-add-app-user-locale-country
+      author: Petr F.
+      changes:
+        - addColumn:
+            schemaName: auth
+            tableName: app_user
+            columns:
+              - column:
+                  name: locale
+                  type: VARCHAR(5)
+              - column:
+                  name: country
+                  type: VARCHAR(2)

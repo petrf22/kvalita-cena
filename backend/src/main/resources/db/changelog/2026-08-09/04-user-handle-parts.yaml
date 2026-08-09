@@ -1,0 +1,66 @@
+# 04-user-handle-parts.yaml — HandleGenerator dřív skládal "Modrý čáp #4271" rovnou česky a
+# ukládal hotový text. To se v cs/sk/pl nedalo přeložit: přídavné jméno se ohýbá podle rodu
+# podstatného ("Modrý čáp" vs. "Modrá liška"), takže naivní bundle "adjektivum + podstatné" by
+# tvary rozhodil. Řešení: uložit STRUKTURU (klíče), vyrenderovat větu podle jazyka čtenáře až
+# v ViewerGraphQlController (viz Messages, handles*.properties).
+#
+# public_handle zůstává, ale mění roli — přestává být zobrazovaným textem a stává se kanonickým,
+# jazykově neutrálním klíčem ("blue-stork-4271"), na kterém dál visí unique constraint.
+# Unikátnost se MUSÍ kontrolovat nad kanonickým tvarem, jinak by se dva účty mohly srazit
+# v jednom jazyce a v jiném ne.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-09-04-add-app-user-handle-parts
+      author: Petr F.
+      changes:
+        - addColumn:
+            schemaName: auth
+            tableName: app_user
+            columns:
+              - column:
+                  name: handle_adjective
+                  type: VARCHAR(24)
+              - column:
+                  name: handle_noun
+                  type: VARCHAR(24)
+              - column:
+                  name: handle_number
+                  type: SMALLINT
+
+  - changeSet:
+      id: 2026-08-09-04-backfill-app-user-handle-parts
+      author: Petr F.
+      comment: >
+        Produkce podle docs/vydani.md ještě neběží, takže staré české public_handle hodnoty
+        není co zachraňovat — přegenerují se čistě SQL na strukturovaný (jazykově neutrální) tvar.
+      changes:
+        - sql:
+            sql: |
+              UPDATE auth.app_user SET
+                handle_adjective = (ARRAY['blue','green','quiet','quick','cheerful','wise',
+                                          'brave','curious','morning','careful','thrifty',
+                                          'watchful'])[1 + floor(random() * 12)],
+                handle_noun      = (ARRAY['stork','badger','falcon','bear','elk','lynx',
+                                          'woodpecker','deer','wolf','beaver','owl','crane'
+                                          ])[1 + floor(random() * 12)],
+                handle_number    = 1000 + floor(random() * 9000)
+              WHERE handle_adjective IS NULL;
+
+              UPDATE auth.app_user
+                 SET public_handle = handle_adjective || '-' || handle_noun || '-' || handle_number
+               WHERE handle_adjective IS NOT NULL;
+        - addNotNullConstraint:
+            schemaName: auth
+            tableName: app_user
+            columnName: handle_adjective
+            columnDataType: VARCHAR(24)
+        - addNotNullConstraint:
+            schemaName: auth
+            tableName: app_user
+            columnName: handle_noun
+            columnDataType: VARCHAR(24)
+        - addNotNullConstraint:
+            schemaName: auth
+            tableName: app_user
+            columnName: handle_number
+            columnDataType: SMALLINT

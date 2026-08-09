@@ -1,0 +1,125 @@
+# 01-agg-currency.yaml — měna do primárního klíče obou agregačních tabulek (docs/lokalizace.md).
+# core.price_observation.currency existuje od začátku, ale nikdy neopouštěl backend — agg
+# tabulky ji vůbec neměly. Bez tohohle by u příhraniční prodejny s částí záznamů v CZK a
+# částí v EUR PriceAggregationService smíchal obě měny do jednoho řádku a vážený medián by
+# počítal medián z čísel ve dvou měnách (tichá datová korupce, ne kosmetika).
+#
+# Obě tabulky jsou v etapě 1 prázdné (žádná observace zatím neprošla agregací mimo testy),
+# takže není co migrovat zpětně — sloupec s defaultem 'CZK' stačí.
+databaseChangeLog:
+  # --- agg.price_current ---
+  - changeSet:
+      id: 2026-08-09-01-agg-price-current-add-currency
+      author: Petr F.
+      changes:
+        - addColumn:
+            schemaName: agg
+            tableName: price_current
+            columns:
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  defaultValue: CZK
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 2026-08-09-01-agg-price-current-currency-pk
+      author: Petr F.
+      changes:
+        - dropPrimaryKey:
+            schemaName: agg
+            tableName: price_current
+            constraintName: pk_agg_price_current
+        - addPrimaryKey:
+            schemaName: agg
+            tableName: price_current
+            columnNames: product_id, store_id, price_kind, currency
+            constraintName: pk_agg_price_current
+
+  - changeSet:
+      id: 2026-08-09-01-agg-price-current-currency-index
+      author: Petr F.
+      comment: >
+        currency PŘED unit_price v indexu — dotaz "nejlevnější v CZK" (ProductSearchRepositoryImpl,
+        best CTE) jinak nedokáže seek a degraduje na filtr po range scanu.
+      changes:
+        - dropIndex:
+            schemaName: agg
+            tableName: price_current
+            indexName: idx_agg_price_current_product_kind_price
+        - createIndex:
+            schemaName: agg
+            tableName: price_current
+            indexName: idx_agg_price_current_product_kind_currency_price
+            columns:
+              - column: { name: product_id }
+              - column: { name: price_kind }
+              - column: { name: currency }
+              - column: { name: unit_price }
+        - sql:
+            sql: |
+              ALTER TABLE agg.price_current
+                ADD CONSTRAINT chk_agg_price_current_currency CHECK (currency IN ('CZK', 'EUR', 'PLN'));
+
+  # --- agg.price_daily ---
+  - changeSet:
+      id: 2026-08-09-01-agg-price-daily-add-currency
+      author: Petr F.
+      changes:
+        - addColumn:
+            schemaName: agg
+            tableName: price_daily
+            columns:
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  defaultValue: CZK
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 2026-08-09-01-agg-price-daily-currency-pk
+      author: Petr F.
+      changes:
+        - dropPrimaryKey:
+            schemaName: agg
+            tableName: price_daily
+            constraintName: pk_agg_price_daily
+        - addPrimaryKey:
+            schemaName: agg
+            tableName: price_daily
+            columnNames: product_id, store_id, price_kind, currency, day
+            constraintName: pk_agg_price_daily
+
+  - changeSet:
+      id: 2026-08-09-01-agg-price-daily-currency-index
+      author: Petr F.
+      changes:
+        - dropIndex:
+            schemaName: agg
+            tableName: price_daily
+            indexName: idx_agg_price_daily_product_kind_day
+        - createIndex:
+            schemaName: agg
+            tableName: price_daily
+            indexName: idx_agg_price_daily_product_kind_currency_day
+            columns:
+              - column: { name: product_id }
+              - column: { name: price_kind }
+              - column: { name: currency }
+              - column: { name: day }
+        - sql:
+            sql: |
+              ALTER TABLE agg.price_daily
+                ADD CONSTRAINT chk_agg_price_daily_currency CHECK (currency IN ('CZK', 'EUR', 'PLN'));
+
+  # --- core.price_observation — sloupec existuje od začátku, jen mu chyběl CHECK ---
+  - changeSet:
+      id: 2026-08-09-01-price-observation-currency-check
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.price_observation
+                ADD CONSTRAINT chk_price_observation_currency CHECK (currency IN ('CZK', 'EUR', 'PLN'));
