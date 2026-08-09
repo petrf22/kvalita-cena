@@ -239,6 +239,37 @@ a vynutil seq scan, takže se hledá zvlášť přes `p.name` (index) a zvláš�
 (malý LEFT JOIN jen pro jednoho viewera). Skryté (`hidden_at`) záznamy z hledání zmizí úplně,
 i autorovi — přímý dotaz `product(id)`/`productByCode` je autorovi pořád ukáže, s příznakem.
 
+## Fotky zboží a provozoven
+
+`core.media` (`2026-08-08/01-media.yaml`) nese jen metadata jedné fotky — binární obsah
+(originál i náhled) leží MIMO databázi, na disku pod `app.media.root`
+(`MediaStorage`/`LocalFileSystemMediaStorage`, rozhraní kvůli pozdější výměně za S3/MinIO).
+Důvod je stejný jako u oddělení `off`/`osm` výš, jen obráceně: tady nejde o cizí licenci, ale
+o to, že by tisíce binárních souborů v Postgresu zbytečně nafoukly `pg_dump --schema=core
+--schema=agg` (čistý export vlastních dat, viz „Oddělení schémat" výš) — ten zůstává malý,
+zálohu adresáře s fotkami řeší nezávislý mechanismus (rsync/snapshot disku), ne `pg_dump`.
+
+**`record_type`/`record_id` je stejný polymorfní vzor bez FK jako `core.record_flag`** —
+`core.media.record_type` nese jen `PRODUCT`/`STORE` (čí je fotka), `RecordType` v GraphQL má
+navíc `PHOTO` pro `flagRecord` (nahlašovaný typ je jiná osa než "čí je fotka"). Cizí klíč na
+dvě různé tabulky najednou v Postgresu nejde, stejná úvaha jako u nahlášení.
+
+**Fotky se nahrávají výhradně na existující záznam** (žádné osiřelé uploady) přes REST
+`POST /api/media/{recordType}/{recordId}` — GraphQL zůstává pro metadata (`Photo` typ,
+`Product.photos`/`Store.photos` přes `@BatchMapping`, `updatePhoto`/`deletePhoto`), protože
+multipart upload (`graphql-multipart-request-spec`) Spring for GraphQL nepodporuje. Binárky se
+čtou přes `GET /api/media/{id}`/`{id}/thumb`, veřejně, s dlouhým `Cache-Control` (obsah pod
+daným id se nikdy nemění, jen jeho existence).
+
+**Skrytí po nahlášení má stejnou sémantiku jako `core.product.hidden_at`/`core.store.hidden_at`**
+— vidí ji dál jen autor. Práh je ale jiný a mnohem nižší (`app.moderation.photo-flags-to-hide`,
+výchozí 1) — zdůvodnění patří do `reputace.md`.
+
+**Obrázky z Open Food Facts (`off.*`) se do `core.media` nikdy nekopírují** — jsou pod CC-BY-SA
+stejně jako zbytek OFF dat, platí pro ně přesně to pravidlo oddělení schémat, které je popsané
+na začátku tohohle dokumentu. Případné zobrazení OFF fotky by šlo výhradně odkazem přes
+`Product.externalLinks`, ne uložením do `core.media`.
+
 ## Co ještě není v etapě 1
 
 `agg.price_weekly_national` (týdenní řady pro delší grafy), plné textové recenze

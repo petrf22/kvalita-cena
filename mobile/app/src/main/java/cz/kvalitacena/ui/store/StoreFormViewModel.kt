@@ -9,6 +9,7 @@ import cz.kvalitacena.network.CreateStoreInput
 import cz.kvalitacena.network.GeocodeCandidate
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Store
+import cz.kvalitacena.network.UpdateStoreInput
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -22,14 +23,26 @@ private const val SIMILAR_CHECK_DEBOUNCE_MS = 400L
  * (StorePicker "+ Přidat nový obchod" se anonymovi vůbec nenabídne, viz StorePicker.kt), stejně
  * jako na webu (frontend shared/store-picker.ts). Kdyby appka sem přesto pustila anonyma,
  * GraphQL vrátí UNAUTHORIZED a chyba se prostě zobrazí, stejně jako u rateProduct.
+ *
+ * Se zadaným [editingStoreId] přejde do režimu editace existující provozovny (patch nad
+ * core.store_user_edit, `updateStore`) — používá ji StoreDetailScreen. Webový protějšek:
+ * frontend shared/store-form.ts.
  */
-class StoreFormViewModel(private val graphQlClient: GraphQlClient) : ViewModel() {
+class StoreFormViewModel(
+  private val graphQlClient: GraphQlClient,
+  private val editingStoreId: String? = null,
+) : ViewModel() {
+
+  val isEditing: Boolean get() = editingStoreId != null
 
   var name by mutableStateOf("")
   var street by mutableStateOf("")
   var city by mutableStateOf("")
   var postalCode by mutableStateOf("")
   var ico by mutableStateOf("")
+
+  var loadingExisting by mutableStateOf(editingStoreId != null)
+    private set
 
   var icoLookupLoading by mutableStateOf(false)
     private set
@@ -38,6 +51,7 @@ class StoreFormViewModel(private val graphQlClient: GraphQlClient) : ViewModel()
 
   // "Našli jsme podobné" — povinný krok před uložením (docs/datovy-model.md), server má
   // navíc tvrdou pojistku (uq_store_identity), tohle je jen včasné varování uživateli.
+  // V režimu editace nedává smysl (obchod už existuje), viz onNameChange/onCityChange.
   var similarStores by mutableStateOf<List<Store>>(emptyList())
     private set
   private var similarCheckJob: Job? = null
@@ -55,6 +69,8 @@ class StoreFormViewModel(private val graphQlClient: GraphQlClient) : ViewModel()
     private set
   var manualLon by mutableStateOf<Double?>(null)
     private set
+  var locating by mutableStateOf(false)
+    private set
 
   var saving by mutableStateOf(false)
     private set
@@ -62,6 +78,34 @@ class StoreFormViewModel(private val graphQlClient: GraphQlClient) : ViewModel()
     private set
   var created by mutableStateOf<Store?>(null)
     private set
+
+  init {
+    if (editingStoreId != null) loadExisting(editingStoreId)
+  }
+
+  private fun loadExisting(id: String) {
+    viewModelScope.launch {
+      try {
+        graphQlClient.storeById(id)?.let { store ->
+          name = store.name
+          street = store.street.orEmpty()
+          city = store.city
+          postalCode = store.postalCode.orEmpty()
+          ico = store.ico.orEmpty()
+          // Store (GraphQL) nevrací osmRef zvoleného kandidáta (jen core.store.osm_ref
+          // interně), takže se u editace nedá obnovit "vybraný kandidát" — jen souřadnice
+          // samotné. Dokud se souřadnice na mapě nezmění, uloží se zpátky jako COMMUNITY
+          // (viz submit()) — menší nepřesnost v provenienci, ne v samotné poloze.
+          manualLat = store.lat
+          manualLon = store.lon
+        }
+      } catch (e: Exception) {
+        saveError = "Načtení obchodu se nepovedlo, zkus to prosím znovu."
+      } finally {
+        loadingExisting = false
+      }
+    }
+  }
 
   fun onNameChange(value: String) {
     name = value
@@ -75,7 +119,7 @@ class StoreFormViewModel(private val graphQlClient: GraphQlClient) : ViewModel()
 
   private fun scheduleSimilarCheck() {
     similarCheckJob?.cancel()
-    if (name.isBlank() || city.isBlank()) {
+    if (isEditing || name.isBlank() || city.isBlank()) {
       similarStores = emptyList()
       return
     }
@@ -141,32 +185,81 @@ class StoreFormViewModel(private val graphQlClient: GraphQlClient) : ViewModel()
     manualLon = null
   }
 
+  /** Klik/přetažení značky na mapě (LocationMap, editable) — ruční bod, ne kandidát z geokódování. */
+  fun onMapPointSelected(lat: Double, lon: Double) {
+    selectedCandidate = null
+    manualLat = lat
+    manualLon = lon
+  }
+
   fun useMyLocation(lat: Double, lon: Double) {
     manualLat = lat
     manualLon = lon
     selectedCandidate = null
+    // Doplní jen PRÁZDNÁ adresní pole — nepřepisuje, co uživatel už vyplnil (docs/soukromi.md:
+    // reverseGeocode jde stejně jako geocodeAddress výhradně ze serveru).
+    locating = true
+    viewModelScope.launch {
+      try {
+        val result = graphQlClient.reverseGeocode(lat, lon)
+        if (street.isBlank()) result.street?.let { street = it }
+        if (city.isBlank()) result.city?.let { city = it }
+        if (postalCode.isBlank()) result.postalCode?.let { postalCode = it }
+      } catch (e: Exception) {
+        // Fail-soft na backendu i tady — adresa prostě zůstane nedoplněná.
+      } finally {
+        locating = false
+      }
+    }
   }
 
   fun submit() {
     if (!isStoreFormValid(name, city) || !isIcoShapeValid(ico)) return
     saving = true
     saveError = null
+    val lat = selectedCandidate?.lat ?: manualLat
+    val lon = selectedCandidate?.lon ?: manualLon
+    val geoSource = if (selectedCandidate != null) "OSM" else if (lat != null) "COMMUNITY" else null
+    val osmRef = selectedCandidate?.osmRef
+
     viewModelScope.launch {
       try {
-        val input = CreateStoreInput(
-          name = name.trim(),
-          street = street.trim().ifBlank { null },
-          city = city.trim(),
-          postalCode = postalCode.trim().ifBlank { null },
-          ico = ico.trim().ifBlank { null },
-          lat = selectedCandidate?.lat ?: manualLat,
-          lon = selectedCandidate?.lon ?: manualLon,
-          geoSource = if (selectedCandidate != null) "OSM" else if (manualLat != null) "COMMUNITY" else null,
-          osmRef = selectedCandidate?.osmRef,
-        )
-        created = graphQlClient.createStore(input)
+        created = if (isEditing) {
+          val input = UpdateStoreInput(
+            name = name.trim(),
+            street = street.trim().ifBlank { null },
+            clearStreet = street.trim().isEmpty(),
+            city = city.trim(),
+            postalCode = postalCode.trim().ifBlank { null },
+            clearPostalCode = postalCode.trim().isEmpty(),
+            ico = ico.trim().ifBlank { null },
+            clearIco = ico.trim().isEmpty(),
+            lat = lat,
+            lon = lon,
+            geoSource = geoSource,
+            osmRef = osmRef,
+          )
+          graphQlClient.updateStore(editingStoreId!!, input)
+        } else {
+          val input = CreateStoreInput(
+            name = name.trim(),
+            street = street.trim().ifBlank { null },
+            city = city.trim(),
+            postalCode = postalCode.trim().ifBlank { null },
+            ico = ico.trim().ifBlank { null },
+            lat = lat,
+            lon = lon,
+            geoSource = geoSource,
+            osmRef = osmRef,
+          )
+          graphQlClient.createStore(input)
+        }
       } catch (e: Exception) {
-        saveError = e.message ?: "Založení obchodu se nepovedlo, zkus to prosím znovu."
+        saveError = e.message ?: if (isEditing) {
+          "Uložení změn se nepovedlo, zkus to prosím znovu."
+        } else {
+          "Založení obchodu se nepovedlo, zkus to prosím znovu."
+        }
       } finally {
         saving = false
       }

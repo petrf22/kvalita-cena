@@ -20,6 +20,17 @@ private val STORE_FIELDS = """
   verified editedByMe pendingConfirmation
 """
 
+private val PHOTO_FIELDS = """
+  id url thumbnailUrl width height caption mine hidden attribution
+"""
+
+/** Navíc oproti STORE_FIELDS — jen pro detail obchodu, ať se fotky netahají všude, kde se
+ * Store objeví (řádky cen, výsledky hledání, ...), stejný vzor jako u produktu. */
+private val STORE_DETAIL_FIELDS = """
+  $STORE_FIELDS
+  photos { $PHOTO_FIELDS }
+"""
+
 private val PRICE_CURRENT_FIELDS = """
   store { $STORE_FIELDS }
   priceKind unitPrice priceAmount nObs nEff lastObservedAt confidence
@@ -42,6 +53,7 @@ private val PRODUCT_DETAIL_FIELDS = """
   myQualityRating
   externalLinks { kind label url attribution }
   myPrices { store { $STORE_FIELDS } priceKind priceAmount unitPrice observedAt }
+  photos { $PHOTO_FIELDS }
 """
 
 private val PRODUCT_SUMMARY_FIELDS = """
@@ -263,6 +275,54 @@ class GraphQlClient(private val authRepository: AuthRepository) {
     """
     val variables = buildJsonObject { put("ico", ico) }
     return execute(gql, variables, GraphQlResponse.serializer(CompanyByIcoData.serializer())).companyByIco
+  }
+
+  /** Detail provozovny (adresa, mapa, fotky) — pro obrazovku obchodu, viz productById na produktu. */
+  suspend fun storeById(id: String): Store? {
+    val query = "query(${'$'}id: ID!) { store(id: ${'$'}id) { $STORE_DETAIL_FIELDS } }"
+    val variables = buildJsonObject { put("id", id) }
+    return execute(query, variables, GraphQlResponse.serializer(StoreData.serializer())).store
+  }
+
+  /**
+   * Opačný směr než geocodeAddress — souřadnice na adresu, pro tlačítko "Použít mou polohu"
+   * při editaci obchodu. Výpadek na backendu se projeví jako prázdná pole, ne jako výjimka.
+   */
+  suspend fun reverseGeocode(lat: Double, lon: Double): ReverseGeocodeResult {
+    val query = """
+      query(${'$'}lat: Float!, ${'$'}lon: Float!) {
+        reverseGeocode(lat: ${'$'}lat, lon: ${'$'}lon) {
+          street city postalCode country osmRef attribution
+        }
+      }
+    """
+    val variables = buildJsonObject {
+      put("lat", lat)
+      put("lon", lon)
+    }
+    return execute(query, variables, GraphQlResponse.serializer(ReverseGeocodeData.serializer())).reverseGeocode
+  }
+
+  /** Popisek a pořadí (nejnižší sortOrder = hlavní fotka záznamu). Jen autor fotky. */
+  suspend fun updatePhoto(id: String, caption: String?, sortOrder: Int?): Photo {
+    val query = """
+      mutation(${'$'}id: ID!, ${'$'}caption: String, ${'$'}sortOrder: Int) {
+        updatePhoto(id: ${'$'}id, caption: ${'$'}caption, sortOrder: ${'$'}sortOrder) { $PHOTO_FIELDS }
+      }
+    """
+    val variables = buildJsonObject {
+      put("id", id)
+      put("caption", caption)
+      put("sortOrder", sortOrder)
+    }
+    return execute(query, variables, GraphQlResponse.serializer(UpdatePhotoData.serializer())).updatePhoto
+  }
+
+  /** Smazání vlastní fotky. Jen autor. */
+  suspend fun deletePhoto(id: String): Boolean {
+    val query = "mutation(${'$'}id: ID!) { deletePhoto(id: ${'$'}id) }"
+    val variables = buildJsonObject { put("id", id) }
+    return execute(query, variables, GraphQlResponse.serializer(DeletePhotoData.serializer())).deletePhoto
   }
 
   /** Založení provozovny — vyžaduje přihlášení (docs/reputace.md, T1). */

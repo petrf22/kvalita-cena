@@ -48,6 +48,23 @@ export interface Store {
   // Provozovna od nedůvěryhodného autora čeká na potvrzení dalších přispěvatelů — vidí ji jen
   // autor (docs/reputace.md).
   pendingConfirmation: boolean;
+  // Jen v detailu obchodu (STORE_DETAIL_FIELDS) — hledání/výběr obchodu je nežádá.
+  photos?: Photo[];
+}
+
+/** Fotka zboží nebo provozovny (core.media) — nahrává se přes REST, ne přes tuhle mutaci. */
+export interface Photo {
+  id: string;
+  url: string;
+  thumbnailUrl: string;
+  width: number;
+  height: number;
+  caption: string | null;
+  // Nahrál ji přihlášený uživatel — smí ji smazat a upravit popisek.
+  mine: boolean;
+  // Skrytá po nahlášení (docs/reputace.md) — vidí ji dál už jen autor.
+  hidden: boolean;
+  attribution: string;
 }
 
 export interface PriceCurrent {
@@ -87,6 +104,8 @@ export interface Product {
   editedByMe: boolean;
   // Jen v detailu — vlastní poslední zápisy ("Vaše cena"), viz PRODUCT_DETAIL_FIELDS.
   myPrices?: MyPrice[];
+  // Jen v detailu — fotky zboží (core.media), první (nejnižší sortOrder) je hlavní.
+  photos?: Photo[];
 }
 
 /** "Vaše cena" — poslední vlastní zápis přihlášeného uživatele, i dřív než ho zpracuje agregace. */
@@ -210,6 +229,16 @@ export interface GeocodeResult {
   attribution: string;
 }
 
+/** Opačný směr — souřadnice na adresu, pro tlačítko "Použít mou polohu" při editaci obchodu. */
+export interface ReverseGeocodeResult {
+  street: string | null;
+  city: string | null;
+  postalCode: string | null;
+  country: string | null;
+  osmRef: string | null;
+  attribution: string;
+}
+
 /** Údaje o firmě z veřejného rejstříku ARES podle IČO — předvyplnění formuláře obchodu. */
 export interface CompanyInfo {
   ico: string;
@@ -278,7 +307,7 @@ export interface UpdateStoreInput {
   osmRef?: string | null;
 }
 
-export type RecordType = 'PRODUCT' | 'STORE';
+export type RecordType = 'PRODUCT' | 'STORE' | 'PHOTO';
 
 export interface FlagResult {
   flagCount: number;

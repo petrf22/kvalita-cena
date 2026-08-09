@@ -1,0 +1,91 @@
+<div class="photo-gallery">
+  @if (photos().length === 0 && !auth.isLoggedIn()) {
+    <p class="empty-hint">Zatím tu nikdo fotku nepřidal.</p>
+  }
+
+  <div class="photo-grid">
+    @for (photo of photos(); track photo.id; let i = $index) {
+      <button type="button" class="photo-tile" (click)="openViewer(i)">
+        <img [src]="photo.thumbnailUrl" [alt]="photo.caption || 'Fotka'" />
+        @if (photo.hidden) {
+          <span class="hidden-badge">Skryto</span>
+        }
+      </button>
+    }
+    @if (auth.isLoggedIn() && remainingSlots() > 0) {
+      <button type="button" class="photo-add-tile" (click)="fileInput.click()" [disabled]="uploading()">
+        <span nz-icon [nzType]="uploading() ? 'loading' : 'plus'"></span>
+        <span>Přidat fotku</span>
+      </button>
+    }
+  </div>
+
+  <input
+    #fileInput
+    type="file"
+    accept="image/jpeg,image/png"
+    multiple
+    hidden
+    (change)="onFilesSelected($event)"
+  />
+
+  @if (!auth.isLoggedIn() && photos().length > 0) {
+    <p class="login-hint">Přidávání fotek vyžaduje přihlášení — přejdi na stránku Účet.</p>
+  }
+  @if (uploadError()) {
+    <nz-alert nzType="error" [nzMessage]="uploadError()" nzShowIcon class="gallery-alert" />
+  }
+  @if (photos().length > 0) {
+    <p class="attribution">{{ photos()[0].attribution }}</p>
+  }
+</div>
+
+<nz-modal [nzVisible]="viewerIndex() !== null" [nzFooter]="null" nzWidth="600px" (nzOnCancel)="closeViewer()">
+  <ng-container *nzModalContent>
+    @if (currentPhoto(); as photo) {
+      <div class="viewer">
+        <img [src]="photo.url" [alt]="photo.caption || 'Fotka'" class="viewer-image" />
+        @if (photo.caption) {
+          <p class="viewer-caption">{{ photo.caption }}</p>
+        }
+
+        @if (photos().length > 1) {
+          <div class="viewer-nav">
+            <button nz-button type="button" [disabled]="viewerIndex() === 0" (click)="prev()">
+              <span nz-icon nzType="left"></span>
+            </button>
+            <span class="viewer-position">{{ (viewerIndex() ?? 0) + 1 }} / {{ photos().length }}</span>
+            <button nz-button type="button" [disabled]="viewerIndex() === photos().length - 1" (click)="next()">
+              <span nz-icon nzType="right"></span>
+            </button>
+          </div>
+        }
+
+        <div class="viewer-actions">
+          @if (photo.mine) {
+            @if (viewerIndex() !== 0) {
+              <button nz-button type="button" (click)="setAsMain(photo)">
+                <span nz-icon nzType="star"></span>
+                Nastavit jako hlavní
+              </button>
+            }
+            <button nz-button nzDanger type="button" (click)="deletePhoto(photo)">
+              <span nz-icon nzType="delete"></span>
+              Smazat
+            </button>
+          } @else {
+            <button nz-button type="button" [nzLoading]="flaggingId() === photo.id" (click)="flagPhoto(photo)">
+              <span nz-icon nzType="flag"></span>
+              Nahlásit
+            </button>
+          }
+        </div>
+
+        @if (flagMessage()) {
+          <nz-alert nzType="info" [nzMessage]="flagMessage()" nzShowIcon class="gallery-alert" />
+        }
+        <p class="attribution">{{ photo.attribution }}</p>
+      </div>
+    }
+  </ng-container>
+</nz-modal>

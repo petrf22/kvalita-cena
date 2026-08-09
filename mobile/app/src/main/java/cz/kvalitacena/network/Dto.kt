@@ -49,7 +49,32 @@ data class Store(
   // Provozovna od nedůvěryhodného autora čeká na potvrzení dalších přispěvatelů — vidí ji
   // jen autor (docs/reputace.md).
   val pendingConfirmation: Boolean = false,
+  // Jen v detailu (STORE_DETAIL_FIELDS) — hledání/výběr obchodu je nežádá.
+  val photos: List<Photo> = emptyList(),
 )
+
+/**
+ * Fotka zboží nebo provozovny (core.media). url/thumbnailUrl jsou cesty na backend REST
+ * (MediaController), appka si je musí složit s [ApiConfig.BASE_URL] — viz [Photo.fullUrl]/
+ * [Photo.thumbUrl].
+ */
+@Serializable
+data class Photo(
+  val id: String,
+  val url: String,
+  val thumbnailUrl: String,
+  val width: Int,
+  val height: Int,
+  val caption: String? = null,
+  // Nahrál ji přihlášený uživatel — smí ji smazat a upravit popisek.
+  val mine: Boolean = false,
+  // Skrytá po nahlášení (docs/reputace.md) — vidí ji dál už jen autor.
+  val hidden: Boolean = false,
+  val attribution: String = "",
+) {
+  fun fullUrl(): String = ApiConfig.BASE_URL + url
+  fun thumbUrl(): String = ApiConfig.BASE_URL + thumbnailUrl
+}
 
 @Serializable
 data class PriceCurrent(
@@ -89,6 +114,8 @@ data class Product(
   val editedByMe: Boolean = false,
   // Jen v detailu — vlastní poslední zápisy ("Vaše cena"), viz PRODUCT_DETAIL_FIELDS.
   val myPrices: List<MyPrice> = emptyList(),
+  // Jen v detailu — fotky zboží (core.media), první (nejnižší sortOrder) je hlavní.
+  val photos: List<Photo> = emptyList(),
 )
 
 /** "Vaše cena" — poslední vlastní zápis přihlášeného uživatele, i dřív než ho zpracuje agregace. */
@@ -221,6 +248,17 @@ data class GeocodeCandidate(
 data class GeocodeResult(
   val candidates: List<GeocodeCandidate> = emptyList(),
   val attribution: String,
+)
+
+/** Opačný směr — souřadnice na adresu, pro tlačítko "Použít mou polohu" při editaci obchodu. */
+@Serializable
+data class ReverseGeocodeResult(
+  val street: String? = null,
+  val city: String? = null,
+  val postalCode: String? = null,
+  val country: String? = null,
+  val osmRef: String? = null,
+  val attribution: String = "",
 )
 
 /** Údaje o firmě z veřejného rejstříku ARES podle IČO — předvyplnění formuláře obchodu. */
@@ -369,6 +407,18 @@ data class UpdateProductData(val updateProduct: Product)
 
 @Serializable
 data class UpdateStoreData(val updateStore: Store)
+
+@Serializable
+data class StoreData(val store: Store? = null)
+
+@Serializable
+data class ReverseGeocodeData(val reverseGeocode: ReverseGeocodeResult)
+
+@Serializable
+data class UpdatePhotoData(val updatePhoto: Photo)
+
+@Serializable
+data class DeletePhotoData(val deletePhoto: Boolean)
 
 @Serializable
 data class FlagRecordData(val flagRecord: FlagResult)

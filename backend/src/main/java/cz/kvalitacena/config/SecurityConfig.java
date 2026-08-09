@@ -40,6 +40,10 @@ public class SecurityConfig {
         .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(authz -> authz
             .requestMatchers("/api/auth/**").permitAll()
+            // Autorizaci (kdo smí nahrát/smazat, co je vidět skryté) řeší MediaService z
+            // Authentication, kterou JwtAuthenticationFilter naplní i tady stejně jako u
+            // GraphQL — stejný princip "autorizace jako predikát", ne blokování na URL.
+            .requestMatchers("/api/media/**").permitAll()
             .requestMatchers("/actuator/health/**", "/actuator/info/**").permitAll()
             // GraphQL běží na jednom endpointu pro anonymní (T0) i přihlášené uživatele —
             // odstupňování přístupu (docs/reputace.md) řeší predikáty v resolverech/ViewerContext,

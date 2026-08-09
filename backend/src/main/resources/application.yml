@@ -31,6 +31,14 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
 
+  servlet:
+    multipart:
+      # V souladu s app.media.max-upload-bytes níž — nahrávaný soubor navíc kontroluje
+      # ImageProcessingService (magic bytes, rozměry), tohle je jen hrubá pojistka na úrovni
+      # kontejneru (MediaController, jediný multipart endpoint v appce).
+      max-file-size: 8MB
+      max-request-size: 8MB
+
   graphql:
     graphiql:
       enabled: true # jen pro dev profil, viz application-local.yml
@@ -111,6 +119,20 @@ app:
     # Kolik různých nahlášení skryje záznam a pošle ho k přezkumu (docs/reputace.md,
     # "Nesouhlas se vyjadřuje k faktu, ne k člověku").
     flags-to-hide: 3
+    # Fotka je nejrizikovější uživatelský obsah — jedno nahlášení stačí (docs/reputace.md).
+    photo-flags-to-hide: 1
+  media:
+    # Adresář na disku mimo pg_dump (docs/datovy-model.md) — v produkci mimo repozitář,
+    # zálohuje se nezávisle na databázi.
+    root: ./data/media
+    max-upload-bytes: 8388608
+    # Pojistka proti "decompression bomb" — kontroluje se PŘED dekódováním (ImageProcessingService).
+    max-pixels: 50000000
+    max-dimension: 1600
+    thumbnail-dimension: 400
+    max-photos-per-record: 5
+    max-uploads-per-day: 30
+    attribution: "Foto: přispěvatelé Kvalita a cena, licence CC BY-SA 4.0"
   external:
     open-food-facts:
       product-url-template: "https://cz.openfoodfacts.org/product/{barcode}"

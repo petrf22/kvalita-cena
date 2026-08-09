@@ -8,6 +8,7 @@ import cz.kvalitacena.db.entity.PriceCurrent;
 import cz.kvalitacena.db.entity.PriceKind;
 import cz.kvalitacena.db.entity.ProductCode;
 import cz.kvalitacena.db.entity.ProductStatus;
+import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
@@ -19,6 +20,7 @@ import cz.kvalitacena.security.ViewerContext;
 import cz.kvalitacena.security.ViewerContextResolver;
 import cz.kvalitacena.service.CatalogEditService;
 import cz.kvalitacena.service.GtinNormalization;
+import cz.kvalitacena.service.MediaService;
 import cz.kvalitacena.service.MyPriceService;
 import cz.kvalitacena.service.ProductCatalogService;
 import cz.kvalitacena.service.ProductOverlayService;
@@ -62,6 +64,7 @@ public class ProductGraphQlController {
   private final ProductOverlayService productOverlayService;
   private final CatalogEditService catalogEditService;
   private final MyPriceService myPriceService;
+  private final MediaService mediaService;
   private final ViewerContextResolver viewerContextResolver;
   private final ExternalLinkProperties externalLinkProperties;
 
@@ -248,6 +251,17 @@ public class ProductGraphQlController {
     Map<Product, ProductQuality> result = new LinkedHashMap<>();
     for (Product p : products) {
       result.put(p, summaries.getOrDefault(p.getId(), ProductQuality.EMPTY));
+    }
+    return result;
+  }
+
+  @BatchMapping(typeName = "Product", field = "photos")
+  public Map<Product, List<Photo>> photos(List<Product> products, Authentication authentication) {
+    ViewerContext viewer = viewerContextResolver.resolve(authentication);
+    Map<Long, List<Photo>> byProduct = mediaService.photosForBatch(RecordType.PRODUCT, productIds(products), viewer);
+    Map<Product, List<Photo>> result = new LinkedHashMap<>();
+    for (Product p : products) {
+      result.put(p, byProduct.getOrDefault(p.getId(), List.of()));
     }
     return result;
   }

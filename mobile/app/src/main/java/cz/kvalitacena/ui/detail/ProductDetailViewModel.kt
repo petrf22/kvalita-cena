@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.kvalitacena.network.GraphQlClient
+import cz.kvalitacena.network.Photo
 import cz.kvalitacena.network.PriceHistory
 import cz.kvalitacena.network.Product
 import kotlinx.coroutines.launch
@@ -95,6 +96,11 @@ class ProductDetailViewModel(
         ratingError = "Hodnocení kvality vyžaduje přihlášení — dokonči ho v záložce Účet."
       }
     }
+  }
+
+  /** Po uploadu/smazání/přeřazení fotky (PhotoGallery/PhotoPicker) — jen lokální stav, appka fotku nenačítá znovu z produktu. */
+  fun onPhotosChange(photos: List<Photo>) {
+    product = product?.copy(photos = photos)
   }
 
   /** Hlasuje se o FAKTU, nikdy o ČLOVĚKU (docs/reputace.md, "Nesouhlas se vyjadřuje k faktu"). */

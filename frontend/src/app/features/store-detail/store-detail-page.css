@@ -1,0 +1,33 @@
+.store-meta {
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 16px;
+}
+
+.status-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.section-alert {
+  margin-bottom: 16px;
+}
+
+.section-card {
+  margin-top: 16px;
+}
+
+.osm-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.no-location {
+  color: rgba(0, 0, 0, 0.45);
+  margin: 0;
+}

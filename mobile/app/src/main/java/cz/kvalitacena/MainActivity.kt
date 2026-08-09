@@ -31,21 +31,27 @@ import cz.kvalitacena.ui.account.AccountScreen
 import cz.kvalitacena.ui.detail.ProductDetailScreen
 import cz.kvalitacena.ui.navigation.ARG_BARCODE
 import cz.kvalitacena.ui.navigation.ARG_PRODUCT_ID
+import cz.kvalitacena.ui.navigation.ARG_STORE_ID
 import cz.kvalitacena.ui.navigation.ROUTE_PRICE_ENTRY
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_DETAIL
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_FORM
+import cz.kvalitacena.ui.navigation.ROUTE_STORE_DETAIL
 import cz.kvalitacena.ui.navigation.ROUTE_STORE_FORM
 import cz.kvalitacena.ui.navigation.TopLevelDestination
 import cz.kvalitacena.ui.navigation.priceEntryRouteByBarcode
 import cz.kvalitacena.ui.navigation.priceEntryRouteByProductId
 import cz.kvalitacena.ui.navigation.productDetailRoute
 import cz.kvalitacena.ui.navigation.productFormRoute
+import cz.kvalitacena.ui.navigation.storeDetailRoute
+import cz.kvalitacena.ui.navigation.storeFormRouteForCreate
+import cz.kvalitacena.ui.navigation.storeFormRouteForEdit
 import cz.kvalitacena.ui.price.PriceEntryScreen
 import cz.kvalitacena.ui.price.PriceEntryTarget
 import cz.kvalitacena.ui.product.ProductFormScreen
 import cz.kvalitacena.ui.scan.ScanScreen
 import cz.kvalitacena.ui.search.SearchScreen
 import cz.kvalitacena.ui.settings.SettingsScreen
+import cz.kvalitacena.ui.store.StoreDetailScreen
 import cz.kvalitacena.ui.store.StoreFormScreen
 import cz.kvalitacena.ui.theme.KvalitaACenaTheme
 import kotlinx.coroutines.launch
@@ -115,6 +121,7 @@ private fun AppScaffold() {
           onNavigateToAccount = {
             navController.navigate(TopLevelDestination.ACCOUNT.route) { launchSingleTop = true }
           },
+          onStoreClick = { storeId -> navController.navigate(storeDetailRoute(storeId)) },
         )
       }
       composable(
@@ -135,13 +142,27 @@ private fun AppScaffold() {
           PriceEntryScreen(
             target = target,
             onDone = { navController.popBackStack() },
-            onAddStore = { navController.navigate(ROUTE_STORE_FORM) },
+            onAddStore = { navController.navigate(storeFormRouteForCreate()) },
             onAddProduct = { newBarcode -> navController.navigate(productFormRoute(newBarcode)) },
           )
         }
       }
-      composable(ROUTE_STORE_FORM) {
-        StoreFormScreen(onDone = { navController.popBackStack() })
+      composable(
+        ROUTE_STORE_FORM,
+        arguments = listOf(navArgument(ARG_STORE_ID) { type = NavType.StringType; nullable = true; defaultValue = null }),
+      ) { backStackEntry ->
+        val storeId = backStackEntry.arguments?.getString(ARG_STORE_ID)
+        StoreFormScreen(storeId = storeId, onDone = { navController.popBackStack() })
+      }
+      composable(
+        ROUTE_STORE_DETAIL,
+        arguments = listOf(navArgument(ARG_STORE_ID) { type = NavType.StringType }),
+      ) { backStackEntry ->
+        val storeId = backStackEntry.arguments?.getString(ARG_STORE_ID).orEmpty()
+        StoreDetailScreen(
+          storeId = storeId,
+          onEditStore = { id -> navController.navigate(storeFormRouteForEdit(id)) },
+        )
       }
       composable(
         ROUTE_PRODUCT_FORM,

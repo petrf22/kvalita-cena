@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cesty vystavené přes FileProvider — jen dočasný adresář pro fotky pořízené kamerou
+     (ui/common/PhotoPicker.kt), appka jinak žádné soubory nesdílí. -->
+<paths>
+    <cache-path name="captured_photos" path="captured_photos/" />
+</paths>

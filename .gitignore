@@ -49,6 +49,7 @@ mobile/build/
 mobile/*/build/
 mobile/.idea/
 mobile/local.properties
+backend/data/
 mobile/*.iml
 mobile/.cxx/
 mobile/captures/

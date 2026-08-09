@@ -23,6 +23,10 @@ const STORE_FIELDS = `
   verified editedByMe pendingConfirmation
 `;
 
+const PHOTO_FIELDS = `
+  id url thumbnailUrl width height caption mine hidden attribution
+`;
+
 const PRICE_CURRENT_FIELDS = `
   store { ${STORE_FIELDS} }
   priceKind
@@ -60,6 +64,7 @@ const PRODUCT_DETAIL_FIELDS = `
   myQualityRating
   externalLinks { kind label url attribution }
   myPrices { store { ${STORE_FIELDS} } priceKind priceAmount unitPrice observedAt }
+  photos { ${PHOTO_FIELDS} }
 `;
 
 const PRODUCT_SUMMARY_FIELDS = `

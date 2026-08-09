@@ -204,6 +204,16 @@ PENDING výš (autor musí vědět, co se s jeho příspěvkem děje). Druhé na
 člověka nic nezmění (`uq_record_flag_user`, `INSERT ... ON CONFLICT DO NOTHING`) — bez týhle
 pojistky by šlo záznam skrýt jedním účtem opakovaným klikáním.
 
+**Fotky (`RecordType.PHOTO`, `core.media`) mají vlastní, mnohem nižší práh**
+(`app.moderation.photo-flags-to-hide`, výchozí **1**) — stejný mechanismus, jiné číslo.
+Důvod je asymetrie cen chyby, ne nedůvěra v komunitu: u katalogového textu je cena falešně
+pozitivního nahlášení vysoká (zmizí správný záznam, na kterém visí historie cen) a cena
+falešně negativního nízká (nesmyslný název nikoho nepoškodí, jen matí). U fotky je poměr
+opačný — smazaná dobrá fotka se nahraje znovu za deset vteřin, zatímco přehlédnutý nevhodný
+obrázek je vážný problém a kapacita moderace jednoho člověka je reálný limit projektu
+(`soukromi.md`, "Otevřená rizika"). Fotka je proto vidět hned po nahrání (stejně jako
+u důvěryhodného autora zboží/obchodu), ale jediné nahlášení ji rovnou skryje.
+
 ## Hodnocení kvality zboží (etapa 1)
 
 Jen známka 1–5 (jako ve škole, 1 nejlepší), bez textů, bez skupin důvěry — implementace

@@ -22,6 +22,36 @@ IP uživatele (a u mobilu i síťové metadata operátora), přesně to, čemu s
 výše vyhýbá. Odpověď se do `core.store` nekopíruje celá — jen lat/lon a `osm_ref`
 **zvoleného** kandidáta, s `geo_source = 'OSM'` jako značkou původu.
 
+**Opačný směr (`reverseGeocode`, tlačítko „Použít mou polohu" při editaci obchodu) platí
+stejně** — parametrem je tady rovnou poloha UŽIVATELE, ne adresa obchodu, takže je pravidlo
+„jen ze serveru" o to důležitější. Dotaz jde výhradně z `GeocodingService`, souřadnice se
+nikam nezapisují a jsou v POST body, které se neloguje. Výpadek Nominatimu vrací prázdná
+pole, nikdy chybu — editace obchodu nesmí spadnout kvůli nedostupnému externímu serveru.
+
+### EXIF nahrané fotky se strhává na serveru, ne spoléhá na klienta
+
+Fotka z mobilu v EXIF běžně nese přesnou GPS polohu, kde vznikla — přijetí souboru tak, jak
+přišel, by tiše prolomilo záruku „poloha uživatele se nikdy neukládá" výš, jen jinou cestou
+(souborem na disku místo databázového sloupce). `ImageProcessingService` (backend) to řeší
+**překreslením z pixelů**: nahraná fotka se dekóduje do `BufferedImage` a znovu zapíše jako
+JPEG — výstup tak nikdy neměl žádná metadata, natož EXIF GPS, protože vzniká z pixelů, ne
+kopírováním/úpravou vstupního souboru. Je to vědomě jiný přístup než „smaž EXIF tagy" (selektivní
+mazání by šlo zapomenout rozšířit o nově přidaný tag); tady výstup prostě nemá kudy metadata
+dostat. EXIF `Orientation` se přečte a promítne do otočení PŘED tímhle překreslením, aby fotka
+z mobilu nezůstala ležet na boku.
+
+### Mapové dlaždice — vědomá výjimka z pravidla „jen ze serveru"
+
+Mapa nad OpenStreetMap (`frontend/shared/location-map.ts` — Leaflet, `mobile/ui/common/
+LocationMap.kt` — osmdroid) na rozdíl od geokódování stahuje dlaždice **přímo z prohlížeče/
+appky** (`tile.openstreetmap.org`) — OSM tak vidí IP uživatele, přesně to, čemu se
+`geocodeAddress`/`reverseGeocode`/`nearbyStores` výš vyhýbají. Proxování dlaždic přes backend
+by šlo, ale je to proti OSM tile usage policy (server-side proxy vyžaduje vlastní tile server
+nebo komerční smlouvu). Zmírnění je proto jen v UI: mapa (a tedy i stahování dlaždic) se
+vytvoří až po explicitním kliknutí na „Zobrazit mapu", nikdy automaticky při načtení stránky/
+obrazovky — na rozdíl od zbytku dokumentu tahle výjimka není beze zbytku vyřešená, jen vědomě
+přijatá a zapsaná, ať se na ni nezapomene při případné budoucí revizi.
+
 ## Retence vazby observace → uživatel: 180 dní
 
 | Fáze | Doba | Co je uloženo |
@@ -152,5 +182,11 @@ nekoná, ale např. podezření na krádež) se řeší inkrementem `token_versi
 - **OpenStreetMap i Open Food Facts jsou ODbL** (share-alike) — viz `datovy-model.md`,
   oddělení schémat `off`/`osm` od `core`. Na OSM se snadno zapomíná, protože souřadnice
   nevypadají jako "databáze".
+- **Mapové dlaždice jdou přímo z klienta na OSM**, ne přes server jako zbytek geokódování —
+  vědomá, zapsaná výjimka (viz „Mapové dlaždice" výš), ne přehlédnutí. Hlídat při případné
+  budoucí revizi, jestli pořád stojí za to (proxy dlaždic vyžaduje vlastní tile server nebo
+  komerční smlouvu s OSM Foundation).
 - Kapacita moderace jednoho člověka je reálný limit — proto co nejvíc automatiky
-  (rate limity, detekce anomálií) a co nejméně věcí vyžadujících lidský zásah.
+  (rate limity, detekce anomálií) a co nejméně věcí vyžadujících lidský zásah. Fotky
+  (`app.moderation.photo-flags-to-hide`) mají mnohem nižší práh nahlášení než katalog
+  (`reputace.md`) přesně z tohohle důvodu.

@@ -45,6 +45,13 @@ type Query {
   searchStores(query: String, city: String, first: Int = 20, offset: Int = 0): StoreSearchResult!
 
   """
+  Detail jedné provozovny (stránka obchodu — adresa, mapa, fotky). Stejná viditelnost pod
+  prahem důvěry jako product(id): ACTIVE vidí každý, vlastní PENDING (docs/reputace.md) jen
+  autor. Null, když provozovna neexistuje nebo není vidět.
+  """
+  store(id: ID!): Store
+
+  """
   Podobné zboží podle názvu (pg_trgm) — druhové položky (Product.isGeneric) i zboží s kódem.
   Slouží k nabídnutí existující druhové položky při bezkódovém zápisu i jako povinná kontrola
   duplicit před založením nového zboží (docs/reputace.md, "Zboží bez čárového kódu").
@@ -62,6 +69,15 @@ type Query {
   — založení obchodu bez souřadnic musí projít i tak.
   """
   geocodeAddress(street: String, city: String!, postalCode: String, country: String = "CZ"): GeocodeResult!
+
+  """
+  Opačný směr než geocodeAddress — souřadnice na adresu, pro tlačítko "Použít mou polohu" při
+  editaci obchodu. Stejná pravidla soukromí platí ještě přísněji: parametrem je tady rovnou
+  poloha UŽIVATELE, ne adresa obchodu, takže dotaz jde výhradně ze serveru
+  (docs/soukromi.md) a souřadnice se nikam nezapisují. Výpadek Nominatimu vrací prázdná pole,
+  nikdy chybu.
+  """
+  reverseGeocode(lat: Float!, lon: Float!): ReverseGeocodeResult!
 
   """
   Údaje o firmě z veřejného rejstříku ARES podle IČO — předvyplnění formuláře obchodu. ARES
@@ -141,11 +157,42 @@ type Mutation {
   přihlášení; opakované nahlášení stejným člověkem nic nemění.
   """
   flagRecord(recordType: RecordType!, recordId: ID!, reason: String): FlagResult!
+
+  """
+  Popisek a pořadí fotky (nejnižší sortOrder = hlavní fotka záznamu). Jen autor fotky, jinak
+  UnauthorizedException.
+  """
+  updatePhoto(id: ID!, caption: String, sortOrder: Int): Photo!
+
+  "Smazání vlastní fotky (core.media i soubor v MediaStorage). Jen autor."
+  deletePhoto(id: ID!): Boolean!
 }
 
 enum RecordType {
   PRODUCT
   STORE
+  "Nahlašovaný typ pro flagRecord — core.media samo nese jen PRODUCT/STORE (čí je fotka)."
+  PHOTO
+}
+
+"""
+Fotka zboží nebo provozovny (core.media) — nahrává se přes REST POST /api/media/{recordType}/
+{recordId}, protože multipart upload GraphQL v tomhle projektu nepodporuje (viz backend
+MediaController). url/thumbnailUrl vedou na stejný REST endpoint (GET).
+"""
+type Photo {
+  id: ID!
+  url: String!
+  thumbnailUrl: String!
+  width: Int!
+  height: Int!
+  caption: String
+  "Nahrál ji přihlášený uživatel — smí ji smazat a upravit popisek."
+  mine: Boolean!
+  "Skrytá po nahlášení (RecordType.PHOTO); vidí ji dál už jen autor (docs/reputace.md)."
+  hidden: Boolean!
+  "Povinný text licence, klient ho MUSÍ zobrazit u galerie."
+  attribution: String!
 }
 
 input UpdateProductInput {
@@ -292,6 +339,8 @@ type Product {
   pole pro anonyma i pro produkt bez vlastního zápisu.
   """
   myPrices: [MyPrice!]!
+  "Fotky zboží (core.media) — první (nejnižší sortOrder) je hlavní. Prázdné, dokud je nikdo nenahraje."
+  photos: [Photo!]!
 }
 
 type MyPrice {
@@ -448,6 +497,8 @@ type Store {
   obchod nevidí.
   """
   pendingConfirmation: Boolean!
+  "Fotky provozovny (core.media) — první (nejnižší sortOrder) je hlavní."
+  photos: [Photo!]!
 }
 
 type StoreSearchResult {
@@ -471,6 +522,21 @@ type GeocodeCandidate {
 type GeocodeResult {
   candidates: [GeocodeCandidate!]!
   "Povinný text zdroje/licence (ODbL) — UI ho musí zobrazit vedle výsledků."
+  attribution: String!
+}
+
+"""
+Adresa dohledaná ze souřadnic (reverseGeocode) — všechna pole nullable, neúplná adresa nebo
+výpadek Nominatimu se projeví jako prázdná pole, ne jako chyba dotazu.
+"""
+type ReverseGeocodeResult {
+  street: String
+  city: String
+  postalCode: String
+  country: String
+  "Formát '{typ}/{id}' — ukládá se do core.store.osm_ref, pokud uživatel výsledek potvrdí."
+  osmRef: String
+  "Povinný text zdroje/licence (ODbL) — UI ho musí zobrazit."
   attribution: String!
 }
 

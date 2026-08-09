@@ -6,6 +6,9 @@
   <nz-alert nzType="error" nzMessage="Produkt se nepodařilo najít." nzShowIcon />
 } @else {
   <h1>{{ product()!.name }}</h1>
+
+  <app-photo-gallery recordType="PRODUCT" [recordId]="product()!.id" [photos]="product()!.photos ?? []" />
+
   <p class="product-meta">
     @if (product()!.brand) {
       {{ product()!.brand!.name }} ·
@@ -94,23 +97,13 @@
 
   @if (product()!.stats?.bestPrice != null && product()!.stats?.cheapestStore) {
     <nz-card nzTitle="Nejlevněji" class="cheapest-card">
-      @if (osmUrl(product()!.stats!.cheapestStore!); as url) {
-        <a [href]="url" target="_blank" rel="noopener" class="cheapest-row">
-          <span>
-            <span class="cheapest-store-name">{{ product()!.stats!.cheapestStore!.name }}</span>
-            <span class="cheapest-store-city">{{ product()!.stats!.cheapestStore!.city }}</span>
-          </span>
-          <span class="cheapest-price">{{ product()!.stats!.bestPrice }} Kč</span>
-        </a>
-      } @else {
-        <div class="cheapest-row">
-          <span>
-            <span class="cheapest-store-name">{{ product()!.stats!.cheapestStore!.name }}</span>
-            <span class="cheapest-store-city">{{ product()!.stats!.cheapestStore!.city }}</span>
-          </span>
-          <span class="cheapest-price">{{ product()!.stats!.bestPrice }} Kč</span>
-        </div>
-      }
+      <a [routerLink]="['/obchod', product()!.stats!.cheapestStore!.id]" class="cheapest-row">
+        <span>
+          <span class="cheapest-store-name">{{ product()!.stats!.cheapestStore!.name }}</span>
+          <span class="cheapest-store-city">{{ product()!.stats!.cheapestStore!.city }}</span>
+        </span>
+        <span class="cheapest-price">{{ product()!.stats!.bestPrice }} Kč</span>
+      </a>
     </nz-card>
   }
 
@@ -133,11 +126,7 @@
           @for (price of pricesTable.data; track price.store.id + price.priceKind) {
             <tr>
               <td>
-                @if (osmUrl(price.store); as url) {
-                  <a [href]="url" target="_blank" rel="noopener">{{ price.store.name }}</a>
-                } @else {
-                  {{ price.store.name }}
-                }
+                <a [routerLink]="['/obchod', price.store.id]">{{ price.store.name }}</a>
               </td>
               <td>{{ priceKindLabels[price.priceKind] }}</td>
               <td>{{ price.priceAmount }} Kč</td>

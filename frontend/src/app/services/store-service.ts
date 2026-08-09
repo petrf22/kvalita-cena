@@ -6,6 +6,7 @@ import {
   CreateStoreInput,
   FlagResult,
   GeocodeResult,
+  ReverseGeocodeResult,
   Store,
   StoreSearchResult,
   UpdateStoreInput,
@@ -14,6 +15,17 @@ import {
 const STORE_FIELDS = `
   id name street city postalCode country lat lon geoSource ico chain { id name chainType }
   verified editedByMe pendingConfirmation
+`;
+
+const PHOTO_FIELDS = `
+  id url thumbnailUrl width height caption mine hidden attribution
+`;
+
+/** Navíc oproti STORE_FIELDS — jen pro detail stránky obchodu, ať se fotky netahají všude,
+ * kde se Store objeví (řádky cen, výsledky hledání, ...), stejný vzor jako u produktu. */
+const STORE_DETAIL_FIELDS = `
+  ${STORE_FIELDS}
+  photos { ${PHOTO_FIELDS} }
 `;
 
 @Injectable({ providedIn: 'root' })
@@ -53,6 +65,16 @@ export class StoreService {
     return this.graphQl
       .execute<{ searchStores: StoreSearchResult }>(gql, { query, city, first })
       .pipe(map((data) => data.searchStores));
+  }
+
+  /** Detail provozovny (adresa, mapa, fotky) — pro stránku obchodu, viz product(id) na produktu. */
+  getById(id: string): Observable<Store | null> {
+    const gql = `
+      query Store($id: ID!) {
+        store(id: $id) { ${STORE_DETAIL_FIELDS} }
+      }
+    `;
+    return this.graphQl.execute<{ store: Store | null }>(gql, { id }).pipe(map((data) => data.store));
   }
 
   /** Založení provozovny — vyžaduje přihlášení (docs/reputace.md, T1). */
@@ -104,6 +126,23 @@ export class StoreService {
     return this.graphQl
       .execute<{ geocodeAddress: GeocodeResult }>(gql, { street, city, postalCode })
       .pipe(map((data) => data.geocodeAddress));
+  }
+
+  /**
+   * Opačný směr než geocode() — souřadnice na adresu, pro tlačítko "Použít mou polohu" při
+   * editaci obchodu. Výpadek na backendu se projeví jako prázdná pole, ne jako chyba.
+   */
+  reverseGeocode(lat: number, lon: number): Observable<ReverseGeocodeResult> {
+    const gql = `
+      query ReverseGeocode($lat: Float!, $lon: Float!) {
+        reverseGeocode(lat: $lat, lon: $lon) {
+          street city postalCode country osmRef attribution
+        }
+      }
+    `;
+    return this.graphQl
+      .execute<{ reverseGeocode: ReverseGeocodeResult }>(gql, { lat, lon })
+      .pipe(map((data) => data.reverseGeocode));
   }
 
   /** Předvyplnění formuláře obchodu z veřejného rejstříku ARES — null, když IČO neexistuje nebo je ARES nedostupný. */

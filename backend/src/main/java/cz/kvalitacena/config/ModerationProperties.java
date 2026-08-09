@@ -14,4 +14,10 @@ import org.springframework.stereotype.Component;
 public class ModerationProperties {
   /** Kolik různých nahlášení skryje záznam (RecordFlagService) a pošle ho k přezkumu. */
   private int flagsToHide;
+  /**
+   * Fotka je nejrizikovější uživatelský obsah v appce (nevhodný obrázek) — cena přehlédnutého
+   * nahlášení je vyšší než cena zbytečně skryté dobré fotky (dá se nahrát znovu), proto
+   * mnohem nižší práh než u zboží/obchodu (docs/reputace.md).
+   */
+  private int photoFlagsToHide;
 }

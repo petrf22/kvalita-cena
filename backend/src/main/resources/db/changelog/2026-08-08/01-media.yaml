@@ -1,0 +1,157 @@
+# 01-media.yaml — fotky zboží a provozoven (core.media). Binární obsah leží MIMO databázi
+# (MediaStorage/LocalFileSystemMediaStorage, app.media.root) — tabulka nese jen metadata,
+# aby čistý export `pg_dump --schema=core --schema=agg` zůstal malý a fotky šly zálohovat
+# nezávisle. record_type/record_id je stejný polymorfní vzor bez FK jako core.record_flag
+# (PRODUCT i STORE sdílí jednu tabulku), viz docs/datovy-model.md.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-08-01-create-core-media
+      author: Petr F.
+      comment: >
+        sha256 + unikátní index (record_type, record_id, sha256) dělá druhý upload téže fotky
+        na týž záznam idempotentní (MediaService.upload), ne chybu. uploaded_by_user_id je
+        ON DELETE CASCADE — fotka bez vlastníka nemá po smazání účtu veřejný zájem, který by
+        zdůvodnil přežití (stejná úvaha jako u core.product_user_edit, docs/soukromi.md).
+        hidden_at má stejnou sémantiku jako u core.product/core.store — skryto po nahlášení,
+        vidí dál jen autor.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: media
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: record_type
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: record_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  # Relativní cesta v úložišti (yyyy/MM/<uuid>.jpg) — validuje se přísným
+                  # regexem při čtení (LocalFileSystemMediaStorage), nikdy se neskládá z
+                  # hodnoty přišlé z requestu.
+                  name: storage_key
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: uploaded_by_user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  # Po zpracování (ImageProcessingService) je vždy image/jpeg — vstup smí být
+                  # i PNG, výstup je jednotně přeuložený JPEG.
+                  name: content_type
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: width
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: height
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: byte_size
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sha256
+                  type: BYTEA
+                  constraints:
+                    nullable: false
+              - column:
+                  name: caption
+                  type: VARCHAR(200)
+              - column:
+                  # Nejnižší = hlavní fotka záznamu.
+                  name: sort_order
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  # Licence, kterou uživatel nahráním fotky uděluje — drží se u záznamu, ne
+                  # jen v podmínkách stranou (viz docs/datovy-model.md).
+                  name: license
+                  type: VARCHAR(20)
+                  defaultValue: "CC-BY-SA-4.0"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: hidden_at
+                  type: TIMESTAMPTZ
+        - addForeignKeyConstraint:
+            constraintName: fk_media_uploaded_by
+            baseTableSchemaName: core
+            baseTableName: media
+            baseColumnNames: uploaded_by_user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            schemaName: core
+            tableName: media
+            indexName: uq_media_storage_key
+            unique: true
+            columns:
+              - column:
+                  name: storage_key
+        - createIndex:
+            schemaName: core
+            tableName: media
+            indexName: uq_media_record_hash
+            unique: true
+            columns:
+              - column:
+                  name: record_type
+              - column:
+                  name: record_id
+              - column:
+                  name: sha256
+        - sql:
+            sql: |
+              ALTER TABLE core.media
+                ADD CONSTRAINT chk_media_record_type CHECK (record_type IN ('PRODUCT', 'STORE'));
+
+              -- Fronta pro galerii jednoho záznamu, řazená podle sort_order — skryté fotky
+              -- (po nahlášení) z ní vypadnou, stejně jako u core.product_user_edit fronty.
+              CREATE INDEX idx_media_record ON core.media (record_type, record_id, sort_order)
+                WHERE hidden_at IS NULL;
+
+  - changeSet:
+      id: 2026-08-08-01-record-flag-allow-photo
+      author: Petr F.
+      comment: >
+        Fotku jde nahlásit stejným kanálem jako zboží/obchod (core.record_flag,
+        RecordFlagService) — rozšiřuje se jen CHECK, tabulka i unikátní index
+        (record_type, record_id, user_id) zůstávají beze změny.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.record_flag DROP CONSTRAINT chk_record_flag_type;
+              ALTER TABLE core.record_flag
+                ADD CONSTRAINT chk_record_flag_type CHECK (record_type IN ('PRODUCT', 'STORE', 'PHOTO'));

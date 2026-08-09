@@ -14,3 +14,4 @@ databaseChangeLog:
   - include: { file: 2026-08-06/02-store-identity.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-06/03-generic-product.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-06/04-user-layer.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-08/01-media.yaml, relativeToChangelogFile: true }

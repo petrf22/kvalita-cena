@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,27 +39,31 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.location.getCurrentLocation
 import cz.kvalitacena.network.GeocodeCandidate
+import cz.kvalitacena.ui.common.LocationMap
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.SingleLineTextField
 import kotlinx.coroutines.launch
 
 /**
  * Založení provozovny — vyplní se název/adresa, volitelně IČO (s předvyplněním z ARES) a
- * volitelně souřadnice (geokódování přes server, nebo aktuální poloha). Obchod jde uložit
+ * volitelně souřadnice (geokódování přes server, mapa nebo aktuální poloha). Obchod jde uložit
  * i bez souřadnic (docs/datovy-model.md) — doplní se později. Po úspěchu se výsledek předá
  * zpátky přes [NavigationResults] a obrazovka se zavře (`onDone`).
+ *
+ * Se zadaným [storeId] přejde do režimu editace existující provozovny — používá ji
+ * StoreDetailScreen. Webový protějšek: frontend shared/store-form.ts.
  */
 @Composable
-fun StoreFormScreen(onDone: () -> Unit) {
+fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
   val viewModel: StoreFormViewModel = viewModel(
-    factory = viewModelFactory { initializer { StoreFormViewModel(AppContainer.graphQlClient) } },
+    factory = viewModelFactory { initializer { StoreFormViewModel(AppContainer.graphQlClient, storeId) } },
   )
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
 
   LaunchedEffect(viewModel.created) {
     viewModel.created?.let {
-      NavigationResults.newStore = it
+      if (viewModel.isEditing) NavigationResults.updatedStore = it else NavigationResults.newStore = it
       onDone()
     }
   }
@@ -87,8 +92,13 @@ fun StoreFormScreen(onDone: () -> Unit) {
     }
   }
 
+  if (viewModel.loadingExisting) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+    return
+  }
+
   Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-    Text("Nový obchod", style = MaterialTheme.typography.headlineSmall)
+    Text(if (viewModel.isEditing) "Upravit obchod" else "Nový obchod", style = MaterialTheme.typography.headlineSmall)
     Gap()
 
     SingleLineTextField(
@@ -180,7 +190,10 @@ fun StoreFormScreen(onDone: () -> Unit) {
         if (viewModel.geocoding) CircularProgressIndicator(modifier = Modifier.size(20.dp))
         else Text("Najít souřadnice")
       }
-      OutlinedButton(onClick = { useMyLocation() }) { Text("Použít mou polohu") }
+      OutlinedButton(onClick = { useMyLocation() }, enabled = !viewModel.locating) {
+        if (viewModel.locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+        else Text("Použít mou polohu")
+      }
     }
     Gap()
 
@@ -198,14 +211,23 @@ fun StoreFormScreen(onDone: () -> Unit) {
       Gap()
     }
 
-    if (viewModel.manualLat != null && viewModel.manualLon != null) {
+    if (viewModel.manualLat != null && viewModel.manualLon != null && viewModel.selectedCandidate == null) {
       Text(
-        "Použije se tvoje aktuální poloha.",
+        "Použije se poloha z mapy níž / tvoje aktuální poloha.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
       Gap()
     }
+
+    LocationMap(
+      lat = viewModel.selectedCandidate?.lat ?: viewModel.manualLat,
+      lon = viewModel.selectedCandidate?.lon ?: viewModel.manualLon,
+      editable = true,
+      onPointSelected = { lat, lon -> viewModel.onMapPointSelected(lat, lon) },
+      modifier = Modifier.fillMaxWidth(),
+    )
+    Gap()
 
     viewModel.saveError?.let {
       Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -219,11 +241,11 @@ fun StoreFormScreen(onDone: () -> Unit) {
       modifier = Modifier.fillMaxWidth(),
     ) {
       if (viewModel.saving) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-      else Text("Založit obchod")
+      else Text(if (viewModel.isEditing) "Uložit změny" else "Založit obchod")
     }
     Gap()
     OutlinedButton(onClick = onDone, enabled = !viewModel.saving, modifier = Modifier.fillMaxWidth()) {
-      Text("Zpět bez založení")
+      Text(if (viewModel.isEditing) "Zrušit" else "Zpět bez založení")
     }
   }
 }

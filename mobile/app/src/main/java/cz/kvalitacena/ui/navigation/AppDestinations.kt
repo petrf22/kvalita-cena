@@ -31,8 +31,20 @@ const val ROUTE_PRICE_ENTRY = "price_entry?barcode={$ARG_BARCODE}&$ARG_PRODUCT_I
 fun priceEntryRouteByBarcode(barcode: String) = "price_entry?barcode=$barcode"
 fun priceEntryRouteByProductId(productId: String) = "price_entry?$ARG_PRODUCT_ID=$productId"
 
-/** Založení obchodu — dostupné odkudkoli, kde se vybírá provozovna (StorePicker "+ Přidat nový"). */
-const val ROUTE_STORE_FORM = "store_form"
+const val ARG_STORE_ID = "storeId"
+const val ROUTE_STORE_DETAIL = "store/{$ARG_STORE_ID}"
+
+fun storeDetailRoute(storeId: String) = "store/$storeId"
+
+/**
+ * Založení obchodu — dostupné odkudkoli, kde se vybírá provozovna (StorePicker "+ Přidat
+ * nový"). Volitelný `storeId` v query přepne obrazovku do režimu editace (StoreDetailScreen
+ * "Upravit").
+ */
+const val ROUTE_STORE_FORM = "store_form?$ARG_STORE_ID={$ARG_STORE_ID}"
+
+fun storeFormRouteForCreate() = "store_form"
+fun storeFormRouteForEdit(storeId: String) = "store_form?$ARG_STORE_ID=$storeId"
 
 /** Založení zboží — s EANem i bez (bezkódová druhová položka, docs/reputace.md). */
 const val ROUTE_PRODUCT_FORM = "product_form?$ARG_BARCODE={$ARG_BARCODE}"

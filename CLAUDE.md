@@ -79,10 +79,30 @@ mají proto GraphQL pole `verified`/`editedByMe` (Store navíc `pendingConfirmat
 i Android odráží čtecí stranu stejným rozsahem (badge „neověřeno"/„vaše úprava", „Vaše cena",
 tlačítko „Nahlásit", gating zakládání pro anonyma — web `store-picker`/`price-entry-page`,
 mobil `ui/common/StorePicker.kt`/`ui/price/PriceEntryScreen.kt`) — **inline úprava existujícího
-zboží/obchodu v UI (`updateProduct`/`updateStore` z formulářů) na žádném z klientů zatím
-chybí**, i když `GraphQlClient.updateProduct`/`updateStore`/`flagRecord` (mobil) a
-`ProductService.updateProduct`/`StoreService.update`/`flag` (web) i backend mutace jsou hotové
-a otestované — jen je zatím nevolá žádná obrazovka.
+obchodu v UI je teď hotová** (web `features/store-detail`, mobil `ui/store/StoreDetailScreen.kt`
++ `StoreFormScreen.kt` v režimu editace, oba volají `updateStore`); **inline úprava zboží
+(`updateProduct` z formuláře) zatím na žádném z klientů nechybí implementačně, ale UI ji pořád
+nevolá** — `GraphQlClient.updateProduct` (mobil) a `ProductService.updateProduct` (web)
+i backend mutace jsou hotové a otestované, jen na ně nemíří žádná obrazovka.
+
+**Fotky zboží a provozoven** (`docs/datovy-model.md`, „Fotky zboží a provozoven"; práh
+nahlášení v `docs/reputace.md`): `core.media` nese metadata, binární obsah (originál i náhled)
+leží mimo databázi za rozhraním `MediaStorage`/`LocalFileSystemMediaStorage`, zpracování
+(`ImageProcessingService`) fotku vždy překreslí z pixelů do nového JPEGu — strhne tak veškerá
+metadata včetně EXIF GPS (`docs/soukromi.md`), otočí podle EXIF `Orientation` a zmenší jen
+dolů. Upload jde přes REST (`MediaController`, multipart — GraphQL to nepodporuje), metadata
+přes GraphQL (`Photo` typ, `Product.photos`/`Store.photos` přes `@BatchMapping`,
+`updatePhoto`/`deletePhoto`). Nahlášení fotky (`RecordType.PHOTO`) má mnohem nižší práh než
+katalog (`app.moderation.photo-flags-to-hide = 1`, `docs/reputace.md`). Web (`shared/
+photo-gallery.ts`) i Android (`ui/common/PhotoGallery.kt`/`PhotoPicker.kt`, Coil) mají galerii
+s náhledem, smazáním vlastní fotky a nahlášením cizí, na detailu zboží i obchodu.
+
+**Adresa/mapa provozovny**: `reverseGeocode` (souřadnice → adresa, `GeocodingService`, vždy ze
+serveru jako `geocodeAddress`) doplňuje adresu po „Použít mou polohu". Mapa nad OpenStreetMap
+(web `shared/location-map.ts` — Leaflet, lazy `import()`; mobil `ui/common/LocationMap.kt` —
+osmdroid) umožňuje náhled i výběr bodu klikem/přetažením značky — dlaždice se na rozdíl od
+geokódování stahují přímo z klienta, vědomá výjimka zapsaná v `docs/soukromi.md`, zmírněná
+tím, že se mapa nenačte, dokud si o to uživatel výslovně neřekne.
 
 Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
 `PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec
@@ -90,9 +110,11 @@ Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditeln
 geokódování adresy, `agg.price_weekly_national`, offline fronta v mobilu, výběr řetězce při
 zakládání obchodu (`chainId` v `CreateStoreInput` existuje, ale klienti zatím nenabízí číselník
 řetězců k výběru), konsolidační job nad uživatelskou vrstvou (jen datový model a fronta,
-vyhodnocovací pravidlo zatím není známé — viz výš), inline edit UI pro zboží/obchod na obou
-klientech (mutace jsou hotové, jen je zatím nevolá žádná obrazovka) — viz konec plánu založení
-projektu pro rozpis a `docs/reputace.md` pro poznámku o hodnocení kvality vs. dodavatelích.
+vyhodnocovací pravidlo zatím není známé — viz výš), inline edit UI pro ZBOŽÍ na obou klientech
+(mutace jsou hotové, jen je zatím nevolá žádná obrazovka — u OBCHODU už hotové je, viz výš),
+fotka jako důkaz ceny (`core.price_observation`, `f_evid` v `docs/reputace.md` — fotky zatím
+váží jen na katalogový záznam, ne na cenový zápis) — viz konec plánu založení projektu pro
+rozpis a `docs/reputace.md` pro poznámku o hodnocení kvality vs. dodavatelích.
 
 ## Příkazy
 

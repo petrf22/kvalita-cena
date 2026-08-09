@@ -3,9 +3,11 @@ package cz.kvalitacena.service;
 import cz.kvalitacena.config.ModerationProperties;
 import cz.kvalitacena.controller.FlagResult;
 import cz.kvalitacena.db.entity.AppUser;
+import cz.kvalitacena.db.entity.Media;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.repo.AppUserRepository;
+import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.RecordFlagRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
@@ -46,13 +48,16 @@ class RecordFlagServiceTest {
   private ProductRepository productRepository;
   @Mock
   private StoreRepository storeRepository;
+  @Mock
+  private MediaRepository mediaRepository;
 
   private final ModerationProperties moderationProperties = new ModerationProperties();
 
   private RecordFlagService service() {
     moderationProperties.setFlagsToHide(3);
+    moderationProperties.setPhotoFlagsToHide(1);
     return new RecordFlagService(recordFlagRepository, appUserRepository, productRepository,
-        storeRepository, moderationProperties);
+        storeRepository, mediaRepository, moderationProperties);
   }
 
   private void givenLoggedInUser() {
@@ -99,6 +104,26 @@ class RecordFlagServiceTest {
     assertThat(result.hidden()).isTrue();
     ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
     verify(productRepository).save(captor.capture());
+    assertThat(captor.getValue().getHiddenAt()).isNotNull();
+  }
+
+  @Test
+  void singleFlagHidesPhotoButNotProduct() {
+    // Fotka je nejrizikovější uživatelský obsah — jedno nahlášení stačí (docs/reputace.md),
+    // na rozdíl od produktu/obchodu, kde jsou potřeba tři (viz reachingThresholdHidesRecord).
+    Long mediaId = 99L;
+    givenLoggedInUser();
+    when(mediaRepository.existsById(mediaId)).thenReturn(true);
+    when(recordFlagRepository.countByRecordTypeAndRecordId(RecordType.PHOTO, mediaId)).thenReturn(1L);
+    Media media = Media.builder().id(mediaId).build();
+    when(mediaRepository.findById(mediaId)).thenReturn(Optional.of(media));
+
+    FlagResult result = service().flag(RecordType.PHOTO, mediaId, "nevhodný obsah", PUBLIC_UID);
+
+    assertThat(result.flagCount()).isEqualTo(1);
+    assertThat(result.hidden()).isTrue();
+    ArgumentCaptor<Media> captor = ArgumentCaptor.forClass(Media.class);
+    verify(mediaRepository).save(captor.capture());
     assertThat(captor.getValue().getHiddenAt()).isNotNull();
   }
 

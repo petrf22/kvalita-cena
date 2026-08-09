@@ -69,6 +69,17 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 
+    // Zobrazení fotek zboží/obchodů (core.media) — Apache-2.0, sdílí OkHttp s GraphQlClient/
+    // MediaClient přes coil-network-okhttp, žádný druhý HTTP stack navíc.
+    implementation("io.coil-kt.coil3:coil-compose:3.2.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.2.0")
+
+    // Mapa nad OpenStreetMap (výběr/náhled souřadnic obchodu) — Apache-2.0, stejná licenční
+    // politika jako ZXing/Coil výš (viz plán projektu). Dlaždice se stahují přímo z klienta,
+    // vědomá výjimka z "geokódování jen ze serveru" (docs/soukromi.md) — mapa se proto načte
+    // až po explicitním otevření (ui/common/LocationMap.kt), nikdy automaticky.
+    implementation("org.osmdroid:osmdroid-android:6.1.20")
+
     // Jednotkové testy čisté logiky (PriceChartGeometry) bez Androidu/emulátoru.
     testImplementation("junit:junit:4.13.2")
 }

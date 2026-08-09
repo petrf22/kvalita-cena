@@ -15,4 +15,7 @@ import cz.kvalitacena.network.Store
 object NavigationResults {
   var newStore: Store? = null
   var newProduct: Product? = null
+
+  /** Stejný vzor, ale pro editaci existující provozovny (StoreFormScreen storeId != null) — StoreDetailScreen ho vyzvedne. */
+  var updatedStore: Store? = null
 }

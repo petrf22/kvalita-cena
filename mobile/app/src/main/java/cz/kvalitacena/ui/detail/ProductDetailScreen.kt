@@ -33,9 +33,10 @@ import cz.kvalitacena.AppContainer
 import cz.kvalitacena.network.ExternalLink
 import cz.kvalitacena.network.PriceCurrent
 import cz.kvalitacena.ui.common.PRICE_KIND_LABELS
+import cz.kvalitacena.ui.common.PhotoGallery
+import cz.kvalitacena.ui.common.PhotoPicker
 import cz.kvalitacena.ui.common.QualityBadge
 import cz.kvalitacena.ui.common.formatRelativeDate
-import cz.kvalitacena.ui.common.openMap
 import cz.kvalitacena.ui.common.openUrl
 import java.text.NumberFormat
 import java.util.Locale
@@ -43,15 +44,17 @@ import java.util.Locale
 private val CZK_FORMAT: NumberFormat = NumberFormat.getCurrencyInstance(Locale("cs", "CZ"))
 
 /**
- * Detail produktu: název, graf vývoje ceny (rozklikávací rozsah), nejlevnější obchod, odkazy
- * do otevřených databází (Open Food Facts), počet hlášení/cena/datum/obchod po řádcích, obchod
- * klikací na mapu — viz zadání. Hodnocení kvality (1 nejlepší, jako ve škole) vyžaduje přihlášení.
+ * Detail produktu: název, fotky, graf vývoje ceny (rozklikávací rozsah), nejlevnější obchod,
+ * odkazy do otevřených databází (Open Food Facts), počet hlášení/cena/datum/obchod po řádcích
+ * — klik na obchod vede na jeho detail (adresa, mapa, fotky), viz StoreDetailScreen.
+ * Hodnocení kvality (1 nejlepší, jako ve škole) vyžaduje přihlášení.
  */
 @Composable
 fun ProductDetailScreen(
   productId: String,
   onWriteObservation: () -> Unit,
   onNavigateToAccount: () -> Unit,
+  onStoreClick: (String) -> Unit,
 ) {
   val viewModel: ProductDetailViewModel = viewModel(
     factory = viewModelFactory { initializer { ProductDetailViewModel(AppContainer.graphQlClient, productId) } },
@@ -74,6 +77,20 @@ fun ProductDetailScreen(
       val product = viewModel.product!!
       Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text(product.name, style = MaterialTheme.typography.headlineSmall)
+
+        Gap()
+        PhotoGallery(photos = product.photos, onPhotosChange = viewModel::onPhotosChange, modifier = Modifier.fillMaxWidth())
+        if (isLoggedIn) {
+          PhotoPicker(
+            recordType = "PRODUCT",
+            recordId = productId,
+            existingPhotoCount = product.photos.size,
+            onUploaded = { photo -> viewModel.onPhotosChange(product.photos + photo) },
+            modifier = Modifier.padding(top = 4.dp),
+          )
+        }
+        Gap()
+
         val subtitle = listOfNotNull(product.brand?.name, product.category.name).joinToString(" · ")
         if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodyMedium)
 
@@ -161,20 +178,11 @@ fun ProductDetailScreen(
         Text("Nejlevněji", style = MaterialTheme.typography.titleMedium)
         if (stats?.bestPrice != null && stats.cheapestStore != null) {
           val store = stats.cheapestStore
-          val lat = store.lat
-          val lon = store.lon
-          // Provozovna zadaná bez GPS (zápis doma) souřadnice mít nemusí — pak se řádek jen
-          // nedá otevřít na mapě, ne že appka spadne (docs/datovy-model.md).
-          val mapModifier = if (lat != null && lon != null) {
-            Modifier.clickable { openMap(context, lat, lon, store.name) }
-          } else {
-            Modifier
-          }
           Row(
             modifier = Modifier
               .fillMaxWidth()
               .padding(top = 4.dp)
-              .then(mapModifier),
+              .clickable { onStoreClick(store.id) },
             horizontalArrangement = Arrangement.SpaceBetween,
           ) {
             Column {
@@ -197,15 +205,7 @@ fun ProductDetailScreen(
         } else {
           Column(modifier = Modifier.padding(top = 8.dp)) {
             product.prices.forEach { price ->
-              PriceRow(
-                price,
-                onClick = {
-                  // Provozovna bez GPS (zápis doma) nemusí mít souřadnice — klik pak jen nic neudělá.
-                  val lat = price.store.lat
-                  val lon = price.store.lon
-                  if (lat != null && lon != null) openMap(context, lat, lon, price.store.name)
-                },
-              )
+              PriceRow(price, onClick = { onStoreClick(price.store.id) })
             }
           }
         }
