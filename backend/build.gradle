@@ -53,7 +53,7 @@ dependencies {
 
     // Čtení EXIF orientace nahraných fotek (ImageProcessingService) — Apache-2.0. Vlastní
     // parser APP1 segmentu je klasické místo na chyby, tohle je pro to standardní knihovna.
-    implementation 'com.drewnoakes:metadata-extractor:2.19.0'
+    implementation 'com.drewnoakes:metadata-extractor:2.21.0'
 
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
