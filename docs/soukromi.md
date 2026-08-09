@@ -52,6 +52,14 @@ vytvoří až po explicitním kliknutí na „Zobrazit mapu", nikdy automaticky 
 obrazovky — na rozdíl od zbytku dokumentu tahle výjimka není beze zbytku vyřešená, jen vědomě
 přijatá a zapsaná, ať se na ni nezapomene při případné budoucí revizi.
 
+### Lokální AI (plánováno) je opačný případ než mapové dlaždice
+
+U dlaždic výš appka vědomě připouští, že OSM uvidí IP uživatele. Plánovaná AI (`ai.md`) — čtení
+čísel z fotek, předfiltr moderace, kontrola textů — jde přesně opačným směrem: model běží u
+provozovatele appky (lokální PC), takže fotky ani texty uživatelů neopouští appku vůbec, žádné
+třetí straně. Verdikt je navíc vždy jen poradní, nikdy sám nerozhoduje — viz `ai.md`, „AI nikdy
+nerozhoduje".
+
 ## Retence vazby observace → uživatel: 180 dní
 
 | Fáze | Doba | Co je uloženo |
@@ -176,6 +184,8 @@ nekoná, ale např. podezření na krádež) se řeší inkrementem `token_versi
   pseudonymizované jako agregovaná statistika ve veřejném zájmu) nebo smazat i obsah.
 - Žádná analytika třetích stran, žádné externí fonty ani CDN. Jediná cookie je `httpOnly`
   refresh token → není potřeba cookie lišta.
+- Plánovaná AI (`ai.md`) běží lokálně u provozovatele, ne přes cloudové API — jinak by tahle
+  věta neplatila.
 
 ## Otevřená rizika / co hlídat
 

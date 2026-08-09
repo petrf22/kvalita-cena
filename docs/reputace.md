@@ -49,6 +49,10 @@ f_recency = 0,5^(stáří_dní / 14)           jen pro "aktuální cenu", ne pro
 f_group   = 3,0 autor je v mé skupině důvěry / 1,5 vzdálenost 2 kroky / 1,0 jinak
 ```
 
+Rozlišení `f_evid` mezi „účtenka+OCR" a „foto cedulky" předpokládá, že schéma ukládá **druh
+důkazu**, ne jen odkaz na fotku — až se bude psát fotka jako důkaz ceny (nedodělek etapy 1), viz
+`ai.md`, „Vazba na f_evid".
+
 „Nezávislý potvrzovatel" = není ve stejné skupině důvěry jako autor a není v témže
 detekovaném sybil klastru. Bez této podmínky je potvrzování triviálně zneužitelné (skupina
 si vzájemně potvrzuje cokoliv).
@@ -213,6 +217,10 @@ opačný — smazaná dobrá fotka se nahraje znovu za deset vteřin, zatímco p
 obrázek je vážný problém a kapacita moderace jednoho člověka je reálný limit projektu
 (`soukromi.md`, "Otevřená rizika"). Fotka je proto vidět hned po nahrání (stejně jako
 u důvěryhodného autora zboží/obchodu), ale jediné nahlášení ji rovnou skryje.
+
+**Plánovaný strojový předfiltr fotek (`ai.md`) nikdy nenahrazuje hlas člověka ani sám nesahá
+na `hidden_at`** — jen řadí frontu k přezkumu, stejně jako zbytek téhle sekce hlasuje o
+záznamu, nikdy o člověku.
 
 ## Hodnocení kvality zboží (etapa 1)
 

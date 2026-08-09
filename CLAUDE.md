@@ -18,7 +18,9 @@ Dvě zadání, která jdou proti samozřejmým řešením a určují celou archi
 2. **Komunita má být pozitivní** — proto žádné veřejné negativní hodnocení uživatelů, i když by
    bylo technicky nejjednodušší. Detaily: `docs/reputace.md`.
 
-Plán založení a odůvodnění klíčových rozhodnutí: `/home/petr/.claude/plans/clever-puzzling-crescent.md`.
+Plán založení a odůvodnění klíčových rozhodnutí: `docs/` (jednotlivé dokumenty datový model,
+reputace, soukromí, AI — odkaz na samostatný plánovací soubor mimo repo tu dřív byl, ale ten
+soubor už neexistuje).
 
 ## Monorepo — tři samostatné aplikace
 
@@ -26,7 +28,7 @@ Plán založení a odůvodnění klíčových rozhodnutí: `/home/petr/.claude/p
 backend/    Spring Boot 4, Java 25, Gradle (Groovy DSL) — API pro web i mobil
 frontend/   Angular 22 + ng-zorro-antd — webové rozhraní
 mobile/     Kotlin + Jetpack Compose — nativní Android
-docs/       datový model, reputace, soukromí — jeden zdroj pravdy pro vzorce a prahy
+docs/       datový model, reputace, soukromí, AI — jeden zdroj pravdy pro vzorce a prahy
 ```
 
 Každá část má vlastní build nástroj a vlastní `README`/konvence; sdílený je jen kontrakt API
@@ -113,8 +115,11 @@ zakládání obchodu (`chainId` v `CreateStoreInput` existuje, ale klienti zatí
 vyhodnocovací pravidlo zatím není známé — viz výš), inline edit UI pro ZBOŽÍ na obou klientech
 (mutace jsou hotové, jen je zatím nevolá žádná obrazovka — u OBCHODU už hotové je, viz výš),
 fotka jako důkaz ceny (`core.price_observation`, `f_evid` v `docs/reputace.md` — fotky zatím
-váží jen na katalogový záznam, ne na cenový zápis) — viz konec plánu založení projektu pro
-rozpis a `docs/reputace.md` pro poznámku o hodnocení kvality vs. dodavatelích.
+váží jen na katalogový záznam, ne na cenový zápis), lokální AI (`docs/ai.md` — čtení čísel
+z fotek, kontrola textů, předfiltr moderace; zatím jen rozhodnutí v docs, žádný kód — výjimkou
+je předfiltr fotek pro moderaci, který podle `docs/ai.md` patří před spuštění veřejného
+provozu, ne až za etapu 2) — viz konec plánu založení projektu pro rozpis a `docs/reputace.md`
+pro poznámku o hodnocení kvality vs. dodavatelích.
 
 ## Příkazy
 
