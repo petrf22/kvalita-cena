@@ -1,0 +1,16 @@
+{
+  "nameLabel": "Product name",
+  "suggestionsWarning": "Isn't it one of these existing items?",
+  "genericTag": "generic item",
+  "categoryLabel": "Category",
+  "categoryPlaceholder": "Pick a category",
+  "brandLabel": "Brand (optional)",
+  "unitBaseLabel": "Base unit",
+  "variableWeightLabel": "Sold by weight (price always per kg/l, no fixed net content)",
+  "massLabel": "Package weight (kg)",
+  "volumeLabel": "Package volume (l)",
+  "piecesInPackLabel": "Pieces per pack (optional)",
+  "codeLabel": "Barcode (optional)",
+  "codeHint": "Without a code, a generic item is created (e.g. \"bread for {{example}}\" from a receipt) — with lower data confidence, but it can still be recorded.",
+  "submit": "Create product"
+}

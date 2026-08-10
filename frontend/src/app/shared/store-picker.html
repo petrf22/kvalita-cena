@@ -1,40 +1,44 @@
-<div class="store-picker">
-  <nz-select
-    nzShowSearch
-    nzServerSearch
-    nzPlaceHolder="Napiš název nebo město obchodu"
-    [nzLoading]="searching()"
-    [ngModel]="selectedStoreId()"
-    (nzOnSearch)="onSearch($event)"
-    (ngModelChange)="onSelectId($event)"
-    class="store-select"
-  >
-    @for (store of displayOptions(); track store.id) {
-      <nz-option [nzValue]="store.id" [nzLabel]="store.name + ' — ' + store.city" />
+<ng-container *transloco="let t; scope: 'store'">
+  <div class="store-picker">
+    <nz-select
+      nzShowSearch
+      nzServerSearch
+      [nzPlaceHolder]="t('store.picker.searchPlaceholder')"
+      [nzLoading]="searching()"
+      [ngModel]="selectedStoreId()"
+      (nzOnSearch)="onSearch($event)"
+      (ngModelChange)="onSelectId($event)"
+      class="store-select"
+    >
+      @for (store of displayOptions(); track store.id) {
+        <nz-option [nzValue]="store.id" [nzLabel]="store.name + ' — ' + store.city" />
+      }
+    </nz-select>
+    <button nz-button type="button" [nzLoading]="locating()" (click)="findNearby()">
+      <span nz-icon nzType="environment"></span>
+      {{ t('store.picker.findNearby') }}
+    </button>
+    @if (auth.isLoggedIn()) {
+      <button nz-button type="button" (click)="showAddModal.set(true)">
+        {{ t('store.picker.addNew') }}
+      </button>
     }
-  </nz-select>
-  <button nz-button type="button" [nzLoading]="locating()" (click)="findNearby()">
-    <span nz-icon nzType="environment"></span>
-    Najít v okolí
-  </button>
-  @if (auth.isLoggedIn()) {
-    <button nz-button type="button" (click)="showAddModal.set(true)">+ Nový obchod</button>
+  </div>
+  @if (!auth.isLoggedIn()) {
+    <p class="login-hint">{{ t('store.picker.loginHint') }}</p>
   }
-</div>
-@if (!auth.isLoggedIn()) {
-  <p class="login-hint">Založení nového obchodu vyžaduje přihlášení — přejdi na stránku Účet.</p>
-}
-@if (locationError()) {
-  <p class="location-error">{{ locationError() }}</p>
-}
+  @if (locationError()) {
+    <p class="location-error">{{ locationError() }}</p>
+  }
 
-<nz-modal
-  [nzVisible]="showAddModal()"
-  nzTitle="Nový obchod"
-  [nzFooter]="null"
-  (nzOnCancel)="showAddModal.set(false)"
->
-  <ng-container *nzModalContent>
-    <app-store-form (created)="onStoreCreated($event)" (cancelled)="showAddModal.set(false)" />
-  </ng-container>
-</nz-modal>
+  <nz-modal
+    [nzVisible]="showAddModal()"
+    [nzTitle]="t('store.picker.newStoreModalTitle')"
+    [nzFooter]="null"
+    (nzOnCancel)="showAddModal.set(false)"
+  >
+    <ng-container *nzModalContent>
+      <app-store-form (created)="onStoreCreated($event)" (cancelled)="showAddModal.set(false)" />
+    </ng-container>
+  </nz-modal>
+</ng-container>

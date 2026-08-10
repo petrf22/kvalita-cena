@@ -1,5 +1,11 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import {
+  TranslocoDirective,
+  TranslocoPipe,
+  TranslocoService,
+  provideTranslocoScope,
+} from '@jsverse/transloco';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -9,6 +15,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Store } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
 import { StoreService } from '../../services/store-service';
+import { translateError } from '../../shared/error-message';
 import { LocationMap } from '../../shared/location-map';
 import { PhotoGallery } from '../../shared/photo-gallery';
 import { StoreForm } from '../../shared/store-form';
@@ -31,13 +38,17 @@ import { StoreForm } from '../../shared/store-form';
     LocationMap,
     PhotoGallery,
     StoreForm,
+    TranslocoDirective,
+    TranslocoPipe,
   ],
+  providers: [provideTranslocoScope('store')],
   templateUrl: './store-detail-page.html',
   styleUrl: './store-detail-page.css',
 })
 export class StoreDetailPage {
   private readonly route = inject(ActivatedRoute);
   private readonly storeService = inject(StoreService);
+  private readonly transloco = inject(TranslocoService);
   protected readonly auth = inject(AuthService);
 
   protected readonly store = signal<Store | null>(null);
@@ -88,14 +99,14 @@ export class StoreDetailPage {
       next: (result) => {
         this.flagging.set(false);
         this.flagMessage.set(
-          result.hidden
-            ? 'Díky za nahlášení — provozovna je teď skrytá a čeká na přezkum.'
-            : 'Díky za nahlášení, zaznamenali jsme ho.',
+          this.transloco.translate(
+            result.hidden ? 'store.detail.flagHidden' : 'store.detail.flagAcknowledged',
+          ),
         );
       },
-      error: () => {
+      error: (err) => {
         this.flagging.set(false);
-        this.flagMessage.set('Nahlášení se nepovedlo, zkus to prosím znovu.');
+        this.flagMessage.set(translateError(err, this.transloco));
       },
     });
   }

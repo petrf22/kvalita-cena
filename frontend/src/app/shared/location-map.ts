@@ -1,4 +1,14 @@
-import { Component, ElementRef, EventEmitter, Output, effect, input, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Output,
+  effect,
+  input,
+  signal,
+  viewChild,
+} from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import type * as LeafletNs from 'leaflet';
@@ -20,7 +30,7 @@ const POINT_ZOOM = 16;
  */
 @Component({
   selector: 'app-location-map',
-  imports: [NzButtonModule, NzIconModule],
+  imports: [NzButtonModule, NzIconModule, TranslocoPipe],
   templateUrl: './location-map.html',
   styleUrl: './location-map.css',
 })
@@ -79,7 +89,8 @@ export class LocationMap {
     this.map = leaflet.map(container).setView(center, hasPoint ? POINT_ZOOM : DEFAULT_ZOOM);
     leaflet
       .tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
       })
       .addTo(this.map);

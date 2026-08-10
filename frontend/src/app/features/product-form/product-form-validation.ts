@@ -7,7 +7,11 @@ import { UnitBase } from '../../models/catalog';
  * co se uloží, ne aby počítala něco jiného.
  */
 
-export function isProductFormValid(name: string, categoryId: string | null, unitBase: string | null): boolean {
+export function isProductFormValid(
+  name: string,
+  categoryId: string | null,
+  unitBase: string | null,
+): boolean {
   return name.trim().length > 0 && !!categoryId && !!unitBase;
 }
 

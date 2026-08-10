@@ -9,7 +9,14 @@
     "edit": "Edytuj",
     "back": "Wstecz",
     "yes": "Tak",
-    "no": "Nie"
+    "no": "Nie",
+    "showMap": "Pokaż mapę",
+    "mapHint": "Kliknij na mapie lub przeciągnij znacznik w dokładne miejsce."
+  },
+  "quality": {
+    "notRatedYet": "Jakość: brak ocen",
+    "rated": "Jakość {{value}}/5",
+    "ratedApproximate": "Jakość {{value}}/5 (orientacyjna)"
   },
   "nav": {
     "search": "Wyszukiwanie",

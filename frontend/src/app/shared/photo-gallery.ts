@@ -1,4 +1,10 @@
 import { Component, EventEmitter, Output, effect, inject, input, signal } from '@angular/core';
+import {
+  TranslocoDirective,
+  TranslocoPipe,
+  TranslocoService,
+  provideTranslocoScope,
+} from '@jsverse/transloco';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
@@ -6,21 +12,37 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { Photo, RecordType } from '../models/catalog';
 import { AuthService } from '../services/auth-service';
 import { MediaService } from '../services/media-service';
-import { photoValidationError, remainingPhotoSlots } from './photo-upload-validation';
+import { translateError } from './error-message';
+import {
+  MAX_PHOTOS_PER_RECORD,
+  photoValidationError,
+  remainingPhotoSlots,
+} from './photo-upload-validation';
 
 /**
  * Galerie fotek zboží/obchodu (core.media) — mřížka náhledů, po kliknutí zvětšení s
  * prev/next navigací (ručně, bez další knihovny — stejný duch jako ruční SVG graf
- * price-chart.ts). Mobilní protějšek: mobile ui/common/PhotoGallery.kt.
+ * price-chart.ts). Vlastní scope 'photos' přímo na komponentě (ne na stránce, která ji
+ * vkládá) — galerie se používá jak z detailu zboží, tak z detailu obchodu (docs/lokalizace.md).
+ * Mobilní protějšek: mobile ui/common/PhotoGallery.kt.
  */
 @Component({
   selector: 'app-photo-gallery',
-  imports: [NzButtonModule, NzIconModule, NzModalModule, NzAlertModule],
+  imports: [
+    NzButtonModule,
+    NzIconModule,
+    NzModalModule,
+    NzAlertModule,
+    TranslocoDirective,
+    TranslocoPipe,
+  ],
+  providers: [provideTranslocoScope('photos')],
   templateUrl: './photo-gallery.html',
   styleUrl: './photo-gallery.css',
 })
 export class PhotoGallery {
   private readonly mediaService = inject(MediaService);
+  private readonly transloco = inject(TranslocoService);
   protected readonly auth = inject(AuthService);
 
   readonly recordType = input.required<RecordType>();
@@ -80,9 +102,13 @@ export class PhotoGallery {
 
     this.uploadError.set(null);
     for (const file of files) {
-      const error = photoValidationError(file, this.photos().length);
-      if (error) {
-        this.uploadError.set(error);
+      const errorCode = photoValidationError(file, this.photos().length);
+      if (errorCode) {
+        // Stejné klíče jako ErrorCode na backendu (kořenový bundle errors.*) — appka tu jen
+        // ušetří zbytečný upload, text hlášky je ale ten samý jako po chybě ze serveru.
+        this.uploadError.set(
+          this.transloco.translate(`errors.${errorCode}`, { p0: MAX_PHOTOS_PER_RECORD }),
+        );
         continue;
       }
       this.uploadOne(file);
@@ -99,9 +125,11 @@ export class PhotoGallery {
         this.remainingSlots.set(remainingPhotoSlots(updated.length));
         this.photosChange.emit(updated);
       },
+      // Upload jde přes REST multipart, ne GraphQL (viz MediaService) — translateError tu
+      // proto nejde použít, chyba nenese extensions.code.
       error: () => {
         this.uploading.set(false);
-        this.uploadError.set('Nahrání fotky se nepovedlo, zkus to prosím znovu.');
+        this.uploadError.set(this.transloco.translate('photos.uploadFailed'));
       },
     });
   }
@@ -115,7 +143,7 @@ export class PhotoGallery {
         this.photosChange.emit(updated);
         this.closeViewer();
       },
-      error: () => this.uploadError.set('Smazání fotky se nepovedlo, zkus to prosím znovu.'),
+      error: (err) => this.uploadError.set(translateError(err, this.transloco)),
     });
   }
 
@@ -140,7 +168,7 @@ export class PhotoGallery {
           },
         });
       },
-      error: () => this.uploadError.set('Nastavení hlavní fotky se nepovedlo, zkus to prosím znovu.'),
+      error: (err) => this.uploadError.set(translateError(err, this.transloco)),
     });
   }
 
@@ -150,14 +178,12 @@ export class PhotoGallery {
       next: (result) => {
         this.flaggingId.set(null);
         this.flagMessage.set(
-          result.hidden
-            ? 'Díky za nahlášení — fotka je teď skrytá a čeká na přezkum.'
-            : 'Díky za nahlášení, zaznamenali jsme ho.',
+          this.transloco.translate(result.hidden ? 'photos.flagHidden' : 'photos.flagAcknowledged'),
         );
       },
-      error: () => {
+      error: (err) => {
         this.flaggingId.set(null);
-        this.flagMessage.set('Nahlášení se nepovedlo, zkus to prosím znovu.');
+        this.flagMessage.set(translateError(err, this.transloco));
       },
     });
   }

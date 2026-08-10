@@ -1,0 +1,12 @@
+{
+  "emptyHint": "Nikt jeszcze nie dodał tu zdjęcia.",
+  "photoAlt": "Zdjęcie",
+  "hiddenBadge": "Ukryte",
+  "addPhoto": "Dodaj zdjęcie",
+  "loginHint": "Dodawanie zdjęć wymaga zalogowania — przejdź do strony Konto.",
+  "uploadFailed": "Przesłanie zdjęcia się nie powiodło, spróbuj ponownie.",
+  "setAsMain": "Ustaw jako główne",
+  "flag": "Zgłoś",
+  "flagHidden": "Dziękujemy za zgłoszenie — zdjęcie jest teraz ukryte i czeka na weryfikację.",
+  "flagAcknowledged": "Dziękujemy za zgłoszenie, odnotowaliśmy je."
+}

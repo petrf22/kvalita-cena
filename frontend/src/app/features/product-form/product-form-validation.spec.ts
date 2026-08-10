@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { impliedNetContentUom, isProductFormValid, previewUnitPrice } from './product-form-validation';
+import {
+  impliedNetContentUom,
+  isProductFormValid,
+  previewUnitPrice,
+} from './product-form-validation';
 
 describe('isProductFormValid', () => {
   it('requires name, category and unit base', () => {

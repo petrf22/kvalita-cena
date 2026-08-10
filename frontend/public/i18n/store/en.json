@@ -1,0 +1,57 @@
+{
+  "form": {
+    "nameLabel": "Store name",
+    "streetLabel": "Street and number (optional)",
+    "cityLabel": "City",
+    "postalCodeLabel": "Postal code (optional)",
+    "similarWarning": "Did you mean one of these existing stores?",
+    "saveChanges": "Save changes",
+    "createStore": "Create store"
+  },
+  "companyId": {
+    "sectionTitle": "{{label}} (optional)",
+    "hint": "For a corporate branch or sole trader, where the name alone isn't enough to identify it uniquely.",
+    "placeholder": "{{digits}} digits",
+    "loadFromRegistry": "Load from registry",
+    "shapeInvalid": "{{label}} must have {{digits}} digits.",
+    "notFoundInRegistry": "We couldn't find this ID in the registry.",
+    "label": {
+      "CZ": "Company ID",
+      "SK": "Company ID",
+      "PL": "NIP"
+    }
+  },
+  "location": {
+    "sectionTitle": "Coordinates (optional)",
+    "hint": "Without coordinates the store won't show up in nearby search, only in name search — they can be added later too.",
+    "findCoordinates": "Find coordinates",
+    "useMyLocation": "Use my location",
+    "willUseMapPosition": "The position from the map below / your current location will be used."
+  },
+  "detail": {
+    "backToSearch": "Back to search",
+    "notFound": "We couldn't find this store.",
+    "unverified": "Unverified",
+    "editedByMe": "Your edit",
+    "pendingConfirmation": "Awaiting confirmation",
+    "flag": "Report",
+    "flagHidden": "Thanks for reporting — the store is now hidden and awaiting review.",
+    "flagAcknowledged": "Thanks for reporting, we've noted it.",
+    "photosTitle": "Photos",
+    "locationTitle": "Location",
+    "openOnOsm": "Open on OpenStreetMap",
+    "noLocation": "This store doesn't have coordinates yet.",
+    "operatorTitle": "Operator",
+    "editModalTitle": "Edit store"
+  },
+  "picker": {
+    "searchPlaceholder": "Type a store name or city",
+    "findNearby": "Find nearby",
+    "addNew": "+ New store",
+    "loginHint": "Creating a new store requires signing in — go to the Account page.",
+    "newStoreModalTitle": "New store",
+    "geoUnsupported": "This browser can't determine your location — pick a store manually.",
+    "noNearbyStores": "We didn't find any store nearby.",
+    "geoPermissionDenied": "Location access was denied — pick a store manually."
+  }
+}

@@ -1,11 +1,11 @@
 @if (!loaded()) {
   <button nz-button type="button" [nzLoading]="loading()" (click)="show()">
     <span nz-icon nzType="environment"></span>
-    Zobrazit mapu
+    {{ 'common.showMap' | transloco }}
   </button>
 } @else {
   <div #mapContainer class="map-container"></div>
   @if (editable()) {
-    <p class="map-hint">Klikni do mapy nebo přetáhni značku na přesné místo.</p>
+    <p class="map-hint">{{ 'common.mapHint' | transloco }}</p>
   }
 }

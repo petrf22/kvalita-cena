@@ -1,0 +1,57 @@
+{
+  "form": {
+    "nameLabel": "Nazwa sklepu",
+    "streetLabel": "Ulica i numer (opcjonalnie)",
+    "cityLabel": "Miasto",
+    "postalCodeLabel": "Kod pocztowy (opcjonalnie)",
+    "similarWarning": "Czy nie masz na myśli jednego z już istniejących sklepów?",
+    "saveChanges": "Zapisz zmiany",
+    "createStore": "Dodaj sklep"
+  },
+  "companyId": {
+    "sectionTitle": "{{label}} (opcjonalnie)",
+    "hint": "Dla placówki firmowej lub jednoosobowej działalności, gdzie sama nazwa nie wystarczy do jednoznacznej identyfikacji.",
+    "placeholder": "{{digits}} cyfr",
+    "loadFromRegistry": "Pobierz z rejestru",
+    "shapeInvalid": "{{label}} musi mieć {{digits}} cyfr.",
+    "notFoundInRegistry": "Nie znaleźliśmy tego numeru w rejestrze.",
+    "label": {
+      "CZ": "IČO",
+      "SK": "IČO",
+      "PL": "NIP"
+    }
+  },
+  "location": {
+    "sectionTitle": "Współrzędne (opcjonalnie)",
+    "hint": "Bez współrzędnych sklep nie pojawi się w wyszukiwaniu w okolicy, tylko w wyszukiwaniu po nazwie — można je dodać też później.",
+    "findCoordinates": "Znajdź współrzędne",
+    "useMyLocation": "Użyj mojej lokalizacji",
+    "willUseMapPosition": "Zostanie użyta pozycja z mapy poniżej / twoja aktualna lokalizacja."
+  },
+  "detail": {
+    "backToSearch": "Powrót do wyszukiwania",
+    "notFound": "Nie udało się znaleźć tego sklepu.",
+    "unverified": "Niezweryfikowane",
+    "editedByMe": "Twoja edycja",
+    "pendingConfirmation": "Oczekuje na potwierdzenie",
+    "flag": "Zgłoś",
+    "flagHidden": "Dziękujemy za zgłoszenie — sklep jest teraz ukryty i czeka na weryfikację.",
+    "flagAcknowledged": "Dziękujemy za zgłoszenie, odnotowaliśmy je.",
+    "photosTitle": "Zdjęcia",
+    "locationTitle": "Lokalizacja",
+    "openOnOsm": "Otwórz w OpenStreetMap",
+    "noLocation": "Ten sklep nie ma jeszcze współrzędnych.",
+    "operatorTitle": "Operator",
+    "editModalTitle": "Edytuj sklep"
+  },
+  "picker": {
+    "searchPlaceholder": "Wpisz nazwę lub miasto sklepu",
+    "findNearby": "Znajdź w okolicy",
+    "addNew": "+ Nowy sklep",
+    "loginHint": "Dodanie nowego sklepu wymaga zalogowania — przejdź do strony Konto.",
+    "newStoreModalTitle": "Nowy sklep",
+    "geoUnsupported": "Ta przeglądarka nie potrafi ustalić lokalizacji — wybierz sklep ręcznie.",
+    "noNearbyStores": "Nie znaleźliśmy żadnego sklepu w okolicy.",
+    "geoPermissionDenied": "Dostęp do lokalizacji został odrzucony — wybierz sklep ręcznie."
+  }
+}

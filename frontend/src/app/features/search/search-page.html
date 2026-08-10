@@ -1,123 +1,127 @@
 <ng-container *transloco="let t; scope: 'search'">
-<h1>{{ t('search.title') }}</h1>
-<p class="search-intro">{{ t('search.intro') }}</p>
+  <h1>{{ t('search.title') }}</h1>
+  <p class="search-intro">{{ t('search.intro') }}</p>
 
-<div class="search-box">
-  <input
-    nz-input
-    name="query"
-    [placeholder]="t('search.searchPlaceholder')"
-    [ngModel]="query()"
-    (ngModelChange)="query.set($event)"
-    (keyup.enter)="search()"
-  />
-  <button nz-button nzType="primary" [nzLoading]="loading()" (click)="search()">
-    <span nz-icon nzType="search"></span>
-    {{ t('search.search') }}
-  </button>
-</div>
+  <div class="search-box">
+    <input
+      nz-input
+      name="query"
+      [placeholder]="t('search.searchPlaceholder')"
+      [ngModel]="query()"
+      (ngModelChange)="query.set($event)"
+      (keyup.enter)="search()"
+    />
+    <button nz-button nzType="primary" [nzLoading]="loading()" (click)="search()">
+      <span nz-icon nzType="search"></span>
+      {{ t('search.search') }}
+    </button>
+  </div>
 
-<div class="filter-row">
-  <nz-select
-    class="filter-select"
-    [ngModel]="storeId()"
-    (ngModelChange)="storeId.set($event); onFilterChange()"
-    nzAllowClear
-    [nzPlaceHolder]="t('search.storeFilter')"
-  >
-    @for (store of facets().stores; track store.id) {
-      <nz-option [nzValue]="store.id" [nzLabel]="store.name + ' — ' + store.city" />
-    }
-  </nz-select>
-
-  <nz-select
-    class="filter-select"
-    [ngModel]="city()"
-    (ngModelChange)="city.set($event); onFilterChange()"
-    nzAllowClear
-    [nzPlaceHolder]="t('search.cityFilter')"
-  >
-    @for (c of facets().cities; track c) {
-      <nz-option [nzValue]="c" [nzLabel]="c" />
-    }
-  </nz-select>
-
-  <nz-select
-    class="filter-select"
-    [ngModel]="sort()"
-    (ngModelChange)="sort.set($event); onFilterChange()"
-  >
-    @for (value of sortOrder; track value) {
-      <nz-option [nzValue]="value" [nzLabel]="sortKeys[value] | transloco" />
-    }
-  </nz-select>
-</div>
-
-@if (hasSearched() && items().length === 0 && !loading()) {
-  <nz-empty [nzNotFoundContent]="t('search.notFound')" />
-}
-
-@if (!hasSearched() && items().length === 0) {
-  <p class="search-hint">{{ t('search.hint') }}</p>
-}
-
-@if (items().length > 0) {
-  <nz-table
-    #resultsTable
-    [nzData]="items()"
-    [nzFrontPagination]="false"
-    [nzShowPagination]="false"
-    [nzLoading]="loading()"
-  >
-    <thead>
-      <tr>
-        <th>{{ t('search.colProduct') }}</th>
-        <th>{{ t('search.colPrice') }}</th>
-        <th>{{ t('search.colCheapest') }}</th>
-        <th>{{ t('search.colTotalReports') }}</th>
-        <th>{{ t('search.colLast') }}</th>
-        <th>{{ t('search.colQuality') }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (item of resultsTable.data; track item.product.id) {
-        <tr (click)="openProduct(item)" class="search-result-row">
-          <td>
-            <div class="product-name">
-              {{ item.product.name }}
-              @if (!item.product.verified) {
-                <nz-tag class="unverified-tag">{{ t('search.unverified') }}</nz-tag>
-              }
-            </div>
-            <div class="product-subtitle">
-              {{ item.product.brand?.name ?? item.product.category.name }}
-            </div>
-          </td>
-          <td>
-            @if (item.bestPrice != null) {
-              {{ item.bestPrice | money: item.currency }}
-              @if (item.bestPriceObservations) {
-                <span class="confirmations">{{ t('search.confirmations', { count: item.bestPriceObservations }) }}</span>
-              }
-            } @else {
-              <span class="unknown-price">{{ t('search.unknownPrice') }}</span>
-            }
-          </td>
-          <td>{{ item.cheapestStore?.name ?? '–' }}</td>
-          <td>{{ item.observationCount }}</td>
-          <td>{{ item.lastObservedAt | relativeDate }}</td>
-          <td><app-quality-badge [average]="item.qualityAverage" [count]="item.qualityCount" /></td>
-        </tr>
+  <div class="filter-row">
+    <nz-select
+      class="filter-select"
+      [ngModel]="storeId()"
+      (ngModelChange)="storeId.set($event); onFilterChange()"
+      nzAllowClear
+      [nzPlaceHolder]="t('search.storeFilter')"
+    >
+      @for (store of facets().stores; track store.id) {
+        <nz-option [nzValue]="store.id" [nzLabel]="store.name + ' — ' + store.city" />
       }
-    </tbody>
-  </nz-table>
+    </nz-select>
 
-  <nz-pagination
-    class="results-pagination"
-    [nzPageIndex]="pageIndex()"
-    [nzTotal]="totalCount()"
-    [nzPageSize]="20"
-    (nzPageIndexChange)="onPageIndexChange($event)"
-  />
-}
+    <nz-select
+      class="filter-select"
+      [ngModel]="city()"
+      (ngModelChange)="city.set($event); onFilterChange()"
+      nzAllowClear
+      [nzPlaceHolder]="t('search.cityFilter')"
+    >
+      @for (c of facets().cities; track c) {
+        <nz-option [nzValue]="c" [nzLabel]="c" />
+      }
+    </nz-select>
+
+    <nz-select
+      class="filter-select"
+      [ngModel]="sort()"
+      (ngModelChange)="sort.set($event); onFilterChange()"
+    >
+      @for (value of sortOrder; track value) {
+        <nz-option [nzValue]="value" [nzLabel]="sortKeys[value] | transloco" />
+      }
+    </nz-select>
+  </div>
+
+  @if (hasSearched() && items().length === 0 && !loading()) {
+    <nz-empty [nzNotFoundContent]="t('search.notFound')" />
+  }
+
+  @if (!hasSearched() && items().length === 0) {
+    <p class="search-hint">{{ t('search.hint') }}</p>
+  }
+
+  @if (items().length > 0) {
+    <nz-table
+      #resultsTable
+      [nzData]="items()"
+      [nzFrontPagination]="false"
+      [nzShowPagination]="false"
+      [nzLoading]="loading()"
+    >
+      <thead>
+        <tr>
+          <th>{{ t('search.colProduct') }}</th>
+          <th>{{ t('search.colPrice') }}</th>
+          <th>{{ t('search.colCheapest') }}</th>
+          <th>{{ t('search.colTotalReports') }}</th>
+          <th>{{ t('search.colLast') }}</th>
+          <th>{{ t('search.colQuality') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of resultsTable.data; track item.product.id) {
+          <tr (click)="openProduct(item)" class="search-result-row">
+            <td>
+              <div class="product-name">
+                {{ item.product.name }}
+                @if (!item.product.verified) {
+                  <nz-tag class="unverified-tag">{{ t('search.unverified') }}</nz-tag>
+                }
+              </div>
+              <div class="product-subtitle">
+                {{ item.product.brand?.name ?? item.product.category.name }}
+              </div>
+            </td>
+            <td>
+              @if (item.bestPrice != null) {
+                {{ item.bestPrice | money: item.currency }}
+                @if (item.bestPriceObservations) {
+                  <span class="confirmations">{{
+                    t('search.confirmations', { count: item.bestPriceObservations })
+                  }}</span>
+                }
+              } @else {
+                <span class="unknown-price">{{ t('search.unknownPrice') }}</span>
+              }
+            </td>
+            <td>{{ item.cheapestStore?.name ?? '–' }}</td>
+            <td>{{ item.observationCount }}</td>
+            <td>{{ item.lastObservedAt | relativeDate }}</td>
+            <td>
+              <app-quality-badge [average]="item.qualityAverage" [count]="item.qualityCount" />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <nz-pagination
+      class="results-pagination"
+      [nzPageIndex]="pageIndex()"
+      [nzTotal]="totalCount()"
+      [nzPageSize]="20"
+      (nzPageIndexChange)="onPageIndexChange($event)"
+    />
+  }
 </ng-container>

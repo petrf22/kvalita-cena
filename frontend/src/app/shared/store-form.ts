@@ -1,5 +1,20 @@
-import { Component, EventEmitter, Output, effect, inject, input, signal } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Output,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import {
+  TranslocoDirective,
+  TranslocoPipe,
+  TranslocoService,
+  provideTranslocoScope,
+} from '@jsverse/transloco';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzFormModule } from 'ng-zorro-antd/form';
@@ -8,9 +23,22 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { GeocodeCandidate, Store, UpdateStoreInput } from '../models/catalog';
 import { StoreService } from '../services/store-service';
+import { translateError } from './error-message';
 import { LocationMap } from './location-map';
 
 const SIMILAR_CHECK_DEBOUNCE_MS = 400;
+
+/**
+ * Tvar identifikačního čísla firmy per zemi (docs/lokalizace.md) — zrcadlí
+ * CompanyIdValidator/CompanyIdValidators na backendu (jen tvar, ne kontrolní součet —
+ * ten appka nekontroluje, aby neduplikovala algoritmus). Země bez záznamu = appka
+ * tvar nekontroluje vůbec, stejně jako backend hodnotu bez kontroly jen uloží.
+ */
+const COMPANY_ID_DIGITS: Record<string, number> = { CZ: 8, SK: 8, PL: 10 };
+/** AresService je zatím jediný napojený rejstřík (CompanyRegistry na backendu) — jen pro CZ. */
+const COUNTRIES_WITH_REGISTRY: readonly string[] = ['CZ'];
+/** Appka zatím zná jen tyhle tři země (docs/lokalizace.md) — detekovaná jiná se nepoužije. */
+const KNOWN_COUNTRIES: readonly string[] = ['CZ', 'SK', 'PL'];
 
 /**
  * Založení provozovny — pro zápis ceny bez sdílení polohy nebo zpětně z domova
@@ -31,12 +59,16 @@ const SIMILAR_CHECK_DEBOUNCE_MS = 400;
     NzRadioModule,
     NzAlertModule,
     LocationMap,
+    TranslocoDirective,
+    TranslocoPipe,
   ],
+  providers: [provideTranslocoScope('store')],
   templateUrl: './store-form.html',
   styleUrl: './store-form.css',
 })
 export class StoreForm {
   private readonly storeService = inject(StoreService);
+  private readonly transloco = inject(TranslocoService);
 
   /** Nastavený vstup přepne formulář do režimu editace téhle provozovny. */
   readonly store = input<Store | null>(null);
@@ -49,6 +81,18 @@ export class StoreForm {
   protected readonly city = signal('');
   protected readonly postalCode = signal('');
   protected readonly ico = signal('');
+
+  /**
+   * Určuje popisek/tvar IČO-NIP a viditelnost "Načíst z ARES" (docs/lokalizace.md). V režimu
+   * editace jde ze `store()` (provozovna zemi už má), při zakládání ji appka nezná předem —
+   * výchozí CZ se přepíše, jen když reverseGeocode ("Použít mou polohu") vrátí jinou zemi
+   * z appce známou (viz useMyLocation).
+   */
+  protected readonly country = signal('CZ');
+  protected readonly companyIdDigits = computed(() => COMPANY_ID_DIGITS[this.country()] ?? null);
+  protected readonly hasCompanyRegistry = computed(() =>
+    COUNTRIES_WITH_REGISTRY.includes(this.country()),
+  );
 
   protected readonly icoLoading = signal(false);
   protected readonly icoError = signal<string | null>(null);
@@ -79,6 +123,7 @@ export class StoreForm {
       this.city.set(store.city);
       this.postalCode.set(store.postalCode ?? '');
       this.ico.set(store.ico ?? '');
+      this.country.set(store.country);
       // Store (GraphQL) nevrací osmRef zvoleného kandidáta (jen core.store.osm_ref interně),
       // takže se u editace nedá obnovit "vybraný kandidát" — jen souřadnice samotné. Dokud
       // uživatel nehne se značkou na mapě, uloží se zpátky jako COMMUNITY (viz submit());
@@ -86,6 +131,12 @@ export class StoreForm {
       this.manualLat.set(store.lat);
       this.manualLon.set(store.lon);
     });
+  }
+
+  // Metoda, ne computed() — translate() není signálově reaktivní na změnu jazyka, appka na ni
+  // reaguje přes reRenderOnLangChange (app.config.ts, stejný vzor jako price-chart.ts).
+  protected companyIdLabel(): string {
+    return this.transloco.translate(`store.companyId.label.${this.country()}`);
   }
 
   /** Aktuálně zvolený bod (kandidát z geokódování, nebo ruční/přenesená poloha) pro mapu. */
@@ -120,28 +171,35 @@ export class StoreForm {
   }
 
   lookupIco(): void {
-    const ico = this.ico().trim();
-    if (!/^\d{8}$/.test(ico)) {
-      this.icoError.set('IČO musí mít 8 číslic.');
+    const digits = this.companyIdDigits();
+    const shapeOk = digits != null && new RegExp(`^\\d{${digits}}$`).test(this.ico().trim());
+    if (!shapeOk) {
+      this.icoError.set(
+        this.transloco.translate('store.companyId.shapeInvalid', {
+          label: this.companyIdLabel(),
+          digits,
+        }),
+      );
       return;
     }
     this.icoLoading.set(true);
     this.icoError.set(null);
-    this.storeService.companyByIco(ico).subscribe({
+    this.storeService.companyByIco(this.ico().trim()).subscribe({
       next: (company) => {
         this.icoLoading.set(false);
         if (!company) {
-          this.icoError.set('V ARES jsme tohle IČO nenašli.');
+          this.icoError.set(this.transloco.translate('store.companyId.notFoundInRegistry'));
           return;
         }
         if (!this.name().trim()) this.name.set(company.name);
         if (!this.street().trim() && company.street) this.street.set(company.street);
         if (!this.city().trim() && company.city) this.city.set(company.city);
-        if (!this.postalCode().trim() && company.postalCode) this.postalCode.set(company.postalCode);
+        if (!this.postalCode().trim() && company.postalCode)
+          this.postalCode.set(company.postalCode);
       },
-      error: () => {
+      error: (err) => {
         this.icoLoading.set(false);
-        this.icoError.set('Dotaz do ARES se nepovedl, zkus to prosím znovu.');
+        this.icoError.set(translateError(err, this.transloco));
       },
     });
   }
@@ -152,17 +210,19 @@ export class StoreForm {
     this.manualLat.set(null);
     this.manualLon.set(null);
     this.selectedCandidateRef.set(null);
-    this.storeService.geocode(this.street().trim() || null, this.city().trim(), this.postalCode().trim() || null).subscribe({
-      next: (result) => {
-        this.geocodeCandidates.set(result.candidates);
-        this.geocodeAttribution.set(result.attribution);
-        this.geocoding.set(false);
-      },
-      error: () => {
-        this.geocodeCandidates.set([]);
-        this.geocoding.set(false);
-      },
-    });
+    this.storeService
+      .geocode(this.street().trim() || null, this.city().trim(), this.postalCode().trim() || null)
+      .subscribe({
+        next: (result) => {
+          this.geocodeCandidates.set(result.candidates);
+          this.geocodeAttribution.set(result.attribution);
+          this.geocoding.set(false);
+        },
+        error: () => {
+          this.geocodeCandidates.set([]);
+          this.geocoding.set(false);
+        },
+      });
   }
 
   selectCandidate(candidate: GeocodeCandidate): void {
@@ -188,7 +248,14 @@ export class StoreForm {
             this.locating.set(false);
             if (!this.street().trim() && result.street) this.street.set(result.street);
             if (!this.city().trim() && result.city) this.city.set(result.city);
-            if (!this.postalCode().trim() && result.postalCode) this.postalCode.set(result.postalCode);
+            if (!this.postalCode().trim() && result.postalCode)
+              this.postalCode.set(result.postalCode);
+            // Jen při zakládání — editovaná provozovna svou zemi už má a appka ji přepočtem
+            // polohy nepřepisuje (docs/lokalizace.md). Neznámá země (appka umí jen CZ/SK/PL)
+            // se ignoruje, zůstane výchozí CZ.
+            if (!this.store() && result.country && KNOWN_COUNTRIES.includes(result.country)) {
+              this.country.set(result.country);
+            }
           },
           error: () => this.locating.set(false),
         });
@@ -206,7 +273,9 @@ export class StoreForm {
 
   isIcoShapeValid(): boolean {
     const ico = this.ico().trim();
-    return ico === '' || /^\d{8}$/.test(ico);
+    if (ico === '') return true;
+    const digits = this.companyIdDigits();
+    return digits == null || new RegExp(`^\\d{${digits}}$`).test(ico);
   }
 
   submit(): void {
@@ -221,12 +290,16 @@ export class StoreForm {
 
     const editingStore = this.store();
     const request = editingStore
-      ? this.storeService.update(editingStore.id, this.buildUpdateInput(lat, lon, geoSource, osmRef))
+      ? this.storeService.update(
+          editingStore.id,
+          this.buildUpdateInput(lat, lon, geoSource, osmRef),
+        )
       : this.storeService.create({
           name: this.name().trim(),
           street: this.street().trim() || null,
           city: this.city().trim(),
           postalCode: this.postalCode().trim() || null,
+          country: this.country(),
           ico: this.ico().trim() || null,
           lat,
           lon,
@@ -239,14 +312,9 @@ export class StoreForm {
         this.saving.set(false);
         this.created.emit(store);
       },
-      error: (err: Error) => {
+      error: (err) => {
         this.saving.set(false);
-        this.saveError.set(
-          err.message ||
-            (editingStore
-              ? 'Uložení změn se nepovedlo, zkus to prosím znovu.'
-              : 'Založení obchodu se nepovedlo, zkus to prosím znovu.'),
-        );
+        this.saveError.set(translateError(err, this.transloco));
       },
     });
   }

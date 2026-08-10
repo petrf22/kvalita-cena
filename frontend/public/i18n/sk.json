@@ -9,7 +9,14 @@
     "edit": "Upraviť",
     "back": "Späť",
     "yes": "Áno",
-    "no": "Nie"
+    "no": "Nie",
+    "showMap": "Zobraziť mapu",
+    "mapHint": "Klikni do mapy alebo presuň značku na presné miesto."
+  },
+  "quality": {
+    "notRatedYet": "Kvalita: zatiaľ nehodnotená",
+    "rated": "Kvalita {{value}}/5",
+    "ratedApproximate": "Kvalita {{value}}/5 (orientačná)"
   },
   "nav": {
     "search": "Hľadanie",

@@ -1,0 +1,57 @@
+{
+  "form": {
+    "nameLabel": "Název obchodu",
+    "streetLabel": "Ulice a číslo (volitelné)",
+    "cityLabel": "Město",
+    "postalCodeLabel": "PSČ (volitelné)",
+    "similarWarning": "Nemyslíš spíš některý z už existujících obchodů?",
+    "saveChanges": "Uložit změny",
+    "createStore": "Založit obchod"
+  },
+  "companyId": {
+    "sectionTitle": "{{label}} (volitelné)",
+    "hint": "Pro podnikovou prodejnu nebo OSVČ, kde samotný název nestačí k jednoznačné identifikaci.",
+    "placeholder": "{{digits}} číslic",
+    "loadFromRegistry": "Načíst z ARES",
+    "shapeInvalid": "{{label}} musí mít {{digits}} číslic.",
+    "notFoundInRegistry": "V ARES jsme tohle IČO nenašli.",
+    "label": {
+      "CZ": "IČO",
+      "SK": "IČO",
+      "PL": "NIP"
+    }
+  },
+  "location": {
+    "sectionTitle": "Souřadnice (volitelné)",
+    "hint": "Bez souřadnic obchod nenajde vyhledávání v okolí, jen ruční hledání podle názvu — dají se doplnit i později.",
+    "findCoordinates": "Najít souřadnice",
+    "useMyLocation": "Použít mou polohu",
+    "willUseMapPosition": "Použije se poloha z mapy níž / tvoje aktuální poloha."
+  },
+  "detail": {
+    "backToSearch": "Zpět na hledání",
+    "notFound": "Provozovnu se nepodařilo najít.",
+    "unverified": "Neověřeno",
+    "editedByMe": "Vaše úprava",
+    "pendingConfirmation": "Čeká na potvrzení",
+    "flag": "Nahlásit",
+    "flagHidden": "Díky za nahlášení — provozovna je teď skrytá a čeká na přezkum.",
+    "flagAcknowledged": "Díky za nahlášení, zaznamenali jsme ho.",
+    "photosTitle": "Fotky",
+    "locationTitle": "Poloha",
+    "openOnOsm": "Otevřít na OpenStreetMap",
+    "noLocation": "Tahle provozovna zatím nemá souřadnice.",
+    "operatorTitle": "Provozovatel",
+    "editModalTitle": "Upravit obchod"
+  },
+  "picker": {
+    "searchPlaceholder": "Napiš název nebo město obchodu",
+    "findNearby": "Najít v okolí",
+    "addNew": "+ Nový obchod",
+    "loginHint": "Založení nového obchodu vyžaduje přihlášení — přejdi na stránku Účet.",
+    "newStoreModalTitle": "Nový obchod",
+    "geoUnsupported": "Tento prohlížeč neumí zjistit polohu — vyber obchod ručně.",
+    "noNearbyStores": "V okolí jsme nenašli žádný obchod.",
+    "geoPermissionDenied": "Přístup k poloze byl odmítnut — vyber obchod ručně."
+  }
+}

@@ -1,5 +1,11 @@
 import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import {
+  TranslocoDirective,
+  TranslocoPipe,
+  TranslocoService,
+  provideTranslocoScope,
+} from '@jsverse/transloco';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzFormModule } from 'ng-zorro-antd/form';
@@ -9,16 +15,16 @@ import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { Category, Product, ProductSummary, UnitBase } from '../../models/catalog';
+import { FormatService } from '../../services/format-service';
 import { ProductService } from '../../services/product-service';
+import { translateError } from '../../shared/error-message';
+import { UNIT_BASE_KEYS } from '../../shared/enum-labels';
 import { impliedNetContentUom, isProductFormValid } from './product-form-validation';
 
 const SUGGESTIONS_DEBOUNCE_MS = 300;
 
-const UNIT_BASE_OPTIONS: { value: UnitBase; label: string }[] = [
-  { value: 'COUNT', label: 'Kus' },
-  { value: 'MASS', label: 'Hmotnost' },
-  { value: 'VOLUME', label: 'Objem' },
-];
+/** Pořadí ve formuláři — popisky drží UNIT_BASE_KEYS, jediný zdroj pravdy (docs/lokalizace.md). */
+const UNIT_BASE_ORDER: readonly UnitBase[] = ['COUNT', 'MASS', 'VOLUME'];
 
 /**
  * Založení zboží — s naskenovaným EANem i bez něj. Bezkódové zboží (žádný kód na obalu, jen
@@ -39,12 +45,17 @@ const UNIT_BASE_OPTIONS: { value: UnitBase; label: string }[] = [
     NzSwitchModule,
     NzButtonModule,
     NzAlertModule,
+    TranslocoDirective,
+    TranslocoPipe,
   ],
+  providers: [provideTranslocoScope('product-form')],
   templateUrl: './product-form.html',
   styleUrl: './product-form.css',
 })
 export class ProductForm {
   private readonly productService = inject(ProductService);
+  private readonly format = inject(FormatService);
+  private readonly transloco = inject(TranslocoService);
 
   /** Naskenovaný/zadaný kód, který se v katalogu nenašel — předvyplní pole kódu. */
   @Input() set barcode(value: string | null | undefined) {
@@ -54,7 +65,8 @@ export class ProductForm {
   @Output() readonly created = new EventEmitter<Product>();
   @Output() readonly cancelled = new EventEmitter<void>();
 
-  protected readonly unitBaseOptions = UNIT_BASE_OPTIONS;
+  protected readonly unitBaseOrder = UNIT_BASE_ORDER;
+  protected readonly unitBaseKeys = UNIT_BASE_KEYS;
 
   protected readonly name = signal('');
   protected readonly suggestions = signal<ProductSummary[]>([]);
@@ -110,15 +122,24 @@ export class ProductForm {
         this.saving.set(false);
         if (product) this.created.emit(product);
       },
-      error: () => {
+      error: (err) => {
         this.saving.set(false);
-        this.saveError.set('Nepodařilo se načíst vybrané zboží, zkus to prosím znovu.');
+        this.saveError.set(translateError(err, this.transloco));
       },
     });
   }
 
   isValid(): boolean {
     return isProductFormValid(this.name(), this.selectedCategoryId(), this.unitBase());
+  }
+
+  /**
+   * Ilustrační příklad v nápovědě u kódu — formulář v tuhle chvíli neví, do jakého obchodu/země
+   * zboží míří (na rozdíl od store-form, kde už `country` appka zná), takže CZK tu zůstává jen
+   * jako záměrně zvolený, byť ne úplně přesný, vzor (docs/lokalizace.md).
+   */
+  protected codeHintExample(): string {
+    return this.format.money(45, 'CZK');
   }
 
   submit(): void {
@@ -144,9 +165,9 @@ export class ProductForm {
           this.saving.set(false);
           this.created.emit(product);
         },
-        error: (err: Error) => {
+        error: (err) => {
           this.saving.set(false);
-          this.saveError.set(err.message || 'Založení zboží se nepovedlo, zkus to prosím znovu.');
+          this.saveError.set(translateError(err, this.transloco));
         },
       });
   }

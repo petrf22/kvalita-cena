@@ -1,0 +1,12 @@
+{
+  "emptyHint": "No one has added a photo here yet.",
+  "photoAlt": "Photo",
+  "hiddenBadge": "Hidden",
+  "addPhoto": "Add photo",
+  "loginHint": "Adding photos requires signing in — go to the Account page.",
+  "uploadFailed": "The photo upload failed, please try again.",
+  "setAsMain": "Set as main photo",
+  "flag": "Report",
+  "flagHidden": "Thanks for reporting — the photo is now hidden and awaiting review.",
+  "flagAcknowledged": "Thanks for reporting, we've noted it."
+}

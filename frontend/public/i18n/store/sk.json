@@ -1,0 +1,57 @@
+{
+  "form": {
+    "nameLabel": "Názov obchodu",
+    "streetLabel": "Ulica a číslo (voliteľné)",
+    "cityLabel": "Mesto",
+    "postalCodeLabel": "PSČ (voliteľné)",
+    "similarWarning": "Nemyslíš skôr niektorý z už existujúcich obchodov?",
+    "saveChanges": "Uložiť zmeny",
+    "createStore": "Založiť obchod"
+  },
+  "companyId": {
+    "sectionTitle": "{{label}} (voliteľné)",
+    "hint": "Pre podnikovú predajňu alebo SZČO, kde samotný názov nestačí na jednoznačnú identifikáciu.",
+    "placeholder": "{{digits}} číslic",
+    "loadFromRegistry": "Načítať z ARES",
+    "shapeInvalid": "{{label}} musí mať {{digits}} číslic.",
+    "notFoundInRegistry": "V ARES sme toto IČO nenašli.",
+    "label": {
+      "CZ": "IČO",
+      "SK": "IČO",
+      "PL": "NIP"
+    }
+  },
+  "location": {
+    "sectionTitle": "Súradnice (voliteľné)",
+    "hint": "Bez súradníc obchod nenájde vyhľadávanie v okolí, len ručné hľadanie podľa názvu — dajú sa doplniť aj neskôr.",
+    "findCoordinates": "Nájsť súradnice",
+    "useMyLocation": "Použiť moju polohu",
+    "willUseMapPosition": "Použije sa poloha z mapy nižšie / tvoja aktuálna poloha."
+  },
+  "detail": {
+    "backToSearch": "Späť na hľadanie",
+    "notFound": "Prevádzku sa nepodarilo nájsť.",
+    "unverified": "Neoverené",
+    "editedByMe": "Tvoja úprava",
+    "pendingConfirmation": "Čaká na potvrdenie",
+    "flag": "Nahlásiť",
+    "flagHidden": "Ďakujeme za nahlásenie — prevádzka je teraz skrytá a čaká na preskúmanie.",
+    "flagAcknowledged": "Ďakujeme za nahlásenie, zaznamenali sme ho.",
+    "photosTitle": "Fotky",
+    "locationTitle": "Poloha",
+    "openOnOsm": "Otvoriť na OpenStreetMap",
+    "noLocation": "Táto prevádzka zatiaľ nemá súradnice.",
+    "operatorTitle": "Prevádzkovateľ",
+    "editModalTitle": "Upraviť obchod"
+  },
+  "picker": {
+    "searchPlaceholder": "Napíš názov alebo mesto obchodu",
+    "findNearby": "Nájsť v okolí",
+    "addNew": "+ Nový obchod",
+    "loginHint": "Založenie nového obchodu vyžaduje prihlásenie — prejdi na stránku Účet.",
+    "newStoreModalTitle": "Nový obchod",
+    "geoUnsupported": "Tento prehliadač nevie zistiť polohu — vyber obchod ručne.",
+    "noNearbyStores": "V okolí sme nenašli žiadny obchod.",
+    "geoPermissionDenied": "Prístup k polohe bol odmietnutý — vyber obchod ručne."
+  }
+}

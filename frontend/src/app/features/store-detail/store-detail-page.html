@@ -1,72 +1,93 @@
-<a routerLink="/">&larr; Zpět na hledání</a>
+<ng-container *transloco="let t; scope: 'store'">
+  <a routerLink="/">&larr; {{ t('store.detail.backToSearch') }}</a>
 
-@if (loading()) {
-  <p>Načítám…</p>
-} @else if (!store()) {
-  <nz-alert nzType="error" nzMessage="Provozovnu se nepodařilo najít." nzShowIcon />
-} @else {
-  <h1>{{ store()!.name }}</h1>
-  <p class="store-meta">
-    @if (store()!.chain) {
-      {{ store()!.chain!.name }} ·
-    }
-    {{ store()!.street ? store()!.street + ', ' : '' }}{{ store()!.city }}
-  </p>
-
-  <div class="status-badges">
-    @if (!store()!.verified) {
-      <nz-tag>Neověřeno</nz-tag>
-    }
-    @if (store()!.editedByMe) {
-      <nz-tag nzColor="blue">Vaše úprava</nz-tag>
-    }
-    @if (store()!.pendingConfirmation) {
-      <nz-tag nzColor="orange">Čeká na potvrzení</nz-tag>
-    }
-    @if (auth.isLoggedIn()) {
-      <button nz-button nzType="text" nzSize="small" (click)="editing.set(true)">
-        <span nz-icon nzType="edit"></span>
-        Upravit
-      </button>
-      <button nz-button nzType="text" nzSize="small" [nzLoading]="flagging()" (click)="flagStore()">
-        <span nz-icon nzType="flag"></span>
-        Nahlásit
-      </button>
-    }
-  </div>
-  @if (flagMessage()) {
-    <nz-alert nzType="info" [nzMessage]="flagMessage()" nzShowIcon class="section-alert" />
-  }
-
-  <nz-card nzTitle="Fotky" class="section-card">
-    <app-photo-gallery recordType="STORE" [recordId]="store()!.id" [photos]="store()!.photos ?? []" />
-  </nz-card>
-
-  <nz-card nzTitle="Poloha" class="section-card">
-    @if (store()!.lat != null && store()!.lon != null) {
-      <app-location-map [lat]="store()!.lat" [lon]="store()!.lon" [editable]="false" />
-      @if (osmUrl(store()!); as url) {
-        <a [href]="url" target="_blank" rel="noopener" class="osm-link">
-          <span nz-icon nzType="link"></span>
-          Otevřít na OpenStreetMap
-        </a>
+  @if (loading()) {
+    <p>{{ 'common.loading' | transloco }}</p>
+  } @else if (!store()) {
+    <nz-alert nzType="error" [nzMessage]="t('store.detail.notFound')" nzShowIcon />
+  } @else {
+    <h1>{{ store()!.name }}</h1>
+    <p class="store-meta">
+      @if (store()!.chain) {
+        {{ store()!.chain!.name }} ·
       }
-    } @else {
-      <p class="no-location">Tahle provozovna zatím nemá souřadnice.</p>
-    }
-  </nz-card>
+      {{ store()!.street ? store()!.street + ', ' : '' }}{{ store()!.city }}
+    </p>
 
-  @if (store()!.ico) {
-    <nz-card nzTitle="Provozovatel" class="section-card">
-      <p>IČO: {{ store()!.ico }}</p>
+    <div class="status-badges">
+      @if (!store()!.verified) {
+        <nz-tag>{{ t('store.detail.unverified') }}</nz-tag>
+      }
+      @if (store()!.editedByMe) {
+        <nz-tag nzColor="blue">{{ t('store.detail.editedByMe') }}</nz-tag>
+      }
+      @if (store()!.pendingConfirmation) {
+        <nz-tag nzColor="orange">{{ t('store.detail.pendingConfirmation') }}</nz-tag>
+      }
+      @if (auth.isLoggedIn()) {
+        <button nz-button nzType="text" nzSize="small" (click)="editing.set(true)">
+          <span nz-icon nzType="edit"></span>
+          {{ 'common.edit' | transloco }}
+        </button>
+        <button
+          nz-button
+          nzType="text"
+          nzSize="small"
+          [nzLoading]="flagging()"
+          (click)="flagStore()"
+        >
+          <span nz-icon nzType="flag"></span>
+          {{ t('store.detail.flag') }}
+        </button>
+      }
+    </div>
+    @if (flagMessage()) {
+      <nz-alert nzType="info" [nzMessage]="flagMessage()" nzShowIcon class="section-alert" />
+    }
+
+    <nz-card [nzTitle]="t('store.detail.photosTitle')" class="section-card">
+      <app-photo-gallery
+        recordType="STORE"
+        [recordId]="store()!.id"
+        [photos]="store()!.photos ?? []"
+      />
     </nz-card>
-  }
-}
 
-<nz-modal [nzVisible]="editing()" nzTitle="Upravit obchod" [nzFooter]="null" (nzOnCancel)="editing.set(false)">
-  <ng-container *nzModalContent>
-    @if (store(); as s) {
-      <app-store-form [store]="s" (created)="onStoreSaved($event)" (cancelled)="editing.set(false)" />
+    <nz-card [nzTitle]="t('store.detail.locationTitle')" class="section-card">
+      @if (store()!.lat != null && store()!.lon != null) {
+        <app-location-map [lat]="store()!.lat" [lon]="store()!.lon" [editable]="false" />
+        @if (osmUrl(store()!); as url) {
+          <a [href]="url" target="_blank" rel="noopener" class="osm-link">
+            <span nz-icon nzType="link"></span>
+            {{ t('store.detail.openOnOsm') }}
+          </a>
+        }
+      } @else {
+        <p class="no-location">{{ t('store.detail.noLocation') }}</p>
+      }
+    </nz-card>
+
+    @if (store()!.ico) {
+      <nz-card [nzTitle]="t('store.detail.operatorTitle')" class="section-card">
+        <p>{{ t('store.companyId.label.' + store()!.country) }}: {{ store()!.ico }}</p>
+      </nz-card>
     }
-  </ng-container>
-</nz-modal>
+  }
+
+  <nz-modal
+    [nzVisible]="editing()"
+    [nzTitle]="t('store.detail.editModalTitle')"
+    [nzFooter]="null"
+    (nzOnCancel)="editing.set(false)"
+  >
+    <ng-container *nzModalContent>
+      @if (store(); as s) {
+        <app-store-form
+          [store]="s"
+          (created)="onStoreSaved($event)"
+          (cancelled)="editing.set(false)"
+        />
+      }
+    </ng-container>
+  </nz-modal>
+</ng-container>

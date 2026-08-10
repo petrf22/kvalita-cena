@@ -1,0 +1,16 @@
+{
+  "nameLabel": "Názov tovaru",
+  "suggestionsWarning": "Nemyslíš skôr niektorú z týchto položiek?",
+  "genericTag": "druhová položka",
+  "categoryLabel": "Kategória",
+  "categoryPlaceholder": "Vyber kategóriu",
+  "brandLabel": "Značka (voliteľné)",
+  "unitBaseLabel": "Základná jednotka",
+  "variableWeightLabel": "Váhový tovar (cena vždy za kg/l, bez pevnej gramáže)",
+  "massLabel": "Hmotnosť balenia (kg)",
+  "volumeLabel": "Objem balenia (l)",
+  "piecesInPackLabel": "Kusov v balení (voliteľné)",
+  "codeLabel": "Čiarový kód (voliteľné)",
+  "codeHint": "Bez kódu vznikne druhová položka (napr. „pečivo za {{example}}“ z účtenky) — s nižšou dôveryhodnosťou dát, ale zapísať sa dá aj tak.",
+  "submit": "Založiť tovar"
+}

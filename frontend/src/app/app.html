@@ -21,7 +21,9 @@
       </li>
       <li nz-menu-item routerLink="/login" routerLinkActive="ant-menu-item-selected">
         <span nz-icon nzType="user"></span>
-        <span class="app-menu-label">{{ (auth.isLoggedIn() ? 'nav.account' : 'nav.login') | transloco }}</span>
+        <span class="app-menu-label">{{
+          (auth.isLoggedIn() ? 'nav.account' : 'nav.login') | transloco
+        }}</span>
       </li>
     </ul>
   </nz-header>

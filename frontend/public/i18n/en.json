@@ -9,7 +9,14 @@
     "edit": "Edit",
     "back": "Back",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "showMap": "Show map",
+    "mapHint": "Click the map or drag the marker to the exact spot."
+  },
+  "quality": {
+    "notRatedYet": "Quality: not rated yet",
+    "rated": "Quality {{value}}/5",
+    "ratedApproximate": "Quality {{value}}/5 (approximate)"
   },
   "nav": {
     "search": "Search",

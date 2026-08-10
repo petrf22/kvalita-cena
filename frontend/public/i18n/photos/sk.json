@@ -1,0 +1,12 @@
+{
+  "emptyHint": "Zatiaľ tu nikto fotku nepridal.",
+  "photoAlt": "Fotka",
+  "hiddenBadge": "Skryté",
+  "addPhoto": "Pridať fotku",
+  "loginHint": "Pridávanie fotiek vyžaduje prihlásenie — prejdi na stránku Účet.",
+  "uploadFailed": "Nahratie fotky sa nepodarilo, skús to prosím znova.",
+  "setAsMain": "Nastaviť ako hlavnú",
+  "flag": "Nahlásiť",
+  "flagHidden": "Ďakujeme za nahlásenie — fotka je teraz skrytá a čaká na preskúmanie.",
+  "flagAcknowledged": "Ďakujeme za nahlásenie, zaznamenali sme ho."
+}

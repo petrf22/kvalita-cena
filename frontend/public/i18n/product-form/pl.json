@@ -1,0 +1,16 @@
+{
+  "nameLabel": "Nazwa produktu",
+  "suggestionsWarning": "Czy nie chodzi o jedną z tych pozycji?",
+  "genericTag": "pozycja rodzajowa",
+  "categoryLabel": "Kategoria",
+  "categoryPlaceholder": "Wybierz kategorię",
+  "brandLabel": "Marka (opcjonalnie)",
+  "unitBaseLabel": "Jednostka podstawowa",
+  "variableWeightLabel": "Towar na wagę (cena zawsze za kg/l, bez stałej gramatury)",
+  "massLabel": "Waga opakowania (kg)",
+  "volumeLabel": "Objętość opakowania (l)",
+  "piecesInPackLabel": "Sztuk w opakowaniu (opcjonalnie)",
+  "codeLabel": "Kod kreskowy (opcjonalnie)",
+  "codeHint": "Bez kodu powstanie pozycja rodzajowa (np. „pieczywo za {{example}}” z paragonu) — z niższą wiarygodnością danych, ale zapisać i tak można.",
+  "submit": "Dodaj produkt"
+}

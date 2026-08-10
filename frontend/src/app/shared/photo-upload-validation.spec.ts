@@ -20,15 +20,19 @@ describe('photoValidationError', () => {
   });
 
   it('rejects unsupported types', () => {
-    expect(photoValidationError(file('image/gif', 1024), 0)).toMatch(/JPEG nebo PNG/);
+    expect(photoValidationError(file('image/gif', 1024), 0)).toBe('PHOTO_UNSUPPORTED_FORMAT');
   });
 
   it('rejects files over the size limit', () => {
-    expect(photoValidationError(file('image/jpeg', MAX_PHOTO_BYTES + 1), 0)).toMatch(/příliš velká/);
+    expect(photoValidationError(file('image/jpeg', MAX_PHOTO_BYTES + 1), 0)).toBe(
+      'PHOTO_TOO_LARGE',
+    );
   });
 
   it('rejects once the per-record limit is reached', () => {
-    expect(photoValidationError(file('image/jpeg', 1024), MAX_PHOTOS_PER_RECORD)).toMatch(/maximální počet/);
+    expect(photoValidationError(file('image/jpeg', 1024), MAX_PHOTOS_PER_RECORD)).toBe(
+      'PHOTO_LIMIT_REACHED',
+    );
   });
 });
 
