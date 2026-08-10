@@ -28,6 +28,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -83,7 +84,8 @@ fun PriceEntryScreen(
   )
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
-  val isLoggedIn = AppContainer.authRepository.accessToken.value != null
+  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
+  val isLoggedIn = accessToken != null
 
   // Vyzvednutí výsledku z formuláře obchodu/zboží po návratu na tuhle obrazovku — viz
   // NavigationResults. LaunchedEffect(Unit) proběhne znovu pokaždé, když se sem znovu vstoupí

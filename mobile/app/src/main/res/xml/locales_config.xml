@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Jazyky appky (docs/lokalizace.md) — čeština je zdroj i fallback (values/), ne angličtina.
+     Podklad pro systémový per-app picker (API 33+) i AppCompatDelegate.setApplicationLocales()
+     pod tím (LocaleController.kt). -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="cs" />
+    <locale android:name="sk" />
+    <locale android:name="en" />
+    <locale android:name="pl" />
+</locale-config>

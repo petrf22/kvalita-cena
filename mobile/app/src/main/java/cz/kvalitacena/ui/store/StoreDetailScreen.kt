@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +46,8 @@ fun StoreDetailScreen(storeId: String, onEditStore: (String) -> Unit) {
     factory = viewModelFactory { initializer { StoreDetailViewModel(AppContainer.graphQlClient, storeId) } },
   )
   val context = LocalContext.current
-  val isLoggedIn = AppContainer.authRepository.accessToken.value != null
+  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
+  val isLoggedIn = accessToken != null
 
   // Po návratu z editace (StoreFormScreen storeId != null) vyzvedne výsledek stejným vzorem
   // jako PriceEntryScreen NavigationResults.newStore/newProduct.

@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Kvalita a cena</string>
+    <string name="tab_scan">Skanuj</string>
+    <string name="tab_search">Szukaj</string>
+    <string name="tab_settings">Ustawienia</string>
+    <string name="tab_account">Konto</string>
+    <string name="common_never">nigdy</string>
+</resources>

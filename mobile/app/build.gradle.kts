@@ -69,6 +69,20 @@ android {
         compose = true
         buildConfig = true // BuildConfig.VERSION_NAME pro sekci "Zdroje dat" v nastavení
     }
+
+    // AGP 9 nástupce resConfigs — appka zná jen cs/sk/en/pl (docs/lokalizace.md), balit
+    // stringy dalších jazyků z knihoven (Compose, AndroidX) do APK nemá smysl.
+    androidResources {
+        localeFilters += listOf("cs", "sk", "en", "pl")
+    }
+
+    // MissingTranslation/ExtraTranslation/MissingQuantity jako error — hlídá, že values-*/
+    // nezaostanou za values/ (čeština, zdroj i fallback — docs/lokalizace.md) a že <plurals>
+    // mají všechny tvary, které dané jazykové pravidlo (cs/sk/pl 4 kategorie, en 2) vyžaduje.
+    lint {
+        error += listOf("MissingTranslation", "ExtraTranslation", "MissingQuantity")
+        abortOnError = true
+    }
 }
 
 kotlin {
@@ -87,6 +101,10 @@ dependencies {
 
     implementation("androidx.core:core-ktx:1.19.0")
     implementation("androidx.activity:activity-compose:1.13.0")
+    // Jen kvůli AppCompatDelegate.setApplicationLocales() (docs/lokalizace.md) — deleguje na
+    // systémový LocaleManager od API 33, pod tím si volbu persistuje sama. AppCompatActivity
+    // není potřeba, appka zůstává na ComponentActivity (MainActivity.kt).
+    implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.navigation:navigation-compose:2.9.8")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
