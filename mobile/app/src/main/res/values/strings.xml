@@ -6,4 +6,5 @@
     <string name="tab_account">Účet</string>
     <!-- docs/lokalizace.md — values/ je čeština, zdroj i fallback pro values-{sk,en,pl}/. -->
     <string name="common_never">zatím nikdy</string>
+    <string name="error_generic">Něco se pokazilo, zkus to prosím znovu.</string>
 </resources>

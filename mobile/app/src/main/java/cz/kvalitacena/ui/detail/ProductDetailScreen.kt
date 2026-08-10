@@ -39,10 +39,7 @@ import cz.kvalitacena.ui.common.PhotoPicker
 import cz.kvalitacena.ui.common.QualityBadge
 import cz.kvalitacena.ui.common.formatRelativeDate
 import cz.kvalitacena.ui.common.openUrl
-import java.text.NumberFormat
-import java.util.Locale
-
-private val CZK_FORMAT: NumberFormat = NumberFormat.getCurrencyInstance(Locale("cs", "CZ"))
+import cz.kvalitacena.ui.common.rememberMoneyFormatter
 
 /**
  * Detail produktu: název, fotky, graf vývoje ceny (rozklikávací rozsah), nejlevnější obchod,
@@ -169,7 +166,11 @@ fun ProductDetailScreen(
             CircularProgressIndicator()
           }
         } else {
-          PriceChart(points = viewModel.history?.points ?: emptyList(), modifier = Modifier.fillMaxWidth())
+          PriceChart(
+            points = viewModel.history?.points ?: emptyList(),
+            currency = viewModel.history?.currency,
+            modifier = Modifier.fillMaxWidth(),
+          )
         }
         Gap()
         HorizontalDivider()
@@ -191,7 +192,10 @@ fun ProductDetailScreen(
               Text(store.name, style = MaterialTheme.typography.bodyLarge)
               Text(store.city, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(CZK_FORMAT.format(stats.bestPrice), style = MaterialTheme.typography.bodyLarge)
+            Text(
+              rememberMoneyFormatter(stats.bestPriceCurrency).format(stats.bestPrice),
+              style = MaterialTheme.typography.bodyLarge,
+            )
           }
         } else {
           Text("Zatím tu nikdo cenu nezadal.", style = MaterialTheme.typography.bodyMedium)
@@ -222,7 +226,7 @@ fun ProductDetailScreen(
             product.myPrices.forEach { mp ->
               Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Text("${mp.store.name} — ${PRICE_KIND_LABELS[mp.priceKind] ?: mp.priceKind}")
-                Text(CZK_FORMAT.format(mp.priceAmount))
+                Text(rememberMoneyFormatter(mp.currency).format(mp.priceAmount))
               }
               Text(
                 formatRelativeDate(mp.observedAt),
@@ -258,7 +262,7 @@ private fun PriceRow(price: PriceCurrent, onClick: () -> Unit) {
   Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp)) {
     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
       Text("${price.store.name} — ${PRICE_KIND_LABELS[price.priceKind] ?: price.priceKind}")
-      Text(price.priceAmount?.let { CZK_FORMAT.format(it) } ?: "–")
+      Text(price.priceAmount?.let { rememberMoneyFormatter(price.currency).format(it) } ?: "–")
     }
     Text(
       "${price.nObs}× hlášeno · naposledy ${formatRelativeDate(price.lastObservedAt)}",

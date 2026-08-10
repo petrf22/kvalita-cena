@@ -7,6 +7,7 @@ import cz.kvalitacena.network.OtpRequestResponse
 import cz.kvalitacena.network.OtpVerifyBody
 import cz.kvalitacena.network.RefreshBody
 import cz.kvalitacena.network.TokenResponse
+import cz.kvalitacena.network.TransportException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,10 +25,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * cookie (Android nemá prohlížečovou cookie jar), ale v těle odpovědi → {@link TokenStore}
  * (EncryptedSharedPreferences). Access token žije jen v paměti procesu (docs/soukromi.md).
  */
-class AuthRepository(context: Context) {
+class AuthRepository(context: Context, private val client: OkHttpClient) {
 
   private val tokenStore = TokenStore(context.applicationContext)
-  private val client = OkHttpClient()
   private val json = Json { ignoreUnknownKeys = true }
   private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
@@ -43,7 +43,7 @@ class AuthRepository(context: Context) {
       .build()
 
     client.newCall(request).execute().use { response ->
-      check(response.isSuccessful) { "Odeslání kódu selhalo (${response.code})" }
+      if (!response.isSuccessful) throw TransportException("Odeslání kódu selhalo (${response.code})")
       json.decodeFromString<OtpRequestResponse>(response.body!!.string())
     }
   }
@@ -58,7 +58,7 @@ class AuthRepository(context: Context) {
         .build()
 
       client.newCall(request).execute().use { response ->
-        check(response.isSuccessful) { "Ověření kódu selhalo (${response.code})" }
+        if (!response.isSuccessful) throw TransportException("Ověření kódu selhalo (${response.code})")
         val token = json.decodeFromString<TokenResponse>(response.body!!.string())
         applyToken(token)
         token

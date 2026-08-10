@@ -18,9 +18,8 @@ import okhttp3.RequestBody.Companion.toRequestBody
  * schema.graphqls). Popisek/pořadí a smazání jdou přes [GraphQlClient.updatePhoto]/
  * [GraphQlClient.deletePhoto] — stejné rozdělení jako na webu (frontend media-service.ts).
  */
-class MediaClient(private val authRepository: AuthRepository) {
+class MediaClient(private val authRepository: AuthRepository, private val client: OkHttpClient) {
 
-  private val client = OkHttpClient()
   private val json = Json { ignoreUnknownKeys = true }
 
   /**
@@ -32,7 +31,7 @@ class MediaClient(private val authRepository: AuthRepository) {
       val resolver = context.contentResolver
       val mimeType = resolver.getType(uri) ?: "image/jpeg"
       val bytes = resolver.openInputStream(uri)?.use { it.readBytes() }
-        ?: throw IllegalStateException("Fotku se nepodařilo přečíst")
+        ?: throw TransportException("Fotku se nepodařilo přečíst")
       val extension = if (mimeType.contains("png")) "png" else "jpg"
 
       val multipartBody = MultipartBody.Builder()
@@ -48,7 +47,7 @@ class MediaClient(private val authRepository: AuthRepository) {
 
       client.newCall(builder.build()).execute().use { response ->
         val bodyString = response.body?.string().orEmpty()
-        check(response.isSuccessful) { "Nahrání fotky selhalo (${response.code})" }
+        if (!response.isSuccessful) throw TransportException("Nahrání fotky selhalo (${response.code})")
         json.decodeFromString(Photo.serializer(), bodyString)
       }
     }

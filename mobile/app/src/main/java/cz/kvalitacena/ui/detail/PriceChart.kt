@@ -24,15 +24,18 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import cz.kvalitacena.network.PricePoint
+import cz.kvalitacena.ui.common.rememberMoneyFormatter
 
 /**
  * Graf vývoje ceny — vlastní vykreslení na Canvasu, žádná nová závislost (viz plán). Jedna
  * řada v barvě `colorScheme.primary`, schodová křivka, mřížka vlasová plná (ne čárkovaná),
  * popisky nikdy v barvě dat. Ceny se čtou z agg.price_daily (přes priceHistory), nikdy ze
- * syrových observací.
+ * syrových observací. `currency` z `PriceHistory.currency` (VŽDY vyplněná, docs/lokalizace.md)
+ * — popisky pod grafem se skládají mimo `drawScope` (obyčejné `Text`, ne kreslený text na
+ * Canvasu), takže si `rememberMoneyFormatter` klidně můžou zavolat samy.
  */
 @Composable
-fun PriceChart(points: List<PricePoint>, modifier: Modifier = Modifier) {
+fun PriceChart(points: List<PricePoint>, currency: String?, modifier: Modifier = Modifier) {
   if (points.isEmpty()) {
     Box(modifier = modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) {
       Text("Zatím nemáme dost hlášení na graf", style = MaterialTheme.typography.bodyMedium)
@@ -114,6 +117,9 @@ fun PriceChart(points: List<PricePoint>, modifier: Modifier = Modifier) {
 
     // Popisky nikdy v barvě dat (`labelColor` = onSurfaceVariant) — přímo se píše jen poslední
     // bod, extrém a vybraný bod; tabulka cen pod grafem zůstává hlavním zdrojem čísel.
+    val moneyFormatter = rememberMoneyFormatter(currency)
+    fun formatUnitPrice(value: Double) = "${moneyFormatter.format(value)}/jednotka"
+
     val last = points.last()
     Text(
       "Poslední: ${formatUnitPrice(last.unitPrice)} (${last.day})",
@@ -138,5 +144,3 @@ fun PriceChart(points: List<PricePoint>, modifier: Modifier = Modifier) {
     }
   }
 }
-
-private fun formatUnitPrice(value: Double): String = "%.2f Kč/jednotka".format(value)

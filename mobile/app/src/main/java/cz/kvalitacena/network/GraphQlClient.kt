@@ -33,7 +33,7 @@ private val STORE_DETAIL_FIELDS = """
 
 private val PRICE_CURRENT_FIELDS = """
   store { $STORE_FIELDS }
-  priceKind unitPrice priceAmount nObs nEff lastObservedAt confidence
+  priceKind unitPrice priceAmount nObs nEff lastObservedAt confidence currency
 """
 
 private val PRODUCT_FIELDS = """
@@ -48,11 +48,14 @@ private val PRODUCT_FIELDS = """
 /** Navíc oproti PRODUCT_FIELDS — jen pro obrazovku detailu, aby seznam hledání netahal zbytečně moc. */
 private val PRODUCT_DETAIL_FIELDS = """
   $PRODUCT_FIELDS
-  stats { observationCount storeCount lastObservedAt bestPrice bestUnitPrice cheapestStore { $STORE_FIELDS } }
+  stats {
+    observationCount storeCount lastObservedAt bestPrice bestUnitPrice bestPriceCurrency
+    cheapestStore { $STORE_FIELDS }
+  }
   quality { average count }
   myQualityRating
   externalLinks { kind label url attribution }
-  myPrices { store { $STORE_FIELDS } priceKind priceAmount unitPrice observedAt }
+  myPrices { store { $STORE_FIELDS } priceKind priceAmount unitPrice observedAt currency }
   photos { $PHOTO_FIELDS }
 """
 
@@ -67,7 +70,7 @@ private val PRODUCT_SUMMARY_FIELDS = """
 private val SEARCH_ITEM_FIELDS = """
   product { $PRODUCT_SUMMARY_FIELDS }
   observationCount bestPrice bestUnitPrice bestPriceObservations lastObservedAt
-  qualityAverage qualityCount
+  qualityAverage qualityCount currency
   cheapestStore { $STORE_FIELDS }
 """
 
@@ -75,9 +78,8 @@ private val SEARCH_ITEM_FIELDS = """
  * Bez Apollo — appka je malá, jeden POST /graphql endpoint stačí (stejná konvence jako
  * frontend/src/app/services/graphql-service.ts).
  */
-class GraphQlClient(private val authRepository: AuthRepository) {
+class GraphQlClient(private val authRepository: AuthRepository, private val client: OkHttpClient) {
 
-  private val client = OkHttpClient()
   private val json = Json { ignoreUnknownKeys = true }
   private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
@@ -155,7 +157,7 @@ class GraphQlClient(private val authRepository: AuthRepository) {
     val gql = """
       query(${'$'}productId: ID!, ${'$'}priceKind: PriceKind, ${'$'}storeId: ID, ${'$'}days: Int) {
         priceHistory(productId: ${'$'}productId, priceKind: ${'$'}priceKind, storeId: ${'$'}storeId, days: ${'$'}days) {
-          priceKind days
+          priceKind days currency
           store { $STORE_FIELDS }
           points { day priceAmount unitPrice nObs storeCount }
         }
@@ -413,12 +415,19 @@ class GraphQlClient(private val authRepository: AuthRepository) {
     authRepository.accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
 
     client.newCall(builder.build()).execute().use { response ->
-      check(response.isSuccessful) { "GraphQL požadavek selhal (${response.code})" }
+      if (!response.isSuccessful) {
+        throw TransportException("GraphQL požadavek selhal (${response.code})")
+      }
       val parsed = json.decodeFromString(responseSerializer, response.body!!.string())
       if (!parsed.errors.isNullOrEmpty()) {
-        throw IllegalStateException(parsed.errors.joinToString("; ") { it.message })
+        val first = parsed.errors.first()
+        throw GraphQlAppException(
+          first.extensions?.code,
+          first.extensions?.params ?: emptyList(),
+          parsed.errors.joinToString("; ") { it.message },
+        )
       }
-      parsed.data ?: throw IllegalStateException("Prázdná odpověď od serveru")
+      parsed.data ?: throw TransportException("Prázdná odpověď od serveru")
     }
   }
 }

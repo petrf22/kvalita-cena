@@ -5,4 +5,5 @@
     <string name="tab_settings">Ustawienia</string>
     <string name="tab_account">Konto</string>
     <string name="common_never">nigdy</string>
+    <string name="error_generic">Coś poszło nie tak, spróbuj ponownie.</string>
 </resources>

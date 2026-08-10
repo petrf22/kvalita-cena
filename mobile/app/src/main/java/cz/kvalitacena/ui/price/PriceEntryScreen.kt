@@ -50,6 +50,9 @@ import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.PRICE_KIND_LABELS
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.StorePicker
+import cz.kvalitacena.ui.common.currencyForCountry
+import cz.kvalitacena.ui.common.rememberMoneyFormatter
+import java.util.Currency
 import kotlinx.coroutines.launch
 
 // Čísla a nejvýš jedna desetinná čárka nebo tečka — obojí se dál akceptuje shodně
@@ -196,8 +199,10 @@ fun PriceEntryScreen(
             product.prices.forEach { price ->
               Column(modifier = Modifier.padding(vertical = 4.dp)) {
                 Text("${price.store.name} — ${PRICE_KIND_LABELS[price.priceKind] ?: price.priceKind}")
+                val moneyFormatter = rememberMoneyFormatter(price.currency)
                 Text(
-                  "${price.priceAmount} Kč (${price.unitPrice} Kč/jednotka) · ${price.nObs} záznamy",
+                  "${price.priceAmount?.let { moneyFormatter.format(it) }} " +
+                    "(${price.unitPrice?.let { moneyFormatter.format(it) }}/jednotka) · ${price.nObs} záznamy",
                   style = MaterialTheme.typography.bodySmall,
                 )
               }
@@ -245,12 +250,17 @@ fun PriceEntryScreen(
           Gap()
         }
 
+        // Symbol podle měny vybraného obchodu (docs/lokalizace.md) — než je obchod vybraný,
+        // appka měnu ještě nezná, CZK je tu jen nouzový výchozí popisek pole.
+        val currencySymbol = remember(viewModel.selectedStore?.country) {
+          Currency.getInstance(currencyForCountry(viewModel.selectedStore?.country)).symbol
+        }
         SingleLineTextField(
           value = viewModel.priceAmount,
           onValueChange = { input ->
             if (input.matches(PRICE_INPUT_PATTERN)) viewModel.priceAmount = input
           },
-          label = "Cena (Kč)",
+          label = "Cena ($currencySymbol)",
           // Desetinná čárka i tečka se přijímají obě — viz PriceEntryViewModel.submit().
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
           modifier = Modifier.fillMaxWidth(),

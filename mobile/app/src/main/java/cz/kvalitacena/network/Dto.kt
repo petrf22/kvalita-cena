@@ -1,6 +1,7 @@
 package cz.kvalitacena.network
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
 @Serializable
@@ -86,6 +87,8 @@ data class PriceCurrent(
   val nEff: Double,
   val lastObservedAt: String? = null,
   val confidence: String,
+  // ISO-4217 kód (docs/lokalizace.md) — vždy vyplněné, appka ho nesmí nahradit natvrdo "Kč".
+  val currency: String,
 )
 
 @Serializable
@@ -126,6 +129,7 @@ data class MyPrice(
   val priceAmount: Double,
   val unitPrice: Double? = null,
   val observedAt: String,
+  val currency: String,
 )
 
 /** Lehčí varianta Product pro řádek seznamu hledání — bez cen a bez agregátů (ty jsou na ProductSearchItem). */
@@ -148,6 +152,8 @@ data class ProductStats(
   val bestPrice: Double? = null,
   val bestUnitPrice: Double? = null,
   val cheapestStore: Store? = null,
+  // Měna bestPrice/bestUnitPrice — null jen když je bestPrice null (docs/lokalizace.md).
+  val bestPriceCurrency: String? = null,
 )
 
 /** Průměrná známka 1,00–5,00 (1 nejlepší, jako ve škole). average je null, dokud nikdo nehodnotil. */
@@ -177,6 +183,8 @@ data class ProductSearchItem(
   val lastObservedAt: String? = null,
   val qualityAverage: Double? = null,
   val qualityCount: Int = 0,
+  // Měna bestPrice/bestUnitPrice — null jen když je bestPrice null (docs/lokalizace.md).
+  val currency: String? = null,
 )
 
 @Serializable
@@ -206,6 +214,8 @@ data class PriceHistory(
   val priceKind: String,
   val store: Store? = null,
   val days: Int,
+  // VŽDY vyplněná (docs/lokalizace.md) — bez storeId je to měna s nejvíc záznamy za dané období.
+  val currency: String,
   val points: List<PricePoint> = emptyList(),
 )
 
@@ -423,8 +433,19 @@ data class DeletePhotoData(val deletePhoto: Boolean)
 @Serializable
 data class FlagRecordData(val flagRecord: FlagResult)
 
+/**
+ * `extensions.code`/`params` je strojový kontrakt chyby (docs/lokalizace.md), stejný jako
+ * frontend `GraphQlAppError` — `message` je jen lokalizovaný fallback, appka ho ukáže, dokud
+ * kód sama nezná (viz `ui/common/ErrorMessages.kt`, `toUiText()`).
+ */
 @Serializable
-data class GraphQlError(val message: String)
+data class GraphQlErrorExtensions(
+  val code: String? = null,
+  val params: List<JsonElement> = emptyList(),
+)
+
+@Serializable
+data class GraphQlError(val message: String, val extensions: GraphQlErrorExtensions? = null)
 
 @Serializable
 data class GraphQlRequest(val query: String, val variables: JsonObject)

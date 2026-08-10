@@ -46,8 +46,7 @@ import cz.kvalitacena.network.ProductSearchItem
 import cz.kvalitacena.ui.common.QualityBadge
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.formatRelativeDate
-import java.text.NumberFormat
-import java.util.Locale
+import cz.kvalitacena.ui.common.rememberMoneyFormatter
 
 /**
  * Záložka "Hledat" — úvodní obrazovka appky (viz zadání). Pole s lupou nahoře, pod ním filtry
@@ -160,8 +159,6 @@ fun SearchScreen(onProductClick: (String) -> Unit) {
   }
 }
 
-private val CZK_FORMAT: NumberFormat = NumberFormat.getCurrencyInstance(Locale("cs", "CZ"))
-
 @Composable
 private fun SearchResultRow(item: ProductSearchItem, onClick: () -> Unit) {
   Column(
@@ -190,7 +187,8 @@ private fun SearchResultRow(item: ProductSearchItem, onClick: () -> Unit) {
       horizontalArrangement = Arrangement.SpaceBetween,
     ) {
       Column {
-        val priceText = item.bestPrice?.let { CZK_FORMAT.format(it) } ?: "cena neznámá"
+        val moneyFormatter = rememberMoneyFormatter(item.currency)
+        val priceText = item.bestPrice?.let { moneyFormatter.format(it) } ?: "cena neznámá"
         val confirmations = item.bestPriceObservations?.let { " · ×$it potvrzení" } ?: ""
         Text("$priceText$confirmations", style = MaterialTheme.typography.bodyMedium)
         Text(
