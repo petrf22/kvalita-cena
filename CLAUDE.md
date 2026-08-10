@@ -109,6 +109,23 @@ osmdroid) umožňuje náhled i výběr bodu klikem/přetažením značky — dla
 geokódování stahují přímo z klienta, vědomá výjimka zapsaná v `docs/soukromi.md`, zmírněná
 tím, že se mapa nenačte, dokud si o to uživatel výslovně neřekne.
 
+**Lokalizace: cs/sk/en/pl, multi-měna, strojově čitelný kontrakt chyb** (`docs/lokalizace.md`
+je jeden zdroj pravdy — jazyky, mapa země→měna→locale, pravidla překladu, přehled testů):
+backend má `ErrorCode`/`AppException` (`extensions.code` je závazný kontrakt, `message` jen
+lokalizovaný fallback podle `Accept-Language`), `MessageSource`/`UserAwareLocaleResolver`,
+měnu jako součást PK `agg.price_current`/`agg.price_daily` (jinak by vážený medián mísil CZK/
+EUR/PLN), `core.category_i18n`, strukturovaný `HandleGenerator` (rod přídavného jména),
+`CompanyIdValidator`/`CompanyRegistry` per zemi (IČO CZ/SK, NIP PL). Frontend má Transloco
+(runtime přepínání, `FormatService` nad `Intl.*` misto `CurrencyPipe`/`DatePipe`/`DecimalPipe`,
+anglické routy s českými redirecty) se všemi stránkami přepsanými na i18n klíče. Mobil má
+`values-{sk,en,pl}/` vedle `values/` (čeština, zdroj i fallback), `AppCompatDelegate
+.setApplicationLocales()`, `UiText` (`Res`/`Plural`/`Raw`) pro odklad `stringResource` do
+Compose kontextu, `Money.kt`/`CompanyId.kt` zrcadlící backendová pravidla — všechny tři appky
+mají testy/lint guardy hlídající shodu klíčů napříč jazyky (`docs/lokalizace.md`, „Testy a CI
+guardy"). **Neimplementováno**: klientský překlad chyb podle `code` na mobilu (appka ukáže
+`serverMessage`, protože `network/Dto.kt` negeneruje typy ze schématu jako web), samostatný
+přepínač země nezávislý na jazyku v UI (země/měna se zatím odvozuje z obchodu).
+
 Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
 `PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec
 (jen složka `L`), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo jednorázové
@@ -236,6 +253,22 @@ Viditelnost `PUBLIC`/`GROUPS`/`PRIVATE` se vynucuje výhradně v `ReviewQuerySer
 (`(productId, viewerId)`) — jinak se cache prolije mezi uživateli. Neviditelná recenze vrací
 `NOT_FOUND`, ne `FORBIDDEN`.
 
+### Lokalizace: `docs/lokalizace.md` je jeden zdroj pravdy
+
+Jazyky, mapa země→měna→locale, kontrakt chyb (`extensions.code`/`params`), pravidla pro `{0}`/
+`{{param}}` (jen datová hodnota, nikdy přeložený kus věty) a přehled i18n testů/CI guardů patří
+tam, ne rozeseté po kódu jako `docs/reputace.md` pro prahy. Klíčové, co je nutné znát před
+jakoukoli změnou v katalogu/cenách:
+
+- **Měna je součástí primárního klíče `agg.price_current`/`agg.price_daily`.** Nový sloupec bez
+  úpravy PK/indexů by vážený medián tiše mísil napříč CZK/EUR/PLN — bez chyby při zápisu, jen
+  špatné číslo v grafu. Index má `currency` **před** `unit_price`.
+- **Volba jazyka je na klientovi.** `auth.app_user.locale`/`country` slouží výhradně
+  asynchronnímu výstupu (OTP e-mail) — appka z nich nikdy nerozhoduje, co klient uvidí, jen se
+  tam volba klienta uloží.
+- **`values/` na Androidu je čeština** (zdroj i fallback), ne angličtina — vědomé rozhodnutí,
+  appka vznikla pro český trh.
+
 ### Reputace: vzorce jsou jen v `docs/reputace.md`
 
 **Stav v etapě 1**: implementovaná je jen složka `L` v `PriceAggregationService.weightFor()`
@@ -269,6 +302,11 @@ vlastního záznamu uživatele), jinak si osamělý přispěvatel vždy "potvrd�
   v `EncryptedSharedPreferences` (`auth/TokenStore.kt`), poloha přes obyčejný `LocationManager`
   (`location/LocationHelper.kt`), ne Play Services Fused Location — appka má běžet i bez GMS
 - **Komentáře, commit zprávy a dokumentace česky**, identifikátory v kódu anglicky
+- **Lokalizace** (`docs/lokalizace.md`): Angular nepoužívá `CurrencyPipe`/`DatePipe`/
+  `DecimalPipe` (formátování jde přes `FormatService` nad `Intl.*`, protože `LOCALE_ID` se
+  vyhodnocuje jen jednou při bootstrapu a měna přichází z dat, ne z locale); routy jsou anglické
+  a jazykově neutrální, české cesty jsou jen redirecty; pole `ico` v GraphQL je název z historie
+  (nese IČO i NIP), validace i popisek jdou per `country`
 - Pouze svobodné licence knihoven (MIT/Apache-2.0/BSD/EPL) — žádné knihovny s rizikem budoucí
   placené licence (proto např. ZXing místo ML Kit pro skenování, `cube`/`earthdistance` místo
   PostGIS)

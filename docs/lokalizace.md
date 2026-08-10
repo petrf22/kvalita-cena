@@ -1,0 +1,224 @@
+# Lokalizace: jazyky, měny, kontrakt chyb
+
+Dvě zadání, která šla proti nejjednoduššímu řešení a určila architekturu: appka nemá jen jiný
+jazyk, ale i jinou **zemi a měnu** (SK/EUR, PL/PLN vedle CZ/CZK), a lokalizace se dělala **hned
+celá**, ne jako dokumentovaný záměr bez kódu. Tenhle dokument je jeden zdroj pravdy pro seznam
+jazyků, mapu země→měna→locale a pravidla překladu — obdoba toho, čím je `reputace.md` pro prahy.
+
+## Jazyky a měny
+
+| Jazyk | Kód | Země (výchozí) | Měna | Poznámka |
+|---|---|---|---|---|
+| Čeština | `cs` | CZ | CZK | **zdrojový jazyk a fallback** — ne angličtina |
+| Slovenčina | `sk` | SK | EUR | |
+| English | `en` | — | — | bez vlastní výchozí země/měny, appka se jím dá používat odkudkoli |
+| Polski | `pl` | PL | PLN | |
+
+Mapa `country → currency` a `country → locale` je na backendu `app.i18n.*`
+(`application.yml`, `I18nProperties`) — jediné místo, které ji zná; frontend/mobil mají jen
+odlehčenou kopii pro NÁPOVĚDU v UI (popisek pole ceny dřív, než zná server), viz níže.
+
+**Proč čeština, ne angličtina, je fallback:** appka vznikla pro český trh, drtivá většina dat
+(kategorie, handly, mail) existuje nejdřív česky. Anglický fallback by pro švédského turistu na
+Slovensku fungoval stejně dobře, ale pro zapomenutý klíč u českého uživatele by byl matoucí
+skok do cizího jazyka uprostřed jinak české appky.
+
+## Kontrakt chyby: `extensions.code` je závazný, `message` je jen fallback
+
+Každá doménová výjimka (`AppException` a potomci) nese `ErrorCode` — strojově čitelný enum,
+stejné hodnoty na backendu (`exception/ErrorCode.java`) i ve schématu (`enum ErrorCode` v
+`schema.graphqls`, jen pro codegen, nepoužívá se v žádném poli). GraphQL chyba dostane obojí:
+
+```json
+{
+  "message": "Produkt s tímto id neexistuje",
+  "extensions": { "code": "PRODUCT_NOT_FOUND", "params": [] }
+}
+```
+
+- **Klient hledá vlastní překlad podle `code`** (web `shared/error-message.ts`, mobil
+  `ui/common/ErrorMessages.kt` — zatím jen `Raw(serverMessage)`, viz "Mobil" níže).
+- **`message` je fallback** — server ho už poslal lokalizovaný podle `Accept-Language`, takže
+  klient nespadne na obecné "Něco se pokazilo" jen proto, že backend přidal `ErrorCode` dřív,
+  než se vydala nová verze webu/appky.
+- **Do `{0}`/`{{param}}` smí jen datová hodnota** (číslo, název, IČO), **nikdy přeložený kus
+  věty** — v polštině a slovenštině se mění slovosled i vazba slovesa, takže sestavená věta z
+  kousků by v části jazyků zněla rozbitě. `MediaService`/`NetContentCalculator` posílají do
+  `args` symbolické jméno (`G`, `MASS`), ne popisek — klient si hezčí verzi složí sám podle
+  vlastního klíče (`enum-labels.ts` `NET_CONTENT_UOM_KEYS` apod.).
+
+REST (`GlobalExceptionHandler`) nese totéž v `ProblemDetail.properties.code`.
+
+## Volba jazyka je na klientovi, server ji zná jen pro asynchronní výstup
+
+`auth.app_user.locale`/`country` existují **výhradně proto, aby server uměl poslat OTP e-mail
+ve správném jazyce v době, kdy žádný request neběží** — appka je nepoužívá k žádnému
+rozhodování o tom, co klient uvidí. Volba na klientovi (`localStorage` na webu,
+`AppCompatDelegate.setApplicationLocales()` na mobilu) je vždy autoritativní a jen se **posílá**
+na server (`setLocale` mutace), nikdy se z něj nestahuje zpátky. Tím odpadá celá kategorie „co
+vyhraje, když se klient a server neshodnou" — nikdy nemůžou, server o tom nerozhoduje.
+
+`UserAwareLocaleResolver` (`extends AcceptHeaderLocaleResolver`) čte v tomhle pořadí:
+`SecurityContextHolder` → uložený `locale` přihlášeného uživatele (Caffeine cache, 5 min TTL,
+invalidace v `setLocale`) → `Accept-Language` hlavička → `cs`.
+
+## Backend
+
+`I18nConfig`: `ResourceBundleMessageSource` nad `messages/{errors,mail,handles,attribution}`,
+`fallbackToSystemLocale=false` + `useCodeAsDefaultMessage=false` — chybějící klíč **spadne**,
+neprojde tiše jako kód. Základní soubor bez přípony (`errors.properties`) je čeština; `_sk`/
+`_en`/`_pl` jsou explicitní varianty. `service/Messages.java` je tenká fasáda nad
+`MessageSource` + `LocaleContextHolder`.
+
+**Co se nepřekládá, explicitně:**
+- **Logy** — CLAUDE.md, zůstávají česky bez ohledu na tenhle dokument.
+- **Technické výjimky**, které uživatel nikdy neuvidí jako lokalizovaný text: GraphQL coercion
+  chyby (`GraphQlScalars`), hash/šifrování e-mailu (`EmailCipher`), I/O při ukládání fotky
+  (`ImageProcessingService`, `LocalFileSystemMediaStorage`, `MediaController`), neočekávaný JDBC
+  typ (`ProductSearchRepositoryImpl`) — regresní pojistka `HardcodedTextTest` je drží jako
+  explicitní allowlist, ne že by na ně někdo zapomněl.
+- **Slugy, `path`, `osmRef`, kódy enumů** — identifikátory, ne text pro člověka.
+- **Atribuce zdroje/licence** (OFF, Nominatim, fotky): uvozující slovo („Zdroj:", „Foto:") se
+  lokalizuje, **jméno licence a zdroje je právní text a nepřekládá se** (`messages/attribution*`).
+
+### Multi-měna
+
+Měna ceny se odvozuje **ze `store.country`**, ne posílá klientem — cena je vlastnost
+provozovny (`CurrencyResolver.forStore`). Výjimka: `SubmitObservationInput.currency`
+(volitelné, pro příhraniční prodejny cenící v jiné měně, než je země obchodu) — server hodnotu
+validuje proti podporovaným měnám, neplatnou tiše ignoruje.
+
+`currency` je **součástí primárního klíče** `agg.price_current`/`agg.price_daily`
+(`(product_id, store_id, price_kind, currency[, day])`) — jinak by vážený medián mísil CZK/EUR/
+PLN do jednoho čísla, tichá datová korupce bez jakékoli chyby při zápisu. Index má `currency`
+**před** `unit_price`, jinak dotaz „nejlevnější v CZK" degraduje na range scan místo seeku.
+
+`searchProducts`/`searchFacets` mají povinný `country` filtr (server default: viewerova země →
+`Accept-Language` → `app.i18n.default-country`, nikdy „celý svět") — bez něj by řazení podle
+ceny řadilo CZK vedle PLN v jednom sloupci. `Product.stats`/`ProductSearchItem` vybírají
+**dominantní měnu** (nejvíc `n_obs`) mezi skupinami stejného produktu, ne naivní `.min()` napříč
+měnami — to by dovolilo 15 PLN vypadat levněji než 20 CZK jen proto, že číslo je menší.
+
+### Kategorie: `core.category_i18n`, ne klíče v bundlech
+
+Kategorie jsou **data, ne UI chrome** — rostou (seed zatím jen zlomek reálného stromu) a musí
+jít řadit/filtrovat v SQL (`ORDER BY name` se správnou collation pro `č`/`ř`/`ł`). Klíče v
+klientských bundlech by každou novou kategorii vázaly na koordinované vydání webu i mobilu;
+tabulka `PK (category_id, locale)` řeší přidání jako jeden `INSERT`. `core.category.name`
+zůstává zdrojová čeština a fallback (`COALESCE(i18n.name, category.name)`). **`slug`/`path` se
+nepřekládají** — `path` slouží k filtrování podle větve stromu a musí být napříč jazyky totožná.
+
+### Handle: strukturovaně kvůli gramatickému rodu
+
+„Modrý čáp" vs. „Modrá liška" — v cs/sk/pl se přídavné jméno ohýbá podle rodu podstatného, takže
+appka neukládá hotový řetězec, ale `handle_adjective`/`handle_noun`/`handle_number` +
+`Gender` (`HandleGenerator`). `public_handle` zůstává kanonický, jazykově neutrální klíč
+(`blue-stork-4271`) pro unikátnost — ta se musí kontrolovat nad kanonickým tvarem, jinak by se
+dva účty srazily v jednom jazyce a v jiném ne. Vykreslení podle jazyka čtenáře je až na čtení
+(`ViewerGraphQlController`, `messages/handles*.properties`: `handle.adjective.blue.M/F/N`).
+
+### IČO/NIP per zemi
+
+`CompanyIdValidator` (rozhraní) + `IcoValidator`/`SkIcoValidator` (mod-11, 8 číslic — společné
+dědictví ČSFR) / `PlNipValidator` (NIP, 10 číslic, jiné váhy) — `CompanyIdValidators` vybere
+podle `country`; země bez validátoru hodnotu **uloží bez kontroly** (lepší než ji odmítnout).
+Pole `ico` v GraphQL **se kvůli historii nepřejmenovává**, i když nese IČO i NIP — popisek v UI
+je per-country klíč (`store.companyId.label.{CZ,SK,PL}`), ne odvozený z názvu pole.
+`CompanyRegistry`/`AresService` jsou analogicky jen pro CZ — klienti schovávají tlačítko „Načíst
+z registru" tam, kde `CompanyRegistries.forCountry(country)` nic nevrátí.
+
+## Frontend (Angular + Transloco)
+
+Rozhodnutí (ne `@angular/localize`): runtime přepínání beze změny buildu, ICU plurály fungují
+i v TS kódu, ne jen v šablonách, jeden build bez per-locale nasazení.
+
+**`LOCALE_ID`/`provideNzI18n` se vyhodnocují jen JEDNOU při bootstrapu** — proto:
+- `registerLocaleData` eagerně pro všechny čtyři jazyky (data jsou jednotky kB, lazy `import()`
+  by přineslo blikání).
+- **`CurrencyPipe`/`DatePipe`/`DecimalPipe` se v projektu nepoužívají.** Formátování jde přes
+  `services/format-service.ts` nad `Intl.*`, který čte jazyk ze signálu `LanguageService.lang`
+  a měnu z DAT (multi-měna výš) — `CurrencyPipe` s pevnou měnou by byl špatně i bez i18n.
+  `shared/money.pipe.ts` je schválně `pure: false` (jazyk je signál, ne input).
+- ng-zorro se přepíná za běhu přes `NzI18nService.setLocale()`.
+
+`LanguageService.setLang()`: nejdřív `await transloco.load(lang)`, až pak přepnutí signálu (ať
+UI na zlomek vteřiny nespadne do prázdna), pak `document.documentElement.lang`, `localStorage`,
+a push na server (`ViewerService.setLocale`, chyba requestu appku neblokuje — volba klienta je
+platná bez ohledu na to, jestli se stihla uložit). Počáteční jazyk: `localStorage` →
+`navigator.languages` ∩ podporované → `cs`.
+
+**Struktura bundlů**: `public/i18n/{cs,sk,en,pl}.json` (kořen: `common`/`nav`/`errors`/`enum`) +
+`public/i18n/<scope>/{cs,sk,en,pl}.json` na stránku/komponentu (`provideTranslocoScope`,
+staženo spolu s lazy chunkem route). Komponenta vložená do víc stránek (galerie fotek, mapa) má
+vlastní scope přímo na sobě, ne závislý na tom, která stránka ji zrovna použije.
+
+`shared/relative-date.ts` jde přes `Intl.RelativeTimeFormat` (plurály i „včera" řeší platforma
+sama), `@jsverse/transloco-messageformat` (ICU) je jen tam, kde platformní API nepomůže
+(`{count, plural, one {...} few {...} many {...} other {...}}` pro počty dní/záznamů).
+
+**Routy jsou anglické, české jsou jen redirecty** (`produkt/:id` → `product/:id` apod.) —
+lokalizované routy per jazyk by znamenaly čtyři sady definic nebo vlastní `UrlSerializer`, a
+zisk (SEO) je dnes nulový (appka nemá SSR). Až SSR přijde, lokalizované aliasy se přidají jako
+**aditivum**, ne náhrada za tohle rozhodnutí.
+
+## Mobil (Kotlin/Compose)
+
+`values/` = **čeština**, zdroj i fallback — stejný důvod jako u backendu výš. `values-{sk,en,
+pl}/` vedle ní. `android:localeConfig` (`res/xml/locales_config.xml`) + `androidx.appcompat`
+**jen kvůli** `AppCompatDelegate.setApplicationLocales()` — per-app picker v systémovém
+nastavení je až od API 33 (appka má `minSdk 26`), AppCompat pod tím drží volbu sama
+(`AppLocalesMetadataHolderService` s `autoStoreLocales` v manifestu). `ComponentActivity`
+zůstává, `AppCompatActivity` není potřeba.
+
+**`UiText`** (`ui/common/UiText.kt`, `Res`/`Plural`/`Raw`) odkládá `stringResource` do Compose
+kontextu — ViewModel/síťová vrstva k němu nemá přístup a `context.getString()` přímo z
+ViewModelu by po přepnutí jazyka zůstalo viset ve starém textu. `Throwable.toUiText()`
+(`ui/common/ErrorMessages.kt`) mapuje `GraphQlAppException` na `Raw(serverMessage)` — appka
+zatím netypuje `ErrorCode` ze schématu jako web (chybí codegen pro `network/Dto.kt`, ten se
+píše ručně), takže vlastní klientský překlad podle `code` je až budoucí rozšíření; neznámý kód
+dostane vždy aspoň lokalizovaný text ze serveru, nikdy ne anglický/český napevno.
+
+`ui/common/Money.kt` (`rememberMoneyFormatter`) čte měnu z dat a jazyk z
+`LocalConfiguration.current.locales[0]` — nahrazuje dřívější top-level `NumberFormat
+.getCurrencyInstance(Locale("cs","CZ"))`, který by nereagoval na změnu jazyka ani měny.
+`ui/common/CompanyId.kt` a `ui/common/CountryCurrency.kt` zrcadlí backendová pravidla pro
+UI popisky (IČO vs. NIP, měna podle země obchodu) — server zůstává jediným zdrojem pravdy,
+neshoda by způsobila jen dočasně špatný popisek, nikdy špatně uloženou hodnotu.
+
+`AcceptLanguageInterceptor` (sdílený `OkHttpClient` v `AppContainer`) posílá
+`Locale.getDefault().language` — `AppCompatDelegate` ho drží v souladu s volbou v Nastavení,
+appka tak nemusí nikam tahat `Context` jen kvůli aktuálnímu jazyku.
+
+## Testy a CI guardy
+
+„Druhá polovina triku": kompilátor hlídá, že klíč z `enum-labels.ts` (`Record<Enum, string>`)
+nebo `@StringRes` reference existuje v kódu; testy hlídají, že existuje i v bundlech. Ani jedno
+samo o sobě nestačí — kompilátor neví nic o obsahu JSON/XML, testy nevidí, jestli kód klíč
+vůbec používá.
+
+| Vrstva | Test | Co hlídá |
+|---|---|---|
+| Backend | `i18n.MessageBundleTest` | sk/en/pl mají přesně stejné klíče jako český základ, každý `ErrorCode` má klíč, počet `{0}`/`{1}` placeholderů sedí napříč jazyky |
+| Backend | `i18n.HardcodedTextTest` | žádný nový český text natvrdo ve `throw new *Exception(...)` mimo allowlist technických výjimek |
+| Backend | `i18n.GraphQlErrorLocalizationTest` | `extensions.code` je stejný napříč jazyky, `message` se mění podle `Accept-Language`, neznámý jazyk padá na český základ |
+| Frontend | `i18n.spec.ts` | každý scope bundle má ve sk/en/pl stejné klíče jako cs, interpolační parametry sedí, žádná hodnota není prázdná/rovná klíči, všech deset `*_KEYS` z `enum-labels.ts` existuje ve všech čtyřech jazycích |
+| Frontend | `no-hardcoded-text.spec.ts` | česká diakritika ve statickém textovém uzlu nebo statickém atributu (`placeholder`, `nzTitle`, `alt`, ...) v libovolné šabloně |
+| Mobil | lint (`MissingTranslation`/`ExtraTranslation`/`MissingQuantity` jako error) | `values-*/` nezaostávají za `values/`, `<plurals>` mají všechny tvary daného jazyka |
+| Mobil | `i18n.HardcodedTextTest` | žádný nový český string literál v `src/main/java` mimo allowlist (endonyma, technické `TransportException` zprávy) |
+
+CI (`.github/workflows/ci.yml`) spouští všechno automaticky — backend přes `./gradlew build`,
+frontend přes `npm test`, mobil přes `:app:testDebugUnitTest :app:lintDebug :app:assembleDebug`
+(dřív jen `assembleDebug`, testy a lint se v CI vůbec nespouštěly).
+
+## Co zbývá (mimo rozsah téhle práce)
+
+- **Skutečný per-kódu klientský překlad chyb na mobilu** — appka zatím vždy ukáže
+  `serverMessage` (lokalizovaný, ale ne appkou doladěný), protože `network/Dto.kt` negeneruje
+  typy ze schématu jako web (`ERROR_CODE_KEYS`). Vyžadovalo by to buď codegen pro Kotlin, nebo
+  ruční `Map<String, Int>` udržovanou v synchronizaci s `ErrorCode` enumem.
+- **Country selector v UI** — appka zatím zemi/měnu odvozuje z `store.country` (existující
+  obchod) nebo z `reverseGeocode` při zakládání nové provozovny; samostatný přepínač země
+  (nezávislý na jazyku — Čech žijící v Polsku chce české UI a polské ceny) v Nastavení zatím
+  neexistuje na webu ani na mobilu.
+- **Skutečné lidské revize strojových překladů** sk/en/pl — psané s péčí a gramaticky, ale bez
+  rodilého mluvčího na kontrolu.
