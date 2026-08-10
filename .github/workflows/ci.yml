@@ -65,4 +65,6 @@ jobs:
           java-version: '21'
       - uses: android-actions/setup-android@v4
       - uses: gradle/actions/setup-gradle@v6
-      - run: ./gradlew :app:assembleDebug
+      # testDebugUnitTest/lintDebug dřív běžely jen lokálně — lint teď navíc hlídá
+      # MissingTranslation/ExtraTranslation/MissingQuantity (docs/lokalizace.md).
+      - run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
