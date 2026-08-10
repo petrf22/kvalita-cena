@@ -5,14 +5,22 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cz.kvalitacena.R
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Photo
 import cz.kvalitacena.network.PriceHistory
 import cz.kvalitacena.network.Product
+import cz.kvalitacena.ui.common.UiText
+import cz.kvalitacena.ui.common.toUiText
 import kotlinx.coroutines.launch
 
 /** Rozsahy grafu nabízené v UI — dny odpovídají přímo argumentu `days` v priceHistory. */
-val CHART_RANGES = listOf(7 to "7 dní", 30 to "30 dní", 90 to "90 dní", 365 to "365 dní")
+val CHART_RANGES = listOf(
+  7 to R.string.chart_range_7d,
+  30 to R.string.chart_range_30d,
+  90 to R.string.chart_range_90d,
+  365 to R.string.chart_range_365d,
+)
 
 class ProductDetailViewModel(
   private val graphQlClient: GraphQlClient,
@@ -35,12 +43,12 @@ class ProductDetailViewModel(
   var selectedDays by mutableStateOf(90)
     private set
 
-  var ratingError by mutableStateOf<String?>(null)
+  var ratingError by mutableStateOf<UiText?>(null)
     private set
 
   var flagging by mutableStateOf(false)
     private set
-  var flagMessage by mutableStateOf<String?>(null)
+  var flagMessage by mutableStateOf<UiText?>(null)
     private set
 
   init {
@@ -93,7 +101,7 @@ class ProductDetailViewModel(
         val quality = graphQlClient.rateProduct(productId, grade)
         product = product?.copy(quality = quality, myQualityRating = grade)
       } catch (e: Exception) {
-        ratingError = "Hodnocení kvality vyžaduje přihlášení — dokonči ho v záložce Účet."
+        ratingError = e.toUiText()
       }
     }
   }
@@ -110,13 +118,11 @@ class ProductDetailViewModel(
     viewModelScope.launch {
       try {
         val result = graphQlClient.flagRecord("PRODUCT", productId)
-        flagMessage = if (result.hidden) {
-          "Díky za nahlášení — položka je teď skrytá a čeká na přezkum."
-        } else {
-          "Díky za nahlášení, zaznamenali jsme ho."
-        }
+        flagMessage = UiText.Res(
+          if (result.hidden) R.string.product_report_hidden else R.string.report_acknowledged,
+        )
       } catch (e: Exception) {
-        flagMessage = "Nahlášení se nepovedlo, zkus to prosím znovu."
+        flagMessage = e.toUiText()
       } finally {
         flagging = false
       }

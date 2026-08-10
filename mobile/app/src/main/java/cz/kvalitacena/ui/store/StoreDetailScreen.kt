@@ -24,12 +24,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
+import cz.kvalitacena.R
 import cz.kvalitacena.ui.common.LocationMap
+import cz.kvalitacena.ui.common.companyIdLabelRes
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.PhotoGallery
 import cz.kvalitacena.ui.common.PhotoPicker
@@ -65,7 +68,7 @@ fun StoreDetailScreen(storeId: String, onEditStore: (String) -> Unit) {
 
     viewModel.notFound -> {
       Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-        Text("Tuhle provozovnu se nepodařilo najít.", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.store_not_found), style = MaterialTheme.typography.bodyLarge)
       }
     }
 
@@ -78,24 +81,28 @@ fun StoreDetailScreen(storeId: String, onEditStore: (String) -> Unit) {
         if (addressLine.isNotBlank()) Text(addressLine, style = MaterialTheme.typography.bodyMedium)
 
         Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          if (!store.verified) AssistChip(onClick = {}, label = { Text("Neověřeno") })
-          if (store.editedByMe) AssistChip(onClick = {}, label = { Text("Vaše úprava") })
-          if (store.pendingConfirmation) AssistChip(onClick = {}, label = { Text("Čeká na potvrzení") })
+          if (!store.verified) AssistChip(onClick = {}, label = { Text(stringResource(R.string.common_unverified)) })
+          if (store.editedByMe) AssistChip(onClick = {}, label = { Text(stringResource(R.string.store_edited_by_me)) })
+          if (store.pendingConfirmation) {
+            AssistChip(onClick = {}, label = { Text(stringResource(R.string.store_pending_confirmation)) })
+          }
         }
         if (isLoggedIn) {
           Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = { onEditStore(storeId) }) { Text("Upravit") }
-            TextButton(onClick = { viewModel.flagStore() }, enabled = !viewModel.flagging) { Text("Nahlásit") }
+            TextButton(onClick = { onEditStore(storeId) }) { Text(stringResource(R.string.common_edit)) }
+            TextButton(onClick = { viewModel.flagStore() }, enabled = !viewModel.flagging) {
+              Text(stringResource(R.string.common_report))
+            }
           }
         }
         viewModel.flagMessage?.let {
-          Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+          Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Gap()
         HorizontalDivider()
         Gap()
 
-        Text("Fotky", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.store_photos_title), style = MaterialTheme.typography.titleMedium)
         Gap()
         PhotoGallery(
           photos = store.photos,
@@ -115,24 +122,27 @@ fun StoreDetailScreen(storeId: String, onEditStore: (String) -> Unit) {
         HorizontalDivider()
         Gap()
 
-        Text("Poloha", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.store_location_title), style = MaterialTheme.typography.titleMedium)
         Gap()
         if (store.lat != null && store.lon != null) {
           LocationMap(lat = store.lat, lon = store.lon, editable = false, modifier = Modifier.fillMaxWidth())
           Gap()
           OutlinedButton(onClick = { openMap(context, store.lat, store.lon, store.name) }) {
-            Text("Otevřít v mapové aplikaci")
+            Text(stringResource(R.string.store_open_in_map_app))
           }
         } else {
-          Text("Tahle provozovna zatím nemá souřadnice.", style = MaterialTheme.typography.bodyMedium)
+          Text(stringResource(R.string.store_no_location), style = MaterialTheme.typography.bodyMedium)
         }
 
         if (!store.ico.isNullOrBlank()) {
           Gap()
           HorizontalDivider()
           Gap()
-          Text("Provozovatel", style = MaterialTheme.typography.titleMedium)
-          Text("IČO: ${store.ico}", style = MaterialTheme.typography.bodyMedium)
+          Text(stringResource(R.string.store_operator_title), style = MaterialTheme.typography.titleMedium)
+          Text(
+            "${stringResource(companyIdLabelRes(store.country))}: ${store.ico}",
+            style = MaterialTheme.typography.bodyMedium,
+          )
         }
       }
     }

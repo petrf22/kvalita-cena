@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -24,6 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
+import cz.kvalitacena.R
 import cz.kvalitacena.ui.common.SingleLineTextField
 
 @Composable
@@ -36,25 +38,22 @@ fun LoginScreen(onLoggedIn: () -> Unit) {
     modifier = Modifier.fillMaxSize().padding(24.dp),
     verticalArrangement = Arrangement.Center,
   ) {
-    Text("Přihlášení", style = MaterialTheme.typography.headlineSmall)
+    Text(stringResource(R.string.login_title), style = MaterialTheme.typography.headlineSmall)
     Spacer(Modifier.height(16.dp))
 
     viewModel.errorMessage?.let {
-      Text(it, color = MaterialTheme.colorScheme.error)
+      Text(it.asString(), color = MaterialTheme.colorScheme.error)
       Spacer(Modifier.height(16.dp))
     }
 
     when (viewModel.step) {
       LoginStep.EMAIL -> {
-        Text(
-          "Pošleme ti na e-mail šestimístný kód, žádné heslo si nemusíš pamatovat.",
-          style = MaterialTheme.typography.bodyMedium,
-        )
+        Text(stringResource(R.string.login_otp_hint), style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(16.dp))
         SingleLineTextField(
           value = viewModel.email,
           onValueChange = { viewModel.email = it },
-          label = "E-mail",
+          label = stringResource(R.string.login_email_label),
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done),
           keyboardActions = KeyboardActions(onDone = { viewModel.requestCode() }),
           modifier = Modifier.fillMaxWidth(),
@@ -62,17 +61,20 @@ fun LoginScreen(onLoggedIn: () -> Unit) {
         Spacer(Modifier.height(16.dp))
         Button(onClick = { viewModel.requestCode() }, modifier = Modifier.fillMaxWidth()) {
           if (viewModel.loading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-          else Text("Poslat kód")
+          else Text(stringResource(R.string.login_send_code))
         }
       }
 
       LoginStep.CODE -> {
-        Text("Kód jsme poslali na ${viewModel.email}.", style = MaterialTheme.typography.bodyMedium)
+        Text(
+          stringResource(R.string.login_code_hint, viewModel.email),
+          style = MaterialTheme.typography.bodyMedium,
+        )
         Spacer(Modifier.height(16.dp))
         SingleLineTextField(
           value = viewModel.code,
           onValueChange = { viewModel.code = it },
-          label = "Kód z e-mailu",
+          label = stringResource(R.string.login_code_label),
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
           keyboardActions = KeyboardActions(onDone = { viewModel.verifyCode(onSuccess = onLoggedIn) }),
           modifier = Modifier.fillMaxWidth(),
@@ -83,10 +85,10 @@ fun LoginScreen(onLoggedIn: () -> Unit) {
           modifier = Modifier.fillMaxWidth(),
         ) {
           if (viewModel.loading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-          else Text("Přihlásit se")
+          else Text(stringResource(R.string.login_sign_in))
         }
         TextButton(onClick = { viewModel.backToEmail() }, modifier = Modifier.fillMaxWidth()) {
-          Text("Zadat jiný e-mail")
+          Text(stringResource(R.string.login_change_email))
         }
       }
     }

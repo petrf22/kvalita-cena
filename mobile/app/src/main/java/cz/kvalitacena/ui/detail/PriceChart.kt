@@ -22,7 +22,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cz.kvalitacena.R
 import cz.kvalitacena.network.PricePoint
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 
@@ -38,7 +40,7 @@ import cz.kvalitacena.ui.common.rememberMoneyFormatter
 fun PriceChart(points: List<PricePoint>, currency: String?, modifier: Modifier = Modifier) {
   if (points.isEmpty()) {
     Box(modifier = modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) {
-      Text("Zatím nemáme dost hlášení na graf", style = MaterialTheme.typography.bodyMedium)
+      Text(stringResource(R.string.chart_not_enough_data), style = MaterialTheme.typography.bodyMedium)
     }
     return
   }
@@ -122,7 +124,7 @@ fun PriceChart(points: List<PricePoint>, currency: String?, modifier: Modifier =
 
     val last = points.last()
     Text(
-      "Poslední: ${formatUnitPrice(last.unitPrice)} (${last.day})",
+      stringResource(R.string.chart_last, formatUnitPrice(last.unitPrice), last.day),
       style = MaterialTheme.typography.bodySmall,
       color = labelColor,
       modifier = Modifier.padding(top = 4.dp),
@@ -130,13 +132,19 @@ fun PriceChart(points: List<PricePoint>, currency: String?, modifier: Modifier =
     val min = points.minBy { it.unitPrice }
     val max = points.maxBy { it.unitPrice }
     Text(
-      "Nejníž: ${formatUnitPrice(min.unitPrice)} (${min.day}) · Nejvýš: ${formatUnitPrice(max.unitPrice)} (${max.day})",
+      stringResource(
+        R.string.chart_min_max,
+        formatUnitPrice(min.unitPrice),
+        min.day,
+        formatUnitPrice(max.unitPrice),
+        max.day,
+      ),
       style = MaterialTheme.typography.bodySmall,
       color = labelColor,
     )
     selected?.let { sel ->
       Text(
-        "Vybráno: ${formatUnitPrice(sel.unitPrice)} · ${sel.day} · ${sel.nObs}× potvrzeno",
+        stringResource(R.string.chart_selected, formatUnitPrice(sel.unitPrice), sel.day, sel.nObs),
         style = MaterialTheme.typography.bodySmall,
         color = primaryColor,
         modifier = Modifier.padding(top = 4.dp),

@@ -5,11 +5,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cz.kvalitacena.R
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.Store
 import cz.kvalitacena.network.SubmitObservationInput
+import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.storeLabel
+import cz.kvalitacena.ui.common.toUiText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -43,7 +46,7 @@ class PriceEntryViewModel(
 
   var locating by mutableStateOf(false)
     private set
-  var locationError by mutableStateOf<String?>(null)
+  var locationError by mutableStateOf<UiText?>(null)
     private set
 
   var priceAmount by mutableStateOf("")
@@ -56,7 +59,7 @@ class PriceEntryViewModel(
     private set
   var submitSuccess by mutableStateOf(false)
     private set
-  var submitError by mutableStateOf<String?>(null)
+  var submitError by mutableStateOf<UiText?>(null)
     private set
 
   init {
@@ -130,12 +133,12 @@ class PriceEntryViewModel(
         val stores = graphQlClient.nearbyStores(lat, lon)
         storeSuggestions = stores
         if (stores.isEmpty()) {
-          locationError = "V okolí jsme nenašli žádný obchod."
+          locationError = UiText.Res(R.string.store_picker_no_nearby_stores)
         } else {
           onStoreSelected(stores.first())
         }
       } catch (e: Exception) {
-        locationError = "Nepodařilo se najít obchody v okolí."
+        locationError = e.toUiText()
       } finally {
         locating = false
       }
@@ -144,7 +147,7 @@ class PriceEntryViewModel(
 
   fun onLocationUnavailable() {
     locating = false
-    locationError = "Polohu se nepodařilo zjistit — vyber obchod, až budou data."
+    locationError = UiText.Res(R.string.price_entry_location_unavailable)
   }
 
   fun startLocating() {
@@ -175,7 +178,7 @@ class PriceEntryViewModel(
         // (obnova produktu, čištění pole) — ViewModel se zahodí spolu s ní.
         submitSuccess = true
       } catch (e: Exception) {
-        submitError = "Zápis se nepovedl, zkus to prosím znovu."
+        submitError = e.toUiText()
       } finally {
         submitting = false
       }

@@ -20,10 +20,16 @@ sealed interface UiText {
   /** Text, který je už hotový (např. serverMessage z GraphQL chyby) — appka ho jen zobrazí. */
   data class Raw(val value: String) : UiText
 
+  // Argument smí být i vnořený UiText (např. popisek IČO/NIP per zemi) — rozbalí se až tady,
+  // ViewModel/síťová vrstva k Compose kontextu nemá přístup.
+  @Composable
+  private fun resolvedArgs(args: List<Any>): Array<Any> =
+    args.map { if (it is UiText) it.asString() else it }.toTypedArray()
+
   @Composable
   fun asString(): String = when (this) {
-    is Res -> stringResource(id, *args.toTypedArray())
-    is Plural -> pluralStringResource(id, count, *args.toTypedArray())
+    is Res -> stringResource(id, *resolvedArgs(args))
+    is Plural -> pluralStringResource(id, count, *resolvedArgs(args))
     is Raw -> value
   }
 }

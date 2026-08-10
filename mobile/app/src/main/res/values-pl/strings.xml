@@ -6,4 +6,187 @@
     <string name="tab_account">Konto</string>
     <string name="common_never">nigdy</string>
     <string name="error_generic">Coś poszło nie tak, spróbuj ponownie.</string>
+
+    <string name="common_back">Wstecz</string>
+    <string name="common_cancel">Anuluj</string>
+    <string name="common_delete">Usuń</string>
+    <string name="common_edit">Edytuj</string>
+    <string name="common_report">Zgłoś</string>
+    <string name="common_unverified">Niezweryfikowane</string>
+    <string name="report_acknowledged">Dziękujemy za zgłoszenie, odnotowaliśmy je.</string>
+
+    <string name="company_id_label_generic">IČO</string>
+    <string name="company_id_label_pl">NIP</string>
+
+    <string name="account_title">Konto</string>
+    <string name="account_logged_in_fallback">Zalogowano</string>
+    <string name="account_logout">Wyloguj się</string>
+
+    <string name="login_title">Logowanie</string>
+    <string name="login_otp_hint">Wyślemy na Twój e-mail sześciocyfrowy kod, żadnego hasła nie musisz pamiętać.</string>
+    <string name="login_email_label">E-mail</string>
+    <string name="login_send_code">Wyślij kod</string>
+    <string name="login_code_hint">Wysłaliśmy kod na %1$s.</string>
+    <string name="login_code_label">Kod z e-maila</string>
+    <string name="login_sign_in">Zaloguj się</string>
+    <string name="login_change_email">Podaj inny e-mail</string>
+    <string name="login_request_failed">Nie udało się wysłać kodu. Spróbuj ponownie za chwilę.</string>
+    <string name="login_verify_failed">Kod jest nieprawidłowy lub wygasł. Spróbuj ponownie.</string>
+
+    <string name="scan_camera_permission_hint">Do skanowania kodów kreskowych aplikacja potrzebuje dostępu do aparatu.</string>
+
+    <string name="settings_title">Ustawienia</string>
+    <string name="settings_language">Język</string>
+    <string name="settings_data_sources">Źródła danych</string>
+    <string name="settings_data_sources_body">Ceny i oceny jakości to nasze własne dane społecznościowe. Odnośniki do Open Food Facts są zgodne z licencją ODbL (Open Database License) — dane nigdzie nie są kopiowane, aplikacja tylko odsyła do źródła.</string>
+    <string name="settings_osm_attribution">Współrzędne sklepów pochodzą z OpenStreetMap © współtwórcy OpenStreetMap, licencja ODbL.</string>
+    <string name="settings_app_version">Wersja aplikacji %1$s</string>
+
+    <string name="map_show">Pokaż mapę</string>
+    <string name="map_hint">Dotknij mapy lub przeciągnij znacznik w dokładne miejsce.</string>
+
+    <string name="photo_alt">Zdjęcie</string>
+    <string name="photo_hidden_badge">Ukryte</string>
+    <string name="photo_prev">&lt; Poprzednie</string>
+    <string name="photo_next">Następne &gt;</string>
+    <string name="photo_set_as_main">Ustaw jako główne</string>
+    <string name="photo_report_hidden">Dziękujemy za zgłoszenie — zdjęcie jest teraz ukryte i czeka na weryfikację.</string>
+    <string name="photo_limit_reached">Ten wpis ma już maksymalną liczbę %1$d zdjęć.</string>
+    <string name="photo_unsupported_format">Obsługiwane są tylko zdjęcia JPEG lub PNG.</string>
+    <string name="photo_too_large">Zdjęcie jest zbyt duże (maks. 8 MB).</string>
+    <string name="photo_take_picture">Zrób zdjęcie</string>
+    <string name="photo_pick_from_gallery">Wybierz z galerii</string>
+
+    <string name="quality_not_rated">Jakość: brak ocen</string>
+    <string name="quality_rated">Jakość %1$.1f/5</string>
+    <string name="quality_rated_approximate">Jakość %1$.1f/5 (orientacyjna)</string>
+
+    <string name="price_kind_regular">Cena regularna</string>
+    <string name="price_kind_promo">Promocja</string>
+    <string name="price_kind_club_card">Karta klubowa</string>
+    <string name="price_kind_clearance">Wyprzedaż</string>
+    <string name="price_kind_multibuy">Rabat ilościowy</string>
+    <string name="price_kind_unknown">Nieznany rodzaj ceny</string>
+    <string name="price_kind_field_label">Rodzaj ceny</string>
+
+    <string name="quantity_basis_field_label">Cena podana</string>
+    <string name="quantity_basis_package">Za opakowanie</string>
+    <string name="quantity_basis_per_kg">Za kilogram</string>
+    <string name="quantity_basis_per_l">Za litr</string>
+    <string name="quantity_basis_per_piece">Za sztukę</string>
+
+    <string name="unit_base_count">Sztuka</string>
+    <string name="unit_base_mass">Waga</string>
+    <string name="unit_base_volume">Objętość</string>
+
+    <string name="sort_report_count">Według liczby zgłoszeń</string>
+    <string name="sort_price_asc">Według ceny</string>
+    <string name="sort_quality">Według jakości</string>
+    <string name="sort_last_reported">Według ostatniego zgłoszenia</string>
+    <string name="sort_name">Według nazwy</string>
+
+    <string name="search_field_label">Szukaj produktu</string>
+    <string name="search_action">Szukaj</string>
+    <string name="search_store_filter">Sklep</string>
+    <string name="search_city_filter">Miasto</string>
+    <string name="search_sort_label">Sortowanie</string>
+    <string name="search_filter_all">Wszystkie</string>
+    <string name="search_hint">Wpisz, czego szukasz.</string>
+    <string name="search_not_found">Nic nie znaleźliśmy.</string>
+    <string name="search_failed">Wyszukiwanie się nie powiodło, spróbuj ponownie.</string>
+    <string name="search_unknown_price">cena nieznana</string>
+    <string name="search_confirmations">×%1$d potwierdzeń</string>
+    <string name="search_report_summary">Zgłoszeń łącznie: %1$d · Ostatnie: %2$s</string>
+
+    <string name="chart_not_enough_data">Za mało zgłoszeń na wykres</string>
+    <string name="chart_range_7d">7 dni</string>
+    <string name="chart_range_30d">30 dni</string>
+    <string name="chart_range_90d">90 dni</string>
+    <string name="chart_range_365d">365 dni</string>
+    <string name="chart_last">Ostatnia: %1$s (%2$s)</string>
+    <string name="chart_min_max">Najniżej: %1$s (%2$s) · Najwyżej: %3$s (%4$s)</string>
+    <string name="chart_selected">Wybrano: %1$s · %2$s · potwierdzone %3$d×</string>
+
+    <string name="product_not_found">Nie udało się znaleźć tego produktu.</string>
+    <string name="product_edited_by_me">Twoja edycja</string>
+    <string name="product_quality_requires_login">Ocena jakości wymaga zalogowania — przejdź do zakładki Konto.</string>
+    <string name="product_price_trend">Zmiana ceny</string>
+    <string name="product_cheapest_title">Najtaniej</string>
+    <string name="product_no_price_yet">Nikt jeszcze nie podał tu ceny.</string>
+    <string name="product_prices_by_store">Ceny w sklepach</string>
+    <string name="product_no_price_be_first">Nikt jeszcze nie podał tu ceny — bądź pierwszy.</string>
+    <string name="product_my_price">Twoja cena</string>
+    <string name="product_more_info">Więcej informacji</string>
+    <string name="product_write_observation">Zapisz cenę</string>
+    <string name="product_reported_summary">zgłoszono %1$d× · ostatnio %2$s</string>
+    <string name="product_report_hidden">Dziękujemy za zgłoszenie — pozycja jest teraz ukryta i czeka na weryfikację.</string>
+
+    <string name="price_entry_code_unknown">Nie znamy jeszcze kodu %1$s w katalogu.</string>
+    <string name="price_entry_create_product">Dodaj produkt</string>
+    <string name="price_entry_create_product_requires_login">Dodanie nowego produktu wymaga zalogowania — przejdź do zakładki Konto.</string>
+    <string name="price_entry_current_prices">Aktualne ceny w sklepach</string>
+    <string name="price_entry_price_summary">%1$s (%2$s/jednostkę) · %3$d zgłoszeń</string>
+    <string name="price_entry_write_price">Zapisz cenę</string>
+    <string name="price_entry_price_label">Cena (%1$s)</string>
+    <string name="price_entry_submit">Zapisz cenę</string>
+    <string name="price_entry_back_without_price">Wstecz bez podania ceny</string>
+    <string name="price_entry_submit_success">Cena została zapisana, dziękujemy!</string>
+    <string name="price_entry_location_unavailable">Nie udało się ustalić lokalizacji — wybierz sklep, gdy dane będą dostępne.</string>
+
+    <string name="product_form_title">Nowy produkt</string>
+    <string name="product_form_name_label">Nazwa produktu</string>
+    <string name="product_form_generic_tag">pozycja rodzajowa</string>
+    <string name="product_form_suggestions_hint">Czy nie chodzi o jedną z tych pozycji? Dotknij, aby jej użyć.</string>
+    <string name="product_form_category_label">Kategoria</string>
+    <string name="product_form_category_placeholder">Wybierz kategorię</string>
+    <string name="product_form_brand_label">Marka (opcjonalnie)</string>
+    <string name="product_form_unit_base_label">Jednostka podstawowa</string>
+    <string name="product_form_variable_weight_label">Towar na wagę (cena zawsze za kg/l, bez stałej gramatury)</string>
+    <string name="product_form_mass_label">Waga opakowania (kg)</string>
+    <string name="product_form_volume_label">Objętość opakowania (l)</string>
+    <string name="product_form_pieces_in_pack_label">Sztuk w opakowaniu (opcjonalnie)</string>
+    <string name="product_form_code_label">Kod kreskowy (opcjonalnie)</string>
+    <string name="product_form_code_hint">Bez kodu powstanie pozycja rodzajowa (np. „pieczywo za %1$s” z paragonu) — z niższą wiarygodnością danych, ale zapisać i tak można.</string>
+    <string name="product_form_submit">Dodaj produkt</string>
+    <string name="product_form_back_without_creating">Wstecz bez dodawania</string>
+
+    <string name="store_not_found">Nie udało się znaleźć tego sklepu.</string>
+    <string name="store_edited_by_me">Twoja edycja</string>
+    <string name="store_pending_confirmation">Oczekuje na potwierdzenie</string>
+    <string name="store_photos_title">Zdjęcia</string>
+    <string name="store_location_title">Lokalizacja</string>
+    <string name="store_open_in_map_app">Otwórz w aplikacji mapy</string>
+    <string name="store_no_location">Ten sklep nie ma jeszcze współrzędnych.</string>
+    <string name="store_operator_title">Operator</string>
+    <string name="store_report_hidden">Dziękujemy za zgłoszenie — sklep jest teraz ukryty i czeka na weryfikację.</string>
+
+    <string name="store_picker_label">Sklep</string>
+    <string name="store_picker_add_new">+ Dodaj nowy sklep</string>
+    <string name="store_picker_find_nearby">Znajdź w okolicy</string>
+    <string name="store_picker_hint_logged_in">Wpisz nazwę lub miasto sklepu, dotknij „Znajdź w okolicy”, albo dodaj sklep od razu.</string>
+    <string name="store_picker_hint_anonymous">Wpisz nazwę lub miasto sklepu, albo dotknij „Znajdź w okolicy” — dodanie nowego sklepu wymaga zalogowania.</string>
+    <string name="store_picker_no_nearby_stores">Nie znaleźliśmy żadnego sklepu w okolicy.</string>
+
+    <string name="store_form_create_title">Nowy sklep</string>
+    <string name="store_form_edit_title">Edytuj sklep</string>
+    <string name="store_form_name_label">Nazwa sklepu</string>
+    <string name="store_form_street_label">Ulica i numer (opcjonalnie)</string>
+    <string name="store_form_city_label">Miasto</string>
+    <string name="store_form_postal_code_label">Kod pocztowy (opcjonalnie)</string>
+    <string name="store_form_similar_warning">Czy nie chodzi o jeden z tych już istniejących sklepów?</string>
+    <string name="store_form_save_changes">Zapisz zmiany</string>
+    <string name="store_form_create">Dodaj sklep</string>
+    <string name="store_form_back_without_creating">Wstecz bez dodawania</string>
+
+    <string name="store_company_id_section_title">%1$s (opcjonalnie)</string>
+    <string name="store_company_id_hint">Dla placówki firmowej lub jednoosobowej działalności, gdzie sama nazwa nie wystarczy do jednoznacznej identyfikacji.</string>
+    <string name="store_company_id_load_from_registry">Pobierz z rejestru</string>
+    <string name="store_company_id_shape_invalid">%1$s musi mieć %2$d cyfr.</string>
+    <string name="store_company_id_not_found_in_registry">Nie znaleźliśmy tego numeru w rejestrze.</string>
+
+    <string name="store_location_section_title">Współrzędne (opcjonalnie)</string>
+    <string name="store_location_hint">Bez współrzędnych sklep nie pojawi się w „Znajdź w okolicy”, tylko w wyszukiwaniu po nazwie — można je dodać też później.</string>
+    <string name="store_location_find_coordinates">Znajdź współrzędne</string>
+    <string name="store_location_use_my_location">Użyj mojej lokalizacji</string>
+    <string name="store_location_will_use_map_position">Zostanie użyta pozycja z mapy poniżej / twoja aktualna lokalizacja.</string>
 </resources>

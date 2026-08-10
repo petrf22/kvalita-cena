@@ -26,19 +26,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
+import cz.kvalitacena.R
 import cz.kvalitacena.network.ExternalLink
 import cz.kvalitacena.network.PriceCurrent
-import cz.kvalitacena.ui.common.PRICE_KIND_LABELS
 import cz.kvalitacena.ui.common.PhotoGallery
 import cz.kvalitacena.ui.common.PhotoPicker
 import cz.kvalitacena.ui.common.QualityBadge
 import cz.kvalitacena.ui.common.formatRelativeDate
 import cz.kvalitacena.ui.common.openUrl
+import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 
 /**
@@ -68,7 +70,7 @@ fun ProductDetailScreen(
 
     viewModel.notFound -> {
       Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-        Text("Tohle zboží se nepodařilo najít.", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.product_not_found), style = MaterialTheme.typography.bodyLarge)
       }
     }
 
@@ -96,19 +98,19 @@ fun ProductDetailScreen(
         // --- Štítky uživatelské vrstvy (docs/datovy-model.md) + nahlášení ---
         Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
           if (!product.verified) {
-            AssistChip(onClick = {}, label = { Text("Neověřeno") })
+            AssistChip(onClick = {}, label = { Text(stringResource(R.string.common_unverified)) })
           }
           if (product.editedByMe) {
-            AssistChip(onClick = {}, label = { Text("Vaše úprava") })
+            AssistChip(onClick = {}, label = { Text(stringResource(R.string.product_edited_by_me)) })
           }
           if (isLoggedIn) {
             TextButton(onClick = { viewModel.flagProduct() }, enabled = !viewModel.flagging) {
-              Text("Nahlásit")
+              Text(stringResource(R.string.common_report))
             }
           }
         }
         viewModel.flagMessage?.let {
-          Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+          Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Gap()
 
@@ -128,26 +130,26 @@ fun ProductDetailScreen(
         }
         if (!isLoggedIn) {
           Text(
-            "Hodnocení kvality vyžaduje přihlášení — přejdi do záložky Účet.",
+            stringResource(R.string.product_quality_requires_login),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
         viewModel.ratingError?.let {
-          Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+          Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
         Gap()
         HorizontalDivider()
         Gap()
 
         // --- Graf vývoje ceny ---
-        Text("Vývoj ceny", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.product_price_trend), style = MaterialTheme.typography.titleMedium)
         Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          CHART_RANGES.forEach { (days, label) ->
+          CHART_RANGES.forEach { (days, labelRes) ->
             FilterChip(
               selected = viewModel.selectedDays == days,
               onClick = { viewModel.onDaysChange(days) },
-              label = { Text(label) },
+              label = { Text(stringResource(labelRes)) },
             )
           }
         }
@@ -156,7 +158,7 @@ fun ProductDetailScreen(
             FilterChip(
               selected = viewModel.selectedPriceKind == kind,
               onClick = { viewModel.onPriceKindChange(kind) },
-              label = { Text(PRICE_KIND_LABELS[kind] ?: kind) },
+              label = { Text(priceKindLabel(kind)) },
             )
           }
         }
@@ -178,7 +180,7 @@ fun ProductDetailScreen(
 
         // --- Nejlevněji ---
         val stats = product.stats
-        Text("Nejlevněji", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.product_cheapest_title), style = MaterialTheme.typography.titleMedium)
         if (stats?.bestPrice != null && stats.cheapestStore != null) {
           val store = stats.cheapestStore
           Row(
@@ -198,16 +200,16 @@ fun ProductDetailScreen(
             )
           }
         } else {
-          Text("Zatím tu nikdo cenu nezadal.", style = MaterialTheme.typography.bodyMedium)
+          Text(stringResource(R.string.product_no_price_yet), style = MaterialTheme.typography.bodyMedium)
         }
         Gap()
         HorizontalDivider()
         Gap()
 
         // --- Ceny po obchodech ---
-        Text("Ceny po obchodech", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.product_prices_by_store), style = MaterialTheme.typography.titleMedium)
         if (product.prices.isEmpty()) {
-          Text("Zatím tu nikdo cenu nezadal — buď první.", style = MaterialTheme.typography.bodyMedium)
+          Text(stringResource(R.string.product_no_price_be_first), style = MaterialTheme.typography.bodyMedium)
         } else {
           Column(modifier = Modifier.padding(top = 8.dp)) {
             product.prices.forEach { price ->
@@ -221,11 +223,11 @@ fun ProductDetailScreen(
         if (product.myPrices.isNotEmpty()) {
           HorizontalDivider()
           Gap()
-          Text("Vaše cena", style = MaterialTheme.typography.titleMedium)
+          Text(stringResource(R.string.product_my_price), style = MaterialTheme.typography.titleMedium)
           Column(modifier = Modifier.padding(top = 8.dp)) {
             product.myPrices.forEach { mp ->
               Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text("${mp.store.name} — ${PRICE_KIND_LABELS[mp.priceKind] ?: mp.priceKind}")
+                Text("${mp.store.name} — ${priceKindLabel(mp.priceKind)}")
                 Text(rememberMoneyFormatter(mp.currency).format(mp.priceAmount))
               }
               Text(
@@ -242,7 +244,7 @@ fun ProductDetailScreen(
         if (product.externalLinks.isNotEmpty()) {
           HorizontalDivider()
           Gap()
-          Text("Další informace", style = MaterialTheme.typography.titleMedium)
+          Text(stringResource(R.string.product_more_info), style = MaterialTheme.typography.titleMedium)
           Column(modifier = Modifier.padding(top = 8.dp)) {
             product.externalLinks.forEach { link -> ExternalLinkRow(link, onClick = { openUrl(context, link.url) }) }
           }
@@ -250,7 +252,7 @@ fun ProductDetailScreen(
         }
 
         Button(onClick = onWriteObservation, modifier = Modifier.fillMaxWidth()) {
-          Text("Zapsat cenu")
+          Text(stringResource(R.string.product_write_observation))
         }
       }
     }
@@ -261,11 +263,11 @@ fun ProductDetailScreen(
 private fun PriceRow(price: PriceCurrent, onClick: () -> Unit) {
   Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp)) {
     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-      Text("${price.store.name} — ${PRICE_KIND_LABELS[price.priceKind] ?: price.priceKind}")
+      Text("${price.store.name} — ${priceKindLabel(price.priceKind)}")
       Text(price.priceAmount?.let { rememberMoneyFormatter(price.currency).format(it) } ?: "–")
     }
     Text(
-      "${price.nObs}× hlášeno · naposledy ${formatRelativeDate(price.lastObservedAt)}",
+      stringResource(R.string.product_reported_summary, price.nObs, formatRelativeDate(price.lastObservedAt)),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

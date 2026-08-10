@@ -12,16 +12,20 @@ const val MAX_PHOTO_BYTES = 8L * 1024 * 1024
 const val MAX_PHOTOS_PER_RECORD = 5
 val ALLOWED_PHOTO_MIME_TYPES = setOf("image/jpeg", "image/png")
 
-/** Text chyby, nebo null, pokud je soubor v pořádku k odeslání. */
-fun photoValidationError(mimeType: String?, byteSize: Long, existingPhotoCount: Int): String? {
+/** Stejný vzor jako web `photo-upload-validation.ts` (docs/lokalizace.md) — kód místo
+ * hotové věty, text se skládá až u volajícího přes `UiText` (`PhotoPicker.kt`). */
+enum class PhotoValidationError { LIMIT_REACHED, UNSUPPORTED_FORMAT, TOO_LARGE }
+
+/** Kód chyby, nebo null, pokud je soubor v pořádku k odeslání. */
+fun photoValidationError(mimeType: String?, byteSize: Long, existingPhotoCount: Int): PhotoValidationError? {
   if (existingPhotoCount >= MAX_PHOTOS_PER_RECORD) {
-    return "Záznam už má maximální počet fotek ($MAX_PHOTOS_PER_RECORD)."
+    return PhotoValidationError.LIMIT_REACHED
   }
   if (mimeType == null || mimeType !in ALLOWED_PHOTO_MIME_TYPES) {
-    return "Podporované jsou jen fotky JPEG nebo PNG."
+    return PhotoValidationError.UNSUPPORTED_FORMAT
   }
   if (byteSize > MAX_PHOTO_BYTES) {
-    return "Fotka je příliš velká (max. 8 MB)."
+    return PhotoValidationError.TOO_LARGE
   }
   return null
 }

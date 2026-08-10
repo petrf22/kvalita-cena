@@ -22,9 +22,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import cz.kvalitacena.AppContainer
+import cz.kvalitacena.R
 import cz.kvalitacena.network.Photo
 import kotlinx.coroutines.launch
 import java.io.File
@@ -48,12 +50,19 @@ fun PhotoPicker(
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
   var uploading by remember { mutableStateOf(false) }
-  var error by remember { mutableStateOf<String?>(null) }
+  var error by remember { mutableStateOf<UiText?>(null) }
   var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
 
   fun upload(uri: Uri) {
     val mimeType = context.contentResolver.getType(uri)
-    val validationError = photoValidationError(mimeType, sizeOf(context, uri), existingPhotoCount)
+    // Stejné klíče jako ErrorCode na backendu (docs/lokalizace.md) — appka tu jen ušetří
+    // zbytečný upload, text hlášky je ale ten samý jako po chybě ze serveru.
+    val validationError = when (photoValidationError(mimeType, sizeOf(context, uri), existingPhotoCount)) {
+      PhotoValidationError.LIMIT_REACHED -> UiText.Res(R.string.photo_limit_reached, listOf(MAX_PHOTOS_PER_RECORD))
+      PhotoValidationError.UNSUPPORTED_FORMAT -> UiText.Res(R.string.photo_unsupported_format)
+      PhotoValidationError.TOO_LARGE -> UiText.Res(R.string.photo_too_large)
+      null -> null
+    }
     if (validationError != null) {
       error = validationError
       return
@@ -65,7 +74,7 @@ fun PhotoPicker(
         val photo = AppContainer.mediaClient.upload(context, recordType, recordId, uri)
         onUploaded(photo)
       } catch (e: Exception) {
-        error = "Nahrání fotky se nepovedlo, zkus to prosím znovu."
+        error = e.toUiText()
       } finally {
         uploading = false
       }
@@ -83,7 +92,7 @@ fun PhotoPicker(
   Column(modifier = modifier) {
     if (existingPhotoCount >= MAX_PHOTOS_PER_RECORD) {
       Text(
-        "Záznam už má maximální počet fotek.",
+        stringResource(R.string.photo_limit_reached, MAX_PHOTOS_PER_RECORD),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
@@ -96,18 +105,18 @@ fun PhotoPicker(
             cameraLauncher.launch(uri)
           },
           enabled = !uploading,
-        ) { Text("Vyfotit") }
+        ) { Text(stringResource(R.string.photo_take_picture)) }
         OutlinedButton(
           onClick = {
             galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
           },
           enabled = !uploading,
-        ) { Text("Vybrat z galerie") }
+        ) { Text(stringResource(R.string.photo_pick_from_gallery)) }
         if (uploading) CircularProgressIndicator(modifier = Modifier.size(24.dp))
       }
     }
     error?.let {
-      Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+      Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
     }
   }
 }

@@ -1,13 +1,33 @@
 package cz.kvalitacena.ui.common
 
+import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import cz.kvalitacena.R
+
 /**
  * Jediný zdroj popisků druhu ceny — dřív byla tahle mapa duplicitně ve dvou souborech
- * (PriceEntryScreen, ProductDetailScreen) a lišily se (jedna neznala MULTIBUY).
+ * (PriceEntryScreen, ProductDetailScreen) a lišily se (jedna neznala MULTIBUY). `else ->` u
+ * neznámé hodnoty (ne shoda podle enumu) schválně — appka netypuje `PriceKind` z GraphQL
+ * schématu jako web, backend tak může přidat hodnotu dřív, než se vydá nová appka
+ * (docs/lokalizace.md).
  */
-val PRICE_KIND_LABELS = mapOf(
-  "REGULAR" to "Běžná cena",
-  "PROMO" to "Akce",
-  "CLUB_CARD" to "Klubová karta",
-  "CLEARANCE" to "Výprodej",
-  "MULTIBUY" to "Množstevní sleva",
-)
+@StringRes
+private fun priceKindLabelRes(kind: String): Int = when (kind) {
+  "REGULAR" -> R.string.price_kind_regular
+  "PROMO" -> R.string.price_kind_promo
+  "CLUB_CARD" -> R.string.price_kind_club_card
+  "CLEARANCE" -> R.string.price_kind_clearance
+  "MULTIBUY" -> R.string.price_kind_multibuy
+  else -> R.string.price_kind_unknown
+}
+
+@Composable
+fun priceKindLabel(kind: String): String = stringResource(priceKindLabelRes(kind))
+
+/**
+ * Druhy ceny nabízené ve formuláři zápisu — stejný seznam jako web `SELECTABLE_PRICE_KINDS`
+ * (`shared/enum-labels.ts`). MULTIBUY tu schválně chybí — schéma pro něj vyžaduje i
+ * multibuyQty/multibuyTotal (docs/datovy-model.md) a appka je zatím neumí zadat (etapa 2/3).
+ */
+val SELECTABLE_PRICE_KINDS = listOf("REGULAR", "PROMO", "CLUB_CARD", "CLEARANCE")

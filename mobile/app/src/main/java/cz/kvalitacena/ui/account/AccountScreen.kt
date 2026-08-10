@@ -18,8 +18,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cz.kvalitacena.AppContainer
+import cz.kvalitacena.R
 import cz.kvalitacena.network.Viewer
 import cz.kvalitacena.ui.login.LoginScreen
 import kotlinx.coroutines.launch
@@ -52,19 +54,22 @@ private fun LoggedInContent() {
   }
 
   Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-    Text("Účet", style = MaterialTheme.typography.headlineSmall)
+    Text(stringResource(R.string.account_title), style = MaterialTheme.typography.headlineSmall)
     Spacer(Modifier.height(16.dp))
 
     if (loading) {
       CircularProgressIndicator()
     } else {
-      Text(viewer?.publicHandle ?: "Přihlášen", style = MaterialTheme.typography.titleMedium)
+      Text(
+        viewer?.publicHandle ?: stringResource(R.string.account_logged_in_fallback),
+        style = MaterialTheme.typography.titleMedium,
+      )
       viewer?.displayName?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
     }
 
     Spacer(Modifier.height(24.dp))
     Button(onClick = { scope.launch { AppContainer.authRepository.logout() } }) {
-      Text("Odhlásit se")
+      Text(stringResource(R.string.account_logout))
     }
   }
 }

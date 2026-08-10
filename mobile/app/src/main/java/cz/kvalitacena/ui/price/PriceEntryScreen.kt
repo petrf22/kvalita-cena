@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -45,9 +46,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
+import cz.kvalitacena.R
 import cz.kvalitacena.location.getCurrentLocation
 import cz.kvalitacena.ui.common.NavigationResults
-import cz.kvalitacena.ui.common.PRICE_KIND_LABELS
+import cz.kvalitacena.ui.common.SELECTABLE_PRICE_KINDS
+import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.StorePicker
 import cz.kvalitacena.ui.common.currencyForCountry
@@ -59,11 +62,11 @@ import kotlinx.coroutines.launch
 // (PriceEntryViewModel.submit() převádí čárku na tečku před parsováním).
 private val PRICE_INPUT_PATTERN = Regex("^\\d*[.,]?\\d*$")
 
-private val QUANTITY_BASIS_LABELS = mapOf(
-  "PACKAGE" to "Za balení",
-  "PER_KG" to "Za kilogram",
-  "PER_L" to "Za litr",
-  "PER_PIECE" to "Za kus",
+private val QUANTITY_BASIS_LABEL_RES = mapOf(
+  "PACKAGE" to R.string.quantity_basis_package,
+  "PER_KG" to R.string.quantity_basis_per_kg,
+  "PER_L" to R.string.quantity_basis_per_l,
+  "PER_PIECE" to R.string.quantity_basis_per_piece,
 )
 
 /**
@@ -140,9 +143,10 @@ fun PriceEntryScreen(
 
   // Po úspěšném zápisu se obrazovka rovnou opouští (návrat tam, odkud se přišlo) — hláška
   // o úspěchu by na ní jen problikla, proto potvrzujeme Toastem, který přežije i tuhle navigaci.
+  val submitSuccessMessage = stringResource(R.string.price_entry_submit_success)
   LaunchedEffect(viewModel.submitSuccess) {
     if (viewModel.submitSuccess) {
-      Toast.makeText(context, "Cena byla zapsána, díky!", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, submitSuccessMessage, Toast.LENGTH_SHORT).show()
       onDone()
     }
   }
@@ -159,8 +163,8 @@ fun PriceEntryScreen(
 
       viewModel.notFound -> {
         val message = when (target) {
-          is PriceEntryTarget.ByBarcode -> "Kód ${target.barcode} zatím v katalogu neznáme."
-          is PriceEntryTarget.ById -> "Tohle zboží se nepodařilo najít."
+          is PriceEntryTarget.ByBarcode -> stringResource(R.string.price_entry_code_unknown, target.barcode)
+          is PriceEntryTarget.ById -> stringResource(R.string.product_not_found)
         }
         Text(message, style = MaterialTheme.typography.bodyLarge)
         Gap()
@@ -171,17 +175,19 @@ fun PriceEntryScreen(
         // jen "Zpět", ne formulář, který by na odeslání skončil UNAUTHORIZED.
         if (isLoggedIn) {
           Button(onClick = { onAddProduct(viewModel.barcodeForNewProduct()) }, modifier = Modifier.fillMaxWidth()) {
-            Text("Založit zboží")
+            Text(stringResource(R.string.price_entry_create_product))
           }
         } else {
           Text(
-            "Založení nového zboží vyžaduje přihlášení — přejdi do záložky Účet.",
+            stringResource(R.string.price_entry_create_product_requires_login),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
         Gap()
-        OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) { Text("Zpět") }
+        OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
+          Text(stringResource(R.string.common_back))
+        }
       }
 
       else -> {
@@ -191,18 +197,22 @@ fun PriceEntryScreen(
         Text(subtitle, style = MaterialTheme.typography.bodyMedium)
         Gap()
 
-        Text("Aktuální ceny po obchodech", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.price_entry_current_prices), style = MaterialTheme.typography.titleMedium)
         if (product.prices.isEmpty()) {
-          Text("Zatím tu nikdo cenu nezadal — buď první.", style = MaterialTheme.typography.bodyMedium)
+          Text(stringResource(R.string.product_no_price_be_first), style = MaterialTheme.typography.bodyMedium)
         } else {
           Column(modifier = Modifier.padding(top = 8.dp)) {
             product.prices.forEach { price ->
               Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                Text("${price.store.name} — ${PRICE_KIND_LABELS[price.priceKind] ?: price.priceKind}")
+                Text("${price.store.name} — ${priceKindLabel(price.priceKind)}")
                 val moneyFormatter = rememberMoneyFormatter(price.currency)
                 Text(
-                  "${price.priceAmount?.let { moneyFormatter.format(it) }} " +
-                    "(${price.unitPrice?.let { moneyFormatter.format(it) }}/jednotka) · ${price.nObs} záznamy",
+                  stringResource(
+                    R.string.price_entry_price_summary,
+                    price.priceAmount?.let { moneyFormatter.format(it) }.orEmpty(),
+                    price.unitPrice?.let { moneyFormatter.format(it) }.orEmpty(),
+                    price.nObs,
+                  ),
                   style = MaterialTheme.typography.bodySmall,
                 )
               }
@@ -215,15 +225,15 @@ fun PriceEntryScreen(
         HorizontalDivider()
         Gap()
 
-        Text("Zadat cenu", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.price_entry_write_price), style = MaterialTheme.typography.titleMedium)
         Gap()
 
         viewModel.locationError?.let {
-          Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+          Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
           Gap()
         }
         viewModel.submitError?.let {
-          Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+          Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
           Gap()
         }
 
@@ -260,7 +270,7 @@ fun PriceEntryScreen(
           onValueChange = { input ->
             if (input.matches(PRICE_INPUT_PATTERN)) viewModel.priceAmount = input
           },
-          label = "Cena ($currencySymbol)",
+          label = stringResource(R.string.price_entry_price_label, currencySymbol),
           // Desetinná čárka i tečka se přijímají obě — viz PriceEntryViewModel.submit().
           keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
           modifier = Modifier.fillMaxWidth(),
@@ -273,7 +283,7 @@ fun PriceEntryScreen(
           modifier = Modifier.fillMaxWidth(),
         ) {
           if (viewModel.submitting) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-          else Text("Zapsat cenu")
+          else Text(stringResource(R.string.price_entry_submit))
         }
         Gap()
 
@@ -284,7 +294,7 @@ fun PriceEntryScreen(
           enabled = !viewModel.submitting,
           modifier = Modifier.fillMaxWidth(),
         ) {
-          Text("Zpět bez zadání ceny")
+          Text(stringResource(R.string.price_entry_back_without_price))
         }
       }
     }
@@ -298,17 +308,17 @@ private fun PriceKindDropdown(selected: String, onSelect: (String) -> Unit) {
 
   ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
     SingleLineTextField(
-      value = PRICE_KIND_LABELS[selected] ?: selected,
+      value = priceKindLabel(selected),
       onValueChange = {},
       readOnly = true,
-      label = "Druh ceny",
+      label = stringResource(R.string.price_kind_field_label),
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
       modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
     )
     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-      PRICE_KIND_LABELS.forEach { (value, label) ->
+      SELECTABLE_PRICE_KINDS.forEach { value ->
         DropdownMenuItem(
-          text = { Text(label) },
+          text = { Text(priceKindLabel(value)) },
           onClick = {
             onSelect(value)
             expanded = false
@@ -327,17 +337,17 @@ private fun QuantityBasisDropdown(selected: String, onSelect: (String) -> Unit) 
 
   ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
     SingleLineTextField(
-      value = QUANTITY_BASIS_LABELS[selected] ?: selected,
+      value = QUANTITY_BASIS_LABEL_RES[selected]?.let { stringResource(it) } ?: selected,
       onValueChange = {},
       readOnly = true,
-      label = "Cena je uvedená",
+      label = stringResource(R.string.quantity_basis_field_label),
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
       modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
     )
     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-      QUANTITY_BASIS_LABELS.forEach { (value, label) ->
+      QUANTITY_BASIS_LABEL_RES.forEach { (value, labelRes) ->
         DropdownMenuItem(
-          text = { Text(label) },
+          text = { Text(stringResource(labelRes)) },
           onClick = {
             onSelect(value)
             expanded = false

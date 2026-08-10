@@ -13,7 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cz.kvalitacena.R
 import cz.kvalitacena.network.Store
 
 /**
@@ -46,7 +48,7 @@ fun StorePicker(
         suggestions = suggestions,
         onSelect = onSelect,
         itemLabel = ::storeLabel,
-        label = "Obchod",
+        label = stringResource(R.string.store_picker_label),
         loading = searching,
         modifier = Modifier.weight(1f),
         // Založení nového obchodu vyžaduje přihlášení (docs/reputace.md, T1) — anonymovi se
@@ -54,7 +56,7 @@ fun StorePicker(
         footer = if (isLoggedIn) {
           {
             DropdownMenuItem(
-              text = { Text("+ Přidat nový obchod") },
+              text = { Text(stringResource(R.string.store_picker_add_new)) },
               onClick = onAddNew,
             )
           }
@@ -64,14 +66,14 @@ fun StorePicker(
       )
       Button(onClick = onFindNearby) {
         if (locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-        else Text("Najít v okolí")
+        else Text(stringResource(R.string.store_picker_find_nearby))
       }
     }
     if (selectedStoreId == null && query.isBlank() && suggestions.isEmpty()) {
       val hint = if (isLoggedIn) {
-        "Napiš název nebo město obchodu, stiskni „Najít v okolí“, nebo obchod rovnou založ."
+        stringResource(R.string.store_picker_hint_logged_in)
       } else {
-        "Napiš název nebo město obchodu, nebo stiskni „Najít v okolí“ — založení nového obchodu vyžaduje přihlášení."
+        stringResource(R.string.store_picker_hint_anonymous)
       }
       Text(
         hint,

@@ -4,6 +4,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import cz.kvalitacena.R
 
 /**
  * Známka kvality jako ve škole — 1 nejlepší, 5 nejhorší (viz zadání). Pod
@@ -15,10 +17,11 @@ private const val MIN_RATINGS_FOR_BADGE = 3
 @Composable
 fun QualityBadge(average: Double?, count: Int, modifier: Modifier = Modifier) {
   val text = if (average == null) {
-    "Kvalita: zatím nehodnoceno"
+    stringResource(R.string.quality_not_rated)
+  } else if (count in 1 until MIN_RATINGS_FOR_BADGE) {
+    stringResource(R.string.quality_rated_approximate, average)
   } else {
-    val base = "Kvalita %.1f/5".format(average)
-    if (count in 1 until MIN_RATINGS_FOR_BADGE) "$base (orientační)" else base
+    stringResource(R.string.quality_rated, average)
   }
   Text(
     text = text,

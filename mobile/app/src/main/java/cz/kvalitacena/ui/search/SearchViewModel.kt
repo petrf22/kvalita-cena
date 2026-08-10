@@ -1,22 +1,29 @@
 package cz.kvalitacena.ui.search
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cz.kvalitacena.R
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.ProductSearchItem
 import cz.kvalitacena.network.SearchFacets
+import cz.kvalitacena.ui.common.UiText
 import kotlinx.coroutines.launch
 
-/** Hledatelná pole řazení — hodnoty musí odpovídat GraphQL enumu ProductSort. */
-enum class SortOption(val value: String, val label: String) {
-  REPORT_COUNT("REPORT_COUNT", "Podle počtu hlášení"),
-  PRICE_ASC("PRICE_ASC", "Podle ceny"),
-  QUALITY("QUALITY", "Podle kvality"),
-  LAST_REPORTED("LAST_REPORTED", "Podle posledního hlášení"),
-  NAME("NAME", "Podle názvu"),
+/**
+ * Hledatelná pole řazení — hodnoty musí odpovídat GraphQL enumu ProductSort. Popisek jako
+ * `@StringRes`, ne hotový text (docs/lokalizace.md) — `stringResource` je `@Composable`,
+ * appka ho tahá až v `SearchScreen.kt`.
+ */
+enum class SortOption(val value: String, @StringRes val labelRes: Int) {
+  REPORT_COUNT("REPORT_COUNT", R.string.sort_report_count),
+  PRICE_ASC("PRICE_ASC", R.string.sort_price_asc),
+  QUALITY("QUALITY", R.string.sort_quality),
+  LAST_REPORTED("LAST_REPORTED", R.string.sort_last_reported),
+  NAME("NAME", R.string.sort_name),
 }
 
 private const val PAGE_SIZE = 20
@@ -39,7 +46,7 @@ class SearchViewModel(private val graphQlClient: GraphQlClient) : ViewModel() {
     private set
   var loading by mutableStateOf(false)
     private set
-  var errorMessage by mutableStateOf<String?>(null)
+  var errorMessage by mutableStateOf<UiText?>(null)
     private set
   var hasSearched by mutableStateOf(false)
     private set
@@ -79,7 +86,7 @@ class SearchViewModel(private val graphQlClient: GraphQlClient) : ViewModel() {
         totalCount = result.totalCount
         hasMore = result.hasMore
       } catch (e: Exception) {
-        errorMessage = "Hledání se nepovedlo, zkus to prosím znovu."
+        errorMessage = UiText.Res(R.string.search_failed)
       } finally {
         loading = false
       }

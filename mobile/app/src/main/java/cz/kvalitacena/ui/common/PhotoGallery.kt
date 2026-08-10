@@ -28,10 +28,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil3.compose.AsyncImage
 import cz.kvalitacena.AppContainer
+import cz.kvalitacena.R
 import cz.kvalitacena.network.Photo
 import kotlinx.coroutines.launch
 
@@ -61,7 +63,7 @@ fun PhotoGallery(
       ) {
         AsyncImage(
           model = photo.thumbUrl(),
-          contentDescription = photo.caption ?: "Fotka",
+          contentDescription = photo.caption ?: stringResource(R.string.photo_alt),
           modifier = Modifier.fillMaxSize(),
           contentScale = ContentScale.Crop,
         )
@@ -73,7 +75,7 @@ fun PhotoGallery(
               .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.6f)),
           ) {
             Text(
-              "Skryto",
+              stringResource(R.string.photo_hidden_badge),
               color = MaterialTheme.colorScheme.onPrimary,
               style = MaterialTheme.typography.labelSmall,
               modifier = Modifier.padding(2.dp),
@@ -107,7 +109,7 @@ private fun PhotoViewerDialog(
   val photo = photos[index]
   val scope = rememberCoroutineScope()
   var flagging by remember { mutableStateOf(false) }
-  var actionMessage by remember { mutableStateOf<String?>(null) }
+  var actionMessage by remember { mutableStateOf<UiText?>(null) }
 
   Dialog(onDismissRequest = onDismiss) {
     Column(
@@ -119,7 +121,7 @@ private fun PhotoViewerDialog(
     ) {
       AsyncImage(
         model = photo.fullUrl(),
-        contentDescription = photo.caption ?: "Fotka",
+        contentDescription = photo.caption ?: stringResource(R.string.photo_alt),
         modifier = Modifier.fillMaxWidth().height(280.dp),
         contentScale = ContentScale.Fit,
       )
@@ -133,12 +135,14 @@ private fun PhotoViewerDialog(
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.CenterVertically,
         ) {
-          TextButton(onClick = { if (index > 0) onIndexChange(index - 1) }, enabled = index > 0) { Text("< Předchozí") }
+          TextButton(onClick = { if (index > 0) onIndexChange(index - 1) }, enabled = index > 0) {
+            Text(stringResource(R.string.photo_prev))
+          }
           Text("${index + 1} / ${photos.size}", style = MaterialTheme.typography.bodySmall)
           TextButton(
             onClick = { if (index < photos.size - 1) onIndexChange(index + 1) },
             enabled = index < photos.size - 1,
-          ) { Text("Další >") }
+          ) { Text(stringResource(R.string.photo_next)) }
         }
       }
 
@@ -155,10 +159,10 @@ private fun PhotoViewerDialog(
                   onPhotosChange(listOf(updated, updatedFirst) + rest)
                   onIndexChange(0)
                 } catch (e: Exception) {
-                  actionMessage = "Nastavení hlavní fotky se nepovedlo, zkus to prosím znovu."
+                  actionMessage = e.toUiText()
                 }
               }
-            }) { Text("Nastavit jako hlavní") }
+            }) { Text(stringResource(R.string.photo_set_as_main)) }
           }
           OutlinedButton(onClick = {
             scope.launch {
@@ -167,10 +171,10 @@ private fun PhotoViewerDialog(
                 onPhotosChange(photos.filter { it.id != photo.id })
                 onDismiss()
               } catch (e: Exception) {
-                actionMessage = "Smazání fotky se nepovedlo, zkus to prosím znovu."
+                actionMessage = e.toUiText()
               }
             }
-          }) { Text("Smazat") }
+          }) { Text(stringResource(R.string.common_delete)) }
         } else {
           OutlinedButton(
             onClick = {
@@ -178,13 +182,11 @@ private fun PhotoViewerDialog(
               scope.launch {
                 try {
                   val result = AppContainer.graphQlClient.flagRecord("PHOTO", photo.id)
-                  actionMessage = if (result.hidden) {
-                    "Díky za nahlášení — fotka je teď skrytá a čeká na přezkum."
-                  } else {
-                    "Díky za nahlášení, zaznamenali jsme ho."
-                  }
+                  actionMessage = UiText.Res(
+                    if (result.hidden) R.string.photo_report_hidden else R.string.report_acknowledged,
+                  )
                 } catch (e: Exception) {
-                  actionMessage = "Nahlášení se nepovedlo, zkus to prosím znovu."
+                  actionMessage = e.toUiText()
                 } finally {
                   flagging = false
                 }
@@ -192,13 +194,17 @@ private fun PhotoViewerDialog(
             },
             enabled = !flagging,
           ) {
-            if (flagging) CircularProgressIndicator(modifier = Modifier.size(16.dp)) else Text("Nahlásit")
+            if (flagging) {
+              CircularProgressIndicator(modifier = Modifier.size(16.dp))
+            } else {
+              Text(stringResource(R.string.common_report))
+            }
           }
         }
       }
       actionMessage?.let {
         Text(
-          it,
+          it.asString(),
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
           modifier = Modifier.padding(top = 4.dp),

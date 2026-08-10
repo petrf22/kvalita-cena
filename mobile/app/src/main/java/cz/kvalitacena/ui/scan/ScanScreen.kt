@@ -24,10 +24,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import cz.kvalitacena.R
 import cz.kvalitacena.scanner.BarcodeAnalyzer
 import cz.kvalitacena.scanner.ZxingBarcodeScanner
 
@@ -54,7 +56,7 @@ fun ScanScreen(onBarcodeDetected: (String) -> Unit) {
   } else {
     Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
       Text(
-        "Pro skenování čárových kódů appka potřebuje přístup ke kameře.",
+        stringResource(R.string.scan_camera_permission_hint),
         style = MaterialTheme.typography.bodyMedium,
       )
     }

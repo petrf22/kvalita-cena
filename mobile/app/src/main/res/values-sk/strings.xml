@@ -6,4 +6,187 @@
     <string name="tab_account">Účet</string>
     <string name="common_never">zatiaľ nikdy</string>
     <string name="error_generic">Niečo sa pokazilo, skús to prosím znova.</string>
+
+    <string name="common_back">Späť</string>
+    <string name="common_cancel">Zrušiť</string>
+    <string name="common_delete">Zmazať</string>
+    <string name="common_edit">Upraviť</string>
+    <string name="common_report">Nahlásiť</string>
+    <string name="common_unverified">Neoverené</string>
+    <string name="report_acknowledged">Ďakujeme za nahlásenie, zaznamenali sme ho.</string>
+
+    <string name="company_id_label_generic">IČO</string>
+    <string name="company_id_label_pl">NIP</string>
+
+    <string name="account_title">Účet</string>
+    <string name="account_logged_in_fallback">Prihlásený</string>
+    <string name="account_logout">Odhlásiť sa</string>
+
+    <string name="login_title">Prihlásenie</string>
+    <string name="login_otp_hint">Pošleme ti na e-mail šesťmiestny kód, žiadne heslo si nemusíš pamätať.</string>
+    <string name="login_email_label">E-mail</string>
+    <string name="login_send_code">Poslať kód</string>
+    <string name="login_code_hint">Kód sme poslali na %1$s.</string>
+    <string name="login_code_label">Kód z e-mailu</string>
+    <string name="login_sign_in">Prihlásiť sa</string>
+    <string name="login_change_email">Zadať iný e-mail</string>
+    <string name="login_request_failed">Nepodarilo sa odoslať kód. Skús to prosím znova o chvíľu.</string>
+    <string name="login_verify_failed">Kód je neplatný alebo vypršal. Skús to prosím znova.</string>
+
+    <string name="scan_camera_permission_hint">Na skenovanie čiarových kódov appka potrebuje prístup ku kamere.</string>
+
+    <string name="settings_title">Nastavenia</string>
+    <string name="settings_language">Jazyk</string>
+    <string name="settings_data_sources">Zdroje dát</string>
+    <string name="settings_data_sources_body">Ceny a hodnotenia kvality sú vlastné komunitné dáta. Odkazy do Open Food Facts sú podľa licencie ODbL (Open Database License) — dáta sa nikam nekopírujú, appka len odkazuje na zdroj.</string>
+    <string name="settings_osm_attribution">Súradnice prevádzok vychádzajú z OpenStreetMap © prispievatelia OpenStreetMap, licencia ODbL.</string>
+    <string name="settings_app_version">Verzia appky %1$s</string>
+
+    <string name="map_show">Zobraziť mapu</string>
+    <string name="map_hint">Klepni do mapy alebo presuň značku na presné miesto.</string>
+
+    <string name="photo_alt">Fotka</string>
+    <string name="photo_hidden_badge">Skryté</string>
+    <string name="photo_prev">&lt; Predchádzajúca</string>
+    <string name="photo_next">Ďalšia &gt;</string>
+    <string name="photo_set_as_main">Nastaviť ako hlavnú</string>
+    <string name="photo_report_hidden">Ďakujeme za nahlásenie — fotka je teraz skrytá a čaká na preskúmanie.</string>
+    <string name="photo_limit_reached">Záznam už má maximálny počet fotiek (%1$d).</string>
+    <string name="photo_unsupported_format">Podporované sú len fotky JPEG alebo PNG.</string>
+    <string name="photo_too_large">Fotka je príliš veľká (max. 8 MB).</string>
+    <string name="photo_take_picture">Odfotiť</string>
+    <string name="photo_pick_from_gallery">Vybrať z galérie</string>
+
+    <string name="quality_not_rated">Kvalita: zatiaľ nehodnotená</string>
+    <string name="quality_rated">Kvalita %1$.1f/5</string>
+    <string name="quality_rated_approximate">Kvalita %1$.1f/5 (orientačná)</string>
+
+    <string name="price_kind_regular">Bežná cena</string>
+    <string name="price_kind_promo">Akcia</string>
+    <string name="price_kind_club_card">Klubová karta</string>
+    <string name="price_kind_clearance">Výpredaj</string>
+    <string name="price_kind_multibuy">Množstevná zľava</string>
+    <string name="price_kind_unknown">Neznámy druh ceny</string>
+    <string name="price_kind_field_label">Druh ceny</string>
+
+    <string name="quantity_basis_field_label">Cena je uvedená</string>
+    <string name="quantity_basis_package">Za balenie</string>
+    <string name="quantity_basis_per_kg">Za kilogram</string>
+    <string name="quantity_basis_per_l">Za liter</string>
+    <string name="quantity_basis_per_piece">Za kus</string>
+
+    <string name="unit_base_count">Kus</string>
+    <string name="unit_base_mass">Hmotnosť</string>
+    <string name="unit_base_volume">Objem</string>
+
+    <string name="sort_report_count">Podľa počtu hlásení</string>
+    <string name="sort_price_asc">Podľa ceny</string>
+    <string name="sort_quality">Podľa kvality</string>
+    <string name="sort_last_reported">Podľa posledného hlásenia</string>
+    <string name="sort_name">Podľa názvu</string>
+
+    <string name="search_field_label">Hľadať tovar</string>
+    <string name="search_action">Hľadať</string>
+    <string name="search_store_filter">Obchod</string>
+    <string name="search_city_filter">Mesto</string>
+    <string name="search_sort_label">Radenie</string>
+    <string name="search_filter_all">Všetky</string>
+    <string name="search_hint">Zadaj, čo hľadáš.</string>
+    <string name="search_not_found">Nič sme nenašli.</string>
+    <string name="search_failed">Hľadanie sa nepodarilo, skús to prosím znova.</string>
+    <string name="search_unknown_price">cena neznáma</string>
+    <string name="search_confirmations">×%1$d potvrdení</string>
+    <string name="search_report_summary">Hlásenia spolu: %1$d · Posledné: %2$s</string>
+
+    <string name="chart_not_enough_data">Zatiaľ nemáme dosť hlásení na graf</string>
+    <string name="chart_range_7d">7 dní</string>
+    <string name="chart_range_30d">30 dní</string>
+    <string name="chart_range_90d">90 dní</string>
+    <string name="chart_range_365d">365 dní</string>
+    <string name="chart_last">Posledné: %1$s (%2$s)</string>
+    <string name="chart_min_max">Najnižšie: %1$s (%2$s) · Najvyššie: %3$s (%4$s)</string>
+    <string name="chart_selected">Vybrané: %1$s · %2$s · %3$d× potvrdené</string>
+
+    <string name="product_not_found">Tento tovar sa nepodarilo nájsť.</string>
+    <string name="product_edited_by_me">Tvoja úprava</string>
+    <string name="product_quality_requires_login">Hodnotenie kvality vyžaduje prihlásenie — prejdi do záložky Účet.</string>
+    <string name="product_price_trend">Vývoj ceny</string>
+    <string name="product_cheapest_title">Najlacnejšie</string>
+    <string name="product_no_price_yet">Zatiaľ tu nikto cenu nezadal.</string>
+    <string name="product_prices_by_store">Ceny po obchodoch</string>
+    <string name="product_no_price_be_first">Zatiaľ tu nikto cenu nezadal — buď prvý.</string>
+    <string name="product_my_price">Tvoja cena</string>
+    <string name="product_more_info">Ďalšie informácie</string>
+    <string name="product_write_observation">Zapísať cenu</string>
+    <string name="product_reported_summary">%1$d× nahlásené · naposledy %2$s</string>
+    <string name="product_report_hidden">Ďakujeme za nahlásenie — položka je teraz skrytá a čaká na preskúmanie.</string>
+
+    <string name="price_entry_code_unknown">Kód %1$s zatiaľ v katalógu nepoznáme.</string>
+    <string name="price_entry_create_product">Založiť tovar</string>
+    <string name="price_entry_create_product_requires_login">Založenie nového tovaru vyžaduje prihlásenie — prejdi do záložky Účet.</string>
+    <string name="price_entry_current_prices">Aktuálne ceny po obchodoch</string>
+    <string name="price_entry_price_summary">%1$s (%2$s/jednotka) · %3$d záznamov</string>
+    <string name="price_entry_write_price">Zadať cenu</string>
+    <string name="price_entry_price_label">Cena (%1$s)</string>
+    <string name="price_entry_submit">Zapísať cenu</string>
+    <string name="price_entry_back_without_price">Späť bez zadania ceny</string>
+    <string name="price_entry_submit_success">Cena bola zapísaná, ďakujeme!</string>
+    <string name="price_entry_location_unavailable">Polohu sa nepodarilo zistiť — vyber obchod, keď budú dáta.</string>
+
+    <string name="product_form_title">Nový tovar</string>
+    <string name="product_form_name_label">Názov tovaru</string>
+    <string name="product_form_generic_tag">druhová položka</string>
+    <string name="product_form_suggestions_hint">Nie je to už niektorá z týchto položiek? Klepnutím ju rovno použiješ.</string>
+    <string name="product_form_category_label">Kategória</string>
+    <string name="product_form_category_placeholder">Vyber kategóriu</string>
+    <string name="product_form_brand_label">Značka (voliteľné)</string>
+    <string name="product_form_unit_base_label">Základná jednotka</string>
+    <string name="product_form_variable_weight_label">Váhový tovar (cena vždy za kg/l, bez pevnej gramáže)</string>
+    <string name="product_form_mass_label">Hmotnosť balenia (kg)</string>
+    <string name="product_form_volume_label">Objem balenia (l)</string>
+    <string name="product_form_pieces_in_pack_label">Kusov v balení (voliteľné)</string>
+    <string name="product_form_code_label">Čiarový kód (voliteľné)</string>
+    <string name="product_form_code_hint">Bez kódu vznikne druhová položka (napr. „pečivo za %1$s“ z účtenky) — s nižšou dôveryhodnosťou dát, ale zapísať sa dá aj tak.</string>
+    <string name="product_form_submit">Založiť tovar</string>
+    <string name="product_form_back_without_creating">Späť bez založenia</string>
+
+    <string name="store_not_found">Túto prevádzku sa nepodarilo nájsť.</string>
+    <string name="store_edited_by_me">Tvoja úprava</string>
+    <string name="store_pending_confirmation">Čaká na potvrdenie</string>
+    <string name="store_photos_title">Fotky</string>
+    <string name="store_location_title">Poloha</string>
+    <string name="store_open_in_map_app">Otvoriť v mapovej aplikácii</string>
+    <string name="store_no_location">Táto prevádzka zatiaľ nemá súradnice.</string>
+    <string name="store_operator_title">Prevádzkovateľ</string>
+    <string name="store_report_hidden">Ďakujeme za nahlásenie — prevádzka je teraz skrytá a čaká na preskúmanie.</string>
+
+    <string name="store_picker_label">Obchod</string>
+    <string name="store_picker_add_new">+ Pridať nový obchod</string>
+    <string name="store_picker_find_nearby">Nájsť v okolí</string>
+    <string name="store_picker_hint_logged_in">Napíš názov alebo mesto obchodu, stlač „Nájsť v okolí“, alebo obchod rovno založ.</string>
+    <string name="store_picker_hint_anonymous">Napíš názov alebo mesto obchodu, alebo stlač „Nájsť v okolí“ — založenie nového obchodu vyžaduje prihlásenie.</string>
+    <string name="store_picker_no_nearby_stores">V okolí sme nenašli žiadny obchod.</string>
+
+    <string name="store_form_create_title">Nový obchod</string>
+    <string name="store_form_edit_title">Upraviť obchod</string>
+    <string name="store_form_name_label">Názov obchodu</string>
+    <string name="store_form_street_label">Ulica a číslo (voliteľné)</string>
+    <string name="store_form_city_label">Mesto</string>
+    <string name="store_form_postal_code_label">PSČ (voliteľné)</string>
+    <string name="store_form_similar_warning">Nemyslíš skôr niektorý z týchto už existujúcich obchodov?</string>
+    <string name="store_form_save_changes">Uložiť zmeny</string>
+    <string name="store_form_create">Založiť obchod</string>
+    <string name="store_form_back_without_creating">Späť bez založenia</string>
+
+    <string name="store_company_id_section_title">%1$s (voliteľné)</string>
+    <string name="store_company_id_hint">Pre podnikovú predajňu alebo SZČO, kde samotný názov nestačí na jednoznačnú identifikáciu.</string>
+    <string name="store_company_id_load_from_registry">Načítať z ARES</string>
+    <string name="store_company_id_shape_invalid">%1$s musí mať %2$d číslic.</string>
+    <string name="store_company_id_not_found_in_registry">V ARES sme toto IČO nenašli.</string>
+
+    <string name="store_location_section_title">Súradnice (voliteľné)</string>
+    <string name="store_location_hint">Bez súradníc obchod nenájde „Nájsť v okolí“, len ručné hľadanie podľa názvu — dajú sa doplniť aj neskôr.</string>
+    <string name="store_location_find_coordinates">Nájsť súradnice</string>
+    <string name="store_location_use_my_location">Použiť moju polohu</string>
+    <string name="store_location_will_use_map_position">Použije sa poloha z mapy nižšie / tvoja aktuálna poloha.</string>
 </resources>

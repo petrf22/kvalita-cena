@@ -14,8 +14,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cz.kvalitacena.BuildConfig
+import cz.kvalitacena.R
 
 /**
  * Záložka "Nastavení" — placeholder podle zadání ("doplním později"), ale ne prázdný: sekce
@@ -27,10 +29,10 @@ import cz.kvalitacena.BuildConfig
 @Composable
 fun SettingsScreen() {
   Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-    Text("Nastavení", style = MaterialTheme.typography.headlineSmall)
+    Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
     Spacer()
 
-    Text("Jazyk", style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.settings_language), style = MaterialTheme.typography.titleMedium)
     Spacer()
     val current = currentAppLang()
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -46,17 +48,12 @@ fun SettingsScreen() {
     HorizontalDivider()
     Spacer()
 
-    Text("Zdroje dat", style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.settings_data_sources), style = MaterialTheme.typography.titleMedium)
+    Spacer()
+    Text(stringResource(R.string.settings_data_sources_body), style = MaterialTheme.typography.bodyMedium)
     Spacer()
     Text(
-      "Ceny a hodnocení kvality jsou vlastní komunitní data. Odkazy do Open Food Facts jsou " +
-        "podle licence ODbL (Open Database License) — data se nikam nekopírují, appka jen " +
-        "odkazuje na zdroj.",
-      style = MaterialTheme.typography.bodyMedium,
-    )
-    Spacer()
-    Text(
-      "Souřadnice provozoven vycházejí z OpenStreetMap © přispěvatelé OpenStreetMap, licence ODbL.",
+      stringResource(R.string.settings_osm_attribution),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -64,7 +61,7 @@ fun SettingsScreen() {
     HorizontalDivider()
     Spacer()
     Text(
-      "Verze appky ${BuildConfig.VERSION_NAME}",
+      stringResource(R.string.settings_app_version, BuildConfig.VERSION_NAME),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

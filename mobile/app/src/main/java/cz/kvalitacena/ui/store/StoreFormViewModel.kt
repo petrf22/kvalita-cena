@@ -5,16 +5,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cz.kvalitacena.R
 import cz.kvalitacena.network.CreateStoreInput
 import cz.kvalitacena.network.GeocodeCandidate
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Store
 import cz.kvalitacena.network.UpdateStoreInput
+import cz.kvalitacena.ui.common.UiText
+import cz.kvalitacena.ui.common.companyIdDigits
+import cz.kvalitacena.ui.common.companyIdLabelRes
+import cz.kvalitacena.ui.common.toUiText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val SIMILAR_CHECK_DEBOUNCE_MS = 400L
+
+/** Appka zatím zná jen tyhle tři země (docs/lokalizace.md) — detekovaná jiná se nepoužije. */
+private val KNOWN_COUNTRIES = setOf("CZ", "SK", "PL")
 
 /**
  * Založení provozovny mimo skenování/GPS — pro zápis ceny bez sdílení polohy nebo zpětně
@@ -41,12 +49,21 @@ class StoreFormViewModel(
   var postalCode by mutableStateOf("")
   var ico by mutableStateOf("")
 
+  /**
+   * Určuje popisek/tvar IČO-NIP a viditelnost "Načíst z ARES" (docs/lokalizace.md). V režimu
+   * editace jde ze store.country (provozovna zemi už má), při zakládání ji appka nezná předem
+   * — výchozí CZ se přepíše, jen když reverseGeocode ("Použít mou polohu") vrátí jinou zemi
+   * z appce známou.
+   */
+  var country by mutableStateOf("CZ")
+    private set
+
   var loadingExisting by mutableStateOf(editingStoreId != null)
     private set
 
   var icoLookupLoading by mutableStateOf(false)
     private set
-  var icoLookupError by mutableStateOf<String?>(null)
+  var icoLookupError by mutableStateOf<UiText?>(null)
     private set
 
   // "Našli jsme podobné" — povinný krok před uložením (docs/datovy-model.md), server má
@@ -74,7 +91,7 @@ class StoreFormViewModel(
 
   var saving by mutableStateOf(false)
     private set
-  var saveError by mutableStateOf<String?>(null)
+  var saveError by mutableStateOf<UiText?>(null)
     private set
   var created by mutableStateOf<Store?>(null)
     private set
@@ -92,6 +109,7 @@ class StoreFormViewModel(
           city = store.city
           postalCode = store.postalCode.orEmpty()
           ico = store.ico.orEmpty()
+          country = store.country
           // Store (GraphQL) nevrací osmRef zvoleného kandidáta (jen core.store.osm_ref
           // interně), takže se u editace nedá obnovit "vybraný kandidát" — jen souřadnice
           // samotné. Dokud se souřadnice na mapě nezmění, uloží se zpátky jako COMMUNITY
@@ -100,7 +118,7 @@ class StoreFormViewModel(
           manualLon = store.lon
         }
       } catch (e: Exception) {
-        saveError = "Načtení obchodu se nepovedlo, zkus to prosím znovu."
+        saveError = e.toUiText()
       } finally {
         loadingExisting = false
       }
@@ -135,8 +153,12 @@ class StoreFormViewModel(
 
   fun lookupIco() {
     val trimmed = ico.trim()
-    if (!isIcoShapeValid(trimmed) || trimmed.isBlank()) {
-      icoLookupError = "IČO musí mít 8 číslic."
+    if (!isIcoShapeValid(trimmed, country) || trimmed.isBlank()) {
+      val digits = companyIdDigits(country)
+      icoLookupError = UiText.Res(
+        R.string.store_company_id_shape_invalid,
+        listOf(UiText.Res(companyIdLabelRes(country)), digits ?: 0),
+      )
       return
     }
     icoLookupLoading = true
@@ -145,7 +167,7 @@ class StoreFormViewModel(
       try {
         val company = graphQlClient.companyByIco(trimmed)
         if (company == null) {
-          icoLookupError = "V ARES jsme tohle IČO nenašli."
+          icoLookupError = UiText.Res(R.string.store_company_id_not_found_in_registry)
         } else {
           if (name.isBlank()) name = company.name
           if (street.isBlank()) company.street?.let { street = it }
@@ -153,7 +175,7 @@ class StoreFormViewModel(
           if (postalCode.isBlank()) company.postalCode?.let { postalCode = it }
         }
       } catch (e: Exception) {
-        icoLookupError = "Dotaz do ARES se nepovedl, zkus to prosím znovu."
+        icoLookupError = e.toUiText()
       } finally {
         icoLookupLoading = false
       }
@@ -205,6 +227,11 @@ class StoreFormViewModel(
         if (street.isBlank()) result.street?.let { street = it }
         if (city.isBlank()) result.city?.let { city = it }
         if (postalCode.isBlank()) result.postalCode?.let { postalCode = it }
+        // Jen při zakládání — editovaná provozovna svou zemi už má (docs/lokalizace.md).
+        // Neznámá země (appka umí jen CZ/SK/PL) se ignoruje, zůstane výchozí CZ.
+        if (!isEditing && result.country in KNOWN_COUNTRIES) {
+          country = result.country!!
+        }
       } catch (e: Exception) {
         // Fail-soft na backendu i tady — adresa prostě zůstane nedoplněná.
       } finally {
@@ -214,7 +241,7 @@ class StoreFormViewModel(
   }
 
   fun submit() {
-    if (!isStoreFormValid(name, city) || !isIcoShapeValid(ico)) return
+    if (!isStoreFormValid(name, city) || !isIcoShapeValid(ico, country)) return
     saving = true
     saveError = null
     val lat = selectedCandidate?.lat ?: manualLat
@@ -246,6 +273,7 @@ class StoreFormViewModel(
             street = street.trim().ifBlank { null },
             city = city.trim(),
             postalCode = postalCode.trim().ifBlank { null },
+            country = country,
             ico = ico.trim().ifBlank { null },
             lat = lat,
             lon = lon,
@@ -255,11 +283,7 @@ class StoreFormViewModel(
           graphQlClient.createStore(input)
         }
       } catch (e: Exception) {
-        saveError = e.message ?: if (isEditing) {
-          "Uložení změn se nepovedlo, zkus to prosím znovu."
-        } else {
-          "Založení obchodu se nepovedlo, zkus to prosím znovu."
-        }
+        saveError = e.toUiText()
       } finally {
         saving = false
       }

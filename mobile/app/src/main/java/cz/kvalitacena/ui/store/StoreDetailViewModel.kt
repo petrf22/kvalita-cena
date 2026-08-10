@@ -5,9 +5,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cz.kvalitacena.R
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Photo
 import cz.kvalitacena.network.Store
+import cz.kvalitacena.ui.common.UiText
+import cz.kvalitacena.ui.common.toUiText
 import kotlinx.coroutines.launch
 
 /** Webový protějšek: frontend features/store-detail/store-detail-page.ts. */
@@ -25,7 +28,7 @@ class StoreDetailViewModel(
 
   var flagging by mutableStateOf(false)
     private set
-  var flagMessage by mutableStateOf<String?>(null)
+  var flagMessage by mutableStateOf<UiText?>(null)
     private set
 
   init {
@@ -66,13 +69,11 @@ class StoreDetailViewModel(
     viewModelScope.launch {
       try {
         val result = graphQlClient.flagRecord("STORE", storeId)
-        flagMessage = if (result.hidden) {
-          "Díky za nahlášení — provozovna je teď skrytá a čeká na přezkum."
-        } else {
-          "Díky za nahlášení, zaznamenali jsme ho."
-        }
+        flagMessage = UiText.Res(
+          if (result.hidden) R.string.store_report_hidden else R.string.report_acknowledged,
+        )
       } catch (e: Exception) {
-        flagMessage = "Nahlášení se nepovedlo, zkus to prosím znovu."
+        flagMessage = e.toUiText()
       } finally {
         flagging = false
       }

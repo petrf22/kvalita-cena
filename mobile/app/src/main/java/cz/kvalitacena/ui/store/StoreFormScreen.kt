@@ -29,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
@@ -37,11 +38,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
+import cz.kvalitacena.R
 import cz.kvalitacena.location.getCurrentLocation
 import cz.kvalitacena.network.GeocodeCandidate
 import cz.kvalitacena.ui.common.LocationMap
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.SingleLineTextField
+import cz.kvalitacena.ui.common.companyIdLabelRes
+import cz.kvalitacena.ui.common.hasCompanyRegistry
 import kotlinx.coroutines.launch
 
 /**
@@ -98,44 +102,44 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
   }
 
   Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-    Text(if (viewModel.isEditing) "Upravit obchod" else "Nový obchod", style = MaterialTheme.typography.headlineSmall)
+    Text(
+      stringResource(if (viewModel.isEditing) R.string.store_form_edit_title else R.string.store_form_create_title),
+      style = MaterialTheme.typography.headlineSmall,
+    )
     Gap()
 
     SingleLineTextField(
       value = viewModel.name,
       onValueChange = viewModel::onNameChange,
-      label = "Název obchodu",
+      label = stringResource(R.string.store_form_name_label),
       modifier = Modifier.fillMaxWidth(),
     )
     Gap()
     SingleLineTextField(
       value = viewModel.street,
       onValueChange = { viewModel.street = it },
-      label = "Ulice a číslo (volitelné)",
+      label = stringResource(R.string.store_form_street_label),
       modifier = Modifier.fillMaxWidth(),
     )
     Gap()
     SingleLineTextField(
       value = viewModel.city,
       onValueChange = viewModel::onCityChange,
-      label = "Město",
+      label = stringResource(R.string.store_form_city_label),
       modifier = Modifier.fillMaxWidth(),
     )
     Gap()
     SingleLineTextField(
       value = viewModel.postalCode,
       onValueChange = { viewModel.postalCode = it },
-      label = "PSČ (volitelné)",
+      label = stringResource(R.string.store_form_postal_code_label),
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
       modifier = Modifier.fillMaxWidth(),
     )
     Gap()
 
     if (viewModel.similarStores.isNotEmpty()) {
-      Text(
-        "Nemyslíš spíš některý z těchhle už existujících obchodů?",
-        style = MaterialTheme.typography.bodyMedium,
-      )
+      Text(stringResource(R.string.store_form_similar_warning), style = MaterialTheme.typography.bodyMedium)
       viewModel.similarStores.forEach { store ->
         Text(
           "${store.name} — ${store.city}${store.street?.let { ", $it" } ?: ""}",
@@ -149,9 +153,13 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     HorizontalDivider()
     Gap()
 
-    Text("IČO (volitelné)", style = MaterialTheme.typography.titleMedium)
+    val companyIdLabel = stringResource(companyIdLabelRes(viewModel.country))
     Text(
-      "Pro podnikovou prodejnu nebo OSVČ, kde samotný název nestačí k jednoznačné identifikaci.",
+      stringResource(R.string.store_company_id_section_title, companyIdLabel),
+      style = MaterialTheme.typography.titleMedium,
+    )
+    Text(
+      stringResource(R.string.store_company_id_hint),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -160,27 +168,29 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       SingleLineTextField(
         value = viewModel.ico,
         onValueChange = { viewModel.ico = it },
-        label = "IČO",
-        isError = viewModel.ico.isNotBlank() && !isIcoShapeValid(viewModel.ico),
+        label = companyIdLabel,
+        isError = viewModel.ico.isNotBlank() && !isIcoShapeValid(viewModel.ico, viewModel.country),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = Modifier.weight(1f),
       )
-      Button(onClick = { viewModel.lookupIco() }, enabled = !viewModel.icoLookupLoading) {
-        if (viewModel.icoLookupLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-        else Text("Načíst z ARES")
+      if (hasCompanyRegistry(viewModel.country)) {
+        Button(onClick = { viewModel.lookupIco() }, enabled = !viewModel.icoLookupLoading) {
+          if (viewModel.icoLookupLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+          else Text(stringResource(R.string.store_company_id_load_from_registry))
+        }
       }
     }
     viewModel.icoLookupError?.let {
-      Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+      Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
     }
     Gap()
 
     HorizontalDivider()
     Gap()
 
-    Text("Souřadnice (volitelné)", style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.store_location_section_title), style = MaterialTheme.typography.titleMedium)
     Text(
-      "Bez souřadnic obchod nenajde \"Najít v okolí\", jen ruční hledání podle názvu — dají se doplnit i později.",
+      stringResource(R.string.store_location_hint),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -188,11 +198,11 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
       OutlinedButton(onClick = { viewModel.geocode() }, enabled = viewModel.city.isNotBlank() && !viewModel.geocoding) {
         if (viewModel.geocoding) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-        else Text("Najít souřadnice")
+        else Text(stringResource(R.string.store_location_find_coordinates))
       }
       OutlinedButton(onClick = { useMyLocation() }, enabled = !viewModel.locating) {
         if (viewModel.locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-        else Text("Použít mou polohu")
+        else Text(stringResource(R.string.store_location_use_my_location))
       }
     }
     Gap()
@@ -213,7 +223,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
 
     if (viewModel.manualLat != null && viewModel.manualLon != null && viewModel.selectedCandidate == null) {
       Text(
-        "Použije se poloha z mapy níž / tvoje aktuální poloha.",
+        stringResource(R.string.store_location_will_use_map_position),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
@@ -230,22 +240,22 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     Gap()
 
     viewModel.saveError?.let {
-      Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+      Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
       Gap()
     }
 
     Button(
       onClick = { viewModel.submit() },
       enabled = isStoreFormValid(viewModel.name, viewModel.city) &&
-        isIcoShapeValid(viewModel.ico) && !viewModel.saving,
+        isIcoShapeValid(viewModel.ico, viewModel.country) && !viewModel.saving,
       modifier = Modifier.fillMaxWidth(),
     ) {
       if (viewModel.saving) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-      else Text(if (viewModel.isEditing) "Uložit změny" else "Založit obchod")
+      else Text(stringResource(if (viewModel.isEditing) R.string.store_form_save_changes else R.string.store_form_create))
     }
     Gap()
     OutlinedButton(onClick = onDone, enabled = !viewModel.saving, modifier = Modifier.fillMaxWidth()) {
-      Text(if (viewModel.isEditing) "Zrušit" else "Zpět bez založení")
+      Text(stringResource(if (viewModel.isEditing) R.string.common_cancel else R.string.store_form_back_without_creating))
     }
   }
 }

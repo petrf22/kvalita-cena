@@ -5,7 +5,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cz.kvalitacena.R
 import cz.kvalitacena.auth.AuthRepository
+import cz.kvalitacena.ui.common.UiText
+import cz.kvalitacena.ui.common.toUiText
 import kotlinx.coroutines.launch
 
 enum class LoginStep { EMAIL, CODE }
@@ -18,7 +21,7 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
   var code by mutableStateOf("")
   var loading by mutableStateOf(false)
     private set
-  var errorMessage by mutableStateOf<String?>(null)
+  var errorMessage by mutableStateOf<UiText?>(null)
     private set
 
   private var challengeUid: String? = null
@@ -34,7 +37,7 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
         step = LoginStep.CODE
         onSent()
       } catch (e: Exception) {
-        errorMessage = "Nepodařilo se odeslat kód. Zkus to prosím znovu za chvíli."
+        errorMessage = UiText.Res(R.string.login_request_failed)
       } finally {
         loading = false
       }
@@ -51,7 +54,7 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
         authRepository.verifyOtp(uid, code.trim(), email.trim())
         onSuccess()
       } catch (e: Exception) {
-        errorMessage = "Kód je neplatný nebo vypršel. Zkus to prosím znovu."
+        errorMessage = UiText.Res(R.string.login_verify_failed)
       } finally {
         loading = false
       }

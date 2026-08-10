@@ -6,4 +6,187 @@
     <string name="tab_account">Account</string>
     <string name="common_never">never</string>
     <string name="error_generic">Something went wrong, please try again.</string>
+
+    <string name="common_back">Back</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_report">Report</string>
+    <string name="common_unverified">Unverified</string>
+    <string name="report_acknowledged">Thanks for reporting, we\'ve noted it.</string>
+
+    <string name="company_id_label_generic">Company ID</string>
+    <string name="company_id_label_pl">NIP</string>
+
+    <string name="account_title">Account</string>
+    <string name="account_logged_in_fallback">Signed in</string>
+    <string name="account_logout">Sign out</string>
+
+    <string name="login_title">Sign in</string>
+    <string name="login_otp_hint">We\'ll send a six-digit code to your email, no password to remember.</string>
+    <string name="login_email_label">Email</string>
+    <string name="login_send_code">Send code</string>
+    <string name="login_code_hint">We sent a code to %1$s.</string>
+    <string name="login_code_label">Code from email</string>
+    <string name="login_sign_in">Sign in</string>
+    <string name="login_change_email">Use a different email</string>
+    <string name="login_request_failed">We couldn\'t send the code. Please try again shortly.</string>
+    <string name="login_verify_failed">The code is invalid or has expired. Please try again.</string>
+
+    <string name="scan_camera_permission_hint">To scan barcodes, the app needs access to the camera.</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_data_sources">Data sources</string>
+    <string name="settings_data_sources_body">Prices and quality ratings are our own community data. Links to Open Food Facts follow the ODbL (Open Database License) — no data is copied, the app only links to the source.</string>
+    <string name="settings_osm_attribution">Store coordinates are based on OpenStreetMap © OpenStreetMap contributors, ODbL license.</string>
+    <string name="settings_app_version">App version %1$s</string>
+
+    <string name="map_show">Show map</string>
+    <string name="map_hint">Tap the map or drag the marker to the exact spot.</string>
+
+    <string name="photo_alt">Photo</string>
+    <string name="photo_hidden_badge">Hidden</string>
+    <string name="photo_prev">&lt; Previous</string>
+    <string name="photo_next">Next &gt;</string>
+    <string name="photo_set_as_main">Set as main photo</string>
+    <string name="photo_report_hidden">Thanks for reporting — the photo is now hidden and awaiting review.</string>
+    <string name="photo_limit_reached">This record already has the maximum of %1$d photos.</string>
+    <string name="photo_unsupported_format">Only JPEG or PNG photos are supported.</string>
+    <string name="photo_too_large">The photo is too large (max. 8 MB).</string>
+    <string name="photo_take_picture">Take photo</string>
+    <string name="photo_pick_from_gallery">Pick from gallery</string>
+
+    <string name="quality_not_rated">Quality: not rated yet</string>
+    <string name="quality_rated">Quality %1$.1f/5</string>
+    <string name="quality_rated_approximate">Quality %1$.1f/5 (approximate)</string>
+
+    <string name="price_kind_regular">Regular price</string>
+    <string name="price_kind_promo">Promotion</string>
+    <string name="price_kind_club_card">Club card</string>
+    <string name="price_kind_clearance">Clearance</string>
+    <string name="price_kind_multibuy">Multibuy discount</string>
+    <string name="price_kind_unknown">Unknown price kind</string>
+    <string name="price_kind_field_label">Price kind</string>
+
+    <string name="quantity_basis_field_label">Price is stated</string>
+    <string name="quantity_basis_package">Per package</string>
+    <string name="quantity_basis_per_kg">Per kilogram</string>
+    <string name="quantity_basis_per_l">Per litre</string>
+    <string name="quantity_basis_per_piece">Per piece</string>
+
+    <string name="unit_base_count">Piece</string>
+    <string name="unit_base_mass">Weight</string>
+    <string name="unit_base_volume">Volume</string>
+
+    <string name="sort_report_count">By number of reports</string>
+    <string name="sort_price_asc">By price</string>
+    <string name="sort_quality">By quality</string>
+    <string name="sort_last_reported">By last report</string>
+    <string name="sort_name">By name</string>
+
+    <string name="search_field_label">Search for a product</string>
+    <string name="search_action">Search</string>
+    <string name="search_store_filter">Store</string>
+    <string name="search_city_filter">City</string>
+    <string name="search_sort_label">Sort</string>
+    <string name="search_filter_all">All</string>
+    <string name="search_hint">Type what you\'re looking for.</string>
+    <string name="search_not_found">We didn\'t find anything.</string>
+    <string name="search_failed">The search failed, please try again.</string>
+    <string name="search_unknown_price">price unknown</string>
+    <string name="search_confirmations">×%1$d confirmations</string>
+    <string name="search_report_summary">Total reports: %1$d · Last: %2$s</string>
+
+    <string name="chart_not_enough_data">Not enough reports yet for a chart</string>
+    <string name="chart_range_7d">7 days</string>
+    <string name="chart_range_30d">30 days</string>
+    <string name="chart_range_90d">90 days</string>
+    <string name="chart_range_365d">365 days</string>
+    <string name="chart_last">Last: %1$s (%2$s)</string>
+    <string name="chart_min_max">Lowest: %1$s (%2$s) · Highest: %3$s (%4$s)</string>
+    <string name="chart_selected">Selected: %1$s · %2$s · confirmed %3$d×</string>
+
+    <string name="product_not_found">We couldn\'t find this product.</string>
+    <string name="product_edited_by_me">Your edit</string>
+    <string name="product_quality_requires_login">Rating quality requires signing in — go to the Account tab.</string>
+    <string name="product_price_trend">Price trend</string>
+    <string name="product_cheapest_title">Cheapest</string>
+    <string name="product_no_price_yet">No one has entered a price here yet.</string>
+    <string name="product_prices_by_store">Prices by store</string>
+    <string name="product_no_price_be_first">No one has entered a price here yet — be the first.</string>
+    <string name="product_my_price">Your price</string>
+    <string name="product_more_info">More information</string>
+    <string name="product_write_observation">Record a price</string>
+    <string name="product_reported_summary">reported %1$d× · last %2$s</string>
+    <string name="product_report_hidden">Thanks for reporting — the item is now hidden and awaiting review.</string>
+
+    <string name="price_entry_code_unknown">We don\'t yet know the code %1$s in the catalog.</string>
+    <string name="price_entry_create_product">Create product</string>
+    <string name="price_entry_create_product_requires_login">Creating a new product requires signing in — go to the Account tab.</string>
+    <string name="price_entry_current_prices">Current prices by store</string>
+    <string name="price_entry_price_summary">%1$s (%2$s/unit) · %3$d reports</string>
+    <string name="price_entry_write_price">Record a price</string>
+    <string name="price_entry_price_label">Price (%1$s)</string>
+    <string name="price_entry_submit">Record price</string>
+    <string name="price_entry_back_without_price">Back without recording a price</string>
+    <string name="price_entry_submit_success">Price recorded, thanks!</string>
+    <string name="price_entry_location_unavailable">We couldn\'t determine your location — pick a store once data is available.</string>
+
+    <string name="product_form_title">New product</string>
+    <string name="product_form_name_label">Product name</string>
+    <string name="product_form_generic_tag">generic item</string>
+    <string name="product_form_suggestions_hint">Isn\'t it one of these existing items? Tap to use it directly.</string>
+    <string name="product_form_category_label">Category</string>
+    <string name="product_form_category_placeholder">Pick a category</string>
+    <string name="product_form_brand_label">Brand (optional)</string>
+    <string name="product_form_unit_base_label">Base unit</string>
+    <string name="product_form_variable_weight_label">Sold by weight (price always per kg/l, no fixed net content)</string>
+    <string name="product_form_mass_label">Package weight (kg)</string>
+    <string name="product_form_volume_label">Package volume (l)</string>
+    <string name="product_form_pieces_in_pack_label">Pieces per pack (optional)</string>
+    <string name="product_form_code_label">Barcode (optional)</string>
+    <string name="product_form_code_hint">Without a code, a generic item is created (e.g. \"bread for %1$s\" from a receipt) — with lower data confidence, but it can still be recorded.</string>
+    <string name="product_form_submit">Create product</string>
+    <string name="product_form_back_without_creating">Back without creating</string>
+
+    <string name="store_not_found">We couldn\'t find this store.</string>
+    <string name="store_edited_by_me">Your edit</string>
+    <string name="store_pending_confirmation">Awaiting confirmation</string>
+    <string name="store_photos_title">Photos</string>
+    <string name="store_location_title">Location</string>
+    <string name="store_open_in_map_app">Open in maps app</string>
+    <string name="store_no_location">This store doesn\'t have coordinates yet.</string>
+    <string name="store_operator_title">Operator</string>
+    <string name="store_report_hidden">Thanks for reporting — the store is now hidden and awaiting review.</string>
+
+    <string name="store_picker_label">Store</string>
+    <string name="store_picker_add_new">+ Add new store</string>
+    <string name="store_picker_find_nearby">Find nearby</string>
+    <string name="store_picker_hint_logged_in">Type a store name or city, tap \"Find nearby\", or create a store directly.</string>
+    <string name="store_picker_hint_anonymous">Type a store name or city, or tap \"Find nearby\" — creating a new store requires signing in.</string>
+    <string name="store_picker_no_nearby_stores">We didn\'t find any store nearby.</string>
+
+    <string name="store_form_create_title">New store</string>
+    <string name="store_form_edit_title">Edit store</string>
+    <string name="store_form_name_label">Store name</string>
+    <string name="store_form_street_label">Street and number (optional)</string>
+    <string name="store_form_city_label">City</string>
+    <string name="store_form_postal_code_label">Postal code (optional)</string>
+    <string name="store_form_similar_warning">Did you mean one of these existing stores?</string>
+    <string name="store_form_save_changes">Save changes</string>
+    <string name="store_form_create">Create store</string>
+    <string name="store_form_back_without_creating">Back without creating</string>
+
+    <string name="store_company_id_section_title">%1$s (optional)</string>
+    <string name="store_company_id_hint">For a corporate branch or sole trader, where the name alone isn\'t enough to identify it uniquely.</string>
+    <string name="store_company_id_load_from_registry">Load from registry</string>
+    <string name="store_company_id_shape_invalid">%1$s must have %2$d digits.</string>
+    <string name="store_company_id_not_found_in_registry">We couldn\'t find this ID in the registry.</string>
+
+    <string name="store_location_section_title">Coordinates (optional)</string>
+    <string name="store_location_hint">Without coordinates the store won\'t show up in \"Find nearby\", only in name search — they can be added later too.</string>
+    <string name="store_location_find_coordinates">Find coordinates</string>
+    <string name="store_location_use_my_location">Use my location</string>
+    <string name="store_location_will_use_map_position">The position from the map below / your current location will be used.</string>
 </resources>

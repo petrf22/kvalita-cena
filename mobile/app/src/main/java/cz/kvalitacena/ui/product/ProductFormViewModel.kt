@@ -10,6 +10,8 @@ import cz.kvalitacena.network.CreateProductInput
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.ProductSummary
+import cz.kvalitacena.ui.common.UiText
+import cz.kvalitacena.ui.common.toUiText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -50,7 +52,7 @@ class ProductFormViewModel(
 
   var saving by mutableStateOf(false)
     private set
-  var saveError by mutableStateOf<String?>(null)
+  var saveError by mutableStateOf<UiText?>(null)
     private set
   var created by mutableStateOf<Product?>(null)
     private set
@@ -97,7 +99,7 @@ class ProductFormViewModel(
       try {
         created = graphQlClient.productById(summary.id)
       } catch (e: Exception) {
-        saveError = "Nepodařilo se načíst vybrané zboží, zkus to prosím znovu."
+        saveError = e.toUiText()
         usingExisting = false
       } finally {
         saving = false
@@ -126,7 +128,7 @@ class ProductFormViewModel(
         )
         created = graphQlClient.createProduct(input)
       } catch (e: Exception) {
-        saveError = e.message ?: "Založení zboží se nepovedlo, zkus to prosím znovu."
+        saveError = e.toUiText()
       } finally {
         saving = false
       }

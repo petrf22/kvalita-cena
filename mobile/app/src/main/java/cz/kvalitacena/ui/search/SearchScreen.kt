@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -65,12 +66,12 @@ fun SearchScreen(onProductClick: (String) -> Unit) {
       SingleLineTextField(
         value = viewModel.query,
         onValueChange = { viewModel.query = it },
-        label = "Hledat zboží",
+        label = stringResource(R.string.search_field_label),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { viewModel.search() }),
         trailingIcon = {
           IconButton(onClick = { viewModel.search() }) {
-            Icon(painterResource(R.drawable.ic_tab_search), contentDescription = "Hledat")
+            Icon(painterResource(R.drawable.ic_tab_search), contentDescription = stringResource(R.string.search_action))
           }
         },
         modifier = Modifier.fillMaxWidth(),
@@ -82,14 +83,14 @@ fun SearchScreen(onProductClick: (String) -> Unit) {
       horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
       FilterDropdown(
-        label = "Obchod",
+        label = stringResource(R.string.search_store_filter),
         options = viewModel.facets.stores.map { it.id to it.name },
         selected = viewModel.selectedStoreId,
         onSelect = viewModel::onStoreChange,
         modifier = Modifier.weight(1f),
       )
       FilterDropdown(
-        label = "Město",
+        label = stringResource(R.string.search_city_filter),
         options = viewModel.facets.cities.map { it to it },
         selected = viewModel.selectedCity,
         onSelect = viewModel::onCityChange,
@@ -113,19 +114,19 @@ fun SearchScreen(onProductClick: (String) -> Unit) {
 
       viewModel.errorMessage != null -> {
         Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-          Text(viewModel.errorMessage!!, color = MaterialTheme.colorScheme.error)
+          Text(viewModel.errorMessage!!.asString(), color = MaterialTheme.colorScheme.error)
         }
       }
 
       !viewModel.hasSearched -> {
         Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-          Text("Zadej, co hledáš.", style = MaterialTheme.typography.bodyMedium)
+          Text(stringResource(R.string.search_hint), style = MaterialTheme.typography.bodyMedium)
         }
       }
 
       viewModel.items.isEmpty() -> {
         Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-          Text("Nic jsme nenašli.", style = MaterialTheme.typography.bodyMedium)
+          Text(stringResource(R.string.search_not_found), style = MaterialTheme.typography.bodyMedium)
         }
       }
 
@@ -171,7 +172,7 @@ private fun SearchResultRow(item: ProductSearchItem, onClick: () -> Unit) {
       Text(item.product.name, style = MaterialTheme.typography.titleMedium)
       if (!item.product.verified) {
         Text(
-          "Neověřeno",
+          stringResource(R.string.common_unverified),
           style = MaterialTheme.typography.labelSmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
           modifier = Modifier.padding(start = 6.dp),
@@ -188,11 +189,13 @@ private fun SearchResultRow(item: ProductSearchItem, onClick: () -> Unit) {
     ) {
       Column {
         val moneyFormatter = rememberMoneyFormatter(item.currency)
-        val priceText = item.bestPrice?.let { moneyFormatter.format(it) } ?: "cena neznámá"
-        val confirmations = item.bestPriceObservations?.let { " · ×$it potvrzení" } ?: ""
+        val priceText = item.bestPrice?.let { moneyFormatter.format(it) } ?: stringResource(R.string.search_unknown_price)
+        val confirmations = item.bestPriceObservations?.let {
+          " · " + stringResource(R.string.search_confirmations, it)
+        } ?: ""
         Text("$priceText$confirmations", style = MaterialTheme.typography.bodyMedium)
         Text(
-          "Hlášení celkem: ${item.observationCount} · Poslední: ${formatRelativeDate(item.lastObservedAt)}",
+          stringResource(R.string.search_report_summary, item.observationCount, formatRelativeDate(item.lastObservedAt)),
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -212,7 +215,7 @@ private fun FilterDropdown(
   modifier: Modifier = Modifier,
 ) {
   var expanded by remember { mutableStateOf(false) }
-  val selectedLabel = options.find { it.first == selected }?.second ?: "Vše"
+  val selectedLabel = options.find { it.first == selected }?.second ?: stringResource(R.string.search_filter_all)
 
   ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }, modifier = modifier) {
     SingleLineTextField(
@@ -224,7 +227,10 @@ private fun FilterDropdown(
       modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
     )
     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-      DropdownMenuItem(text = { Text("Vše") }, onClick = { onSelect(null); expanded = false })
+      DropdownMenuItem(
+        text = { Text(stringResource(R.string.search_filter_all)) },
+        onClick = { onSelect(null); expanded = false },
+      )
       options.forEach { (value, label) ->
         DropdownMenuItem(text = { Text(label) }, onClick = { onSelect(value); expanded = false })
       }
@@ -239,16 +245,19 @@ private fun SortDropdown(selected: SortOption, onSelect: (SortOption) -> Unit, m
 
   ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }, modifier = modifier) {
     SingleLineTextField(
-      value = selected.label,
+      value = stringResource(selected.labelRes),
       onValueChange = {},
       readOnly = true,
-      label = "Řazení",
+      label = stringResource(R.string.search_sort_label),
       trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
       modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
     )
     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
       SortOption.entries.forEach { option ->
-        DropdownMenuItem(text = { Text(option.label) }, onClick = { onSelect(option); expanded = false })
+        DropdownMenuItem(
+          text = { Text(stringResource(option.labelRes)) },
+          onClick = { onSelect(option); expanded = false },
+        )
       }
     }
   }

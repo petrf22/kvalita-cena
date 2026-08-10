@@ -15,7 +15,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
+import cz.kvalitacena.R
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -47,12 +49,12 @@ fun LocationMap(
 
   Column(modifier = modifier) {
     if (!shown) {
-      Button(onClick = { shown = true }) { Text("Zobrazit mapu") }
+      Button(onClick = { shown = true }) { Text(stringResource(R.string.map_show)) }
     } else {
       MapContent(lat = lat, lon = lon, editable = editable, onPointSelected = onPointSelected)
       if (editable) {
         Text(
-          "Klepni do mapy nebo přetáhni značku na přesné místo.",
+          stringResource(R.string.map_hint),
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
