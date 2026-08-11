@@ -12,5 +12,5 @@ import java.time.OffsetDateTime;
  * PriceAggregationService (běží jen co pár sekund, ale uživatel má vidět svůj zápis okamžitě).
  */
 public record MyPrice(Store store, PriceKind priceKind, BigDecimal priceAmount, BigDecimal unitPrice,
-                       OffsetDateTime observedAt, String currency) {
+                       OffsetDateTime observedAt, String currency, ConvertedPrice converted) {
 }

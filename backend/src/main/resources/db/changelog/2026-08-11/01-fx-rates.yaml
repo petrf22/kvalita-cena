@@ -1,0 +1,82 @@
+# 01-fx-rates.yaml — kurzovní lístek ČNB (docs/lokalizace.md, "Kurzovní lístek a zobrazovací
+# měna"). Vlastní schéma `fx`, ne core/agg — je to externí, kdykoli znovu stažitelná data, ne
+# vlastní observace. Na rozdíl od off/osm sem ale aplikační uživatel PÍŠE (plánovaná úloha
+# uvnitř appky, ne samostatný sync job), proto to není součástí toho páru.
+#
+# CZK je pivot, ne řádek v tabulce — ČNB kótuje kurzy vůči koruně, takže "CZK/CZK = 1" by byl
+# vymyšlený záznam bez zdroje. Křížový kurz se počítá czk_per_unit(from) / czk_per_unit(to)
+# (FxRateService). czk_per_unit je normalizovaná hodnota `rate / amount`, ne syrový ČNB `rate`
+# — ČNB kótuje některé měny po stovkách (HUF: amount=100), násobit syrovým rate by byla tichá
+# stonásobná chyba.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-11-01-create-fx-schema
+      author: Petr F.
+      changes:
+        - sql:
+            comment: Schéma pro kurzovní lístek — odděleně od core/agg, viz hlavička souboru.
+            sql: |
+              CREATE SCHEMA IF NOT EXISTS fx;
+      rollback:
+        - sql:
+            sql: |
+              DROP SCHEMA IF EXISTS fx CASCADE;
+
+  - changeSet:
+      id: 2026-08-11-01-create-fx-exchange-rate
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: fx
+            tableName: exchange_rate
+            columns:
+              - column:
+                  # ČNB `validFor` — den, pro který kurz PLATÍ, ne den stažení (ten je fetched_at).
+                  name: rate_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  constraints:
+                    nullable: false
+              - column:
+                  # Kolik CZK stojí 1 jednotka měny — už normalizované rate/amount (viz hlavička).
+                  name: czk_per_unit
+                  type: NUMERIC(18,6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: VARCHAR(16)
+                  defaultValue: CNB
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fetched_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            schemaName: fx
+            tableName: exchange_rate
+            columnNames: rate_date, currency
+            constraintName: pk_fx_exchange_rate
+        - createIndex:
+            schemaName: fx
+            tableName: exchange_rate
+            indexName: idx_fx_exchange_rate_currency_date
+            columns:
+              - column: { name: currency }
+              - column: { name: rate_date, descending: true }
+        - sql:
+            comment: >
+              Stejný vzorec jako chk_agg_price_current_currency (2026-08-09/01-agg-currency.yaml)
+              — nová měna = řádek v app.fx konfiguraci + tenhle CHECK, ne zásah do kódu. CZK tu
+              záměrně není (je to pivot, ne stahovaná měna).
+            sql: |
+              ALTER TABLE fx.exchange_rate
+                ADD CONSTRAINT chk_fx_exchange_rate_currency CHECK (currency IN ('EUR', 'PLN', 'USD'));
+              ALTER TABLE fx.exchange_rate
+                ADD CONSTRAINT chk_fx_exchange_rate_positive CHECK (czk_per_unit > 0);

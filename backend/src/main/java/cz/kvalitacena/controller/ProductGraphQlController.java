@@ -31,9 +31,11 @@ import cz.kvalitacena.service.Messages;
 import cz.kvalitacena.service.ProductOverlayService;
 import cz.kvalitacena.service.ProductSearchService;
 import cz.kvalitacena.service.QualityRatingService;
+import cz.kvalitacena.service.fx.FxRateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.BatchMapping;
+import org.springframework.graphql.data.method.annotation.ContextValue;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -42,6 +44,7 @@ import org.springframework.stereotype.Controller;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -77,14 +80,16 @@ public class ProductGraphQlController {
   private final Messages messages;
   private final AppUserRepository appUserRepository;
   private final I18nProperties i18nProperties;
+  private final FxRateService fxRateService;
 
   @QueryMapping
   public ProductSearchResult searchProducts(@Argument String query, @Argument Long storeId,
       @Argument String city, @Argument String country, @Argument ProductSort sort,
-      @Argument Integer first, @Argument Integer offset, Authentication authentication) {
+      @Argument Integer first, @Argument Integer offset, Authentication authentication,
+      @ContextValue(name = "displayCurrency", required = false) String displayCurrency) {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
     return productSearchService.search(query, storeId, city, resolveCountry(country, viewer), sort, first,
-        offset, viewer.userId());
+        offset, viewer.userId(), displayCurrency);
   }
 
   @QueryMapping
@@ -158,9 +163,10 @@ public class ProductGraphQlController {
   }
 
   @BatchMapping(typeName = "Product", field = "myPrices")
-  public Map<Product, List<MyPrice>> myPrices(List<Product> products, Authentication authentication) {
+  public Map<Product, List<MyPrice>> myPrices(List<Product> products, Authentication authentication,
+      @ContextValue(name = "displayCurrency", required = false) String displayCurrency) {
     Long viewerId = viewerContextResolver.resolve(authentication).userId();
-    Map<Long, List<MyPrice>> byProduct = myPriceService.myPricesByProductId(productIds(products), viewerId);
+    Map<Long, List<MyPrice>> byProduct = myPriceService.myPricesByProductId(productIds(products), viewerId, displayCurrency);
     Map<Product, List<MyPrice>> result = new LinkedHashMap<>();
     for (Product p : products) {
       result.put(p, byProduct.getOrDefault(p.getId(), List.of()));
@@ -250,7 +256,8 @@ public class ProductGraphQlController {
   }
 
   @BatchMapping(typeName = "Product", field = "stats")
-  public Map<Product, ProductStats> stats(List<Product> products) {
+  public Map<Product, ProductStats> stats(List<Product> products,
+      @ContextValue(name = "displayCurrency", required = false) String displayCurrency) {
     Map<Long, List<PriceCurrent>> byProduct = pricesByProductId(products);
 
     record Raw(int observationCount, int storeCount, OffsetDateTime lastObservedAt,
@@ -296,8 +303,14 @@ public class ProductGraphQlController {
     for (Product p : products) {
       Raw raw = rawByProduct.get(p.getId());
       Store cheapestStore = raw.cheapestStoreId() == null ? null : storesById.get(raw.cheapestStoreId());
+      // Kurz k lastObservedAt, ne dnešní (docs/lokalizace.md) — "nejlevnější" je pořád ta samá
+      // konkrétní observace, jen zobrazená v jiné měně.
+      ConvertedPrice converted = displayCurrency == null || raw.lastObservedAt() == null
+          ? null
+          : ConvertedPrice.from(fxRateService.convert(raw.bestPrice(), raw.bestPriceCurrency(), displayCurrency,
+              raw.lastObservedAt().atZoneSameInstant(ZoneOffset.UTC).toLocalDate()));
       result.put(p, new ProductStats(raw.observationCount(), raw.storeCount(), raw.lastObservedAt(),
-          raw.bestPrice(), raw.bestUnitPrice(), cheapestStore, raw.bestPriceCurrency()));
+          raw.bestPrice(), raw.bestUnitPrice(), cheapestStore, raw.bestPriceCurrency(), converted));
     }
     return result;
   }

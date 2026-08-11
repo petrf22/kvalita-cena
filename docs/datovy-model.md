@@ -12,6 +12,8 @@ auth   účty, přihlašovací výzvy, tokeny
 agg    předpočítané agregáty pro grafy
 off    data z Open Food Facts — NIKDY se nekopírují do core.*
 osm    souřadnice provozoven z OpenStreetMap — NIKDY se nekopírují do core.*
+fx     kurzovní lístek ČNB (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna") —
+       na rozdíl od off/osm sem appka sama PÍŠE (plánovaná úloha), ne read-only sync cizích dat
 ```
 
 Open Food Facts **i OpenStreetMap** jsou pod licencí ODbL se share-alike podmínkou — kdyby
@@ -88,9 +90,11 @@ výrazu indexu.
 
 ## Agregace jsou tabulky, ne materialized view
 
-`agg.price_current` (PK `product_id, store_id, price_kind`) a `agg.price_daily` (PK navíc
-`day`, doplněno pro graf vývoje ceny — viz `2026-08-05/02-agg-price-daily.yaml`) se plní přes
-`agg.recompute_queue`, ne `REFRESH MATERIALIZED VIEW`.
+`agg.price_current` (PK `product_id, store_id, price_kind, currency`) a `agg.price_daily` (PK
+navíc `day`, doplněno pro graf vývoje ceny — viz `2026-08-05/02-agg-price-daily.yaml`) se plní
+přes `agg.recompute_queue`, ne `REFRESH MATERIALIZED VIEW`. `currency` přibyla do obou PK až
+`2026-08-09/01-agg-currency.yaml` (docs/lokalizace.md, „Multi-měna") — bez ní by u příhraniční
+prodejny s částí záznamů v CZK a částí v EUR vážený medián počítal z čísel ve dvou měnách.
 
 Důvod: váhy záznamů se mění **zpětně** — klesne někomu reputace, odhalí se sybil klastr —
 takže je potřeba cílený přepočet konkrétních buněk (`product_id, store_id`), ne přepočet

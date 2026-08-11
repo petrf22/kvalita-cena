@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
@@ -83,6 +83,27 @@ export class ProductDetailPage {
   protected readonly historyPoints = signal<PricePoint[]>([]);
   protected readonly historyLoading = signal(false);
   protected readonly historyCurrency = signal<string | null>(null);
+  /** Vyplněná, jen když appka řadu skutečně přepočítala (X-Display-Currency), viz docs/lokalizace.md. */
+  protected readonly historyDisplayCurrency = signal<string | null>(null);
+  protected readonly chartCurrency = computed(
+    () => this.historyDisplayCurrency() ?? this.historyCurrency(),
+  );
+  /**
+   * Graf jednu řadu nikdy nemíchá napříč měnami — když appka přepočítává, substituují se
+   * OBĚ pole (unit i balení) najednou, se svým vlastním denním kurzem (PricePoint.convertedUnitPrice).
+   * Chybí-li kurz pro konkrétní den (starší než nejstarší stažený lístek), spadne ten bod zpět
+   * na originál — vzácný okrajový případ, ne důvod celou řadu zahodit.
+   */
+  protected readonly chartPoints = computed<PricePoint[]>(() => {
+    const displayCurrency = this.historyDisplayCurrency();
+    const points = this.historyPoints();
+    if (!displayCurrency) return points;
+    return points.map((point) => ({
+      ...point,
+      unitPrice: point.convertedUnitPrice ?? point.unitPrice,
+      priceAmount: point.convertedPriceAmount ?? point.priceAmount,
+    }));
+  });
   protected readonly selectedDays = signal(90);
   protected readonly selectedPriceKind = signal<PriceKind>('REGULAR');
 
@@ -126,6 +147,7 @@ export class ProductDetailPage {
         next: (history) => {
           this.historyPoints.set(history.points);
           this.historyCurrency.set(history.currency);
+          this.historyDisplayCurrency.set(history.displayCurrency ?? null);
           this.historyLoading.set(false);
         },
         error: () => {

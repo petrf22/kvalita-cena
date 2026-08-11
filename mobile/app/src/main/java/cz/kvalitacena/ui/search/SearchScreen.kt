@@ -188,8 +188,11 @@ private fun SearchResultRow(item: ProductSearchItem, onClick: () -> Unit) {
       horizontalArrangement = Arrangement.SpaceBetween,
     ) {
       Column {
-        val moneyFormatter = rememberMoneyFormatter(item.currency)
-        val priceText = item.bestPrice?.let { moneyFormatter.format(it) } ?: stringResource(R.string.search_unknown_price)
+        // Přepočtená hodnota (X-Display-Currency), když je — jinak originál v měně obchodu
+        // (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna").
+        val displayAmount = item.converted?.amount ?: item.bestPrice
+        val moneyFormatter = rememberMoneyFormatter(item.converted?.currency ?: item.currency)
+        val priceText = displayAmount?.let { moneyFormatter.format(it) } ?: stringResource(R.string.search_unknown_price)
         val confirmations = item.bestPriceObservations?.let {
           " · " + stringResource(R.string.search_confirmations, it)
         } ?: ""

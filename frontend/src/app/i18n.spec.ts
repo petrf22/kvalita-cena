@@ -55,9 +55,12 @@ function interpolationParams(value: string): Set<string> {
 }
 
 /** Scope adresáře (search/, store/, ...) + kořen (prefix '.', reprezentuje public/i18n/cs.json atd.). */
-const scopeDirs = ['.', ...readdirSync(I18N_ROOT, { withFileTypes: true })
-  .filter((entry) => entry.isDirectory())
-  .map((entry) => entry.name)];
+const scopeDirs = [
+  '.',
+  ...readdirSync(I18N_ROOT, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name),
+];
 
 describe.each(scopeDirs)('i18n scope %s', (scope) => {
   const scopeDir = join(I18N_ROOT, scope);
@@ -95,7 +98,9 @@ describe.each(scopeDirs)('i18n scope %s', (scope) => {
 });
 
 describe('enum-labels.ts keys exist in every language bundle', () => {
-  const rootBundles = new Map(LANGUAGES.map((lang) => [lang, flatten(loadBundle(I18N_ROOT, lang))]));
+  const rootBundles = new Map(
+    LANGUAGES.map((lang) => [lang, flatten(loadBundle(I18N_ROOT, lang))]),
+  );
 
   const allKeyRecords = {
     PRICE_KIND_KEYS,

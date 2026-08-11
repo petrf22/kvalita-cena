@@ -154,21 +154,28 @@ export type UpdateStoreInput = {
   street?: string | null | undefined;
 };
 
+export type FxInfoQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type FxInfoQuery = { fxInfo: { displayCurrencies: Array<string>, latestRateDate: string | null, attribution: string } };
+
 export type StoreFieldsFragment = { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null };
 
 export type PhotoFieldsFragment = { id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string };
 
 export type StoreDetailFieldsFragment = { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string }>, chain: { id: string, name: string, chainType: ChainType } | null };
 
-export type PriceCurrentFieldsFragment = { priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } };
+export type ConvertedPriceFieldsFragment = { amount: number, currency: string, rateDate: string };
 
-export type ProductFieldsFragment = { id: string, name: string, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> };
+export type PriceCurrentFieldsFragment = { priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null };
 
-export type ProductDetailFieldsFragment = { gtin: string | null, myQualityRating: number | null, id: string, name: string, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, verified: boolean, editedByMe: boolean, stats: { observationCount: number, storeCount: number, lastObservedAt: string | null, bestPrice: number | null, bestUnitPrice: number | null, bestPriceCurrency: string | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }, quality: { average: number | null, count: number }, externalLinks: Array<{ kind: ExternalLinkKind, label: string, url: string, attribution: string }>, myPrices: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }>, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string }>, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> };
+export type ProductFieldsFragment = { id: string, name: string, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }> };
+
+export type ProductDetailFieldsFragment = { gtin: string | null, myQualityRating: number | null, id: string, name: string, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, verified: boolean, editedByMe: boolean, stats: { observationCount: number, storeCount: number, lastObservedAt: string | null, bestPrice: number | null, bestUnitPrice: number | null, bestPriceCurrency: string | null, bestPriceConverted: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }, quality: { average: number | null, count: number }, externalLinks: Array<{ kind: ExternalLinkKind, label: string, url: string, attribution: string }>, myPrices: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }>, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string }>, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }> };
 
 export type ProductSummaryFieldsFragment = { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } };
 
-export type SearchItemFieldsFragment = { observationCount: number, bestPrice: number | null, bestUnitPrice: number | null, currency: string | null, bestPriceObservations: number | null, lastObservedAt: string | null, qualityAverage: number | null, qualityCount: number, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } }, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null };
+export type SearchItemFieldsFragment = { observationCount: number, bestPrice: number | null, bestUnitPrice: number | null, currency: string | null, bestPriceObservations: number | null, lastObservedAt: string | null, qualityAverage: number | null, qualityCount: number, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } }, converted: { amount: number, currency: string, rateDate: string } | null, convertedUnit: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null };
 
 export type UpdatePhotoMutationVariables = Exact<{
   id: string;
@@ -205,7 +212,7 @@ export type SearchProductsQueryVariables = Exact<{
 }>;
 
 
-export type SearchProductsQuery = { searchProducts: { totalCount: number, hasMore: boolean, items: Array<{ observationCount: number, bestPrice: number | null, bestUnitPrice: number | null, currency: string | null, bestPriceObservations: number | null, lastObservedAt: string | null, qualityAverage: number | null, qualityCount: number, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } }, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }> } };
+export type SearchProductsQuery = { searchProducts: { totalCount: number, hasMore: boolean, items: Array<{ observationCount: number, bestPrice: number | null, bestUnitPrice: number | null, currency: string | null, bestPriceObservations: number | null, lastObservedAt: string | null, qualityAverage: number | null, qualityCount: number, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } }, converted: { amount: number, currency: string, rateDate: string } | null, convertedUnit: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }> } };
 
 export type SearchFacetsQueryVariables = Exact<{
   country?: string | null | undefined;
@@ -219,14 +226,14 @@ export type ProductQueryVariables = Exact<{
 }>;
 
 
-export type ProductQuery = { product: { gtin: string | null, myQualityRating: number | null, id: string, name: string, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, verified: boolean, editedByMe: boolean, stats: { observationCount: number, storeCount: number, lastObservedAt: string | null, bestPrice: number | null, bestUnitPrice: number | null, bestPriceCurrency: string | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }, quality: { average: number | null, count: number }, externalLinks: Array<{ kind: ExternalLinkKind, label: string, url: string, attribution: string }>, myPrices: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }>, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string }>, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> } | null };
+export type ProductQuery = { product: { gtin: string | null, myQualityRating: number | null, id: string, name: string, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, verified: boolean, editedByMe: boolean, stats: { observationCount: number, storeCount: number, lastObservedAt: string | null, bestPrice: number | null, bestUnitPrice: number | null, bestPriceCurrency: string | null, bestPriceConverted: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }, quality: { average: number | null, count: number }, externalLinks: Array<{ kind: ExternalLinkKind, label: string, url: string, attribution: string }>, myPrices: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }>, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string }>, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }> } | null };
 
 export type ProductByCodeQueryVariables = Exact<{
   code: string;
 }>;
 
 
-export type ProductByCodeQuery = { productByCode: { gtin: string | null, myQualityRating: number | null, id: string, name: string, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, verified: boolean, editedByMe: boolean, stats: { observationCount: number, storeCount: number, lastObservedAt: string | null, bestPrice: number | null, bestUnitPrice: number | null, bestPriceCurrency: string | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }, quality: { average: number | null, count: number }, externalLinks: Array<{ kind: ExternalLinkKind, label: string, url: string, attribution: string }>, myPrices: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }>, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string }>, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> } | null };
+export type ProductByCodeQuery = { productByCode: { gtin: string | null, myQualityRating: number | null, id: string, name: string, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, verified: boolean, editedByMe: boolean, stats: { observationCount: number, storeCount: number, lastObservedAt: string | null, bestPrice: number | null, bestUnitPrice: number | null, bestPriceCurrency: string | null, bestPriceConverted: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }, quality: { average: number | null, count: number }, externalLinks: Array<{ kind: ExternalLinkKind, label: string, url: string, attribution: string }>, myPrices: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }>, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string }>, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }> } | null };
 
 export type ProductSuggestionsQueryVariables = Exact<{
   name: string;
@@ -246,7 +253,7 @@ export type CreateProductMutationVariables = Exact<{
 }>;
 
 
-export type CreateProductMutation = { createProduct: { gtin: string | null, myQualityRating: number | null, id: string, name: string, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, verified: boolean, editedByMe: boolean, stats: { observationCount: number, storeCount: number, lastObservedAt: string | null, bestPrice: number | null, bestUnitPrice: number | null, bestPriceCurrency: string | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }, quality: { average: number | null, count: number }, externalLinks: Array<{ kind: ExternalLinkKind, label: string, url: string, attribution: string }>, myPrices: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }>, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string }>, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> } };
+export type CreateProductMutation = { createProduct: { gtin: string | null, myQualityRating: number | null, id: string, name: string, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, verified: boolean, editedByMe: boolean, stats: { observationCount: number, storeCount: number, lastObservedAt: string | null, bestPrice: number | null, bestUnitPrice: number | null, bestPriceCurrency: string | null, bestPriceConverted: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }, quality: { average: number | null, count: number }, externalLinks: Array<{ kind: ExternalLinkKind, label: string, url: string, attribution: string }>, myPrices: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }>, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string }>, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }> } };
 
 export type UpdateProductMutationVariables = Exact<{
   id: string;
@@ -254,7 +261,7 @@ export type UpdateProductMutationVariables = Exact<{
 }>;
 
 
-export type UpdateProductMutation = { updateProduct: { gtin: string | null, myQualityRating: number | null, id: string, name: string, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, verified: boolean, editedByMe: boolean, stats: { observationCount: number, storeCount: number, lastObservedAt: string | null, bestPrice: number | null, bestUnitPrice: number | null, bestPriceCurrency: string | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }, quality: { average: number | null, count: number }, externalLinks: Array<{ kind: ExternalLinkKind, label: string, url: string, attribution: string }>, myPrices: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }>, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string }>, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> } };
+export type UpdateProductMutation = { updateProduct: { gtin: string | null, myQualityRating: number | null, id: string, name: string, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, verified: boolean, editedByMe: boolean, stats: { observationCount: number, storeCount: number, lastObservedAt: string | null, bestPrice: number | null, bestUnitPrice: number | null, bestPriceCurrency: string | null, bestPriceConverted: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }, quality: { average: number | null, count: number }, externalLinks: Array<{ kind: ExternalLinkKind, label: string, url: string, attribution: string }>, myPrices: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }>, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string }>, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }> } };
 
 export type FlagProductMutationVariables = Exact<{
   recordId: string;
@@ -271,7 +278,7 @@ export type PriceHistoryQueryVariables = Exact<{
 }>;
 
 
-export type PriceHistoryQuery = { priceHistory: { priceKind: PriceKind, days: number, currency: string, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, points: Array<{ day: string, priceAmount: number | null, unitPrice: number, nObs: number, storeCount: number }> } };
+export type PriceHistoryQuery = { priceHistory: { priceKind: PriceKind, days: number, currency: string, displayCurrency: string | null, rateAttribution: string | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, points: Array<{ day: string, priceAmount: number | null, unitPrice: number, nObs: number, storeCount: number, convertedUnitPrice: number | null, convertedPriceAmount: number | null }> } };
 
 export type RateProductMutationVariables = Exact<{
   productId: string;
@@ -464,6 +471,13 @@ fragment PhotoFields on Photo {
   hidden
   attribution
 }`, {"fragmentName":"StoreDetailFields"}) as unknown as TypedDocumentString<StoreDetailFieldsFragment, unknown>;
+export const ConvertedPriceFieldsFragmentDoc = new TypedDocumentString(`
+    fragment ConvertedPriceFields on ConvertedPrice {
+  amount
+  currency
+  rateDate
+}
+    `, {"fragmentName":"ConvertedPriceFields"}) as unknown as TypedDocumentString<ConvertedPriceFieldsFragment, unknown>;
 export const PriceCurrentFieldsFragmentDoc = new TypedDocumentString(`
     fragment PriceCurrentFields on PriceCurrent {
   store {
@@ -477,6 +491,9 @@ export const PriceCurrentFieldsFragmentDoc = new TypedDocumentString(`
   nEff
   lastObservedAt
   confidence
+  converted {
+    ...ConvertedPriceFields
+  }
 }
     fragment StoreFields on Store {
   id
@@ -497,6 +514,11 @@ export const PriceCurrentFieldsFragmentDoc = new TypedDocumentString(`
   verified
   editedByMe
   pendingConfirmation
+}
+fragment ConvertedPriceFields on ConvertedPrice {
+  amount
+  currency
+  rateDate
 }`, {"fragmentName":"PriceCurrentFields"}) as unknown as TypedDocumentString<PriceCurrentFieldsFragment, unknown>;
 export const ProductFieldsFragmentDoc = new TypedDocumentString(`
     fragment ProductFields on Product {
@@ -547,6 +569,11 @@ export const ProductFieldsFragmentDoc = new TypedDocumentString(`
   editedByMe
   pendingConfirmation
 }
+fragment ConvertedPriceFields on ConvertedPrice {
+  amount
+  currency
+  rateDate
+}
 fragment PriceCurrentFields on PriceCurrent {
   store {
     ...StoreFields
@@ -559,6 +586,9 @@ fragment PriceCurrentFields on PriceCurrent {
   nEff
   lastObservedAt
   confidence
+  converted {
+    ...ConvertedPriceFields
+  }
 }`, {"fragmentName":"ProductFields"}) as unknown as TypedDocumentString<ProductFieldsFragment, unknown>;
 export const ProductDetailFieldsFragmentDoc = new TypedDocumentString(`
     fragment ProductDetailFields on Product {
@@ -571,6 +601,9 @@ export const ProductDetailFieldsFragmentDoc = new TypedDocumentString(`
     bestPrice
     bestUnitPrice
     bestPriceCurrency
+    bestPriceConverted {
+      ...ConvertedPriceFields
+    }
     cheapestStore {
       ...StoreFields
     }
@@ -595,6 +628,9 @@ export const ProductDetailFieldsFragmentDoc = new TypedDocumentString(`
     unitPrice
     currency
     observedAt
+    converted {
+      ...ConvertedPriceFields
+    }
   }
   photos {
     ...PhotoFields
@@ -631,6 +667,11 @@ fragment PhotoFields on Photo {
   hidden
   attribution
 }
+fragment ConvertedPriceFields on ConvertedPrice {
+  amount
+  currency
+  rateDate
+}
 fragment PriceCurrentFields on PriceCurrent {
   store {
     ...StoreFields
@@ -643,6 +684,9 @@ fragment PriceCurrentFields on PriceCurrent {
   nEff
   lastObservedAt
   confidence
+  converted {
+    ...ConvertedPriceFields
+  }
 }
 fragment ProductFields on Product {
   id
@@ -705,6 +749,12 @@ export const SearchItemFieldsFragmentDoc = new TypedDocumentString(`
   lastObservedAt
   qualityAverage
   qualityCount
+  converted {
+    ...ConvertedPriceFields
+  }
+  convertedUnit {
+    ...ConvertedPriceFields
+  }
   cheapestStore {
     ...StoreFields
   }
@@ -729,6 +779,11 @@ export const SearchItemFieldsFragmentDoc = new TypedDocumentString(`
   editedByMe
   pendingConfirmation
 }
+fragment ConvertedPriceFields on ConvertedPrice {
+  amount
+  currency
+  rateDate
+}
 fragment ProductSummaryFields on Product {
   id
   name
@@ -747,6 +802,15 @@ fragment ProductSummaryFields on Product {
   verified
   editedByMe
 }`, {"fragmentName":"SearchItemFields"}) as unknown as TypedDocumentString<SearchItemFieldsFragment, unknown>;
+export const FxInfoDocument = new TypedDocumentString(`
+    query FxInfo {
+  fxInfo {
+    displayCurrencies
+    latestRateDate
+    attribution
+  }
+}
+    `) as unknown as TypedDocumentString<FxInfoQuery, FxInfoQueryVariables>;
 export const UpdatePhotoDocument = new TypedDocumentString(`
     mutation UpdatePhoto($id: ID!, $caption: String, $sortOrder: Int) {
   updatePhoto(id: $id, caption: $caption, sortOrder: $sortOrder) {
@@ -815,6 +879,11 @@ export const SearchProductsDocument = new TypedDocumentString(`
   editedByMe
   pendingConfirmation
 }
+fragment ConvertedPriceFields on ConvertedPrice {
+  amount
+  currency
+  rateDate
+}
 fragment ProductSummaryFields on Product {
   id
   name
@@ -845,6 +914,12 @@ fragment SearchItemFields on ProductSearchItem {
   lastObservedAt
   qualityAverage
   qualityCount
+  converted {
+    ...ConvertedPriceFields
+  }
+  convertedUnit {
+    ...ConvertedPriceFields
+  }
   cheapestStore {
     ...StoreFields
   }
@@ -915,6 +990,11 @@ fragment PhotoFields on Photo {
   hidden
   attribution
 }
+fragment ConvertedPriceFields on ConvertedPrice {
+  amount
+  currency
+  rateDate
+}
 fragment PriceCurrentFields on PriceCurrent {
   store {
     ...StoreFields
@@ -927,6 +1007,9 @@ fragment PriceCurrentFields on PriceCurrent {
   nEff
   lastObservedAt
   confidence
+  converted {
+    ...ConvertedPriceFields
+  }
 }
 fragment ProductFields on Product {
   id
@@ -966,6 +1049,9 @@ fragment ProductDetailFields on Product {
     bestPrice
     bestUnitPrice
     bestPriceCurrency
+    bestPriceConverted {
+      ...ConvertedPriceFields
+    }
     cheapestStore {
       ...StoreFields
     }
@@ -990,6 +1076,9 @@ fragment ProductDetailFields on Product {
     unitPrice
     currency
     observedAt
+    converted {
+      ...ConvertedPriceFields
+    }
   }
   photos {
     ...PhotoFields
@@ -1032,6 +1121,11 @@ fragment PhotoFields on Photo {
   hidden
   attribution
 }
+fragment ConvertedPriceFields on ConvertedPrice {
+  amount
+  currency
+  rateDate
+}
 fragment PriceCurrentFields on PriceCurrent {
   store {
     ...StoreFields
@@ -1044,6 +1138,9 @@ fragment PriceCurrentFields on PriceCurrent {
   nEff
   lastObservedAt
   confidence
+  converted {
+    ...ConvertedPriceFields
+  }
 }
 fragment ProductFields on Product {
   id
@@ -1083,6 +1180,9 @@ fragment ProductDetailFields on Product {
     bestPrice
     bestUnitPrice
     bestPriceCurrency
+    bestPriceConverted {
+      ...ConvertedPriceFields
+    }
     cheapestStore {
       ...StoreFields
     }
@@ -1107,6 +1207,9 @@ fragment ProductDetailFields on Product {
     unitPrice
     currency
     observedAt
+    converted {
+      ...ConvertedPriceFields
+    }
   }
   photos {
     ...PhotoFields
@@ -1183,6 +1286,11 @@ fragment PhotoFields on Photo {
   hidden
   attribution
 }
+fragment ConvertedPriceFields on ConvertedPrice {
+  amount
+  currency
+  rateDate
+}
 fragment PriceCurrentFields on PriceCurrent {
   store {
     ...StoreFields
@@ -1195,6 +1303,9 @@ fragment PriceCurrentFields on PriceCurrent {
   nEff
   lastObservedAt
   confidence
+  converted {
+    ...ConvertedPriceFields
+  }
 }
 fragment ProductFields on Product {
   id
@@ -1234,6 +1345,9 @@ fragment ProductDetailFields on Product {
     bestPrice
     bestUnitPrice
     bestPriceCurrency
+    bestPriceConverted {
+      ...ConvertedPriceFields
+    }
     cheapestStore {
       ...StoreFields
     }
@@ -1258,6 +1372,9 @@ fragment ProductDetailFields on Product {
     unitPrice
     currency
     observedAt
+    converted {
+      ...ConvertedPriceFields
+    }
   }
   photos {
     ...PhotoFields
@@ -1300,6 +1417,11 @@ fragment PhotoFields on Photo {
   hidden
   attribution
 }
+fragment ConvertedPriceFields on ConvertedPrice {
+  amount
+  currency
+  rateDate
+}
 fragment PriceCurrentFields on PriceCurrent {
   store {
     ...StoreFields
@@ -1312,6 +1434,9 @@ fragment PriceCurrentFields on PriceCurrent {
   nEff
   lastObservedAt
   confidence
+  converted {
+    ...ConvertedPriceFields
+  }
 }
 fragment ProductFields on Product {
   id
@@ -1351,6 +1476,9 @@ fragment ProductDetailFields on Product {
     bestPrice
     bestUnitPrice
     bestPriceCurrency
+    bestPriceConverted {
+      ...ConvertedPriceFields
+    }
     cheapestStore {
       ...StoreFields
     }
@@ -1375,6 +1503,9 @@ fragment ProductDetailFields on Product {
     unitPrice
     currency
     observedAt
+    converted {
+      ...ConvertedPriceFields
+    }
   }
   photos {
     ...PhotoFields
@@ -1394,6 +1525,8 @@ export const PriceHistoryDocument = new TypedDocumentString(`
     priceKind
     days
     currency
+    displayCurrency
+    rateAttribution
     store {
       ...StoreFields
     }
@@ -1403,6 +1536,8 @@ export const PriceHistoryDocument = new TypedDocumentString(`
       unitPrice
       nObs
       storeCount
+      convertedUnitPrice
+      convertedPriceAmount
     }
   }
 }

@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import cz.kvalitacena.AppContainer
 import cz.kvalitacena.BuildConfig
 import cz.kvalitacena.R
 
@@ -25,6 +26,10 @@ import cz.kvalitacena.R
  * v detailu produktu (docs/datovy-model.md). Přepínač jazyka (docs/lokalizace.md) je jediné
  * místo v appce, kde jde volba jazyka nastavit ručně — mobilní protějšek webové
  * frontend/src/app/features/settings/settings-page.ts.
+ *
+ * Přepínač zobrazovací měny (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna") je druhá,
+ * nezávislá volba — [DisplayCurrency] `null` (měna obchodu) je výchozí, appka pak vůbec
+ * neposílá X-Display-Currency a nic nepřepočítává ([DisplayCurrencyStore]).
  */
 @Composable
 fun SettingsScreen() {
@@ -48,12 +53,46 @@ fun SettingsScreen() {
     HorizontalDivider()
     Spacer()
 
+    Text(stringResource(R.string.settings_currency), style = MaterialTheme.typography.titleMedium)
+    Spacer()
+    val store = AppContainer.displayCurrencyStore
+    val currentCurrency = store.currency
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      FilterChip(
+        selected = currentCurrency == null,
+        onClick = { store.select(null) },
+        label = { Text(stringResource(R.string.settings_currency_store_default)) },
+      )
+      DisplayCurrency.entries.forEach { currency ->
+        FilterChip(
+          selected = currency == currentCurrency,
+          onClick = { store.select(currency) },
+          label = { Text(currency.code) },
+        )
+      }
+    }
+    Spacer()
+    Text(
+      stringResource(R.string.settings_currency_note),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer()
+    HorizontalDivider()
+    Spacer()
+
     Text(stringResource(R.string.settings_data_sources), style = MaterialTheme.typography.titleMedium)
     Spacer()
     Text(stringResource(R.string.settings_data_sources_body), style = MaterialTheme.typography.bodyMedium)
     Spacer()
     Text(
       stringResource(R.string.settings_osm_attribution),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer()
+    Text(
+      stringResource(R.string.settings_fx_attribution),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

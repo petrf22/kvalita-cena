@@ -37,9 +37,13 @@
 
     <string name="settings_title">Settings</string>
     <string name="settings_language">Language</string>
+    <string name="settings_currency">Display currency</string>
+    <string name="settings_currency_store_default">Store currency (default)</string>
+    <string name="settings_currency_note">The conversion is only for comparison — you always report a price in the store\'s currency, this just changes how it\'s displayed.</string>
     <string name="settings_data_sources">Data sources</string>
     <string name="settings_data_sources_body">Prices and quality ratings are our own community data. Links to Open Food Facts follow the ODbL (Open Database License) — no data is copied, the app only links to the source.</string>
     <string name="settings_osm_attribution">Store coordinates are based on OpenStreetMap © OpenStreetMap contributors, ODbL license.</string>
+    <string name="settings_fx_attribution">Exchange rates come from the Czech National Bank\'s daily rate list.</string>
     <string name="settings_app_version">App version %1$s</string>
 
     <string name="map_show">Show map</string>

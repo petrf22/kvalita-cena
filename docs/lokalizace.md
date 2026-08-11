@@ -99,6 +99,53 @@ ceny řadilo CZK vedle PLN v jednom sloupci. `Product.stats`/`ProductSearchItem`
 **dominantní měnu** (nejvíc `n_obs`) mezi skupinami stejného produktu, ne naivní `.min()` napříč
 měnami — to by dovolilo 15 PLN vypadat levněji než 20 CZK jen proto, že číslo je menší.
 
+### Kurzovní lístek a zobrazovací měna
+
+Doplněk k multi-měně výš: appka umí cenu **zobrazit** přepočtenou do jiné měny, aniž by to
+jakkoli měnilo, v čem se cena **hlásí** (pořád jen CZK/EUR/PLN podle `store.country`). Kurzy
+stahuje `ExchangeRateSyncService` denně z veřejného API ČNB (`https://api.cnb.cz/cnbapi`) do
+vlastního schématu `fx.exchange_rate` — vedle `core`/`agg`, ne v nich, protože je to externí,
+kdykoli znovu stažitelná data (stejný důvod jako `off`/`osm`), ale na rozdíl od nich appka do
+`fx.*` sama **píše** (plánovaná úloha uvnitř appky, ne read-only sync cizích dat).
+
+- **CZK je pivot, ne řádek v tabulce.** ČNB kótuje kurzy vůči koruně, `fx.exchange_rate` proto
+  CZK vůbec neobsahuje — křížový kurz (`FxRateService.convert`) jde vždy `from → CZK → to`.
+- **USD je čistě referenční měna pro srovnání napříč zeměmi** — appka v ní cenu zapsat nedovolí.
+  `app.fx.display-currencies` (CZK/EUR/PLN/USD) je proto úmyslně JINÝ seznam než
+  `app.i18n.country-currency` (jen CZK/EUR/PLN), který zná `CurrencyResolver`/`isSupported` a
+  na který je navázaný CHECK constraint `agg.*`/`core.price_observation`. Přidání USD do
+  `country-currency` by appce dovolilo zapsat cenu v měně, kterou žádná provozovna nemá.
+- **Přepočítává se vždy kurzem PLATNÝM K DATU CENY, nikdy dnešním.** `PricePoint` v grafu
+  přepočítává KAŽDÝ bod svým vlastním dnem (`FxRateService.convert(amount, from, to, den)`) —
+  jinak by graf vývoje ceny v USD mísil pohyb ceny s pohybem kurzu, ne ukazoval jen tu cenu.
+  `PriceCurrent`/`ProductStats.bestPrice`/`MyPrice` používají `lastObservedAt`/`observedAt`.
+  ČNB o víkendech a svátcích nepublikuje — `ExchangeRateRepository
+  .findTopByCurrencyAndRateDateLessThanEqualOrderByRateDateDesc` proto hledá poslední
+  publikovaný lístek **k datu nebo dřívější**, nikdy přesnou rovnost na `rate_date`.
+- **Nic z přepočtu se neukládá do `agg.*`.** Protože `currency` je už součástí PK
+  `agg.price_current`/`agg.price_daily`, je každý řádek jednoměnový a medián je invariantní
+  vůči lineární transformaci — vynásobení uloženého mediánu jedním kurzem je matematicky
+  totéž jako přepočíst všechny observace a medián spočítat znovu. Přidání sloupce s převedenou
+  částkou by se muselo přepočítávat při každém novém kurzovním lístku (denně, celá historie);
+  přepočet proto patří výhradně do čtecí cesty (`GraphQL` typ `ConvertedPrice`, pole `converted`/
+  `bestPriceConverted`/`convertedUnit`/`convertedUnitPrice` — `null`, když se nepřepočítalo).
+- **Zobrazovací měna jde hlavičkou `X-Display-Currency`, ne argumentem dotazu.** Je to
+  preference VIEWERA napříč celým dotazem, stejně jako `Accept-Language`
+  (`UserAwareLocaleResolver`) — a `@BatchMapping` pole (`Product.prices`/`myPrices`) argumenty
+  na poli stejně nepodporují. `DisplayCurrencyInterceptor` (`WebGraphQlInterceptor`) ji čte do
+  `GraphQLContext` pod klíčem `displayCurrency`, odkud si ji resolvery berou přes
+  `@ContextValue(required = false)`. Neplatná/nepodporovaná hodnota se tiše ignoruje — stejný
+  vzorec jako `SubmitObservationInput.currency`. Web (`DisplayCurrencyService` + funkcionální
+  interceptor) i mobil (`ui/settings/DisplayCurrencyStore` + `DisplayCurrencyInterceptor` na
+  sdíleném `OkHttpClient`) drží volbu jen lokálně (localStorage/SharedPreferences) — server o ní
+  neví nic mimo hlavičku jednotlivého requestu, `null`/chybějící hlavička = „měna obchodu"
+  (výchozí), appka pak nic nepřepočítává.
+- **Backfill při prázdné `fx.exchange_rate`** (`ExchangeRateSyncService`) se odvodí od
+  `min(core.price_observation.observed_at)`, zarovná na začátek roku a omezí
+  `app.fx.max-backfill-years` zpátky — appka tak nestahuje víc historie, než kolik má vlastních
+  cen. Katalog s cenami zapsanými do minulosti (`observedAt` v `SubmitObservationInput`) proto
+  spolehlivě dostane kurz i pro zpětně dopsaný den.
+
 ### Kategorie: `core.category_i18n`, ne klíče v bundlech
 
 Kategorie jsou **data, ne UI chrome** — rostou (seed zatím jen zlomek reálného stromu) a musí
@@ -201,6 +248,9 @@ vůbec používá.
 | Backend | `i18n.MessageBundleTest` | sk/en/pl mají přesně stejné klíče jako český základ, každý `ErrorCode` má klíč, počet `{0}`/`{1}` placeholderů sedí napříč jazyky |
 | Backend | `i18n.HardcodedTextTest` | žádný nový český text natvrdo ve `throw new *Exception(...)` mimo allowlist technických výjimek |
 | Backend | `i18n.GraphQlErrorLocalizationTest` | `extensions.code` je stejný napříč jazyky, `message` se mění podle `Accept-Language`, neznámý jazyk padá na český základ |
+| Backend | `service.fx.FxRateServiceTest` | křížový kurz přes CZK jako pivot, kurz k víkendu padá na poslední pátek (ne rovnost na datu), chybějící kurz vrací prázdný `Optional`, ne výjimku |
+| Backend | `service.fx.ExchangeRateSyncServiceTest` | backfill se odvodí z `min(observed_at)` a je omezen `max-backfill-years`, druhý běh nezaloží duplicity, sledují se jen `app.fx.tracked-currencies` |
+| Backend | `service.PriceHistoryServiceTest` | dva dny grafu s různými kurzy dají dva různě přepočtené body (ne jeden dnešní kurz pro celou řadu) |
 | Frontend | `i18n.spec.ts` | každý scope bundle má ve sk/en/pl stejné klíče jako cs, interpolační parametry sedí, žádná hodnota není prázdná/rovná klíči, všech deset `*_KEYS` z `enum-labels.ts` existuje ve všech čtyřech jazycích |
 | Frontend | `no-hardcoded-text.spec.ts` | česká diakritika ve statickém textovém uzlu nebo statickém atributu (`placeholder`, `nzTitle`, `alt`, ...) v libovolné šabloně |
 | Mobil | lint (`MissingTranslation`/`ExtraTranslation`/`MissingQuantity` jako error) | `values-*/` nezaostávají za `values/`, `<plurals>` mají všechny tvary daného jazyka |

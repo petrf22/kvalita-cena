@@ -115,16 +115,24 @@ backend má `ErrorCode`/`AppException` (`extensions.code` je závazný kontrakt,
 lokalizovaný fallback podle `Accept-Language`), `MessageSource`/`UserAwareLocaleResolver`,
 měnu jako součást PK `agg.price_current`/`agg.price_daily` (jinak by vážený medián mísil CZK/
 EUR/PLN), `core.category_i18n`, strukturovaný `HandleGenerator` (rod přídavného jména),
-`CompanyIdValidator`/`CompanyRegistry` per zemi (IČO CZ/SK, NIP PL). Frontend má Transloco
-(runtime přepínání, `FormatService` nad `Intl.*` misto `CurrencyPipe`/`DatePipe`/`DecimalPipe`,
-anglické routy s českými redirecty) se všemi stránkami přepsanými na i18n klíče. Mobil má
+`CompanyIdValidator`/`CompanyRegistry` per zemi (IČO CZ/SK, NIP PL). **Kurzovní lístek ČNB a
+zobrazovací měna** (`docs/lokalizace.md`, „Kurzovní lístek a zobrazovací měna"): denní stahování
+do vlastního schématu `fx.exchange_rate` (`ExchangeRateSyncService`, backfill od nejstarší ceny
+v DB), přepočet vždy kurzem platným k datu CENY, nikdy dnešním (`FxRateService`), nic z toho
+nejde do `agg.*` — přepočet je čistě čtecí vrstva (`ConvertedPrice`), přenášená hlavičkou
+`X-Display-Currency`, ne argumentem dotazu; USD je jen zobrazovací (nejde v ní zapsat cenu).
+Frontend má Transloco (runtime přepínání, `FormatService` nad `Intl.*` misto `CurrencyPipe`/
+`DatePipe`/`DecimalPipe`, anglické routy s českými redirecty) se všemi stránkami přepsanými na
+i18n klíče a přepínačem zobrazovací měny v Nastavení (`DisplayCurrencyService`). Mobil má
 `values-{sk,en,pl}/` vedle `values/` (čeština, zdroj i fallback), `AppCompatDelegate
 .setApplicationLocales()`, `UiText` (`Res`/`Plural`/`Raw`) pro odklad `stringResource` do
-Compose kontextu, `Money.kt`/`CompanyId.kt` zrcadlící backendová pravidla — všechny tři appky
-mají testy/lint guardy hlídající shodu klíčů napříč jazyky (`docs/lokalizace.md`, „Testy a CI
-guardy"). **Neimplementováno**: klientský překlad chyb podle `code` na mobilu (appka ukáže
-`serverMessage`, protože `network/Dto.kt` negeneruje typy ze schématu jako web), samostatný
-přepínač země nezávislý na jazyku v UI (země/měna se zatím odvozuje z obchodu).
+Compose kontextu, `Money.kt`/`CompanyId.kt` zrcadlící backendová pravidla, stejný přepínač měny
+(`ui/settings/DisplayCurrencyStore`) — všechny tři appky mají testy/lint guardy hlídající shodu
+klíčů napříč jazyky (`docs/lokalizace.md`, „Testy a CI guardy"). **Neimplementováno**: klientský
+překlad chyb podle `code` na mobilu (appka ukáže `serverMessage`, protože `network/Dto.kt`
+negeneruje typy ze schématu jako web), samostatný přepínač země nezávislý na jazyku v UI
+(země/měna zápisu se zatím odvozuje z obchodu — přepínač zobrazovací měny výš je nezávislá věc,
+nic nemění na tom, v jaké měně appka cenu ukládá).
 
 Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
 `PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec
@@ -216,7 +224,8 @@ změnou v daných oblastech.
 ### Oddělení schémat kvůli ODbL
 
 PostgreSQL schémata: **`core`** (vlastní data), **`auth`**, **`agg`** (agregáty pro grafy),
-**`off`** (Open Food Facts), **`osm`** (souřadnice provozoven z OpenStreetMap).
+**`off`** (Open Food Facts), **`osm`** (souřadnice provozoven z OpenStreetMap), **`fx`**
+(kurzovní lístek ČNB, `docs/lokalizace.md` — na rozdíl od `off`/`osm` sem appka sama píše).
 
 Open Food Facts **i OpenStreetMap** jsou pod ODbL se share-alike podmínkou. Žádná hodnota z
 `off.*`/`osm.*` se **nikdy nekopíruje** do `core.*` — spojení vzniká až při čtení v service vrstvě
@@ -263,6 +272,10 @@ jakoukoli změnou v katalogu/cenách:
 - **Měna je součástí primárního klíče `agg.price_current`/`agg.price_daily`.** Nový sloupec bez
   úpravy PK/indexů by vážený medián tiše mísil napříč CZK/EUR/PLN — bez chyby při zápisu, jen
   špatné číslo v grafu. Index má `currency` **před** `unit_price`.
+- **Přepočet do zobrazovací měny je jen čtecí vrstva, nikdy se neukládá do `agg.*`.** Kurz musí
+  být vždy platný K DATU CENY, nikdy dnešní — jinak by graf vývoje ceny v cizí měně mísil pohyb
+  ceny s pohybem kurzu. USD je jen zobrazovací, nejde v ní zapsat cenu (`app.fx.display-
+  currencies` ≠ `app.i18n.country-currency`).
 - **Volba jazyka je na klientovi.** `auth.app_user.locale`/`country` slouží výhradně
   asynchronnímu výstupu (OTP e-mail) — appka z nich nikdy nerozhoduje, co klient uvidí, jen se
   tam volba klienta uloží.

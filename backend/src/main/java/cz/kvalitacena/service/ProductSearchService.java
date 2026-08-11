@@ -1,5 +1,6 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.controller.ConvertedPrice;
 import cz.kvalitacena.controller.ProductSearchItem;
 import cz.kvalitacena.controller.ProductSearchResult;
 import cz.kvalitacena.controller.SearchFacets;
@@ -10,10 +11,13 @@ import cz.kvalitacena.db.repo.ProductSearchCriteria;
 import cz.kvalitacena.db.repo.ProductSearchRow;
 import cz.kvalitacena.db.repo.ProductSort;
 import cz.kvalitacena.db.repo.StoreRepository;
+import cz.kvalitacena.service.fx.FxRateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,10 +40,11 @@ public class ProductSearchService {
   private final ProductRepository productRepository;
   private final StoreRepository storeRepository;
   private final ProductOverlayService productOverlayService;
+  private final FxRateService fxRateService;
 
   @Transactional(readOnly = true)
   public ProductSearchResult search(String query, Long storeId, String city, String country, ProductSort sort,
-      Integer first, Integer offset, Long viewerId) {
+      Integer first, Integer offset, Long viewerId, String displayCurrency) {
     int limitedFirst = clamp(first == null ? 20 : first, 1, MAX_FIRST);
     int limitedOffset = clamp(offset == null ? 0 : offset, 0, MAX_OFFSET);
     ProductSearchCriteria criteria = new ProductSearchCriteria(
@@ -68,7 +73,7 @@ public class ProductSearchService {
 
     List<ProductSearchItem> items = rows.stream()
         .filter(row -> productsById.containsKey(row.productId())) // produkt mezitím zmizel/smazán
-        .map(row -> toItem(row, productsById, storesById))
+        .map(row -> toItem(row, productsById, storesById, displayCurrency))
         .toList();
 
     long totalCount = productRepository.count(criteria);
@@ -82,7 +87,15 @@ public class ProductSearchService {
         storeRepository.findDistinctCitiesWithPrices(country));
   }
 
-  private ProductSearchItem toItem(ProductSearchRow row, Map<Long, Product> productsById, Map<Long, Store> storesById) {
+  private ProductSearchItem toItem(ProductSearchRow row, Map<Long, Product> productsById, Map<Long, Store> storesById,
+      String displayCurrency) {
+    // Kurz k lastObservedAt, ne dnešní (docs/lokalizace.md) — stejné pravidlo jako ProductStats.
+    LocalDate rateAt = row.lastObservedAt() == null ? null
+        : row.lastObservedAt().atZoneSameInstant(ZoneOffset.UTC).toLocalDate();
+    ConvertedPrice converted = displayCurrency == null || rateAt == null ? null
+        : ConvertedPrice.from(fxRateService.convert(row.bestPrice(), row.currency(), displayCurrency, rateAt));
+    ConvertedPrice convertedUnit = displayCurrency == null || rateAt == null ? null
+        : ConvertedPrice.from(fxRateService.convert(row.bestUnitPrice(), row.currency(), displayCurrency, rateAt));
     return new ProductSearchItem(
         productsById.get(row.productId()),
         (int) row.observationCount(),
@@ -93,7 +106,9 @@ public class ProductSearchService {
         row.lastObservedAt(),
         row.qualityAverage(),
         (int) row.qualityCount(),
-        row.currency());
+        row.currency(),
+        converted,
+        convertedUnit);
   }
 
   private int clamp(int value, int min, int max) {

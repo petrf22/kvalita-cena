@@ -50,6 +50,12 @@ app-photo-gallery {
   margin-bottom: 24px;
 }
 
+.chart-fx-note {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+
 .my-prices-list {
   margin: 0;
   padding-left: 20px;

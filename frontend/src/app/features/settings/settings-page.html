@@ -17,11 +17,31 @@
         </nz-select>
       </nz-form-control>
     </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-label>{{ t('settings.currencyLabel') }}</nz-form-label>
+      <nz-form-control [nzExtra]="t('settings.currencyNote')">
+        <nz-select
+          [ngModel]="displayCurrency.currency()"
+          (ngModelChange)="onCurrencyChange($event)"
+          name="currency"
+          style="width: 200px"
+        >
+          <nz-option [nzValue]="null" [nzLabel]="t('settings.currencyStoreDefaultOption')" />
+          @for (currency of currencyOptions; track currency) {
+            <nz-option [nzValue]="currency" [nzLabel]="currency" />
+          }
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
   </form>
 
   <nz-card [nzTitle]="t('settings.sourcesTitle')" class="sources-card">
     <p>{{ t('settings.sourcesText') }}</p>
     <p class="sources-note">{{ t('settings.sourcesNote') }}</p>
+    @if (fxInfo(); as info) {
+      <p class="sources-note">{{ t('settings.fxLabel', { attribution: info.attribution }) }}</p>
+    }
   </nz-card>
 
   <p class="app-version">{{ t('settings.appVersionLabel', { version: appVersion }) }}</p>

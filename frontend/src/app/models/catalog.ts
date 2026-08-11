@@ -12,6 +12,7 @@ import type {
   CreateProductInput,
   CreateStoreInput,
   FlagProductMutation,
+  FxInfoQuery,
   GeocodeAddressQuery,
   PhotoFieldsFragment,
   PriceCurrentFieldsFragment,
@@ -105,3 +106,6 @@ export type ReverseGeocodeResult = ReverseGeocodeQuery['reverseGeocode'];
 export type CompanyInfo = NonNullable<CompanyByIcoQuery['companyByIco']>;
 
 export type FlagResult = FlagProductMutation['flagRecord'];
+
+/** Zobrazovací měny a stav kurzovního lístku ČNB — pro atribuci na kartě Zdroje dat (docs/lokalizace.md). */
+export type FxInfo = FxInfoQuery['fxInfo'];

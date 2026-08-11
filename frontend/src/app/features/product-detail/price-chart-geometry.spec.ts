@@ -2,7 +2,15 @@ import { computeGeometry } from './price-chart-geometry';
 import { PricePoint } from '../../models/catalog';
 
 function point(day: string, unitPrice: number): PricePoint {
-  return { day, unitPrice, priceAmount: unitPrice, nObs: 1, storeCount: 1 };
+  return {
+    day,
+    unitPrice,
+    priceAmount: unitPrice,
+    nObs: 1,
+    storeCount: 1,
+    convertedUnitPrice: null,
+    convertedPriceAmount: null,
+  };
 }
 
 describe('computeGeometry', () => {

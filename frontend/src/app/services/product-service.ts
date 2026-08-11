@@ -191,6 +191,8 @@ export class ProductService {
           priceKind
           days
           currency
+          displayCurrency
+          rateAttribution
           store {
             ...StoreFields
           }
@@ -200,6 +202,8 @@ export class ProductService {
             unitPrice
             nObs
             storeCount
+            convertedUnitPrice
+            convertedPriceAmount
           }
         }
       }

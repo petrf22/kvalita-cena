@@ -31,9 +31,12 @@ private val STORE_DETAIL_FIELDS = """
   photos { $PHOTO_FIELDS }
 """
 
+private val CONVERTED_PRICE_FIELDS = "amount currency rateDate"
+
 private val PRICE_CURRENT_FIELDS = """
   store { $STORE_FIELDS }
   priceKind unitPrice priceAmount nObs nEff lastObservedAt confidence currency
+  converted { $CONVERTED_PRICE_FIELDS }
 """
 
 private val PRODUCT_FIELDS = """
@@ -50,12 +53,16 @@ private val PRODUCT_DETAIL_FIELDS = """
   $PRODUCT_FIELDS
   stats {
     observationCount storeCount lastObservedAt bestPrice bestUnitPrice bestPriceCurrency
+    bestPriceConverted { $CONVERTED_PRICE_FIELDS }
     cheapestStore { $STORE_FIELDS }
   }
   quality { average count }
   myQualityRating
   externalLinks { kind label url attribution }
-  myPrices { store { $STORE_FIELDS } priceKind priceAmount unitPrice observedAt currency }
+  myPrices {
+    store { $STORE_FIELDS } priceKind priceAmount unitPrice observedAt currency
+    converted { $CONVERTED_PRICE_FIELDS }
+  }
   photos { $PHOTO_FIELDS }
 """
 
@@ -71,6 +78,8 @@ private val SEARCH_ITEM_FIELDS = """
   product { $PRODUCT_SUMMARY_FIELDS }
   observationCount bestPrice bestUnitPrice bestPriceObservations lastObservedAt
   qualityAverage qualityCount currency
+  converted { $CONVERTED_PRICE_FIELDS }
+  convertedUnit { $CONVERTED_PRICE_FIELDS }
   cheapestStore { $STORE_FIELDS }
 """
 
@@ -157,9 +166,9 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     val gql = """
       query(${'$'}productId: ID!, ${'$'}priceKind: PriceKind, ${'$'}storeId: ID, ${'$'}days: Int) {
         priceHistory(productId: ${'$'}productId, priceKind: ${'$'}priceKind, storeId: ${'$'}storeId, days: ${'$'}days) {
-          priceKind days currency
+          priceKind days currency displayCurrency rateAttribution
           store { $STORE_FIELDS }
-          points { day priceAmount unitPrice nObs storeCount }
+          points { day priceAmount unitPrice nObs storeCount convertedUnitPrice convertedPriceAmount }
         }
       }
     """
@@ -190,6 +199,12 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
   suspend fun me(): Viewer? {
     val gql = "{ me { publicHandle displayName createdAt trusted } }"
     return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(MeData.serializer())).me
+  }
+
+  /** Zobrazovací měny a stav kurzovního lístku ČNB — pro atribuci v Nastavení (docs/lokalizace.md). */
+  suspend fun fxInfo(): FxInfo {
+    val gql = "{ fxInfo { displayCurrencies latestRateDate attribution } }"
+    return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(FxInfoData.serializer())).fxInfo
   }
 
   suspend fun submitObservation(input: SubmitObservationInput): PriceObservation {

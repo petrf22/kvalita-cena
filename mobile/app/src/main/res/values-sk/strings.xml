@@ -37,9 +37,13 @@
 
     <string name="settings_title">Nastavenia</string>
     <string name="settings_language">Jazyk</string>
+    <string name="settings_currency">Zobrazovacia mena</string>
+    <string name="settings_currency_store_default">Mena obchodu (predvolené)</string>
+    <string name="settings_currency_note">Prepočet slúži len na porovnanie — cenu vždy hlásite v mene obchodu, toto len mení, ako sa zobrazuje.</string>
     <string name="settings_data_sources">Zdroje dát</string>
     <string name="settings_data_sources_body">Ceny a hodnotenia kvality sú vlastné komunitné dáta. Odkazy do Open Food Facts sú podľa licencie ODbL (Open Database License) — dáta sa nikam nekopírujú, appka len odkazuje na zdroj.</string>
     <string name="settings_osm_attribution">Súradnice prevádzok vychádzajú z OpenStreetMap © prispievatelia OpenStreetMap, licencia ODbL.</string>
+    <string name="settings_fx_attribution">Kurzy mien vychádzajú z kurzového lístka Českej národnej banky.</string>
     <string name="settings_app_version">Verzia appky %1$s</string>
 
     <string name="map_show">Zobraziť mapu</string>

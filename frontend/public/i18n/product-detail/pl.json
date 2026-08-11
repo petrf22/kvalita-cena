@@ -7,6 +7,7 @@
   "report": "Zgłoś",
   "qualityLoginHint": "Ocena jakości wymaga zalogowania — przejdź do strony Konto.",
   "priceChartTitle": "Historia ceny",
+  "chartConverted": "Przeliczono kursem Czeskiego Banku Narodowego z danego dnia, nie kursem dzisiejszym.",
   "days": "{count, plural, one {# dzień} few {# dni} many {# dni} other {# dni}}",
   "cheapestTitle": "Najtaniej",
   "currentPricesTitle": "Aktualne ceny według sklepów",

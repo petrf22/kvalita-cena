@@ -95,7 +95,13 @@
             </td>
             <td>
               @if (item.bestPrice != null) {
-                {{ item.bestPrice | money: item.currency }}
+                @if (item.converted; as converted) {
+                  <span [title]="item.bestPrice | money: item.currency">{{
+                    converted.amount | money: converted.currency
+                  }}</span>
+                } @else {
+                  {{ item.bestPrice | money: item.currency }}
+                }
                 @if (item.bestPriceObservations) {
                   <span class="confirmations">{{
                     t('search.confirmations', { count: item.bestPriceObservations })

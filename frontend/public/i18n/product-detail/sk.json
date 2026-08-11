@@ -7,6 +7,7 @@
   "report": "Nahlásiť",
   "qualityLoginHint": "Hodnotenie kvality vyžaduje prihlásenie — prejdi na stránku Účet.",
   "priceChartTitle": "Vývoj ceny",
+  "chartConverted": "Prepočítané kurzom ČNB k jednotlivým dňom, nie dnešným kurzom.",
   "days": "{count, plural, one {# deň} few {# dni} many {# dňa} other {# dní}}",
   "cheapestTitle": "Najlacnejšie",
   "currentPricesTitle": "Aktuálne ceny po obchodoch",

@@ -58,6 +58,20 @@ export const storeDetailFieldsFragment = graphql(`
   }
 `);
 
+/**
+ * Přepočet do zobrazovací měny kurzem ČNB (docs/lokalizace.md, "Kurzovní lístek a zobrazovací
+ * měna") — null vždy, když se nepřepočítalo (X-Display-Currency nedorazila, rovná se původní
+ * měně, nebo pro daný den kurz neznáme). `displayCurrencyInterceptor` posílá hlavičku, appka
+ * pak zobrazí `converted` místo originálu, když je vyplněný.
+ */
+export const convertedPriceFieldsFragment = graphql(`
+  fragment ConvertedPriceFields on ConvertedPrice {
+    amount
+    currency
+    rateDate
+  }
+`);
+
 export const priceCurrentFieldsFragment = graphql(`
   fragment PriceCurrentFields on PriceCurrent {
     store {
@@ -71,6 +85,9 @@ export const priceCurrentFieldsFragment = graphql(`
     nEff
     lastObservedAt
     confidence
+    converted {
+      ...ConvertedPriceFields
+    }
   }
 `);
 
@@ -117,6 +134,9 @@ export const productDetailFieldsFragment = graphql(`
       bestPrice
       bestUnitPrice
       bestPriceCurrency
+      bestPriceConverted {
+        ...ConvertedPriceFields
+      }
       cheapestStore {
         ...StoreFields
       }
@@ -141,6 +161,9 @@ export const productDetailFieldsFragment = graphql(`
       unitPrice
       currency
       observedAt
+      converted {
+        ...ConvertedPriceFields
+      }
     }
     photos {
       ...PhotoFields
@@ -182,6 +205,12 @@ export const searchItemFieldsFragment = graphql(`
     lastObservedAt
     qualityAverage
     qualityCount
+    converted {
+      ...ConvertedPriceFields
+    }
+    convertedUnit {
+      ...ConvertedPriceFields
+    }
     cheapestStore {
       ...StoreFields
     }

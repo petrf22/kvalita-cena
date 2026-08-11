@@ -17,7 +17,15 @@ const CZECH_DIACRITICS = 'ěščřžýáíéúůťďňĚŠČŘŽÝÁÍÉÚŮŤĎ
 const STATIC_TEXT_NODE = new RegExp(`>([^<{]*[${CZECH_DIACRITICS}][^<]*)<`, 'g');
 
 // Známé atributy nesené jako STATICKÝ literál (ne `[attr]="..."` binding) s českou diakritikou.
-const STATIC_ATTRIBUTES = ['placeholder', 'nzPlaceHolder', 'nzTitle', 'nzMessage', 'title', 'alt', 'aria-label'];
+const STATIC_ATTRIBUTES = [
+  'placeholder',
+  'nzPlaceHolder',
+  'nzTitle',
+  'nzMessage',
+  'title',
+  'alt',
+  'aria-label',
+];
 const STATIC_ATTRIBUTE_PATTERN = new RegExp(
   `\\s(?:${STATIC_ATTRIBUTES.join('|')})="([^"]*[${CZECH_DIACRITICS}][^"]*)"`,
   'g',

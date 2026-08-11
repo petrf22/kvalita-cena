@@ -162,3 +162,18 @@ app:
       CZ: cs
       SK: sk
       PL: pl
+
+  fx:
+    enabled: true
+    base-url: https://api.cnb.cz/cnbapi
+    timeout: PT10S
+    # ČNB publikuje v pracovní dny cca 14:30 SEČ — běžíme s rezervou (docs/lokalizace.md).
+    cron: "0 15 15 * * *"
+    zone: Europe/Prague
+    # Co se stahuje. CZK tu NENÍ — je to pivot, kurz CZK/CZK ČNB nepublikuje.
+    tracked-currencies: [EUR, PLN, USD]
+    # Do čeho appka smí PŘEPOČÍTAT zobrazení. USD je navíc oproti app.i18n.country-currency —
+    # je to referenční měna pro srovnání napříč zeměmi, cenu v ní zapsat nejde (CurrencyResolver).
+    display-currencies: [CZK, EUR, PLN, USD]
+    cache-ttl: PT6H
+    max-backfill-years: 5

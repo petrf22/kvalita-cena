@@ -20,6 +20,7 @@ import { provideNzIcons } from 'ng-zorro-antd/icon';
 
 import { routes } from './app.routes';
 import { authInitializer } from './func/auth-initializer';
+import { displayCurrencyInterceptor } from './func/display-currency-interceptor';
 import { languageInitializer } from './func/language-initializer';
 import { languageInterceptor } from './func/language-interceptor';
 import { tokenInterceptor } from './func/token-interceptor';
@@ -64,7 +65,9 @@ export const appConfig: ApplicationConfig = {
       loader: TranslocoHttpLoader,
     }),
     provideTranslocoMessageformat(),
-    provideHttpClient(withInterceptors([tokenInterceptor, languageInterceptor])),
+    provideHttpClient(
+      withInterceptors([tokenInterceptor, languageInterceptor, displayCurrencyInterceptor]),
+    ),
     // Jazyk PŘED přihlášením — ať appka nebliká nepřeloženými klíči, než se ověří token.
     provideAppInitializer(languageInitializer()),
     provideAppInitializer(authInitializer()),

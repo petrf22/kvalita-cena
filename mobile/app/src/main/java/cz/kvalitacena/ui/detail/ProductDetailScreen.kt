@@ -168,9 +168,19 @@ fun ProductDetailScreen(
             CircularProgressIndicator()
           }
         } else {
+          val history = viewModel.history
+          // Graf jednu řadu nikdy nemíchá napříč měnami — když appka přepočítává (displayCurrency
+          // vyplněná), substituují se OBĚ pole najednou, se svým vlastním denním kurzem
+          // (PricePoint.convertedUnitPrice), viz docs/lokalizace.md. Chybí-li kurz pro konkrétní
+          // den, ten bod spadne zpět na originál — vzácný okrajový případ, ne důvod řadu zahodit.
+          val chartPoints = if (history?.displayCurrency != null) {
+            history.points.map { it.copy(unitPrice = it.convertedUnitPrice ?: it.unitPrice) }
+          } else {
+            history?.points ?: emptyList()
+          }
           PriceChart(
-            points = viewModel.history?.points ?: emptyList(),
-            currency = viewModel.history?.currency,
+            points = chartPoints,
+            currency = history?.displayCurrency ?: history?.currency,
             modifier = Modifier.fillMaxWidth(),
           )
         }
@@ -194,8 +204,11 @@ fun ProductDetailScreen(
               Text(store.name, style = MaterialTheme.typography.bodyLarge)
               Text(store.city, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            // Přepočtená hodnota (X-Display-Currency), když je — jinak originál v měně obchodu
+            // (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna").
             Text(
-              rememberMoneyFormatter(stats.bestPriceCurrency).format(stats.bestPrice),
+              rememberMoneyFormatter(stats.bestPriceConverted?.currency ?: stats.bestPriceCurrency)
+                .format(stats.bestPriceConverted?.amount ?: stats.bestPrice),
               style = MaterialTheme.typography.bodyLarge,
             )
           }
@@ -228,7 +241,10 @@ fun ProductDetailScreen(
             product.myPrices.forEach { mp ->
               Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Text("${mp.store.name} — ${priceKindLabel(mp.priceKind)}")
-                Text(rememberMoneyFormatter(mp.currency).format(mp.priceAmount))
+                Text(
+                  rememberMoneyFormatter(mp.converted?.currency ?: mp.currency)
+                    .format(mp.converted?.amount ?: mp.priceAmount),
+                )
               }
               Text(
                 formatRelativeDate(mp.observedAt),

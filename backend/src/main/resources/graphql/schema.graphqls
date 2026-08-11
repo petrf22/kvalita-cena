@@ -122,6 +122,13 @@ type Query {
 
   "Veřejná identita přihlášeného uživatele — bez e-mailu a bez DB id (docs/soukromi.md)."
   me: Viewer
+
+  """
+  Zobrazovací měny a stav kurzovního lístku ČNB (docs/lokalizace.md, "Kurzovní lístek a
+  zobrazovací měna"). USD je jen referenční — cenu v ní zapsat nejde (SubmitObservationInput
+  ji nepřijímá), je to výhradně přepočet pro zobrazení napříč zeměmi.
+  """
+  fxInfo: FxInfo!
 }
 
 type Mutation {
@@ -364,6 +371,27 @@ type Product {
   photos: [Photo!]!
 }
 
+"""
+Částka přepočtená do zobrazovací měny kurzem ČNB platným k danému dni (docs/lokalizace.md,
+"Kurzovní lístek a zobrazovací měna"). Null vždy, když se přepočet neprovedl — hlavička
+X-Display-Currency nedorazila, rovná se původní měně, nebo pro daný den kurz neznáme (appka
+pak zobrazí jen původní částku).
+"""
+type ConvertedPrice {
+  amount: BigDecimal!
+  currency: String!
+  "Datum lístku, kterým se přepočítávalo — ČNB nepublikuje o víkendech a svátcích, může být starší než den ceny."
+  rateDate: Date!
+}
+
+"Zobrazovací měny a stav kurzovního lístku ČNB. USD je jen referenční — cenu v ní zapsat nejde."
+type FxInfo {
+  displayCurrencies: [String!]!
+  "Nejnovější den, pro který appka kurz má — null, dokud proběhne první stažení."
+  latestRateDate: Date
+  attribution: String!
+}
+
 type MyPrice {
   store: Store!
   priceKind: PriceKind!
@@ -371,6 +399,8 @@ type MyPrice {
   unitPrice: BigDecimal
   observedAt: DateTime!
   currency: String!
+  "Přepočet do zobrazovací měny kurzem k observedAt (X-Display-Currency)."
+  converted: ConvertedPrice
 }
 
 enum CodeType {
@@ -397,6 +427,8 @@ type ProductStats {
   cheapestStore: Store
   "Měna bestPrice/bestUnitPrice — null, jen když je bestPrice null (docs/lokalizace.md)."
   bestPriceCurrency: String
+  "Přepočet bestPrice do zobrazovací měny kurzem k lastObservedAt (X-Display-Currency)."
+  bestPriceConverted: ConvertedPrice
 }
 
 "Průměrná známka 1,00–5,00 (1 nejlepší). Null, dokud nikdo nehodnotil."
@@ -446,6 +478,10 @@ type ProductSearchItem {
   qualityCount: Int!
   "Měna bestPrice/bestUnitPrice — null, jen když je bestPrice null (docs/lokalizace.md)."
   currency: String
+  "Přepočet bestPrice do zobrazovací měny kurzem k lastObservedAt (X-Display-Currency)."
+  converted: ConvertedPrice
+  "Přepočet bestUnitPrice — vlastní kurzový přepočet, ne dopočet z converted/amount."
+  convertedUnit: ConvertedPrice
 }
 
 type SearchFacets {
@@ -460,6 +496,14 @@ type PriceHistory {
   days: Int!
   "VŽDY vyplněná (docs/lokalizace.md) — bez storeId je to měna s nejvíc záznamy za dané období."
   currency: String!
+  """
+  Zobrazovací měna řady (X-Display-Currency), když se liší od currency — null, pokud se
+  nepřepočítávalo. Jedna hodnota pro celou řadu, ne ConvertedPrice na bod: rateDate každého
+  bodu se liší (viz PricePoint), ale osu grafu appka popisuje jednou.
+  """
+  displayCurrency: String
+  "Atribuce zdroje kurzu (Kurzy ČNB) — appka ji zobrazí vedle grafu, když je displayCurrency vyplněná."
+  rateAttribution: String
   points: [PricePoint!]!
 }
 
@@ -470,6 +514,9 @@ type PricePoint {
   nObs: Int!
   "Z kolika provozoven medián vznikl (1 při filtru na obchod)."
   storeCount: Int!
+  "Přepočet unitPrice kurzem PLATNÝM K TOMUTO DNI (PriceHistory.displayCurrency) — NIKDY dnešním kurzem, jinak by graf mísil pohyb ceny s pohybem kurzu."
+  convertedUnitPrice: BigDecimal
+  convertedPriceAmount: BigDecimal
 }
 
 type Viewer {
@@ -606,6 +653,8 @@ type PriceCurrent {
   lastObservedAt: DateTime
   confidence: Confidence!
   currency: String!
+  "Přepočet unitPrice do zobrazovací měny kurzem k lastObservedAt (X-Display-Currency)."
+  converted: ConvertedPrice
 }
 
 enum QuantityBasis {

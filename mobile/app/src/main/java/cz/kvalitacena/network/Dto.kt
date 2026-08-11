@@ -77,6 +77,18 @@ data class Photo(
   fun thumbUrl(): String = ApiConfig.BASE_URL + thumbnailUrl
 }
 
+/**
+ * Přepočet do zobrazovací měny kurzem ČNB platným k danému dni (docs/lokalizace.md, "Kurzovní
+ * lístek a zobrazovací měna") — appka ho posílá jen tehdy, když si uživatel zvolil jinou měnu
+ * než "měnu obchodu" (viz DisplayCurrencyInterceptor); jinak je pole vždy null a appka ukáže originál.
+ */
+@Serializable
+data class ConvertedPrice(
+  val amount: Double,
+  val currency: String,
+  val rateDate: String,
+)
+
 @Serializable
 data class PriceCurrent(
   val store: Store,
@@ -89,6 +101,7 @@ data class PriceCurrent(
   val confidence: String,
   // ISO-4217 kód (docs/lokalizace.md) — vždy vyplněné, appka ho nesmí nahradit natvrdo "Kč".
   val currency: String,
+  val converted: ConvertedPrice? = null,
 )
 
 @Serializable
@@ -130,6 +143,7 @@ data class MyPrice(
   val unitPrice: Double? = null,
   val observedAt: String,
   val currency: String,
+  val converted: ConvertedPrice? = null,
 )
 
 /** Lehčí varianta Product pro řádek seznamu hledání — bez cen a bez agregátů (ty jsou na ProductSearchItem). */
@@ -154,6 +168,7 @@ data class ProductStats(
   val cheapestStore: Store? = null,
   // Měna bestPrice/bestUnitPrice — null jen když je bestPrice null (docs/lokalizace.md).
   val bestPriceCurrency: String? = null,
+  val bestPriceConverted: ConvertedPrice? = null,
 )
 
 /** Průměrná známka 1,00–5,00 (1 nejlepší, jako ve škole). average je null, dokud nikdo nehodnotil. */
@@ -185,6 +200,8 @@ data class ProductSearchItem(
   val qualityCount: Int = 0,
   // Měna bestPrice/bestUnitPrice — null jen když je bestPrice null (docs/lokalizace.md).
   val currency: String? = null,
+  val converted: ConvertedPrice? = null,
+  val convertedUnit: ConvertedPrice? = null,
 )
 
 @Serializable
@@ -207,6 +224,10 @@ data class PricePoint(
   val unitPrice: Double,
   val nObs: Int,
   val storeCount: Int,
+  // Kurz PLATNÝ K "day", NIKDY dnešní (docs/lokalizace.md) — jinak by graf v USD mísil pohyb
+  // ceny s pohybem kurzu. Null, dokud appka řadu nepřepočítává (viz PriceHistory.displayCurrency).
+  val convertedUnitPrice: Double? = null,
+  val convertedPriceAmount: Double? = null,
 )
 
 @Serializable
@@ -216,6 +237,9 @@ data class PriceHistory(
   val days: Int,
   // VŽDY vyplněná (docs/lokalizace.md) — bez storeId je to měna s nejvíc záznamy za dané období.
   val currency: String,
+  // Vyplněná, jen když appka řadu skutečně přepočítala (X-Display-Currency).
+  val displayCurrency: String? = null,
+  val rateAttribution: String? = null,
   val points: List<PricePoint> = emptyList(),
 )
 
@@ -344,6 +368,14 @@ data class UpdateStoreInput(
   val osmRef: String? = null,
 )
 
+/** Zobrazovací měny a stav kurzovního lístku ČNB — pro atribuci v Nastavení (docs/lokalizace.md). */
+@Serializable
+data class FxInfo(
+  val displayCurrencies: List<String> = emptyList(),
+  val latestRateDate: String? = null,
+  val attribution: String,
+)
+
 /** Výsledek flagRecord — kolik různých lidí záznam nahlásilo a jestli je teď skrytý. */
 @Serializable
 data class FlagResult(
@@ -432,6 +464,9 @@ data class DeletePhotoData(val deletePhoto: Boolean)
 
 @Serializable
 data class FlagRecordData(val flagRecord: FlagResult)
+
+@Serializable
+data class FxInfoData(val fxInfo: FxInfo)
 
 /**
  * `extensions.code`/`params` je strojový kontrakt chyby (docs/lokalizace.md), stejný jako

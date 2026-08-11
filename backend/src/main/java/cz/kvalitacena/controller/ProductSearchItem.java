@@ -18,5 +18,7 @@ public record ProductSearchItem(
     BigDecimal qualityAverage,
     int qualityCount,
     // Měna bestPrice/bestUnitPrice — null, jen když je bestPrice null (docs/lokalizace.md).
-    String currency) {
+    String currency,
+    ConvertedPrice converted,
+    ConvertedPrice convertedUnit) {
 }

@@ -37,9 +37,13 @@
 
     <string name="settings_title">Ustawienia</string>
     <string name="settings_language">Język</string>
+    <string name="settings_currency">Waluta wyświetlania</string>
+    <string name="settings_currency_store_default">Waluta sklepu (domyślnie)</string>
+    <string name="settings_currency_note">Przeliczenie służy tylko do porównania — cenę zawsze zgłaszasz w walucie sklepu, to tylko zmienia sposób jej wyświetlania.</string>
     <string name="settings_data_sources">Źródła danych</string>
     <string name="settings_data_sources_body">Ceny i oceny jakości to nasze własne dane społecznościowe. Odnośniki do Open Food Facts są zgodne z licencją ODbL (Open Database License) — dane nigdzie nie są kopiowane, aplikacja tylko odsyła do źródła.</string>
     <string name="settings_osm_attribution">Współrzędne sklepów pochodzą z OpenStreetMap © współtwórcy OpenStreetMap, licencja ODbL.</string>
+    <string name="settings_fx_attribution">Kursy walut pochodzą z tabeli kursowej Czeskiego Banku Narodowego.</string>
     <string name="settings_app_version">Wersja aplikacji %1$s</string>
 
     <string name="map_show">Pokaż mapę</string>

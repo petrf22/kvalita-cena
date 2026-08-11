@@ -19,3 +19,4 @@ databaseChangeLog:
   - include: { file: 2026-08-09/02-user-locale.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-09/03-category-i18n.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-09/04-user-handle-parts.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-11/01-fx-rates.yaml, relativeToChangelogFile: true }

@@ -12,5 +12,6 @@ public record ProductStats(
     BigDecimal bestPrice,
     BigDecimal bestUnitPrice,
     Store cheapestStore,
-    String bestPriceCurrency) {
+    String bestPriceCurrency,
+    ConvertedPrice bestPriceConverted) {
 }

@@ -107,7 +107,10 @@
           </button>
         </div>
       </div>
-      <app-price-chart [points]="historyPoints()" [currency]="historyCurrency()" />
+      <app-price-chart [points]="chartPoints()" [currency]="chartCurrency()" />
+      @if (historyDisplayCurrency()) {
+        <p class="chart-fx-note">{{ t('product-detail.chartConverted') }}</p>
+      }
     </nz-card>
 
     @if (product()!.stats?.bestPrice != null && product()!.stats?.cheapestStore) {
@@ -117,9 +120,16 @@
             <span class="cheapest-store-name">{{ product()!.stats!.cheapestStore!.name }}</span>
             <span class="cheapest-store-city">{{ product()!.stats!.cheapestStore!.city }}</span>
           </span>
-          <span class="cheapest-price">{{
-            product()!.stats!.bestPrice | money: product()!.stats!.bestPriceCurrency
-          }}</span>
+          <span class="cheapest-price">
+            @if (product()!.stats!.bestPriceConverted; as converted) {
+              <span
+                [title]="product()!.stats!.bestPrice | money: product()!.stats!.bestPriceCurrency"
+                >{{ converted.amount | money: converted.currency }}</span
+              >
+            } @else {
+              {{ product()!.stats!.bestPrice | money: product()!.stats!.bestPriceCurrency }}
+            }
+          </span>
         </a>
       </nz-card>
     }
@@ -152,7 +162,15 @@
                 </td>
                 <td>{{ priceKindKeys[price.priceKind] | transloco }}</td>
                 <td>{{ price.priceAmount | money: price.currency }}</td>
-                <td>{{ price.unitPrice | money: price.currency }}</td>
+                <td>
+                  @if (price.converted; as converted) {
+                    <span [title]="price.unitPrice | money: price.currency">{{
+                      converted.amount | money: converted.currency
+                    }}</span>
+                  } @else {
+                    {{ price.unitPrice | money: price.currency }}
+                  }
+                </td>
                 <td>
                   <nz-tag
                     [nzColor]="
@@ -180,7 +198,13 @@
           @for (mp of product()!.myPrices!; track mp.store.id + mp.priceKind) {
             <li>
               {{ mp.store.name }} — {{ priceKindKeys[mp.priceKind] | transloco }}:
-              {{ mp.priceAmount | money: mp.currency }}
+              @if (mp.converted; as converted) {
+                <span [title]="mp.priceAmount | money: mp.currency">{{
+                  converted.amount | money: converted.currency
+                }}</span>
+              } @else {
+                {{ mp.priceAmount | money: mp.currency }}
+              }
               <span class="my-price-date">({{ mp.observedAt | relativeDate }})</span>
             </li>
           }

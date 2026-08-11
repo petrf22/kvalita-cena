@@ -6,12 +6,22 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface PriceObservationRepository extends JpaRepository<PriceObservation, Long> {
 
   List<PriceObservation> findByProductIdAndStoreIdAndStatus(Long productId, Long storeId, ObservationStatus status);
+
+  /**
+   * Nejstarší zapsaná cena — určuje, jak hluboko do historie backfillovat kurzovní lístek
+   * (ExchangeRateSyncService, docs/lokalizace.md). Prázdná tabulka → empty, volající si poradí
+   * defaultem "od dneška".
+   */
+  @Query("SELECT MIN(o.observedAt) FROM PriceObservation o")
+  Optional<OffsetDateTime> findEarliestObservedAt();
 
   /**
    * Kolik různých přispěvatelů zboží zatím zapsalo — rozhoduje o promoci DRAFT → ACTIVE u
