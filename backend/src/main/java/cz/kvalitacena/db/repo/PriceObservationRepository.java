@@ -3,6 +3,7 @@ package cz.kvalitacena.db.repo;
 import cz.kvalitacena.db.entity.ObservationStatus;
 import cz.kvalitacena.db.entity.PriceObservation;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -57,4 +58,14 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
       + "ORDER BY product_id, store_id, price_kind, observed_at DESC", nativeQuery = true)
   List<PriceObservation> findLatestOwnByProductIdIn(@Param("userId") Long userId,
       @Param("productIds") Collection<Long> productIds);
+
+  /**
+   * Pseudonymizace (docs/soukromi.md, "Retence vazby observace → uživatel: 180 dní") —
+   * {@code submitter_cohort}/{@code frozen_weight} zůstávají (reputace je průběžný čítač, ne
+   * odvozená z historie jednotlivých observací), mizí jen vazba na konkrétní účet.
+   */
+  @Modifying
+  @Query("UPDATE PriceObservation o SET o.submitter = NULL "
+      + "WHERE o.observedAt < :cutoff AND o.submitter IS NOT NULL")
+  int pseudonymizeObservationsBefore(@Param("cutoff") OffsetDateTime cutoff);
 }

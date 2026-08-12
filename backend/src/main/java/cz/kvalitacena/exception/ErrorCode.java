@@ -96,7 +96,8 @@ public enum ErrorCode {
   ACCOUNT_GONE("error.common.accountGone"),
   TOO_MANY_REQUESTS("error.common.tooManyRequests"),
   UOM_MISMATCH("error.netContent.uomMismatch"),               // {0} = uom, {1} = unitBase
-  VALIDATION_FAILED("error.common.validationFailed");
+  VALIDATION_FAILED("error.common.validationFailed"),
+  CLIENT_VERSION_TOO_OLD("error.common.clientVersionTooOld");
 
   private final String messageKey;
 

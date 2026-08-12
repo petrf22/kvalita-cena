@@ -77,9 +77,17 @@ app:
     access-token-ttl: PT10M
   security:
     # HMAC-SHA256 pepper pro email_hash a AES-256-GCM klíč pro email_enc (docs/soukromi.md).
-    # Oba jen pro lokální vývoj — v produkci povinně přes proměnné prostředí, mimo databázi.
+    # Oba jen pro lokální vývoj — v produkci povinně přes proměnné prostředí, mimo databázi
+    # (viz application-prod.yml, kde nemají fallback a appka bez nich nenastartuje).
     email-hash-pepper: ${EMAIL_HASH_PEPPER:3h1brFxufkFk4TeZkGz/O9SyCbfC3tSMTGvC49lRzMs=}
     email-enc-key: ${EMAIL_ENC_KEY:u1h1L4+4CDYrvpImNDJzSnpXwUOHW5OvMHmd+THqhzQ=}
+    # Refresh cookie jde přes HTTP jen v dev — v produkci nastaveno na true (application-prod.yml).
+    cookie-secure: false
+    # CORS (SecurityConfig) — dev Angular server. Produkční hodnota je v application-prod.yml;
+    # mobil se CORS netýká (nativní klient).
+    allowed-origins:
+      - http://localhost:4200
+      - http://127.0.0.1:4200
   auth:
     otp:
       # V MVP (etapa 1) se kód místo odesílání e-mailem loguje do konzole (viz OtpService).
@@ -101,6 +109,15 @@ app:
     # Pod tímto počtem hodnocení klienti známku zobrazí ztlumeně jako "orientační" — obdoba
     # pravidla n_eff < 2 u cen (docs/reputace.md).
     min-ratings-for-badge: 3
+  client:
+    # Nejnižší versionCode mobilní appky, který backend ještě obsluhuje (ClientVersionFilter,
+    # docs/vydani.md) — vydáním APK zamrzne GraphQL kontrakt, starším klientům v terénu by
+    # pozdější breaking změna schématu jinak spadla na nesrozumitelnou chybu. 0 = kontrola
+    # vypnutá (etapa 1, žádné APK ještě není v terénu).
+    min-android-version: 0
+  privacy:
+    # docs/soukromi.md, "Retence vazby observace → uživatel: 180 dní" (PseudonymizationService).
+    pseudonymization-days: 180
   catalog:
     # Zakládání katalogu (docs/reputace.md, "Limity patří do konfigurace") — velkoryse jako
     # ostatní limity v MVP, studený start je větší riziko než zneužití.

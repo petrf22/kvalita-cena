@@ -19,3 +19,12 @@ class GraphQlAppException(
 
 /** Chyba mimo GraphQL kontrakt — REST volání (MediaClient upload) nebo transportní selhání. */
 class TransportException(message: String, cause: Throwable? = null) : Exception(message, cause)
+
+/**
+ * Backend odmítl request kvůli staré verzi appky (HTTP 426, [ClientVersionInterceptor]) —
+ * vydáním APK zamrzne GraphQL kontrakt (docs/vydani.md), takže starší klient v terénu by na
+ * pozdější breaking změnu schématu jinak spadl na nesrozumitelnou parse chybu. ViewModely tuhle
+ * výjimku nemusí zvlášť ošetřovat — [ClientVersionInterceptor] zároveň nastaví
+ * `UpdateRequiredState.required`, které `MainActivity` zobrazí jako blokující obrazovku.
+ */
+class ClientUpdateRequiredException : Exception("Client version too old")

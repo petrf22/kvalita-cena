@@ -67,6 +67,14 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.graphql:spring-graphql-test'
     testImplementation 'org.springframework.security:spring-security-test'
+    // Jediné místo, kde appka nastartuje celý Spring kontext proti reálné DB (viz
+    // ApplicationSmokeTest) — ostatních 22+ tříd testuje bez Springu, takže Liquibase vs.
+    // ddl-auto=validate, GraphQL wiring a autorizace v SecurityConfig se jinde neověří.
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    // Spring Boot 4.1.0 (velmi čerstvý) zatím dependency-management BOM verzi Testcontainers
+    // neřídí — verze proto natvrdo tady, ne přes BOM jako ostatní závislosti v tomhle souboru.
+    testImplementation 'org.testcontainers:junit-jupiter:1.20.4'
+    testImplementation 'org.testcontainers:postgresql:1.20.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

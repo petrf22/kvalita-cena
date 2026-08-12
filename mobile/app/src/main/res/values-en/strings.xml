@@ -6,6 +6,8 @@
     <string name="tab_account">Account</string>
     <string name="common_never">never</string>
     <string name="error_generic">Something went wrong, please try again.</string>
+    <string name="update_required_title">Update the app</string>
+    <string name="update_required_body">Your app version is no longer supported. Please install the latest version so the app works again.</string>
 
     <string name="common_back">Back</string>
     <string name="common_cancel">Cancel</string>

@@ -1,5 +1,6 @@
 package cz.kvalitacena.config;
 
+import cz.kvalitacena.security.ClientVersionFilter;
 import cz.kvalitacena.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -25,6 +26,8 @@ import java.util.List;
 public class SecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final ClientVersionFilter clientVersionFilter;
+  private final SecurityProperties securityProperties;
 
   /** Argon2id pro hash OTP kódů — potřebuje Bouncy Castle na classpath, viz build.gradle. */
   @Bean
@@ -50,7 +53,8 @@ public class SecurityConfig {
             // ne blokování na úrovni URL (viz docs/datovy-model.md, "Autorizace jako predikát").
             .requestMatchers("/graphql", "/graphiql/**").permitAll()
             .anyRequest().authenticated())
-        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+        .addFilterAfter(clientVersionFilter, JwtAuthenticationFilter.class);
 
     return http.build();
   }
@@ -58,7 +62,7 @@ public class SecurityConfig {
   private UrlBasedCorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
     config.setAllowCredentials(true);
-    config.setAllowedOrigins(List.of("http://localhost:4200", "http://127.0.0.1:4200"));
+    config.setAllowedOrigins(securityProperties.getAllowedOrigins());
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     config.setAllowedHeaders(List.of("*"));
 

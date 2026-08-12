@@ -28,6 +28,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import cz.kvalitacena.ui.account.AccountScreen
+import cz.kvalitacena.ui.common.UpdateRequiredScreen
+import cz.kvalitacena.ui.common.UpdateRequiredState
 import cz.kvalitacena.ui.detail.ProductDetailScreen
 import cz.kvalitacena.ui.navigation.ARG_BARCODE
 import cz.kvalitacena.ui.navigation.ARG_PRODUCT_ID
@@ -78,6 +80,13 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AppScaffold() {
+  // Backend odmítá úplně všechny požadavky staré appce (ClientVersionFilter), takže se
+  // nahrazuje celý Scaffold, ne jen aktuální obrazovka.
+  if (UpdateRequiredState.required) {
+    UpdateRequiredScreen()
+    return
+  }
+
   val navController = rememberNavController()
 
   Scaffold(

@@ -81,7 +81,8 @@
     "ACCOUNT_GONE": "Účet už neexistuje",
     "TOO_MANY_REQUESTS": "Příliš mnoho požadavků, zkus to prosím později",
     "UOM_MISMATCH": "Jednotka {{p0}} neodpovídá typu {{p1}}",
-    "VALIDATION_FAILED": "Zadané údaje nejsou platné"
+    "VALIDATION_FAILED": "Zadané údaje nejsou platné",
+    "CLIENT_VERSION_TOO_OLD": "Tvoje verze aplikace už není podporovaná, nainstaluj prosím aktuální verzi"
   },
   "enum": {
     "priceKind": {

@@ -6,6 +6,8 @@
     <string name="tab_account">Účet</string>
     <string name="common_never">zatiaľ nikdy</string>
     <string name="error_generic">Niečo sa pokazilo, skús to prosím znova.</string>
+    <string name="update_required_title">Aktualizuj appku</string>
+    <string name="update_required_body">Tvoja verzia aplikácie už nie je podporovaná. Nainštaluj si prosím aktuálnu verziu, aby appka opäť fungovala.</string>
 
     <string name="common_back">Späť</string>
     <string name="common_cancel">Zrušiť</string>

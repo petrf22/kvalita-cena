@@ -6,6 +6,8 @@
     <string name="tab_account">Konto</string>
     <string name="common_never">nigdy</string>
     <string name="error_generic">Coś poszło nie tak, spróbuj ponownie.</string>
+    <string name="update_required_title">Zaktualizuj aplikację</string>
+    <string name="update_required_body">Twoja wersja aplikacji nie jest już obsługiwana. Zainstaluj najnowszą wersję, aby aplikacja znów działała.</string>
 
     <string name="common_back">Wstecz</string>
     <string name="common_cancel">Anuluj</string>

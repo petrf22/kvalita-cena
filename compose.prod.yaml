@@ -1,0 +1,63 @@
+# Produkční nasazení (docs/vydani.md — "Neexistuje produkční backend"), na rozdíl od
+# compose.yaml v kořeni repa, který je jen dev Postgres pro spring-boot-docker-compose.
+#
+# Proměnné (POSTGRES_USER/PASSWORD, JWT_SECRET, ...) čte Docker Compose ze souboru `.env` ve
+# stejném adresáři (viz .env.example) — `.env` samotný je v .gitignore, nikdy se necommituje.
+#
+# Named volumes mají suffix "-prod" schválně — oba compose soubory leží ve stejném adresáři,
+# takže mají stejné výchozí jméno Compose projektu (`kvalita-cena`); bez odlišení by tenhle
+# soubor spolknul (nebo přepsal) volume dev DB z compose.yaml, jen podle shodného klíče.
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=kvalitaacena
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - kvalita-a-cena-postgres-data-prod:/var/lib/postgresql/data
+    # Žádné `ports:` — na rozdíl od dev compose.yaml tu Postgres nemá být dostupný z hostitele,
+    # jen z backend kontejneru přes interní síť compose.
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      # Jméno služby, ne localhost — appka běží v kontejneru vedle Postgresu, ne na hostiteli.
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/kvalitaacena
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - MEDIA_ROOT=/data/media
+    volumes:
+      # Fotky leží mimo databázi (docs/datovy-model.md) — zálohuje se nezávisle na pg_dump.
+      - kvalita-a-cena-media-prod:/data/media
+    depends_on:
+      - postgres
+
+  web:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    environment:
+      - SITE_ADDRESS=${SITE_ADDRESS:-http://localhost}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      # Certifikáty/stav Let's Encrypt musí přežít restart kontejneru, jinak si Caddy vyžádá
+      # nový certifikát při každém nasazení a narazí na rate limit.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
+
+volumes:
+  kvalita-a-cena-postgres-data-prod:
+  kvalita-a-cena-media-prod:
+  caddy-data:
+  caddy-config:

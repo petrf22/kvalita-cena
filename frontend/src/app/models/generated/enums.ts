@@ -40,6 +40,7 @@ export const ErrorCode = {
   AvatarRequiresLogin: 'AVATAR_REQUIRES_LOGIN',
   CategoryNotFound: 'CATEGORY_NOT_FOUND',
   ChainNotFound: 'CHAIN_NOT_FOUND',
+  ClientVersionTooOld: 'CLIENT_VERSION_TOO_OLD',
   CompanyIdInvalid: 'COMPANY_ID_INVALID',
   DuplicateGenericProduct: 'DUPLICATE_GENERIC_PRODUCT',
   DuplicateProductCode: 'DUPLICATE_PRODUCT_CODE',

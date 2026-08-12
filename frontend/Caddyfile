@@ -1,0 +1,23 @@
+# SITE_ADDRESS = doména appky (kvalitacena.cz v produkci) — Caddy si pro ni sám obstará TLS
+# (Let's Encrypt). Bez proměnné/DNS namířeného na server naslouchá jen na :80, ať jde image
+# vyzkoušet i lokálně (docs/vydani.md plán, fáze "minimální produkční nasazení").
+{$SITE_ADDRESS:http://localhost}
+
+encode gzip
+
+# Stejný origin jako web (viz komentář v Dockerfile) — /api a /graphql jdou na backend
+# kontejner podle jména služby z compose.prod.yaml, ne přes veřejnou adresu.
+handle /api/* {
+	reverse_proxy backend:8080
+}
+
+handle /graphql {
+	reverse_proxy backend:8080
+}
+
+# Angular SPA — neznámá cesta padá na index.html, o zbytek routingu se postará klient.
+handle {
+	root * /srv
+	try_files {path} /index.html
+	file_server
+}

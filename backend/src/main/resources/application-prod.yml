@@ -1,0 +1,63 @@
+# Produkční profil (SPRING_PROFILES_ACTIVE=prod) — přebíjí dev hodnoty z application.yml.
+# Cílem je, aby appka BEZ potřebných proměnných prostředí radši nenastartovala, než aby běžela
+# s dev tajemstvími/nastavením naostro (docs/vydani.md — "Neexistuje produkční backend").
+#
+# Placeholdery bez `:default` (${VAR}, ne ${VAR:dev-hodnota}) jsou záměr: chybějící proměnná
+# má appku shodit hned při startu, ne až při prvním requestu.
+spring:
+  docker:
+    compose:
+      enabled: false # appka v kontejneru si dev Postgres přes compose.yaml nespouští sama
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  graphql:
+    graphiql:
+      enabled: false
+    schema:
+      introspection:
+        enabled: false # docs/soukromi.md, docs/datovy-model.md
+
+  mail:
+    host: ${SMTP_HOST}
+    port: ${SMTP_PORT}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+management:
+  health:
+    mail:
+      enabled: true # SMTP v produkci skutečně běží (app.auth.otp.mail-enabled níže)
+
+logging:
+  level:
+    cz.kvalitacena: INFO # dev DEBUG by mimo jiné logoval OTP kódy do produkčního logu
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+  security:
+    email-hash-pepper: ${EMAIL_HASH_PEPPER}
+    email-enc-key: ${EMAIL_ENC_KEY}
+    cookie-secure: true
+    allowed-origins:
+      - https://kvalitacena.cz
+  auth:
+    otp:
+      mail-enabled: true
+  media:
+    root: ${MEDIA_ROOT}
+  external:
+    nominatim:
+      # Usage policy Nominatimu vyžaduje identifikovatelný kontakt (dev@example.com by appku
+      # v produkci riskovalo zablokování IP, viz https://operations.osmfoundation.org/policies/nominatim/).
+      user-agent: ${NOMINATIM_USER_AGENT}

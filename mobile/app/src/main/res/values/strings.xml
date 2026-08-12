@@ -7,6 +7,8 @@
     <!-- docs/lokalizace.md — values/ je čeština, zdroj i fallback pro values-{sk,en,pl}/. -->
     <string name="common_never">zatím nikdy</string>
     <string name="error_generic">Něco se pokazilo, zkus to prosím znovu.</string>
+    <string name="update_required_title">Aktualizuj appku</string>
+    <string name="update_required_body">Tvoje verze aplikace už není podporovaná. Nainstaluj prosím aktuální verzi, ať appka zase funguje.</string>
 
     <string name="common_back">Zpět</string>
     <string name="common_cancel">Zrušit</string>
