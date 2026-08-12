@@ -1,12 +1,14 @@
 package cz.kvalitacena.controller;
 
 import cz.kvalitacena.db.entity.Media;
+import cz.kvalitacena.db.entity.ProfileField;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.security.ViewerContext;
 import cz.kvalitacena.security.ViewerContextResolver;
 import cz.kvalitacena.service.MediaService;
 import cz.kvalitacena.service.MediaStorage;
+import cz.kvalitacena.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -40,6 +42,7 @@ public class MediaController {
   private final MediaRepository mediaRepository;
   private final MediaStorage mediaStorage;
   private final ViewerContextResolver viewerContextResolver;
+  private final UserProfileService userProfileService;
 
   @PostMapping("/{recordType}/{recordId}")
   public Photo upload(@PathVariable RecordType recordType, @PathVariable Long recordId,
@@ -49,6 +52,17 @@ public class MediaController {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
     Media media = mediaService.upload(recordType, recordId, readBytes(file), caption, viewer.publicUid());
     return mediaService.toPhoto(media, viewer);
+  }
+
+  /**
+   * Avatar profilu — {@code recordId} se bere z {@link Authentication}, ne z requestu
+   * (docs/soukromi.md: v API nikdy DB id), a na rozdíl od {@link #upload} vždy NAHRADÍ
+   * předchozí avatar, nepřidává ho do fronty (viz {@link MediaService#uploadAvatar}).
+   */
+  @PostMapping("/user/avatar")
+  public Photo uploadAvatar(@RequestParam("file") MultipartFile file, Authentication authentication) {
+    ViewerContext viewer = viewerContextResolver.resolve(authentication);
+    return mediaService.uploadAvatar(readBytes(file), viewer.publicUid());
   }
 
   @GetMapping("/{id}")
@@ -70,11 +84,14 @@ public class MediaController {
   private ResponseEntity<byte[]> serve(Long id, MediaStorage.Variant variant, Authentication authentication) {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
     Media media = mediaRepository.findById(id).orElse(null);
-    // Skrytá fotka se tváří jako neexistující i pro cizí lidi — nikdy 403 (CLAUDE.md, stejné
-    // pravidlo jako u neviditelných recenzí: NOT_FOUND, ne FORBIDDEN, aby existenci skrytého
-    // záznamu nešlo zvenčí odvodit).
-    boolean visible = media != null
-        && (media.getHiddenAt() == null || media.getUploadedByUserId().equals(viewer.userId()));
+    // Skrytá/neviditelná fotka se tváří jako neexistující i pro cizí lidi — nikdy 403 (CLAUDE.md,
+    // stejné pravidlo jako u neviditelných recenzí: NOT_FOUND, ne FORBIDDEN, aby existenci
+    // skrytého záznamu nešlo zvenčí odvodit).
+    boolean visible = media != null && (media.getRecordType() == RecordType.USER
+        // Avatar profilu nemá hidden_at (record_flag ho nepoužívá) — viditelnost řídí
+        // UserProfileService podle visibility/visibleFields majitele (docs/soukromi.md).
+        ? userProfileService.isFieldVisible(media.getRecordId(), ProfileField.AVATAR, viewer)
+        : (media.getHiddenAt() == null || media.getUploadedByUserId().equals(viewer.userId())));
     if (!visible) {
       return ResponseEntity.notFound().build();
     }

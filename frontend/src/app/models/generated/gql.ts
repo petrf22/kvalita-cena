@@ -18,6 +18,7 @@ type Documents = {
     "\n      query FxInfo {\n        fxInfo {\n          displayCurrencies\n          latestRateDate\n          attribution\n        }\n      }\n    ": typeof types.FxInfoDocument,
     "\n  fragment StoreFields on Store {\n    id\n    name\n    street\n    city\n    postalCode\n    country\n    lat\n    lon\n    geoSource\n    ico\n    chain {\n      id\n      name\n      chainType\n    }\n    verified\n    editedByMe\n    pendingConfirmation\n  }\n": typeof types.StoreFieldsFragmentDoc,
     "\n  fragment PhotoFields on Photo {\n    id\n    url\n    thumbnailUrl\n    width\n    height\n    caption\n    mine\n    hidden\n    attribution\n  }\n": typeof types.PhotoFieldsFragmentDoc,
+    "\n  fragment ProfileFields on Profile {\n    firstName\n    lastName\n    phone\n    contactEmail\n    loginEmail\n    visibility\n    visibleFields {\n      field\n      audience\n    }\n    avatar {\n      ...PhotoFields\n    }\n  }\n": typeof types.ProfileFieldsFragmentDoc,
     "\n  fragment StoreDetailFields on Store {\n    ...StoreFields\n    photos {\n      ...PhotoFields\n    }\n  }\n": typeof types.StoreDetailFieldsFragmentDoc,
     "\n  fragment ConvertedPriceFields on ConvertedPrice {\n    amount\n    currency\n    rateDate\n  }\n": typeof types.ConvertedPriceFieldsFragmentDoc,
     "\n  fragment PriceCurrentFields on PriceCurrent {\n    store {\n      ...StoreFields\n    }\n    priceKind\n    unitPrice\n    priceAmount\n    currency\n    nObs\n    nEff\n    lastObservedAt\n    confidence\n    converted {\n      ...ConvertedPriceFields\n    }\n  }\n": typeof types.PriceCurrentFieldsFragmentDoc,
@@ -49,13 +50,16 @@ type Documents = {
     "\n      query GeocodeAddress($street: String, $city: String!, $postalCode: String) {\n        geocodeAddress(street: $street, city: $city, postalCode: $postalCode) {\n          attribution\n          candidates {\n            lat\n            lon\n            displayName\n            osmRef\n          }\n        }\n      }\n    ": typeof types.GeocodeAddressDocument,
     "\n      query ReverseGeocode($lat: Float!, $lon: Float!) {\n        reverseGeocode(lat: $lat, lon: $lon) {\n          street\n          city\n          postalCode\n          country\n          osmRef\n          attribution\n        }\n      }\n    ": typeof types.ReverseGeocodeDocument,
     "\n      query CompanyByIco($ico: String!) {\n        companyByIco(ico: $ico) {\n          ico\n          name\n          street\n          city\n          postalCode\n        }\n      }\n    ": typeof types.CompanyByIcoDocument,
-    "\n      query Me {\n        me {\n          publicHandle\n          displayName\n          createdAt\n          trusted\n          locale\n          country\n        }\n      }\n    ": typeof types.MeDocument,
+    "\n      query Me {\n        me {\n          publicHandle\n          displayName\n          createdAt\n          trusted\n          locale\n          country\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    ": typeof types.MeDocument,
     "\n      mutation SetLocale($locale: String!, $country: String) {\n        setLocale(locale: $locale, country: $country) {\n          locale\n          country\n        }\n      }\n    ": typeof types.SetLocaleDocument,
+    "\n      mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n          publicHandle\n          displayName\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    ": typeof types.UpdateProfileDocument,
+    "\n      mutation DeleteAvatar {\n        deleteAvatar {\n          publicHandle\n          displayName\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    ": typeof types.DeleteAvatarDocument,
 };
 const documents: Documents = {
     "\n      query FxInfo {\n        fxInfo {\n          displayCurrencies\n          latestRateDate\n          attribution\n        }\n      }\n    ": types.FxInfoDocument,
     "\n  fragment StoreFields on Store {\n    id\n    name\n    street\n    city\n    postalCode\n    country\n    lat\n    lon\n    geoSource\n    ico\n    chain {\n      id\n      name\n      chainType\n    }\n    verified\n    editedByMe\n    pendingConfirmation\n  }\n": types.StoreFieldsFragmentDoc,
     "\n  fragment PhotoFields on Photo {\n    id\n    url\n    thumbnailUrl\n    width\n    height\n    caption\n    mine\n    hidden\n    attribution\n  }\n": types.PhotoFieldsFragmentDoc,
+    "\n  fragment ProfileFields on Profile {\n    firstName\n    lastName\n    phone\n    contactEmail\n    loginEmail\n    visibility\n    visibleFields {\n      field\n      audience\n    }\n    avatar {\n      ...PhotoFields\n    }\n  }\n": types.ProfileFieldsFragmentDoc,
     "\n  fragment StoreDetailFields on Store {\n    ...StoreFields\n    photos {\n      ...PhotoFields\n    }\n  }\n": types.StoreDetailFieldsFragmentDoc,
     "\n  fragment ConvertedPriceFields on ConvertedPrice {\n    amount\n    currency\n    rateDate\n  }\n": types.ConvertedPriceFieldsFragmentDoc,
     "\n  fragment PriceCurrentFields on PriceCurrent {\n    store {\n      ...StoreFields\n    }\n    priceKind\n    unitPrice\n    priceAmount\n    currency\n    nObs\n    nEff\n    lastObservedAt\n    confidence\n    converted {\n      ...ConvertedPriceFields\n    }\n  }\n": types.PriceCurrentFieldsFragmentDoc,
@@ -87,8 +91,10 @@ const documents: Documents = {
     "\n      query GeocodeAddress($street: String, $city: String!, $postalCode: String) {\n        geocodeAddress(street: $street, city: $city, postalCode: $postalCode) {\n          attribution\n          candidates {\n            lat\n            lon\n            displayName\n            osmRef\n          }\n        }\n      }\n    ": types.GeocodeAddressDocument,
     "\n      query ReverseGeocode($lat: Float!, $lon: Float!) {\n        reverseGeocode(lat: $lat, lon: $lon) {\n          street\n          city\n          postalCode\n          country\n          osmRef\n          attribution\n        }\n      }\n    ": types.ReverseGeocodeDocument,
     "\n      query CompanyByIco($ico: String!) {\n        companyByIco(ico: $ico) {\n          ico\n          name\n          street\n          city\n          postalCode\n        }\n      }\n    ": types.CompanyByIcoDocument,
-    "\n      query Me {\n        me {\n          publicHandle\n          displayName\n          createdAt\n          trusted\n          locale\n          country\n        }\n      }\n    ": types.MeDocument,
+    "\n      query Me {\n        me {\n          publicHandle\n          displayName\n          createdAt\n          trusted\n          locale\n          country\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    ": types.MeDocument,
     "\n      mutation SetLocale($locale: String!, $country: String) {\n        setLocale(locale: $locale, country: $country) {\n          locale\n          country\n        }\n      }\n    ": types.SetLocaleDocument,
+    "\n      mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n          publicHandle\n          displayName\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    ": types.UpdateProfileDocument,
+    "\n      mutation DeleteAvatar {\n        deleteAvatar {\n          publicHandle\n          displayName\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    ": types.DeleteAvatarDocument,
 };
 
 /**
@@ -103,6 +109,10 @@ export function graphql(source: "\n  fragment StoreFields on Store {\n    id\n  
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  fragment PhotoFields on Photo {\n    id\n    url\n    thumbnailUrl\n    width\n    height\n    caption\n    mine\n    hidden\n    attribution\n  }\n"): typeof import('./graphql').PhotoFieldsFragmentDoc;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  fragment ProfileFields on Profile {\n    firstName\n    lastName\n    phone\n    contactEmail\n    loginEmail\n    visibility\n    visibleFields {\n      field\n      audience\n    }\n    avatar {\n      ...PhotoFields\n    }\n  }\n"): typeof import('./graphql').ProfileFieldsFragmentDoc;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -230,11 +240,19 @@ export function graphql(source: "\n      query CompanyByIco($ico: String!) {\n  
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n      query Me {\n        me {\n          publicHandle\n          displayName\n          createdAt\n          trusted\n          locale\n          country\n        }\n      }\n    "): typeof import('./graphql').MeDocument;
+export function graphql(source: "\n      query Me {\n        me {\n          publicHandle\n          displayName\n          createdAt\n          trusted\n          locale\n          country\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    "): typeof import('./graphql').MeDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n      mutation SetLocale($locale: String!, $country: String) {\n        setLocale(locale: $locale, country: $country) {\n          locale\n          country\n        }\n      }\n    "): typeof import('./graphql').SetLocaleDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n      mutation UpdateProfile($input: UpdateProfileInput!) {\n        updateProfile(input: $input) {\n          publicHandle\n          displayName\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    "): typeof import('./graphql').UpdateProfileDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n      mutation DeleteAvatar {\n        deleteAvatar {\n          publicHandle\n          displayName\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    "): typeof import('./graphql').DeleteAvatarDocument;
 
 
 export function graphql(source: string) {

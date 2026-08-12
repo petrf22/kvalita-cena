@@ -194,6 +194,17 @@ type Mutation {
   klientovi, tahle mutace ji jen posílá na server. Vyžaduje přihlášení.
   """
   setLocale(locale: String!, country: String): Viewer!
+
+  """
+  Úprava profilu (jméno, příjmení, přezdívka, telefon, kontaktní e-mail, viditelnost) —
+  docs/soukromi.md, "Profil uživatele a viditelnost". Vyžaduje přihlášení. Avatar se nahrává
+  přes REST POST /api/media/user/avatar (multipart, stejný důvod jako u ostatních fotek),
+  tahle mutace ho jen umí smazat (deleteAvatar).
+  """
+  updateProfile(input: UpdateProfileInput!): Viewer!
+
+  "Smazání avatara profilu. Vyžaduje přihlášení."
+  deleteAvatar: Viewer!
 }
 
 enum RecordType {
@@ -529,6 +540,83 @@ type Viewer {
   locale: String
   "Uložená preference země — null, dokud si ji uživatel nenastaví."
   country: String
+  "Jméno, příjmení, telefon, kontaktní e-mail, avatar a viditelnost (docs/soukromi.md, 'Profil uživatele a viditelnost')."
+  profile: Profile!
+}
+
+"""
+Viditelnost profilu (auth.user_profile.visibility) — výchozí ANONYMOUS, aby si lidé ze
+setrvačnosti nedávali skutečné jméno (docs/soukromi.md). U PUBLIC/FRIENDS teprve rozhoduje
+Profile.visibleFields, KTERÁ pole se komu zobrazí.
+"""
+enum ProfileVisibility {
+  ANONYMOUS
+  PUBLIC
+  FRIENDS
+}
+
+"Pole profilu, pro které lze zvlášť zapnout viditelnost vůči Audience."
+enum ProfileField {
+  FIRST_NAME
+  LAST_NAME
+  DISPLAY_NAME
+  CONTACT_EMAIL
+  PHONE
+  AVATAR
+}
+
+"Publikum, kterému lze zpřístupnit konkrétní pole profilu."
+enum Audience {
+  PUBLIC
+  FRIENDS
+}
+
+type ProfileFieldAudience {
+  field: ProfileField!
+  audience: Audience!
+}
+
+input ProfileFieldAudienceInput {
+  field: ProfileField!
+  audience: Audience!
+}
+
+"""
+Profil přihlášeného uživatele — vždy PLNÝ pohled vlastníka (Viewer.profile), nikdy filtrovaný
+podle visibility/visibleFields (docs/soukromi.md). Všechna pole jsou nepovinná; jméno/příjmení/
+telefon/kontaktní e-mail leží šifrované mimo core/off/osm export, avatar (core.media) šifrovaný
+NENÍ.
+"""
+type Profile {
+  firstName: String
+  lastName: String
+  phone: String
+  contactEmail: String
+  "Přihlašovací e-mail; mění se VÝHRADNĚ přes REST /api/auth/email/change (OTP na novou adresu) — tady jen ke čtení."
+  loginEmail: String!
+  visibility: ProfileVisibility!
+  visibleFields: [ProfileFieldAudience!]!
+  avatar: Photo
+}
+
+"""
+Patch nad auth.user_profile (+ app_user.display_name) — null u pole znamená "nezměněno",
+clearX = true maže hodnotu (stejný vzor jako UpdateStoreInput/UpdateProductInput).
+"""
+input UpdateProfileInput {
+  firstName: String
+  clearFirstName: Boolean = false
+  lastName: String
+  clearLastName: Boolean = false
+  displayName: String
+  clearDisplayName: Boolean = false
+  phone: String
+  clearPhone: Boolean = false
+  contactEmail: String
+  clearContactEmail: Boolean = false
+  visibility: ProfileVisibility
+  "null nechá matici beze změny, JAKÝKOLI seznam (i prázdný) ji celou nahradí."
+  visibleFields: [ProfileFieldAudienceInput!]
 }
 
 enum ChainType {
@@ -734,6 +822,7 @@ enum ErrorCode {
   PHOTO_UPLOAD_REQUIRES_LOGIN
   PHOTO_ACTION_REQUIRES_LOGIN
   PHOTO_CANNOT_ATTACH_TO_PHOTO
+  PHOTO_CANNOT_ATTACH_TO_USER
   PHOTO_LIMIT_REACHED
   PHOTO_DELETE_NOT_OWNER
   PHOTO_UPDATE_NOT_OWNER
@@ -751,6 +840,16 @@ enum ErrorCode {
   SESSION_EXPIRED
   LOCALE_REQUIRES_LOGIN
   LOCALE_UNSUPPORTED
+  PROFILE_REQUIRES_LOGIN
+  PROFILE_NAME_TOO_LONG
+  PROFILE_DISPLAY_NAME_TOO_LONG
+  PROFILE_PHONE_INVALID
+  PROFILE_EMAIL_INVALID
+  AVATAR_REQUIRES_LOGIN
+  EMAIL_CHANGE_REQUIRES_LOGIN
+  EMAIL_CHANGE_SAME_ADDRESS
+  EMAIL_CHANGE_INVALID_CHALLENGE
+  EMAIL_CHANGE_EMAIL_TAKEN
   ACCOUNT_GONE
   TOO_MANY_REQUESTS
   UOM_MISMATCH

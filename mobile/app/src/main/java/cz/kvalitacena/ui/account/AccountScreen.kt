@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,22 +29,23 @@ import kotlinx.coroutines.launch
 
 /**
  * Záložka "Účet" — nepřihlášený vidí dnešní [LoginScreen] jako obsah, přihlášený veřejnou
- * identitu (`me`) a odhlášení. Po přihlášení se záložka sama překreslí (accessToken je
- * StateFlow), žádná ruční navigace pryč — to bylo dřív křehké (popBackStack na sken natvrdo).
+ * identitu (`me`), odkaz na editaci profilu a odhlášení. Po přihlášení se záložka sama
+ * překreslí (accessToken je StateFlow), žádná ruční navigace pryč — to bylo dřív křehké
+ * (popBackStack na sken natvrdo).
  */
 @Composable
-fun AccountScreen() {
+fun AccountScreen(onEditProfile: () -> Unit = {}) {
   val accessToken by AppContainer.authRepository.accessToken.collectAsState()
 
   if (accessToken == null) {
     LoginScreen(onLoggedIn = {})
   } else {
-    LoggedInContent()
+    LoggedInContent(onEditProfile)
   }
 }
 
 @Composable
-private fun LoggedInContent() {
+private fun LoggedInContent(onEditProfile: () -> Unit) {
   val scope = rememberCoroutineScope()
   var viewer by remember { mutableStateOf<Viewer?>(null) }
   var loading by remember { mutableStateOf(true) }
@@ -68,6 +70,10 @@ private fun LoggedInContent() {
     }
 
     Spacer(Modifier.height(24.dp))
+    OutlinedButton(onClick = onEditProfile) {
+      Text(stringResource(R.string.account_edit_profile))
+    }
+    Spacer(Modifier.height(8.dp))
     Button(onClick = { scope.launch { AppContainer.authRepository.logout() } }) {
       Text(stringResource(R.string.account_logout))
     }

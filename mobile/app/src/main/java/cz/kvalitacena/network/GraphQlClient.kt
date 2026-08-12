@@ -24,6 +24,13 @@ private val PHOTO_FIELDS = """
   id url thumbnailUrl width height caption mine hidden attribution
 """
 
+/** Profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") — vždy plný pohled vlastníka. */
+private val PROFILE_FIELDS = """
+  firstName lastName phone contactEmail loginEmail visibility
+  visibleFields { field audience }
+  avatar { $PHOTO_FIELDS }
+"""
+
 /** Navíc oproti STORE_FIELDS — jen pro detail obchodu, ať se fotky netahají všude, kde se
  * Store objeví (řádky cen, výsledky hledání, ...), stejný vzor jako u produktu. */
 private val STORE_DETAIL_FIELDS = """
@@ -197,8 +204,41 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
 
   /** Veřejná identita přihlášeného uživatele — null pro anonyma. */
   suspend fun me(): Viewer? {
-    val gql = "{ me { publicHandle displayName createdAt trusted } }"
+    val gql = "{ me { publicHandle displayName createdAt trusted profile { $PROFILE_FIELDS } } }"
     return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(MeData.serializer())).me
+  }
+
+  /**
+   * Jméno, příjmení, přezdívka, telefon, kontaktní e-mail, viditelnost (docs/soukromi.md,
+   * "Profil uživatele a viditelnost"). Avatar se nahrává přes REST (MediaClient.uploadAvatar),
+   * tahle mutace ho jen umí smazat (viz deleteAvatar). Vyžaduje přihlášení.
+   */
+  suspend fun updateProfile(input: UpdateProfileInput): Viewer {
+    val gql = """
+      mutation(${'$'}input: UpdateProfileInput!) {
+        updateProfile(input: ${'$'}input) {
+          publicHandle displayName
+          profile { $PROFILE_FIELDS }
+        }
+      }
+    """
+    val variables = buildJsonObject {
+      put("input", json.encodeToJsonElement(UpdateProfileInput.serializer(), input))
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(UpdateProfileData.serializer())).updateProfile
+  }
+
+  /** Smazání avatara profilu. Vyžaduje přihlášení. */
+  suspend fun deleteAvatar(): Viewer {
+    val gql = """
+      mutation {
+        deleteAvatar {
+          publicHandle displayName
+          profile { $PROFILE_FIELDS }
+        }
+      }
+    """
+    return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(DeleteAvatarData.serializer())).deleteAvatar
   }
 
   /** Zobrazovací měny a stav kurzovního lístku ČNB — pro atribuci v Nastavení (docs/lokalizace.md). */

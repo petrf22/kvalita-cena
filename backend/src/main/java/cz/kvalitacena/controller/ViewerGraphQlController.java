@@ -8,8 +8,10 @@ import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.UnauthorizedException;
 import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.security.HandleGenerator;
+import cz.kvalitacena.service.MediaService;
 import cz.kvalitacena.service.Messages;
 import cz.kvalitacena.service.TrustLevelService;
+import cz.kvalitacena.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -28,6 +30,8 @@ public class ViewerGraphQlController {
   private final Messages messages;
   private final I18nProperties i18nProperties;
   private final UserAwareLocaleResolver userAwareLocaleResolver;
+  private final UserProfileService userProfileService;
+  private final MediaService mediaService;
 
   /** Nikdy e-mail ani DB id (docs/soukromi.md) — jen veřejná identita přihlášeného uživatele. */
   @QueryMapping
@@ -65,6 +69,34 @@ public class ViewerGraphQlController {
     return toViewer(user);
   }
 
+  /**
+   * Avatar se nahrává přes REST (MediaService.uploadAvatar, multipart), tahle mutace řeší
+   * zbytek profilu — jméno, příjmení, přezdívka, telefon, kontaktní e-mail, viditelnost
+   * (docs/soukromi.md, "Profil uživatele a viditelnost"). Vyžaduje přihlášení.
+   */
+  @MutationMapping
+  public Viewer updateProfile(@Argument UpdateProfileInput input, Authentication authentication) {
+    AppUser user = requireCurrentUser(authentication);
+    userProfileService.update(user, input);
+    return toViewer(user);
+  }
+
+  /** Smazání avatara profilu. Vyžaduje přihlášení. */
+  @MutationMapping
+  public Viewer deleteAvatar(Authentication authentication) {
+    AppUser user = requireCurrentUser(authentication);
+    mediaService.deleteAvatar(user.getPublicUid());
+    return toViewer(user);
+  }
+
+  private AppUser requireCurrentUser(Authentication authentication) {
+    if (authentication == null || !(authentication.getPrincipal() instanceof UUID publicUid)) {
+      throw new UnauthorizedException(ErrorCode.PROFILE_REQUIRES_LOGIN);
+    }
+    return appUserRepository.findByPublicUid(publicUid)
+        .orElseThrow(() -> new UnauthorizedException(ErrorCode.ACCOUNT_GONE));
+  }
+
   private String countryFor(String locale) {
     return i18nProperties.getCountryLocale().entrySet().stream()
         .filter(e -> e.getValue().equals(locale))
@@ -75,7 +107,7 @@ public class ViewerGraphQlController {
 
   private Viewer toViewer(AppUser user) {
     return new Viewer(renderedHandle(user), user.getDisplayName(), user.getCreatedAt(),
-        trustLevelService.isTrusted(user), user.getLocale(), user.getCountry());
+        trustLevelService.isTrusted(user), user.getLocale(), user.getCountry(), userProfileService.load(user));
   }
 
   /**

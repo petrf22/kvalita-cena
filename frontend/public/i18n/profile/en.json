@@ -1,0 +1,67 @@
+{
+  "title": "Profile",
+  "backToAccount": "Back to account",
+  "loadFailed": "Failed to load the profile.",
+  "avatar": {
+    "title": "Profile photo",
+    "hint": "The photo is NOT stored encrypted in the database (unlike the text fields below).",
+    "upload": "Upload photo",
+    "remove": "Remove photo",
+    "uploadFailed": "Uploading the photo failed."
+  },
+  "fields": {
+    "sectionTitle": "Details",
+    "encryptedHint": "This value is stored encrypted in the database.",
+    "firstNameLabel": "First name",
+    "lastNameLabel": "Last name",
+    "displayNameLabel": "Nickname",
+    "phoneLabel": "Phone",
+    "contactEmailLabel": "Contact email"
+  },
+  "loginEmail": {
+    "label": "Sign-in email",
+    "changeButton": "Change email"
+  },
+  "save": {
+    "button": "Save",
+    "success": "Profile saved."
+  },
+  "visibility": {
+    "sectionTitle": "Visibility",
+    "ANONYMOUS": "Anonymous — only your user number is shown",
+    "PUBLIC": "Public — choose which details are shown",
+    "FRIENDS": "Friends — choose which details your friends see",
+    "fieldsTableTitle": "Which details are shown",
+    "publicColumn": "Public",
+    "friendsColumn": "Friends",
+    "friendsHint": "The app doesn't support friend groups yet — checkboxes will take effect once it does."
+  },
+  "field": {
+    "FIRST_NAME": "First name",
+    "LAST_NAME": "Last name",
+    "DISPLAY_NAME": "Nickname",
+    "CONTACT_EMAIL": "Contact email",
+    "PHONE": "Phone",
+    "AVATAR": "Profile photo"
+  },
+  "links": {
+    "sectionTitle": "More information",
+    "comingSoon": "Coming soon",
+    "friends": "Friends list",
+    "systemRating": "System rating",
+    "friendsTrust": "Trust from friends",
+    "stats": "My stats"
+  },
+  "emailChange": {
+    "title": "Change sign-in email",
+    "newEmailLabel": "New email address",
+    "sendCode": "Send code",
+    "codeLabel": "Code from the email",
+    "codeHint": "We sent a code to {{email}}.",
+    "confirm": "Confirm change",
+    "cancel": "Cancel",
+    "success": "Sign-in email changed.",
+    "requestFailed": "Couldn't send the code. Please try again shortly.",
+    "confirmFailed": "The code is invalid or has expired. Please try again."
+  }
+}

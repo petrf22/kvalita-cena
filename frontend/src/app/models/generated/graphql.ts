@@ -4,6 +4,11 @@ type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 /** Internal type. DO NOT USE DIRECTLY. */
 export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
 import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
+/** Publikum, kterému lze zpřístupnit konkrétní pole profilu. */
+export type Audience =
+  | 'FRIENDS'
+  | 'PUBLIC';
+
 export type ChainType =
   | 'CHAIN'
   | 'FARM_SHOP'
@@ -91,6 +96,30 @@ export type ProductStatus =
   | 'MERGED'
   | 'REJECTED';
 
+/** Pole profilu, pro které lze zvlášť zapnout viditelnost vůči Audience. */
+export type ProfileField =
+  | 'AVATAR'
+  | 'CONTACT_EMAIL'
+  | 'DISPLAY_NAME'
+  | 'FIRST_NAME'
+  | 'LAST_NAME'
+  | 'PHONE';
+
+export type ProfileFieldAudienceInput = {
+  audience: Audience;
+  field: ProfileField;
+};
+
+/**
+ * Viditelnost profilu (auth.user_profile.visibility) — výchozí ANONYMOUS, aby si lidé ze
+ * setrvačnosti nedávali skutečné jméno (docs/soukromi.md). U PUBLIC/FRIENDS teprve rozhoduje
+ * Profile.visibleFields, KTERÁ pole se komu zobrazí.
+ */
+export type ProfileVisibility =
+  | 'ANONYMOUS'
+  | 'FRIENDS'
+  | 'PUBLIC';
+
 export type QuantityBasis =
   | 'PACKAGE'
   | 'PER_KG'
@@ -135,6 +164,26 @@ export type UpdateProductInput = {
   unitBase?: UnitBase | null | undefined;
 };
 
+/**
+ * Patch nad auth.user_profile (+ app_user.display_name) — null u pole znamená "nezměněno",
+ * clearX = true maže hodnotu (stejný vzor jako UpdateStoreInput/UpdateProductInput).
+ */
+export type UpdateProfileInput = {
+  clearContactEmail?: boolean | null | undefined;
+  clearDisplayName?: boolean | null | undefined;
+  clearFirstName?: boolean | null | undefined;
+  clearLastName?: boolean | null | undefined;
+  clearPhone?: boolean | null | undefined;
+  contactEmail?: string | null | undefined;
+  displayName?: string | null | undefined;
+  firstName?: string | null | undefined;
+  lastName?: string | null | undefined;
+  phone?: string | null | undefined;
+  visibility?: ProfileVisibility | null | undefined;
+  /** null nechá matici beze změny, JAKÝKOLI seznam (i prázdný) ji celou nahradí. */
+  visibleFields?: Array<ProfileFieldAudienceInput> | null | undefined;
+};
+
 export type UpdateStoreInput = {
   chainId?: string | null | undefined;
   city?: string | null | undefined;
@@ -162,6 +211,8 @@ export type FxInfoQuery = { fxInfo: { displayCurrencies: Array<string>, latestRa
 export type StoreFieldsFragment = { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null };
 
 export type PhotoFieldsFragment = { id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string };
+
+export type ProfileFieldsFragment = { firstName: string | null, lastName: string | null, phone: string | null, contactEmail: string | null, loginEmail: string, visibility: ProfileVisibility, visibleFields: Array<{ field: ProfileField, audience: Audience }>, avatar: { id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string } | null };
 
 export type StoreDetailFieldsFragment = { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string }>, chain: { id: string, name: string, chainType: ChainType } | null };
 
@@ -370,7 +421,7 @@ export type CompanyByIcoQuery = { companyByIco: { ico: string, name: string, str
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MeQuery = { me: { publicHandle: string, displayName: string | null, createdAt: string, trusted: boolean, locale: string | null, country: string | null } | null };
+export type MeQuery = { me: { publicHandle: string, displayName: string | null, createdAt: string, trusted: boolean, locale: string | null, country: string | null, profile: { firstName: string | null, lastName: string | null, phone: string | null, contactEmail: string | null, loginEmail: string, visibility: ProfileVisibility, visibleFields: Array<{ field: ProfileField, audience: Audience }>, avatar: { id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string } | null } } | null };
 
 export type SetLocaleMutationVariables = Exact<{
   locale: string;
@@ -379,6 +430,18 @@ export type SetLocaleMutationVariables = Exact<{
 
 
 export type SetLocaleMutation = { setLocale: { locale: string | null, country: string | null } };
+
+export type UpdateProfileMutationVariables = Exact<{
+  input: UpdateProfileInput;
+}>;
+
+
+export type UpdateProfileMutation = { updateProfile: { publicHandle: string, displayName: string | null, profile: { firstName: string | null, lastName: string | null, phone: string | null, contactEmail: string | null, loginEmail: string, visibility: ProfileVisibility, visibleFields: Array<{ field: ProfileField, audience: Audience }>, avatar: { id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string } | null } } };
+
+export type DeleteAvatarMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type DeleteAvatarMutation = { deleteAvatar: { publicHandle: string, displayName: string | null, profile: { firstName: string | null, lastName: string | null, phone: string | null, contactEmail: string | null, loginEmail: string, visibility: ProfileVisibility, visibleFields: Array<{ field: ProfileField, audience: Audience }>, avatar: { id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string } | null } } };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -398,6 +461,46 @@ export class TypedDocumentString<TResult, TVariables>
     return this.value;
   }
 }
+export const PhotoFieldsFragmentDoc = new TypedDocumentString(`
+    fragment PhotoFields on Photo {
+  id
+  url
+  thumbnailUrl
+  width
+  height
+  caption
+  mine
+  hidden
+  attribution
+}
+    `, {"fragmentName":"PhotoFields"}) as unknown as TypedDocumentString<PhotoFieldsFragment, unknown>;
+export const ProfileFieldsFragmentDoc = new TypedDocumentString(`
+    fragment ProfileFields on Profile {
+  firstName
+  lastName
+  phone
+  contactEmail
+  loginEmail
+  visibility
+  visibleFields {
+    field
+    audience
+  }
+  avatar {
+    ...PhotoFields
+  }
+}
+    fragment PhotoFields on Photo {
+  id
+  url
+  thumbnailUrl
+  width
+  height
+  caption
+  mine
+  hidden
+  attribution
+}`, {"fragmentName":"ProfileFields"}) as unknown as TypedDocumentString<ProfileFieldsFragment, unknown>;
 export const StoreFieldsFragmentDoc = new TypedDocumentString(`
     fragment StoreFields on Store {
   id
@@ -420,19 +523,6 @@ export const StoreFieldsFragmentDoc = new TypedDocumentString(`
   pendingConfirmation
 }
     `, {"fragmentName":"StoreFields"}) as unknown as TypedDocumentString<StoreFieldsFragment, unknown>;
-export const PhotoFieldsFragmentDoc = new TypedDocumentString(`
-    fragment PhotoFields on Photo {
-  id
-  url
-  thumbnailUrl
-  width
-  height
-  caption
-  mine
-  hidden
-  attribution
-}
-    `, {"fragmentName":"PhotoFields"}) as unknown as TypedDocumentString<PhotoFieldsFragment, unknown>;
 export const StoreDetailFieldsFragmentDoc = new TypedDocumentString(`
     fragment StoreDetailFields on Store {
   ...StoreFields
@@ -1787,9 +1877,37 @@ export const MeDocument = new TypedDocumentString(`
     trusted
     locale
     country
+    profile {
+      ...ProfileFields
+    }
   }
 }
-    `) as unknown as TypedDocumentString<MeQuery, MeQueryVariables>;
+    fragment PhotoFields on Photo {
+  id
+  url
+  thumbnailUrl
+  width
+  height
+  caption
+  mine
+  hidden
+  attribution
+}
+fragment ProfileFields on Profile {
+  firstName
+  lastName
+  phone
+  contactEmail
+  loginEmail
+  visibility
+  visibleFields {
+    field
+    audience
+  }
+  avatar {
+    ...PhotoFields
+  }
+}`) as unknown as TypedDocumentString<MeQuery, MeQueryVariables>;
 export const SetLocaleDocument = new TypedDocumentString(`
     mutation SetLocale($locale: String!, $country: String) {
   setLocale(locale: $locale, country: $country) {
@@ -1798,3 +1916,75 @@ export const SetLocaleDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<SetLocaleMutation, SetLocaleMutationVariables>;
+export const UpdateProfileDocument = new TypedDocumentString(`
+    mutation UpdateProfile($input: UpdateProfileInput!) {
+  updateProfile(input: $input) {
+    publicHandle
+    displayName
+    profile {
+      ...ProfileFields
+    }
+  }
+}
+    fragment PhotoFields on Photo {
+  id
+  url
+  thumbnailUrl
+  width
+  height
+  caption
+  mine
+  hidden
+  attribution
+}
+fragment ProfileFields on Profile {
+  firstName
+  lastName
+  phone
+  contactEmail
+  loginEmail
+  visibility
+  visibleFields {
+    field
+    audience
+  }
+  avatar {
+    ...PhotoFields
+  }
+}`) as unknown as TypedDocumentString<UpdateProfileMutation, UpdateProfileMutationVariables>;
+export const DeleteAvatarDocument = new TypedDocumentString(`
+    mutation DeleteAvatar {
+  deleteAvatar {
+    publicHandle
+    displayName
+    profile {
+      ...ProfileFields
+    }
+  }
+}
+    fragment PhotoFields on Photo {
+  id
+  url
+  thumbnailUrl
+  width
+  height
+  caption
+  mine
+  hidden
+  attribution
+}
+fragment ProfileFields on Profile {
+  firstName
+  lastName
+  phone
+  contactEmail
+  loginEmail
+  visibility
+  visibleFields {
+    field
+    audience
+  }
+  avatar {
+    ...PhotoFields
+  }
+}`) as unknown as TypedDocumentString<DeleteAvatarMutation, DeleteAvatarMutationVariables>;

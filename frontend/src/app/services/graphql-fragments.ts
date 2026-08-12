@@ -46,6 +46,28 @@ export const photoFieldsFragment = graphql(`
 `);
 
 /**
+ * Profil přihlášeného uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") — vždy
+ * plný pohled vlastníka, `Viewer.profile` se nikdy nefiltruje podle `visibility`.
+ */
+export const profileFieldsFragment = graphql(`
+  fragment ProfileFields on Profile {
+    firstName
+    lastName
+    phone
+    contactEmail
+    loginEmail
+    visibility
+    visibleFields {
+      field
+      audience
+    }
+    avatar {
+      ...PhotoFields
+    }
+  }
+`);
+
+/**
  * Navíc oproti StoreFields — jen pro detail stránky obchodu, ať se fotky netahají všude, kde
  * se Store objeví (řádky cen, výsledky hledání, ...), stejný vzor jako u produktu.
  */

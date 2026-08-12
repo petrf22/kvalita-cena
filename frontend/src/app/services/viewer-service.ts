@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs';
 import { GraphQlService } from './graphql-service';
 import { graphql } from '../models/generated';
+import type { UpdateProfileInput } from '../models/generated/graphql';
 
 @Injectable({ providedIn: 'root' })
 export class ViewerService {
@@ -18,6 +19,9 @@ export class ViewerService {
           trusted
           locale
           country
+          profile {
+            ...ProfileFields
+          }
         }
       }
     `);
@@ -39,5 +43,41 @@ export class ViewerService {
       }
     `);
     return this.graphQl.execute(document, { locale, country }).pipe(map((data) => data.setLocale));
+  }
+
+  /**
+   * Jméno, příjmení, přezdívka, telefon, kontaktní e-mail a viditelnost (docs/soukromi.md,
+   * "Profil uživatele a viditelnost"). Avatar se nahrává přes REST (MediaService.uploadAvatar),
+   * tahle mutace ho jen umí smazat (viz deleteAvatar).
+   */
+  updateProfile(input: UpdateProfileInput) {
+    const document = graphql(`
+      mutation UpdateProfile($input: UpdateProfileInput!) {
+        updateProfile(input: $input) {
+          publicHandle
+          displayName
+          profile {
+            ...ProfileFields
+          }
+        }
+      }
+    `);
+    return this.graphQl.execute(document, { input }).pipe(map((data) => data.updateProfile));
+  }
+
+  /** Smazání avatara profilu. */
+  deleteAvatar() {
+    const document = graphql(`
+      mutation DeleteAvatar {
+        deleteAvatar {
+          publicHandle
+          displayName
+          profile {
+            ...ProfileFields
+          }
+        }
+      }
+    `);
+    return this.graphQl.execute(document).pipe(map((data) => data.deleteAvatar));
   }
 }

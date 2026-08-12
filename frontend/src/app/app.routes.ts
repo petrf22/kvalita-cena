@@ -36,11 +36,16 @@ export const routes: Routes = [
     path: 'settings',
     loadComponent: () => import('./features/settings/settings-page').then((m) => m.SettingsPage),
   },
+  {
+    path: 'profile',
+    loadComponent: () => import('./features/profile/profile-page').then((m) => m.ProfilePage),
+  },
   // Staré české cesty — zachovány kvůli existujícím odkazům/záložkám.
   { path: 'produkt/:id', redirectTo: 'product/:id' },
   { path: 'obchod/:id', redirectTo: 'store/:id' },
   { path: 'zadat-cenu', redirectTo: 'price' },
   { path: 'prihlaseni', redirectTo: 'login' },
   { path: 'nastaveni', redirectTo: 'settings' },
+  { path: 'profil', redirectTo: 'profile' },
   { path: '**', redirectTo: '' },
 ];

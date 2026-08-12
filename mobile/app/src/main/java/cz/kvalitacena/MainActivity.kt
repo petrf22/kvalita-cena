@@ -35,6 +35,7 @@ import cz.kvalitacena.ui.navigation.ARG_STORE_ID
 import cz.kvalitacena.ui.navigation.ROUTE_PRICE_ENTRY
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_DETAIL
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_FORM
+import cz.kvalitacena.ui.navigation.ROUTE_PROFILE
 import cz.kvalitacena.ui.navigation.ROUTE_STORE_DETAIL
 import cz.kvalitacena.ui.navigation.ROUTE_STORE_FORM
 import cz.kvalitacena.ui.navigation.TopLevelDestination
@@ -48,6 +49,7 @@ import cz.kvalitacena.ui.navigation.storeFormRouteForEdit
 import cz.kvalitacena.ui.price.PriceEntryScreen
 import cz.kvalitacena.ui.price.PriceEntryTarget
 import cz.kvalitacena.ui.product.ProductFormScreen
+import cz.kvalitacena.ui.profile.ProfileScreen
 import cz.kvalitacena.ui.scan.ScanScreen
 import cz.kvalitacena.ui.search.SearchScreen
 import cz.kvalitacena.ui.settings.SettingsScreen
@@ -108,7 +110,7 @@ private fun AppScaffold() {
         SettingsScreen()
       }
       composable(TopLevelDestination.ACCOUNT.route) {
-        AccountScreen()
+        AccountScreen(onEditProfile = { navController.navigate(ROUTE_PROFILE) })
       }
       composable(
         ROUTE_PRODUCT_DETAIL,
@@ -170,6 +172,9 @@ private fun AppScaffold() {
       ) { backStackEntry ->
         val barcode = backStackEntry.arguments?.getString(ARG_BARCODE)
         ProductFormScreen(barcode = barcode, onDone = { navController.popBackStack() })
+      }
+      composable(ROUTE_PROFILE) {
+        ProfileScreen(onDone = { navController.popBackStack() })
       }
     }
   }

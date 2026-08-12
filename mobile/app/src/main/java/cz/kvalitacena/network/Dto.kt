@@ -251,7 +251,66 @@ data class Viewer(
   val createdAt: String,
   // Práh důvěry (docs/reputace.md) — vysvětluje, proč nový obchod/zboží zatím vidí jen viewer sám.
   val trusted: Boolean = false,
+  // Vyplněné jen v dotazech, které o něj request (viz GraphQlClient.me/updateProfile/deleteAvatar).
+  val profile: Profile? = null,
 )
+
+/**
+ * Jeden řádek matice viditelnosti — existence záznamu (field, audience) znamená, že dané pole
+ * je pro dané publikum viditelné (docs/soukromi.md, "Profil uživatele a viditelnost"). `field`
+ * je jedna z FIRST_NAME/LAST_NAME/DISPLAY_NAME/CONTACT_EMAIL/PHONE/AVATAR, `audience` PUBLIC
+ * nebo FRIENDS — appka zatím typy ze schématu negeneruje (network/Dto.kt mapuje enumy ručně na
+ * String, viz CLAUDE.md).
+ */
+@Serializable
+data class ProfileFieldAudience(
+  val field: String,
+  val audience: String,
+)
+
+/**
+ * Profil přihlášeného uživatele — jméno, příjmení, telefon, kontaktní e-mail (nepovinné,
+ * šifrované na backendu), avatar, viditelnost (docs/soukromi.md, "Profil uživatele a
+ * viditelnost"). Vždy plný pohled vlastníka, nikdy filtrovaný podle `visibility`.
+ */
+@Serializable
+data class Profile(
+  val firstName: String? = null,
+  val lastName: String? = null,
+  val phone: String? = null,
+  val contactEmail: String? = null,
+  // Přihlašovací e-mail; mění se VÝHRADNĚ přes /api/auth/email/change (OTP na novou adresu).
+  val loginEmail: String,
+  val visibility: String = "ANONYMOUS",
+  val visibleFields: List<ProfileFieldAudience> = emptyList(),
+  val avatar: Photo? = null,
+)
+
+/** Patch nad auth.user_profile (+ app_user.display_name) — null u pole znamená "nezměněno". */
+@Serializable
+data class UpdateProfileInput(
+  val firstName: String? = null,
+  val clearFirstName: Boolean = false,
+  val lastName: String? = null,
+  val clearLastName: Boolean = false,
+  val displayName: String? = null,
+  val clearDisplayName: Boolean = false,
+  val phone: String? = null,
+  val clearPhone: Boolean = false,
+  val contactEmail: String? = null,
+  val clearContactEmail: Boolean = false,
+  val visibility: String? = null,
+  // null nechá matici beze změny, JAKÝKOLI seznam (i prázdný) ji celou nahradí.
+  val visibleFields: List<ProfileFieldAudience>? = null,
+)
+
+// --- REST DTO pro změnu přihlašovacího e-mailu (/api/auth/email/change/*, ne GraphQL) ---
+
+@Serializable
+data class EmailChangeRequestBody(val email: String)
+
+@Serializable
+data class EmailChangeConfirmBody(val challengeUid: String, val code: String, val email: String)
 
 @Serializable
 data class SubmitObservationInput(
@@ -422,6 +481,12 @@ data class RateProductData(val rateProduct: ProductQuality)
 
 @Serializable
 data class MeData(val me: Viewer? = null)
+
+@Serializable
+data class UpdateProfileData(val updateProfile: Viewer)
+
+@Serializable
+data class DeleteAvatarData(val deleteAvatar: Viewer)
 
 @Serializable
 data class SearchStoresData(val searchStores: StoreSearchResult)

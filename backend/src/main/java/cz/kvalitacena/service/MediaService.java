@@ -5,10 +5,12 @@ import cz.kvalitacena.controller.Photo;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.Media;
 import cz.kvalitacena.db.entity.RecordType;
+import cz.kvalitacena.db.entity.UserProfile;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
+import cz.kvalitacena.db.repo.UserProfileRepository;
 import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.TooManyRequestsException;
@@ -44,6 +46,7 @@ public class MediaService {
   private final AppUserRepository appUserRepository;
   private final ProductRepository productRepository;
   private final StoreRepository storeRepository;
+  private final UserProfileRepository userProfileRepository;
   private final MediaStorage mediaStorage;
   private final ImageProcessingService imageProcessingService;
   private final CatalogRateLimiter catalogRateLimiter;
@@ -57,6 +60,11 @@ public class MediaService {
     }
     if (recordType == RecordType.PHOTO) {
       throw new ValidationException(ErrorCode.PHOTO_CANNOT_ATTACH_TO_PHOTO);
+    }
+    // Avatar jde jen přes uploadAvatar() (recordId se bere z Authentication, ne z requestu) —
+    // jinak by šlo tímhle obecným endpointem nahrát fotku pod libovolné cizí user_id.
+    if (recordType == RecordType.USER) {
+      throw new ValidationException(ErrorCode.PHOTO_CANNOT_ATTACH_TO_USER);
     }
     AppUser user = appUserRepository.findByPublicUid(viewerPublicUid)
         .orElseThrow(() -> new UnauthorizedException(ErrorCode.ACCOUNT_GONE));
@@ -160,11 +168,83 @@ public class MediaService {
     return !media.isHidden() || media.getUploadedByUserId().equals(viewer.userId());
   }
 
+  /**
+   * Avatar profilu — na rozdíl od {@link #upload} je vždy nejvýš jeden na uživatele
+   * (nahrazení, ne přidání do fronty) a {@code recordId} se bere VÝHRADNĚ z {@code
+   * viewerPublicUid}, nikdy z requestu (docs/soukromi.md — v API nikdy DB id). Idempotence
+   * (stejný obsah nahraný podruhé) funguje stejně jako u {@link #upload}.
+   */
+  @Transactional
+  public Photo uploadAvatar(byte[] raw, UUID viewerPublicUid) {
+    if (viewerPublicUid == null) {
+      throw new UnauthorizedException(ErrorCode.AVATAR_REQUIRES_LOGIN);
+    }
+    AppUser user = appUserRepository.findByPublicUid(viewerPublicUid)
+        .orElseThrow(() -> new UnauthorizedException(ErrorCode.ACCOUNT_GONE));
+    if (!catalogRateLimiter.tryAcquireMediaUpload(viewerPublicUid)) {
+      throw new TooManyRequestsException();
+    }
+
+    ImageProcessingService.ProcessedImage processed = imageProcessingService.process(raw);
+
+    Media media = mediaRepository
+        .findByRecordTypeAndRecordIdAndSha256(RecordType.USER, user.getId(), processed.sha256())
+        .orElseGet(() -> {
+          String storageKey = mediaStorage.store(processed.full(), processed.thumbnail());
+          return mediaRepository.save(Media.builder()
+              .recordType(RecordType.USER)
+              .recordId(user.getId())
+              .storageKey(storageKey)
+              .uploadedByUserId(user.getId())
+              .contentType("image/jpeg")
+              .width(processed.width())
+              .height(processed.height())
+              .byteSize(processed.full().length)
+              .sha256(processed.sha256())
+              .sortOrder(0)
+              .build());
+        });
+
+    replaceAvatar(user, media);
+    ViewerContext self = new ViewerContext(user.getPublicUid(), user.getId(), false);
+    return toPhoto(media, self);
+  }
+
+  @Transactional
+  public void deleteAvatar(UUID viewerPublicUid) {
+    if (viewerPublicUid == null) {
+      throw new UnauthorizedException(ErrorCode.AVATAR_REQUIRES_LOGIN);
+    }
+    AppUser user = appUserRepository.findByPublicUid(viewerPublicUid)
+        .orElseThrow(() -> new UnauthorizedException(ErrorCode.ACCOUNT_GONE));
+    replaceAvatar(user, null);
+  }
+
+  /** Zapíše (nebo smaže) {@code user_profile.avatar_media_id} a starý avatar odstraní — soubor i řádek. */
+  private void replaceAvatar(AppUser user, Media newMedia) {
+    UserProfile profile = userProfileRepository.findById(user.getId())
+        .orElseGet(() -> UserProfile.builder().userId(user.getId()).build());
+    Long oldAvatarId = profile.getAvatarMediaId();
+    Long newAvatarId = newMedia == null ? null : newMedia.getId();
+    profile.setAvatarMediaId(newAvatarId);
+    userProfileRepository.save(profile);
+
+    if (oldAvatarId != null && !oldAvatarId.equals(newAvatarId)) {
+      mediaRepository.findById(oldAvatarId).ifPresent(old -> {
+        mediaStorage.delete(old.getStorageKey());
+        mediaRepository.delete(old);
+      });
+    }
+  }
+
   private void requireRecordExists(RecordType recordType, Long recordId) {
     boolean exists = switch (recordType) {
       case PRODUCT -> productRepository.existsById(recordId);
       case STORE -> storeRepository.existsById(recordId);
       case PHOTO -> false;
+      // Sem se za normálních okolností nedostane (viz guard v upload() výš) — větev je tu jen
+      // kvůli exhaustivitě switche, ne jako podporovaná cesta.
+      case USER -> appUserRepository.existsById(recordId);
     };
     if (!exists) {
       throw new NotFoundException(ErrorCode.PHOTO_TARGET_RECORD_NOT_FOUND);

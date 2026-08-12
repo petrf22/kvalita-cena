@@ -1,0 +1,67 @@
+{
+  "title": "Profil",
+  "backToAccount": "Zpět na účet",
+  "loadFailed": "Profil se nepodařilo načíst.",
+  "avatar": {
+    "title": "Fotka profilu",
+    "hint": "Fotka NENÍ v databázi uložená šifrovaně (na rozdíl od textových údajů níž).",
+    "upload": "Nahrát fotku",
+    "remove": "Odebrat fotku",
+    "uploadFailed": "Nahrání fotky se nepovedlo."
+  },
+  "fields": {
+    "sectionTitle": "Údaje",
+    "encryptedHint": "Údaj je v databázi uložený šifrovaně.",
+    "firstNameLabel": "Jméno",
+    "lastNameLabel": "Příjmení",
+    "displayNameLabel": "Přezdívka",
+    "phoneLabel": "Telefon",
+    "contactEmailLabel": "Kontaktní e-mail"
+  },
+  "loginEmail": {
+    "label": "Přihlašovací e-mail",
+    "changeButton": "Změnit e-mail"
+  },
+  "save": {
+    "button": "Uložit",
+    "success": "Profil byl uložen."
+  },
+  "visibility": {
+    "sectionTitle": "Viditelnost",
+    "ANONYMOUS": "Anonymní — zobrazuje se jen číslo uživatele",
+    "PUBLIC": "Veřejný — vyber, jaké údaje se zobrazí",
+    "FRIENDS": "Přátelé — vyber, jaké údaje uvidí přátelé",
+    "fieldsTableTitle": "Které údaje se zobrazí",
+    "publicColumn": "Veřejnost",
+    "friendsColumn": "Přátelé",
+    "friendsHint": "Skupiny přátel appka zatím neumí — zaškrtnutí se uplatní, až budou hotové."
+  },
+  "field": {
+    "FIRST_NAME": "Jméno",
+    "LAST_NAME": "Příjmení",
+    "DISPLAY_NAME": "Přezdívka",
+    "CONTACT_EMAIL": "Kontaktní e-mail",
+    "PHONE": "Telefon",
+    "AVATAR": "Fotka profilu"
+  },
+  "links": {
+    "sectionTitle": "Další informace",
+    "comingSoon": "Připravujeme",
+    "friends": "Seznam přátel",
+    "systemRating": "Hodnocení systémem",
+    "friendsTrust": "Důvěra od přátel",
+    "stats": "Moje statistiky"
+  },
+  "emailChange": {
+    "title": "Změnit přihlašovací e-mail",
+    "newEmailLabel": "Nová e-mailová adresa",
+    "sendCode": "Poslat kód",
+    "codeLabel": "Kód z e-mailu",
+    "codeHint": "Kód jsme poslali na {{email}}.",
+    "confirm": "Potvrdit změnu",
+    "cancel": "Zrušit",
+    "success": "Přihlašovací e-mail byl změněn.",
+    "requestFailed": "Nepodařilo se odeslat kód. Zkus to prosím znovu za chvíli.",
+    "confirmFailed": "Kód je neplatný nebo vypršel. Zkus to prosím znovu."
+  }
+}

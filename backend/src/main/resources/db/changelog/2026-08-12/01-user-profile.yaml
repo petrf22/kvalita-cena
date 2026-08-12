@@ -1,0 +1,130 @@
+# 01-user-profile.yaml — profil přihlášeného uživatele (jméno, příjmení, telefon, kontaktní
+# e-mail, avatar, viditelnost). Vědomá změna dřívějšího rozhodnutí "auth.app_user nemá pole pro
+# jméno, adresu ani telefon" (docs/soukromi.md) — údaje jsou nepovinné a leží ve VLASTNÍ tabulce
+# mimo app_user, aby app_user zůstal "identitou bez osobních údajů" a smazání profilu bylo
+# jeden DELETE. Textová PII (first_name/last_name/phone/contact_email) je šifrovaná stejným
+# AES-256-GCM jako email_enc (viz EmailCipher) — klíč mimo databázi, únik dumpu bez něj
+# neodhalí nic. Avatar (core.media) šifrovaný NENÍ, viz docs/soukromi.md.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-12-01-create-user-profile
+      author: Petr F.
+      comment: >
+        visibility je výchozí ANONYMOUS (public_handle zůstává výchozí identitou, aby si lidé
+        ze setrvačnosti nedávali skutečné jméno) — PUBLIC/FRIENDS teprve zpřístupní pole
+        vyjmenovaná v user_profile_field_visibility. avatar_media_id ukazuje do core.media bez
+        FK (schémata auth/core se mezi sebou nekříží cizím klíčem nikde jinde v projektu).
+      changes:
+        - createTable:
+            schemaName: auth
+            tableName: user_profile
+            columns:
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: first_name_enc
+                  type: BYTEA
+              - column:
+                  name: last_name_enc
+                  type: BYTEA
+              - column:
+                  name: phone_enc
+                  type: BYTEA
+              - column:
+                  name: contact_email_enc
+                  type: BYTEA
+              - column:
+                  name: visibility
+                  type: VARCHAR(10)
+                  defaultValue: ANONYMOUS
+                  constraints:
+                    nullable: false
+              - column:
+                  name: avatar_media_id
+                  type: BIGINT
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            constraintName: fk_user_profile_user
+            baseTableSchemaName: auth
+            baseTableName: user_profile
+            baseColumnNames: user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - sql:
+            sql: |
+              ALTER TABLE auth.user_profile
+                ADD CONSTRAINT chk_user_profile_visibility
+                  CHECK (visibility IN ('ANONYMOUS', 'PUBLIC', 'FRIENDS'));
+
+  - changeSet:
+      id: 2026-08-12-01-create-user-profile-field-visibility
+      author: Petr F.
+      comment: >
+        Matice pole × publikum — existence řádku znamená "pole je pro tohle publikum viditelné",
+        žádný řádek znamená neviditelné. Rozšiřitelné o další pole bez migrace sloupců, na
+        rozdíl od jednoho boolean sloupce na pole.
+      changes:
+        - createTable:
+            schemaName: auth
+            tableName: user_profile_field_visibility
+            columns:
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: field
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: audience
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            schemaName: auth
+            tableName: user_profile_field_visibility
+            columnNames: user_id, field, audience
+            constraintName: pk_user_profile_field_visibility
+        - addForeignKeyConstraint:
+            constraintName: fk_user_profile_field_visibility_user
+            baseTableSchemaName: auth
+            baseTableName: user_profile_field_visibility
+            baseColumnNames: user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - sql:
+            sql: |
+              ALTER TABLE auth.user_profile_field_visibility
+                ADD CONSTRAINT chk_user_profile_field_visibility_field
+                  CHECK (field IN ('FIRST_NAME', 'LAST_NAME', 'DISPLAY_NAME', 'CONTACT_EMAIL', 'PHONE', 'AVATAR')),
+                ADD CONSTRAINT chk_user_profile_field_visibility_audience
+                  CHECK (audience IN ('PUBLIC', 'FRIENDS'));
+
+  - changeSet:
+      id: 2026-08-12-01-media-allow-user
+      author: Petr F.
+      comment: >
+        Avatar profilu jde přes core.media stejně jako fotky zboží/obchodu (RecordType.USER) —
+        znovu použije MediaController/ImageProcessingService (EXIF včetně GPS se strhává i tady).
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.media DROP CONSTRAINT chk_media_record_type;
+              ALTER TABLE core.media
+                ADD CONSTRAINT chk_media_record_type CHECK (record_type IN ('PRODUCT', 'STORE', 'USER'));

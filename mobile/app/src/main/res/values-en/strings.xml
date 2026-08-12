@@ -21,6 +21,7 @@
     <string name="account_title">Account</string>
     <string name="account_logged_in_fallback">Signed in</string>
     <string name="account_logout">Sign out</string>
+    <string name="account_edit_profile">Edit profile</string>
 
     <string name="login_title">Sign in</string>
     <string name="login_otp_hint">We\'ll send a six-digit code to your email, no password to remember.</string>
@@ -32,6 +33,54 @@
     <string name="login_change_email">Use a different email</string>
     <string name="login_request_failed">We couldn\'t send the code. Please try again shortly.</string>
     <string name="login_verify_failed">The code is invalid or has expired. Please try again.</string>
+
+    <!-- Profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_load_failed">Failed to load the profile.</string>
+    <string name="profile_avatar_title">Profile photo</string>
+    <string name="profile_avatar_hint">The photo is NOT stored encrypted in the database (unlike the text fields below).</string>
+    <string name="profile_avatar_upload">Upload photo</string>
+    <string name="profile_avatar_remove">Remove photo</string>
+    <string name="profile_avatar_upload_failed">Uploading the photo failed.</string>
+    <string name="profile_first_name_label">First name</string>
+    <string name="profile_last_name_label">Last name</string>
+    <string name="profile_display_name_label">Nickname</string>
+    <string name="profile_phone_label">Phone</string>
+    <string name="profile_contact_email_label">Contact email</string>
+    <string name="profile_encrypted_hint">This value is stored encrypted in the database.</string>
+    <string name="profile_login_email_label">Sign-in email</string>
+    <string name="profile_change_email_button">Change email</string>
+    <string name="profile_save_button">Save</string>
+    <string name="profile_save_success">Profile saved.</string>
+    <string name="profile_visibility_title">Visibility</string>
+    <string name="profile_visibility_anonymous">Anonymous — only your user number is shown</string>
+    <string name="profile_visibility_public">Public — choose which details are shown</string>
+    <string name="profile_visibility_friends">Friends — choose which details your friends see</string>
+    <string name="profile_fields_table_title">Which details are shown</string>
+    <string name="profile_fields_public_column">Public</string>
+    <string name="profile_fields_friends_column">Friends</string>
+    <string name="profile_fields_friends_hint">The app doesn\'t support friend groups yet — checkboxes will take effect once it does.</string>
+    <string name="profile_field_first_name">First name</string>
+    <string name="profile_field_last_name">Last name</string>
+    <string name="profile_field_display_name">Nickname</string>
+    <string name="profile_field_contact_email">Contact email</string>
+    <string name="profile_field_phone">Phone</string>
+    <string name="profile_field_avatar">Profile photo</string>
+    <string name="profile_links_title">More information</string>
+    <string name="profile_links_coming_soon">Coming soon</string>
+    <string name="profile_links_friends">Friends list</string>
+    <string name="profile_links_system_rating">System rating</string>
+    <string name="profile_links_friends_trust">Trust from friends</string>
+    <string name="profile_links_stats">My stats</string>
+    <string name="profile_email_change_title">Change sign-in email</string>
+    <string name="profile_email_change_new_email_label">New email address</string>
+    <string name="profile_email_change_send_code">Send code</string>
+    <string name="profile_email_change_code_label">Code from the email</string>
+    <string name="profile_email_change_code_hint">We sent a code to %1$s.</string>
+    <string name="profile_email_change_confirm">Confirm change</string>
+    <string name="profile_email_change_success">Sign-in email changed.</string>
+    <string name="profile_email_change_request_failed">Couldn\'t send the code. Please try again shortly.</string>
+    <string name="profile_email_change_confirm_failed">The code is invalid or has expired. Please try again.</string>
 
     <string name="scan_camera_permission_hint">To scan barcodes, the app needs access to the camera.</string>
 

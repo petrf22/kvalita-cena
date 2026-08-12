@@ -274,6 +274,35 @@ stejně jako zbytek OFF dat, platí pro ně přesně to pravidlo oddělení sch�
 na začátku tohohle dokumentu. Případné zobrazení OFF fotky by šlo výhradně odkazem přes
 `Product.externalLinks`, ne uložením do `core.media`.
 
+## Profil uživatele a viditelnost
+
+Podrobné odůvodnění (šifrování, žádná spoluúčast na "žádné veřejné negativní hodnocení",
+tok změny e-mailu) je v `docs/soukromi.md`, „Profil uživatele a viditelnost" — tady jen
+datový tvar. `auth.user_profile` (`2026-08-12/01-user-profile.yaml`) je 1:1 s `app_user`,
+ale VE VLASTNÍ tabulce, aby `app_user` zůstal "identita bez osobních údajů" (viz
+`docs/soukromi.md`) a smazání profilu bylo jeden `DELETE`/`CASCADE`. Sloupce
+`first_name_enc`/`last_name_enc`/`phone_enc`/`contact_email_enc` jsou `BYTEA`, ne `VARCHAR`
+— šifrovaná hodnota nemá smysluplnou textovou délku ani se nedá `LIKE`-filtrovat, což je
+zamýšlené (appka nikdy nehledá uživatele podle jména).
+
+`auth.user_profile_field_visibility` je matice `(user_id, field, audience)` s kompozitním
+primárním klíčem — **existence řádku** znamená "tohle pole vidí tohle publikum", ne boolean
+sloupec na pole. Nevýhoda (o řád víc řádků než sloupců) se vyplatí tím, že přidání dalšího
+pole do budoucna je jen nová hodnota v `CHECK`, ne migrace schématu přidávající sloupec ke
+každému budoucímu poli.
+
+**Avatar jde přes `core.media` s `RecordType.USER`** (rozšíření `chk_media_record_type` ve
+stejném changelogu) — `record_id` je `app_user.id`, ne nějaké nové ID. Odkaz zpátky
+(`user_profile.avatar_media_id`) je bez FK, stejně jako `media`→`product`/`store` výš —
+schémata `auth`/`core` se mezi sebou cizím klíčem nekříží nikde v projektu. Na rozdíl od
+zboží/obchodu je avatar nejvýš jeden na uživatele: druhý upload STARÝ smaže (soubor
+i řádek), nepřidává frontu jako `PhotoGallery`.
+
+**`RecordType.USER` je jen pro `core.media`, ne pro `core.record_flag`** — GraphQL `enum
+RecordType` (pro `flagRecord`) proto `USER` vůbec neobsahuje, jen Java/Kotlin enum. Avatar se
+nenahlašuje stejným kanálem jako fotka zboží/obchodu (`docs/reputace.md`, "žádné veřejné
+negativní hodnocení uživatelů" — nahlašování cizího avataru by tomu odporovalo).
+
 ## Co ještě není v etapě 1
 
 `agg.price_weekly_national` (týdenní řady pro delší grafy), plné textové recenze

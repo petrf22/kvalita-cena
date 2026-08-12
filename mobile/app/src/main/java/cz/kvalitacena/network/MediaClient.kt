@@ -51,4 +51,33 @@ class MediaClient(private val authRepository: AuthRepository, private val client
         json.decodeFromString(Photo.serializer(), bodyString)
       }
     }
+
+  /**
+   * Avatar profilu — na rozdíl od [upload] vždy NAHRADÍ předchozí avatar (recordId se na
+   * backendu bere z Authentication, ne z URL, viz MediaController.uploadAvatar).
+   */
+  suspend fun uploadAvatar(context: Context, uri: Uri): Photo =
+    withContext(Dispatchers.IO) {
+      val resolver = context.contentResolver
+      val mimeType = resolver.getType(uri) ?: "image/jpeg"
+      val bytes = resolver.openInputStream(uri)?.use { it.readBytes() }
+        ?: throw TransportException("Fotku se nepodařilo přečíst")
+      val extension = if (mimeType.contains("png")) "png" else "jpg"
+
+      val multipartBody = MultipartBody.Builder()
+        .setType(MultipartBody.FORM)
+        .addFormDataPart("file", "avatar.$extension", bytes.toRequestBody(mimeType.toMediaTypeOrNull()))
+        .build()
+
+      val builder = Request.Builder()
+        .url("${ApiConfig.BASE_URL}/api/media/user/avatar")
+        .post(multipartBody)
+      authRepository.accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
+
+      client.newCall(builder.build()).execute().use { response ->
+        val bodyString = response.body?.string().orEmpty()
+        if (!response.isSuccessful) throw TransportException("Nahrání avataru selhalo (${response.code})")
+        json.decodeFromString(Photo.serializer(), bodyString)
+      }
+    }
 }

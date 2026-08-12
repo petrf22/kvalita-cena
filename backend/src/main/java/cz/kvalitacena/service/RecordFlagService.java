@@ -73,6 +73,9 @@ public class RecordFlagService {
       case PRODUCT -> productRepository.existsById(recordId);
       case STORE -> storeRepository.existsById(recordId);
       case PHOTO -> mediaRepository.existsById(recordId);
+      // Avatar profilu se nenahlašuje record_flag kanálem (docs/reputace.md, "žádné veřejné
+      // negativní hodnocení uživatelů") — sem se proto nikdy neplatně nedostane.
+      case USER -> false;
     };
     if (!exists) {
       throw new NotFoundException(ErrorCode.FLAG_RECORD_NOT_FOUND);
@@ -99,6 +102,9 @@ public class RecordFlagService {
           mediaRepository.save(m);
         }
       });
+      // requireRecordExists nad USER vždy vrátí false dřív, než se sem dostaneme — viz výš.
+      case USER -> {
+      }
     }
   }
 

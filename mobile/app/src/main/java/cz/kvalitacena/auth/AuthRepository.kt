@@ -2,6 +2,8 @@ package cz.kvalitacena.auth
 
 import android.content.Context
 import cz.kvalitacena.network.ApiConfig
+import cz.kvalitacena.network.EmailChangeConfirmBody
+import cz.kvalitacena.network.EmailChangeRequestBody
 import cz.kvalitacena.network.OtpRequestBody
 import cz.kvalitacena.network.OtpRequestResponse
 import cz.kvalitacena.network.OtpVerifyBody
@@ -104,6 +106,47 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
       }
     }
   }
+
+  /**
+   * Změna přihlašovacího e-mailu — VLASTNÍ tok vedle přihlašovacího OTP (docs/soukromi.md,
+   * "Profil uživatele a viditelnost"): kód jde vždy na NOVOU adresu, jinak by šlo o pole ve
+   * formuláři profilu, kterým by se dal účet překlepem zamknout. Odpověď je stejná bez ohledu
+   * na to, jestli je adresa volná, nebo už patří jinému účtu (enumerace účtů zůstává nemožná).
+   */
+  suspend fun requestEmailChange(newEmail: String): OtpRequestResponse = withContext(Dispatchers.IO) {
+    val body = json.encodeToString(EmailChangeRequestBody(newEmail)).toRequestBody(jsonMediaType)
+    val builder = Request.Builder()
+      .url("${ApiConfig.BASE_URL}/api/auth/email/change/request")
+      .header("X-Client-Kind", "ANDROID")
+      .post(body)
+    _accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
+
+    client.newCall(builder.build()).execute().use { response ->
+      if (!response.isSuccessful) throw TransportException("Odeslání kódu selhalo (${response.code})")
+      json.decodeFromString<OtpRequestResponse>(response.body!!.string())
+    }
+  }
+
+  /**
+   * Potvrzení nové adresy — na serveru inkrementuje token_version (odhlásí ostatní zařízení,
+   * stejný mechanismus jako "podezření na krádež", docs/soukromi.md), proto si hned poté appka
+   * obnoví vlastní access token, ať aktuální relace nemusí čekat na chybu a teprve pak refresh.
+   */
+  suspend fun confirmEmailChange(challengeUid: String, code: String, newEmail: String): Boolean =
+    withContext(Dispatchers.IO) {
+      val body = json.encodeToString(EmailChangeConfirmBody(challengeUid, code, newEmail))
+        .toRequestBody(jsonMediaType)
+      val builder = Request.Builder()
+        .url("${ApiConfig.BASE_URL}/api/auth/email/change/confirm")
+        .header("X-Client-Kind", "ANDROID")
+        .post(body)
+      _accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
+
+      client.newCall(builder.build()).execute().use { response ->
+        if (!response.isSuccessful) throw TransportException("Změna e-mailu selhala (${response.code})")
+      }
+      refresh()
+    }
 
   private fun applyToken(token: TokenResponse) {
     _accessToken.value = token.accessToken

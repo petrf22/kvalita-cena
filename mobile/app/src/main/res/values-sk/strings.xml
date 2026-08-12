@@ -21,6 +21,7 @@
     <string name="account_title">Účet</string>
     <string name="account_logged_in_fallback">Prihlásený</string>
     <string name="account_logout">Odhlásiť sa</string>
+    <string name="account_edit_profile">Upraviť profil</string>
 
     <string name="login_title">Prihlásenie</string>
     <string name="login_otp_hint">Pošleme ti na e-mail šesťmiestny kód, žiadne heslo si nemusíš pamätať.</string>
@@ -32,6 +33,54 @@
     <string name="login_change_email">Zadať iný e-mail</string>
     <string name="login_request_failed">Nepodarilo sa odoslať kód. Skús to prosím znova o chvíľu.</string>
     <string name="login_verify_failed">Kód je neplatný alebo vypršal. Skús to prosím znova.</string>
+
+    <!-- Profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") -->
+    <string name="profile_title">Profil</string>
+    <string name="profile_load_failed">Profil sa nepodarilo načítať.</string>
+    <string name="profile_avatar_title">Fotka profilu</string>
+    <string name="profile_avatar_hint">Fotka NIE JE v databáze uložená šifrovane (na rozdiel od textových údajov nižšie).</string>
+    <string name="profile_avatar_upload">Nahrať fotku</string>
+    <string name="profile_avatar_remove">Odobrať fotku</string>
+    <string name="profile_avatar_upload_failed">Nahratie fotky sa nepodarilo.</string>
+    <string name="profile_first_name_label">Meno</string>
+    <string name="profile_last_name_label">Priezvisko</string>
+    <string name="profile_display_name_label">Prezývka</string>
+    <string name="profile_phone_label">Telefón</string>
+    <string name="profile_contact_email_label">Kontaktný e-mail</string>
+    <string name="profile_encrypted_hint">Údaj je v databáze uložený šifrovane.</string>
+    <string name="profile_login_email_label">Prihlasovací e-mail</string>
+    <string name="profile_change_email_button">Zmeniť e-mail</string>
+    <string name="profile_save_button">Uložiť</string>
+    <string name="profile_save_success">Profil bol uložený.</string>
+    <string name="profile_visibility_title">Viditeľnosť</string>
+    <string name="profile_visibility_anonymous">Anonymný — zobrazuje sa len číslo používateľa</string>
+    <string name="profile_visibility_public">Verejný — vyber, ktoré údaje sa zobrazia</string>
+    <string name="profile_visibility_friends">Priatelia — vyber, ktoré údaje uvidia priatelia</string>
+    <string name="profile_fields_table_title">Ktoré údaje sa zobrazia</string>
+    <string name="profile_fields_public_column">Verejnosť</string>
+    <string name="profile_fields_friends_column">Priatelia</string>
+    <string name="profile_fields_friends_hint">Skupiny priateľov appka zatiaľ nevie — zaškrtnutie sa uplatní, až budú hotové.</string>
+    <string name="profile_field_first_name">Meno</string>
+    <string name="profile_field_last_name">Priezvisko</string>
+    <string name="profile_field_display_name">Prezývka</string>
+    <string name="profile_field_contact_email">Kontaktný e-mail</string>
+    <string name="profile_field_phone">Telefón</string>
+    <string name="profile_field_avatar">Fotka profilu</string>
+    <string name="profile_links_title">Ďalšie informácie</string>
+    <string name="profile_links_coming_soon">Pripravujeme</string>
+    <string name="profile_links_friends">Zoznam priateľov</string>
+    <string name="profile_links_system_rating">Hodnotenie systémom</string>
+    <string name="profile_links_friends_trust">Dôvera od priateľov</string>
+    <string name="profile_links_stats">Moje štatistiky</string>
+    <string name="profile_email_change_title">Zmeniť prihlasovací e-mail</string>
+    <string name="profile_email_change_new_email_label">Nová e-mailová adresa</string>
+    <string name="profile_email_change_send_code">Poslať kód</string>
+    <string name="profile_email_change_code_label">Kód z e-mailu</string>
+    <string name="profile_email_change_code_hint">Kód sme poslali na %1$s.</string>
+    <string name="profile_email_change_confirm">Potvrdiť zmenu</string>
+    <string name="profile_email_change_success">Prihlasovací e-mail bol zmenený.</string>
+    <string name="profile_email_change_request_failed">Nepodarilo sa odoslať kód. Skús to prosím znova za chvíľu.</string>
+    <string name="profile_email_change_confirm_failed">Kód je neplatný alebo vypršal. Skús to prosím znova.</string>
 
     <string name="scan_camera_permission_hint">Na skenovanie čiarových kódov appka potrebuje prístup ku kamere.</string>
 

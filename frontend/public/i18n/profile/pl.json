@@ -1,0 +1,67 @@
+{
+  "title": "Profil",
+  "backToAccount": "Powrót do konta",
+  "loadFailed": "Nie udało się wczytać profilu.",
+  "avatar": {
+    "title": "Zdjęcie profilowe",
+    "hint": "Zdjęcie NIE jest przechowywane w bazie zaszyfrowane (w przeciwieństwie do pól tekstowych poniżej).",
+    "upload": "Prześlij zdjęcie",
+    "remove": "Usuń zdjęcie",
+    "uploadFailed": "Przesłanie zdjęcia się nie powiodło."
+  },
+  "fields": {
+    "sectionTitle": "Dane",
+    "encryptedHint": "Ta wartość jest przechowywana w bazie zaszyfrowana.",
+    "firstNameLabel": "Imię",
+    "lastNameLabel": "Nazwisko",
+    "displayNameLabel": "Pseudonim",
+    "phoneLabel": "Telefon",
+    "contactEmailLabel": "Kontaktowy e-mail"
+  },
+  "loginEmail": {
+    "label": "E-mail logowania",
+    "changeButton": "Zmień e-mail"
+  },
+  "save": {
+    "button": "Zapisz",
+    "success": "Profil zapisany."
+  },
+  "visibility": {
+    "sectionTitle": "Widoczność",
+    "ANONYMOUS": "Anonimowy — widoczny jest tylko numer użytkownika",
+    "PUBLIC": "Publiczny — wybierz, które dane są widoczne",
+    "FRIENDS": "Znajomi — wybierz, które dane widzą znajomi",
+    "fieldsTableTitle": "Które dane są widoczne",
+    "publicColumn": "Publicznie",
+    "friendsColumn": "Znajomi",
+    "friendsHint": "Aplikacja nie obsługuje jeszcze grup znajomych — zaznaczenie zadziała, gdy będą gotowe."
+  },
+  "field": {
+    "FIRST_NAME": "Imię",
+    "LAST_NAME": "Nazwisko",
+    "DISPLAY_NAME": "Pseudonim",
+    "CONTACT_EMAIL": "Kontaktowy e-mail",
+    "PHONE": "Telefon",
+    "AVATAR": "Zdjęcie profilowe"
+  },
+  "links": {
+    "sectionTitle": "Więcej informacji",
+    "comingSoon": "Wkrótce",
+    "friends": "Lista znajomych",
+    "systemRating": "Ocena systemowa",
+    "friendsTrust": "Zaufanie znajomych",
+    "stats": "Moje statystyki"
+  },
+  "emailChange": {
+    "title": "Zmień e-mail logowania",
+    "newEmailLabel": "Nowy adres e-mail",
+    "sendCode": "Wyślij kod",
+    "codeLabel": "Kod z e-maila",
+    "codeHint": "Wysłaliśmy kod na {{email}}.",
+    "confirm": "Potwierdź zmianę",
+    "cancel": "Anuluj",
+    "success": "E-mail logowania został zmieniony.",
+    "requestFailed": "Nie udało się wysłać kodu. Spróbuj ponownie za chwilę.",
+    "confirmFailed": "Kod jest nieprawidłowy lub wygasł. Spróbuj ponownie."
+  }
+}

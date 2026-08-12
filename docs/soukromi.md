@@ -113,7 +113,10 @@ gramáž, adresa) — patch by se přestal zobrazovat, protože ho backend neum�
 
 ## Identita bez osobních údajů
 
-`auth.app_user` nemá pole pro jméno, adresu ani telefon — v API pro ně neexistuje místo.
+`auth.app_user` samo nemá pole pro jméno, adresu ani telefon — je to vždy "identita bez
+osobních údajů" a smazání účtu (nebo jen profilu) je jeden `DELETE`. Osobní údaje, POKUD si
+je uživatel dobrovolně vyplní, žijí ve vedlejší tabulce, viz „Profil uživatele a viditelnost"
+níže — tohle je vědomá změna dřívějšího tvrzení, že appka pro ně nemá v API místo vůbec.
 
 - `public_uid` (UUID) — používá se v API i jako JWT `sub`, nikdy databázové `id`, aby nešlo
   počítat ani hádat uživatele podle sekvenčního čísla.
@@ -126,13 +129,62 @@ gramáž, adresa) — patch by se přestal zobrazovat, protože ho backend neum�
   ze setrvačnosti nedávali skutečné jméno. Volitelně přepsatelné na vlastní přezdívku
   (`display_name`), nikdy ne na reálné jméno.
 
-Únik databázového dumpu bez pepperu a šifrovacího klíče z env tedy neodhalí jediný e-mail.
+Únik databázového dumpu bez pepperu a šifrovacího klíče z env tedy neodhalí jediný e-mail
+ani žádnou jinou textovou PII v profilu (viz níže) — obojí sdílí stejný AES-256-GCM klíč
+(`security/EmailCipher`).
 
 **IČO provozovny (`core.store.ico`) není osobní údaj uživatele appky** — je to identifikátor
 z veřejného rejstříku ekonomických subjektů (ARES), fakt o provozovateli obchodu, ne o
 člověku, který obchod v appce založil (ten zůstává jen v `store.created_by_user_id`, stejná
 pseudonymizační logika jako jinde v `core.*`). Volitelné potvrzení přes `companyByIco` čte
 jen z veřejného ARES, nic z appky do ARES neposílá.
+
+## Profil uživatele a viditelnost
+
+Přihlášený uživatel si smí volitelně vyplnit jméno, příjmení, telefon, kontaktní e-mail
+a avatar (`auth.user_profile`, `UserProfileService`, GraphQL `Viewer.profile`/`updateProfile`)
+— to vše je vědomá výjimka z předchozí sekce, ne její popření: údaje jsou **nepovinné**,
+leží ve **vlastní tabulce** mimo `app_user` a výchozí viditelnost je **`ANONYMOUS`** (vidí je
+jen vlastník), takže appka se dál nechová jako appka, co si říká o jméno.
+
+- **Textová PII je šifrovaná stejným AES-256-GCM jako `email_enc`**
+  (`EmailCipher.encryptValue`/`decryptValue`) — BEZ normalizace na malá písmena (na rozdíl
+  od e-mailu), protože "Jan Novák" a "jan novák" nejsou zaměnitelné jako přihlašovací adresa.
+- **Avatar (`core.media`, `RecordType.USER`) šifrovaný NENÍ** — je to binární soubor mimo
+  databázi jako ostatní fotky (`ImageProcessingService` z něj i tak strhne EXIF včetně GPS),
+  jen s vlastním REST endpointem `POST /api/media/user/avatar` (recordId se bere z
+  `Authentication`, nikdy z URL — v API nikdy DB id) a vždy nejvýš jedním záznamem na
+  uživatele (nahrazení staré fotky, ne přidání do fronty). Web i mobil to uživateli
+  explicitně ukazují (ikona/tooltip u avatara), ať neplatí mlčky jiná záruka než u
+  textových polí vedle.
+- **`pg_dump --schema=core --schema=agg` musí avatary typu `USER` vynechat** stejně jako
+  `user_id` jinde v `core.*` — nejsou to fotky zboží/obchodu s veřejným zájmem na přežití.
+- **Viditelnost je dvouúrovňová**: globální `visibility` (`ANONYMOUS`/`PUBLIC`/`FRIENDS`) je
+  jediný gate — `ANONYMOUS` blokuje úplně vše, i kdyby matice níž tvrdila jinak. Jinak
+  rozhoduje `auth.user_profile_field_visibility` (existence řádku `(user_id, field,
+  audience)` = pole je pro to publikum vidět) nezávisle na tom, jestli je celkový režim
+  `PUBLIC`, nebo `FRIENDS` — `UserProfileService.isFieldVisible` je jediné místo pravdy.
+  Vlastník vidí přes `me`/`Viewer.profile` vždy úplně vše, filtr se na něj neaplikuje.
+- **Skupiny důvěry (přátelé) v etapě 1 neexistují** (`docs/datovy-model.md`), takže řádky
+  s `audience = FRIENDS` se zatím nikdy neuplatní — to je očekávané, ne chyba. Odkazy na
+  "seznam přátel", "hodnocení přáteli" apod. v UI jsou zatím jen `Připravujeme` placeholdery
+  bez vlastní logiky.
+- **Přihlašovací e-mail se v profilu NEMĚNÍ** — `updateProfile` na něj vůbec nesahá. Změna
+  jde přes samostatný REST tok `POST /api/auth/email/change/request` + `/confirm`
+  (`EmailChangeService`), který znovu použije OTP mechanismus `LoginChallenge`
+  (`ChallengePurpose.EMAIL_CHANGE`), ale kód pošle vždy na **novou** adresu — přímé pole ve
+  formuláři profilu by šlo překlepem zamknout účet. Odpověď na `request` je STEJNÁ bez
+  ohledu na to, jestli je nová adresa volná nebo už patří jinému účtu (stejná pojistka proti
+  enumeraci účtů jako u loginu) — liší se jen OBSAH e-mailu, který vidí jen majitel schránky.
+  Skutečná pojistka proti převzetí cizí adresy je až v `confirmChange` (kontrola vlastnictví
+  natvrdo, ne spoléhání na nerozlišitelnost response). Úspěšné potvrzení inkrementuje
+  `token_version` — odhlásí ostatní zařízení, stejný mechanismus jako "podezření na krádež"
+  o pár odstavců výš.
+- **Smazání účtu smaže i profil** — `auth.user_profile`/`user_profile_field_visibility` mají
+  `ON DELETE CASCADE` na `user_id`, žádná ruční čistící úloha (až GDPR výmaz z účtu vznikne,
+  viz „GDPR" níže). Avatar (soubor v `MediaStorage`) se maže při nahrazení novým i při
+  explicitním `deleteAvatar`, ne až při smazání účtu — sirotčí soubory po smazaném účtu jsou
+  známý zbytkový dluh, stejný jako u ostatních fotek v `core.media`.
 
 ## Passwordless auth (e-mail → OTP kód → token)
 

@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoService, provideTranslocoScope } from '@jsverse/transloco';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -21,6 +22,7 @@ import { ViewerService } from '../../services/viewer-service';
   selector: 'app-login-page',
   imports: [
     FormsModule,
+    RouterLink,
     NzCardModule,
     NzFormModule,
     NzInputModule,

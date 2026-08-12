@@ -3,6 +3,7 @@
   "loading": "Loading…",
   "loggedIn": "Signed in",
   "logout": "Sign out",
+  "editProfile": "Edit profile",
   "loginTitle": "Sign in",
   "emailLabel": "Email",
   "emailPlaceholder": "jan.novak@example.com",

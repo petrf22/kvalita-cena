@@ -49,6 +49,9 @@ public enum ErrorCode {
   PHOTO_UPLOAD_REQUIRES_LOGIN("error.photo.uploadRequiresLogin"),
   PHOTO_ACTION_REQUIRES_LOGIN("error.photo.actionRequiresLogin"),
   PHOTO_CANNOT_ATTACH_TO_PHOTO("error.photo.cannotAttachToPhoto"),
+  // Avatar profilu jde jen přes dedikovaný POST /api/media/user/avatar (MediaService.uploadAvatar) —
+  // obecný upload nesmí umožnit nahrát fotku pod cizí user_id.
+  PHOTO_CANNOT_ATTACH_TO_USER("error.photo.cannotAttachToUser"),
   PHOTO_LIMIT_REACHED("error.photo.limitReached"),          // {0} = max fotek na záznam
   PHOTO_DELETE_NOT_OWNER("error.photo.deleteNotOwner"),
   PHOTO_UPDATE_NOT_OWNER("error.photo.updateNotOwner"),
@@ -74,6 +77,20 @@ public enum ErrorCode {
   // --- preference jazyka/země (docs/lokalizace.md)
   LOCALE_REQUIRES_LOGIN("error.locale.requiresLogin"),
   LOCALE_UNSUPPORTED("error.locale.unsupported"),              // {0} = zadaný locale
+
+  // --- profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost")
+  PROFILE_REQUIRES_LOGIN("error.profile.requiresLogin"),
+  PROFILE_NAME_TOO_LONG("error.profile.nameTooLong"),           // {0} = max délka
+  PROFILE_DISPLAY_NAME_TOO_LONG("error.profile.displayNameTooLong"), // {0} = max délka
+  PROFILE_PHONE_INVALID("error.profile.phoneInvalid"),
+  PROFILE_EMAIL_INVALID("error.profile.emailInvalid"),
+  AVATAR_REQUIRES_LOGIN("error.profile.avatarRequiresLogin"),
+
+  // --- změna přihlašovacího e-mailu (samostatný OTP tok, docs/soukromi.md)
+  EMAIL_CHANGE_REQUIRES_LOGIN("error.emailChange.requiresLogin"),
+  EMAIL_CHANGE_SAME_ADDRESS("error.emailChange.sameAddress"),
+  EMAIL_CHANGE_INVALID_CHALLENGE("error.emailChange.invalidChallenge"),
+  EMAIL_CHANGE_EMAIL_TAKEN("error.emailChange.emailTaken"),
 
   // --- obecné
   ACCOUNT_GONE("error.common.accountGone"),

@@ -29,4 +29,22 @@ public class SmtpOtpMailSender implements OtpMailSender {
     message.setText(messages.get("mail.otp.body", locale, code, otpProperties.getCodeTtl().toMinutes()));
     javaMailSender.send(message);
   }
+
+  @Override
+  public void sendEmailChangeCode(String email, String code, Locale locale) {
+    SimpleMailMessage message = new SimpleMailMessage();
+    message.setTo(email);
+    message.setSubject(messages.get("mail.emailChange.subject", locale));
+    message.setText(messages.get("mail.emailChange.body", locale, code, otpProperties.getCodeTtl().toMinutes()));
+    javaMailSender.send(message);
+  }
+
+  @Override
+  public void sendEmailChangeConflict(String email, Locale locale) {
+    SimpleMailMessage message = new SimpleMailMessage();
+    message.setTo(email);
+    message.setSubject(messages.get("mail.emailChange.conflictSubject", locale));
+    message.setText(messages.get("mail.emailChange.conflictBody", locale));
+    javaMailSender.send(message);
+  }
 }

@@ -1,0 +1,61 @@
+.profile-page {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.section-card {
+  margin-bottom: 16px;
+}
+
+.section-alert {
+  margin-top: 12px;
+}
+
+.hint {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  margin: 8px 0 0;
+}
+
+.avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.login-email {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.fields-table-title {
+  margin-top: 16px;
+}
+
+.fields-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.fields-table th,
+.fields-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.save-button {
+  margin-bottom: 24px;
+}

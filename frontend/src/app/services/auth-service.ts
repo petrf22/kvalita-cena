@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { OtpRequestResponse, TokenResponse } from '../models/auth';
+import { EmailChangeRequestResponse, OtpRequestResponse, TokenResponse } from '../models/auth';
 
 /**
  * Passwordless přihlášení (e-mail → OTP kód → token) — viz docs/soukromi.md v backendu.
@@ -43,5 +43,25 @@ export class AuthService {
     return this.http
       .post<void>('/api/auth/logout', {}, { withCredentials: true })
       .pipe(tap(() => this.accessTokenSignal.set(null)));
+  }
+
+  /**
+   * Změna přihlašovacího e-mailu — VLASTNÍ tok vedle přihlašovacího OTP (docs/soukromi.md,
+   * "Profil uživatele a viditelnost"): kód jde vždy na NOVOU adresu, jinak by šlo o zapole ve
+   * formuláři profilu, kterým by se dal účet překlepem zamknout. Odpověď je stejná bez ohledu
+   * na to, jestli je adresa volná, nebo už patří jinému účtu (enumerace účtů zůstává nemožná).
+   */
+  requestEmailChange(newEmail: string): Observable<EmailChangeRequestResponse> {
+    return this.http.post<EmailChangeRequestResponse>('/api/auth/email/change/request', {
+      email: newEmail,
+    });
+  }
+
+  confirmEmailChange(challengeUid: string, code: string, newEmail: string): Observable<void> {
+    return this.http.post<void>('/api/auth/email/change/confirm', {
+      challengeUid,
+      code,
+      email: newEmail,
+    });
   }
 }

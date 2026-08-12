@@ -27,6 +27,16 @@ export class MediaService {
     return this.http.post<PhotoFieldsFragment>(`/api/media/${recordType}/${recordId}`, formData);
   }
 
+  /**
+   * Avatar profilu — na rozdíl od {@link upload} vždy NAHRADÍ předchozí avatar (recordId se na
+   * backendu bere z Authentication, ne z URL, viz MediaController.uploadAvatar).
+   */
+  uploadAvatar(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<PhotoFieldsFragment>('/api/media/user/avatar', formData);
+  }
+
   /** Popisek a pořadí (nejnižší sortOrder = hlavní fotka záznamu). Jen autor fotky. */
   update(id: string, caption: string | null, sortOrder: number | null) {
     const document = graphql(`

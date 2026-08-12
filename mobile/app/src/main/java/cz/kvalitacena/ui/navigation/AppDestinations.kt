@@ -51,3 +51,6 @@ const val ROUTE_PRODUCT_FORM = "product_form?$ARG_BARCODE={$ARG_BARCODE}"
 
 fun productFormRoute(barcode: String? = null) =
   if (barcode.isNullOrBlank()) "product_form" else "product_form?barcode=$barcode"
+
+/** Editace profilu (docs/soukromi.md, "Profil uživatele a viditelnost") — ze záložky Účet. */
+const val ROUTE_PROFILE = "profile"

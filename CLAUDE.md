@@ -102,6 +102,23 @@ katalog (`app.moderation.photo-flags-to-hide = 1`, `docs/reputace.md`). Web (`sh
 photo-gallery.ts`) i Android (`ui/common/PhotoGallery.kt`/`PhotoPicker.kt`, Coil) mají galerii
 s náhledem, smazáním vlastní fotky a nahlášením cizí, na detailu zboží i obchodu.
 
+**Profil uživatele a viditelnost** (`docs/soukromi.md`, „Profil uživatele a viditelnost";
+datový tvar v `docs/datovy-model.md` pod stejným názvem): jméno, příjmení, přezdívka, telefon,
+kontaktní e-mail (všechno nepovinné, `auth.user_profile`, šifrované stejným AES-256-GCM jako
+`email_enc` — `EmailCipher.encryptValue`/`decryptValue`) a avatar (`core.media`,
+`RecordType.USER`, šifrovaný NENÍ, vlastní REST `POST /api/media/user/avatar` — recordId se
+bere z přihlášení, ne z URL). Výchozí viditelnost `ANONYMOUS`; u `PUBLIC`/`FRIENDS` rozhoduje
+matice `auth.user_profile_field_visibility` po jednotlivých polích a publikách
+(`UserProfileService.isFieldVisible`, jediné místo pravdy i pro viditelnost avataru v
+`MediaController`) — řádky pro `FRIENDS` se zatím nikdy neuplatní, skupiny důvěry v etapě 1
+neexistují. Přihlašovací e-mail se mění VÝHRADNĚ přes samostatný OTP tok
+(`POST /api/auth/email/change/request`+`/confirm`, `EmailChangeService`) na NOVOU adresu, ne
+polem v profilu — potvrzení inkrementuje `token_version` (odhlásí ostatní zařízení). GraphQL
+`Viewer.profile`/`updateProfile`/`deleteAvatar`. Web (`features/profile`) i Android
+(`ui/profile/ProfileScreen.kt`) mají formulář, tabulku viditelnosti a odkaz z Účtu; „Seznam
+přátel"/„Hodnocení systémem"/„Důvěra od přátel"/„Moje statistiky" jsou zatím jen neaktivní
+odkazy (`docs/reputace.md`).
+
 **Adresa/mapa provozovny**: `reverseGeocode` (souřadnice → adresa, `GeocodingService`, vždy ze
 serveru jako `geocodeAddress`) doplňuje adresu po „Použít mou polohu". Mapa nad OpenStreetMap
 (web `shared/location-map.ts` — Leaflet, lazy `import()`; mobil `ui/common/LocationMap.kt` —

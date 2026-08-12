@@ -1,0 +1,247 @@
+<ng-container *transloco="let t; scope: 'profile'">
+  <div class="profile-page">
+    <a routerLink="/login" class="back-link">
+      <span nz-icon nzType="left"></span>
+      {{ t('backToAccount') }}
+    </a>
+    <h1>{{ t('title') }}</h1>
+
+    @if (loading()) {
+      <p>…</p>
+    } @else if (loadError()) {
+      <nz-alert nzType="error" [nzMessage]="loadError()" nzShowIcon />
+    } @else {
+      <nz-card [nzTitle]="t('avatar.title')" class="section-card">
+        <div class="avatar-row">
+          <nz-avatar [nzSize]="80" [nzSrc]="avatar()?.url" nzIcon="user" />
+          <div class="avatar-actions">
+            <button
+              nz-button
+              type="button"
+              (click)="avatarInput.click()"
+              [nzLoading]="avatarUploading()"
+            >
+              <span nz-icon nzType="upload"></span>
+              {{ t('avatar.upload') }}
+            </button>
+            @if (avatar()) {
+              <button nz-button nzDanger type="button" (click)="removeAvatar()">
+                <span nz-icon nzType="delete"></span>
+                {{ t('avatar.remove') }}
+              </button>
+            }
+          </div>
+        </div>
+        <input #avatarInput type="file" accept="image/jpeg,image/png" hidden (change)="onAvatarSelected($event)" />
+        <p class="hint">{{ t('avatar.hint') }}</p>
+        @if (avatarError()) {
+          <nz-alert nzType="error" [nzMessage]="avatarError()" nzShowIcon class="section-alert" />
+        }
+      </nz-card>
+
+      <nz-card [nzTitle]="t('fields.sectionTitle')" class="section-card">
+        <form nz-form nzLayout="vertical">
+          <nz-form-item>
+            <nz-form-label>
+              {{ t('fields.firstNameLabel') }}
+              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('fields.encryptedHint')"></span>
+            </nz-form-label>
+            <nz-form-control>
+              <input nz-input [ngModel]="firstName()" (ngModelChange)="firstName.set($event)" name="firstName" />
+            </nz-form-control>
+          </nz-form-item>
+
+          <nz-form-item>
+            <nz-form-label>
+              {{ t('fields.lastNameLabel') }}
+              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('fields.encryptedHint')"></span>
+            </nz-form-label>
+            <nz-form-control>
+              <input nz-input [ngModel]="lastName()" (ngModelChange)="lastName.set($event)" name="lastName" />
+            </nz-form-control>
+          </nz-form-item>
+
+          <nz-form-item>
+            <nz-form-label>{{ t('fields.displayNameLabel') }}</nz-form-label>
+            <nz-form-control>
+              <input
+                nz-input
+                [ngModel]="displayName()"
+                (ngModelChange)="displayName.set($event)"
+                name="displayName"
+              />
+            </nz-form-control>
+          </nz-form-item>
+
+          <nz-form-item>
+            <nz-form-label>
+              {{ t('fields.phoneLabel') }}
+              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('fields.encryptedHint')"></span>
+            </nz-form-label>
+            <nz-form-control>
+              <input nz-input [ngModel]="phone()" (ngModelChange)="phone.set($event)" name="phone" />
+            </nz-form-control>
+          </nz-form-item>
+
+          <nz-form-item>
+            <nz-form-label>
+              {{ t('fields.contactEmailLabel') }}
+              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('fields.encryptedHint')"></span>
+            </nz-form-label>
+            <nz-form-control>
+              <input
+                nz-input
+                type="email"
+                [ngModel]="contactEmail()"
+                (ngModelChange)="contactEmail.set($event)"
+                name="contactEmail"
+              />
+            </nz-form-control>
+          </nz-form-item>
+        </form>
+      </nz-card>
+
+      <nz-card [nzTitle]="t('loginEmail.label')" class="section-card">
+        <p class="login-email">{{ loginEmail() }}</p>
+        <button nz-button type="button" (click)="openEmailChangeModal()">
+          {{ t('loginEmail.changeButton') }}
+        </button>
+      </nz-card>
+
+      <nz-card [nzTitle]="t('visibility.sectionTitle')" class="section-card">
+        <nz-radio-group [ngModel]="visibility()" (ngModelChange)="visibility.set($event)" name="visibility">
+          <label nz-radio [nzValue]="ProfileVisibility.Anonymous">{{ t('visibility.ANONYMOUS') }}</label>
+          <label nz-radio [nzValue]="ProfileVisibility.Public">{{ t('visibility.PUBLIC') }}</label>
+          <label nz-radio [nzValue]="ProfileVisibility.Friends">{{ t('visibility.FRIENDS') }}</label>
+        </nz-radio-group>
+
+        @if (!visibilityIsAnonymous()) {
+          <h4 class="fields-table-title">{{ t('visibility.fieldsTableTitle') }}</h4>
+          <table class="fields-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>{{ t('visibility.publicColumn') }}</th>
+                <th>
+                  {{ t('visibility.friendsColumn') }}
+                  <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('visibility.friendsHint')"></span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (field of visibilityFields; track field) {
+                <tr>
+                  <td>{{ fieldLabel(field) }}</td>
+                  <td>
+                    <label
+                      nz-checkbox
+                      [ngModel]="isChecked(field, 'PUBLIC')"
+                      (ngModelChange)="toggleField(field, 'PUBLIC')"
+                      [name]="'public-' + field"
+                    ></label>
+                  </td>
+                  <td>
+                    <label
+                      nz-checkbox
+                      [ngModel]="isChecked(field, 'FRIENDS')"
+                      (ngModelChange)="toggleField(field, 'FRIENDS')"
+                      [name]="'friends-' + field"
+                    ></label>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </nz-card>
+
+      @if (saveError()) {
+        <nz-alert nzType="error" [nzMessage]="saveError()" nzShowIcon class="section-alert" />
+      }
+      @if (saveMessage()) {
+        <nz-alert nzType="success" [nzMessage]="saveMessage()" nzShowIcon class="section-alert" />
+      }
+      <button nz-button nzType="primary" [nzLoading]="saving()" (click)="save()" class="save-button">
+        {{ t('save.button') }}
+      </button>
+
+      <nz-card [nzTitle]="t('links.sectionTitle')" class="section-card">
+        <nz-list>
+          <nz-list-item>
+            {{ t('links.friends') }}
+            <nz-tag>{{ t('links.comingSoon') }}</nz-tag>
+          </nz-list-item>
+          <nz-list-item>
+            {{ t('links.systemRating') }}
+            <nz-tag>{{ t('links.comingSoon') }}</nz-tag>
+          </nz-list-item>
+          <nz-list-item>
+            {{ t('links.friendsTrust') }}
+            <nz-tag>{{ t('links.comingSoon') }}</nz-tag>
+          </nz-list-item>
+          <nz-list-item>
+            {{ t('links.stats') }}
+            <nz-tag>{{ t('links.comingSoon') }}</nz-tag>
+          </nz-list-item>
+        </nz-list>
+      </nz-card>
+    }
+  </div>
+
+  <nz-modal
+    [nzVisible]="emailChangeVisible()"
+    [nzTitle]="t('emailChange.title')"
+    [nzFooter]="null"
+    (nzOnCancel)="closeEmailChangeModal()"
+  >
+    <ng-container *nzModalContent>
+      @if (emailChangeSuccess()) {
+        <nz-alert nzType="success" [nzMessage]="t('emailChange.success')" nzShowIcon />
+      } @else {
+        @if (emailChangeError()) {
+          <nz-alert nzType="error" [nzMessage]="emailChangeError()" nzShowIcon class="section-alert" />
+        }
+        @if (emailChangeStep() === 'email') {
+          <form nz-form nzLayout="vertical" (ngSubmit)="requestEmailChangeCode()">
+            <nz-form-item>
+              <nz-form-label>{{ t('emailChange.newEmailLabel') }}</nz-form-label>
+              <nz-form-control>
+                <input
+                  nz-input
+                  type="email"
+                  name="newEmail"
+                  [ngModel]="newEmail()"
+                  (ngModelChange)="newEmail.set($event)"
+                  required
+                />
+              </nz-form-control>
+            </nz-form-item>
+            <button nz-button nzType="primary" [nzLoading]="emailChangeLoading()" type="submit">
+              {{ t('emailChange.sendCode') }}
+            </button>
+          </form>
+        } @else {
+          <form nz-form nzLayout="vertical" (ngSubmit)="confirmEmailChangeCode()">
+            <p class="hint">{{ t('emailChange.codeHint', { email: newEmail() }) }}</p>
+            <nz-form-item>
+              <nz-form-label>{{ t('emailChange.codeLabel') }}</nz-form-label>
+              <nz-form-control>
+                <input
+                  nz-input
+                  inputmode="numeric"
+                  name="emailChangeCode"
+                  [ngModel]="emailChangeCode()"
+                  (ngModelChange)="emailChangeCode.set($event)"
+                  required
+                />
+              </nz-form-control>
+            </nz-form-item>
+            <button nz-button nzType="primary" [nzLoading]="emailChangeLoading()" type="submit">
+              {{ t('emailChange.confirm') }}
+            </button>
+          </form>
+        }
+      }
+    </ng-container>
+  </nz-modal>
+</ng-container>

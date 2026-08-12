@@ -115,6 +115,13 @@ neověřitelných datech.
 - **Absence důvěry je sama o sobě negativní signál** — tichý, neeskalující, ale ve výpočtu
   vah plně funkční (nikdo v žádné skupině důvěry ⇒ `f_group = 1,0`, žádný bonus).
 
+Profil uživatele (`docs/soukromi.md`, „Profil uživatele a viditelnost") má proto zatím jen
+NEAKTIVNÍ odkazy „Hodnocení systémem" a „Důvěra od přátel" — pojmenování je záměrně jiné než
+prosté „hodnocení", ať je vidět, že jde přesně o tyhle dva mechanismy výš (`user_flag`
+transparentní vlastníkovi, `trust_edge` jako veřejný pozitivní signál), ne o nový kanál pro
+hodnocení člověka člověkem. Než budou skupiny důvěry a plný vzorec `S` napsané (etapa 2/3),
+odkazy nikam nevedou.
+
 ## Detekce zneužití
 
 Všechny signály vedou na neveřejný `user_flag`, nikdy na veřejné označení:

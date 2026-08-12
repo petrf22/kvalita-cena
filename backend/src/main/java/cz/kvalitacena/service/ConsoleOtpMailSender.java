@@ -18,4 +18,14 @@ public class ConsoleOtpMailSender implements OtpMailSender {
     // uživatele); locale se předává hlavně kvůli jednotné signatuře s SmtpOtpMailSender.
     log.info("[DEV] Přihlašovací kód pro {} (locale {}): {}", email, locale, code);
   }
+
+  @Override
+  public void sendEmailChangeCode(String email, String code, Locale locale) {
+    log.info("[DEV] Kód pro změnu přihlašovacího e-mailu na {} (locale {}): {}", email, locale, code);
+  }
+
+  @Override
+  public void sendEmailChangeConflict(String email, Locale locale) {
+    log.info("[DEV] Pokus o změnu e-mailu na už obsazenou adresu {} (locale {})", email, locale);
+  }
 }

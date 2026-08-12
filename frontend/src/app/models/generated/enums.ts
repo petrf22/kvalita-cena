@@ -1,3 +1,10 @@
+/** Publikum, kterému lze zpřístupnit konkrétní pole profilu. */
+export const Audience = {
+  Friends: 'FRIENDS',
+  Public: 'PUBLIC'
+} as const;
+
+export type Audience = typeof Audience[keyof typeof Audience];
 export const ChainType = {
   Chain: 'CHAIN',
   FarmShop: 'FARM_SHOP',
@@ -30,12 +37,17 @@ export type Confidence = typeof Confidence[keyof typeof Confidence];
  */
 export const ErrorCode = {
   AccountGone: 'ACCOUNT_GONE',
+  AvatarRequiresLogin: 'AVATAR_REQUIRES_LOGIN',
   CategoryNotFound: 'CATEGORY_NOT_FOUND',
   ChainNotFound: 'CHAIN_NOT_FOUND',
   CompanyIdInvalid: 'COMPANY_ID_INVALID',
   DuplicateGenericProduct: 'DUPLICATE_GENERIC_PRODUCT',
   DuplicateProductCode: 'DUPLICATE_PRODUCT_CODE',
   DuplicateStore: 'DUPLICATE_STORE',
+  EmailChangeEmailTaken: 'EMAIL_CHANGE_EMAIL_TAKEN',
+  EmailChangeInvalidChallenge: 'EMAIL_CHANGE_INVALID_CHALLENGE',
+  EmailChangeRequiresLogin: 'EMAIL_CHANGE_REQUIRES_LOGIN',
+  EmailChangeSameAddress: 'EMAIL_CHANGE_SAME_ADDRESS',
   FlagRecordNotFound: 'FLAG_RECORD_NOT_FOUND',
   FlagRequiresLogin: 'FLAG_REQUIRES_LOGIN',
   InvalidChallenge: 'INVALID_CHALLENGE',
@@ -43,6 +55,7 @@ export const ErrorCode = {
   LocaleUnsupported: 'LOCALE_UNSUPPORTED',
   PhotoActionRequiresLogin: 'PHOTO_ACTION_REQUIRES_LOGIN',
   PhotoCannotAttachToPhoto: 'PHOTO_CANNOT_ATTACH_TO_PHOTO',
+  PhotoCannotAttachToUser: 'PHOTO_CANNOT_ATTACH_TO_USER',
   PhotoDeleteNotOwner: 'PHOTO_DELETE_NOT_OWNER',
   PhotoLimitReached: 'PHOTO_LIMIT_REACHED',
   PhotoNotFound: 'PHOTO_NOT_FOUND',
@@ -60,6 +73,11 @@ export const ErrorCode = {
   ProductNameRequired: 'PRODUCT_NAME_REQUIRED',
   ProductNotFound: 'PRODUCT_NOT_FOUND',
   ProductUnitBaseRequired: 'PRODUCT_UNIT_BASE_REQUIRED',
+  ProfileDisplayNameTooLong: 'PROFILE_DISPLAY_NAME_TOO_LONG',
+  ProfileEmailInvalid: 'PROFILE_EMAIL_INVALID',
+  ProfileNameTooLong: 'PROFILE_NAME_TOO_LONG',
+  ProfilePhoneInvalid: 'PROFILE_PHONE_INVALID',
+  ProfileRequiresLogin: 'PROFILE_REQUIRES_LOGIN',
   QualityGradeOutOfRange: 'QUALITY_GRADE_OUT_OF_RANGE',
   QualityRequiresLogin: 'QUALITY_REQUIRES_LOGIN',
   SessionExpired: 'SESSION_EXPIRED',
@@ -135,6 +153,29 @@ export const ProductStatus = {
 } as const;
 
 export type ProductStatus = typeof ProductStatus[keyof typeof ProductStatus];
+/** Pole profilu, pro které lze zvlášť zapnout viditelnost vůči Audience. */
+export const ProfileField = {
+  Avatar: 'AVATAR',
+  ContactEmail: 'CONTACT_EMAIL',
+  DisplayName: 'DISPLAY_NAME',
+  FirstName: 'FIRST_NAME',
+  LastName: 'LAST_NAME',
+  Phone: 'PHONE'
+} as const;
+
+export type ProfileField = typeof ProfileField[keyof typeof ProfileField];
+/**
+ * Viditelnost profilu (auth.user_profile.visibility) — výchozí ANONYMOUS, aby si lidé ze
+ * setrvačnosti nedávali skutečné jméno (docs/soukromi.md). U PUBLIC/FRIENDS teprve rozhoduje
+ * Profile.visibleFields, KTERÁ pole se komu zobrazí.
+ */
+export const ProfileVisibility = {
+  Anonymous: 'ANONYMOUS',
+  Friends: 'FRIENDS',
+  Public: 'PUBLIC'
+} as const;
+
+export type ProfileVisibility = typeof ProfileVisibility[keyof typeof ProfileVisibility];
 export const QuantityBasis = {
   Package: 'PACKAGE',
   PerKg: 'PER_KG',

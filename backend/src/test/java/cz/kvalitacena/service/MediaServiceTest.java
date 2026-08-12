@@ -5,10 +5,12 @@ import cz.kvalitacena.controller.Photo;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.Media;
 import cz.kvalitacena.db.entity.RecordType;
+import cz.kvalitacena.db.entity.UserProfile;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
+import cz.kvalitacena.db.repo.UserProfileRepository;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.TooManyRequestsException;
 import cz.kvalitacena.exception.UnauthorizedException;
@@ -56,6 +58,8 @@ class MediaServiceTest {
   @Mock
   private StoreRepository storeRepository;
   @Mock
+  private UserProfileRepository userProfileRepository;
+  @Mock
   private MediaStorage mediaStorage;
   @Mock
   private ImageProcessingService imageProcessingService;
@@ -70,7 +74,8 @@ class MediaServiceTest {
     mediaProperties = new MediaProperties();
     mediaProperties.setMaxPhotosPerRecord(5);
     service = new MediaService(mediaRepository, appUserRepository, productRepository, storeRepository,
-        mediaStorage, imageProcessingService, catalogRateLimiter, mediaProperties, TestMessages.instance());
+        userProfileRepository, mediaStorage, imageProcessingService, catalogRateLimiter, mediaProperties,
+        TestMessages.instance());
   }
 
   private void givenLoggedInUser() {
@@ -215,5 +220,53 @@ class MediaServiceTest {
     assertThat(photos).hasSize(1);
     assertThat(photos.get(0).mine()).isTrue();
     assertThat(photos.get(0).hidden()).isTrue();
+  }
+
+  @Test
+  void genericUploadRejectsUserRecordType() {
+    // Kontrola recordType == USER je v upload() PŘED načtením uživatele — findByPublicUid se
+    // tak vůbec nevolá, žádný stub navíc není potřeba.
+    assertThatThrownBy(() -> service.upload(RecordType.USER, USER_ID, new byte[]{1}, null, PUBLIC_UID))
+        .isInstanceOf(ValidationException.class);
+    verify(imageProcessingService, never()).process(any());
+  }
+
+  @Test
+  void anonymousCannotUploadAvatar() {
+    assertThatThrownBy(() -> service.uploadAvatar(new byte[]{1}, null))
+        .isInstanceOf(UnauthorizedException.class);
+  }
+
+  @Test
+  void uploadingSecondAvatarReplacesTheFirstOne() {
+    AppUser user = AppUser.builder().id(USER_ID).publicUid(PUBLIC_UID).build();
+    when(appUserRepository.findByPublicUid(PUBLIC_UID)).thenReturn(Optional.of(user));
+    when(catalogRateLimiter.tryAcquireMediaUpload(PUBLIC_UID)).thenReturn(true);
+
+    byte[] sha = {4, 5, 6};
+    ImageProcessingService.ProcessedImage processed =
+        new ImageProcessingService.ProcessedImage(new byte[]{9}, new byte[]{8}, 100, 100, sha);
+    when(imageProcessingService.process(any())).thenReturn(processed);
+    when(mediaRepository.findByRecordTypeAndRecordIdAndSha256(RecordType.USER, USER_ID, sha))
+        .thenReturn(Optional.empty());
+    when(mediaStorage.store(any(), any())).thenReturn("2026/08/avatar.jpg");
+    Media savedMedia = Media.builder().id(77L).recordType(RecordType.USER).recordId(USER_ID)
+        .storageKey("2026/08/avatar.jpg").uploadedByUserId(USER_ID).sha256(sha).build();
+    when(mediaRepository.save(any(Media.class))).thenReturn(savedMedia);
+
+    UserProfile existingProfile = UserProfile.builder().userId(USER_ID).avatarMediaId(11L).build();
+    when(userProfileRepository.findById(USER_ID)).thenReturn(Optional.of(existingProfile));
+    Media oldAvatar = Media.builder().id(11L).storageKey("2026/07/stary.jpg").build();
+    when(mediaRepository.findById(11L)).thenReturn(Optional.of(oldAvatar));
+
+    Photo result = service.uploadAvatar(new byte[]{1}, PUBLIC_UID);
+
+    assertThat(result.id()).isEqualTo(77L);
+    ArgumentCaptor<UserProfile> profileCaptor = ArgumentCaptor.forClass(UserProfile.class);
+    verify(userProfileRepository).save(profileCaptor.capture());
+    assertThat(profileCaptor.getValue().getAvatarMediaId()).isEqualTo(77L);
+    // Starý avatar se smaže, ne jen přestane být odkazovaný.
+    verify(mediaStorage).delete("2026/07/stary.jpg");
+    verify(mediaRepository).delete(oldAvatar);
   }
 }

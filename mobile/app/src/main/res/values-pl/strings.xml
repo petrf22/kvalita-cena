@@ -21,6 +21,7 @@
     <string name="account_title">Konto</string>
     <string name="account_logged_in_fallback">Zalogowano</string>
     <string name="account_logout">Wyloguj się</string>
+    <string name="account_edit_profile">Edytuj profil</string>
 
     <string name="login_title">Logowanie</string>
     <string name="login_otp_hint">Wyślemy na Twój e-mail sześciocyfrowy kod, żadnego hasła nie musisz pamiętać.</string>
@@ -32,6 +33,54 @@
     <string name="login_change_email">Podaj inny e-mail</string>
     <string name="login_request_failed">Nie udało się wysłać kodu. Spróbuj ponownie za chwilę.</string>
     <string name="login_verify_failed">Kod jest nieprawidłowy lub wygasł. Spróbuj ponownie.</string>
+
+    <!-- Profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") -->
+    <string name="profile_title">Profil</string>
+    <string name="profile_load_failed">Nie udało się wczytać profilu.</string>
+    <string name="profile_avatar_title">Zdjęcie profilowe</string>
+    <string name="profile_avatar_hint">Zdjęcie NIE jest przechowywane w bazie zaszyfrowane (w przeciwieństwie do pól tekstowych poniżej).</string>
+    <string name="profile_avatar_upload">Prześlij zdjęcie</string>
+    <string name="profile_avatar_remove">Usuń zdjęcie</string>
+    <string name="profile_avatar_upload_failed">Przesłanie zdjęcia się nie powiodło.</string>
+    <string name="profile_first_name_label">Imię</string>
+    <string name="profile_last_name_label">Nazwisko</string>
+    <string name="profile_display_name_label">Pseudonim</string>
+    <string name="profile_phone_label">Telefon</string>
+    <string name="profile_contact_email_label">Kontaktowy e-mail</string>
+    <string name="profile_encrypted_hint">Ta wartość jest przechowywana w bazie zaszyfrowana.</string>
+    <string name="profile_login_email_label">E-mail logowania</string>
+    <string name="profile_change_email_button">Zmień e-mail</string>
+    <string name="profile_save_button">Zapisz</string>
+    <string name="profile_save_success">Profil zapisany.</string>
+    <string name="profile_visibility_title">Widoczność</string>
+    <string name="profile_visibility_anonymous">Anonimowy — widoczny jest tylko numer użytkownika</string>
+    <string name="profile_visibility_public">Publiczny — wybierz, które dane są widoczne</string>
+    <string name="profile_visibility_friends">Znajomi — wybierz, które dane widzą znajomi</string>
+    <string name="profile_fields_table_title">Które dane są widoczne</string>
+    <string name="profile_fields_public_column">Publicznie</string>
+    <string name="profile_fields_friends_column">Znajomi</string>
+    <string name="profile_fields_friends_hint">Aplikacja nie obsługuje jeszcze grup znajomych — zaznaczenie zadziała, gdy będą gotowe.</string>
+    <string name="profile_field_first_name">Imię</string>
+    <string name="profile_field_last_name">Nazwisko</string>
+    <string name="profile_field_display_name">Pseudonim</string>
+    <string name="profile_field_contact_email">Kontaktowy e-mail</string>
+    <string name="profile_field_phone">Telefon</string>
+    <string name="profile_field_avatar">Zdjęcie profilowe</string>
+    <string name="profile_links_title">Więcej informacji</string>
+    <string name="profile_links_coming_soon">Wkrótce</string>
+    <string name="profile_links_friends">Lista znajomych</string>
+    <string name="profile_links_system_rating">Ocena systemowa</string>
+    <string name="profile_links_friends_trust">Zaufanie znajomych</string>
+    <string name="profile_links_stats">Moje statystyki</string>
+    <string name="profile_email_change_title">Zmień e-mail logowania</string>
+    <string name="profile_email_change_new_email_label">Nowy adres e-mail</string>
+    <string name="profile_email_change_send_code">Wyślij kod</string>
+    <string name="profile_email_change_code_label">Kod z e-maila</string>
+    <string name="profile_email_change_code_hint">Wysłaliśmy kod na %1$s.</string>
+    <string name="profile_email_change_confirm">Potwierdź zmianę</string>
+    <string name="profile_email_change_success">E-mail logowania został zmieniony.</string>
+    <string name="profile_email_change_request_failed">Nie udało się wysłać kodu. Spróbuj ponownie za chwilę.</string>
+    <string name="profile_email_change_confirm_failed">Kod jest nieprawidłowy lub wygasł. Spróbuj ponownie.</string>
 
     <string name="scan_camera_permission_hint">Do skanowania kodów kreskowych aplikacja potrzebuje dostępu do aparatu.</string>
 
