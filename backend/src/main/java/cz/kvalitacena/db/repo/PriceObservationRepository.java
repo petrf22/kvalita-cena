@@ -68,4 +68,29 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
   @Query("UPDATE PriceObservation o SET o.submitter = NULL "
       + "WHERE o.observedAt < :cutoff AND o.submitter IS NOT NULL")
   int pseudonymizeObservationsBefore(@Param("cutoff") OffsetDateTime cutoff);
+
+  /** GDPR export (AccountService) — vlastní observace včetně čitelného názvu zboží/obchodu. */
+  @Query("SELECT o FROM PriceObservation o JOIN FETCH o.product JOIN FETCH o.store "
+      + "WHERE o.submitter.id = :userId ORDER BY o.observedAt DESC")
+  List<PriceObservation> findBySubmitterIdWithProductAndStore(@Param("userId") Long userId);
+
+  /**
+   * Výmaz účtu, režim {@code DELETE_CONTENT} (docs/soukromi.md, "GDPR") — na rozdíl od
+   * {@link #pseudonymizeObservationsBefore} observace skutečně mizí, ne jen vazba na účet.
+   * Dotčené buňky agregátu je potřeba zvlášť zařadit do přepočtu (viz {@code AccountService}) —
+   * bulk DELETE sám žádný trigger na {@code agg.recompute_queue} nespustí.
+   */
+  @Query("SELECT DISTINCT o.product.id AS productId, o.store.id AS storeId "
+      + "FROM PriceObservation o WHERE o.submitter.id = :userId")
+  List<ObservationCell> findDistinctProductStoreBySubmitterId(@Param("userId") Long userId);
+
+  @Modifying
+  @Query("DELETE FROM PriceObservation o WHERE o.submitter.id = :userId")
+  int deleteBySubmitterId(@Param("userId") Long userId);
+
+  interface ObservationCell {
+    Long getProductId();
+
+    Long getStoreId();
+  }
 }

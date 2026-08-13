@@ -47,4 +47,13 @@ public class SmtpOtpMailSender implements OtpMailSender {
     message.setText(messages.get("mail.emailChange.conflictBody", locale));
     javaMailSender.send(message);
   }
+
+  @Override
+  public void sendAccountDeleteCode(String email, String code, Locale locale) {
+    SimpleMailMessage message = new SimpleMailMessage();
+    message.setTo(email);
+    message.setSubject(messages.get("mail.accountDelete.subject", locale));
+    message.setText(messages.get("mail.accountDelete.body", locale, code, otpProperties.getCodeTtl().toMinutes()));
+    javaMailSender.send(message);
+  }
 }

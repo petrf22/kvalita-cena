@@ -227,17 +227,40 @@ Krátká životnost → žádný revokační seznam; okamžité globální odhl�
 nekoná, ale např. podezření na krádež) se řeší inkrementem `token_version`, který se do
 `JwtAuthenticationFilter` promítne nejpozději za 60 s (Caffeine cache).
 
-## GDPR (plánováno, zatím ne v etapě 1)
+## GDPR
 
-- Export vlastních dat: `GET /api/me/export`, včetně čitelného výpisu vlastních
-  systémových `user_flag` — skórovací systém, do kterého uživatel nevidí, je proti duchu
-  projektu (viz `reputace.md`, "Proč žádné veřejné negativní hodnocení").
-- Výmaz: `POST /api/me/delete`, dva režimy — anonymizovat účet (observace zůstávají
-  pseudonymizované jako agregovaná statistika ve veřejném zájmu) nebo smazat i obsah.
+Export a výmaz (`AccountService`, `AccountController`) jsou hotové — REST tok jako
+`EmailChangeService` výš, ne GraphQL mutace.
+
+- **Export**: `GET /api/me/export` — čitelný výpis vlastní identity (handle, e-mail, datum
+  založení), volitelného profilu, cenových záznamů stále navázaných na účet (stejné okno jako
+  appka sama ukazuje, tzn. posledních 180 dní — starší jsou pseudonymizované, tudíž v exportu
+  nejsou), hodnocení kvality a vlastních úprav zboží/obchodu. Vyžaduje jen platný access token,
+  žádné zvláštní potvrzení (na rozdíl od výmazu níž) — čtení vlastních dat nic nevratného
+  neriskuje. `user_flag` skórovací systém z původního plánu neexistuje (etapa 1 má jen složku
+  `L`, viz `reputace.md`) — export ho tedy neobsahuje, není co exportovat.
+- **Výmaz**: dvoukrokový OTP tok jako změna e-mailu (`POST /api/me/delete/request` +
+  `/confirm`), kód jde vždy na už vlastněnou přihlašovací adresu. `mode` se volí až u
+  `confirm`, dva režimy:
+  - `ANONYMIZE` — observace zůstávají jako agregovaná statistika ve veřejném zájmu. Appka pro
+    to nemusí dělat nic navíc: `fk_price_observation_submitter` je `ON DELETE SET NULL`, takže
+    smazání řádku `auth.app_user` observace samo anonymizuje, stejným mechanismem jako denní
+    pseudonymizace po 180 dnech.
+  - `DELETE_CONTENT` — observace uživatele se skutečně smažou (ne jen zruší vazba), s ručním
+    zařazením dotčených buněk do `agg.recompute_queue` (`RecomputeReason.MODERATION`) — bulk
+    DELETE sám žádný přepočet nespustí.
+  - V obou režimech appka nejdřív smaže SOUBORY fotek z disku (`MediaStorage`, včetně avataru),
+    teprve pak řádek `app_user` — ten kaskádou smaže zbytek (`user_profile`,
+    `product_quality_rating`, `product_user_edit`/`store_user_edit`, `record_flag`, `media`
+    řádky v DB, `refresh_token`). Katalogová data (zboží, obchod), na která uživatel jen
+    přispěl cenou, samozřejmě zůstávají — mažou/anonymizují se jen věci navázané na *jeho* účet.
 - Žádná analytika třetích stran, žádné externí fonty ani CDN. Jediná cookie je `httpOnly`
   refresh token → není potřeba cookie lišta.
 - Plánovaná AI (`ai.md`) běží lokálně u provozovatele, ne přes cloudové API — jinak by tahle
   věta neplatila.
+
+**Neimplementováno**: appka export/výmaz zatím nenabízí v UI (web ani mobil) — jen na kontaktní
+e-mail, ručně (viz `docs/zasady-ochrany-osobnich-udaju.md`, „Tvá práva").
 
 ## Otevřená rizika / co hlídat
 

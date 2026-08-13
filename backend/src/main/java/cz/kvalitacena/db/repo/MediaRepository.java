@@ -19,4 +19,12 @@ public interface MediaRepository extends JpaRepository<Media, Long> {
 
   /** Idempotence uploadu — druhé nahrání téhož obsahu ke stejnému záznamu vrátí existující řádek. */
   Optional<Media> findByRecordTypeAndRecordIdAndSha256(RecordType recordType, Long recordId, byte[] sha256);
+
+  /**
+   * Výmaz účtu (AccountService, docs/soukromi.md) — {@code fk_media_uploaded_by} je
+   * {@code ON DELETE CASCADE}, takže smazání {@code app_user} řádku smaže i tyhle řádky v DB,
+   * ale NE soubory na disku. Volající proto musí soubory smazat přes {@code MediaStorage}
+   * explicitně PŘED smazáním uživatele, jinak vzniknou sirotčí soubory.
+   */
+  List<Media> findByUploadedByUserId(Long uploadedByUserId);
 }

@@ -79,6 +79,8 @@
     "EMAIL_CHANGE_INVALID_CHALLENGE": "Kod jest nieprawidłowy lub wygasł",
     "EMAIL_CHANGE_EMAIL_TAKEN": "Ten adres e-mail jest już używany przez inne konto",
     "ACCOUNT_GONE": "Konto już nie istnieje",
+    "ACCOUNT_DELETE_REQUIRES_LOGIN": "Usunięcie konta wymaga zalogowania",
+    "ACCOUNT_DELETE_INVALID_CHALLENGE": "Kod jest nieprawidłowy lub wygasł",
     "TOO_MANY_REQUESTS": "Zbyt wiele żądań, spróbuj ponownie później",
     "UOM_MISMATCH": "Jednostka {{p0}} nie pasuje do typu {{p1}}",
     "VALIDATION_FAILED": "Podane dane są nieprawidłowe",

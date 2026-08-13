@@ -47,6 +47,10 @@ public class SecurityConfig {
             // Authentication, kterou JwtAuthenticationFilter naplní i tady stejně jako u
             // GraphQL — stejný princip "autorizace jako predikát", ne blokování na URL.
             .requestMatchers("/api/media/**").permitAll()
+            // AccountController (GDPR export/výmaz) si autorizaci hlídá sám nad Authentication
+            // stejně jako EmailChangeController — permitAll tu neznamená "bez přihlášení",
+            // jen že se to nekontroluje blokováním URL (viz komentáře výš).
+            .requestMatchers("/api/me/**").permitAll()
             .requestMatchers("/actuator/health/**", "/actuator/info/**").permitAll()
             // GraphQL běží na jednom endpointu pro anonymní (T0) i přihlášené uživatele —
             // odstupňování přístupu (docs/reputace.md) řeší predikáty v resolverech/ViewerContext,

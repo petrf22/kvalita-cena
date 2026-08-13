@@ -28,4 +28,9 @@ public class ConsoleOtpMailSender implements OtpMailSender {
   public void sendEmailChangeConflict(String email, Locale locale) {
     log.info("[DEV] Pokus o změnu e-mailu na už obsazenou adresu {} (locale {})", email, locale);
   }
+
+  @Override
+  public void sendAccountDeleteCode(String email, String code, Locale locale) {
+    log.info("[DEV] Kód pro výmaz účtu {} (locale {}): {}", email, locale, code);
+  }
 }

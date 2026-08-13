@@ -11,6 +11,9 @@ public interface ProductUserEditRepository extends JpaRepository<ProductUserEdit
 
   Optional<ProductUserEdit> findByProductIdAndUserId(Long productId, Long userId);
 
+  /** GDPR export (AccountService) — všechny vlastní úpravy bez ohledu na produkt. */
+  List<ProductUserEdit> findByUserId(Long userId);
+
   /** Dávkové dotažení patchů pro seznam produktů a JEDNOHO viewera (hledání, ne N+1). */
   List<ProductUserEdit> findByProductIdInAndUserId(Collection<Long> productIds, Long userId);
 }

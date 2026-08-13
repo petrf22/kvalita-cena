@@ -21,4 +21,7 @@ public interface OtpMailSender {
    * odvodit z toho, že by se REST odpověď lišila (docs/soukromi.md).
    */
   void sendEmailChangeConflict(String email, Locale locale);
+
+  /** Potvrzovací kód pro nevratný výmaz účtu (AccountService, docs/soukromi.md, "GDPR"). */
+  void sendAccountDeleteCode(String email, String code, Locale locale);
 }

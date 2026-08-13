@@ -36,6 +36,8 @@ export type Confidence = typeof Confidence[keyof typeof Confidence];
  * Musí se shodovat s cz.kvalitacena.exception.ErrorCode (viz backendový test MessageBundleTest).
  */
 export const ErrorCode = {
+  AccountDeleteInvalidChallenge: 'ACCOUNT_DELETE_INVALID_CHALLENGE',
+  AccountDeleteRequiresLogin: 'ACCOUNT_DELETE_REQUIRES_LOGIN',
   AccountGone: 'ACCOUNT_GONE',
   AvatarRequiresLogin: 'AVATAR_REQUIRES_LOGIN',
   CategoryNotFound: 'CATEGORY_NOT_FOUND',

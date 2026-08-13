@@ -11,6 +11,9 @@ public interface StoreUserEditRepository extends JpaRepository<StoreUserEdit, St
 
   Optional<StoreUserEdit> findByStoreIdAndUserId(Long storeId, Long userId);
 
+  /** GDPR export (AccountService) — všechny vlastní úpravy bez ohledu na obchod. */
+  List<StoreUserEdit> findByUserId(Long userId);
+
   /** Dávkové dotažení patchů pro seznam provozoven a JEDNOHO viewera (hledání, ne N+1). */
   List<StoreUserEdit> findByStoreIdInAndUserId(Collection<Long> storeIds, Long userId);
 }

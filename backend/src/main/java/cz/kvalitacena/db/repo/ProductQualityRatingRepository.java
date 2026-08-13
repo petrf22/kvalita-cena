@@ -14,6 +14,9 @@ public interface ProductQualityRatingRepository extends JpaRepository<ProductQua
 
   Optional<ProductQualityRating> findByProductIdAndUserId(Long productId, Long userId);
 
+  /** GDPR export (AccountService) — všechna vlastní hodnocení bez ohledu na produkt. */
+  List<ProductQualityRating> findByUserId(Long userId);
+
   @Query("select r.productId as productId, avg(r.grade) as average, count(r) as count "
       + "from ProductQualityRating r where r.productId in :productIds group by r.productId")
   List<QualityRow> summarize(@Param("productIds") Collection<Long> productIds);

@@ -79,6 +79,8 @@
     "EMAIL_CHANGE_INVALID_CHALLENGE": "The code is invalid or has expired",
     "EMAIL_CHANGE_EMAIL_TAKEN": "This email address is already used by another account",
     "ACCOUNT_GONE": "This account no longer exists",
+    "ACCOUNT_DELETE_REQUIRES_LOGIN": "Deleting your account requires signing in",
+    "ACCOUNT_DELETE_INVALID_CHALLENGE": "The code is invalid or has expired",
     "TOO_MANY_REQUESTS": "Too many requests, please try again later",
     "UOM_MISMATCH": "Unit {{p0}} does not match type {{p1}}",
     "VALIDATION_FAILED": "The submitted data is invalid",

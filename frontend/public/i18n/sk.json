@@ -79,6 +79,8 @@
     "EMAIL_CHANGE_INVALID_CHALLENGE": "Kód je neplatný alebo vypršal",
     "EMAIL_CHANGE_EMAIL_TAKEN": "Túto e-mailovú adresu už používa iný účet",
     "ACCOUNT_GONE": "Účet už neexistuje",
+    "ACCOUNT_DELETE_REQUIRES_LOGIN": "Výmaz účtu vyžaduje prihlásenie",
+    "ACCOUNT_DELETE_INVALID_CHALLENGE": "Kód je neplatný alebo vypršal",
     "TOO_MANY_REQUESTS": "Príliš veľa požiadaviek, skús to prosím neskôr",
     "UOM_MISMATCH": "Jednotka {{p0}} nezodpovedá typu {{p1}}",
     "VALIDATION_FAILED": "Zadané údaje nie sú platné",

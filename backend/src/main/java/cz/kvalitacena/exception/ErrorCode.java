@@ -92,6 +92,10 @@ public enum ErrorCode {
   EMAIL_CHANGE_INVALID_CHALLENGE("error.emailChange.invalidChallenge"),
   EMAIL_CHANGE_EMAIL_TAKEN("error.emailChange.emailTaken"),
 
+  // --- výmaz účtu, GDPR (docs/soukromi.md, "GDPR")
+  ACCOUNT_DELETE_REQUIRES_LOGIN("error.accountDelete.requiresLogin"),
+  ACCOUNT_DELETE_INVALID_CHALLENGE("error.accountDelete.invalidChallenge"),
+
   // --- obecné
   ACCOUNT_GONE("error.common.accountGone"),
   TOO_MANY_REQUESTS("error.common.tooManyRequests"),
