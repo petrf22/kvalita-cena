@@ -28,13 +28,15 @@ přesunout do `docs/vydani.md` jako historickou poznámku.
   free tier stačí. Nepoužívat vlastní SMTP na VPS (skončí ve spamu). Kandidáti k porovnání:
   Resend, Postmark, Amazon SES, Mailgun — u všech potřeba: API/SMTP přihlašovací údaje +
   ověřená odesílací doména.
-- [ ] **Vybrat VPS poskytovatele** — jediná tvrdá podmínka: **perzistentní disk** (fotky leží
-  mimo databázi na disku, `docs/datovy-model.md`) — PaaS s efemérním filesystémem (Cloud Run,
-  Heroku) nejde použít. Řádově 120–250 Kč/měsíc (viz plán). Kandidáti: Hetzner, DigitalOcean,
-  Vultr — cokoliv s KVM/dedikovaným diskem stačí, appka nemá zvláštní HW nároky v etapě 1.
-- [ ] **Vybrat cíl pro offsite zálohu** (jiný poskytovatel než VPS výš, ať jeden výpadek
+- [x] **VPS poskytovatel: Hetzner Cloud.** Nejlevnější spolehlivá varianta s perzistentním
+  diskem (appka fotky drží mimo databázi na disku, `docs/datovy-model.md` — PaaS s efemérním
+  filesystémem jako Cloud Run/Heroku nejde použít), servery v EU (Německo/Finsko — sedí
+  k tomu, jak appka od začátku řeší lokalitu dat), nejmenší instance řádově 4–5 €/měsíc =
+  přesně těch 120–250 Kč z odhadu níž. Založit účet, nejmenší instanci s KVM + SSD.
+- [ ] **Vybrat cíl pro offsite zálohu** (jiný poskytovatel než Hetzner výš, ať jeden výpadek
   nevezme obojí) — B2/S3-kompatibilní úložiště s levným cold storage stačí, appka zálohuje jen
-  `pg_dump` + adresář `app.media.root`.
+  `pg_dump` + adresář `app.media.root`. Hetzner má vlastní Storage Box, ale pro skutečnou
+  redundanci je lepší jiný poskytovatel (např. Backblaze B2) — nerozhodnuto.
 
 ## 2. Po výběru VPS
 
