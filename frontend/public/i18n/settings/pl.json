@@ -8,5 +8,8 @@
   "sourcesText": "Ceny i oceny jakości to własne dane społeczności. Odnośniki do Open Food Facts są zgodne z licencją ODbL (Open Database License) — dane nigdy nie są kopiowane, aplikacja tylko odsyła do źródła.",
   "sourcesNote": "Współrzędne sklepów pochodzą z OpenStreetMap © współtwórcy OpenStreetMap, licencja ODbL.",
   "fxLabel": "Kursy walut: {{attribution}}",
+  "legalTitle": "Dokumenty prawne",
+  "termsLink": "Warunki korzystania",
+  "privacyLink": "Polityka prywatności",
   "appVersionLabel": "Wersja aplikacji {{version}}"
 }

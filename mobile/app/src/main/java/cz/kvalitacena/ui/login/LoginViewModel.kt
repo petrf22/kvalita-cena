@@ -19,6 +19,11 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
     private set
   var email by mutableStateOf("")
   var code by mutableStateOf("")
+  // Souhlas s Podmínkami užití a Zásadami ochrany osobních údajů (docs/podminky-uziti.md,
+  // docs/zasady-ochrany-osobnich-udaju.md) — vyžaduje se už u requestCode(), ne až u verifyCode(),
+  // protože i requestOtp zpracovává e-mail (docs/soukromi.md, "Passwordless auth"), i když účet
+  // vzniká JIT až při úspěšném ověření kódu.
+  var consentAccepted by mutableStateOf(false)
   var loading by mutableStateOf(false)
     private set
   var errorMessage by mutableStateOf<UiText?>(null)
@@ -27,7 +32,7 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
   private var challengeUid: String? = null
 
   fun requestCode(onSent: () -> Unit = {}) {
-    if (email.isBlank()) return
+    if (email.isBlank() || !consentAccepted) return
     loading = true
     errorMessage = null
     viewModelScope.launch {

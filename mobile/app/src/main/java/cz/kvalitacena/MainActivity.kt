@@ -31,13 +31,17 @@ import cz.kvalitacena.ui.account.AccountScreen
 import cz.kvalitacena.ui.common.UpdateRequiredScreen
 import cz.kvalitacena.ui.common.UpdateRequiredState
 import cz.kvalitacena.ui.detail.ProductDetailScreen
+import cz.kvalitacena.ui.legal.PrivacyScreen
+import cz.kvalitacena.ui.legal.TermsScreen
 import cz.kvalitacena.ui.navigation.ARG_BARCODE
 import cz.kvalitacena.ui.navigation.ARG_PRODUCT_ID
 import cz.kvalitacena.ui.navigation.ARG_STORE_ID
 import cz.kvalitacena.ui.navigation.ROUTE_PRICE_ENTRY
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_DETAIL
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_FORM
+import cz.kvalitacena.ui.navigation.ROUTE_PRIVACY
 import cz.kvalitacena.ui.navigation.ROUTE_PROFILE
+import cz.kvalitacena.ui.navigation.ROUTE_TERMS
 import cz.kvalitacena.ui.navigation.ROUTE_STORE_DETAIL
 import cz.kvalitacena.ui.navigation.ROUTE_STORE_FORM
 import cz.kvalitacena.ui.navigation.TopLevelDestination
@@ -116,10 +120,17 @@ private fun AppScaffold() {
         )
       }
       composable(TopLevelDestination.SETTINGS.route) {
-        SettingsScreen()
+        SettingsScreen(
+          onOpenTerms = { navController.navigate(ROUTE_TERMS) },
+          onOpenPrivacy = { navController.navigate(ROUTE_PRIVACY) },
+        )
       }
       composable(TopLevelDestination.ACCOUNT.route) {
-        AccountScreen(onEditProfile = { navController.navigate(ROUTE_PROFILE) })
+        AccountScreen(
+          onEditProfile = { navController.navigate(ROUTE_PROFILE) },
+          onOpenTerms = { navController.navigate(ROUTE_TERMS) },
+          onOpenPrivacy = { navController.navigate(ROUTE_PRIVACY) },
+        )
       }
       composable(
         ROUTE_PRODUCT_DETAIL,
@@ -184,6 +195,12 @@ private fun AppScaffold() {
       }
       composable(ROUTE_PROFILE) {
         ProfileScreen(onDone = { navController.popBackStack() })
+      }
+      composable(ROUTE_TERMS) {
+        TermsScreen(onDone = { navController.popBackStack() })
+      }
+      composable(ROUTE_PRIVACY) {
+        PrivacyScreen(onDone = { navController.popBackStack() })
       }
     }
   }

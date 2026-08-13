@@ -40,6 +40,14 @@ export const routes: Routes = [
     path: 'profile',
     loadComponent: () => import('./features/profile/profile-page').then((m) => m.ProfilePage),
   },
+  {
+    path: 'terms',
+    loadComponent: () => import('./features/terms/terms-page').then((m) => m.TermsPage),
+  },
+  {
+    path: 'privacy',
+    loadComponent: () => import('./features/privacy/privacy-page').then((m) => m.PrivacyPage),
+  },
   // Staré české cesty — zachovány kvůli existujícím odkazům/záložkám.
   { path: 'produkt/:id', redirectTo: 'product/:id' },
   { path: 'obchod/:id', redirectTo: 'store/:id' },
@@ -47,5 +55,7 @@ export const routes: Routes = [
   { path: 'prihlaseni', redirectTo: 'login' },
   { path: 'nastaveni', redirectTo: 'settings' },
   { path: 'profil', redirectTo: 'profile' },
+  { path: 'podminky-uziti', redirectTo: 'terms' },
+  { path: 'zasady-ochrany-osobnich-udaju', redirectTo: 'privacy' },
   { path: '**', redirectTo: '' },
 ];

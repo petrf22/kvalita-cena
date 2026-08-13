@@ -28,6 +28,10 @@
     <string name="login_title">Logowanie</string>
     <string name="login_otp_hint">Wyślemy na Twój e-mail sześciocyfrowy kod, żadnego hasła nie musisz pamiętać.</string>
     <string name="login_email_label">E-mail</string>
+    <string name="login_consent_prefix">Zgadzam się z</string>
+    <string name="login_consent_terms_link">warunkami korzystania</string>
+    <string name="login_consent_and">i</string>
+    <string name="login_consent_privacy_link">polityką prywatności</string>
     <string name="login_send_code">Wyślij kod</string>
     <string name="login_code_hint">Wysłaliśmy kod na %1$s.</string>
     <string name="login_code_label">Kod z e-maila</string>
@@ -96,6 +100,12 @@
     <string name="settings_osm_attribution">Współrzędne sklepów pochodzą z OpenStreetMap © współtwórcy OpenStreetMap, licencja ODbL.</string>
     <string name="settings_fx_attribution">Kursy walut pochodzą z tabeli kursowej Czeskiego Banku Narodowego.</string>
     <string name="settings_app_version">Wersja aplikacji %1$s</string>
+    <string name="settings_legal_title">Dokumenty prawne</string>
+    <string name="settings_terms_link">Warunki korzystania</string>
+    <string name="settings_privacy_link">Polityka prywatności</string>
+    <string name="terms_title">Warunki korzystania</string>
+    <string name="privacy_title">Polityka prywatności</string>
+    <string name="legal_czech_only_notice">Ten dokument jest obecnie dostępny tylko w języku czeskim.</string>
 
     <string name="map_show">Pokaż mapę</string>
     <string name="map_hint">Dotknij mapy lub przeciągnij znacznik w dokładne miejsce.</string>

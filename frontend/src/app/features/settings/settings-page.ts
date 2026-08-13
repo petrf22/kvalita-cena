@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { TranslocoDirective, provideTranslocoScope } from '@jsverse/transloco';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzFormModule } from 'ng-zorro-antd/form';
@@ -34,7 +35,7 @@ const LANGUAGE_OPTIONS: { value: AppLang; label: string }[] = [
  */
 @Component({
   selector: 'app-settings-page',
-  imports: [FormsModule, NzCardModule, NzFormModule, NzSelectModule, TranslocoDirective],
+  imports: [FormsModule, RouterLink, NzCardModule, NzFormModule, NzSelectModule, TranslocoDirective],
   providers: [provideTranslocoScope('settings')],
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.css',

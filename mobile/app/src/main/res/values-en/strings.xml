@@ -28,6 +28,10 @@
     <string name="login_title">Sign in</string>
     <string name="login_otp_hint">We\'ll send a six-digit code to your email, no password to remember.</string>
     <string name="login_email_label">Email</string>
+    <string name="login_consent_prefix">I agree to the</string>
+    <string name="login_consent_terms_link">terms of use</string>
+    <string name="login_consent_and">and</string>
+    <string name="login_consent_privacy_link">privacy policy</string>
     <string name="login_send_code">Send code</string>
     <string name="login_code_hint">We sent a code to %1$s.</string>
     <string name="login_code_label">Code from email</string>
@@ -96,6 +100,12 @@
     <string name="settings_osm_attribution">Store coordinates are based on OpenStreetMap © OpenStreetMap contributors, ODbL license.</string>
     <string name="settings_fx_attribution">Exchange rates come from the Czech National Bank\'s daily rate list.</string>
     <string name="settings_app_version">App version %1$s</string>
+    <string name="settings_legal_title">Legal documents</string>
+    <string name="settings_terms_link">Terms of use</string>
+    <string name="settings_privacy_link">Privacy policy</string>
+    <string name="terms_title">Terms of use</string>
+    <string name="privacy_title">Privacy policy</string>
+    <string name="legal_czech_only_notice">This document is currently only available in Czech.</string>
 
     <string name="map_show">Show map</string>
     <string name="map_hint">Tap the map or drag the marker to the exact spot.</string>

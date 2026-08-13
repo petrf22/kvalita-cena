@@ -44,5 +44,11 @@
     }
   </nz-card>
 
+  <nz-card [nzTitle]="t('settings.legalTitle')" class="sources-card">
+    <a routerLink="/terms">{{ t('settings.termsLink') }}</a>
+    <br />
+    <a routerLink="/privacy">{{ t('settings.privacyLink') }}</a>
+  </nz-card>
+
   <p class="app-version">{{ t('settings.appVersionLabel', { version: appVersion }) }}</p>
 </ng-container>

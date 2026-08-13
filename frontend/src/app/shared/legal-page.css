@@ -1,0 +1,52 @@
+/* Sdílené oběma právními stránkami (terms-page, privacy-page) — proto ve shared/, ne
+   u jedné z komponent. */
+
+.legal-card {
+  max-width: 760px;
+  margin: 24px auto;
+}
+
+.legal-notice {
+  color: rgba(0, 0, 0, 0.65);
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 24px;
+}
+
+.legal-body h2 {
+  margin-top: 32px;
+}
+
+.legal-body h2:first-child {
+  margin-top: 0;
+}
+
+.legal-body h3 {
+  margin-top: 20px;
+}
+
+.legal-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.legal-body th,
+.legal-body td {
+  text-align: left;
+  padding: 6px 12px;
+  border: 1px solid #f0f0f0;
+}
+
+.legal-effective-date {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  margin-bottom: 24px;
+}
+
+.legal-back {
+  display: inline-block;
+  margin-top: 24px;
+}

@@ -8,5 +8,8 @@
   "sourcesText": "Ceny a hodnocení kvality jsou vlastní komunitní data. Odkazy do Open Food Facts jsou podle licence ODbL (Open Database License) — data se nikam nekopírují, appka jen odkazuje na zdroj.",
   "sourcesNote": "Souřadnice provozoven vycházejí z OpenStreetMap © přispěvatelé OpenStreetMap, licence ODbL.",
   "fxLabel": "Kurzy měn: {{attribution}}",
+  "legalTitle": "Právní dokumenty",
+  "termsLink": "Podmínky užití",
+  "privacyLink": "Zásady ochrany osobních údajů",
   "appVersionLabel": "Verze appky {{version}}"
 }

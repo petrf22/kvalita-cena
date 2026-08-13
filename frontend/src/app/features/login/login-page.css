@@ -12,6 +12,11 @@
   margin-bottom: 16px;
 }
 
+.login-consent {
+  display: block;
+  margin-bottom: 16px;
+}
+
 .viewer-handle {
   font-size: 16px;
   font-weight: 600;

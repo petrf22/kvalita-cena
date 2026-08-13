@@ -34,11 +34,15 @@ import kotlinx.coroutines.launch
  * (popBackStack na sken natvrdo).
  */
 @Composable
-fun AccountScreen(onEditProfile: () -> Unit = {}) {
+fun AccountScreen(
+  onEditProfile: () -> Unit = {},
+  onOpenTerms: () -> Unit = {},
+  onOpenPrivacy: () -> Unit = {},
+) {
   val accessToken by AppContainer.authRepository.accessToken.collectAsState()
 
   if (accessToken == null) {
-    LoginScreen(onLoggedIn = {})
+    LoginScreen(onLoggedIn = {}, onOpenTerms = onOpenTerms, onOpenPrivacy = onOpenPrivacy)
   } else {
     LoggedInContent(onEditProfile)
   }

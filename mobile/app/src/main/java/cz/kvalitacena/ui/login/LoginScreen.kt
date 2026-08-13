@@ -2,6 +2,7 @@ package cz.kvalitacena.ui.login
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,11 +12,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -29,7 +32,7 @@ import cz.kvalitacena.R
 import cz.kvalitacena.ui.common.SingleLineTextField
 
 @Composable
-fun LoginScreen(onLoggedIn: () -> Unit) {
+fun LoginScreen(onLoggedIn: () -> Unit, onOpenTerms: () -> Unit = {}, onOpenPrivacy: () -> Unit = {}) {
   val viewModel: LoginViewModel = viewModel(
     factory = viewModelFactory { initializer { LoginViewModel(AppContainer.authRepository) } },
   )
@@ -59,7 +62,30 @@ fun LoginScreen(onLoggedIn: () -> Unit) {
           modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(16.dp))
-        Button(onClick = { viewModel.requestCode() }, modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.Top) {
+          Checkbox(
+            checked = viewModel.consentAccepted,
+            onCheckedChange = { viewModel.consentAccepted = it },
+          )
+          Text(
+            stringResource(R.string.login_consent_prefix) + " " +
+              stringResource(R.string.login_consent_terms_link) + " " +
+              stringResource(R.string.login_consent_and) + " " +
+              stringResource(R.string.login_consent_privacy_link) + ".",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(top = 14.dp),
+          )
+        }
+        Row {
+          TextButton(onClick = onOpenTerms) { Text(stringResource(R.string.login_consent_terms_link)) }
+          TextButton(onClick = onOpenPrivacy) { Text(stringResource(R.string.login_consent_privacy_link)) }
+        }
+        Spacer(Modifier.height(8.dp))
+        Button(
+          onClick = { viewModel.requestCode() },
+          enabled = viewModel.consentAccepted,
+          modifier = Modifier.fillMaxWidth(),
+        ) {
           if (viewModel.loading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
           else Text(stringResource(R.string.login_send_code))
         }

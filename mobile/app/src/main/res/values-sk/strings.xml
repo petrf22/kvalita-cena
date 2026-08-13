@@ -28,6 +28,10 @@
     <string name="login_title">Prihlásenie</string>
     <string name="login_otp_hint">Pošleme ti na e-mail šesťmiestny kód, žiadne heslo si nemusíš pamätať.</string>
     <string name="login_email_label">E-mail</string>
+    <string name="login_consent_prefix">Súhlasím s</string>
+    <string name="login_consent_terms_link">podmienkami užívania</string>
+    <string name="login_consent_and">a</string>
+    <string name="login_consent_privacy_link">zásadami ochrany osobných údajov</string>
     <string name="login_send_code">Poslať kód</string>
     <string name="login_code_hint">Kód sme poslali na %1$s.</string>
     <string name="login_code_label">Kód z e-mailu</string>
@@ -96,6 +100,12 @@
     <string name="settings_osm_attribution">Súradnice prevádzok vychádzajú z OpenStreetMap © prispievatelia OpenStreetMap, licencia ODbL.</string>
     <string name="settings_fx_attribution">Kurzy mien vychádzajú z kurzového lístka Českej národnej banky.</string>
     <string name="settings_app_version">Verzia appky %1$s</string>
+    <string name="settings_legal_title">Právne dokumenty</string>
+    <string name="settings_terms_link">Podmienky užívania</string>
+    <string name="settings_privacy_link">Zásady ochrany osobných údajov</string>
+    <string name="terms_title">Podmienky užívania</string>
+    <string name="privacy_title">Zásady ochrany osobných údajov</string>
+    <string name="legal_czech_only_notice">Tento dokument je zatiaľ k dispozícii len v češtine.</string>
 
     <string name="map_show">Zobraziť mapu</string>
     <string name="map_hint">Klepni do mapy alebo presuň značku na presné miesto.</string>

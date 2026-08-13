@@ -1,5 +1,6 @@
 package cz.kvalitacena.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,7 +33,7 @@ import cz.kvalitacena.R
  * neposílá X-Display-Currency a nic nepřepočítává ([DisplayCurrencyStore]).
  */
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(onOpenTerms: () -> Unit = {}, onOpenPrivacy: () -> Unit = {}) {
   Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
     Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
     Spacer()
@@ -95,6 +96,25 @@ fun SettingsScreen() {
       stringResource(R.string.settings_fx_attribution),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer()
+    HorizontalDivider()
+    Spacer()
+
+    Text(stringResource(R.string.settings_legal_title), style = MaterialTheme.typography.titleMedium)
+    Spacer()
+    Text(
+      stringResource(R.string.settings_terms_link),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.primary,
+      modifier = Modifier.clickable(onClick = onOpenTerms),
+    )
+    Spacer()
+    Text(
+      stringResource(R.string.settings_privacy_link),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.primary,
+      modifier = Modifier.clickable(onClick = onOpenPrivacy),
     )
     Spacer()
     HorizontalDivider()

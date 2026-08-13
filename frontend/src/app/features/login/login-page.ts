@@ -5,6 +5,7 @@ import { TranslocoDirective, TranslocoService, provideTranslocoScope } from '@js
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -29,6 +30,7 @@ import { ViewerService } from '../../services/viewer-service';
     NzButtonModule,
     NzAlertModule,
     NzIconModule,
+    NzCheckboxModule,
     TranslocoDirective,
   ],
   providers: [provideTranslocoScope('login')],
@@ -43,6 +45,11 @@ export class LoginPage {
   protected readonly step = signal<'email' | 'code'>('email');
   protected readonly email = signal('');
   protected readonly code = signal('');
+  // Souhlas s Podmínkami užití a Zásadami ochrany osobních údajů (docs/podminky-uziti.md,
+  // docs/zasady-ochrany-osobnich-udaju.md) — vyžaduje se už tady, ne až u verifyCode(), protože
+  // i requestOtp zpracovává e-mail (docs/soukromi.md, "Passwordless auth"), i když účet vzniká
+  // JIT až při úspěšném ověření kódu.
+  protected readonly consentGiven = signal(false);
   protected readonly challengeUid = signal<string | null>(null);
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -70,7 +77,7 @@ export class LoginPage {
   }
 
   requestCode(): void {
-    if (!this.email().trim()) return;
+    if (!this.email().trim() || !this.consentGiven()) return;
 
     this.loading.set(true);
     this.errorMessage.set(null);

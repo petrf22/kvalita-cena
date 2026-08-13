@@ -29,6 +29,10 @@
     <string name="login_title">Přihlášení</string>
     <string name="login_otp_hint">Pošleme ti na e-mail šestimístný kód, žádné heslo si nemusíš pamatovat.</string>
     <string name="login_email_label">E-mail</string>
+    <string name="login_consent_prefix">Souhlasím s</string>
+    <string name="login_consent_terms_link">podmínkami užití</string>
+    <string name="login_consent_and">a</string>
+    <string name="login_consent_privacy_link">zásadami ochrany osobních údajů</string>
     <string name="login_send_code">Poslat kód</string>
     <string name="login_code_hint">Kód jsme poslali na %1$s.</string>
     <string name="login_code_label">Kód z e-mailu</string>
@@ -97,6 +101,80 @@
     <string name="settings_osm_attribution">Souřadnice provozoven vycházejí z OpenStreetMap © přispěvatelé OpenStreetMap, licence ODbL.</string>
     <string name="settings_fx_attribution">Kurzy měn vycházejí z kurzovního lístku České národní banky.</string>
     <string name="settings_app_version">Verze appky %1$s</string>
+    <string name="settings_legal_title">Právní dokumenty</string>
+    <string name="settings_terms_link">Podmínky užití</string>
+    <string name="settings_privacy_link">Zásady ochrany osobních údajů</string>
+
+    <!-- Podmínky užití a Zásady ochrany osobních údajů zrcadlí docs/podminky-uziti.md a
+         docs/zasady-ochrany-osobnich-udaju.md (jeden zdroj pravdy pro znění) — obsah polí níže
+         je záměrně translatable="false" (stejný princip jako web frontend/src/app/features/terms,
+         .../privacy — právní text zatím jen česky, riziko nepřesného strojového překladu;
+         legal_czech_only_notice appka v jiném jazyce zobrazí místo tichého podstrčení
+         nedůvěryhodného překladu). -->
+    <string name="terms_title">Podmínky užití</string>
+    <string name="privacy_title">Zásady ochrany osobních údajů</string>
+    <string name="legal_czech_only_notice">Tento dokument je zatím k dispozici jen v češtině.</string>
+    <string name="legal_effective_date" translatable="false">Platí od [DOPLNIT DATUM ZVEŘEJNĚNÍ].</string>
+
+    <string-array name="terms_headings" translatable="false">
+        <item>1. Kdo podmínky vydává</item>
+        <item>2. Co appka je a co není</item>
+        <item>3. Registrace a účet</item>
+        <item>4. K čemu appku smíš používat</item>
+        <item>5. Obsah, který do appky vkládáš</item>
+        <item>6. Moderace a nahlašování</item>
+        <item>7. Ukončení a vyloučení</item>
+        <item>8. Data z vnějších zdrojů</item>
+        <item>9. Bez záruky, omezení odpovědnosti</item>
+        <item>10. Změny podmínek</item>
+        <item>11. Rozhodné právo a řešení sporů</item>
+        <item>12. Kontakt</item>
+    </string-array>
+    <string-array name="terms_paragraphs" translatable="false">
+        <item>Aplikaci a web Kvalita a cena (dále jen „appka") provozuje Petr Franta jako soukromá osoba, ne jako firma (dále jen „provozovatel"). Appka je komunitní projekt, ne komerční služba — je zdarma a bez reklam.\n\nKontakt: kontakt@kvalitacena.cz</item>
+        <item>Kvalita a cena je komunitní databáze cen běžného zboží v obchodech. Uživatelé zapisují ceny, které vidí v obchodech, appka je agreguje a zobrazuje jejich vývoj v čase a porovnání napříč obchody. Vedle řetězců appka záměrně dává prostor i menším a lokálním dodavatelům.\n\nAppka není cenovým srovnávačem s garantovanou přesností ani zdrojem k okamžitému uzavírání nákupů — ceny zapisují dobrovolníci, mohou být neaktuální, chybné nebo se mezitím v obchodě změnit. Než uskutečníš nákup na základě ceny z appky, ověř si ji v obchodě.</item>
+        <item>Přihlášení je bez hesla — appka pošle jednorázový kód na tvůj e-mail. Účet vznikne automaticky při první úspěšné přihlašovací operaci. Odpovídáš za to, že máš pod kontrolou e-mailovou schránku, kterou k přihlášení použiješ — přihlašovací kódy nikomu nesděluj.\n\nAppku smíš používat i anonymně bez registrace (prohlížení, hledání cen); zápis ceny, hodnocení zboží, nahrávání fotek a zakládání nového zboží/obchodu vyžaduje přihlášení.\n\nVěk: Appka je určená lidem starším 15 let. Pokud jsi mladší, používej appku jen se souhlasem zákonného zástupce.</item>
+        <item>Appku používej k tomu, k čemu je určená — zápisu a hledání skutečných cen a k orientaci v nabídce obchodů. Zejména je zakázáno vkládat vymyšlené, záměrně zkreslené nebo zastaralé ceny, vydávat se za jiného uživatele nebo za zaměstnance/zástupce obchodu bez oprávnění, nahrávat fotky, ke kterým nemáš práva, nebo fotky lidí bez jejich souhlasu, pokoušet se o automatizovaný hromadný sběr dat z appky mimo rozumnou míru, obcházet limity appky (např. opakovaným zakládáním účtů) nebo narušovat její provoz, a nahrávat obsah, který je nezákonný, urážlivý nebo jinak poškozuje appku, ostatní uživatele nebo třetí strany.\n\nPorušení může vést k moderačnímu opatření podle bodu 6, v závažných nebo opakovaných případech až k vyloučení podle bodu 7.</item>
+        <item>Cenové záznamy, hodnocení, fotky a údaje o zboží/obchodech, které do appky vložíš, zůstávají tvým obsahem — appka k nim nezískává vlastnictví. Odpovídáš za to, že máš právo obsah nahrát (zejména u fotek — nesmí porušovat autorská práva třetích stran), údaje odpovídají realitě podle tvého nejlepšího vědomí a fotka nezobrazuje osobní údaje třetích osob bez jejich souhlasu.\n\nAppka z nahraných fotek automaticky odstraňuje metadata (včetně polohy, pokud by je fotka nesla) — víc v Zásadách ochrany osobních údajů.\n\nLicence k vloženému obsahu: appka stojí na otevřených datech (OpenStreetMap, Open Food Facts) a stejnou logiku otevřenosti uplatňuje i na obsah, který do appky vkládáš ty jako uživatel. Vložením obsahu do appky ho zveřejňuješ pod otevřenou licencí, volně dál použitelnou kýmkoli, i komerčně, pokud uvede zdroj a odvozené dílo šíří dál za stejných podmínek: faktické údaje (ceny, gramáž/objem, název a kategorie zboží, adresa a poloha obchodu) poskytuješ appce pod licencí ODbL (Open Database License, stejná jako u OpenStreetMap a Open Food Facts), fotky poskytuješ pod licencí CC BY-SA 4.0 (Creative Commons Uveďte původ – Zachovejte licenci).\n\nTohle je nevratné rozhodnutí pro obsah, který už vložíš — jednou zveřejněný pod otevřenou licencí zůstává pod ní i po případném smazání účtu (smazání účtu se týká vazby tebe na záznam, ne licence k už zveřejněnému obsahu samotnému). Než něco nahraješ, počítej s tím, že to může kdokoli dál volně použít.</item>
+        <item>Appka záměrně nemá veřejné negativní hodnocení uživatelů — nesouhlas se vždy vyjadřuje k záznamu (ceně, fotce, zboží, obchodu), nikdy k člověku, který ho vložil. Kterýkoli přihlášený uživatel může záznam nahlásit jako nesmyslný nebo nepravdivý; po nasbírání dostatečného počtu nezávislých nahlášení se záznam skryje a čeká na přezkum. U fotek stačí k dočasnému skrytí nahlášení jediného uživatele, protože rizika u fotek jsou závažnější než u čísla.\n\nNový obsah od čerstvých účtů appka zpočátku zobrazuje jen autorovi, dokud ho nepotvrdí víc nezávislých přispěvatelů — cílem je odfiltrovat omyly a zneužití dřív, než se dostanou k ostatním uživatelům, ne trestat nové uživatele.</item>
+        <item>Účet si můžeš kdykoli smazat sám (Nastavení → Účet), nebo o smazání požádat na kontaktním e-mailu — viz Zásady ochrany osobních údajů, kde je popsáno, co smazání znamená pro už vložené ceny.\n\nProvozovatel si vyhrazuje právo účet omezit nebo zrušit při opakovaném nebo závažném porušení těchto podmínek. Před zrušením účtu se provozovatel přiměřeně pokusí uživatele na důvod upozornit, pokud tomu nebrání povaha porušení.</item>
+        <item>Appka zobrazuje vedle vlastních dat i informace z veřejných zdrojů třetích stran — OpenStreetMap (mapa, adresy provozoven), Open Food Facts (údaje o zboží), ARES (veřejný rejstřík ekonomických subjektů) a kurzovní lístek ČNB. Tahle data appka nikdy nekopíruje do vlastní databáze jako svoje — spojuje je až při zobrazení a vždy uvádí zdroj. Data z OSM a Open Food Facts podléhají licenci ODbL se sdílením za stejných podmínek.</item>
+        <item>Appka je poskytovaná „tak, jak je", zdarma, bez záruky nepřetržité dostupnosti nebo bezchybnosti dat. Provozovatel neodpovídá za škodu vzniklou spolehnutím se na cenu nebo jiný údaj z appky, s výjimkou škody způsobené úmyslně nebo hrubou nedbalostí. Nic v tomto bodě neomezuje práva, kterých se podle zákona nelze platně vzdát.</item>
+        <item>Podmínky se mohou měnit, zejména s tím, jak appka přibývá funkcemi. O podstatné změně provozovatel informuje přihlášené uživatele (e-mailem nebo oznámením v appce) s přiměřeným předstihem před účinností. Datum aktuálního znění je na začátku tohoto dokumentu.</item>
+        <item>Tyto podmínky se řídí právním řádem České republiky. Spory se řeší přednostně dohodou — napiš na kontaktní e-mail výš. Nedojde-li k dohodě, mimosoudně lze spor v případech, kde to zákon umožňuje, řešit u České obchodní inspekce (www.coi.cz).</item>
+        <item>E-mail: kontakt@kvalitacena.cz</item>
+    </string-array>
+
+    <string-array name="privacy_headings" translatable="false">
+        <item>1. Kdo je správce</item>
+        <item>2. Základní princip: appka tě nesleduje</item>
+        <item>3. Jaké údaje zpracováváme</item>
+        <item>4. Proč údaje zpracováváme (právní základ)</item>
+        <item>5. Jak dlouho údaje uchováváme</item>
+        <item>6. Komu údaje předáváme</item>
+        <item>7. Cookies</item>
+        <item>8. Zabezpečení</item>
+        <item>9. Tvá práva</item>
+        <item>10. Věk</item>
+        <item>11. Budoucí strojové zpracování fotek</item>
+        <item>12. Změny těchto zásad</item>
+        <item>13. Kontakt</item>
+    </string-array>
+    <string-array name="privacy_paragraphs" translatable="false">
+        <item>Správcem osobních údajů zpracovávaných appkou Kvalita a cena je Petr Franta, soukromá osoba (dále jen „my" nebo „provozovatel").\n\nKontakt ve věci ochrany osobních údajů: kontakt@kvalitacena.cz</item>
+        <item>Cílem appky je, aby co nejvíc lidí mělo přehled o cenách — ne sledovat, kdo kde nakupuje. Tenhle princip je promítnutý přímo do toho, jak appka ukládá data: appka nikdy neukládá tvoji GPS polohu, nepoužívá žádnou analytiku ani sledovací nástroje třetích stran, žádnou reklamu ani externí fonty, nemá funkci sledovat jiné uživatele ani vidět jejich historii nákupů, a nepoužívá cookies pro sledování — appka na webu nastavuje jedinou cookie, výhradně k udržení přihlášení.</item>
+        <item>Přihlašovací e-mail: e-mail, kterým se přihlašuješ, se v databázi neukládá v čitelné podobě — ukládá se jednak jako nevratný otisk (k rozpoznání stejného e-mailu při přihlášení), jednak zašifrovaný (aby ti appka mohla poslat přihlašovací kód nebo pozdější oznámení).\n\nVolitelný profil: pokud se rozhodneš appce sdělit jméno, příjmení, telefon, kontaktní e-mail nebo nahrát profilovou fotku, jsou to čistě dobrovolné údaje — appka po nich nikde nežádá a bez nich plně funguje. Textové údaje profilu jsou zašifrované stejně jako přihlašovací e-mail, výchozí viditelnost profilu je nastavená tak, že ho vidíš jen ty.\n\nCenové záznamy a hodnocení, které vložíš: cena, kterou zapíšeš, se propojí s tvým účtem, ale tahle vazba není trvalá — po 180 dnech appka automaticky vazbu na tvůj konkrétní účet zruší, záznam zůstane jen jako anonymizovaná statistika. Výjimky: hodnocení kvality zboží a tvoje vlastní úpravy existujícího zboží/obchodu zůstávají navázané na tvůj účet po celou dobu jeho trvání (jinak by šlo systém obejít nebo by ti tiše zmizely vlastní opravy) — appka navenek vždy ukazuje jen výslednou hodnotu, ne kdo ji vložil. Obě výjimky se smažou při smazání účtu.\n\nPoloha: appka nikdy neukládá tvoji GPS polohu. Když appce dovolíš najít obchody v okolí, polohu použije jen k dotazu „co je nablízku" a hned zapomene. Dotaz na OpenStreetMap kvůli adrese obchodu vždy posílá appka sama ze svého serveru, tvoje IP adresa se k OpenStreetMap nedostane — jedinou vědomou výjimkou je mapa samotná (viz níže).\n\nFotky zboží a provozoven: appka každou nahranou fotku před uložením kompletně překreslí z jednotlivých obrazových bodů do nového souboru, takže výsledek nikdy nenese skrytá data z originálu (včetně GPS). Fotky se dají kdykoli smazat (vlastní) nebo nahlásit (cizí) — u fotek stačí k dočasnému skrytí nahlášení jediného uživatele.\n\nMapa (vědomá výjimka): pokud si na detailu obchodu otevřeš mapu, appka mapové podklady stahuje přímo z tvého telefonu z OpenStreetMap, ne přes náš server — OpenStreetMap tak uvidí tvoji IP adresu. Appka tomu předchází tím, že se mapa nenačte, dokud si o ni výslovně neřekneš.\n\nTechnická data: appka krátkodobě loguje technická data (např. IP adresu u přihlašovacích pokusů) kvůli ochraně proti zneužití — neslouží k profilování ani analytice a neuchovává se dlouhodobě.</item>
+        <item>Plnění smlouvy (čl. 6 odst. 1 písm. b GDPR) — přihlašovací e-mail a vazba cenových záznamů na účet, bez kterých by appka nemohla fungovat.\n\nOprávněný zájem (čl. 6 odst. 1 písm. f GDPR) — ochrana appky před zneužitím.\n\nSouhlas (čl. 6 odst. 1 písm. a GDPR) — volitelný profil a jeho případné zveřejnění; souhlas můžeš kdykoli odvolat smazáním příslušného údaje v appce.</item>
+        <item>Vazba cenového záznamu na tvůj účet: 180 dní od data ceny, pak automaticky anonymizováno.\nSamotný cenový záznam (bez vazby na účet): trvale, jako anonymizovaná statistika ve veřejném zájmu.\nHodnocení kvality zboží, vlastní úpravy zboží/obchodu: po dobu trvání účtu, smazáno s účtem.\nVolitelný profil: po dobu trvání účtu, smazáno s účtem.\nPřihlašovací e-mail (hash a šifrovaná podoba): po dobu trvání účtu.\nTechnická data (IP u přihlašovacích pokusů): krátkodobě, jen pro ochranu proti zneužití.</item>
+        <item>Osobní údaje nikomu neprodáváme ani je nepoužíváme k reklamě. Appka pracuje s těmito externími službami, u kterých se — mimo výjimku mapových dlaždic výš — appka vždy staví mezi tebe a danou službu jako prostředník: OpenStreetMap (Nominatim) pro vyhledání/ověření adresy provozovny, Open Food Facts pro veřejné údaje o zboží, ARES pro volitelné ověření IČO provozovny, Česká národní banka pro kurzovní lístek, a poskytovatel e-mailových služeb, přes kterého appka posílá přihlašovací kódy.\n\nAppka neběží na cizí analytické platformě a nemá vestavěné žádné sledovací pixely.</item>
+        <item>Appka na webu používá jedinou cookie: httpOnly cookie s přihlašovacím tokenem, nutnou k udržení přihlášení. Neslouží k analytice ani reklamě, appka proto nezobrazuje cookie lištu. Mobilní appka žádné cookies nepoužívá; přihlašovací token ukládá zašifrovaný přímo v zabezpečeném úložišti telefonu.</item>
+        <item>Přihlašovací e-mail i volitelné údaje profilu appka šifruje algoritmem AES-256-GCM, šifrovací klíč se nenachází v databázi. Přihlašovací kódy appka neukládá v čitelné podobě, jen jejich kryptografický otisk. Fotky appka před uložením kompletně přegeneruje, aby nikdy nenesly skrytá metadata z originálu. Přístup ke zdrojovému kódu, databázi a serveru má výhradně provozovatel.\n\nŽádný systém není stoprocentně bezpečný, ale appka je navržená tak, aby v případě úniku dat uniklá data sama o sobě neobsahovala čitelné e-maily ani jiné osobní údaje bez šifrovacího klíče, který je uložený odděleně.</item>
+        <item>Podle GDPR máš právo na přístup (vědět, jaké údaje o tobě appka má), na opravu (přímo v appce, Nastavení → Účet), na výmaz (smazat účet a rozhodnout, co se stane s tvými cenovými záznamy), na přenositelnost (vyžádat si vlastní data ve strojově čitelné podobě), vznést námitku proti zpracování založenému na oprávněném zájmu a podat stížnost u Úřadu pro ochranu osobních údajů (www.uoou.cz).\n\nSamoobslužný export a smazání dat v appce se teprve připravuje. Do té doby si o kterékoli z těchto práv napiš na kontakt@kvalitacena.cz — vyřídíme to ručně, obvykle do několika dní.</item>
+        <item>Appka je určená lidem starším 15 let (viz Podmínky užití). Pokud zjistíme, že appku používá dítě mladší 15 let bez souhlasu zákonného zástupce, účet na žádost zákonného zástupce smažeme.</item>
+        <item>Appka do budoucna plánuje automatizovanou předběžnou kontrolu nahraných fotek kvůli moderaci. Tohle zpracování poběží na počítači provozovatele, ne přes cloudovou službu třetí strany — fotky by tak neopustily appku o nic víc, než dnes. Tenhle text aktualizujeme, až se to skutečně zapne.</item>
+        <item>Zásady se mohou měnit, zejména s tím, jak appka přibývá funkcemi. O podstatné změně budeme přihlášené uživatele informovat e-mailem nebo oznámením v appce s přiměřeným předstihem. Datum aktuálního znění je na začátku tohoto dokumentu.</item>
+        <item>E-mail: kontakt@kvalitacena.cz</item>
+    </string-array>
 
     <string name="map_show">Zobrazit mapu</string>
     <string name="map_hint">Klepni do mapy nebo přetáhni značku na přesné místo.</string>

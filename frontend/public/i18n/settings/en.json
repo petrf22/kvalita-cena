@@ -8,5 +8,8 @@
   "sourcesText": "Prices and quality ratings are our own community data. Links to Open Food Facts follow the ODbL (Open Database License) — data is never copied, the app just links to the source.",
   "sourcesNote": "Store coordinates come from OpenStreetMap © OpenStreetMap contributors, ODbL license.",
   "fxLabel": "Exchange rates: {{attribution}}",
+  "legalTitle": "Legal documents",
+  "termsLink": "Terms of use",
+  "privacyLink": "Privacy policy",
   "appVersionLabel": "App version {{version}}"
 }
