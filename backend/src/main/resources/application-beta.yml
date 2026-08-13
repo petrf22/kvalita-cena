@@ -1,0 +1,17 @@
+# Aktivovat SPOLU s prod (SPRING_PROFILES_ACTIVE=prod,beta), jen během uzavřené bety
+# (Fáze 2 plánu zveřejnění, docs/nasazeni.md) — dočasně obchází studený start
+# (docs/reputace.md): s hrstkou pozvaných lidí v různých městech by se nikdy nesešla
+# potřebná nezávislá potvrzení (app.catalog.draft-confirmations) a nikdo by nedosáhl
+# výchozího prahu důvěry (app.trust.*) dost rychle na to, aby appka nepůsobila prázdně
+# i těm, kdo do ní zapisují.
+#
+# 0/0/1 dává smysl jen pro OSOBNĚ pozvané lidi, ne pro veřejnost — před Fází 3 (veřejné
+# spuštění) stačí vypustit "beta" z aktivních profilů (SPRING_PROFILES_ACTIVE=prod v .env),
+# cílové hodnoty z application.yml se vrátí samy, nic se needitovalo natvrdo přímo
+# v produkčním profilu.
+app:
+  trust:
+    min-account-age-days: 0
+    min-observations: 0
+  catalog:
+    draft-confirmations: 1

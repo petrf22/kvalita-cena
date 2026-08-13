@@ -63,14 +63,20 @@ přesunout do `docs/vydani.md` jako historickou poznámku.
 - [ ] Restartovat appku (`docker compose -f compose.prod.yaml up -d`), ověřit doručení testovacím
   přihlášením na skutečnou schránku (ne do spamu).
 
-## 4. Než pozvat první lidi (uzavřená beta, Fáze 2 plánu)
+## 4. Než pozvat první lidi (uzavřená beta, Fáze 2 plánu) — kód hotový, zbývá jen zapnout
 
-- [ ] `robots.txt` se zákazem indexace, žádná veřejná propagace.
+`frontend/public/robots.txt` (zákaz indexace) a `backend/.../application-beta.yml` (prahy
+důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
+
+- [ ] V `.env` na serveru nastavit `SPRING_PROFILES_ACTIVE=prod,beta` (viz `.env.example`) a
+  restartovat (`docker compose -f compose.prod.yaml up -d`) — profil `beta` se dá kdykoli
+  vypnout zpět na `prod` bez editace kódu.
 - [ ] Ručně naplnit katalog (obchody + pár set běžných položek jednoho města) — appka nemá
   žádný import OFF/OSM katalogu, `dev/seed.sql` se na produkci **nesmí** pouštět.
-- [ ] Dočasně snížit prahy důvěry (`app.trust.*`, `app.catalog.draft-confirmations` v
-  `application-prod.yml` nebo přes env) — s hrstkou lidí by se jinak nikdy nesešla potřebná
-  3 potvrzení a appka by vypadala prázdná i těm, kdo do ní zapisují.
+- [ ] **Před Fází 3** (veřejné spuštění): vrátit `SPRING_PROFILES_ACTIVE` zpět na jen `prod`
+  a `frontend/public/robots.txt` buď smazat, nebo povolit indexaci (`Disallow:` prázdné) —
+  jinak appka po zveřejnění zůstane neviditelná pro vyhledávače a prahy důvěry 0/0/1 by
+  fungovaly i pro veřejnost, ne jen pozvané lidi.
 
 ---
 

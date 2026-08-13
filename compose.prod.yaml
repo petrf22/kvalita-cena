@@ -27,7 +27,9 @@ services:
     env_file:
       - .env
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      # "prod,beta" během uzavřené bety (docs/nasazeni.md, application-beta.yml) — nastavit
+      # v .env, ne tady, ať se přepínání neděje editací tohohle souboru.
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
       # Jméno služby, ne localhost — appka běží v kontejneru vedle Postgresu, ne na hostiteli.
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/kvalitaacena
       - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
