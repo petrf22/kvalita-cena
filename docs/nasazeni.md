@@ -71,8 +71,18 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
 - [ ] V `.env` na serveru nastavit `SPRING_PROFILES_ACTIVE=prod,beta` (viz `.env.example`) a
   restartovat (`docker compose -f compose.prod.yaml up -d`) — profil `beta` se dá kdykoli
   vypnout zpět na `prod` bez editace kódu.
-- [ ] Ručně naplnit katalog (obchody + pár set běžných položek jednoho města) — appka nemá
-  žádný import OFF/OSM katalogu, `dev/seed.sql` se na produkci **nesmí** pouštět.
+- **Katalog obchodů se záměrně nepředvyplňuje** — zvažovalo se ruční přepsání poboček
+  velkých řetězců (COOP, Penny) i hromadný import z OpenStreetMap, ale u objemu, o který by
+  reálně šlo (tisíce poboček napříč velkými řetězci), obojí naráží na stejné riziko z druhé
+  strany: scraping webů řetězců je právně nejistý kvůli sui generis právu k databázi
+  (směrnice 96/9/ES) a hromadný import z OSM/Overpass do `core.store` by byl „substantial
+  part" cizí ODbL databáze zkopírované do appčiných vlastních, uzavřených dat — přesně to,
+  čemu měl rozestup `core`/`osm` v `docs/datovy-model.md` zabránit, jen z opačné strany než
+  scraping. Katalog roste organicky s uživateli, jak appka byla navržená; studený start řeší
+  dočasně snížené prahy důvěry (`application-beta.yml`), ne předpřipravená data. Jediná cesta
+  ke skutečně velkému pokrytí by bylo naostro postavit `osm.*` schéma se sync jobem (čtení
+  spojené s `core.*` až za běhu, stejný princip jako appka má pro Open Food Facts) —
+  samostatná vícedenní architektonická práce, ne krok téhle bety.
 - [ ] **Před Fází 3** (veřejné spuštění): vrátit `SPRING_PROFILES_ACTIVE` zpět na jen `prod`
   a `frontend/public/robots.txt` buď smazat, nebo povolit indexaci (`Disallow:` prázdné) —
   jinak appka po zveřejnění zůstane neviditelná pro vyhledávače a prahy důvěry 0/0/1 by
