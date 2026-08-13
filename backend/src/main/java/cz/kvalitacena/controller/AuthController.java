@@ -52,8 +52,8 @@ public class AuthController {
   public ResponseEntity<TokenResponse> verifyOtp(@Valid @RequestBody OtpVerifyRequest request,
       HttpServletRequest servletRequest) {
     ClientKind clientKind = resolveClientKind(servletRequest);
-    OtpService.AuthResult result = otpService.verifyOtp(
-        request.challengeUid(), request.code(), request.email(), clientKind, resolveDevice(servletRequest));
+    OtpService.AuthResult result = otpService.verifyOtp(request.challengeUid(), request.code(),
+        request.email(), request.termsAccepted(), clientKind, resolveDevice(servletRequest));
 
     return respondWithTokens(result.accessToken(), result.refreshToken(), result.newUser(), clientKind);
   }

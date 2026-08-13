@@ -81,6 +81,7 @@
     "ACCOUNT_GONE": "Konto już nie istnieje",
     "ACCOUNT_DELETE_REQUIRES_LOGIN": "Usunięcie konta wymaga zalogowania",
     "ACCOUNT_DELETE_INVALID_CHALLENGE": "Kod jest nieprawidłowy lub wygasł",
+    "TERMS_ACCEPTANCE_REQUIRED": "Aby się zarejestrować, musisz zaakceptować warunki korzystania i politykę prywatności",
     "TOO_MANY_REQUESTS": "Zbyt wiele żądań, spróbuj ponownie później",
     "UOM_MISMATCH": "Jednostka {{p0}} nie pasuje do typu {{p1}}",
     "VALIDATION_FAILED": "Podane dane są nieprawidłowe",

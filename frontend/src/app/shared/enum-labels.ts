@@ -133,6 +133,7 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.AccountGone]: 'errors.ACCOUNT_GONE',
   [ErrorCode.AccountDeleteRequiresLogin]: 'errors.ACCOUNT_DELETE_REQUIRES_LOGIN',
   [ErrorCode.AccountDeleteInvalidChallenge]: 'errors.ACCOUNT_DELETE_INVALID_CHALLENGE',
+  [ErrorCode.TermsAcceptanceRequired]: 'errors.TERMS_ACCEPTANCE_REQUIRED',
   [ErrorCode.TooManyRequests]: 'errors.TOO_MANY_REQUESTS',
   [ErrorCode.UomMismatch]: 'errors.UOM_MISMATCH',
   [ErrorCode.ValidationFailed]: 'errors.VALIDATION_FAILED',

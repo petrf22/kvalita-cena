@@ -81,6 +81,7 @@
     "ACCOUNT_GONE": "This account no longer exists",
     "ACCOUNT_DELETE_REQUIRES_LOGIN": "Deleting your account requires signing in",
     "ACCOUNT_DELETE_INVALID_CHALLENGE": "The code is invalid or has expired",
+    "TERMS_ACCEPTANCE_REQUIRED": "To register, you need to agree to the terms of use and privacy policy",
     "TOO_MANY_REQUESTS": "Too many requests, please try again later",
     "UOM_MISMATCH": "Unit {{p0}} does not match type {{p1}}",
     "VALIDATION_FAILED": "The submitted data is invalid",

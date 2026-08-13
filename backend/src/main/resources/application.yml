@@ -118,6 +118,10 @@ app:
   privacy:
     # docs/soukromi.md, "Retence vazby observace → uživatel: 180 dní" (PseudonymizationService).
     pseudonymization-days: 180
+  legal:
+    # docs/podminky-uziti.md, docs/zasady-ochrany-osobnich-udaju.md — bump při každé věcné
+    # změně (ne při překlepu). OtpService.verifyOtp ji zapisuje k nové registraci.
+    terms-version: "1"
   catalog:
     # Zakládání katalogu (docs/reputace.md, "Limity patří do konfigurace") — velkoryse jako
     # ostatní limity v MVP, studený start je větší riziko než zneužití.

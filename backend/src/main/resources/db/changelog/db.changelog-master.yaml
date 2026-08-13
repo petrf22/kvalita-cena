@@ -21,3 +21,4 @@ databaseChangeLog:
   - include: { file: 2026-08-09/04-user-handle-parts.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-11/01-fx-rates.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-12/01-user-profile.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-13/01-terms-acceptance.yaml, relativeToChangelogFile: true }

@@ -1,11 +1,14 @@
 package cz.kvalitacena.security;
 
+import cz.kvalitacena.config.LegalProperties;
 import cz.kvalitacena.config.OtpProperties;
 import cz.kvalitacena.db.entity.*;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.LoginChallengeRepository;
+import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.InvalidChallengeException;
 import cz.kvalitacena.exception.TooManyRequestsException;
+import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.service.OtpMailSender;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +45,7 @@ public class OtpService {
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
   private final OtpMailSender mailSender;
+  private final LegalProperties legalProperties;
   private final SecureRandom secureRandom = new SecureRandom();
 
   public record OtpRequestResult(UUID challengeUid, long expiresInSec, long resendAfterSec) {
@@ -97,14 +101,17 @@ public class OtpService {
   }
 
   /**
-   * @param email Posílá se znovu i při ověření (ne jen při requestu) — challenge si ukládá jen
-   *              email_hash, ne samotný e-mail, takže při JIT registraci nového účtu potřebujeme
-   *              e-mail zvenčí, abychom mohli spočítat email_enc. Zároveň to přidává druhou
-   *              vazbu navíc k challengeUid (viz docs/soukromi.md).
+   * @param email         Posílá se znovu i při ověření (ne jen při requestu) — challenge si
+   *                      ukládá jen email_hash, ne samotný e-mail, takže při JIT registraci
+   *                      nového účtu potřebujeme e-mail zvenčí, abychom mohli spočítat
+   *                      email_enc. Zároveň to přidává druhou vazbu navíc k challengeUid
+   *                      (viz docs/soukromi.md).
+   * @param termsAccepted Vyžaduje se jen při JIT registraci (viz níže) — existující účet se
+   *                      jen přihlašuje, souhlas se nevyžaduje znovu.
    */
   @Transactional
-  public AuthResult verifyOtp(UUID challengeUid, String code, String email, ClientKind clientKind,
-      String deviceLabel) {
+  public AuthResult verifyOtp(UUID challengeUid, String code, String email, Boolean termsAccepted,
+      ClientKind clientKind, String deviceLabel) {
     LoginChallenge challenge = challengeRepository.findByChallengeUidAndConsumedAtIsNull(challengeUid)
         .orElseThrow(InvalidChallengeException::new);
 
@@ -135,6 +142,12 @@ public class OtpService {
     boolean isNewUser = false;
     AppUser user = appUserRepository.findByEmailHash(emailHash).orElse(null);
     if (user == null) {
+      // Souhlas se zaznamenává PŘI REGISTRACI, ne jen odkazem v UI patičce (docs/soukromi.md) —
+      // appka ho vyžaduje tady, ne jen checkboxem na klientovi, ať nejde JIT registraci obejít
+      // přímým voláním API.
+      if (!Boolean.TRUE.equals(termsAccepted)) {
+        throw new ValidationException(ErrorCode.TERMS_ACCEPTANCE_REQUIRED);
+      }
       isNewUser = true;
       HandleGenerator.GeneratedHandle handle = handleGenerator.generateUnique();
       user = AppUser.builder()
@@ -147,6 +160,8 @@ public class OtpService {
           .handleNumber((short) handle.number())
           .status(AppUserStatus.ACTIVE)
           .tokenVersion(0)
+          .termsAcceptedAt(OffsetDateTime.now())
+          .termsVersion(legalProperties.getTermsVersion())
           .build();
     }
     user.setLastLoginAt(OffsetDateTime.now());

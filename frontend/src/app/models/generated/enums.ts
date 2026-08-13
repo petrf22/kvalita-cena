@@ -91,6 +91,7 @@ export const ErrorCode = {
   StoreNameEmpty: 'STORE_NAME_EMPTY',
   StoreNameRequired: 'STORE_NAME_REQUIRED',
   StoreNotFound: 'STORE_NOT_FOUND',
+  TermsAcceptanceRequired: 'TERMS_ACCEPTANCE_REQUIRED',
   TooManyRequests: 'TOO_MANY_REQUESTS',
   UomMismatch: 'UOM_MISMATCH',
   ValidationFailed: 'VALIDATION_FAILED'

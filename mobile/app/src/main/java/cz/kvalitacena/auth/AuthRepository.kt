@@ -50,9 +50,9 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
     }
   }
 
-  suspend fun verifyOtp(challengeUid: String, code: String, email: String): TokenResponse =
+  suspend fun verifyOtp(challengeUid: String, code: String, email: String, termsAccepted: Boolean): TokenResponse =
     withContext(Dispatchers.IO) {
-      val body = json.encodeToString(OtpVerifyBody(challengeUid, code, email)).toRequestBody(jsonMediaType)
+      val body = json.encodeToString(OtpVerifyBody(challengeUid, code, email, termsAccepted)).toRequestBody(jsonMediaType)
       val request = Request.Builder()
         .url("${ApiConfig.BASE_URL}/api/auth/otp/verify")
         .header("X-Client-Kind", "ANDROID")

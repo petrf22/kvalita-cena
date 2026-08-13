@@ -73,6 +73,7 @@ public enum ErrorCode {
   // --- auth
   INVALID_CHALLENGE("error.auth.invalidChallenge"),
   SESSION_EXPIRED("error.auth.sessionExpired"),
+  TERMS_ACCEPTANCE_REQUIRED("error.auth.termsAcceptanceRequired"),
 
   // --- preference jazyka/země (docs/lokalizace.md)
   LOCALE_REQUIRES_LOGIN("error.locale.requiresLogin"),

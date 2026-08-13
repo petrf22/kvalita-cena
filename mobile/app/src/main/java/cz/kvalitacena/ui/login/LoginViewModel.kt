@@ -56,7 +56,7 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
     errorMessage = null
     viewModelScope.launch {
       try {
-        authRepository.verifyOtp(uid, code.trim(), email.trim())
+        authRepository.verifyOtp(uid, code.trim(), email.trim(), consentAccepted)
         onSuccess()
       } catch (e: Exception) {
         errorMessage = UiText.Res(R.string.login_verify_failed)

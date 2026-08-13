@@ -100,7 +100,7 @@ export class LoginPage {
 
     this.loading.set(true);
     this.errorMessage.set(null);
-    this.auth.verifyOtp(challengeUid, this.code().trim(), this.email().trim()).subscribe({
+    this.auth.verifyOtp(challengeUid, this.code().trim(), this.email().trim(), this.consentGiven()).subscribe({
       next: () => {
         this.loading.set(false);
         // Žádná navigace pryč — stránka se sama překreslí na účet (auth.isLoggedIn() se

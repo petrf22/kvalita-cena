@@ -1,0 +1,24 @@
+# 01-terms-acceptance.yaml — kdy a kterou verzi Podmínek užití/Zásad ochrany osobních údajů
+# (docs/podminky-uziti.md, docs/zasady-ochrany-osobnich-udaju.md) uživatel odsouhlasil při
+# registraci. Bez tohohle je souhlas jen UI checkbox, který appka nikam neukládá a request na
+# ověření kódu ho ani nevyžaduje — appka by tak nedokázala doložit, že k němu vůbec došlo.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-13-01-app-user-add-terms-acceptance
+      author: Petr F.
+      comment: >
+        NULLABLE — existující účty (z doby před zavedením souhlasu) i budoucí přihlášení bez
+        JIT registrace zůstávají NULL, appka to nedopočítává zpětně. Verze je prostý řetězec
+        (app.legal.terms-version), ne cizí klíč na dokument — appka žádnou tabulku s historií
+        verzí zatím nemá, jen aktuální hodnotu z konfigurace v okamžiku registrace.
+      changes:
+        - addColumn:
+            schemaName: auth
+            tableName: app_user
+            columns:
+              - column:
+                  name: terms_accepted_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: terms_version
+                  type: VARCHAR(20)

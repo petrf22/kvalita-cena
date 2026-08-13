@@ -81,6 +81,7 @@
     "ACCOUNT_GONE": "Účet už neexistuje",
     "ACCOUNT_DELETE_REQUIRES_LOGIN": "Výmaz účtu vyžaduje přihlášení",
     "ACCOUNT_DELETE_INVALID_CHALLENGE": "Kód je neplatný nebo vypršel",
+    "TERMS_ACCEPTANCE_REQUIRED": "Pro registraci je potřeba souhlasit s podmínkami užití a zásadami ochrany osobních údajů",
     "TOO_MANY_REQUESTS": "Příliš mnoho požadavků, zkus to prosím později",
     "UOM_MISMATCH": "Jednotka {{p0}} neodpovídá typu {{p1}}",
     "VALIDATION_FAILED": "Zadané údaje nejsou platné",

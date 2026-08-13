@@ -88,6 +88,14 @@ public class AppUser implements Persistable<Long> {
   @Builder.Default
   private int observationCount = 0;
 
+  // NULL = registrace proběhla před zavedením souhlasu, nebo appka konkrétní účet nedopočítala
+  // zpětně (docs/soukromi.md). Vyplňuje OtpService.verifyOtp při JIT registraci, ne dřív.
+  @Column(name = "terms_accepted_at", columnDefinition = "TIMESTAMPTZ")
+  private OffsetDateTime termsAcceptedAt;
+
+  @Column(name = "terms_version", length = 20)
+  private String termsVersion;
+
   @PrePersist
   protected void onCreate() {
     if (publicUid == null) publicUid = UUID.randomUUID();

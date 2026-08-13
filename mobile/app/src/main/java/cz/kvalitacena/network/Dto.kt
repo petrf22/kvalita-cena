@@ -10,8 +10,12 @@ data class OtpRequestBody(val email: String)
 @Serializable
 data class OtpRequestResponse(val challengeUid: String, val expiresInSec: Long, val resendAfterSec: Long)
 
+/**
+ * [termsAccepted] se vyžaduje jen při JIT registraci nového účtu (docs/soukromi.md, "GDPR") —
+ * backend ho ignoruje, pokud e-mail už patří existujícímu účtu (přihlášení, ne registrace).
+ */
 @Serializable
-data class OtpVerifyBody(val challengeUid: String, val code: String, val email: String)
+data class OtpVerifyBody(val challengeUid: String, val code: String, val email: String, val termsAccepted: Boolean)
 
 @Serializable
 data class RefreshBody(val refreshToken: String? = null)
