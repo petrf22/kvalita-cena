@@ -25,21 +25,24 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
   Optional<OffsetDateTime> findEarliestObservedAt();
 
   /**
-   * Kolik různých přispěvatelů zboží zatím zapsalo — rozhoduje o promoci DRAFT → ACTIVE u
-   * bezkódové položky (docs/reputace.md, "Zboží bez čárového kódu"). Anonymní observace se
-   * nedají mezi sebou rozlišit (submitter_id je NULL, docs/soukromi.md), proto se každá počítá
-   * jako samostatný přispěvatel (COALESCE na vlastní id) — pesimistický odhad "aspoň tolik
-   * různých lidí", ne přesný počet.
+   * Leave-one-out obdoba {@link #countDistinctContributorsExcluding} pro zboží — rozhoduje o
+   * promoci DRAFT → ACTIVE (docs/reputace.md, "Zboží bez čárového kódu", "Práh důvěry pro
+   * zveřejnění nového záznamu"). Bez vyloučení autora by si zakladatel odemkl vlastní DRAFT
+   * sám vlastními zápisy cen. Anonymní observace se nedají mezi sebou rozlišit (submitter_id
+   * je NULL, docs/soukromi.md), proto se každá počítá jako samostatný přispěvatel (COALESCE na
+   * vlastní id) — pesimistický odhad "aspoň tolik různých lidí", ne přesný počet.
    */
   @Query(value = "SELECT count(DISTINCT COALESCE(submitter_id::text, id::text)) "
-      + "FROM core.price_observation WHERE product_id = :productId", nativeQuery = true)
-  long countDistinctContributors(@Param("productId") Long productId);
+      + "FROM core.price_observation WHERE product_id = :productId "
+      + "AND submitter_id IS DISTINCT FROM :excludingUserId", nativeQuery = true)
+  long countDistinctProductContributorsExcluding(@Param("productId") Long productId,
+      @Param("excludingUserId") Long excludingUserId);
 
   /**
-   * Obdoba {@link #countDistinctContributors}, ale pro provozovny a bez vlastních záznamů
-   * autora (leave-one-out, docs/reputace.md) — jinak by si zakladatel odemkl PENDING obchod
-   * sám třemi vlastními zápisy. Anonymní observace (submitter_id NULL) se počítají dál, jen
-   * autorovy vlastní ne — {@code IS DISTINCT FROM} je s NULL bezpečné oproti {@code !=}.
+   * Obdoba {@link #countDistinctProductContributorsExcluding}, ale pro provozovny (leave-one-
+   * out, docs/reputace.md) — jinak by si zakladatel odemkl PENDING obchod sám třemi vlastními
+   * zápisy. Anonymní observace (submitter_id NULL) se počítají dál, jen autorovy vlastní ne —
+   * {@code IS DISTINCT FROM} je s NULL bezpečné oproti {@code !=}.
    */
   @Query(value = "SELECT count(DISTINCT COALESCE(submitter_id::text, id::text)) "
       + "FROM core.price_observation WHERE store_id = :storeId "

@@ -135,15 +135,19 @@ public class ProductGraphQlController {
   }
 
   /**
-   * Viditelnost pod prahem důvěry (docs/reputace.md) — globální ACTIVE vidí každý, vlastní
-   * DRAFT jen autor. Skryté (nahlášené, hidden_at) vidí jen autor, ostatním se tváří jako
-   * neexistující — nikdy FORBIDDEN, aby existenci skrytého záznamu nešlo odvodit (CLAUDE.md,
-   * pravidlo o neviditelných recenzích platí i tady).
+   * Viditelnost pod prahem důvěry (docs/reputace.md) — ACTIVE i DRAFT vidí každý (stejné
+   * pravidlo jako {@code productSuggestions} níže), MERGED/REJECTED nikdo. DRAFT musí být
+   * dohledatelné i pro jiné přispěvatele, ne jen pro autora — {@code app.catalog.draft-
+   * confirmations} vyžaduje potvrzení RŮZNÝMI lidmi (leave-one-out), a k tomu musí ten
+   * produkt nejdřív najít/otevřít (skenem kódu, nebo výběrem z {@code productSuggestions} při
+   * zakládání podobného zboží) — kdyby `product`/`productByCode` DRAFT cizím lidem schovávaly,
+   * potvrzovací mechanismus by nikdy neměl jak nastartovat. Skryté (nahlášené, hidden_at) vidí
+   * jen autor, ostatním se tváří jako neexistující — nikdy FORBIDDEN, aby existenci skrytého
+   * záznamu nešlo odvodit (CLAUDE.md, pravidlo o neviditelných recenzích platí i tady).
    */
   private boolean isVisible(Product product, ViewerContext viewer) {
-    boolean ownerOrActive = product.getStatus() == ProductStatus.ACTIVE
-        || (product.getStatus() == ProductStatus.DRAFT && sameUser(product.getCreatedByUserId(), viewer));
-    if (!ownerOrActive) return false;
+    boolean visibleStatus = product.getStatus() == ProductStatus.ACTIVE || product.getStatus() == ProductStatus.DRAFT;
+    if (!visibleStatus) return false;
     return product.getHiddenAt() == null || sameUser(product.getCreatedByUserId(), viewer);
   }
 

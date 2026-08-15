@@ -193,12 +193,17 @@ zavedenému uživateli po pauze tiše sebralo důvěru, kterou si dřív vybudov
 Efekt prahu:
 - **Nad prahem** — nový záznam je hned vidět všem, se štítkem "neověřeno" (`verified_at`
   je `NULL`, dokud neproběhne konsolidační job, viz `datovy-model.md`).
-- **Pod prahem** — vidí ho jen autor (`ProductGraphQlController`/`StoreGraphQlController`,
-  predikát `status = ACTIVE OR createdByUserId = viewerId`), dokud ho nepotvrdí
-  `app.catalog.draft-confirmations` (výchozí 3) DALŠÍCH přispěvatelů — leave-one-out stejně
-  jako souhlas cen výš: obchod počítá jen potvrzení od JINÝCH uživatelů než autora
-  (`countDistinctContributorsExcluding`), jinak by si zakladatel odemkl vlastní záznam sám
-  třemi vlastními zápisy.
+- **Pod prahem** — v OTEVŘENÉM hledání (`searchProducts`, `ProductSearchRepositoryImpl`) ho
+  vidí jen autor, ať nepotvrzený šum nezahlcuje běžné hledání ostatních. CÍLENĚ ho ale najít
+  musí jít i JINÝM přispěvatelům — jinak by `app.catalog.draft-confirmations` (výchozí 3)
+  DALŠÍCH lidí nemělo jak nastartovat: ať kód naskenuje jiný člověk (`productByCode`), nebo
+  narazí na stejné jméno při zakládání podobného zboží a vybere si nabídnutou existující
+  položku místo duplicity (`productSuggestions` → `product(id)`, `ProductFormViewModel
+  .useExisting`/`product-form.ts`), DRAFT je proto v `product`/`productByCode`
+  (`ProductGraphQlController.isVisible`, predikát `status IN (ACTIVE, DRAFT)`) vidět
+  KAŽDÉMU — leave-one-out se řeší jinde: `promoteIfConfirmed` počítá jen potvrzení od JINÝCH
+  uživatelů než autora (`countDistinctContributorsExcluding`), jinak by si zakladatel odemkl
+  vlastní záznam sám třemi vlastními zápisy.
 
 ## Nahlášení záznamu (etapa 1) — hlasuje se o faktu, ne o člověku
 

@@ -219,8 +219,11 @@ class ProductCatalogServiceTest {
   @Test
   void draftIsPromotedToActiveOnceConfirmationThresholdReached() {
     when(productRepository.findById(PRODUCT_ID))
-        .thenReturn(Optional.of(Product.builder().id(PRODUCT_ID).status(ProductStatus.DRAFT).build()));
-    when(priceObservationRepository.countDistinctContributors(PRODUCT_ID)).thenReturn(3L);
+        .thenReturn(Optional.of(
+            Product.builder().id(PRODUCT_ID).status(ProductStatus.DRAFT).createdByUserId(USER_ID).build()));
+    // Leave-one-out (docs/reputace.md) — jen jiní přispěvatelé než autor se počítají.
+    when(priceObservationRepository.countDistinctProductContributorsExcluding(PRODUCT_ID, USER_ID))
+        .thenReturn(3L);
 
     service().promoteIfConfirmed(PRODUCT_ID);
 
@@ -232,8 +235,10 @@ class ProductCatalogServiceTest {
   @Test
   void draftStaysDraftBelowConfirmationThreshold() {
     when(productRepository.findById(PRODUCT_ID))
-        .thenReturn(Optional.of(Product.builder().id(PRODUCT_ID).status(ProductStatus.DRAFT).build()));
-    when(priceObservationRepository.countDistinctContributors(PRODUCT_ID)).thenReturn(2L);
+        .thenReturn(Optional.of(
+            Product.builder().id(PRODUCT_ID).status(ProductStatus.DRAFT).createdByUserId(USER_ID).build()));
+    when(priceObservationRepository.countDistinctProductContributorsExcluding(PRODUCT_ID, USER_ID))
+        .thenReturn(2L);
 
     service().promoteIfConfirmed(PRODUCT_ID);
 
@@ -248,6 +253,7 @@ class ProductCatalogServiceTest {
     service().promoteIfConfirmed(PRODUCT_ID);
 
     verify(productRepository, org.mockito.Mockito.never()).save(any());
-    verify(priceObservationRepository, org.mockito.Mockito.never()).countDistinctContributors(any());
+    verify(priceObservationRepository, org.mockito.Mockito.never())
+        .countDistinctProductContributorsExcluding(any(), any());
   }
 }

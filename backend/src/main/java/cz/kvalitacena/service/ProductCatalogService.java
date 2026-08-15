@@ -131,13 +131,17 @@ public class ProductCatalogService {
    * Volá {@link PriceObservationService#submit} po každém zápisu ceny k DRAFT produktu —
    * jakmile ho potvrdí dost RŮZNÝCH přispěvatelů (app.catalog.draft-confirmations), překlopí
    * se na ACTIVE. Žádný plánovač navíc, kontrola je jen dotaz + případný jeden UPDATE.
+   * Leave-one-out (docs/reputace.md) — počítají se jen potvrzení od JINÝCH uživatelů než
+   * autora, stejně jako u PENDING obchodu (StoreService.promoteIfConfirmed), jinak by si
+   * zakladatel odemkl vlastní DRAFT sám vlastními zápisy cen.
    */
   @Transactional
   public void promoteIfConfirmed(Long productId) {
     Product product = productRepository.findById(productId).orElse(null);
     if (product == null || product.getStatus() != ProductStatus.DRAFT) return;
 
-    long contributors = priceObservationRepository.countDistinctContributors(productId);
+    long contributors = priceObservationRepository.countDistinctProductContributorsExcluding(
+        productId, product.getCreatedByUserId());
     if (contributors >= catalogProperties.getDraftConfirmations()) {
       product.setStatus(ProductStatus.ACTIVE);
       productRepository.save(product);
