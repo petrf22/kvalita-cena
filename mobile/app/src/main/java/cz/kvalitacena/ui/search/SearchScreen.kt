@@ -58,7 +58,9 @@ import cz.kvalitacena.ui.common.rememberMoneyFormatter
 @Composable
 fun SearchScreen(onProductClick: (String) -> Unit) {
   val viewModel: SearchViewModel = viewModel(
-    factory = viewModelFactory { initializer { SearchViewModel(AppContainer.graphQlClient) } },
+    factory = viewModelFactory {
+      initializer { SearchViewModel(AppContainer.graphQlClient, AppContainer.authRepository) }
+    },
   )
 
   Column(modifier = Modifier.fillMaxSize()) {

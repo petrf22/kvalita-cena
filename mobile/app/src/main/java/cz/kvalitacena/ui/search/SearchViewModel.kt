@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.kvalitacena.R
+import cz.kvalitacena.auth.AuthRepository
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.ProductSearchItem
 import cz.kvalitacena.network.SearchFacets
@@ -28,7 +29,10 @@ enum class SortOption(val value: String, @StringRes val labelRes: Int) {
 
 private const val PAGE_SIZE = 20
 
-class SearchViewModel(private val graphQlClient: GraphQlClient) : ViewModel() {
+class SearchViewModel(
+  private val graphQlClient: GraphQlClient,
+  private val authRepository: AuthRepository,
+) : ViewModel() {
 
   var query by mutableStateOf("")
   var selectedStoreId by mutableStateOf<String?>(null)
@@ -74,6 +78,10 @@ class SearchViewModel(private val graphQlClient: GraphQlClient) : ViewModel() {
     errorMessage = null
     viewModelScope.launch {
       try {
+        // Vlastní nepotvrzené (DRAFT) zboží uvidí ve výsledcích jen přihlášený autor — appka
+        // odpaluje obnovení přihlášení při startu bez čekání (MainActivity.kt), takže dotaz
+        // hned po startu appky by se bez tohohle čekání mohl zeptat ještě jako anonym.
+        authRepository.awaitInitialRefresh()
         val result = graphQlClient.searchProducts(
           query = query.trim(),
           storeId = selectedStoreId,

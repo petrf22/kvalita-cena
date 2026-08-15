@@ -32,6 +32,9 @@
       @if (product()!.editedByMe) {
         <nz-tag nzColor="blue">{{ t('product-detail.yourEdit') }}</nz-tag>
       }
+      @if (product()!.status === 'DRAFT') {
+        <nz-tag nzColor="orange">{{ t('product-detail.draftPending') }}</nz-tag>
+      }
       @if (auth.isLoggedIn()) {
         <button
           nz-button

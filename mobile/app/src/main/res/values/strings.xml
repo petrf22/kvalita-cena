@@ -243,6 +243,7 @@
 
     <string name="product_not_found">Tohle zboží se nepodařilo najít.</string>
     <string name="product_edited_by_me">Vaše úprava</string>
+    <string name="product_draft_pending">Čeká na potvrzení — zatím vidíte jen vy</string>
     <string name="product_quality_requires_login">Hodnocení kvality vyžaduje přihlášení — přejdi do záložky Účet.</string>
     <string name="product_price_trend">Vývoj ceny</string>
     <string name="product_cheapest_title">Nejlevněji</string>

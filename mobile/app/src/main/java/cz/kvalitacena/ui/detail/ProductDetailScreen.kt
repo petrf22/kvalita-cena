@@ -103,6 +103,9 @@ fun ProductDetailScreen(
           if (product.editedByMe) {
             AssistChip(onClick = {}, label = { Text(stringResource(R.string.product_edited_by_me)) })
           }
+          if (product.status == "DRAFT") {
+            AssistChip(onClick = {}, label = { Text(stringResource(R.string.product_draft_pending)) })
+          }
           if (isLoggedIn) {
             TextButton(onClick = { viewModel.flagProduct() }, enabled = !viewModel.flagging) {
               Text(stringResource(R.string.common_report))

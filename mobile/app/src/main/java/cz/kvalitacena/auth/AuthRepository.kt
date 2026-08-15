@@ -10,6 +10,7 @@ import cz.kvalitacena.network.OtpVerifyBody
 import cz.kvalitacena.network.RefreshBody
 import cz.kvalitacena.network.TokenResponse
 import cz.kvalitacena.network.TransportException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +36,14 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
 
   private val _accessToken = MutableStateFlow<String?>(null)
   val accessToken: StateFlow<String?> = _accessToken
+
+  // MainActivity odpaluje refresh() při startu bez čekání (T0 anonymní chod appky tím není
+  // podmíněný), takže obrazovka, která vyžaduje přihlášení (např. profil), se může vykreslit
+  // dřív, než refresh doběhne, a omylem se zeptá jako anonym. awaitInitialRefresh() jí dá
+  // možnost počkat na výsledek prvního pokusu, ať se nezeptá předčasně.
+  private val initialRefreshDone = CompletableDeferred<Unit>()
+
+  suspend fun awaitInitialRefresh() = initialRefreshDone.await()
 
   suspend fun requestOtp(email: String): OtpRequestResponse = withContext(Dispatchers.IO) {
     val body = json.encodeToString(OtpRequestBody(email)).toRequestBody(jsonMediaType)
@@ -69,15 +78,15 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
 
   /** Zkusí obnovit přihlášení z uloženého refresh tokenu (volá se při startu appky). */
   suspend fun refresh(): Boolean = withContext(Dispatchers.IO) {
-    val refreshToken = tokenStore.getRefreshToken() ?: return@withContext false
-    val body = json.encodeToString(RefreshBody(refreshToken)).toRequestBody(jsonMediaType)
-    val request = Request.Builder()
-      .url("${ApiConfig.BASE_URL}/api/auth/refresh")
-      .header("X-Client-Kind", "ANDROID")
-      .post(body)
-      .build()
-
     try {
+      val refreshToken = tokenStore.getRefreshToken() ?: return@withContext false
+      val body = json.encodeToString(RefreshBody(refreshToken)).toRequestBody(jsonMediaType)
+      val request = Request.Builder()
+        .url("${ApiConfig.BASE_URL}/api/auth/refresh")
+        .header("X-Client-Kind", "ANDROID")
+        .post(body)
+        .build()
+
       client.newCall(request).execute().use { response ->
         if (!response.isSuccessful) return@use false
         applyToken(json.decodeFromString<TokenResponse>(response.body!!.string()))
@@ -85,6 +94,8 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
       }
     } catch (e: Exception) {
       false
+    } finally {
+      initialRefreshDone.complete(Unit)
     }
   }
 

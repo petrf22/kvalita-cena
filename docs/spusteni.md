@@ -50,6 +50,27 @@ ani řetězce; to je záměr, seed dat nepatří do migrací).
 
 Ověření, že appka žije: `curl http://localhost:8080/actuator/health` → `{"status":"UP"}`.
 
+### Testování s čerstvým účtem — práh důvěry (`app.trust.*`)
+
+Bez aktivního profilu `beta` platí ostré produkční prahy z `application.yml`
+(`min-account-age-days: 7`, `min-observations: 5`, `draft-confirmations: 3`) — nový testovací
+účet je pod nimi vždycky. Zboží i obchod, které takový účet založí, tak vzniknou se
+`status: DRAFT` a jsou vidět **jen jemu** (`docs/reputace.md`), i když mají platný naskenovaný
+EAN — v hledání i po opětovném naskenování kódu z jiného účtu/zařízení to pak vypadá, jako by se
+záznam vůbec neuložil (ve skutečnosti v DB je, jen skrytý ostatním, a UI od teď ukazuje badge
+„Čeká na potvrzení").
+
+Pro lokální ruční testování je připravený profil `beta` (`application-beta.yml`, prahy `0/0/1` —
+určeno pro uzavřenou betu s pozvanými lidmi, ne pro produkci) — aktivuje se přes proměnnou
+prostředí:
+
+```bash
+SPRING_PROFILES_ACTIVE=beta ./gradlew bootRun
+```
+
+Z IntelliJ IDEA (viz run konfigurace níže) přidej `SPRING_PROFILES_ACTIVE=beta` do stejného
+seznamu proměnných prostředí vedle `SPRING_DOCKER_COMPOSE_ENABLED`.
+
 ### Spuštění z IntelliJ IDEA
 
 Pokud je IDEA nainstalovaná jako Flatpak, běží appka i Gradle daemon v sandboxu, který nevidí
@@ -251,3 +272,4 @@ cd mobile && ./gradlew :app:testDebugUnitTest    # JUnit, jen čistá logika (ge
 | Backend hlásí chybu schématu po ruční změně DB | `ddl-auto: validate` — schéma smí měnit jen Liquibase | vrať se k migracím, neuprav tabulku ručně |
 | `Cannot run program "docker"` při spuštění z IDE | IDE (např. IntelliJ IDEA) běží jako Flatpak, sandbox nevidí hostovský docker | spusť `docker compose up -d` ručně a appku pouštěj přes run konfiguraci s `SPRING_DOCKER_COMPOSE_ENABLED=false` — viz sekce **2. Backend** |
 | `geocodeAddress` vždy vrátí prázdné `candidates` | Nominatim často blokuje datacentrové/sdílené IP (`403 Access denied`, viz jeho usage policy) | obchod jde uložit i bez souřadnic — doplní se později; pro reálné testování geokódování je potřeba běžná domácí IP |
+| Nově založené zboží/obchod „zmizí" — nejde najít ani přes hledání, ani opětovným skenem kódu | čerstvý účet je pod prahem důvěry (`app.trust.*`), záznam vznikl jako `status: DRAFT`, vidí ho jen autor | aktivuj lokálně profil `beta` (`SPRING_PROFILES_ACTIVE=beta`, viz sekce **2. Backend**), nebo počkej/navyš stáří účtu a `observation_count` |

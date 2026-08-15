@@ -4,6 +4,7 @@
   "notFound": "The product could not be found.",
   "unverified": "Unverified",
   "yourEdit": "Your edit",
+  "draftPending": "Awaiting confirmation — only you can see this for now",
   "report": "Report",
   "qualityLoginHint": "Rating quality requires signing in — go to the Account page.",
   "priceChartTitle": "Price history",
