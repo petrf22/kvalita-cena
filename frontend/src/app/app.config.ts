@@ -61,6 +61,10 @@ export const appConfig: ApplicationConfig = {
         reRenderOnLangChange: true, // bez tohohle runtime přepínání jazyka nefunguje
         missingHandler: { useFallbackTranslation: true, allowEmpty: false },
         prodMode: !isDevMode(),
+        // Bez tohoto se alias scope camelCasuje (`price-entry` → `priceEntry`), takže by se
+        // bundl slil do jazyka pod jiným jménem, než jakým si o klíč říkají šablony/TS
+        // (`t('price-entry.title')`, `public/i18n/price-entry/`) — docs/lokalizace.md.
+        scopes: { keepCasing: true },
       },
       loader: TranslocoHttpLoader,
     }),

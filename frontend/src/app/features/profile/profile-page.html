@@ -2,16 +2,16 @@
   <div class="profile-page">
     <a routerLink="/login" class="back-link">
       <span nz-icon nzType="left"></span>
-      {{ t('backToAccount') }}
+      {{ t('profile.backToAccount') }}
     </a>
-    <h1>{{ t('title') }}</h1>
+    <h1>{{ t('profile.title') }}</h1>
 
     @if (loading()) {
       <p>…</p>
     } @else if (loadError()) {
       <nz-alert nzType="error" [nzMessage]="loadError()" nzShowIcon />
     } @else {
-      <nz-card [nzTitle]="t('avatar.title')" class="section-card">
+      <nz-card [nzTitle]="t('profile.avatar.title')" class="section-card">
         <div class="avatar-row">
           <nz-avatar [nzSize]="80" [nzSrc]="avatar()?.url" nzIcon="user" />
           <div class="avatar-actions">
@@ -22,29 +22,29 @@
               [nzLoading]="avatarUploading()"
             >
               <span nz-icon nzType="upload"></span>
-              {{ t('avatar.upload') }}
+              {{ t('profile.avatar.upload') }}
             </button>
             @if (avatar()) {
               <button nz-button nzDanger type="button" (click)="removeAvatar()">
                 <span nz-icon nzType="delete"></span>
-                {{ t('avatar.remove') }}
+                {{ t('profile.avatar.remove') }}
               </button>
             }
           </div>
         </div>
         <input #avatarInput type="file" accept="image/jpeg,image/png" hidden (change)="onAvatarSelected($event)" />
-        <p class="hint">{{ t('avatar.hint') }}</p>
+        <p class="hint">{{ t('profile.avatar.hint') }}</p>
         @if (avatarError()) {
           <nz-alert nzType="error" [nzMessage]="avatarError()" nzShowIcon class="section-alert" />
         }
       </nz-card>
 
-      <nz-card [nzTitle]="t('fields.sectionTitle')" class="section-card">
+      <nz-card [nzTitle]="t('profile.fields.sectionTitle')" class="section-card">
         <form nz-form nzLayout="vertical">
           <nz-form-item>
             <nz-form-label>
-              {{ t('fields.firstNameLabel') }}
-              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('fields.encryptedHint')"></span>
+              {{ t('profile.fields.firstNameLabel') }}
+              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('profile.fields.encryptedHint')"></span>
             </nz-form-label>
             <nz-form-control>
               <input nz-input [ngModel]="firstName()" (ngModelChange)="firstName.set($event)" name="firstName" />
@@ -53,8 +53,8 @@
 
           <nz-form-item>
             <nz-form-label>
-              {{ t('fields.lastNameLabel') }}
-              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('fields.encryptedHint')"></span>
+              {{ t('profile.fields.lastNameLabel') }}
+              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('profile.fields.encryptedHint')"></span>
             </nz-form-label>
             <nz-form-control>
               <input nz-input [ngModel]="lastName()" (ngModelChange)="lastName.set($event)" name="lastName" />
@@ -62,7 +62,7 @@
           </nz-form-item>
 
           <nz-form-item>
-            <nz-form-label>{{ t('fields.displayNameLabel') }}</nz-form-label>
+            <nz-form-label>{{ t('profile.fields.displayNameLabel') }}</nz-form-label>
             <nz-form-control>
               <input
                 nz-input
@@ -75,8 +75,8 @@
 
           <nz-form-item>
             <nz-form-label>
-              {{ t('fields.phoneLabel') }}
-              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('fields.encryptedHint')"></span>
+              {{ t('profile.fields.phoneLabel') }}
+              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('profile.fields.encryptedHint')"></span>
             </nz-form-label>
             <nz-form-control>
               <input nz-input [ngModel]="phone()" (ngModelChange)="phone.set($event)" name="phone" />
@@ -85,8 +85,8 @@
 
           <nz-form-item>
             <nz-form-label>
-              {{ t('fields.contactEmailLabel') }}
-              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('fields.encryptedHint')"></span>
+              {{ t('profile.fields.contactEmailLabel') }}
+              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('profile.fields.encryptedHint')"></span>
             </nz-form-label>
             <nz-form-control>
               <input
@@ -101,30 +101,30 @@
         </form>
       </nz-card>
 
-      <nz-card [nzTitle]="t('loginEmail.label')" class="section-card">
+      <nz-card [nzTitle]="t('profile.loginEmail.label')" class="section-card">
         <p class="login-email">{{ loginEmail() }}</p>
         <button nz-button type="button" (click)="openEmailChangeModal()">
-          {{ t('loginEmail.changeButton') }}
+          {{ t('profile.loginEmail.changeButton') }}
         </button>
       </nz-card>
 
-      <nz-card [nzTitle]="t('visibility.sectionTitle')" class="section-card">
+      <nz-card [nzTitle]="t('profile.visibility.sectionTitle')" class="section-card">
         <nz-radio-group [ngModel]="visibility()" (ngModelChange)="visibility.set($event)" name="visibility">
-          <label nz-radio [nzValue]="ProfileVisibility.Anonymous">{{ t('visibility.ANONYMOUS') }}</label>
-          <label nz-radio [nzValue]="ProfileVisibility.Public">{{ t('visibility.PUBLIC') }}</label>
-          <label nz-radio [nzValue]="ProfileVisibility.Friends">{{ t('visibility.FRIENDS') }}</label>
+          <label nz-radio [nzValue]="ProfileVisibility.Anonymous">{{ t('profile.visibility.ANONYMOUS') }}</label>
+          <label nz-radio [nzValue]="ProfileVisibility.Public">{{ t('profile.visibility.PUBLIC') }}</label>
+          <label nz-radio [nzValue]="ProfileVisibility.Friends">{{ t('profile.visibility.FRIENDS') }}</label>
         </nz-radio-group>
 
         @if (!visibilityIsAnonymous()) {
-          <h4 class="fields-table-title">{{ t('visibility.fieldsTableTitle') }}</h4>
+          <h4 class="fields-table-title">{{ t('profile.visibility.fieldsTableTitle') }}</h4>
           <table class="fields-table">
             <thead>
               <tr>
                 <th></th>
-                <th>{{ t('visibility.publicColumn') }}</th>
+                <th>{{ t('profile.visibility.publicColumn') }}</th>
                 <th>
-                  {{ t('visibility.friendsColumn') }}
-                  <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('visibility.friendsHint')"></span>
+                  {{ t('profile.visibility.friendsColumn') }}
+                  <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('profile.visibility.friendsHint')"></span>
                 </th>
               </tr>
             </thead>
@@ -162,26 +162,26 @@
         <nz-alert nzType="success" [nzMessage]="saveMessage()" nzShowIcon class="section-alert" />
       }
       <button nz-button nzType="primary" [nzLoading]="saving()" (click)="save()" class="save-button">
-        {{ t('save.button') }}
+        {{ t('profile.save.button') }}
       </button>
 
-      <nz-card [nzTitle]="t('links.sectionTitle')" class="section-card">
+      <nz-card [nzTitle]="t('profile.links.sectionTitle')" class="section-card">
         <nz-list>
           <nz-list-item>
-            {{ t('links.friends') }}
-            <nz-tag>{{ t('links.comingSoon') }}</nz-tag>
+            {{ t('profile.links.friends') }}
+            <nz-tag>{{ t('profile.links.comingSoon') }}</nz-tag>
           </nz-list-item>
           <nz-list-item>
-            {{ t('links.systemRating') }}
-            <nz-tag>{{ t('links.comingSoon') }}</nz-tag>
+            {{ t('profile.links.systemRating') }}
+            <nz-tag>{{ t('profile.links.comingSoon') }}</nz-tag>
           </nz-list-item>
           <nz-list-item>
-            {{ t('links.friendsTrust') }}
-            <nz-tag>{{ t('links.comingSoon') }}</nz-tag>
+            {{ t('profile.links.friendsTrust') }}
+            <nz-tag>{{ t('profile.links.comingSoon') }}</nz-tag>
           </nz-list-item>
           <nz-list-item>
-            {{ t('links.stats') }}
-            <nz-tag>{{ t('links.comingSoon') }}</nz-tag>
+            {{ t('profile.links.stats') }}
+            <nz-tag>{{ t('profile.links.comingSoon') }}</nz-tag>
           </nz-list-item>
         </nz-list>
       </nz-card>
@@ -190,13 +190,13 @@
 
   <nz-modal
     [nzVisible]="emailChangeVisible()"
-    [nzTitle]="t('emailChange.title')"
+    [nzTitle]="t('profile.emailChange.title')"
     [nzFooter]="null"
     (nzOnCancel)="closeEmailChangeModal()"
   >
     <ng-container *nzModalContent>
       @if (emailChangeSuccess()) {
-        <nz-alert nzType="success" [nzMessage]="t('emailChange.success')" nzShowIcon />
+        <nz-alert nzType="success" [nzMessage]="t('profile.emailChange.success')" nzShowIcon />
       } @else {
         @if (emailChangeError()) {
           <nz-alert nzType="error" [nzMessage]="emailChangeError()" nzShowIcon class="section-alert" />
@@ -204,7 +204,7 @@
         @if (emailChangeStep() === 'email') {
           <form nz-form nzLayout="vertical" (ngSubmit)="requestEmailChangeCode()">
             <nz-form-item>
-              <nz-form-label>{{ t('emailChange.newEmailLabel') }}</nz-form-label>
+              <nz-form-label>{{ t('profile.emailChange.newEmailLabel') }}</nz-form-label>
               <nz-form-control>
                 <input
                   nz-input
@@ -217,14 +217,14 @@
               </nz-form-control>
             </nz-form-item>
             <button nz-button nzType="primary" [nzLoading]="emailChangeLoading()" type="submit">
-              {{ t('emailChange.sendCode') }}
+              {{ t('profile.emailChange.sendCode') }}
             </button>
           </form>
         } @else {
           <form nz-form nzLayout="vertical" (ngSubmit)="confirmEmailChangeCode()">
-            <p class="hint">{{ t('emailChange.codeHint', { email: newEmail() }) }}</p>
+            <p class="hint">{{ t('profile.emailChange.codeHint', { email: newEmail() }) }}</p>
             <nz-form-item>
-              <nz-form-label>{{ t('emailChange.codeLabel') }}</nz-form-label>
+              <nz-form-label>{{ t('profile.emailChange.codeLabel') }}</nz-form-label>
               <nz-form-control>
                 <input
                   nz-input
@@ -237,7 +237,7 @@
               </nz-form-control>
             </nz-form-item>
             <button nz-button nzType="primary" [nzLoading]="emailChangeLoading()" type="submit">
-              {{ t('emailChange.confirm') }}
+              {{ t('profile.emailChange.confirm') }}
             </button>
           </form>
         }

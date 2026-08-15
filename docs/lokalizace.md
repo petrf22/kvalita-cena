@@ -197,7 +197,14 @@ platná bez ohledu na to, jestli se stihla uložit). Počáteční jazyk: `local
 **Struktura bundlů**: `public/i18n/{cs,sk,en,pl}.json` (kořen: `common`/`nav`/`errors`/`enum`) +
 `public/i18n/<scope>/{cs,sk,en,pl}.json` na stránku/komponentu (`provideTranslocoScope`,
 staženo spolu s lazy chunkem route). Komponenta vložená do víc stránek (galerie fotek, mapa) má
-vlastní scope přímo na sobě, ne závislý na tom, která stránka ji zrovna použije.
+vlastní scope přímo na sobě, ne závislý na tom, která stránka ji zrovna použije. Klíč v kódu
+**vždy nese celý prefix scope**, i uvnitř `*transloco="let t; scope: '…'"` (`t('profile.title')`,
+ne `t('title')`) — Transloco po sloučení do jazyka ukládá klíče scope bundlu pod tímhle
+prefixem, ne holé. Pro scopy s pomlčkou (`price-entry`, `product-detail`, `product-form`) na tom
+závisí i `scopes: { keepCasing: true }` v `app.config.ts` — bez něj by se alias scope
+camelCasoval (`price-entry` → `priceEntry`) a klíč z kódu by se s bundlem minul, aniž by o tom
+`i18n.spec.ts` věděl (hlídá jen obsah bundlů, ne to, jaký klíč si o ně kód řekne — na to je
+`i18n-keys.spec.ts` níž).
 
 `shared/relative-date.ts` jde přes `Intl.RelativeTimeFormat` (plurály i „včera" řeší platforma
 sama), `@jsverse/transloco-messageformat` (ICU) je jen tam, kde platformní API nepomůže
@@ -252,6 +259,7 @@ vůbec používá.
 | Backend | `service.fx.ExchangeRateSyncServiceTest` | backfill se odvodí z `min(observed_at)` a je omezen `max-backfill-years`, druhý běh nezaloží duplicity, sledují se jen `app.fx.tracked-currencies` |
 | Backend | `service.PriceHistoryServiceTest` | dva dny grafu s různými kurzy dají dva různě přepočtené body (ne jeden dnešní kurz pro celou řadu) |
 | Frontend | `i18n.spec.ts` | každý scope bundle má ve sk/en/pl stejné klíče jako cs, interpolační parametry sedí, žádná hodnota není prázdná/rovná klíči, všech deset `*_KEYS` z `enum-labels.ts` existuje ve všech čtyřech jazycích |
+| Frontend | `i18n-keys.spec.ts` | každý literálový klíč použitý v kódu (`t('…')`, `translate('…')`, `'…' \| transloco`) existuje v cs bundlu pod svým scope prefixem — chytá chybějící prefix v šabloně i rozjetý alias scope, ne jen neúplný bundle |
 | Frontend | `no-hardcoded-text.spec.ts` | česká diakritika ve statickém textovém uzlu nebo statickém atributu (`placeholder`, `nzTitle`, `alt`, ...) v libovolné šabloně |
 | Mobil | lint (`MissingTranslation`/`ExtraTranslation`/`MissingQuantity` jako error) | `values-*/` nezaostávají za `values/`, `<plurals>` mají všechny tvary daného jazyka |
 | Mobil | `i18n.HardcodedTextTest` | žádný nový český string literál v `src/main/java` mimo allowlist (endonyma, technické `TransportException` zprávy) |
