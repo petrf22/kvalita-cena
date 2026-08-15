@@ -221,8 +221,12 @@ zisk (SEO) je dnes nulový (appka nemá SSR). Až SSR přijde, lokalizované ali
 pl}/` vedle ní. `android:localeConfig` (`res/xml/locales_config.xml`) + `androidx.appcompat`
 **jen kvůli** `AppCompatDelegate.setApplicationLocales()` — per-app picker v systémovém
 nastavení je až od API 33 (appka má `minSdk 26`), AppCompat pod tím drží volbu sama
-(`AppLocalesMetadataHolderService` s `autoStoreLocales` v manifestu). `ComponentActivity`
-zůstává, `AppCompatActivity` není potřeba.
+(`AppLocalesMetadataHolderService` s `autoStoreLocales` v manifestu). `MainActivity` musí být
+`AppCompatActivity` (ne `ComponentActivity`) — `setApplicationLocales()` shání cíl přes interní
+seznam žijících `AppCompatDelegate` instancí, ty vznikají jen uvnitř `AppCompatActivity`; bez
+toho je volání no-op na všech API úrovních, appka po přepnutí v Nastavení zůstane ve starém
+jazyce. `themes.xml` proto musí mít parent odvozený od `Theme.AppCompat` (ne
+`android:Theme.Material*`), jinak `AppCompatActivity` spadne při `setContentView`.
 
 **`UiText`** (`ui/common/UiText.kt`, `Res`/`Plural`/`Raw`) odkládá `stringResource` do Compose
 kontextu — ViewModel/síťová vrstva k němu nemá přístup a `context.getString()` přímo z

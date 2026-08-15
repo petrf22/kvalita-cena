@@ -1,9 +1,9 @@
 package cz.kvalitacena
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -64,7 +64,10 @@ import cz.kvalitacena.ui.store.StoreFormScreen
 import cz.kvalitacena.ui.theme.KvalitaACenaTheme
 import kotlinx.coroutines.launch
 
-class MainActivity : ComponentActivity() {
+// AppCompatActivity, ne ComponentActivity — AppCompatDelegate.setApplicationLocales()
+// (LocaleController.kt) potřebuje aktivní AppCompatDelegate, jinak je no-op na všech API
+// úrovních (appka po přepnutí jazyka v Nastavení zůstávala ve starém jazyce).
+class MainActivity : AppCompatActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()

@@ -1,5 +1,8 @@
 <resources>
     <!-- Vzhled appky je celý v Compose (ui/theme) — tohle je jen okenní téma před prvním
-         vykreslením (splash/status bar), Android XML pro to pořád vyžaduje parent styl. -->
-    <style name="Theme.KvalitaACena" parent="android:Theme.Material.Light.NoActionBar" />
+         vykreslením (splash/status bar), Android XML pro to pořád vyžaduje parent styl.
+         Parent musí být potomek Theme.AppCompat (ne android:Theme.Material*) — MainActivity
+         je AppCompatActivity kvůli AppCompatDelegate.setApplicationLocales()
+         (LocaleController.kt), a ta bez AppCompat tématu při setContentView spadne. -->
+    <style name="Theme.KvalitaACena" parent="Theme.AppCompat.Light.NoActionBar" />
 </resources>

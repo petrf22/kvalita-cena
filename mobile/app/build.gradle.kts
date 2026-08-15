@@ -102,8 +102,9 @@ dependencies {
     implementation("androidx.core:core-ktx:1.19.0")
     implementation("androidx.activity:activity-compose:1.13.0")
     // Jen kvůli AppCompatDelegate.setApplicationLocales() (docs/lokalizace.md) — deleguje na
-    // systémový LocaleManager od API 33, pod tím si volbu persistuje sama. AppCompatActivity
-    // není potřeba, appka zůstává na ComponentActivity (MainActivity.kt).
+    // systémový LocaleManager od API 33, pod tím si volbu persistuje sama. Vyžaduje
+    // AppCompatActivity (MainActivity.kt) — bez zaregistrované AppCompatDelegate instance je
+    // setApplicationLocales() no-op na všech API úrovních.
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.navigation:navigation-compose:2.9.8")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
