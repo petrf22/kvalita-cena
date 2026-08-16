@@ -1,25 +1,33 @@
 package cz.kvalitacena.ui.settings
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.BuildConfig
 import cz.kvalitacena.R
+import cz.kvalitacena.ui.common.SingleLineTextField
 
 /**
  * Záložka "Nastavení" — placeholder podle zadání ("doplním později"), ale ne prázdný: sekce
@@ -38,40 +46,15 @@ fun SettingsScreen(onOpenTerms: () -> Unit = {}, onOpenPrivacy: () -> Unit = {})
     Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
     Spacer()
 
-    Text(stringResource(R.string.settings_language), style = MaterialTheme.typography.titleMedium)
-    Spacer()
     val current = currentAppLang()
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-      AppLang.entries.forEach { lang ->
-        FilterChip(
-          selected = lang == current,
-          onClick = { LocaleController.setLang(lang) },
-          label = { Text(lang.endonym) },
-        )
-      }
-    }
+    LanguageDropdown(selected = current, onSelect = { LocaleController.setLang(it) })
     Spacer()
     HorizontalDivider()
     Spacer()
 
-    Text(stringResource(R.string.settings_currency), style = MaterialTheme.typography.titleMedium)
-    Spacer()
     val store = AppContainer.displayCurrencyStore
     val currentCurrency = store.currency
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-      FilterChip(
-        selected = currentCurrency == null,
-        onClick = { store.select(null) },
-        label = { Text(stringResource(R.string.settings_currency_store_default)) },
-      )
-      DisplayCurrency.entries.forEach { currency ->
-        FilterChip(
-          selected = currency == currentCurrency,
-          onClick = { store.select(currency) },
-          label = { Text(currency.code) },
-        )
-      }
-    }
+    CurrencyDropdown(selected = currentCurrency, onSelect = { store.select(it) })
     Spacer()
     Text(
       stringResource(R.string.settings_currency_note),
@@ -130,4 +113,74 @@ fun SettingsScreen(onOpenTerms: () -> Unit = {}, onOpenPrivacy: () -> Unit = {})
 @Composable
 private fun Spacer() {
   androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+}
+
+/**
+ * Combobox místo dřívější řady `FilterChip` (jedna na jazyk) — s přibývajícími jazyky/měnami
+ * (docs/lokalizace.md počítá s dalšími) by řádek chipů přetekl na malých obrazovkách. Stejná
+ * `ExposedDropdownMenuBox` konvence jako `PriceKindDropdown`/`QuantityBasisDropdown`
+ * (ui/price/PriceEntryScreen.kt).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguageDropdown(selected: AppLang, onSelect: (AppLang) -> Unit) {
+  var expanded by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+    SingleLineTextField(
+      value = selected.endonym,
+      onValueChange = {},
+      readOnly = true,
+      label = stringResource(R.string.settings_language),
+      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+      modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+    )
+    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+      AppLang.entries.forEach { lang ->
+        DropdownMenuItem(
+          text = { Text(lang.endonym) },
+          onClick = {
+            onSelect(lang)
+            expanded = false
+          },
+        )
+      }
+    }
+  }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CurrencyDropdown(selected: DisplayCurrency?, onSelect: (DisplayCurrency?) -> Unit) {
+  var expanded by remember { mutableStateOf(false) }
+  val storeDefaultLabel = stringResource(R.string.settings_currency_store_default)
+
+  ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+    SingleLineTextField(
+      value = selected?.code ?: storeDefaultLabel,
+      onValueChange = {},
+      readOnly = true,
+      label = stringResource(R.string.settings_currency),
+      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+      modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+    )
+    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+      DropdownMenuItem(
+        text = { Text(storeDefaultLabel) },
+        onClick = {
+          onSelect(null)
+          expanded = false
+        },
+      )
+      DisplayCurrency.entries.forEach { currency ->
+        DropdownMenuItem(
+          text = { Text(currency.code) },
+          onClick = {
+            onSelect(currency)
+            expanded = false
+          },
+        )
+      }
+    }
+  }
 }
