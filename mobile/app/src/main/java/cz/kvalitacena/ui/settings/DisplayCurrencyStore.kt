@@ -9,12 +9,21 @@ import androidx.compose.runtime.setValue
 private const val PREFS_NAME = "kvalita_a_cena_settings"
 private const val KEY_CURRENCY = "display_currency"
 
-/** Appka nabízí přepočet jen do měn, které umí stáhnout z ČNB, + CZK jako pivot (docs/lokalizace.md). */
+/**
+ * Appka nabízí přepočet jen do měn, které umí stáhnout (ČNB nebo NBS pro RSD), + CZK jako
+ * pivot (docs/lokalizace.md) — zrcadlí `app.fx.display-currencies`, rozšířené plánem expanze
+ * o 13 dalších zemí.
+ */
 enum class DisplayCurrency(val code: String) {
   CZK("CZK"),
   EUR("EUR"),
   PLN("PLN"),
-  USD("USD");
+  USD("USD"),
+  HUF("HUF"),
+  RON("RON"),
+  GBP("GBP"),
+  CHF("CHF"),
+  RSD("RSD");
 
   companion object {
     fun fromCode(code: String?): DisplayCurrency? = entries.firstOrNull { it.code == code }

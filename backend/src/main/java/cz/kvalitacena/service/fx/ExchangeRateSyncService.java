@@ -25,11 +25,18 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Denní stahování kurzovního lístku ČNB (docs/lokalizace.md, "Kurzovní lístek a zobrazovací
- * měna"). Stejný vzorec jako {@link cz.kvalitacena.service.PriceAggregationService#processQueue}
- * a {@link cz.kvalitacena.security.RefreshTokenService#cleanup} — {@code @EnableScheduling} je
- * už na {@code KvalitaACenaApplication}, žádné ShedLock/Quartz v projektu není. Zápis je
+ * Denní stahování kurzovního lístku — ČNB pro drtivou většinu měn, NBS pro RSD (docs/
+ * lokalizace.md, "Kurzovní lístek a zobrazovací měna"; plán expanze o 13 dalších zemí). Stejný
+ * vzorec jako {@link cz.kvalitacena.service.PriceAggregationService#processQueue} a
+ * {@link cz.kvalitacena.security.RefreshTokenService#cleanup} — {@code @EnableScheduling} je už
+ * na {@code KvalitaACenaApplication}, žádné ShedLock/Quartz v projektu není. Zápis je
  * idempotentní ({@link #saveNew}), takže případný souběh dvou instancí nic nezkazí.
+ *
+ * <p>{@link #sources} je {@code List<ExchangeRateSource>}, ne jeden zdroj — stejný vzor jako
+ * {@code CompanyIdValidators}/{@code CompanyRegistries} u registrů IČO, aby přidání dalšího
+ * zdroje kurzů (kdyby jednou přibyla další měna mimo ČNB i NBS) nebylo zásahem do téhle třídy.
+ * Zdroje se dotazují nezávisle a jejich řádky se jen sloučí — jeden zdroj, který neodpoví
+ * (výpadek, chybějící NBS klíč), nezablokuje uložení řádků od ostatních.
  *
  * <p>{@link #syncOnStartup} navíc spouští totéž hned po startu (přes {@link ApplicationReadyEvent}),
  * aby čerstvá databáze nečekala na první cron.
@@ -39,7 +46,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ExchangeRateSyncService {
 
-  private final ExchangeRateSource source;
+  private final List<ExchangeRateSource> sources;
   private final ExchangeRateRepository exchangeRateRepository;
   private final PriceObservationRepository priceObservationRepository;
   private final FxProperties fxProperties;
@@ -60,13 +67,13 @@ public class ExchangeRateSyncService {
     LocalDate today = LocalDate.now(ZoneId.of(fxProperties.getZone()));
 
     Optional<ExchangeRate> latest = exchangeRateRepository.findTopByOrderByRateDateDesc();
-    List<ExchangeRateSource.FxRateRow> rows = latest.isEmpty()
+    List<TaggedRow> rows = latest.isEmpty()
         ? backfill(today)
         : catchUp(latest.get().getRateDate(), today);
 
     int saved = saveNew(rows);
     if (saved > 0) {
-      log.info("Kurzovní lístek ČNB: uloženo {} nových kurzů (do dne {}).", saved, today);
+      log.info("Kurzovní lístek: uloženo {} nových kurzů (do dne {}).", saved, today);
     }
   }
 
@@ -75,10 +82,10 @@ public class ExchangeRateSyncService {
    * (docs/lokalizace.md), zarovnanou na začátek roku a omezenou {@code app.fx.max-backfill-years}
    * zpátky. Bez jediné ceny v DB appka nemá co dohánět — stáhne jen dnešní lístek.
    */
-  private List<ExchangeRateSource.FxRateRow> backfill(LocalDate today) {
+  private List<TaggedRow> backfill(LocalDate today) {
     Optional<OffsetDateTime> earliest = priceObservationRepository.findEarliestObservedAt();
     if (earliest.isEmpty()) {
-      return source.fetchDay(today);
+      return fetchDayFromAllSources(today);
     }
     LocalDate earliestDay = earliest.get().atZoneSameInstant(ZoneOffset.UTC).toLocalDate();
     LocalDate cap = today.minusYears(fxProperties.getMaxBackfillYears());
@@ -87,34 +94,51 @@ public class ExchangeRateSyncService {
   }
 
   /** Neprázdná tabulka — jen chybějící dny od posledního staženého po dnešek. */
-  private List<ExchangeRateSource.FxRateRow> catchUp(LocalDate lastKnown, LocalDate today) {
+  private List<TaggedRow> catchUp(LocalDate lastKnown, LocalDate today) {
     LocalDate from = lastKnown.plusDays(1);
     return from.isAfter(today) ? List.of() : fetchRange(from, today);
   }
 
   /**
-   * Malá mezera → denní endpoint den po dni (ČNB o víkendu/svátku vrátí poslední předchozí
-   * lístek, takže duplicity odfiltruje až {@link #saveNew}). Velká mezera → roční endpoint,
-   * jeden request místo desítek.
+   * Malá mezera → denní endpoint den po dni (ČNB/NBS o víkendu/svátku vrátí poslední předchozí
+   * lístek nebo nic, takže duplicity odfiltruje až {@link #saveNew}). Velká mezera → roční
+   * endpoint, jeden request místo desítek — jen u zdrojů, které ho mají (NBS zatím nemá,
+   * {@link NbsRateSource#fetchYear} vrací prázdno, takže RSD se u velké mezery dožene až dalším
+   * catch-upem po dnech).
    */
-  private List<ExchangeRateSource.FxRateRow> fetchRange(LocalDate from, LocalDate to) {
-    List<ExchangeRateSource.FxRateRow> rows = new ArrayList<>();
+  private List<TaggedRow> fetchRange(LocalDate from, LocalDate to) {
+    List<TaggedRow> rows = new ArrayList<>();
     if (ChronoUnit.DAYS.between(from, to) > 30) {
       for (int year = from.getYear(); year <= to.getYear(); year++) {
-        rows.addAll(source.fetchYear(year));
+        for (ExchangeRateSource src : sources) {
+          for (ExchangeRateSource.FxRateRow row : src.fetchYear(year)) {
+            rows.add(new TaggedRow(src.name(), row));
+          }
+        }
       }
     } else {
       for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
-        rows.addAll(source.fetchDay(d));
+        rows.addAll(fetchDayFromAllSources(d));
       }
     }
-    return rows.stream().filter(r -> !r.validFor().isBefore(from) && !r.validFor().isAfter(to)).toList();
+    return rows.stream().filter(r -> !r.row().validFor().isBefore(from) && !r.row().validFor().isAfter(to)).toList();
+  }
+
+  private List<TaggedRow> fetchDayFromAllSources(LocalDate date) {
+    List<TaggedRow> rows = new ArrayList<>();
+    for (ExchangeRateSource src : sources) {
+      for (ExchangeRateSource.FxRateRow row : src.fetchDay(date)) {
+        rows.add(new TaggedRow(src.name(), row));
+      }
+    }
+    return rows;
   }
 
   /** Uloží jen sledované měny (app.fx.tracked-currencies) a jen dny, které ještě nemáme — idempotentní. */
-  private int saveNew(List<ExchangeRateSource.FxRateRow> rows) {
+  private int saveNew(List<TaggedRow> rows) {
     int saved = 0;
-    for (ExchangeRateSource.FxRateRow row : rows) {
+    for (TaggedRow tagged : rows) {
+      ExchangeRateSource.FxRateRow row = tagged.row();
       if (row.amount() <= 0 || !fxProperties.getTrackedCurrencies().contains(row.currencyCode())) continue;
       ExchangeRateId id = new ExchangeRateId(row.validFor(), row.currencyCode());
       if (exchangeRateRepository.existsById(id)) continue;
@@ -124,10 +148,15 @@ public class ExchangeRateSyncService {
           .rateDate(row.validFor())
           .currency(row.currencyCode())
           .czkPerUnit(czkPerUnit)
+          .source(tagged.sourceName())
           .fetchedAt(OffsetDateTime.now())
           .build());
       saved++;
     }
     return saved;
+  }
+
+  /** Řádek spárovaný s tím, který {@link ExchangeRateSource} ho vrátil — jde do {@code fx.exchange_rate.source}. */
+  private record TaggedRow(String sourceName, ExchangeRateSource.FxRateRow row) {
   }
 }

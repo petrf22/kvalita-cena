@@ -26,7 +26,7 @@ public class I18nConfig {
   public MessageSource messageSource() {
     ResourceBundleMessageSource source = new ResourceBundleMessageSource();
     source.setBasenames("messages/errors", "messages/mail", "messages/handles",
-        "messages/attribution");
+        "messages/attribution", "messages/countries");
     source.setDefaultEncoding("UTF-8");
     source.setFallbackToSystemLocale(false);
     // Chybějící klíč MUSÍ spadnout (NoSuchMessageException), ne tiše vrátit kód jako text —

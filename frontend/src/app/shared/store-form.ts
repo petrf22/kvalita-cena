@@ -37,7 +37,16 @@ const SIMILAR_CHECK_DEBOUNCE_MS = 400;
  * ten appka nekontroluje, aby neduplikovala algoritmus). Země bez záznamu = appka
  * tvar nekontroluje vůbec, stejně jako backend hodnotu bez kontroly jen uloží.
  */
-const COMPANY_ID_DIGITS: Record<string, number> = { CZ: 8, SK: 8, PL: 10 };
+const COMPANY_ID_DIGITS: Record<string, number> = {
+  CZ: 8,
+  SK: 8,
+  PL: 10,
+  HR: 11,
+  SI: 8,
+  RS: 9,
+  FR: 9,
+  IT: 11,
+};
 /** AresService je zatím jediný napojený rejstřík (CompanyRegistry na backendu) — jen pro CZ. */
 const COUNTRIES_WITH_REGISTRY: readonly string[] = ['CZ'];
 

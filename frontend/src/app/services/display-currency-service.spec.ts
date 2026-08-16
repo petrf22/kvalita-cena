@@ -16,7 +16,7 @@ describe('DisplayCurrencyService', () => {
   });
 
   it('ignores garbage previously left in localStorage', () => {
-    localStorage.setItem(STORAGE_KEY, 'HUF'); // appka HUF nepodporuje
+    localStorage.setItem(STORAGE_KEY, 'XYZ'); // appka XYZ nepodporuje (a nikdy nebude — není to ISO 4217 kód)
     const service = TestBed.inject(DisplayCurrencyService);
     expect(service.currency()).toBeNull();
   });

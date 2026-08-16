@@ -170,19 +170,57 @@ app:
       # Veřejný rejstřík ekonomických subjektů ČR — ne ODbL, jen předvyplnění formuláře.
       base-url: https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty
       timeout: PT5S
+    nbs:
+      # Národní banka Srbska — jediný zdroj kurzu pro RSD, ČNB ho na lístku nemá (ověřeno
+      # živě, viz plán expanze). Na rozdíl od ČNB vyžaduje registraci a API klíč — bez
+      # nastaveného NBS_API_KEY NbsRateSource jen vrací prázdno (stejná odolnost jako u
+      # výpadku ČNB), RSD kurz prostě chybí, appka nespadne (docs/lokalizace.md).
+      base-url: https://webappcenter.nbs.rs/ExchangeRateWebService
+      api-key: ${NBS_API_KEY:}
+      timeout: PT10S
 
   i18n:
     default-locale: cs
     supported-locales: [cs, sk, en, pl]
     default-country: CZ
+    # Rozšíření o dalších 13 zemí (plán expanze, docs/lokalizace.md "Country selector v UI") —
+    # nové země záměrně míří na `en`, dokud pro ně appka nemá vlastní jazyk (žádný literál v
+    # kódu se tím nemění, jen řádek tady + CHECK constraint na currency, viz migrace
+    # 2026-08-17/01-countries.yaml).
     country-currency:
       CZ: CZK
       SK: EUR
       PL: PLN
+      DE: EUR
+      AT: EUR
+      FR: EUR
+      ES: EUR
+      IT: EUR
+      HR: EUR
+      SI: EUR
+      BG: EUR
+      HU: HUF
+      RO: RON
+      GB: GBP
+      CH: CHF
+      RS: RSD
     country-locale:
       CZ: cs
       SK: sk
       PL: pl
+      DE: en
+      AT: en
+      FR: en
+      ES: en
+      IT: en
+      HR: en
+      SI: en
+      BG: en
+      HU: en
+      RO: en
+      GB: en
+      CH: en
+      RS: en
 
   fx:
     enabled: true
@@ -191,10 +229,11 @@ app:
     # ČNB publikuje v pracovní dny cca 14:30 SEČ — běžíme s rezervou (docs/lokalizace.md).
     cron: "0 15 15 * * *"
     zone: Europe/Prague
-    # Co se stahuje. CZK tu NENÍ — je to pivot, kurz CZK/CZK ČNB nepublikuje.
-    tracked-currencies: [EUR, PLN, USD]
+    # Co se stahuje. CZK tu NENÍ — je to pivot, kurz CZK/CZK ČNB nepublikuje. HUF/RON/GBP/CHF
+    # jdou z ČNB stejně jako EUR/PLN; RSD jde výhradně z NbsRateSource (viz app.external.nbs).
+    tracked-currencies: [EUR, PLN, USD, HUF, RON, GBP, CHF, RSD]
     # Do čeho appka smí PŘEPOČÍTAT zobrazení. USD je navíc oproti app.i18n.country-currency —
     # je to referenční měna pro srovnání napříč zeměmi, cenu v ní zapsat nejde (CurrencyResolver).
-    display-currencies: [CZK, EUR, PLN, USD]
+    display-currencies: [CZK, EUR, PLN, USD, HUF, RON, GBP, CHF, RSD]
     cache-ttl: PT6H
     max-backfill-years: 5

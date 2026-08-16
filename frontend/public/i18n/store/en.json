@@ -8,7 +8,20 @@
     "country": {
       "CZ": "Czechia",
       "SK": "Slovakia",
-      "PL": "Poland"
+      "PL": "Poland",
+      "DE": "Germany",
+      "AT": "Austria",
+      "FR": "France",
+      "ES": "Spain",
+      "IT": "Italy",
+      "HR": "Croatia",
+      "SI": "Slovenia",
+      "BG": "Bulgaria",
+      "HU": "Hungary",
+      "RO": "Romania",
+      "GB": "United Kingdom",
+      "CH": "Switzerland",
+      "RS": "Serbia"
     },
     "similarWarning": "Did you mean one of these existing stores?",
     "saveChanges": "Save changes",
@@ -24,7 +37,20 @@
     "label": {
       "CZ": "Company ID",
       "SK": "Company ID",
-      "PL": "NIP"
+      "PL": "NIP",
+      "DE": "USt-IdNr.",
+      "AT": "UID-Nummer",
+      "FR": "SIREN",
+      "ES": "NIF",
+      "IT": "Partita IVA",
+      "HR": "OIB",
+      "SI": "Davčna številka",
+      "BG": "EIK",
+      "HU": "Adószám",
+      "RO": "CUI",
+      "GB": "Company number",
+      "CH": "UID",
+      "RS": "PIB"
     }
   },
   "location": {

@@ -19,6 +19,19 @@
 
     <string name="company_id_label_generic">IČO</string>
     <string name="company_id_label_pl">NIP</string>
+    <string name="company_id_label_de">USt-IdNr.</string>
+    <string name="company_id_label_at">UID-Nummer</string>
+    <string name="company_id_label_fr">SIREN</string>
+    <string name="company_id_label_es">NIF</string>
+    <string name="company_id_label_it">Partita IVA</string>
+    <string name="company_id_label_hr">OIB</string>
+    <string name="company_id_label_si">Davčna številka</string>
+    <string name="company_id_label_bg">EIK</string>
+    <string name="company_id_label_hu">Adószám</string>
+    <string name="company_id_label_ro">CUI</string>
+    <string name="company_id_label_gb">Company number</string>
+    <string name="company_id_label_ch">UID</string>
+    <string name="company_id_label_rs">PIB</string>
 
     <string name="account_title">Účet</string>
     <string name="account_logged_in_fallback">Prihlásený</string>
@@ -97,6 +110,19 @@
     <string name="country_name_cz">Česko</string>
     <string name="country_name_sk">Slovensko</string>
     <string name="country_name_pl">Poľsko</string>
+    <string name="country_name_de">Nemecko</string>
+    <string name="country_name_at">Rakúsko</string>
+    <string name="country_name_fr">Francúzsko</string>
+    <string name="country_name_es">Španielsko</string>
+    <string name="country_name_it">Taliansko</string>
+    <string name="country_name_hr">Chorvátsko</string>
+    <string name="country_name_si">Slovinsko</string>
+    <string name="country_name_bg">Bulharsko</string>
+    <string name="country_name_hu">Maďarsko</string>
+    <string name="country_name_ro">Rumunsko</string>
+    <string name="country_name_gb">Spojené kráľovstvo</string>
+    <string name="country_name_ch">Švajčiarsko</string>
+    <string name="country_name_rs">Srbsko</string>
     <string name="settings_currency">Zobrazovacia mena</string>
     <string name="settings_currency_store_default">Mena obchodu (predvolené)</string>
     <string name="settings_currency_note">Prepočet slúži len na porovnanie — cenu vždy hlásite v mene obchodu, toto len mení, ako sa zobrazuje.</string>

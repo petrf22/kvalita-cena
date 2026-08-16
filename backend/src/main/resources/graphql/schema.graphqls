@@ -731,6 +731,8 @@ type CountryInfo {
   currency: String!
   "Výchozí jazyk appky pro tuhle zemi (app.i18n.country-locale) — jen předvyplnění, jazyk zůstává nezávislou volbou klienta."
   defaultLocale: String
+  "Název země lokalizovaný podle jazyka aktuálního requestu (messages/countries*.properties)."
+  name: String!
 }
 
 enum PriceKind {

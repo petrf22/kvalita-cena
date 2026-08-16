@@ -54,7 +54,7 @@ public class StoreUserEdit {
   @Column(name = "postal_code", length = 10)
   private String postalCode;
 
-  @Column(name = "ico", length = 8)
+  @Column(name = "ico", length = 20)
   private String ico;
 
   @Column(name = "lat", precision = 9, scale = 6)

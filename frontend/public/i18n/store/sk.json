@@ -8,7 +8,20 @@
     "country": {
       "CZ": "Česko",
       "SK": "Slovensko",
-      "PL": "Poľsko"
+      "PL": "Poľsko",
+      "DE": "Nemecko",
+      "AT": "Rakúsko",
+      "FR": "Francúzsko",
+      "ES": "Španielsko",
+      "IT": "Taliansko",
+      "HR": "Chorvátsko",
+      "SI": "Slovinsko",
+      "BG": "Bulharsko",
+      "HU": "Maďarsko",
+      "RO": "Rumunsko",
+      "GB": "Spojené kráľovstvo",
+      "CH": "Švajčiarsko",
+      "RS": "Srbsko"
     },
     "similarWarning": "Nemyslíš skôr niektorý z už existujúcich obchodov?",
     "saveChanges": "Uložiť zmeny",
@@ -24,7 +37,20 @@
     "label": {
       "CZ": "IČO",
       "SK": "IČO",
-      "PL": "NIP"
+      "PL": "NIP",
+      "DE": "USt-IdNr.",
+      "AT": "UID-Nummer",
+      "FR": "SIREN",
+      "ES": "NIF",
+      "IT": "Partita IVA",
+      "HR": "OIB",
+      "SI": "Davčna številka",
+      "BG": "EIK",
+      "HU": "Adószám",
+      "RO": "CUI",
+      "GB": "Company number",
+      "CH": "UID",
+      "RS": "PIB"
     }
   },
   "location": {

@@ -1,9 +1,23 @@
 import { Injectable, effect, signal } from '@angular/core';
 
-/** Appka nabízí přepočet jen do měn, které appka umí stáhnout z ČNB, + CZK jako pivot (docs/lokalizace.md). */
-export type DisplayCurrency = 'CZK' | 'EUR' | 'PLN' | 'USD';
+/**
+ * Appka nabízí přepočet jen do měn, které umí stáhnout (ČNB nebo NBS pro RSD), + CZK jako
+ * pivot (docs/lokalizace.md) — lehká kopie `app.fx.display-currencies`, rozšířená plánem
+ * expanze o 13 dalších zemí (HUF/RON/GBP/CHF/RSD vedle původních EUR/PLN/USD).
+ */
+export type DisplayCurrency = 'CZK' | 'EUR' | 'PLN' | 'USD' | 'HUF' | 'RON' | 'GBP' | 'CHF' | 'RSD';
 
-export const DISPLAY_CURRENCIES: readonly DisplayCurrency[] = ['CZK', 'EUR', 'PLN', 'USD'];
+export const DISPLAY_CURRENCIES: readonly DisplayCurrency[] = [
+  'CZK',
+  'EUR',
+  'PLN',
+  'USD',
+  'HUF',
+  'RON',
+  'GBP',
+  'CHF',
+  'RSD',
+];
 
 const STORAGE_KEY = 'kac.currency';
 

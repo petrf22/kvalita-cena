@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class MessageBundleTest {
 
-  private static final List<String> BUNDLES = List.of("errors", "mail", "handles", "attribution");
+  private static final List<String> BUNDLES = List.of("errors", "mail", "handles", "attribution", "countries");
   private static final List<String> LANGUAGES = List.of("sk", "en", "pl");
   private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\d+)[,}]");
 

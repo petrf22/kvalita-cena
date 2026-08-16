@@ -6,7 +6,20 @@
   "country": {
     "CZ": "Česko",
     "SK": "Slovensko",
-    "PL": "Poľsko"
+    "PL": "Poľsko",
+    "DE": "Nemecko",
+    "AT": "Rakúsko",
+    "FR": "Francúzsko",
+    "ES": "Španielsko",
+    "IT": "Taliansko",
+    "HR": "Chorvátsko",
+    "SI": "Slovinsko",
+    "BG": "Bulharsko",
+    "HU": "Maďarsko",
+    "RO": "Rumunsko",
+    "GB": "Spojené kráľovstvo",
+    "CH": "Švajčiarsko",
+    "RS": "Srbsko"
   },
   "currencyLabel": "Zobrazovacia mena",
   "currencyStoreDefaultOption": "Mena obchodu (predvolené)",

@@ -60,9 +60,10 @@ public class Store implements Persistable<Long> {
   @Column(name = "osm_ref", length = 32)
   private String osmRef;
 
-  // Volitelný identifikátor provozovatele (podniková prodejna družstva, OSVČ) — 8 číslic,
-  // ověřitelné v ARES (docs/soukromi.md — veřejný rejstřík, ne osobní údaj).
-  @Column(name = "ico", length = 8)
+  // Volitelný identifikátor provozovatele (podniková prodejna družstva, OSVČ) — u CZ 8 číslic,
+  // ověřitelné v ARES (docs/soukromi.md — veřejný rejstřík, ne osobní údaj). Délka 20 kvůli
+  // dalším zemím (PL NIP 10, FR SIRET 14, CH UID 12+ — CompanyIdValidators, docs/lokalizace.md).
+  @Column(name = "ico", length = 20)
   private String ico;
 
   @Column(name = "ico_verified_at", columnDefinition = "TIMESTAMPTZ")

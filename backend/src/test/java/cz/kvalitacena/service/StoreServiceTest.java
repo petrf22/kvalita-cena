@@ -68,7 +68,9 @@ class StoreServiceTest {
     catalogProperties.setDraftConfirmations(3);
     i18nProperties.setDefaultCountry("CZ");
     i18nProperties.setCountryCurrency(Map.of("CZ", "CZK", "SK", "EUR", "PL", "PLN"));
-    CountryResolver countryResolver = new CountryResolver(i18nProperties, appUserRepository);
+    // Messages je null — tenhle test volá jen resolve()/isSupported(), ne supportedCountries()
+    // (jediné místo, které Messages skutečně potřebuje pro lokalizovaný název země).
+    CountryResolver countryResolver = new CountryResolver(i18nProperties, appUserRepository, null);
     return new StoreService(storeRepository, retailChainRepository, appUserRepository,
         priceObservationRepository, companyIdValidators, catalogRateLimiter, duplicateLookupService,
         trustLevelService, catalogProperties, countryResolver);

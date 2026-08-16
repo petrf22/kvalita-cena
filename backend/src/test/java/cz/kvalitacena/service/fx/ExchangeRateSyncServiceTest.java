@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -31,9 +32,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Backfill/catch-up logika kurzovního lístku ČNB (docs/lokalizace.md) — testuje se přes veřejný
+ * Backfill/catch-up logika kurzovního lístku (docs/lokalizace.md) — testuje se přes veřejný
  * vstupní bod {@link ExchangeRateSyncService#sync()}, se zdrojem (ČNB) i repozitáři mockovanými,
- * stejný vzorec jako {@code PriceAggregationServiceTest}.
+ * stejný vzorec jako {@code PriceAggregationServiceTest}. Většina testů má jen jeden zdroj v
+ * seznamu (ekvivalent ČNB) — sloučení víc zdrojů (ČNB + NBS pro RSD) ověřuje samostatně
+ * {@link #mergesRowsFromMultipleSourcesAndTagsEachWithItsSource}.
  */
 @ExtendWith(MockitoExtension.class)
 class ExchangeRateSyncServiceTest {
@@ -60,7 +63,8 @@ class ExchangeRateSyncServiceTest {
     fxProperties.setZone("Europe/Prague");
     fxProperties.setTrackedCurrencies(List.of("EUR", "PLN", "USD"));
     fxProperties.setMaxBackfillYears(5);
-    service = new ExchangeRateSyncService(source, exchangeRateRepository, priceObservationRepository, fxProperties);
+    Mockito.lenient().when(source.name()).thenReturn("CNB");
+    service = new ExchangeRateSyncService(List.of(source), exchangeRateRepository, priceObservationRepository, fxProperties);
   }
 
   @Test
@@ -161,6 +165,36 @@ class ExchangeRateSyncServiceTest {
     ExchangeRate saved = savedCaptor.getValue();
     assertThat(saved.getCurrency()).isEqualTo("EUR");
     assertThat(saved.getCzkPerUnit()).isEqualByComparingTo(new BigDecimal("24.255000"));
+    assertThat(saved.getSource()).isEqualTo("CNB");
+  }
+
+  /**
+   * Druhý zdroj (NBS pro RSD, plán expanze) — oba zdroje se dotazují nezávisle, jejich řádky
+   * se jen sloučí a každý si nese svoje {@code source} do {@code fx.exchange_rate}, ne že by
+   * druhý zdroj přepsal/nahradil první.
+   */
+  @Test
+  void mergesRowsFromMultipleSourcesAndTagsEachWithItsSource() {
+    ExchangeRateSource nbs = org.mockito.Mockito.mock(ExchangeRateSource.class);
+    Mockito.lenient().when(nbs.name()).thenReturn("NBS");
+    ExchangeRateSyncService multiSourceService = new ExchangeRateSyncService(
+        List.of(source, nbs), exchangeRateRepository, priceObservationRepository, fxProperties);
+    fxProperties.setTrackedCurrencies(List.of("EUR", "RSD"));
+
+    when(exchangeRateRepository.findTopByOrderByRateDateDesc()).thenReturn(Optional.empty());
+    when(priceObservationRepository.findEarliestObservedAt()).thenReturn(Optional.empty());
+    when(source.fetchDay(TODAY)).thenReturn(List.of(
+        new ExchangeRateSource.FxRateRow("EUR", 1, TODAY, new BigDecimal("24.255"))));
+    when(nbs.fetchDay(TODAY)).thenReturn(List.of(
+        new ExchangeRateSource.FxRateRow("RSD", 1, TODAY, new BigDecimal("0.221"))));
+    when(exchangeRateRepository.existsById(any())).thenReturn(false);
+
+    multiSourceService.sync();
+
+    verify(exchangeRateRepository, times(2)).save(savedCaptor.capture());
+    var bySource = savedCaptor.getAllValues().stream()
+        .collect(java.util.stream.Collectors.toMap(ExchangeRate::getCurrency, ExchangeRate::getSource));
+    assertThat(bySource).containsEntry("EUR", "CNB").containsEntry("RSD", "NBS");
   }
 
   /** Druhý běh nad stejnými daty nesmí založit duplicity — ČNB kurzy zpětně nemění. */

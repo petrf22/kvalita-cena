@@ -6,7 +6,20 @@
   "country": {
     "CZ": "Czechy",
     "SK": "Słowacja",
-    "PL": "Polska"
+    "PL": "Polska",
+    "DE": "Niemcy",
+    "AT": "Austria",
+    "FR": "Francja",
+    "ES": "Hiszpania",
+    "IT": "Włochy",
+    "HR": "Chorwacja",
+    "SI": "Słowenia",
+    "BG": "Bułgaria",
+    "HU": "Węgry",
+    "RO": "Rumunia",
+    "GB": "Wielka Brytania",
+    "CH": "Szwajcaria",
+    "RS": "Serbia"
   },
   "currencyLabel": "Waluta wyświetlania",
   "currencyStoreDefaultOption": "Waluta sklepu (domyślnie)",

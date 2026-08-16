@@ -24,6 +24,7 @@ public class CountryResolver {
 
   private final I18nProperties i18nProperties;
   private final AppUserRepository appUserRepository;
+  private final Messages messages;
 
   public String resolve(String explicit, Long viewerUserId) {
     if (explicit != null && !explicit.isBlank()) {
@@ -46,7 +47,8 @@ public class CountryResolver {
   /** Číselník pro Query.countries — jeden zdroj pravdy místo hardcoded CZ/SK/PL na klientech. */
   public List<CountryInfo> supportedCountries() {
     return i18nProperties.getCountryCurrency().entrySet().stream()
-        .map(e -> new CountryInfo(e.getKey(), e.getValue(), i18nProperties.getCountryLocale().get(e.getKey())))
+        .map(e -> new CountryInfo(e.getKey(), e.getValue(), i18nProperties.getCountryLocale().get(e.getKey()),
+            messages.get("country." + e.getKey())))
         .sorted(Comparator.comparing(CountryInfo::code))
         .toList();
   }

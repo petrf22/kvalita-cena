@@ -1,0 +1,82 @@
+# 01-countries.yaml — rozšíření na dalších 13 zemí (plán expanze, docs/lokalizace.md "Country
+# selector v UI"). Dvě nesouvisející změny v jednom souboru, protože obě jsou nutnou podmínkou
+# téhož kroku (app.i18n.country-currency v application.yml):
+#
+# 1) Nové měny do CHECK constraintů — 9 z 13 zemí je EUR (bez dopadu na fx.*), zbylé 4 (HUF,
+#    RON, GBP, CHF) přidávají ČNB kurz, RSD jde z NbsRateSource (app.external.nbs). Bez tohohle
+#    by INSERT/UPDATE s novou měnou spadl na CHECK, ne na chybějící appka to zjistí až za běhu.
+#
+# 2) core.store.ico/core.store_user_edit.ico z VARCHAR(8) na VARCHAR(20) — existující defekt
+#    nezávislý na týhle expanzi, akorát ji zviditelnil: polský NIP je 10 číslic
+#    (PlNipValidator), do VARCHAR(8) se nevejde už dnes. Nové země přidávají další delší tvary
+#    (FR SIRET 14, CH UID 12+), 20 znaků je rezerva i pro ně.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-17-01-currency-checks
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE agg.price_current DROP CONSTRAINT chk_agg_price_current_currency;
+              ALTER TABLE agg.price_current
+                ADD CONSTRAINT chk_agg_price_current_currency
+                CHECK (currency IN ('CZK', 'EUR', 'PLN', 'HUF', 'RON', 'GBP', 'CHF', 'RSD'));
+
+              ALTER TABLE agg.price_daily DROP CONSTRAINT chk_agg_price_daily_currency;
+              ALTER TABLE agg.price_daily
+                ADD CONSTRAINT chk_agg_price_daily_currency
+                CHECK (currency IN ('CZK', 'EUR', 'PLN', 'HUF', 'RON', 'GBP', 'CHF', 'RSD'));
+
+              ALTER TABLE core.price_observation DROP CONSTRAINT chk_price_observation_currency;
+              ALTER TABLE core.price_observation
+                ADD CONSTRAINT chk_price_observation_currency
+                CHECK (currency IN ('CZK', 'EUR', 'PLN', 'HUF', 'RON', 'GBP', 'CHF', 'RSD'));
+
+              ALTER TABLE fx.exchange_rate DROP CONSTRAINT chk_fx_exchange_rate_currency;
+              ALTER TABLE fx.exchange_rate
+                ADD CONSTRAINT chk_fx_exchange_rate_currency
+                CHECK (currency IN ('EUR', 'PLN', 'USD', 'HUF', 'RON', 'GBP', 'CHF', 'RSD'));
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE agg.price_current DROP CONSTRAINT chk_agg_price_current_currency;
+              ALTER TABLE agg.price_current
+                ADD CONSTRAINT chk_agg_price_current_currency CHECK (currency IN ('CZK', 'EUR', 'PLN'));
+
+              ALTER TABLE agg.price_daily DROP CONSTRAINT chk_agg_price_daily_currency;
+              ALTER TABLE agg.price_daily
+                ADD CONSTRAINT chk_agg_price_daily_currency CHECK (currency IN ('CZK', 'EUR', 'PLN'));
+
+              ALTER TABLE core.price_observation DROP CONSTRAINT chk_price_observation_currency;
+              ALTER TABLE core.price_observation
+                ADD CONSTRAINT chk_price_observation_currency CHECK (currency IN ('CZK', 'EUR', 'PLN'));
+
+              ALTER TABLE fx.exchange_rate DROP CONSTRAINT chk_fx_exchange_rate_currency;
+              ALTER TABLE fx.exchange_rate
+                ADD CONSTRAINT chk_fx_exchange_rate_currency CHECK (currency IN ('EUR', 'PLN', 'USD'));
+
+  - changeSet:
+      id: 2026-08-17-01-store-ico-widen
+      author: Petr F.
+      changes:
+        - modifyDataType:
+            schemaName: core
+            tableName: store
+            columnName: ico
+            newDataType: VARCHAR(20)
+        - modifyDataType:
+            schemaName: core
+            tableName: store_user_edit
+            columnName: ico
+            newDataType: VARCHAR(20)
+      rollback:
+        - modifyDataType:
+            schemaName: core
+            tableName: store
+            columnName: ico
+            newDataType: VARCHAR(8)
+        - modifyDataType:
+            schemaName: core
+            tableName: store_user_edit
+            columnName: ico
+            newDataType: VARCHAR(8)

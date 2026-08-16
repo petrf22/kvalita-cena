@@ -18,6 +18,19 @@ Mapa `country → currency` a `country → locale` je na backendu `app.i18n.*`
 (`application.yml`, `I18nProperties`) — jediné místo, které ji zná; frontend/mobil mají jen
 odlehčenou kopii pro NÁPOVĚDU v UI (popisek pole ceny dřív, než zná server), viz níže.
 
+**Země je nezávislá osa od jazyka** (plán expanze, 2026-08) — appka od srpna 2026 zná i dalších
+13 zemí (Německo, Rakousko, Francie, Španělsko, Itálie, Chorvatsko, Slovinsko, Bulharsko,
+Maďarsko, Rumunsko, Británie, Švýcarsko, Srbsko), aniž by přibyl jediný nový jazyk — nové země
+záměrně míří na `en` v `country-locale` (`application.yml`), stejně jako dřív fungovala
+Británie/Švédsko s existujícím `en`. Rozšíření o zemi je tak jen konfigurace + CHECK constraint
+na `currency` (`db/changelog/2026-08-17/01-countries.yaml`), ne zásah do žádného klienta;
+rozšíření o JAZYK je pořád plná práce popsaná v `## Testy a CI guardy` níže (~700 řetězců na
+jazyk) a dělá se samostatně, podle poptávky. 9 z 13 nových zemí je EUR (nulová práce ve `fx.*`);
+zbylé čtyři (HUF, RON, GBP, CHF) ČNB kótuje stejně jako EUR/PLN. Jedinou výjimkou je Srbsko —
+RSD na lístku ČNB není (ověřeno živě), kurz se stahuje z Národní banky Srbska
+(`service/fx/NbsRateSource`, `app.external.nbs`) jako druhý `ExchangeRateSource` vedle ČNB,
+viz „Kurzovní lístek a zobrazovací měna" níže.
+
 **Proč čeština, ne angličtina, je fallback:** appka vznikla pro český trh, drtivá většina dat
 (kategorie, handly, mail) existuje nejdřív česky. Anglický fallback by pro švédského turistu na
 Slovensku fungoval stejně dobře, ale pro zapomenutý klíč u českého uživatele by byl matoucí
@@ -115,7 +128,15 @@ jako český, a všem jeho budoucím cenám se navěky dosadila CZK. Řeší:
 
 - **`Query.countries`** (`CountryResolver.supportedCountries`) — číselník z `app.i18n.
   country-currency`/`country-locale`, jeden zdroj pravdy pro klienty, kteří dřív CZ/SK/PL
-  hardcodovali na několika místech nezávisle.
+  hardcodovali na několika místech nezávisle. Pole `name` je lokalizovaný název země podle
+  jazyka aktuálního requestu (`messages/countries*.properties`, stejný vzorec jako `errors`/
+  `handles` — chybějící klíč pro novou zemi tvrdě spadne, ne že by appka nový kód zobrazila bez
+  názvu). Web dnes pro popisek v Nastavení radši drží vlastní Transloco klíče
+  (`settings.country.*`, `settings-page.ts#countryOptionLabel`, s fallbackem na kód země) než
+  `CountryInfo.name` — obojí musí zůstat v souladu, dokud se to nesjednotí.
+- 16 zemí (plán expanze, 2026-08): CZ/SK/PL a dalších 13 (DE/AT/FR/ES/IT/HR/SI/BG/HU/RO/GB/
+  CH/RS) — viz „Jazyky a měny" výš pro rozdělení, které jsou nové kvůli zemi a které kvůli
+  jazyku.
 - **`CreateStoreInput.country` nemá literální default `"CZ"`** ve schématu — `StoreService.
   create` dosadí zemi vieweru přes `CountryResolver.resolve` (explicit → `app_user.country` →
   `app.i18n.default-country`), stejné pořadí jako `searchProducts` výš.
@@ -133,11 +154,12 @@ jako český, a všem jeho budoucím cenám se navěky dosadila CZK. Řeší:
   vůbec nezohledňoval.
 - **Inverze `currency → country` NEEXISTUJE a nesmí vzniknout.** Mapa je jednosměrná,
   `CurrencyResolver.isSupported`/`CountryResolver.isSupported` testují jen „je tahle hodnota
-  v `country-currency`", nikdy nevrací zemi zpátky z měny. Dnes je to neškodné (EUR je
-  namapované jen na SK), ale jakmile by přibylo AT/DE, cokoli, co by se pokusilo měnu na zemi
-  převést zpátky, by se tiše rozbilo — `agg.price_current`/`agg.price_daily` mají v PK jen
-  `currency`, ne `country`, a `uq_store_identity` výš zemi řeší přes `core.store.country`, ne
-  přes měnu.
+  v `country-currency`", nikdy nevrací zemi zpátky z měny. Tohle přestalo být teoretické plánem
+  expanze (2026-08) — 9 z 13 nových zemí je EUR, takže `country-currency` dnes mapuje EUR na
+  10 různých zemí (SK, DE, AT, FR, ES, IT, HR, SI, BG a další). Cokoli, co by se pokusilo měnu
+  na zemi převést zpátky, by bylo nejednoznačné a tiše špatné — `agg.price_current`/
+  `agg.price_daily` mají v PK jen `currency`, ne `country`, a `uq_store_identity` výš zemi řeší
+  přes `core.store.country`, ne přes měnu.
 - Web (`CountryService`, `services/country-service.ts`) i mobil (`CountryStore`,
   `ui/settings/CountryStore.kt`) drží preferenci lokálně (localStorage/SharedPreferences) a
   posílají ji `setLocale` mutací jen když je uživatel přihlášený — stejný vzor jako zbytek téhle
@@ -191,6 +213,17 @@ kdykoli znovu stažitelná data (stejný důvod jako `off`/`osm`), ale na rozdí
   `app.fx.max-backfill-years` zpátky — appka tak nestahuje víc historie, než kolik má vlastních
   cen. Katalog s cenami zapsanými do minulosti (`observedAt` v `SubmitObservationInput`) proto
   spolehlivě dostane kurz i pro zpětně dopsaný den.
+- **Víc zdrojů kurzu** (plán expanze o 13 zemí, 2026-08): `ExchangeRateSyncService` injektuje
+  `List<ExchangeRateSource>`, ne jeden zdroj — `CnbRateSource` pro drtivou většinu měn a
+  `NbsRateSource` (Národní banka Srbska, `app.external.nbs`) pro RSD, které ČNB na lístku nemá
+  (ověřeno živě proti `api.cnb.cz` při plánování). Zdroje se dotazují nezávisle a jejich řádky
+  se jen sloučí — výpadek jednoho (nebo chybějící `NBS_API_KEY`, který appka bez licence nemá)
+  nezablokuje uložení řádků od ostatních, stejný vzor jako `CompanyIdValidators`/
+  `CompanyRegistries` u registrů IČO. Každý řádek `fx.exchange_rate.source` nese, odkud přišel
+  (`CNB`/`NBS`). **NBS na rozdíl od ČNB vyžaduje registraci a API klíč** a nemá veřejný sandbox —
+  `NbsRateSource` proto NENÍ ověřený proti reálné odpovědi (na rozdíl od `CnbRateSource`,
+  otestovaného živým `curl`), tvar požadavku je zdokumentovaný odhad, který je potřeba opravit
+  po získání licence, než půjde appka s RSD do provozu.
 
 ### Kategorie: `core.category_i18n`, ne klíče v bundlech
 

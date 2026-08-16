@@ -83,7 +83,8 @@ class CatalogEditServiceTest {
   private CatalogEditService service() {
     i18nProperties.setDefaultCountry("CZ");
     i18nProperties.setCountryCurrency(Map.of("CZ", "CZK", "SK", "EUR", "PL", "PLN"));
-    CountryResolver countryResolver = new CountryResolver(i18nProperties, appUserRepository);
+    // Messages je null — tenhle test volá jen resolve()/isSupported(), ne supportedCountries().
+    CountryResolver countryResolver = new CountryResolver(i18nProperties, appUserRepository, null);
     return new CatalogEditService(productRepository, productUserEditRepository, categoryRepository,
         brandResolutionService, productOverlayService, storeRepository, storeUserEditRepository,
         retailChainRepository, companyIdValidators, storeOverlayService, countryResolver,

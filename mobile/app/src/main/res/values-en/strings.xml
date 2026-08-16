@@ -19,6 +19,19 @@
 
     <string name="company_id_label_generic">Company ID</string>
     <string name="company_id_label_pl">NIP</string>
+    <string name="company_id_label_de">USt-IdNr.</string>
+    <string name="company_id_label_at">UID-Nummer</string>
+    <string name="company_id_label_fr">SIREN</string>
+    <string name="company_id_label_es">NIF</string>
+    <string name="company_id_label_it">Partita IVA</string>
+    <string name="company_id_label_hr">OIB</string>
+    <string name="company_id_label_si">Davčna številka</string>
+    <string name="company_id_label_bg">EIK</string>
+    <string name="company_id_label_hu">Adószám</string>
+    <string name="company_id_label_ro">CUI</string>
+    <string name="company_id_label_gb">Company number</string>
+    <string name="company_id_label_ch">UID</string>
+    <string name="company_id_label_rs">PIB</string>
 
     <string name="account_title">Account</string>
     <string name="account_logged_in_fallback">Signed in</string>
@@ -97,6 +110,19 @@
     <string name="country_name_cz">Czechia</string>
     <string name="country_name_sk">Slovakia</string>
     <string name="country_name_pl">Poland</string>
+    <string name="country_name_de">Germany</string>
+    <string name="country_name_at">Austria</string>
+    <string name="country_name_fr">France</string>
+    <string name="country_name_es">Spain</string>
+    <string name="country_name_it">Italy</string>
+    <string name="country_name_hr">Croatia</string>
+    <string name="country_name_si">Slovenia</string>
+    <string name="country_name_bg">Bulgaria</string>
+    <string name="country_name_hu">Hungary</string>
+    <string name="country_name_ro">Romania</string>
+    <string name="country_name_gb">United Kingdom</string>
+    <string name="country_name_ch">Switzerland</string>
+    <string name="country_name_rs">Serbia</string>
     <string name="settings_currency">Display currency</string>
     <string name="settings_currency_store_default">Store currency (default)</string>
     <string name="settings_currency_note">The conversion is only for comparison — you always report a price in the store\'s currency, this just changes how it\'s displayed.</string>

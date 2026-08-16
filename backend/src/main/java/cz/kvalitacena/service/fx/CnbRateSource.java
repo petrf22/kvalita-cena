@@ -47,6 +47,11 @@ public class CnbRateSource implements ExchangeRateSource {
   }
 
   @Override
+  public String name() {
+    return "CNB";
+  }
+
+  @Override
   public List<FxRateRow> fetchDay(LocalDate date) {
     try {
       CnbResponse response = restClient().get()
