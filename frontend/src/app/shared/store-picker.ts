@@ -7,9 +7,11 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { Store } from '../models/catalog';
 import { AuthService } from '../services/auth-service';
+import { CountryService } from '../services/country-service';
 import { StoreService } from '../services/store-service';
 import { translateError } from './error-message';
 import { StoreForm } from './store-form';
+import { storeLabel } from './store-label';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -39,6 +41,8 @@ export class StorePicker {
   private readonly storeService = inject(StoreService);
   private readonly transloco = inject(TranslocoService);
   protected readonly auth = inject(AuthService);
+  protected readonly countryService = inject(CountryService);
+  protected readonly storeLabel = storeLabel;
 
   readonly selectedStoreId = input<string | null>(null);
   @Output() readonly selectedStoreIdChange = new EventEmitter<string | null>();

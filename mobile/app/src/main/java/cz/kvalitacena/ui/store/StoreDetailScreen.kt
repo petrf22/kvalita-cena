@@ -76,7 +76,14 @@ fun StoreDetailScreen(storeId: String, onEditStore: (String) -> Unit) {
       val store = viewModel.store!!
       Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text(store.name, style = MaterialTheme.typography.headlineSmall)
-        val addressLine = listOfNotNull(store.chain?.name, listOfNotNull(store.street, store.city).joinToString(", "))
+        // Kód země se přilepí jen když se liší od domácí země vieweru (docs/lokalizace.md,
+        // "Country selector v UI") — webový protějšek: store-detail-page.html.
+        val cityWithCountry = if (store.country != AppContainer.countryStore.country) {
+          "${store.city} (${store.country})"
+        } else {
+          store.city
+        }
+        val addressLine = listOfNotNull(store.chain?.name, listOfNotNull(store.street, cityWithCountry).joinToString(", "))
           .joinToString(" · ")
         if (addressLine.isNotBlank()) Text(addressLine, style = MaterialTheme.typography.bodyMedium)
 

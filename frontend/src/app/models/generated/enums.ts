@@ -86,6 +86,7 @@ export const ErrorCode = {
   SessionExpired: 'SESSION_EXPIRED',
   StoreCityEmpty: 'STORE_CITY_EMPTY',
   StoreCityRequired: 'STORE_CITY_REQUIRED',
+  StoreCountryEditRequiresTrust: 'STORE_COUNTRY_EDIT_REQUIRES_TRUST',
   StoreCreateRequiresLogin: 'STORE_CREATE_REQUIRES_LOGIN',
   StoreEditRequiresLogin: 'STORE_EDIT_REQUIRES_LOGIN',
   StoreNameEmpty: 'STORE_NAME_EMPTY',
@@ -93,6 +94,7 @@ export const ErrorCode = {
   StoreNotFound: 'STORE_NOT_FOUND',
   TermsAcceptanceRequired: 'TERMS_ACCEPTANCE_REQUIRED',
   TooManyRequests: 'TOO_MANY_REQUESTS',
+  UnsupportedCountry: 'UNSUPPORTED_COUNTRY',
   UomMismatch: 'UOM_MISMATCH',
   ValidationFailed: 'VALIDATION_FAILED'
 } as const;

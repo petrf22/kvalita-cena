@@ -62,6 +62,13 @@ vyhraje, když se klient a server neshodnou" — nikdy nemůžou, server o tom n
 `SecurityContextHolder` → uložený `locale` přihlášeného uživatele (Caffeine cache, 5 min TTL,
 invalidace v `setLocale`) → `Accept-Language` hlavička → `cs`.
 
+Totéž platí pro `country`, jen s jiným účelem: `searchProducts`/`searchFacets`/`geocodeAddress`/
+`companyByIco` (`CountryResolver.resolve`, viz „Country selector v UI" níž) berou explicitní
+argument klienta jako AUTORITATIVNÍ, `auth.app_user.country` je jen fallback pro klienty, kteří
+argument nepošlou (starší build appky), nikdy zdroj pravdy — přesně stejné rozdělení
+zodpovědnosti jako u `locale`/`setLocale` výš, žádná výjimka z pravidla „server o volbě klienta
+nerozhoduje".
+
 ## Backend
 
 `I18nConfig`: `ResourceBundleMessageSource` nad `messages/{errors,mail,handles,attribution}`,
@@ -98,6 +105,45 @@ PLN do jednoho čísla, tichá datová korupce bez jakékoli chyby při zápisu.
 ceny řadilo CZK vedle PLN v jednom sloupci. `Product.stats`/`ProductSearchItem` vybírají
 **dominantní měnu** (nejvíc `n_obs`) mezi skupinami stejného produktu, ne naivní `.min()` napříč
 měnami — to by dovolilo 15 PLN vypadat levněji než 20 CZK jen proto, že číslo je menší.
+
+### Country selector v UI
+
+Země obchodu byla dlouho appce známá (`store.country` → `CurrencyResolver.forStore`), ale
+nikde vidět ani volitelná — formulář zakládání obchodu ji posílal natvrdo jako `CZ`, pokud
+uživatel nezmáčkl „Použít mou polohu". Slovenský/polský obchod založený z domova se tak uložil
+jako český, a všem jeho budoucím cenám se navěky dosadila CZK. Řeší:
+
+- **`Query.countries`** (`CountryResolver.supportedCountries`) — číselník z `app.i18n.
+  country-currency`/`country-locale`, jeden zdroj pravdy pro klienty, kteří dřív CZ/SK/PL
+  hardcodovali na několika místech nezávisle.
+- **`CreateStoreInput.country` nemá literální default `"CZ"`** ve schématu — `StoreService.
+  create` dosadí zemi vieweru přes `CountryResolver.resolve` (explicit → `app_user.country` →
+  `app.i18n.default-country`), stejné pořadí jako `searchProducts` výš.
+- **Oprava země existujícího obchodu obchází `store_user_edit`.** Na rozdíl od zbytku
+  `updateStore` (patch nad soukromou vrstvou, vidí ho jen autor, dokud neproběhne konsolidační
+  job — `docs/datovy-model.md`, „Uživatelská vrstva nad globálními daty") má `country` tvrdý
+  dopad na měnu zápisu a validaci IČO/NIP pro VŠECHNY uživatele, ne jen na to, jak provozovnu
+  vidí autor patche. `CatalogEditService.updateStore` ji proto zapisuje přímo do spravované
+  entity `core.store`, gatováno `TrustLevelService.isTrusted` (`ErrorCode.
+  STORE_COUNTRY_EDIT_REQUIRES_TRUST`) — nedůvěryhodný autor nemůže „přebarvit" obchod všem
+  ostatním jedním klikem. `store_user_edit.country` byl proto zrušen (migrace
+  `2026-08-16/01-store-country.yaml`), byl by navždy nepoužívaný sloupec.
+- **`uq_store_identity` má `country` jako první sloupec indexu** (stejná migrace) — dřív dvě
+  stejnojmenné provozovny ve stejnojmenném městě ve dvou zemích kolidovaly, protože zemi index
+  vůbec nezohledňoval.
+- **Inverze `currency → country` NEEXISTUJE a nesmí vzniknout.** Mapa je jednosměrná,
+  `CurrencyResolver.isSupported`/`CountryResolver.isSupported` testují jen „je tahle hodnota
+  v `country-currency`", nikdy nevrací zemi zpátky z měny. Dnes je to neškodné (EUR je
+  namapované jen na SK), ale jakmile by přibylo AT/DE, cokoli, co by se pokusilo měnu na zemi
+  převést zpátky, by se tiše rozbilo — `agg.price_current`/`agg.price_daily` mají v PK jen
+  `currency`, ne `country`, a `uq_store_identity` výš zemi řeší přes `core.store.country`, ne
+  přes měnu.
+- Web (`CountryService`, `services/country-service.ts`) i mobil (`CountryStore`,
+  `ui/settings/CountryStore.kt`) drží preferenci lokálně (localStorage/SharedPreferences) a
+  posílají ji `setLocale` mutací jen když je uživatel přihlášený — stejný vzor jako zbytek téhle
+  kapitoly, appka se ze serveru nikdy nestahuje zpátky. Ovlivňuje výchozí zemi formuláře obchodu
+  a `country` filtr hledání; `shared/store-label.ts`/`ui/common/StoreLabel.kt` přilepí kód země
+  k názvu obchodu jen když se liší od zvolené domácí země.
 
 ### Kurzovní lístek a zobrazovací měna
 
@@ -192,7 +238,8 @@ i v TS kódu, ne jen v šablonách, jeden build bez per-locale nasazení.
 UI na zlomek vteřiny nespadne do prázdna), pak `document.documentElement.lang`, `localStorage`,
 a push na server (`ViewerService.setLocale`, chyba requestu appku neblokuje — volba klienta je
 platná bez ohledu na to, jestli se stihla uložit). Počáteční jazyk: `localStorage` →
-`navigator.languages` ∩ podporované → `cs`.
+`navigator.languages` ∩ podporované → `cs`. `CountryService` (`services/country-service.ts`) je
+stejný vzor pro zemi — nezávislá volba v Nastavení, viz „Country selector v UI" výš.
 
 **Struktura bundlů**: `public/i18n/{cs,sk,en,pl}.json` (kořen: `common`/`nav`/`errors`/`enum`) +
 `public/i18n/<scope>/{cs,sk,en,pl}.json` na stránku/komponentu (`provideTranslocoScope`,
@@ -247,6 +294,13 @@ neshoda by způsobila jen dočasně špatný popisek, nikdy špatně uloženou h
 `Locale.getDefault().language` — `AppCompatDelegate` ho drží v souladu s volbou v Nastavení,
 appka tak nemusí nikam tahat `Context` jen kvůli aktuálnímu jazyku.
 
+`CountryStore` (`ui/settings/CountryStore.kt`) zrcadlí webový `CountryService` — nezávislá volba
+země v Nastavení, viz „Country selector v UI" výš. Na rozdíl od jazyka appka zemi PO PŘIHLÁŠENÍ
+posílá na server (`GraphQlClient.setLocale`) — `LocaleController.setLang()` sám o sobě
+`setLocale` nevolá vůbec (viz jeho KDoc), takže push u přepínače země v `SettingsScreen`
+posílá aktuální jazyk jen jako povinný doprovodný argument mutace, ne že by appka nově
+synchronizovala i jazyk.
+
 ## Testy a CI guardy
 
 „Druhá polovina triku": kompilátor hlídá, že klíč z `enum-labels.ts` (`Record<Enum, string>`)
@@ -278,9 +332,5 @@ frontend přes `npm test`, mobil přes `:app:testDebugUnitTest :app:lintDebug :a
   `serverMessage` (lokalizovaný, ale ne appkou doladěný), protože `network/Dto.kt` negeneruje
   typy ze schématu jako web (`ERROR_CODE_KEYS`). Vyžadovalo by to buď codegen pro Kotlin, nebo
   ruční `Map<String, Int>` udržovanou v synchronizaci s `ErrorCode` enumem.
-- **Country selector v UI** — appka zatím zemi/měnu odvozuje z `store.country` (existující
-  obchod) nebo z `reverseGeocode` při zakládání nové provozovny; samostatný přepínač země
-  (nezávislý na jazyku — Čech žijící v Polsku chce české UI a polské ceny) v Nastavení zatím
-  neexistuje na webu ani na mobilu.
 - **Skutečné lidské revize strojových překladů** sk/en/pl — psané s péčí a gramaticky, ale bez
   rodilého mluvčího na kontrolu.

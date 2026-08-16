@@ -1,0 +1,49 @@
+# 01-store-country.yaml — země jako viditelná a volitelná dimenze provozovny (docs/lokalizace.md,
+# "Country selector v UI"). Dvě samostatné změny:
+#
+# 1) uq_store_identity dostává country jako první sloupec — stejnojmenná provozovna ve
+#    stejnojmenném městě ve dvou zemích dřív kolidovala, protože country v indexu chyběl.
+#
+# 2) store_user_edit.country se RUŠÍ. Country má na rozdíl od name/street/lat/lon tvrdý dopad
+#    na měnu zápisu (CurrencyResolver.forStore) a validaci IČO/NIP pro VŠECHNY uživatele, ne jen
+#    na to, jak provozovnu vidí autor patche — proto CatalogEditService.updateStore teď zemi
+#    zapisuje přímo do core.store (gatováno TrustLevelService.isTrusted), obchází
+#    store_user_edit/StoreOverlayService stejně jako zbytek "uživatelské vrstvy nad globálními
+#    daty" (docs/datovy-model.md). Sloupec by po přechodu zůstal navždy nepoužívaný.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-16-01-store-identity-country
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              DROP INDEX IF EXISTS core.uq_store_identity;
+
+              CREATE UNIQUE INDEX uq_store_identity ON core.store
+                (country, core.norm_text(name), core.norm_text(city), COALESCE(core.norm_text(street), ''))
+                WHERE status <> 'MERGED';
+      rollback:
+        - sql:
+            sql: |
+              DROP INDEX IF EXISTS core.uq_store_identity;
+
+              CREATE UNIQUE INDEX uq_store_identity ON core.store
+                (core.norm_text(name), core.norm_text(city), COALESCE(core.norm_text(street), ''))
+                WHERE status <> 'MERGED';
+
+  - changeSet:
+      id: 2026-08-16-01-store-user-edit-drop-country
+      author: Petr F.
+      changes:
+        - dropColumn:
+            schemaName: core
+            tableName: store_user_edit
+            columnName: country
+      rollback:
+        - addColumn:
+            schemaName: core
+            tableName: store_user_edit
+            columns:
+              - column:
+                  name: country
+                  type: VARCHAR(2)

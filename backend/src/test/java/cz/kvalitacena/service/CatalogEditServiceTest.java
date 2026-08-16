@@ -1,5 +1,6 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.config.I18nProperties;
 import cz.kvalitacena.controller.UpdateProductInput;
 import cz.kvalitacena.controller.UpdateStoreInput;
 import cz.kvalitacena.db.entity.AppUser;
@@ -28,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -72,13 +74,20 @@ class CatalogEditServiceTest {
   private StoreOverlayService storeOverlayService;
   @Mock
   private AppUserRepository appUserRepository;
+  @Mock
+  private TrustLevelService trustLevelService;
 
   private final CompanyIdValidators companyIdValidators = new CompanyIdValidators(List.of(new IcoValidator()));
+  private final I18nProperties i18nProperties = new I18nProperties();
 
   private CatalogEditService service() {
+    i18nProperties.setDefaultCountry("CZ");
+    i18nProperties.setCountryCurrency(Map.of("CZ", "CZK", "SK", "EUR", "PL", "PLN"));
+    CountryResolver countryResolver = new CountryResolver(i18nProperties, appUserRepository);
     return new CatalogEditService(productRepository, productUserEditRepository, categoryRepository,
         brandResolutionService, productOverlayService, storeRepository, storeUserEditRepository,
-        retailChainRepository, companyIdValidators, storeOverlayService, appUserRepository);
+        retailChainRepository, companyIdValidators, storeOverlayService, countryResolver,
+        trustLevelService, appUserRepository);
   }
 
   private Product existingProduct() {
@@ -186,5 +195,72 @@ class CatalogEditServiceTest {
         null, "12345678", null, null, null, null, null);
     assertThatThrownBy(() -> service().updateStore(STORE_ID, input, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
+  }
+
+  /**
+   * Country na rozdíl od zbytku updateStore obchází store_user_edit a jde přímo do globální
+   * entity (docs/lokalizace.md, "Country selector v UI") — má tvrdý dopad na měnu zápisu pro
+   * VŠECHNY uživatele, ne jen na to, jak provozovnu vidí autor patche.
+   */
+  @Test
+  void trustedUserChangesStoreCountryDirectlyOnGlobalEntity() {
+    givenLoggedInUser();
+    when(trustLevelService.isTrusted(any())).thenReturn(true);
+    Store store = Store.builder().id(STORE_ID).name("Obchod").city("Bratislava").country("CZ").build();
+    when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(store));
+    when(storeUserEditRepository.findByStoreIdAndUserId(STORE_ID, USER_ID)).thenReturn(Optional.empty());
+
+    UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
+        "SK", null, null, null, null, null, null);
+    service().updateStore(STORE_ID, input, PUBLIC_UID);
+
+    assertThat(store.getCountry()).isEqualTo("SK");
+    verify(storeRepository).save(store);
+    // country se NEUKLÁDÁ do patche — je to globální změna, ne pohled jen autora.
+    verify(storeUserEditRepository, never()).save(any());
+  }
+
+  @Test
+  void untrustedUserCannotChangeStoreCountry() {
+    givenLoggedInUser();
+    when(trustLevelService.isTrusted(any())).thenReturn(false);
+    when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(Store.builder().id(STORE_ID)
+        .name("Obchod").city("Bratislava").country("CZ").build()));
+    when(storeUserEditRepository.findByStoreIdAndUserId(STORE_ID, USER_ID)).thenReturn(Optional.empty());
+
+    UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
+        "SK", null, null, null, null, null, null);
+    assertThatThrownBy(() -> service().updateStore(STORE_ID, input, PUBLIC_UID))
+        .isInstanceOf(ValidationException.class);
+    verify(storeRepository, never()).save(any());
+  }
+
+  @Test
+  void unsupportedStoreCountryIsRejectedRegardlessOfTrust() {
+    givenLoggedInUser();
+    when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(Store.builder().id(STORE_ID)
+        .name("Obchod").city("Brno").country("CZ").build()));
+    when(storeUserEditRepository.findByStoreIdAndUserId(STORE_ID, USER_ID)).thenReturn(Optional.empty());
+
+    UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
+        "AT", null, null, null, null, null, null);
+    assertThatThrownBy(() -> service().updateStore(STORE_ID, input, PUBLIC_UID))
+        .isInstanceOf(ValidationException.class);
+  }
+
+  @Test
+  void unchangedCountryDoesNotRequireTrust() {
+    givenLoggedInUser();
+    when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(Store.builder().id(STORE_ID)
+        .name("Obchod").city("Brno").country("CZ").build()));
+    when(storeUserEditRepository.findByStoreIdAndUserId(STORE_ID, USER_ID)).thenReturn(Optional.empty());
+
+    // Stejná země jako globální hodnota — nejde o skutečnou změnu, trustLevelService se
+    // vůbec nezavolá (nemockovaný isTrusted by jinak vrátil Mockito default false a spadlo by).
+    UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
+        "CZ", null, null, null, null, null, null);
+    service().updateStore(STORE_ID, input, PUBLIC_UID);
+
+    verify(storeRepository, never()).save(any());
   }
 }

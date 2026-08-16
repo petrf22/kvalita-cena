@@ -11,7 +11,8 @@
       @if (store()!.chain) {
         {{ store()!.chain!.name }} ·
       }
-      {{ store()!.street ? store()!.street + ', ' : '' }}{{ store()!.city }}
+      {{ store()!.street ? store()!.street + ', ' : '' }}{{ store()!.city
+      }}{{ store()!.country !== countryService.country() ? ' (' + store()!.country + ')' : '' }}
     </p>
 
     <div class="status-badges">

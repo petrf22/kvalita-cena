@@ -25,6 +25,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -66,9 +67,11 @@ class StoreServiceTest {
   private StoreService service() {
     catalogProperties.setDraftConfirmations(3);
     i18nProperties.setDefaultCountry("CZ");
+    i18nProperties.setCountryCurrency(Map.of("CZ", "CZK", "SK", "EUR", "PL", "PLN"));
+    CountryResolver countryResolver = new CountryResolver(i18nProperties, appUserRepository);
     return new StoreService(storeRepository, retailChainRepository, appUserRepository,
         priceObservationRepository, companyIdValidators, catalogRateLimiter, duplicateLookupService,
-        trustLevelService, catalogProperties, i18nProperties);
+        trustLevelService, catalogProperties, countryResolver);
   }
 
   private CreateStoreInput input(String name, String city) {
@@ -170,6 +173,36 @@ class StoreServiceTest {
     service().promoteIfConfirmed(storeId);
 
     org.mockito.Mockito.verify(storeRepository, org.mockito.Mockito.never()).save(any());
+  }
+
+  @Test
+  void missingCountryFallsBackToViewerCountryNotDefault() {
+    AppUser user = AppUser.builder().id(USER_ID).country("SK").build();
+    when(appUserRepository.findByPublicUid(PUBLIC_UID)).thenReturn(Optional.of(user));
+    // CountryResolver čte vieweruv záznam znovu přes findById (jiná repository metoda než
+    // findByPublicUid, kterou používá StoreService pro autorizaci) — obojí musí ukazovat na
+    // stejného uživatele, jinak resolver spadne na app.i18n.default-country.
+    when(appUserRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+    when(catalogRateLimiter.tryAcquireStoreCreation(PUBLIC_UID)).thenReturn(true);
+    when(trustLevelService.isTrusted(any())).thenReturn(true);
+    when(storeRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    CreateStoreInput input = new CreateStoreInput("Obchod", null, null, "Bratislava", null, null,
+        null, null, null, null, null);
+    Store saved = service().create(input, PUBLIC_UID);
+
+    // CountryResolver.resolve: chybějící explicitní country -> app_user.country (SK), nikdy
+    // rovnou app.i18n.default-country — jinak by slovenský uživatel dostal CZ/CZK bez ptaní.
+    assertThat(saved.getCountry()).isEqualTo("SK");
+  }
+
+  @Test
+  void unsupportedCountryIsRejected() {
+    givenLoggedInUser();
+    CreateStoreInput input = new CreateStoreInput("Obchod", null, null, "Brno", null, "AT",
+        null, null, null, null, null);
+    assertThatThrownBy(() -> service().create(input, PUBLIC_UID))
+        .isInstanceOf(ValidationException.class);
   }
 
   @Test

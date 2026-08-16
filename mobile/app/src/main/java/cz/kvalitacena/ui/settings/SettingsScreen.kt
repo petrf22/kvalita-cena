@@ -17,9 +17,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -27,7 +30,11 @@ import androidx.compose.ui.unit.dp
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.BuildConfig
 import cz.kvalitacena.R
+import cz.kvalitacena.network.CountryInfo
+import cz.kvalitacena.ui.common.KNOWN_COUNTRIES
 import cz.kvalitacena.ui.common.SingleLineTextField
+import cz.kvalitacena.ui.common.countryNameRes
+import kotlinx.coroutines.launch
 
 /**
  * Záložka "Nastavení" — placeholder podle zadání ("doplním později"), ale ne prázdný: sekce
@@ -42,12 +49,46 @@ import cz.kvalitacena.ui.common.SingleLineTextField
  */
 @Composable
 fun SettingsScreen(onOpenTerms: () -> Unit = {}, onOpenPrivacy: () -> Unit = {}) {
+  val scope = rememberCoroutineScope()
+  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
+  val isLoggedIn = accessToken != null
+  var countryOptions by remember { mutableStateOf<List<CountryInfo>>(emptyList()) }
+  LaunchedEffect(Unit) {
+    // Číselník je jen doplněk pro select options — výpadek appku nesmí zablokovat, zůstane
+    // statický fallback KNOWN_COUNTRIES.
+    runCatching { AppContainer.graphQlClient.countries() }.onSuccess { countryOptions = it }
+  }
+
   Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
     Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
     Spacer()
 
     val current = currentAppLang()
     LanguageDropdown(selected = current, onSelect = { LocaleController.setLang(it) })
+    Spacer()
+    HorizontalDivider()
+    Spacer()
+
+    val countryStore = AppContainer.countryStore
+    val availableCountries = countryOptions.map { it.code }.ifEmpty { KNOWN_COUNTRIES.toList() }
+    CountryDropdown(
+      selected = countryStore.country,
+      options = availableCountries,
+      onSelect = { code ->
+        countryStore.select(code)
+        // Push na server je jen pro asynchronní OTP e-mail (docs/lokalizace.md) — appka je
+        // sama o sobě autoritativní i bez něj, chyba requestu tady nesmí nic zablokovat.
+        if (isLoggedIn) {
+          scope.launch { runCatching { AppContainer.graphQlClient.setLocale(current.tag, code) } }
+        }
+      },
+    )
+    Spacer()
+    Text(
+      stringResource(R.string.settings_country_note),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     Spacer()
     HorizontalDivider()
     Spacer()
@@ -141,6 +182,34 @@ private fun LanguageDropdown(selected: AppLang, onSelect: (AppLang) -> Unit) {
           text = { Text(lang.endonym) },
           onClick = {
             onSelect(lang)
+            expanded = false
+          },
+        )
+      }
+    }
+  }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CountryDropdown(selected: String, options: List<String>, onSelect: (String) -> Unit) {
+  var expanded by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+    SingleLineTextField(
+      value = stringResource(countryNameRes(selected)),
+      onValueChange = {},
+      readOnly = true,
+      label = stringResource(R.string.settings_country),
+      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+      modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+    )
+    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+      options.forEach { code ->
+        DropdownMenuItem(
+          text = { Text(stringResource(countryNameRes(code))) },
+          onClick = {
+            onSelect(code)
             expanded = false
           },
         )

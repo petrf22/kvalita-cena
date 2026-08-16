@@ -85,7 +85,7 @@ fun PriceEntryScreen(
 ) {
   val viewModel: PriceEntryViewModel = viewModel(
     factory = viewModelFactory {
-      initializer { PriceEntryViewModel(AppContainer.graphQlClient, target) }
+      initializer { PriceEntryViewModel(AppContainer.graphQlClient, target, AppContainer.countryStore) }
     },
   )
   val context = LocalContext.current
@@ -248,6 +248,7 @@ fun PriceEntryScreen(
           locating = viewModel.locating,
           onAddNew = onAddStore,
           isLoggedIn = isLoggedIn,
+          homeCountry = AppContainer.countryStore.country,
           modifier = Modifier.fillMaxWidth(),
         )
         Gap()

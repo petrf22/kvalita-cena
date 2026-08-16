@@ -19,6 +19,22 @@
     </nz-form-item>
 
     <nz-form-item>
+      <nz-form-label>{{ t('settings.countryLabel') }}</nz-form-label>
+      <nz-form-control [nzExtra]="t('settings.countryNote')">
+        <nz-select
+          [ngModel]="countryService.country()"
+          (ngModelChange)="onCountryChange($event)"
+          name="country"
+          style="width: 200px"
+        >
+          @for (code of countryOptions(); track code) {
+            <nz-option [nzValue]="code" [nzLabel]="countryOptionLabel(code)" />
+          }
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
       <nz-form-label>{{ t('settings.currencyLabel') }}</nz-form-label>
       <nz-form-control [nzExtra]="t('settings.currencyNote')">
         <nz-select

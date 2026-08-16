@@ -13,6 +13,7 @@ import cz.kvalitacena.network.SubmitObservationInput
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.storeLabel
 import cz.kvalitacena.ui.common.toUiText
+import cz.kvalitacena.ui.settings.CountryStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -23,6 +24,7 @@ private const val STORE_SEARCH_DEBOUNCE_MS = 300L
 class PriceEntryViewModel(
   private val graphQlClient: GraphQlClient,
   private val target: PriceEntryTarget,
+  private val countryStore: CountryStore,
 ) : ViewModel() {
 
   var loading by mutableStateOf(true)
@@ -115,13 +117,13 @@ class PriceEntryViewModel(
 
   fun onStoreSelected(store: Store) {
     selectedStore = store
-    storeQuery = storeLabel(store)
+    storeQuery = storeLabel(store, countryStore.country)
   }
 
   /** Návrat z formuláře nového obchodu (StoreFormScreen) — rovnou ho vybrat. */
   fun onNewStoreCreated(store: Store) {
     selectedStore = store
-    storeQuery = storeLabel(store)
+    storeQuery = storeLabel(store, countryStore.country)
     storeSuggestions = emptyList()
   }
 

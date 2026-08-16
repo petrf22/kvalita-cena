@@ -92,6 +92,11 @@
 
     <string name="settings_title">Ustawienia</string>
     <string name="settings_language">Język</string>
+    <string name="settings_country">Kraj</string>
+    <string name="settings_country_note">Wpływa na to, które sklepy aplikacja proponuje w domyślnym wyszukiwaniu oraz domyślny kraj/walutę przy dodawaniu nowego sklepu — niezależnie od języka.</string>
+    <string name="country_name_cz">Czechy</string>
+    <string name="country_name_sk">Słowacja</string>
+    <string name="country_name_pl">Polska</string>
     <string name="settings_currency">Waluta wyświetlania</string>
     <string name="settings_currency_store_default">Waluta sklepu (domyślnie)</string>
     <string name="settings_currency_note">Przeliczenie służy tylko do porównania — cenę zawsze zgłaszasz w walucie sklepu, to tylko zmienia sposób jej wyświetlania.</string>
@@ -239,6 +244,7 @@
     <string name="store_form_street_label">Ulica i numer (opcjonalnie)</string>
     <string name="store_form_city_label">Miasto</string>
     <string name="store_form_postal_code_label">Kod pocztowy (opcjonalnie)</string>
+    <string name="store_form_country_label">Kraj</string>
     <string name="store_form_similar_warning">Czy nie chodzi o jeden z tych już istniejących sklepów?</string>
     <string name="store_form_save_changes">Zapisz zmiany</string>
     <string name="store_form_create">Dodaj sklep</string>

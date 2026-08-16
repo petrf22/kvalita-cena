@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.os.LocaleListCompat
+import java.util.Locale
 
 /** Jazyky appky (docs/lokalizace.md) — endonyma se v přepínači zobrazují vlastním jménem. */
 enum class AppLang(val tag: String, val endonym: String) {
@@ -37,3 +38,11 @@ fun currentAppLang(): AppLang {
   val tag = LocalConfiguration.current.locales[0].language
   return AppLang.entries.firstOrNull { it.tag == tag } ?: AppLang.CS
 }
+
+/**
+ * Necomposable ekvivalent [currentAppLang] — pro volání mimo Compose (např. při inicializaci
+ * `CountryStore` nebo push `GraphQlClient.setLocale` po přepnutí země). `AppCompatDelegate`
+ * samo o sobě Compose nevyžaduje, jen `currentAppLang()` kvůli `LocalConfiguration`.
+ */
+fun currentLangTag(): String =
+  AppCompatDelegate.getApplicationLocales().get(0)?.language ?: Locale.getDefault().language

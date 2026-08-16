@@ -15,6 +15,7 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n      query Countries {\n        countries {\n          code\n          currency\n          defaultLocale\n        }\n      }\n    ": typeof types.CountriesDocument,
     "\n      query FxInfo {\n        fxInfo {\n          displayCurrencies\n          latestRateDate\n          attribution\n        }\n      }\n    ": typeof types.FxInfoDocument,
     "\n  fragment StoreFields on Store {\n    id\n    name\n    street\n    city\n    postalCode\n    country\n    lat\n    lon\n    geoSource\n    ico\n    chain {\n      id\n      name\n      chainType\n    }\n    verified\n    editedByMe\n    pendingConfirmation\n  }\n": typeof types.StoreFieldsFragmentDoc,
     "\n  fragment PhotoFields on Photo {\n    id\n    url\n    thumbnailUrl\n    width\n    height\n    caption\n    mine\n    hidden\n    attribution\n  }\n": typeof types.PhotoFieldsFragmentDoc,
@@ -56,6 +57,7 @@ type Documents = {
     "\n      mutation DeleteAvatar {\n        deleteAvatar {\n          publicHandle\n          displayName\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    ": typeof types.DeleteAvatarDocument,
 };
 const documents: Documents = {
+    "\n      query Countries {\n        countries {\n          code\n          currency\n          defaultLocale\n        }\n      }\n    ": types.CountriesDocument,
     "\n      query FxInfo {\n        fxInfo {\n          displayCurrencies\n          latestRateDate\n          attribution\n        }\n      }\n    ": types.FxInfoDocument,
     "\n  fragment StoreFields on Store {\n    id\n    name\n    street\n    city\n    postalCode\n    country\n    lat\n    lon\n    geoSource\n    ico\n    chain {\n      id\n      name\n      chainType\n    }\n    verified\n    editedByMe\n    pendingConfirmation\n  }\n": types.StoreFieldsFragmentDoc,
     "\n  fragment PhotoFields on Photo {\n    id\n    url\n    thumbnailUrl\n    width\n    height\n    caption\n    mine\n    hidden\n    attribution\n  }\n": types.PhotoFieldsFragmentDoc,
@@ -97,6 +99,10 @@ const documents: Documents = {
     "\n      mutation DeleteAvatar {\n        deleteAvatar {\n          publicHandle\n          displayName\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    ": types.DeleteAvatarDocument,
 };
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n      query Countries {\n        countries {\n          code\n          currency\n          defaultLocale\n        }\n      }\n    "): typeof import('./graphql').CountriesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

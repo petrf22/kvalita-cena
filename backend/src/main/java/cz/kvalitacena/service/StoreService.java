@@ -1,7 +1,6 @@
 package cz.kvalitacena.service;
 
 import cz.kvalitacena.config.CatalogProperties;
-import cz.kvalitacena.config.I18nProperties;
 import cz.kvalitacena.controller.CreateStoreInput;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.GeoSource;
@@ -45,7 +44,7 @@ public class StoreService {
   private final DuplicateLookupService duplicateLookupService;
   private final TrustLevelService trustLevelService;
   private final CatalogProperties catalogProperties;
-  private final I18nProperties i18nProperties;
+  private final CountryResolver countryResolver;
 
   @Transactional
   public Store create(CreateStoreInput input, UUID viewerPublicUid) {
@@ -61,8 +60,10 @@ public class StoreService {
     if (input.city() == null || input.city().isBlank()) {
       throw new ValidationException(ErrorCode.STORE_CITY_REQUIRED);
     }
-    String country = input.country() == null || input.country().isBlank()
-        ? i18nProperties.getDefaultCountry() : input.country().trim();
+    String country = countryResolver.resolve(input.country(), user.getId());
+    if (!countryResolver.isSupported(country)) {
+      throw new ValidationException(ErrorCode.UNSUPPORTED_COUNTRY);
+    }
     String ico = normalizeIco(input.ico());
     // Pro zemi bez validátoru (zatím žádnou jinou než CZ/SK/PL) se IČO/NIP uloží bez kontroly
     // tvaru — lepší než odmítnout zápis kvůli algoritmu, který appka ještě nezná.

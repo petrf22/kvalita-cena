@@ -14,6 +14,12 @@ import java.util.List;
  * {@code lat}/{@code lon} v patchi smí ovlivnit JEN zobrazenou hodnotu — filtr vzdálenosti
  * v {@code nearbyStores} musí dál pracovat s globálními souřadnicemi (idx_store_geo), jinak
  * by se rozjelo od GiST indexu (viz backend etapa 2, StoreRepository).
+ *
+ * <p>{@code country} tu záměrně NENÍ — na rozdíl od zbytku téhle entity má tvrdý dopad na měnu
+ * zápisu ({@link cz.kvalitacena.service.CurrencyResolver#forStore}) a validaci IČO/NIP pro
+ * VŠECHNY uživatele, ne jen na to, jak provozovnu vidí autor patche. {@code updateStore}
+ * (viz {@code CatalogEditService}) proto zemi zapisuje přímo do globálního {@code core.store},
+ * gatováno {@code TrustLevelService.isTrusted} (docs/lokalizace.md, "Country selector v UI").
  */
 @Entity
 @Table(name = "store_user_edit", schema = "core")
@@ -47,9 +53,6 @@ public class StoreUserEdit {
 
   @Column(name = "postal_code", length = 10)
   private String postalCode;
-
-  @Column(name = "country", length = 2)
-  private String country;
 
   @Column(name = "ico", length = 8)
   private String ico;

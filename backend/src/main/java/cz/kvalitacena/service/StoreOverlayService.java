@@ -57,7 +57,8 @@ public class StoreOverlayService {
     if (edit.getCity() != null) builder.city(edit.getCity());
     if (edit.getPostalCode() != null) builder.postalCode(edit.getPostalCode());
     else if (edit.getClearedFields().contains("postalCode")) builder.postalCode(null);
-    if (edit.getCountry() != null) builder.country(edit.getCountry());
+    // country tu záměrně chybí — updateStore ji zapisuje přímo do globální entity
+    // (viz StoreUserEdit, CatalogEditService.updateStore), overlay nikdy nepatchuje.
     if (edit.getIco() != null) builder.ico(edit.getIco());
     else if (edit.getClearedFields().contains("ico")) builder.ico(null);
     if (edit.getLat() != null) builder.lat(edit.getLat());

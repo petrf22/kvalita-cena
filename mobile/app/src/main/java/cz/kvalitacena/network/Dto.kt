@@ -368,6 +368,21 @@ data class CompanyInfo(
   val postalCode: String? = null,
 )
 
+/**
+ * Číselník zemí, které appka zná (app.i18n.country-currency/country-locale na backendu) —
+ * mobilní protějšek webového CountryInfo (frontend/src/app/services/country-service.ts).
+ */
+@Serializable
+data class CountryInfo(
+  val code: String,
+  val currency: String,
+  val defaultLocale: String? = null,
+)
+
+/** Odpověď setLocale mutace — appka hodnoty jen zahodí, jde jí čistě o vedlejší efekt na serveru. */
+@Serializable
+data class SetLocaleResult(val locale: String, val country: String? = null)
+
 @Serializable
 data class CreateStoreInput(
   val name: String,
@@ -536,6 +551,12 @@ data class FlagRecordData(val flagRecord: FlagResult)
 
 @Serializable
 data class FxInfoData(val fxInfo: FxInfo)
+
+@Serializable
+data class CountriesData(val countries: List<CountryInfo> = emptyList())
+
+@Serializable
+data class SetLocaleData(val setLocale: SetLocaleResult)
 
 /**
  * `extensions.code`/`params` je strojový kontrakt chyby (docs/lokalizace.md), stejný jako

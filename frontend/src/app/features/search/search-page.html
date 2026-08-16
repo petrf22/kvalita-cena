@@ -26,7 +26,7 @@
       [nzPlaceHolder]="t('search.storeFilter')"
     >
       @for (store of facets().stores; track store.id) {
-        <nz-option [nzValue]="store.id" [nzLabel]="store.name + ' — ' + store.city" />
+        <nz-option [nzValue]="store.id" [nzLabel]="storeLabel(store, countryService.country())" />
       }
     </nz-select>
 
@@ -111,7 +111,11 @@
                 <span class="unknown-price">{{ t('search.unknownPrice') }}</span>
               }
             </td>
-            <td>{{ item.cheapestStore?.name ?? '–' }}</td>
+            <td>
+              {{
+                item.cheapestStore ? storeLabel(item.cheapestStore, countryService.country()) : '–'
+              }}
+            </td>
             <td>{{ item.observationCount }}</td>
             <td>{{ item.lastObservedAt | relativeDate }}</td>
             <td>

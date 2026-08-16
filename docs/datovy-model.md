@@ -145,8 +145,11 @@ z plánu bez seq scanu.
 
 **`core.norm_text(text)` — immutable normalizace pro hledání a unikátnost**
 (`2026-08-06/01-text-normalization.yaml`): malá písmena, bez diakritiky, sjednocené mezery.
-Používá se v `uq_store_identity` (název + město + ulice, tvrdá pojistka proti duplicitám —
-klient si musí před uložením ověřit `searchStores`, tohle je až poslední obrana), v
+Používá se v `uq_store_identity` (**country** + název + město + ulice, tvrdá pojistka proti
+duplicitám — klient si musí před uložením ověřit `searchStores`, tohle je až poslední obrana;
+`country` přibyla do indexu až `2026-08-16/01-store-country.yaml` — do té doby dvě stejnojmenné
+provozovny ve stejnojmenném městě ve dvou zemích kolidovaly, `docs/lokalizace.md`, „Country
+selector v UI"), v
 `uq_product_generic_name` (druhové položky, `docs/reputace.md`) a v `pg_trgm` indexech pro
 podobnostní hledání. Past stejného druhu jako `core.day_utc` u `date_trunc`
 („Past: `date_trunc` není IMMUTABLE" výš): **obě varianty `unaccent()` (jedno- i
@@ -234,6 +237,18 @@ zdvojovat GraphQL typ zvlášť pro "s překryvem" a "bez překryvu" — CLAUDE.
 podobné případy "autorizaci jako predikát v dotazu, ne filtr v resolveru"; tady je to
 "překryv v service vrstvě čtení, nikdy mutace spravované entity", stejný princip jinou
 cestou.
+
+**Výjimka z pravidla výš: `core.store.country`.** Na rozdíl od zbytku téhle vrstvy má country
+tvrdý dopad na měnu zápisu (`CurrencyResolver.forStore`) a validaci IČO/NIP pro VŠECHNY
+uživatele, ne jen na to, jak provozovnu vidí autor patche — kdyby šla přes `store_user_edit`
+jako ostatní pole, autor by ve svém vlastním pohledu viděl opravenou zemi, ale
+`submitObservation` (čte spravovanou entitu přímo, ne přes overlay) by dál ukládal ceny ve
+staré měně, a všem ostatním by se obchod dál tvářil jako z jiné země. `CatalogEditService.
+updateStore` proto `country` zapisuje rovnou do spravované entity `core.store`
+(`store.setCountry(...)`, `storeRepository.save(store)`), gatováno `TrustLevelService.
+isTrusted` — jediné pole v `updateStore`, které mutuje spravovanou entitu uvnitř transakce.
+`store_user_edit.country` byl zrušen (`docs/lokalizace.md`, „Country selector v UI"), aby
+zůstal jen jeden způsob, jak se country vůbec dá změnit.
 
 **Viditelnost pod prahem důvěry** (práh je popsaný v `reputace.md`) řeší stejný predikát
 všude, kde se vrací produkt/obchod: `status = 'ACTIVE' OR created_by_user_id = viewerId`.

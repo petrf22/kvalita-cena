@@ -40,6 +40,8 @@
     "STORE_CITY_REQUIRED": "Miasto jest wymagane",
     "STORE_CITY_EMPTY": "Miasto nie może być puste",
     "COMPANY_ID_INVALID": "Numer identyfikacyjny ma nieprawidłowy format",
+    "UNSUPPORTED_COUNTRY": "Ten kraj nie jest jeszcze obsługiwany",
+    "STORE_COUNTRY_EDIT_REQUIRES_TRUST": "Edycja kraju sklepu wymaga wyższego zaufania konta",
     "PRODUCT_CREATE_REQUIRES_LOGIN": "Dodanie produktu wymaga zalogowania",
     "PRODUCT_EDIT_REQUIRES_LOGIN": "Edycja produktu wymaga zalogowania",
     "STORE_CREATE_REQUIRES_LOGIN": "Dodanie sklepu wymaga zalogowania",

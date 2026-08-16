@@ -1,6 +1,13 @@
 {
   "title": "Settings",
   "languageLabel": "Language",
+  "countryLabel": "Country",
+  "countryNote": "Affects which stores the app suggests in default search and the default country/currency when creating a new store — independent of language.",
+  "country": {
+    "CZ": "Czechia",
+    "SK": "Slovakia",
+    "PL": "Poland"
+  },
   "currencyLabel": "Display currency",
   "currencyStoreDefaultOption": "Store currency (default)",
   "currencyNote": "The conversion is only for comparison — you always report a price in the store's currency, this just changes how it's displayed.",

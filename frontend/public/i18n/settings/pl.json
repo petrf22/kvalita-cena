@@ -1,6 +1,13 @@
 {
   "title": "Ustawienia",
   "languageLabel": "Język",
+  "countryLabel": "Kraj",
+  "countryNote": "Wpływa na to, które sklepy aplikacja proponuje w domyślnym wyszukiwaniu oraz domyślny kraj/walutę przy dodawaniu nowego sklepu — niezależnie od języka.",
+  "country": {
+    "CZ": "Czechy",
+    "SK": "Słowacja",
+    "PL": "Polska"
+  },
   "currencyLabel": "Waluta wyświetlania",
   "currencyStoreDefaultOption": "Waluta sklepu (domyślnie)",
   "currencyNote": "Przeliczenie służy tylko do porównania — cenę zawsze zgłaszasz w walucie sklepu, to tylko zmienia sposób jej wyświetlania.",

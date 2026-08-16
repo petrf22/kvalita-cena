@@ -8,6 +8,7 @@ import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.UnauthorizedException;
 import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.security.HandleGenerator;
+import cz.kvalitacena.service.CountryResolver;
 import cz.kvalitacena.service.MediaService;
 import cz.kvalitacena.service.Messages;
 import cz.kvalitacena.service.TrustLevelService;
@@ -19,6 +20,7 @@ import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -32,6 +34,12 @@ public class ViewerGraphQlController {
   private final UserAwareLocaleResolver userAwareLocaleResolver;
   private final UserProfileService userProfileService;
   private final MediaService mediaService;
+  private final CountryResolver countryResolver;
+
+  @QueryMapping
+  public List<CountryInfo> countries() {
+    return countryResolver.supportedCountries();
+  }
 
   /** Nikdy e-mail ani DB id (docs/soukromi.md) — jen veřejná identita přihlášeného uživatele. */
   @QueryMapping

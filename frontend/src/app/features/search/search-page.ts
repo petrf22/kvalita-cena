@@ -11,11 +11,13 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { ProductSearchItem, ProductSort, SearchFacets } from '../../models/catalog';
+import { CountryService } from '../../services/country-service';
 import { ProductService } from '../../services/product-service';
 import { PRODUCT_SORT_KEYS } from '../../shared/enum-labels';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { QualityBadge } from '../../shared/quality-badge';
 import { RelativeDatePipe } from '../../shared/relative-date.pipe';
+import { storeLabel } from '../../shared/store-label';
 
 const PAGE_SIZE = 20;
 
@@ -53,6 +55,8 @@ const SORT_ORDER = ['REPORT_COUNT', 'PRICE_ASC', 'QUALITY', 'LAST_REPORTED', 'NA
 export class SearchPage {
   private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
+  protected readonly countryService = inject(CountryService);
+  protected readonly storeLabel = storeLabel;
 
   protected readonly sortOrder = SORT_ORDER;
   protected readonly sortKeys = PRODUCT_SORT_KEYS;
@@ -70,7 +74,10 @@ export class SearchPage {
   protected readonly facets = signal<SearchFacets>({ stores: [], cities: [] });
 
   constructor() {
-    this.productService.searchFacets().subscribe({
+    // country jde vždy explicitně z CountryService (klient je autoritativní, docs/lokalizace.md)
+    // — bez toho by appka spadla na app_user.country/Accept-Language na serveru, což by se
+    // rozešlo s tím, co si uživatel zvolil v Nastavení (Čech žijící v Polsku).
+    this.productService.searchFacets(this.countryService.country()).subscribe({
       // Filtry jsou volitelný doplněk hledání — chyba tady nesmí zablokovat samotné hledání.
       next: (facets) => this.facets.set(facets),
       error: () => {},
@@ -111,6 +118,7 @@ export class SearchPage {
         query: q,
         storeId: this.storeId(),
         city: this.city(),
+        country: this.countryService.country(),
         sort: this.sort(),
         first: PAGE_SIZE,
         offset: (this.pageIndex() - 1) * PAGE_SIZE,

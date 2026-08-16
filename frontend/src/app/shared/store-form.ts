@@ -21,9 +21,12 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
+import { NzSelectModule } from 'ng-zorro-antd/select';
 import { GeocodeCandidate, Store, UpdateStoreInput } from '../models/catalog';
+import { CountryService } from '../services/country-service';
 import { StoreService } from '../services/store-service';
 import { translateError } from './error-message';
+import { KNOWN_COUNTRIES } from './known-countries';
 import { LocationMap } from './location-map';
 
 const SIMILAR_CHECK_DEBOUNCE_MS = 400;
@@ -37,8 +40,6 @@ const SIMILAR_CHECK_DEBOUNCE_MS = 400;
 const COMPANY_ID_DIGITS: Record<string, number> = { CZ: 8, SK: 8, PL: 10 };
 /** AresService je zatím jediný napojený rejstřík (CompanyRegistry na backendu) — jen pro CZ. */
 const COUNTRIES_WITH_REGISTRY: readonly string[] = ['CZ'];
-/** Appka zatím zná jen tyhle tři země (docs/lokalizace.md) — detekovaná jiná se nepoužije. */
-const KNOWN_COUNTRIES: readonly string[] = ['CZ', 'SK', 'PL'];
 
 /**
  * Založení provozovny — pro zápis ceny bez sdílení polohy nebo zpětně z domova
@@ -57,6 +58,7 @@ const KNOWN_COUNTRIES: readonly string[] = ['CZ', 'SK', 'PL'];
     NzButtonModule,
     NzIconModule,
     NzRadioModule,
+    NzSelectModule,
     NzAlertModule,
     LocationMap,
     TranslocoDirective,
@@ -69,6 +71,7 @@ const KNOWN_COUNTRIES: readonly string[] = ['CZ', 'SK', 'PL'];
 export class StoreForm {
   private readonly storeService = inject(StoreService);
   private readonly transloco = inject(TranslocoService);
+  protected readonly countryService = inject(CountryService);
 
   /** Nastavený vstup přepne formulář do režimu editace téhle provozovny. */
   readonly store = input<Store | null>(null);
@@ -83,12 +86,23 @@ export class StoreForm {
   protected readonly ico = signal('');
 
   /**
-   * Určuje popisek/tvar IČO-NIP a viditelnost "Načíst z ARES" (docs/lokalizace.md). V režimu
-   * editace jde ze `store()` (provozovna zemi už má), při zakládání ji appka nezná předem —
-   * výchozí CZ se přepíše, jen když reverseGeocode ("Použít mou polohu") vrátí jinou zemi
-   * z appce známou (viz useMyLocation).
+   * Určuje popisek/tvar IČO-NIP a viditelnost "Načíst z ARES" (docs/lokalizace.md) a je teď i
+   * VOLITELNÝ vstup — dřív šla jen natvrdo 'CZ', přepsatelná jen skrz reverseGeocode
+   * ("Použít mou polohu"), takže se slovenský/polský obchod založený z domova ukládal jako
+   * český (a všem jeho cenám se navěky dosadilo CZK). Výchozí hodnota teď jde z
+   * CountryService (viewerova volba v Nastavení), uživatel ji navíc může ručně přepsat ve
+   * formuláři — viz country-select v šabloně. V režimu editace jde ze `store()`.
+   *
+   * Server country na rozdíl od zbytku formuláře gatuje TrustLevelService.isTrusted
+   * (docs/lokalizace.md, "Country selector v UI") — má tvrdý dopad na měnu zápisu pro VŠECHNY
+   * uživatele, ne jen na to, jak provozovnu vidí autor. Nedůvěryhodný autor dostane chybu ze
+   * serveru (translateError níž), formulář to preventivně neomezuje.
    */
-  protected readonly country = signal('CZ');
+  protected readonly country = signal(this.countryService.country());
+  protected readonly countryOptions = computed(() => {
+    const fromServer = this.countryService.countries().map((c) => c.code);
+    return fromServer.length > 0 ? fromServer : KNOWN_COUNTRIES;
+  });
   protected readonly companyIdDigits = computed(() => COMPANY_ID_DIGITS[this.country()] ?? null);
   protected readonly hasCompanyRegistry = computed(() =>
     COUNTRIES_WITH_REGISTRY.includes(this.country()),
@@ -137,6 +151,13 @@ export class StoreForm {
   // reaguje přes reRenderOnLangChange (app.config.ts, stejný vzor jako price-chart.ts).
   protected companyIdLabel(): string {
     return this.transloco.translate(`store.companyId.label.${this.country()}`);
+  }
+
+  /** Appka zatím zná jména jen pro CZ/SK/PL — chybějící překlad zobrazí rovnou kód země. */
+  protected countryOptionLabel(code: string): string {
+    const key = `store.form.country.${code}`;
+    const translated = this.transloco.translate(key);
+    return translated === key ? code : translated;
   }
 
   /** Aktuálně zvolený bod (kandidát z geokódování, nebo ruční/přenesená poloha) pro mapu. */
@@ -319,7 +340,12 @@ export class StoreForm {
     });
   }
 
-  /** Patch nad core.store_user_edit — prázdné pole, které dřív mělo hodnotu, se pošle jako "vymazat". */
+  /**
+   * Patch nad core.store_user_edit — prázdné pole, které dřív mělo hodnotu, se pošle jako
+   * "vymazat". `country` je výjimka: server ji NEUKLÁDÁ do patche, ale rovnou do globální
+   * provozovny (gatováno důvěrou, viz country signál výš) — posílá se pořád, i beze změny,
+   * server sám pozná no-op podle rovnosti s aktuální hodnotou.
+   */
   private buildUpdateInput(
     lat: number | null,
     lon: number | null,
@@ -333,6 +359,7 @@ export class StoreForm {
       city: this.city().trim(),
       postalCode: this.postalCode().trim() || null,
       clearPostalCode: this.postalCode().trim() === '',
+      country: this.country(),
       ico: this.ico().trim() || null,
       clearIco: this.ico().trim() === '',
       lat,

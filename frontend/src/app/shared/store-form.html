@@ -45,6 +45,17 @@
       </nz-form-control>
     </nz-form-item>
 
+    <nz-form-item>
+      <nz-form-label>{{ t('store.form.countryLabel') }}</nz-form-label>
+      <nz-form-control>
+        <nz-select name="country" [ngModel]="country()" (ngModelChange)="country.set($event)">
+          @for (code of countryOptions(); track code) {
+            <nz-option [nzValue]="code" [nzLabel]="countryOptionLabel(code)" />
+          }
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
+
     @if (similarStores().length > 0) {
       <nz-alert
         nzType="warning"

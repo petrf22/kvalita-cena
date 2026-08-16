@@ -4,6 +4,12 @@
     "streetLabel": "Ulica i numer (opcjonalnie)",
     "cityLabel": "Miasto",
     "postalCodeLabel": "Kod pocztowy (opcjonalnie)",
+    "countryLabel": "Kraj",
+    "country": {
+      "CZ": "Czechy",
+      "SK": "Słowacja",
+      "PL": "Polska"
+    },
     "similarWarning": "Czy nie masz na myśli jednego z już istniejących sklepów?",
     "saveChanges": "Zapisz zmiany",
     "createStore": "Dodaj sklep"

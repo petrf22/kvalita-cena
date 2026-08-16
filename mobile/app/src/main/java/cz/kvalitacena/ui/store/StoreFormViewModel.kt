@@ -11,18 +11,17 @@ import cz.kvalitacena.network.GeocodeCandidate
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Store
 import cz.kvalitacena.network.UpdateStoreInput
+import cz.kvalitacena.ui.common.KNOWN_COUNTRIES
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.companyIdDigits
 import cz.kvalitacena.ui.common.companyIdLabelRes
 import cz.kvalitacena.ui.common.toUiText
+import cz.kvalitacena.ui.settings.CountryStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val SIMILAR_CHECK_DEBOUNCE_MS = 400L
-
-/** Appka zatím zná jen tyhle tři země (docs/lokalizace.md) — detekovaná jiná se nepoužije. */
-private val KNOWN_COUNTRIES = setOf("CZ", "SK", "PL")
 
 /**
  * Založení provozovny mimo skenování/GPS — pro zápis ceny bez sdílení polohy nebo zpětně
@@ -39,6 +38,7 @@ private val KNOWN_COUNTRIES = setOf("CZ", "SK", "PL")
 class StoreFormViewModel(
   private val graphQlClient: GraphQlClient,
   private val editingStoreId: String? = null,
+  private val countryStore: CountryStore,
 ) : ViewModel() {
 
   val isEditing: Boolean get() = editingStoreId != null
@@ -50,13 +50,13 @@ class StoreFormViewModel(
   var ico by mutableStateOf("")
 
   /**
-   * Určuje popisek/tvar IČO-NIP a viditelnost "Načíst z ARES" (docs/lokalizace.md). V režimu
-   * editace jde ze store.country (provozovna zemi už má), při zakládání ji appka nezná předem
-   * — výchozí CZ se přepíše, jen když reverseGeocode ("Použít mou polohu") vrátí jinou zemi
-   * z appce známou.
+   * Určuje popisek/tvar IČO-NIP a viditelnost "Načíst z ARES" (docs/lokalizace.md). Uživatel ji
+   * teď může i ručně přepsat ve formuláři (dřív šla jen natvrdo 'CZ', přepsatelná jen skrz
+   * reverseGeocode "Použít mou polohu" — slovenský obchod založený z domova se tak ukládal jako
+   * český a dostal CZK navěky, viz docs/lokalizace.md "Country selector v UI"). V režimu editace
+   * jde ze store.country, při zakládání z [CountryStore] (viewerova volba v Nastavení).
    */
-  var country by mutableStateOf("CZ")
-    private set
+  var country by mutableStateOf(countryStore.country)
 
   var loadingExisting by mutableStateOf(editingStoreId != null)
     private set
@@ -259,6 +259,10 @@ class StoreFormViewModel(
             city = city.trim(),
             postalCode = postalCode.trim().ifBlank { null },
             clearPostalCode = postalCode.trim().isEmpty(),
+            // country jde na rozdíl od zbytku patche rovnou do globální provozovny, gatováno
+            // důvěrou autora (docs/lokalizace.md, "Country selector v UI") — server sám pozná
+            // no-op podle rovnosti s aktuální hodnotou.
+            country = country,
             ico = ico.trim().ifBlank { null },
             clearIco = ico.trim().isEmpty(),
             lat = lat,

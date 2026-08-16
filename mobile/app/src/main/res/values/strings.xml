@@ -93,6 +93,11 @@
 
     <string name="settings_title">Nastavení</string>
     <string name="settings_language">Jazyk</string>
+    <string name="settings_country">Země</string>
+    <string name="settings_country_note">Ovlivňuje, které obchody appka nabízí ve výchozím hledání a výchozí zemi/měnu při zakládání nového obchodu — nezávislé na jazyku (Čech žijící v Polsku chce české rozhraní a polské ceny).</string>
+    <string name="country_name_cz">Česko</string>
+    <string name="country_name_sk">Slovensko</string>
+    <string name="country_name_pl">Polsko</string>
     <string name="settings_currency">Zobrazovací měna</string>
     <string name="settings_currency_store_default">Měna obchodu (výchozí)</string>
     <string name="settings_currency_note">Přepočet slouží jen k porovnání — cenu vždy hlásíte v měně obchodu, tohle jen mění, jak se zobrazuje.</string>
@@ -308,6 +313,7 @@
     <string name="store_form_street_label">Ulice a číslo (volitelné)</string>
     <string name="store_form_city_label">Město</string>
     <string name="store_form_postal_code_label">PSČ (volitelné)</string>
+    <string name="store_form_country_label">Země</string>
     <string name="store_form_similar_warning">Nemyslíš spíš některý z těchhle už existujících obchodů?</string>
     <string name="store_form_save_changes">Uložit změny</string>
     <string name="store_form_create">Založit obchod</string>

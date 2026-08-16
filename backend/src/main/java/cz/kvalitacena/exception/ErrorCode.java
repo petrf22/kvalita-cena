@@ -33,6 +33,11 @@ public enum ErrorCode {
   STORE_CITY_REQUIRED("error.store.cityRequired"),
   STORE_CITY_EMPTY("error.store.cityEmpty"),
   COMPANY_ID_INVALID("error.store.companyIdInvalid"),
+  UNSUPPORTED_COUNTRY("error.store.unsupportedCountry"),
+  // Country má na rozdíl od zbytku updateStore tvrdý dopad na měnu/IČO pro VŠECHNY uživatele
+  // (docs/lokalizace.md, "Country selector v UI") — proto zapisuje přímo do core.store a
+  // vyžaduje TrustLevelService.isTrusted, ne obyčejné přihlášení jako ostatní pole.
+  STORE_COUNTRY_EDIT_REQUIRES_TRUST("error.store.countryEditRequiresTrust"),
 
   // --- katalog: přihlášení vyžadováno
   PRODUCT_CREATE_REQUIRES_LOGIN("error.product.createRequiresLogin"),

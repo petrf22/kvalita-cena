@@ -11,7 +11,7 @@
       class="store-select"
     >
       @for (store of displayOptions(); track store.id) {
-        <nz-option [nzValue]="store.id" [nzLabel]="store.name + ' — ' + store.city" />
+        <nz-option [nzValue]="store.id" [nzLabel]="storeLabel(store, countryService.country())" />
       }
     </nz-select>
     <button nz-button type="button" [nzLoading]="locating()" (click)="findNearby()">

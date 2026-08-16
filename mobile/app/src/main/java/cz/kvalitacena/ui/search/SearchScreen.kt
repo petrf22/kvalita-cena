@@ -48,6 +48,7 @@ import cz.kvalitacena.ui.common.QualityBadge
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.formatRelativeDate
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
+import cz.kvalitacena.ui.common.storeLabel
 
 /**
  * Záložka "Hledat" — úvodní obrazovka appky (viz zadání). Pole s lupou nahoře, pod ním filtry
@@ -59,7 +60,9 @@ import cz.kvalitacena.ui.common.rememberMoneyFormatter
 fun SearchScreen(onProductClick: (String) -> Unit) {
   val viewModel: SearchViewModel = viewModel(
     factory = viewModelFactory {
-      initializer { SearchViewModel(AppContainer.graphQlClient, AppContainer.authRepository) }
+      initializer {
+        SearchViewModel(AppContainer.graphQlClient, AppContainer.authRepository, AppContainer.countryStore)
+      }
     },
   )
 
@@ -86,7 +89,7 @@ fun SearchScreen(onProductClick: (String) -> Unit) {
     ) {
       FilterDropdown(
         label = stringResource(R.string.search_store_filter),
-        options = viewModel.facets.stores.map { it.id to it.name },
+        options = viewModel.facets.stores.map { it.id to storeLabel(it, AppContainer.countryStore.country) },
         selected = viewModel.selectedStoreId,
         onSelect = viewModel::onStoreChange,
         modifier = Modifier.weight(1f),

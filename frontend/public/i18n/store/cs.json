@@ -4,6 +4,12 @@
     "streetLabel": "Ulice a číslo (volitelné)",
     "cityLabel": "Město",
     "postalCodeLabel": "PSČ (volitelné)",
+    "countryLabel": "Země",
+    "country": {
+      "CZ": "Česko",
+      "SK": "Slovensko",
+      "PL": "Polsko"
+    },
     "similarWarning": "Nemyslíš spíš některý z už existujících obchodů?",
     "saveChanges": "Uložit změny",
     "createStore": "Založit obchod"

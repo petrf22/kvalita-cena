@@ -1,6 +1,13 @@
 {
   "title": "Nastavenia",
   "languageLabel": "Jazyk",
+  "countryLabel": "Krajina",
+  "countryNote": "Ovplyvňuje, ktoré obchody appka ponúka vo východiskovom hľadaní a východiskovú krajinu/menu pri zakladaní nového obchodu — nezávislé od jazyka.",
+  "country": {
+    "CZ": "Česko",
+    "SK": "Slovensko",
+    "PL": "Poľsko"
+  },
   "currencyLabel": "Zobrazovacia mena",
   "currencyStoreDefaultOption": "Mena obchodu (predvolené)",
   "currencyNote": "Prepočet slúži len na porovnanie — cenu vždy hlásite v mene obchodu, toto len mení, ako sa zobrazuje.",

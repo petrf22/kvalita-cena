@@ -96,6 +96,9 @@ type Query {
   """
   companyByIco(ico: String!, country: String): CompanyInfo
 
+  "Číselník zemí, které appka zná — viz CountryInfo."
+  countries: [CountryInfo!]!
+
   product(id: ID!): Product
 
   """
@@ -280,7 +283,8 @@ input CreateStoreInput {
   street: String
   city: String!
   postalCode: String
-  country: String = "CZ"
+  "Bez zadání server dosadí zemi vieweru, jinak app.i18n.default-country (CountryResolver, docs/lokalizace.md) — ŽÁDNÝ literální default tady, jinak by tahle větev nikdy nenaběhla."
+  country: String
   "8 číslic, ověří se v ARES (companyByIco) — viz docs/soukromi.md."
   ico: String
   "Volitelné — bez souřadnic obchod nenajde nearbyStores, jen searchStores."
@@ -716,6 +720,19 @@ type CompanyInfo {
   postalCode: String
 }
 
+"""
+Číselník zemí, které appka zná (app.i18n.country-currency/country-locale) — jeden zdroj pravdy
+pro formulář obchodu a přepínač země v Nastavení, místo aby si CZ/SK/PL hardcodoval každý
+klient zvlášť (docs/lokalizace.md, "Country selector v UI").
+"""
+type CountryInfo {
+  code: String!
+  "Měna, ve které se v této zemi zapisují ceny (CurrencyResolver.forStore)."
+  currency: String!
+  "Výchozí jazyk appky pro tuhle zemi (app.i18n.country-locale) — jen předvyplnění, jazyk zůstává nezávislou volbou klienta."
+  defaultLocale: String
+}
+
 enum PriceKind {
   REGULAR
   PROMO
@@ -812,6 +829,8 @@ enum ErrorCode {
   STORE_CITY_REQUIRED
   STORE_CITY_EMPTY
   COMPANY_ID_INVALID
+  UNSUPPORTED_COUNTRY
+  STORE_COUNTRY_EDIT_REQUIRES_TRUST
   PRODUCT_CREATE_REQUIRES_LOGIN
   PRODUCT_EDIT_REQUIRES_LOGIN
   STORE_CREATE_REQUIRES_LOGIN

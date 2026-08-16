@@ -17,15 +17,23 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,10 +49,12 @@ import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.location.getCurrentLocation
 import cz.kvalitacena.network.GeocodeCandidate
+import cz.kvalitacena.ui.common.KNOWN_COUNTRIES
 import cz.kvalitacena.ui.common.LocationMap
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.companyIdLabelRes
+import cz.kvalitacena.ui.common.countryNameRes
 import cz.kvalitacena.ui.common.hasCompanyRegistry
 import kotlinx.coroutines.launch
 
@@ -57,10 +67,13 @@ import kotlinx.coroutines.launch
  * Se zadaným [storeId] přejde do režimu editace existující provozovny — používá ji
  * StoreDetailScreen. Webový protějšek: frontend shared/store-form.ts.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
   val viewModel: StoreFormViewModel = viewModel(
-    factory = viewModelFactory { initializer { StoreFormViewModel(AppContainer.graphQlClient, storeId) } },
+    factory = viewModelFactory {
+      initializer { StoreFormViewModel(AppContainer.graphQlClient, storeId, AppContainer.countryStore) }
+    },
   )
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
@@ -136,6 +149,9 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
       modifier = Modifier.fillMaxWidth(),
     )
+    Gap()
+
+    CountryDropdown(selected = viewModel.country, onSelect = { viewModel.country = it })
     Gap()
 
     if (viewModel.similarStores.isNotEmpty()) {
@@ -277,4 +293,39 @@ private fun CandidateRow(candidate: GeocodeCandidate, selected: Boolean, onSelec
 @Composable
 private fun Gap() {
   androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+}
+
+/**
+ * Výběr země obchodu — appka zatím zná jen CZ/SK/PL ([KNOWN_COUNTRIES]). Na rozdíl od zbytku
+ * formuláře jde tahle hodnota při editaci rovnou do globální provozovny, gatováno důvěrou
+ * autora (docs/lokalizace.md, "Country selector v UI") — nedůvěryhodný autor dostane chybu ze
+ * serveru (viz `saveError`), formulář to preventivně neomezuje. Stejná `ExposedDropdownMenuBox`
+ * konvence jako `PriceKindDropdown`/`CurrencyDropdown`.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CountryDropdown(selected: String, onSelect: (String) -> Unit) {
+  var expanded by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+    SingleLineTextField(
+      value = stringResource(countryNameRes(selected)),
+      onValueChange = {},
+      readOnly = true,
+      label = stringResource(R.string.store_form_country_label),
+      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+      modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+    )
+    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+      KNOWN_COUNTRIES.forEach { code ->
+        DropdownMenuItem(
+          text = { Text(stringResource(countryNameRes(code))) },
+          onClick = {
+            onSelect(code)
+            expanded = false
+          },
+        )
+      }
+    }
+  }
 }

@@ -1,7 +1,6 @@
 package cz.kvalitacena.controller;
 
 import cz.kvalitacena.config.ExternalLinkProperties;
-import cz.kvalitacena.config.I18nProperties;
 import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.CategoryI18n;
 import cz.kvalitacena.db.entity.CodeType;
@@ -12,7 +11,6 @@ import cz.kvalitacena.db.entity.ProductCode;
 import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.entity.Store;
-import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.CategoryI18nRepository;
 import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
@@ -23,6 +21,7 @@ import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.security.ViewerContext;
 import cz.kvalitacena.security.ViewerContextResolver;
 import cz.kvalitacena.service.CatalogEditService;
+import cz.kvalitacena.service.CountryResolver;
 import cz.kvalitacena.service.GtinNormalization;
 import cz.kvalitacena.service.MediaService;
 import cz.kvalitacena.service.MyPriceService;
@@ -78,41 +77,27 @@ public class ProductGraphQlController {
   private final ViewerContextResolver viewerContextResolver;
   private final ExternalLinkProperties externalLinkProperties;
   private final Messages messages;
-  private final AppUserRepository appUserRepository;
-  private final I18nProperties i18nProperties;
+  private final CountryResolver countryResolver;
   private final FxRateService fxRateService;
 
+  /**
+   * country bez zadání NEZNAMENÁ "celý svět" (docs/lokalizace.md) — bez filtru by
+   * ProductSort.PRICE_ASC řadilo CZK vedle PLN v jednom sloupci.
+   */
   @QueryMapping
   public ProductSearchResult searchProducts(@Argument String query, @Argument Long storeId,
       @Argument String city, @Argument String country, @Argument ProductSort sort,
       @Argument Integer first, @Argument Integer offset, Authentication authentication,
       @ContextValue(name = "displayCurrency", required = false) String displayCurrency) {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
-    return productSearchService.search(query, storeId, city, resolveCountry(country, viewer), sort, first,
-        offset, viewer.userId(), displayCurrency);
+    return productSearchService.search(query, storeId, city, countryResolver.resolve(country, viewer.userId()),
+        sort, first, offset, viewer.userId(), displayCurrency);
   }
 
   @QueryMapping
   public SearchFacets searchFacets(@Argument String query, @Argument String country, Authentication authentication) {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
-    return productSearchService.facets(resolveCountry(country, viewer));
-  }
-
-  /**
-   * country bez zadání NEZNAMENÁ "celý svět" (docs/lokalizace.md) — bez filtru by
-   * ProductSort.PRICE_ASC řadilo CZK vedle PLN v jednom sloupci.
-   */
-  private String resolveCountry(String explicit, ViewerContext viewer) {
-    if (explicit != null && !explicit.isBlank()) {
-      return explicit;
-    }
-    if (viewer.userId() != null) {
-      String userCountry = appUserRepository.findById(viewer.userId()).map(u -> u.getCountry()).orElse(null);
-      if (userCountry != null && !userCountry.isBlank()) {
-        return userCountry;
-      }
-    }
-    return i18nProperties.getDefaultCountry();
+    return productSearchService.facets(countryResolver.resolve(country, viewer.userId()));
   }
 
   @QueryMapping

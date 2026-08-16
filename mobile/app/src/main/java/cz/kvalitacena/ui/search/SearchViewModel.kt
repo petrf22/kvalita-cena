@@ -12,6 +12,7 @@ import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.ProductSearchItem
 import cz.kvalitacena.network.SearchFacets
 import cz.kvalitacena.ui.common.UiText
+import cz.kvalitacena.ui.settings.CountryStore
 import kotlinx.coroutines.launch
 
 /**
@@ -32,6 +33,7 @@ private const val PAGE_SIZE = 20
 class SearchViewModel(
   private val graphQlClient: GraphQlClient,
   private val authRepository: AuthRepository,
+  private val countryStore: CountryStore,
 ) : ViewModel() {
 
   var query by mutableStateOf("")
@@ -61,7 +63,8 @@ class SearchViewModel(
   init {
     viewModelScope.launch {
       // Filtry jsou volitelný doplněk hledání — chyba tady nesmí zablokovat samotné hledání.
-      runCatching { facets = graphQlClient.searchFacets() }
+      // country jde vždy explicitně z CountryStore (appka je autoritativní, docs/lokalizace.md).
+      runCatching { facets = graphQlClient.searchFacets(country = countryStore.country) }
     }
   }
 
@@ -86,6 +89,7 @@ class SearchViewModel(
           query = query.trim(),
           storeId = selectedStoreId,
           city = selectedCity,
+          country = countryStore.country,
           sort = sort.value,
           first = PAGE_SIZE,
           offset = 0,
@@ -110,6 +114,7 @@ class SearchViewModel(
           query = query.trim(),
           storeId = selectedStoreId,
           city = selectedCity,
+          country = countryStore.country,
           sort = sort.value,
           first = PAGE_SIZE,
           offset = items.size,

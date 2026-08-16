@@ -38,6 +38,7 @@ fun StorePicker(
   locating: Boolean,
   onAddNew: () -> Unit,
   isLoggedIn: Boolean,
+  homeCountry: String?,
   modifier: Modifier = Modifier,
 ) {
   Column(modifier = modifier) {
@@ -47,7 +48,7 @@ fun StorePicker(
         onQueryChange = onQueryChange,
         suggestions = suggestions,
         onSelect = onSelect,
-        itemLabel = ::storeLabel,
+        itemLabel = { store -> storeLabel(store, homeCountry) },
         label = stringResource(R.string.store_picker_label),
         loading = searching,
         modifier = Modifier.weight(1f),

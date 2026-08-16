@@ -14,6 +14,7 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Store } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
+import { CountryService } from '../../services/country-service';
 import { StoreService } from '../../services/store-service';
 import { translateError } from '../../shared/error-message';
 import { LocationMap } from '../../shared/location-map';
@@ -50,6 +51,7 @@ export class StoreDetailPage {
   private readonly storeService = inject(StoreService);
   private readonly transloco = inject(TranslocoService);
   protected readonly auth = inject(AuthService);
+  protected readonly countryService = inject(CountryService);
 
   protected readonly store = signal<Store | null>(null);
   protected readonly loading = signal(true);

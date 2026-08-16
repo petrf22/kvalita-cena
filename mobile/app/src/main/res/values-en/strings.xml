@@ -92,6 +92,11 @@
 
     <string name="settings_title">Settings</string>
     <string name="settings_language">Language</string>
+    <string name="settings_country">Country</string>
+    <string name="settings_country_note">Affects which stores the app suggests in default search and the default country/currency when creating a new store — independent of language.</string>
+    <string name="country_name_cz">Czechia</string>
+    <string name="country_name_sk">Slovakia</string>
+    <string name="country_name_pl">Poland</string>
     <string name="settings_currency">Display currency</string>
     <string name="settings_currency_store_default">Store currency (default)</string>
     <string name="settings_currency_note">The conversion is only for comparison — you always report a price in the store\'s currency, this just changes how it\'s displayed.</string>
@@ -239,6 +244,7 @@
     <string name="store_form_street_label">Street and number (optional)</string>
     <string name="store_form_city_label">City</string>
     <string name="store_form_postal_code_label">Postal code (optional)</string>
+    <string name="store_form_country_label">Country</string>
     <string name="store_form_similar_warning">Did you mean one of these existing stores?</string>
     <string name="store_form_save_changes">Save changes</string>
     <string name="store_form_create">Create store</string>

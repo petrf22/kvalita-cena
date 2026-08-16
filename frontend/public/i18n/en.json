@@ -40,6 +40,8 @@
     "STORE_CITY_REQUIRED": "City is required",
     "STORE_CITY_EMPTY": "City must not be empty",
     "COMPANY_ID_INVALID": "Company ID has an invalid format (8 digits, wrong check digit)",
+    "UNSUPPORTED_COUNTRY": "This country is not supported yet",
+    "STORE_COUNTRY_EDIT_REQUIRES_TRUST": "Editing a store's country requires higher account trust",
     "PRODUCT_CREATE_REQUIRES_LOGIN": "Creating a product requires signing in",
     "PRODUCT_EDIT_REQUIRES_LOGIN": "Editing a product requires signing in",
     "STORE_CREATE_REQUIRES_LOGIN": "Creating a store requires signing in",

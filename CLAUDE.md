@@ -145,11 +145,19 @@ i18n klíče a přepínačem zobrazovací měny v Nastavení (`DisplayCurrencySe
 .setApplicationLocales()`, `UiText` (`Res`/`Plural`/`Raw`) pro odklad `stringResource` do
 Compose kontextu, `Money.kt`/`CompanyId.kt` zrcadlící backendová pravidla, stejný přepínač měny
 (`ui/settings/DisplayCurrencyStore`) — všechny tři appky mají testy/lint guardy hlídající shodu
-klíčů napříč jazyky (`docs/lokalizace.md`, „Testy a CI guardy"). **Neimplementováno**: klientský
-překlad chyb podle `code` na mobilu (appka ukáže `serverMessage`, protože `network/Dto.kt`
-negeneruje typy ze schématu jako web), samostatný přepínač země nezávislý na jazyku v UI
-(země/měna zápisu se zatím odvozuje z obchodu — přepínač zobrazovací měny výš je nezávislá věc,
-nic nemění na tom, v jaké měně appka cenu ukládá).
+klíčů napříč jazyky (`docs/lokalizace.md`, „Testy a CI guardy"). **Country selector v UI**
+(`docs/lokalizace.md`, „Country selector v UI"): `Query.countries` (číselník ze
+`app.i18n.country-currency`), `CountryResolver` sjednocující dřívější duplicitní odvození země
+ve `StoreGraphQlController`/`ProductGraphQlController`, `CreateStoreInput.country` bez
+literálního defaultu (dřív se slovenský/polský obchod založený bez „Použít mou polohu" tiše
+uložil jako český a dostal CZK navěky), oprava země existujícího obchodu jako jediná výjimka
+zapisující rovnou do `core.store` místo `store_user_edit` (gatováno `TrustLevelService.
+isTrusted`, `docs/datovy-model.md`, „Uživatelská vrstva nad globálními daty"), `uq_store_identity`
+s `country` v indexu, nezávislý přepínač v Nastavení (`CountryService`/`CountryStore`) a
+zobrazení kódu země u obchodu jen když se liší od zvolené domácí země
+(`shared/store-label.ts`/`ui/common/StoreLabel.kt`). **Neimplementováno**: klientský překlad
+chyb podle `code` na mobilu (appka ukáže `serverMessage`, protože `network/Dto.kt` negeneruje
+typy ze schématu jako web).
 
 Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
 `PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec

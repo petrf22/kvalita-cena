@@ -38,6 +38,7 @@ export type CreateProductInput = {
 export type CreateStoreInput = {
   chainId?: string | null | undefined;
   city: string;
+  /** Bez zadání server dosadí zemi vieweru, jinak app.i18n.default-country (CountryResolver, docs/lokalizace.md) — ŽÁDNÝ literální default tady, jinak by tahle větev nikdy nenaběhla. */
   country?: string | null | undefined;
   geoSource?: GeoSource | null | undefined;
   /** 8 číslic, ověří se v ARES (companyByIco) — viz docs/soukromi.md. */
@@ -202,6 +203,11 @@ export type UpdateStoreInput = {
   postalCode?: string | null | undefined;
   street?: string | null | undefined;
 };
+
+export type CountriesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type CountriesQuery = { countries: Array<{ code: string, currency: string, defaultLocale: string | null }> };
 
 export type FxInfoQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -892,6 +898,15 @@ fragment ProductSummaryFields on Product {
   verified
   editedByMe
 }`, {"fragmentName":"SearchItemFields"}) as unknown as TypedDocumentString<SearchItemFieldsFragment, unknown>;
+export const CountriesDocument = new TypedDocumentString(`
+    query Countries {
+  countries {
+    code
+    currency
+    defaultLocale
+  }
+}
+    `) as unknown as TypedDocumentString<CountriesQuery, CountriesQueryVariables>;
 export const FxInfoDocument = new TypedDocumentString(`
     query FxInfo {
   fxInfo {

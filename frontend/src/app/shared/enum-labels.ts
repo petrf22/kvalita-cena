@@ -92,6 +92,8 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.StoreCityRequired]: 'errors.STORE_CITY_REQUIRED',
   [ErrorCode.StoreCityEmpty]: 'errors.STORE_CITY_EMPTY',
   [ErrorCode.CompanyIdInvalid]: 'errors.COMPANY_ID_INVALID',
+  [ErrorCode.UnsupportedCountry]: 'errors.UNSUPPORTED_COUNTRY',
+  [ErrorCode.StoreCountryEditRequiresTrust]: 'errors.STORE_COUNTRY_EDIT_REQUIRES_TRUST',
   [ErrorCode.ProductCreateRequiresLogin]: 'errors.PRODUCT_CREATE_REQUIRES_LOGIN',
   [ErrorCode.ProductEditRequiresLogin]: 'errors.PRODUCT_EDIT_REQUIRES_LOGIN',
   [ErrorCode.StoreCreateRequiresLogin]: 'errors.STORE_CREATE_REQUIRES_LOGIN',

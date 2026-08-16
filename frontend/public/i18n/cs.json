@@ -40,6 +40,8 @@
     "STORE_CITY_REQUIRED": "Město je povinné",
     "STORE_CITY_EMPTY": "Město nesmí být prázdné",
     "COMPANY_ID_INVALID": "IČO nemá platný tvar (8 číslic, špatný kontrolní součet)",
+    "UNSUPPORTED_COUNTRY": "Tuto zemi appka zatím nezná",
+    "STORE_COUNTRY_EDIT_REQUIRES_TRUST": "Úprava země obchodu vyžaduje vyšší důvěru účtu",
     "PRODUCT_CREATE_REQUIRES_LOGIN": "Založení zboží vyžaduje přihlášení",
     "PRODUCT_EDIT_REQUIRES_LOGIN": "Úprava zboží vyžaduje přihlášení",
     "STORE_CREATE_REQUIRES_LOGIN": "Založení obchodu vyžaduje přihlášení",

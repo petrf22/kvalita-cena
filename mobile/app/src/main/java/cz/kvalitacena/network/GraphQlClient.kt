@@ -127,20 +127,23 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
   }
 
   /**
-   * Hledání s volitelným filtrem obchod/město a řazením — mobilní protějšek k
-   * frontend product-service.ts. storeId/city null = bez filtru.
+   * Hledání s volitelným filtrem obchod/město/země a řazením — mobilní protějšek k
+   * frontend product-service.ts. storeId/city/country null = appka nechá server dosadit
+   * (viewerova země, jinak app.i18n.default-country) — country ale posíláme explicitně z
+   * CountryStore (docs/lokalizace.md, "Country selector v UI"), appka je autoritativní.
    */
   suspend fun searchProducts(
     query: String,
     storeId: String? = null,
     city: String? = null,
+    country: String? = null,
     sort: String = "REPORT_COUNT",
     first: Int = 20,
     offset: Int = 0,
   ): ProductSearchResult {
     val gql = """
-      query(${'$'}query: String!, ${'$'}storeId: ID, ${'$'}city: String, ${'$'}sort: ProductSort, ${'$'}first: Int, ${'$'}offset: Int) {
-        searchProducts(query: ${'$'}query, storeId: ${'$'}storeId, city: ${'$'}city, sort: ${'$'}sort, first: ${'$'}first, offset: ${'$'}offset) {
+      query(${'$'}query: String!, ${'$'}storeId: ID, ${'$'}city: String, ${'$'}country: String, ${'$'}sort: ProductSort, ${'$'}first: Int, ${'$'}offset: Int) {
+        searchProducts(query: ${'$'}query, storeId: ${'$'}storeId, city: ${'$'}city, country: ${'$'}country, sort: ${'$'}sort, first: ${'$'}first, offset: ${'$'}offset) {
           totalCount hasMore
           items { $SEARCH_ITEM_FIELDS }
         }
@@ -150,6 +153,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
       put("query", query)
       put("storeId", storeId)
       put("city", city)
+      put("country", country)
       put("sort", sort)
       put("first", first)
       put("offset", offset)
@@ -157,10 +161,39 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     return execute(gql, variables, GraphQlResponse.serializer(SearchProductsData.serializer())).searchProducts
   }
 
-  /** Číselník obchodů/měst pro filtr hledání (jen ty, kde je skutečně nějaká cena). */
-  suspend fun searchFacets(): SearchFacets {
-    val gql = "{ searchFacets { cities stores { $STORE_FIELDS } } }"
-    return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(SearchFacetsData.serializer())).searchFacets
+  /** Číselník obchodů/měst pro filtr hledání (jen ty, kde je skutečně nějaká cena). country viz searchProducts. */
+  suspend fun searchFacets(country: String? = null): SearchFacets {
+    val gql = """
+      query(${'$'}country: String) {
+        searchFacets(country: ${'$'}country) { cities stores { $STORE_FIELDS } }
+      }
+    """
+    val variables = buildJsonObject { put("country", country) }
+    return execute(gql, variables, GraphQlResponse.serializer(SearchFacetsData.serializer())).searchFacets
+  }
+
+  /** Číselník zemí, které appka zná (app.i18n.country-currency/country-locale) — mobilní protějšek country-service.ts. */
+  suspend fun countries(): List<CountryInfo> {
+    val gql = "{ countries { code currency defaultLocale } }"
+    return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(CountriesData.serializer())).countries
+  }
+
+  /**
+   * Uloží preferovaný jazyk (a volitelně zemi) na server — VÝHRADNĚ pro asynchronní výstup
+   * (OTP e-mail), appka z něj nikdy nerozhoduje o obsahu odpovědi (docs/lokalizace.md). Stejný
+   * vzor jako web viewer-service.ts. Vyžaduje přihlášení.
+   */
+  suspend fun setLocale(locale: String, country: String? = null): SetLocaleResult {
+    val gql = """
+      mutation(${'$'}locale: String!, ${'$'}country: String) {
+        setLocale(locale: ${'$'}locale, country: ${'$'}country) { locale country }
+      }
+    """
+    val variables = buildJsonObject {
+      put("locale", locale)
+      put("country", country)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(SetLocaleData.serializer())).setLocale
   }
 
   /** Denní řada z agg.price_daily pro graf vývoje ceny — viz priceHistory v schema.graphqls. */

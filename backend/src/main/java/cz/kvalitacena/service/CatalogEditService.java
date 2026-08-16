@@ -57,6 +57,8 @@ public class CatalogEditService {
   private final RetailChainRepository retailChainRepository;
   private final CompanyIdValidators companyIdValidators;
   private final StoreOverlayService storeOverlayService;
+  private final CountryResolver countryResolver;
+  private final TrustLevelService trustLevelService;
 
   private final AppUserRepository appUserRepository;
 
@@ -189,17 +191,29 @@ public class CatalogEditService {
       setCleared(cleared, "postalCode", store.getPostalCode() != null);
     }
 
+    // Country na rozdíl od zbytku téhle metody NEJDE do store_user_edit — má tvrdý dopad na
+    // měnu zápisu (CurrencyResolver.forStore) a validaci IČO/NIP pro VŠECHNY uživatele, ne jen
+    // na to, jak provozovnu vidí autor patche. Zapisuje se proto rovnou do spravované entity
+    // (StoreUserEdit, docs/lokalizace.md, "Country selector v UI") a vyžaduje vyšší důvěru než
+    // obyčejné přihlášení, aby si obchod nemohl "přebarvit" kdokoliv jedním klikem.
     if (input.country() != null) {
       String trimmed = input.country().trim();
-      edit.setCountry(trimmed.equals(store.getCountry()) ? null : trimmed);
+      if (!countryResolver.isSupported(trimmed)) {
+        throw new ValidationException(ErrorCode.UNSUPPORTED_COUNTRY);
+      }
+      if (!trimmed.equals(store.getCountry())) {
+        if (!trustLevelService.isTrusted(user)) {
+          throw new ValidationException(ErrorCode.STORE_COUNTRY_EDIT_REQUIRES_TRUST);
+        }
+        store.setCountry(trimmed);
+        storeRepository.save(store);
+      }
     }
 
     if (input.ico() != null) {
       String trimmed = input.ico().trim();
-      // Země patchované v TÉTO úpravě má přednost před globální (uživatel může měnit obojí
-      // najednou), jinak validátor podle aktuální globální země obchodu.
-      String effectiveCountry = input.country() != null ? input.country().trim() : store.getCountry();
-      companyIdValidators.forCountry(effectiveCountry).ifPresent(validator -> {
+      // store.getCountry() je tu už po případném přímém zápisu výš, takže odráží efektivní zemi.
+      companyIdValidators.forCountry(store.getCountry()).ifPresent(validator -> {
         if (!validator.isValid(trimmed)) {
           throw new ValidationException(ErrorCode.COMPANY_ID_INVALID);
         }
@@ -258,7 +272,7 @@ public class CatalogEditService {
 
   private boolean isStoreEditEmpty(StoreUserEdit edit) {
     return edit.getName() == null && edit.getChainId() == null && edit.getStreet() == null
-        && edit.getCity() == null && edit.getPostalCode() == null && edit.getCountry() == null
+        && edit.getCity() == null && edit.getPostalCode() == null
         && edit.getIco() == null && edit.getLat() == null && edit.getLon() == null
         && edit.getGeoSource() == null && edit.getOsmRef() == null && edit.getClearedFields().isEmpty();
   }

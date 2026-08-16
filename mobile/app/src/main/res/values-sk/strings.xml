@@ -92,6 +92,11 @@
 
     <string name="settings_title">Nastavenia</string>
     <string name="settings_language">Jazyk</string>
+    <string name="settings_country">Krajina</string>
+    <string name="settings_country_note">Ovplyvňuje, ktoré obchody appka ponúka vo východiskovom hľadaní a východiskovú krajinu/menu pri zakladaní nového obchodu — nezávislé od jazyka.</string>
+    <string name="country_name_cz">Česko</string>
+    <string name="country_name_sk">Slovensko</string>
+    <string name="country_name_pl">Poľsko</string>
     <string name="settings_currency">Zobrazovacia mena</string>
     <string name="settings_currency_store_default">Mena obchodu (predvolené)</string>
     <string name="settings_currency_note">Prepočet slúži len na porovnanie — cenu vždy hlásite v mene obchodu, toto len mení, ako sa zobrazuje.</string>
@@ -239,6 +244,7 @@
     <string name="store_form_street_label">Ulica a číslo (voliteľné)</string>
     <string name="store_form_city_label">Mesto</string>
     <string name="store_form_postal_code_label">PSČ (voliteľné)</string>
+    <string name="store_form_country_label">Krajina</string>
     <string name="store_form_similar_warning">Nemyslíš skôr niektorý z týchto už existujúcich obchodov?</string>
     <string name="store_form_save_changes">Uložiť zmeny</string>
     <string name="store_form_create">Založiť obchod</string>
