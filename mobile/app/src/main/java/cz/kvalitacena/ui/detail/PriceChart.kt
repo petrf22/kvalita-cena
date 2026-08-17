@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cz.kvalitacena.R
 import cz.kvalitacena.network.PricePoint
+import cz.kvalitacena.ui.common.formatShortDate
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 
 /**
@@ -120,11 +121,12 @@ fun PriceChart(points: List<PricePoint>, currency: String?, modifier: Modifier =
     // Popisky nikdy v barvě dat (`labelColor` = onSurfaceVariant) — přímo se píše jen poslední
     // bod, extrém a vybraný bod; tabulka cen pod grafem zůstává hlavním zdrojem čísel.
     val moneyFormatter = rememberMoneyFormatter(currency)
-    fun formatUnitPrice(value: Double) = "${moneyFormatter.format(value)}/jednotka"
+    @Composable fun formatUnitPrice(value: Double) =
+      stringResource(R.string.chart_unit_price, moneyFormatter.format(value))
 
     val last = points.last()
     Text(
-      stringResource(R.string.chart_last, formatUnitPrice(last.unitPrice), last.day),
+      stringResource(R.string.chart_last, formatUnitPrice(last.unitPrice), formatShortDate(last.day)),
       style = MaterialTheme.typography.bodySmall,
       color = labelColor,
       modifier = Modifier.padding(top = 4.dp),
@@ -135,16 +137,21 @@ fun PriceChart(points: List<PricePoint>, currency: String?, modifier: Modifier =
       stringResource(
         R.string.chart_min_max,
         formatUnitPrice(min.unitPrice),
-        min.day,
+        formatShortDate(min.day),
         formatUnitPrice(max.unitPrice),
-        max.day,
+        formatShortDate(max.day),
       ),
       style = MaterialTheme.typography.bodySmall,
       color = labelColor,
     )
     selected?.let { sel ->
       Text(
-        stringResource(R.string.chart_selected, formatUnitPrice(sel.unitPrice), sel.day, sel.nObs),
+        stringResource(
+          R.string.chart_selected,
+          formatUnitPrice(sel.unitPrice),
+          formatShortDate(sel.day),
+          sel.nObs,
+        ),
         style = MaterialTheme.typography.bodySmall,
         color = primaryColor,
         modifier = Modifier.padding(top = 4.dp),
