@@ -300,7 +300,10 @@
     <string name="my_contributions_empty_stores">Zatiaľ si nezaložil/a žiadny obchod.</string>
     <string name="my_contributions_empty_observations">Zatiaľ si nezapísal/a žiadnu cenu.</string>
     <string name="my_contributions_empty_edits">Zatiaľ si neupravil/a žiadny cudzí záznam.</string>
-    <string name="my_contributions_load_more">Načítať ďalšie</string>
+    <string name="my_contributions_page_size_label">Na stránku:</string>
+    <string name="my_contributions_page_indicator">Strana %1$d z %2$d</string>
+    <string name="my_contributions_previous_page">Predchádzajúca</string>
+    <string name="my_contributions_next_page">Ďalšia</string>
     <string name="my_contributions_created_at_label">Založené</string>
     <string name="my_contributions_updated_at_label">Upravené</string>
     <string name="my_contributions_changed_fields_label">Zmenené polia:</string>

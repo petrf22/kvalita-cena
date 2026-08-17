@@ -303,7 +303,10 @@
     <string name="my_contributions_empty_stores">Du hast noch kein Geschäft angelegt.</string>
     <string name="my_contributions_empty_observations">Du hast noch keinen Preis erfasst.</string>
     <string name="my_contributions_empty_edits">Du hast noch keinen fremden Eintrag bearbeitet.</string>
-    <string name="my_contributions_load_more">Mehr laden</string>
+    <string name="my_contributions_page_size_label">Pro Seite:</string>
+    <string name="my_contributions_page_indicator">Seite %1$d von %2$d</string>
+    <string name="my_contributions_previous_page">Zurück</string>
+    <string name="my_contributions_next_page">Weiter</string>
     <string name="my_contributions_created_at_label">Angelegt</string>
     <string name="my_contributions_updated_at_label">Bearbeitet</string>
     <string name="my_contributions_changed_fields_label">Geänderte Felder:</string>

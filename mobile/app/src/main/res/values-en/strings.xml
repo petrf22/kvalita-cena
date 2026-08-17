@@ -300,7 +300,10 @@
     <string name="my_contributions_empty_stores">You haven’t added any stores yet.</string>
     <string name="my_contributions_empty_observations">You haven’t logged any prices yet.</string>
     <string name="my_contributions_empty_edits">You haven’t edited anyone else’s record yet.</string>
-    <string name="my_contributions_load_more">Load more</string>
+    <string name="my_contributions_page_size_label">Per page:</string>
+    <string name="my_contributions_page_indicator">Page %1$d of %2$d</string>
+    <string name="my_contributions_previous_page">Previous</string>
+    <string name="my_contributions_next_page">Next</string>
     <string name="my_contributions_created_at_label">Added</string>
     <string name="my_contributions_updated_at_label">Edited</string>
     <string name="my_contributions_changed_fields_label">Changed fields:</string>

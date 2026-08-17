@@ -300,7 +300,10 @@
     <string name="my_contributions_empty_stores">Nie dodałeś/aś jeszcze żadnego sklepu.</string>
     <string name="my_contributions_empty_observations">Nie zapisałeś/aś jeszcze żadnej ceny.</string>
     <string name="my_contributions_empty_edits">Nie edytowałeś/aś jeszcze cudzego wpisu.</string>
-    <string name="my_contributions_load_more">Wczytaj więcej</string>
+    <string name="my_contributions_page_size_label">Na stronę:</string>
+    <string name="my_contributions_page_indicator">Strona %1$d z %2$d</string>
+    <string name="my_contributions_previous_page">Poprzednia</string>
+    <string name="my_contributions_next_page">Następna</string>
     <string name="my_contributions_created_at_label">Dodano</string>
     <string name="my_contributions_updated_at_label">Edytowano</string>
     <string name="my_contributions_changed_fields_label">Zmienione pola:</string>

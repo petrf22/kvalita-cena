@@ -1,6 +1,7 @@
 package cz.kvalitacena.ui.contributions
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,17 +11,22 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -37,6 +43,8 @@ import cz.kvalitacena.network.PublicationStatus
 import cz.kvalitacena.ui.common.formatRelativeDate
 import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
+import kotlin.math.ceil
+import kotlin.math.max
 
 private val TAB_LABELS = listOf(
   R.string.my_contributions_tab_products,
@@ -113,9 +121,12 @@ private fun ProductsTab(viewModel: MyContributionsViewModel) {
     items = section.items,
     loading = section.loading,
     error = section.error,
-    hasMore = section.hasMore,
+    totalCount = section.totalCount,
+    pageIndex = section.pageIndex,
+    pageSize = section.pageSize,
     emptyTextRes = R.string.my_contributions_empty_products,
-    onLoadMore = { viewModel.loadProducts(reset = false) },
+    onPageChange = { viewModel.changeProductsPage(it) },
+    onPageSizeChange = { viewModel.changeProductsPageSize(it) },
   ) { item: MyProductItem ->
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
       Text(item.product.name, style = MaterialTheme.typography.titleSmall)
@@ -136,9 +147,12 @@ private fun StoresTab(viewModel: MyContributionsViewModel) {
     items = section.items,
     loading = section.loading,
     error = section.error,
-    hasMore = section.hasMore,
+    totalCount = section.totalCount,
+    pageIndex = section.pageIndex,
+    pageSize = section.pageSize,
     emptyTextRes = R.string.my_contributions_empty_stores,
-    onLoadMore = { viewModel.loadStores(reset = false) },
+    onPageChange = { viewModel.changeStoresPage(it) },
+    onPageSizeChange = { viewModel.changeStoresPageSize(it) },
   ) { item: MyStoreItem ->
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
       Text("${item.store.name} — ${item.store.city}", style = MaterialTheme.typography.titleSmall)
@@ -159,9 +173,12 @@ private fun ObservationsTab(viewModel: MyContributionsViewModel) {
     items = section.items,
     loading = section.loading,
     error = section.error,
-    hasMore = section.hasMore,
+    totalCount = section.totalCount,
+    pageIndex = section.pageIndex,
+    pageSize = section.pageSize,
     emptyTextRes = R.string.my_contributions_empty_observations,
-    onLoadMore = { viewModel.loadObservations(reset = false) },
+    onPageChange = { viewModel.changeObservationsPage(it) },
+    onPageSizeChange = { viewModel.changeObservationsPageSize(it) },
   ) { item: MyObservationItem ->
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
       Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -188,9 +205,12 @@ private fun EditsTab(viewModel: MyContributionsViewModel) {
     items = section.items,
     loading = section.loading,
     error = section.error,
-    hasMore = section.hasMore,
+    totalCount = section.totalCount,
+    pageIndex = section.pageIndex,
+    pageSize = section.pageSize,
     emptyTextRes = R.string.my_contributions_empty_edits,
-    onLoadMore = { viewModel.loadEdits(reset = false) },
+    onPageChange = { viewModel.changeEditsPage(it) },
+    onPageSizeChange = { viewModel.changeEditsPageSize(it) },
   ) { item: MyEditItem ->
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
       val recordLabelRes = if (item.recordType == "PRODUCT") {
@@ -238,9 +258,12 @@ private fun <T> ContributionList(
   items: List<T>,
   loading: Boolean,
   error: cz.kvalitacena.ui.common.UiText?,
-  hasMore: Boolean,
+  totalCount: Int,
+  pageIndex: Int,
+  pageSize: Int,
   emptyTextRes: Int,
-  onLoadMore: () -> Unit,
+  onPageChange: (Int) -> Unit,
+  onPageSizeChange: (Int) -> Unit,
   itemContent: @Composable (T) -> Unit,
 ) {
   Column(modifier = Modifier.fillMaxSize()) {
@@ -270,9 +293,77 @@ private fun <T> ContributionList(
           HorizontalDivider()
         }
       }
-      if (hasMore) {
-        OutlinedButton(onClick = onLoadMore, modifier = Modifier.padding(16.dp)) {
-          Text(stringResource(R.string.my_contributions_load_more))
+      if (totalCount > 0) {
+        PaginationBar(
+          pageIndex = pageIndex,
+          pageSize = pageSize,
+          totalCount = totalCount,
+          onPageChange = onPageChange,
+          onPageSizeChange = onPageSizeChange,
+        )
+      }
+    }
+  }
+}
+
+/**
+ * Skutečné stránkování (ne "načíst další") — velikost stránky je uživatelova volba
+ * (`DEFAULT_PAGE_SIZE`/`PAGE_SIZE_OPTIONS` v `MyContributionsViewModel.kt`). Webový protějšek:
+ * `nz-pagination` ve `frontend/src/app/features/my-contributions/my-contributions-page.html`.
+ */
+@Composable
+private fun PaginationBar(
+  pageIndex: Int,
+  pageSize: Int,
+  totalCount: Int,
+  onPageChange: (Int) -> Unit,
+  onPageSizeChange: (Int) -> Unit,
+) {
+  val pageCount = max(1, ceil(totalCount / pageSize.toFloat()).toInt())
+
+  Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      TextButton(onClick = { onPageChange(pageIndex - 1) }, enabled = pageIndex > 1) {
+        Text(stringResource(R.string.my_contributions_previous_page))
+      }
+      Text(
+        stringResource(R.string.my_contributions_page_indicator, pageIndex, pageCount),
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(horizontal = 8.dp),
+      )
+      TextButton(onClick = { onPageChange(pageIndex + 1) }, enabled = pageIndex < pageCount) {
+        Text(stringResource(R.string.my_contributions_next_page))
+      }
+    }
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(
+        stringResource(R.string.my_contributions_page_size_label),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      var expanded by remember { mutableStateOf(false) }
+      Box {
+        TextButton(onClick = { expanded = true }) {
+          Text(pageSize.toString())
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+          PAGE_SIZE_OPTIONS.forEach { size ->
+            DropdownMenuItem(
+              text = { Text(size.toString()) },
+              onClick = {
+                onPageSizeChange(size)
+                expanded = false
+              },
+            )
+          }
         }
       }
     }

@@ -369,7 +369,10 @@
     <string name="my_contributions_empty_stores">Zatím jsi nezaložil/a žádný obchod.</string>
     <string name="my_contributions_empty_observations">Zatím jsi nezapsal/a žádnou cenu.</string>
     <string name="my_contributions_empty_edits">Zatím jsi neupravil/a žádný cizí záznam.</string>
-    <string name="my_contributions_load_more">Načíst další</string>
+    <string name="my_contributions_page_size_label">Na stránku:</string>
+    <string name="my_contributions_page_indicator">Strana %1$d z %2$d</string>
+    <string name="my_contributions_previous_page">Předchozí</string>
+    <string name="my_contributions_next_page">Další</string>
     <string name="my_contributions_created_at_label">Založeno</string>
     <string name="my_contributions_updated_at_label">Upraveno</string>
     <string name="my_contributions_changed_fields_label">Změněná pole:</string>

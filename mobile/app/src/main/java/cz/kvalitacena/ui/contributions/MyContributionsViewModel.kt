@@ -14,15 +14,22 @@ import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.toUiText
 import kotlinx.coroutines.launch
 
-private const val PAGE_SIZE = 20
+const val DEFAULT_PAGE_SIZE = 10
+val PAGE_SIZE_OPTIONS = listOf(10, 20, 50, 100)
 
-/** Stav jedné sekce výpisu (zboží/obchody/ceny/úpravy) — čtyři instance, jedna na záložku. */
+/**
+ * Stav jedné sekce výpisu (zboží/obchody/ceny/úpravy) — čtyři instance, jedna na záložku.
+ * Skutečné stránkování (ne "načíst další"), aby appka při hodně položkách nikdy netáhla celý
+ * seznam — velikost stránky je uživatelova volba (`PaginationBar`, `MyContributionsScreen.kt`).
+ */
 class ContributionSection<T> {
   var items: List<T> by mutableStateOf(emptyList())
     private set
   var totalCount: Int by mutableStateOf(0)
     private set
-  var hasMore: Boolean by mutableStateOf(false)
+  var pageIndex: Int by mutableStateOf(1)
+    private set
+  var pageSize: Int by mutableStateOf(DEFAULT_PAGE_SIZE)
     private set
   var loading: Boolean by mutableStateOf(false)
     private set
@@ -34,16 +41,25 @@ class ContributionSection<T> {
     error = null
   }
 
-  fun applyResult(reset: Boolean, newItems: List<T>, newTotalCount: Int, newHasMore: Boolean) {
-    items = if (reset) newItems else items + newItems
+  fun applyResult(newItems: List<T>, newTotalCount: Int) {
+    items = newItems
     totalCount = newTotalCount
-    hasMore = newHasMore
     loading = false
   }
 
   fun applyError(message: UiText) {
     error = message
     loading = false
+  }
+
+  fun goToPage(index: Int) {
+    pageIndex = index
+  }
+
+  /** Změna velikosti stránky vždy skočí zpátky na první stránku. */
+  fun changePageSize(size: Int) {
+    pageSize = size
+    pageIndex = 1
   }
 }
 
@@ -59,61 +75,101 @@ class MyContributionsViewModel(private val graphQlClient: GraphQlClient) : ViewM
   val edits = ContributionSection<MyEditItem>()
 
   init {
-    loadProducts(reset = true)
-    loadStores(reset = true)
-    loadObservations(reset = true)
-    loadEdits(reset = true)
+    loadProducts()
+    loadStores()
+    loadObservations()
+    loadEdits()
   }
 
-  fun loadProducts(reset: Boolean) {
-    val offset = if (reset) 0 else products.items.size
+  fun loadProducts() {
+    val offset = (products.pageIndex - 1) * products.pageSize
     products.startLoading()
     viewModelScope.launch {
       try {
-        val result = graphQlClient.myProducts(PAGE_SIZE, offset)
-        products.applyResult(reset, result.items, result.totalCount, result.hasMore)
+        val result = graphQlClient.myProducts(products.pageSize, offset)
+        products.applyResult(result.items, result.totalCount)
       } catch (e: Exception) {
         products.applyError(e.toUiText())
       }
     }
   }
 
-  fun loadStores(reset: Boolean) {
-    val offset = if (reset) 0 else stores.items.size
+  fun changeProductsPage(index: Int) {
+    products.goToPage(index)
+    loadProducts()
+  }
+
+  fun changeProductsPageSize(size: Int) {
+    products.changePageSize(size)
+    loadProducts()
+  }
+
+  fun loadStores() {
+    val offset = (stores.pageIndex - 1) * stores.pageSize
     stores.startLoading()
     viewModelScope.launch {
       try {
-        val result = graphQlClient.myStores(PAGE_SIZE, offset)
-        stores.applyResult(reset, result.items, result.totalCount, result.hasMore)
+        val result = graphQlClient.myStores(stores.pageSize, offset)
+        stores.applyResult(result.items, result.totalCount)
       } catch (e: Exception) {
         stores.applyError(e.toUiText())
       }
     }
   }
 
-  fun loadObservations(reset: Boolean) {
-    val offset = if (reset) 0 else observations.items.size
+  fun changeStoresPage(index: Int) {
+    stores.goToPage(index)
+    loadStores()
+  }
+
+  fun changeStoresPageSize(size: Int) {
+    stores.changePageSize(size)
+    loadStores()
+  }
+
+  fun loadObservations() {
+    val offset = (observations.pageIndex - 1) * observations.pageSize
     observations.startLoading()
     viewModelScope.launch {
       try {
-        val result = graphQlClient.myObservations(PAGE_SIZE, offset)
-        observations.applyResult(reset, result.items, result.totalCount, result.hasMore)
+        val result = graphQlClient.myObservations(observations.pageSize, offset)
+        observations.applyResult(result.items, result.totalCount)
       } catch (e: Exception) {
         observations.applyError(e.toUiText())
       }
     }
   }
 
-  fun loadEdits(reset: Boolean) {
-    val offset = if (reset) 0 else edits.items.size
+  fun changeObservationsPage(index: Int) {
+    observations.goToPage(index)
+    loadObservations()
+  }
+
+  fun changeObservationsPageSize(size: Int) {
+    observations.changePageSize(size)
+    loadObservations()
+  }
+
+  fun loadEdits() {
+    val offset = (edits.pageIndex - 1) * edits.pageSize
     edits.startLoading()
     viewModelScope.launch {
       try {
-        val result = graphQlClient.myEdits(PAGE_SIZE, offset)
-        edits.applyResult(reset, result.items, result.totalCount, result.hasMore)
+        val result = graphQlClient.myEdits(edits.pageSize, offset)
+        edits.applyResult(result.items, result.totalCount)
       } catch (e: Exception) {
         edits.applyError(e.toUiText())
       }
     }
+  }
+
+  fun changeEditsPage(index: Int) {
+    edits.goToPage(index)
+    loadEdits()
+  }
+
+  fun changeEditsPageSize(size: Int) {
+    edits.changePageSize(size)
+    loadEdits()
   }
 }
