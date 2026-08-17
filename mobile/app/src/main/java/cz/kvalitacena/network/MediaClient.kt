@@ -5,12 +5,14 @@ import android.net.Uri
 import cz.kvalitacena.auth.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 
 /**
  * Upload fotky (core.media) — REST multipart na backend MediaController, ne GraphQL (ten
@@ -21,6 +23,10 @@ import okhttp3.RequestBody.Companion.toRequestBody
 class MediaClient(private val authRepository: AuthRepository, private val client: OkHttpClient) {
 
   private val json = Json { ignoreUnknownKeys = true }
+
+  /** RFC 7807 `ProblemDetail` tvar — jen pole, která appka umí zobrazit (viz backend `GlobalExceptionHandler`). */
+  @Serializable
+  private data class ProblemDetailBody(val detail: String? = null, val code: String? = null)
 
   /**
    * [uri] je typicky výsledek `TakePicture`/`PickVisualMedia` — čte se přes ContentResolver,
@@ -47,7 +53,7 @@ class MediaClient(private val authRepository: AuthRepository, private val client
 
       client.newCall(builder.build()).execute().use { response ->
         val bodyString = response.body?.string().orEmpty()
-        if (!response.isSuccessful) throw TransportException("Nahrání fotky selhalo (${response.code})")
+        if (!response.isSuccessful) throw errorFor(response, bodyString, "Nahrání fotky selhalo")
         json.decodeFromString(Photo.serializer(), bodyString)
       }
     }
@@ -76,8 +82,26 @@ class MediaClient(private val authRepository: AuthRepository, private val client
 
       client.newCall(builder.build()).execute().use { response ->
         val bodyString = response.body?.string().orEmpty()
-        if (!response.isSuccessful) throw TransportException("Nahrání avataru selhalo (${response.code})")
+        if (!response.isSuccessful) throw errorFor(response, bodyString, "Nahrání avataru selhalo")
         json.decodeFromString(Photo.serializer(), bodyString)
       }
     }
+
+  /**
+   * Rozbalí `ProblemDetail` tělo (backend `GlobalExceptionHandler`) do [HttpAppException] se
+   * skutečnou lokalizovanou hláškou — appka dřív tělo zahazovala a ukázala jen obecné
+   * "Něco se pokazilo" bez ohledu na to, co se skutečně stalo (a backend obchodní výjimky
+   * (`AppException`) nikdy neloguje, takže bez tohohle nešlo příčinu dohledat ani v konzoli).
+   * [fallbackAction] + HTTP kód je nouzová záloha pro odpověď, která tenhle tvar nemá vůbec
+   * (např. request spadl dřív, než stihl doběhnout do `GlobalExceptionHandler`).
+   */
+  private fun errorFor(response: Response, bodyString: String, fallbackAction: String): Exception {
+    val problem = runCatching { json.decodeFromString(ProblemDetailBody.serializer(), bodyString) }.getOrNull()
+    val detail = problem?.detail
+    return if (!detail.isNullOrBlank()) {
+      HttpAppException(problem.code, detail)
+    } else {
+      TransportException("$fallbackAction (${response.code})")
+    }
+  }
 }

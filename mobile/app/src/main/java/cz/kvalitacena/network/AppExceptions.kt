@@ -21,6 +21,14 @@ class GraphQlAppException(
 class TransportException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
 /**
+ * Chyba z REST endpointu (MediaController) — `ProblemDetail` tělo se stejným kontraktem jako
+ * GraphQL (`code`/`detail`, viz backend `GlobalExceptionHandler`), jen se to tam nikdy neloguje
+ * (očekávané doménové výjimky), takže bez rozbalení tady appka ukázala jen obecné "Něco se
+ * pokazilo" bez ohledu na skutečnou příčinu (`Throwable.toUiText()`, `ErrorMessages.kt`).
+ */
+class HttpAppException(val code: String?, val serverMessage: String) : Exception(serverMessage)
+
+/**
  * Backend odmítl request kvůli staré verzi appky (HTTP 426, [ClientVersionInterceptor]) —
  * vydáním APK zamrzne GraphQL kontrakt (docs/vydani.md), takže starší klient v terénu by na
  * pozdější breaking změnu schématu jinak spadl na nesrozumitelnou parse chybu. ViewModely tuhle
