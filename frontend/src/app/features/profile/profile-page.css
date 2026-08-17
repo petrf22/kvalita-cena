@@ -59,3 +59,9 @@
 .save-button {
   margin-bottom: 24px;
 }
+
+[nz-radio] {
+  display: block;
+  height: 32px;
+  line-height: 32px;
+}
