@@ -214,6 +214,20 @@ export const productSummaryFieldsFragment = graphql(`
   }
 `);
 
+/**
+ * Kdy se vlastní záznam propaguje globálně (docs/datovy-model.md, "Uživatelská vrstva nad
+ * globálními daty") — jeden fragment pro všechny čtyři sekce "Moje příspěvky", ať klient
+ * neumí ukázat protichůdný text na dvou různých obrazovkách.
+ */
+export const publicationStatusFieldsFragment = graphql(`
+  fragment PublicationStatusFields on PublicationStatus {
+    state
+    confirmationsReceived
+    confirmationsRequired
+    verified
+  }
+`);
+
 export const searchItemFieldsFragment = graphql(`
   fragment SearchItemFields on ProductSearchItem {
     product {

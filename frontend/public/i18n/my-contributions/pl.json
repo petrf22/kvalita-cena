@@ -1,0 +1,69 @@
+{
+  "title": "Moje wkłady",
+  "loginRequired": "Wyświetlenie Twoich wkładów wymaga zalogowania.",
+  "loginLink": "Przejdź do logowania",
+  "trustBanner": "Twoje konto jest nowe, dlatego nowe produkty i sklepy czekają na potwierdzenie od innych użytkowników.",
+  "tabs": {
+    "products": "Produkty",
+    "stores": "Sklepy",
+    "observations": "Ceny",
+    "edits": "Edycje"
+  },
+  "empty": {
+    "products": "Nie dodałeś/aś jeszcze żadnego produktu.",
+    "stores": "Nie dodałeś/aś jeszcze żadnego sklepu.",
+    "observations": "Nie zapisałeś/aś jeszcze żadnej ceny.",
+    "edits": "Nie edytowałeś/aś jeszcze cudzego wpisu."
+  },
+  "loadMore": "Wczytaj więcej",
+  "loadFailed": "Nie udało się wczytać listy. Spróbuj ponownie.",
+  "createdAtLabel": "Dodano",
+  "updatedAtLabel": "Edytowano",
+  "changedFieldsLabel": "Zmienione pola:",
+  "field": {
+    "name": "nazwa",
+    "brand": "marka",
+    "category": "kategoria",
+    "unitBase": "jednostka bazowa",
+    "netContentValue": "gramatura/objętość",
+    "netContentUom": "jednostka gramatury/objętości",
+    "netContentBase": "gramatura w jednostce bazowej",
+    "piecesInPack": "liczba sztuk w opakowaniu",
+    "isVariableWeight": "zmienna waga",
+    "chain": "sieć",
+    "street": "ulica",
+    "city": "miasto",
+    "postalCode": "kod pocztowy",
+    "ico": "NIP",
+    "lat": "szerokość geograficzna",
+    "lon": "długość geograficzna",
+    "geoSource": "źródło współrzędnych",
+    "osmRef": "referencja OSM"
+  },
+  "state": {
+    "PUBLIC": "Opublikowano",
+    "AWAITING_CONFIRMATIONS": "Czeka na potwierdzenie",
+    "HIDDEN_AFTER_FLAGS": "Ukryto po zgłoszeniu",
+    "PENDING_MERGE": "Twoja edycja"
+  },
+  "status": {
+    "public": {
+      "product": "Opublikowano — widzi go każdy.",
+      "store": "Opublikowano — widzi go każdy.",
+      "observation": "Wliczana do średniej społeczności (przeliczenie w ciągu kilku sekund)."
+    },
+    "awaitingConfirmations": {
+      "product": "W wyszukiwaniu na razie widzisz go tylko Ty. Inni znajdą go, skanując kod. Upubliczni się dla wszystkich, gdy zapisze przy nim cenę {{required}} innych osób — na razie {{received}}.",
+      "store": "Na razie widzisz go tylko Ty. Upubliczni się, gdy zapisze w nim cenę {{required}} innych osób — na razie {{received}}.",
+      "observation": "Inni zobaczą tę cenę, gdy opublikowany zostanie powiązany produkt lub sklep — na razie {{received}} z {{required}} potrzebnych potwierdzeń."
+    },
+    "hiddenAfterFlags": {
+      "product": "Ukryto po zgłoszeniu, czeka na przegląd. Na razie widzisz go tylko Ty.",
+      "store": "Ukryto po zgłoszeniu, czeka na przegląd. Na razie widzisz go tylko Ty.",
+      "observation": "Powiązany produkt lub sklep został ukryty po zgłoszeniu — ta cena nie jest jeszcze widoczna dla nikogo innego."
+    },
+    "pendingMerge": {
+      "edit": "Twoją edycję na razie widzisz tylko Ty — scalenie z publicznym wpisem dopiero się przygotowuje."
+    }
+  }
+}

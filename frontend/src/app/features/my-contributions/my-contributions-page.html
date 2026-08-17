@@ -1,0 +1,199 @@
+<ng-container *transloco="let t; scope: 'my-contributions'">
+  <h1>{{ t('my-contributions.title') }}</h1>
+
+  @if (!auth.isLoggedIn()) {
+    <nz-alert
+      nzType="info"
+      [nzMessage]="t('my-contributions.loginRequired')"
+      nzShowIcon
+      class="section-alert"
+    />
+    <a routerLink="/login">{{ t('my-contributions.loginLink') }}</a>
+  } @else {
+    @if (viewer()?.trusted === false) {
+      <nz-alert
+        nzType="info"
+        [nzMessage]="t('my-contributions.trustBanner')"
+        nzShowIcon
+        class="trust-banner"
+      />
+    }
+
+    <nz-tabs>
+      <nz-tab [nzTitle]="t('my-contributions.tabs.products')">
+        @if (products.error()) {
+          <nz-alert
+            nzType="error"
+            [nzMessage]="products.error()"
+            nzShowIcon
+            class="section-alert"
+          />
+        }
+        @if (products.loading() && products.items().length === 0) {
+          <nz-spin />
+        } @else if (products.items().length === 0) {
+          <nz-empty [nzNotFoundContent]="t('my-contributions.empty.products')" />
+        } @else {
+          <nz-list>
+            @for (item of products.items(); track item.product.id) {
+              <nz-list-item>
+                <div class="item-main">
+                  <a [routerLink]="['/product', item.product.id]">{{ item.product.name }}</a>
+                  <span class="item-date">
+                    {{ t('my-contributions.createdAtLabel') }} {{ item.createdAt | relativeDate }}
+                  </span>
+                </div>
+                <app-publication-status [status]="item.publication" kind="product" />
+              </nz-list-item>
+            }
+          </nz-list>
+        }
+        @if (products.hasMore()) {
+          <button
+            nz-button
+            nzType="default"
+            [nzLoading]="products.loading()"
+            (click)="loadMoreProducts()"
+          >
+            {{ t('my-contributions.loadMore') }}
+          </button>
+        }
+      </nz-tab>
+
+      <nz-tab [nzTitle]="t('my-contributions.tabs.stores')">
+        @if (stores.error()) {
+          <nz-alert nzType="error" [nzMessage]="stores.error()" nzShowIcon class="section-alert" />
+        }
+        @if (stores.loading() && stores.items().length === 0) {
+          <nz-spin />
+        } @else if (stores.items().length === 0) {
+          <nz-empty [nzNotFoundContent]="t('my-contributions.empty.stores')" />
+        } @else {
+          <nz-list>
+            @for (item of stores.items(); track item.store.id) {
+              <nz-list-item>
+                <div class="item-main">
+                  <a [routerLink]="['/store', item.store.id]"
+                    >{{ item.store.name }} — {{ item.store.city }}</a
+                  >
+                  <span class="item-date">
+                    {{ t('my-contributions.createdAtLabel') }} {{ item.createdAt | relativeDate }}
+                  </span>
+                </div>
+                <app-publication-status [status]="item.publication" kind="store" />
+              </nz-list-item>
+            }
+          </nz-list>
+        }
+        @if (stores.hasMore()) {
+          <button
+            nz-button
+            nzType="default"
+            [nzLoading]="stores.loading()"
+            (click)="loadMoreStores()"
+          >
+            {{ t('my-contributions.loadMore') }}
+          </button>
+        }
+      </nz-tab>
+
+      <nz-tab [nzTitle]="t('my-contributions.tabs.observations')">
+        @if (observations.error()) {
+          <nz-alert
+            nzType="error"
+            [nzMessage]="observations.error()"
+            nzShowIcon
+            class="section-alert"
+          />
+        }
+        @if (observations.loading() && observations.items().length === 0) {
+          <nz-spin />
+        } @else if (observations.items().length === 0) {
+          <nz-empty [nzNotFoundContent]="t('my-contributions.empty.observations')" />
+        } @else {
+          <nz-list>
+            @for (
+              item of observations.items();
+              track item.product.id + item.store.id + item.priceKind + item.observedAt
+            ) {
+              <nz-list-item>
+                <div class="item-main">
+                  <a [routerLink]="['/product', item.product.id]">{{ item.product.name }}</a>
+                  — {{ item.store.name }} — {{ priceKindKeys[item.priceKind] | transloco }}:
+                  @if (item.converted; as converted) {
+                    <span [title]="item.priceAmount | money: item.currency">{{
+                      converted.amount | money: converted.currency
+                    }}</span>
+                  } @else {
+                    {{ item.priceAmount | money: item.currency }}
+                  }
+                  <span class="item-date">({{ item.observedAt | relativeDate }})</span>
+                </div>
+                <app-publication-status [status]="item.publication" kind="observation" />
+              </nz-list-item>
+            }
+          </nz-list>
+        }
+        @if (observations.hasMore()) {
+          <button
+            nz-button
+            nzType="default"
+            [nzLoading]="observations.loading()"
+            (click)="loadMoreObservations()"
+          >
+            {{ t('my-contributions.loadMore') }}
+          </button>
+        }
+      </nz-tab>
+
+      <nz-tab [nzTitle]="t('my-contributions.tabs.edits')">
+        @if (edits.error()) {
+          <nz-alert nzType="error" [nzMessage]="edits.error()" nzShowIcon class="section-alert" />
+        }
+        @if (edits.loading() && edits.items().length === 0) {
+          <nz-spin />
+        } @else if (edits.items().length === 0) {
+          <nz-empty [nzNotFoundContent]="t('my-contributions.empty.edits')" />
+        } @else {
+          <nz-list>
+            @for (
+              item of edits.items();
+              track item.recordType + (item.product?.id ?? item.store?.id) + item.updatedAt
+            ) {
+              <nz-list-item>
+                <div class="item-main">
+                  <nz-tag>{{ recordTypeKeys[item.recordType] | transloco }}</nz-tag>
+                  @if (item.recordType === 'PRODUCT' && item.product) {
+                    <a [routerLink]="['/product', item.product.id]">{{ item.product.name }}</a>
+                  } @else if (item.store) {
+                    <a [routerLink]="['/store', item.store.id]">{{ item.store.name }}</a>
+                  }
+                  <span class="item-date">
+                    {{ t('my-contributions.updatedAtLabel') }} {{ item.updatedAt | relativeDate }}
+                  </span>
+                </div>
+                <p class="changed-fields">
+                  {{ t('my-contributions.changedFieldsLabel') }}
+                  @for (field of item.changedFields; track field; let last = $last) {
+                    {{ fieldLabel(field) }}{{ last ? '' : ', ' }}
+                  }
+                </p>
+                <app-publication-status [status]="item.publication" kind="edit" />
+              </nz-list-item>
+            }
+          </nz-list>
+        }
+        @if (edits.hasMore()) {
+          <button
+            nz-button
+            nzType="default"
+            [nzLoading]="edits.loading()"
+            (click)="loadMoreEdits()"
+          >
+            {{ t('my-contributions.loadMore') }}
+          </button>
+        }
+      </nz-tab>
+    </nz-tabs>
+  }
+</ng-container>

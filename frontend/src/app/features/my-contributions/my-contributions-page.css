@@ -1,0 +1,25 @@
+.section-alert {
+  margin-bottom: 16px;
+}
+
+.trust-banner {
+  margin-bottom: 16px;
+}
+
+.item-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.item-date {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
+.changed-fields {
+  margin: 4px 0 0;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 13px;
+}

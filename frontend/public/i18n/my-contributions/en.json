@@ -1,0 +1,69 @@
+{
+  "title": "My contributions",
+  "loginRequired": "Viewing your contributions requires signing in.",
+  "loginLink": "Go to sign in",
+  "trustBanner": "Your account is new, so new products and stores wait for confirmation from other contributors.",
+  "tabs": {
+    "products": "Products",
+    "stores": "Stores",
+    "observations": "Prices",
+    "edits": "Edits"
+  },
+  "empty": {
+    "products": "You haven't added any products yet.",
+    "stores": "You haven't added any stores yet.",
+    "observations": "You haven't logged any prices yet.",
+    "edits": "You haven't edited anyone else's record yet."
+  },
+  "loadMore": "Load more",
+  "loadFailed": "Couldn't load the list. Please try again.",
+  "createdAtLabel": "Added",
+  "updatedAtLabel": "Edited",
+  "changedFieldsLabel": "Changed fields:",
+  "field": {
+    "name": "name",
+    "brand": "brand",
+    "category": "category",
+    "unitBase": "base unit",
+    "netContentValue": "net content",
+    "netContentUom": "net content unit",
+    "netContentBase": "net content in base unit",
+    "piecesInPack": "pieces per pack",
+    "isVariableWeight": "variable weight",
+    "chain": "chain",
+    "street": "street",
+    "city": "city",
+    "postalCode": "postal code",
+    "ico": "company ID",
+    "lat": "latitude",
+    "lon": "longitude",
+    "geoSource": "coordinate source",
+    "osmRef": "OSM reference"
+  },
+  "state": {
+    "PUBLIC": "Published",
+    "AWAITING_CONFIRMATIONS": "Awaiting confirmation",
+    "HIDDEN_AFTER_FLAGS": "Hidden after reports",
+    "PENDING_MERGE": "Your edit"
+  },
+  "status": {
+    "public": {
+      "product": "Published — visible to everyone.",
+      "store": "Published — visible to everyone.",
+      "observation": "Counted into the community average (updates within a few seconds)."
+    },
+    "awaitingConfirmations": {
+      "product": "Only you can find it in search for now. Others can still find it by scanning the code. It becomes visible to everyone once {{required}} other people log a price for it — so far {{received}}.",
+      "store": "Only you can see it for now. It becomes visible once {{required}} other people log a price at it — so far {{received}}.",
+      "observation": "Others will see this price once the underlying product or store is published — so far {{received}} of {{required}} confirmations needed."
+    },
+    "hiddenAfterFlags": {
+      "product": "Hidden after being reported, awaiting review. Only you can see it for now.",
+      "store": "Hidden after being reported, awaiting review. Only you can see it for now.",
+      "observation": "The underlying product or store was hidden after a report — this price isn't visible to anyone else yet."
+    },
+    "pendingMerge": {
+      "edit": "Only you can see your edit for now — merging it into the public record hasn't started yet."
+    }
+  }
+}

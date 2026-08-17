@@ -1,0 +1,69 @@
+{
+  "title": "Meine Beiträge",
+  "loginRequired": "Die Ansicht deiner Beiträge erfordert eine Anmeldung.",
+  "loginLink": "Zur Anmeldung",
+  "trustBanner": "Dein Konto ist neu, deshalb warten neue Produkte und Geschäfte auf Bestätigung durch andere Mitwirkende.",
+  "tabs": {
+    "products": "Produkte",
+    "stores": "Geschäfte",
+    "observations": "Preise",
+    "edits": "Bearbeitungen"
+  },
+  "empty": {
+    "products": "Du hast noch kein Produkt angelegt.",
+    "stores": "Du hast noch kein Geschäft angelegt.",
+    "observations": "Du hast noch keinen Preis erfasst.",
+    "edits": "Du hast noch keinen fremden Eintrag bearbeitet."
+  },
+  "loadMore": "Mehr laden",
+  "loadFailed": "Die Liste konnte nicht geladen werden. Bitte versuche es erneut.",
+  "createdAtLabel": "Angelegt",
+  "updatedAtLabel": "Bearbeitet",
+  "changedFieldsLabel": "Geänderte Felder:",
+  "field": {
+    "name": "Name",
+    "brand": "Marke",
+    "category": "Kategorie",
+    "unitBase": "Basiseinheit",
+    "netContentValue": "Füllmenge",
+    "netContentUom": "Einheit der Füllmenge",
+    "netContentBase": "Füllmenge in Basiseinheit",
+    "piecesInPack": "Stückzahl je Packung",
+    "isVariableWeight": "veränderliches Gewicht",
+    "chain": "Kette",
+    "street": "Straße",
+    "city": "Stadt",
+    "postalCode": "Postleitzahl",
+    "ico": "Steuernummer",
+    "lat": "Breitengrad",
+    "lon": "Längengrad",
+    "geoSource": "Quelle der Koordinaten",
+    "osmRef": "OSM-Referenz"
+  },
+  "state": {
+    "PUBLIC": "Veröffentlicht",
+    "AWAITING_CONFIRMATIONS": "Wartet auf Bestätigung",
+    "HIDDEN_AFTER_FLAGS": "Nach Meldung ausgeblendet",
+    "PENDING_MERGE": "Deine Bearbeitung"
+  },
+  "status": {
+    "public": {
+      "product": "Veröffentlicht — für alle sichtbar.",
+      "store": "Veröffentlicht — für alle sichtbar.",
+      "observation": "Wird in den Community-Durchschnitt eingerechnet (Aktualisierung innerhalb weniger Sekunden)."
+    },
+    "awaitingConfirmations": {
+      "product": "In der Suche siehst vorerst nur du es. Andere finden es trotzdem durch Scannen des Codes. Es wird für alle sichtbar, sobald {{required}} weitere Personen dafür einen Preis erfassen — bisher {{received}}.",
+      "store": "Vorerst siehst nur du es. Es wird sichtbar, sobald {{required}} weitere Personen dort einen Preis erfassen — bisher {{received}}.",
+      "observation": "Andere sehen diesen Preis erst, wenn das zugrunde liegende Produkt oder Geschäft veröffentlicht ist — bisher {{received}} von {{required}} nötigen Bestätigungen."
+    },
+    "hiddenAfterFlags": {
+      "product": "Nach einer Meldung ausgeblendet, wartet auf Prüfung. Vorerst siehst nur du es.",
+      "store": "Nach einer Meldung ausgeblendet, wartet auf Prüfung. Vorerst siehst nur du es.",
+      "observation": "Das zugrunde liegende Produkt oder Geschäft wurde nach einer Meldung ausgeblendet — dieser Preis ist noch für niemand anderen sichtbar."
+    },
+    "pendingMerge": {
+      "edit": "Deine Bearbeitung siehst vorerst nur du — die Zusammenführung mit dem öffentlichen Eintrag ist noch nicht erfolgt."
+    }
+  }
+}

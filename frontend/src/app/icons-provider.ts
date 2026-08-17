@@ -18,6 +18,7 @@ import {
   ShopOutline,
   SortAscendingOutline,
   StarOutline,
+  UnorderedListOutline,
   UserOutline,
 } from '@ant-design/icons-angular/icons';
 
@@ -42,4 +43,5 @@ export const icons = [
   LeftOutline,
   RightOutline,
   EditOutline,
+  UnorderedListOutline,
 ];

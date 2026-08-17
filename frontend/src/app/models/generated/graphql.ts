@@ -121,11 +121,32 @@ export type ProfileVisibility =
   | 'FRIENDS'
   | 'PUBLIC';
 
+/**
+ * Kdy se vlastní záznam propaguje globálně (docs/datovy-model.md, "Uživatelská vrstva nad
+ * globálními daty"; prahy v docs/reputace.md) — jeden zdroj pravdy pro "Moje příspěvky", ať
+ * klient neumí zobrazit protichůdný text na dvou různých obrazovkách.
+ */
+export type PublicationState =
+  /** DRAFT zboží / PENDING obchod — v hledání zatím vidí jen autor, dokud ho nepotvrdí jiní přispěvatelé. */
+  | 'AWAITING_CONFIRMATIONS'
+  /** hidden_at != null po nahlášení (core.record_flag) — čeká na přezkum, vidí ho dál jen autor. */
+  | 'HIDDEN_AFTER_FLAGS'
+  /** Patch v core.product_user_edit/core.store_user_edit — konsolidační job zatím neběží, vidí ho jen autor. */
+  | 'PENDING_MERGE'
+  /** Vidí každý (status ACTIVE). */
+  | 'PUBLIC';
+
 export type QuantityBasis =
   | 'PACKAGE'
   | 'PER_KG'
   | 'PER_L'
   | 'PER_PIECE';
+
+export type RecordType =
+  /** Nahlašovaný typ pro flagRecord — core.media samo nese jen PRODUCT/STORE (čí je fotka). */
+  | 'PHOTO'
+  | 'PRODUCT'
+  | 'STORE';
 
 export type SubmitObservationInput = {
   /**
@@ -232,6 +253,8 @@ export type ProductDetailFieldsFragment = { gtin: string | null, myQualityRating
 
 export type ProductSummaryFieldsFragment = { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } };
 
+export type PublicationStatusFieldsFragment = { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean };
+
 export type SearchItemFieldsFragment = { observationCount: number, bestPrice: number | null, bestUnitPrice: number | null, currency: string | null, bestPriceObservations: number | null, lastObservedAt: string | null, qualityAverage: number | null, qualityCount: number, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } }, converted: { amount: number, currency: string, rateDate: string } | null, convertedUnit: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null };
 
 export type UpdatePhotoMutationVariables = Exact<{
@@ -257,6 +280,38 @@ export type FlagPhotoMutationVariables = Exact<{
 
 
 export type FlagPhotoMutation = { flagRecord: { flagCount: number, hidden: boolean } };
+
+export type MyProductsQueryVariables = Exact<{
+  first?: number | null | undefined;
+  offset?: number | null | undefined;
+}>;
+
+
+export type MyProductsQuery = { myProducts: { totalCount: number, hasMore: boolean, items: Array<{ createdAt: string, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } } }> } };
+
+export type MyStoresQueryVariables = Exact<{
+  first?: number | null | undefined;
+  offset?: number | null | undefined;
+}>;
+
+
+export type MyStoresQuery = { myStores: { totalCount: number, hasMore: boolean, items: Array<{ createdAt: string, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> } };
+
+export type MyObservationsQueryVariables = Exact<{
+  first?: number | null | undefined;
+  offset?: number | null | undefined;
+}>;
+
+
+export type MyObservationsQuery = { myObservations: { totalCount: number, hasMore: boolean, items: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, createdAt: string, converted: { amount: number, currency: string, rateDate: string } | null, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> } };
+
+export type MyEditsQueryVariables = Exact<{
+  first?: number | null | undefined;
+  offset?: number | null | undefined;
+}>;
+
+
+export type MyEditsQuery = { myEdits: { totalCount: number, hasMore: boolean, items: Array<{ recordType: RecordType, updatedAt: string, changedFields: Array<string>, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } } | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }> } };
 
 export type SearchProductsQueryVariables = Exact<{
   query: string;
@@ -812,6 +867,14 @@ fragment ProductFields on Product {
     ...PriceCurrentFields
   }
 }`, {"fragmentName":"ProductDetailFields"}) as unknown as TypedDocumentString<ProductDetailFieldsFragment, unknown>;
+export const PublicationStatusFieldsFragmentDoc = new TypedDocumentString(`
+    fragment PublicationStatusFields on PublicationStatus {
+  state
+  confirmationsReceived
+  confirmationsRequired
+  verified
+}
+    `, {"fragmentName":"PublicationStatusFields"}) as unknown as TypedDocumentString<PublicationStatusFieldsFragment, unknown>;
 export const ProductSummaryFieldsFragmentDoc = new TypedDocumentString(`
     fragment ProductSummaryFields on Product {
   id
@@ -946,6 +1009,229 @@ export const FlagPhotoDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<FlagPhotoMutation, FlagPhotoMutationVariables>;
+export const MyProductsDocument = new TypedDocumentString(`
+    query MyProducts($first: Int, $offset: Int) {
+  myProducts(first: $first, offset: $offset) {
+    totalCount
+    hasMore
+    items {
+      createdAt
+      publication {
+        ...PublicationStatusFields
+      }
+      product {
+        ...ProductSummaryFields
+      }
+    }
+  }
+}
+    fragment ProductSummaryFields on Product {
+  id
+  name
+  brand {
+    id
+    name
+    slug
+  }
+  category {
+    id
+    name
+    slug
+    path
+  }
+  isGeneric
+  verified
+  editedByMe
+}
+fragment PublicationStatusFields on PublicationStatus {
+  state
+  confirmationsReceived
+  confirmationsRequired
+  verified
+}`) as unknown as TypedDocumentString<MyProductsQuery, MyProductsQueryVariables>;
+export const MyStoresDocument = new TypedDocumentString(`
+    query MyStores($first: Int, $offset: Int) {
+  myStores(first: $first, offset: $offset) {
+    totalCount
+    hasMore
+    items {
+      createdAt
+      publication {
+        ...PublicationStatusFields
+      }
+      store {
+        ...StoreFields
+      }
+    }
+  }
+}
+    fragment StoreFields on Store {
+  id
+  name
+  street
+  city
+  postalCode
+  country
+  lat
+  lon
+  geoSource
+  ico
+  chain {
+    id
+    name
+    chainType
+  }
+  verified
+  editedByMe
+  pendingConfirmation
+}
+fragment PublicationStatusFields on PublicationStatus {
+  state
+  confirmationsReceived
+  confirmationsRequired
+  verified
+}`) as unknown as TypedDocumentString<MyStoresQuery, MyStoresQueryVariables>;
+export const MyObservationsDocument = new TypedDocumentString(`
+    query MyObservations($first: Int, $offset: Int) {
+  myObservations(first: $first, offset: $offset) {
+    totalCount
+    hasMore
+    items {
+      priceKind
+      priceAmount
+      unitPrice
+      currency
+      observedAt
+      createdAt
+      converted {
+        ...ConvertedPriceFields
+      }
+      publication {
+        ...PublicationStatusFields
+      }
+      product {
+        ...ProductSummaryFields
+      }
+      store {
+        ...StoreFields
+      }
+    }
+  }
+}
+    fragment StoreFields on Store {
+  id
+  name
+  street
+  city
+  postalCode
+  country
+  lat
+  lon
+  geoSource
+  ico
+  chain {
+    id
+    name
+    chainType
+  }
+  verified
+  editedByMe
+  pendingConfirmation
+}
+fragment ConvertedPriceFields on ConvertedPrice {
+  amount
+  currency
+  rateDate
+}
+fragment ProductSummaryFields on Product {
+  id
+  name
+  brand {
+    id
+    name
+    slug
+  }
+  category {
+    id
+    name
+    slug
+    path
+  }
+  isGeneric
+  verified
+  editedByMe
+}
+fragment PublicationStatusFields on PublicationStatus {
+  state
+  confirmationsReceived
+  confirmationsRequired
+  verified
+}`) as unknown as TypedDocumentString<MyObservationsQuery, MyObservationsQueryVariables>;
+export const MyEditsDocument = new TypedDocumentString(`
+    query MyEdits($first: Int, $offset: Int) {
+  myEdits(first: $first, offset: $offset) {
+    totalCount
+    hasMore
+    items {
+      recordType
+      updatedAt
+      changedFields
+      publication {
+        ...PublicationStatusFields
+      }
+      product {
+        ...ProductSummaryFields
+      }
+      store {
+        ...StoreFields
+      }
+    }
+  }
+}
+    fragment StoreFields on Store {
+  id
+  name
+  street
+  city
+  postalCode
+  country
+  lat
+  lon
+  geoSource
+  ico
+  chain {
+    id
+    name
+    chainType
+  }
+  verified
+  editedByMe
+  pendingConfirmation
+}
+fragment ProductSummaryFields on Product {
+  id
+  name
+  brand {
+    id
+    name
+    slug
+  }
+  category {
+    id
+    name
+    slug
+    path
+  }
+  isGeneric
+  verified
+  editedByMe
+}
+fragment PublicationStatusFields on PublicationStatus {
+  state
+  confirmationsReceived
+  confirmationsRequired
+  verified
+}`) as unknown as TypedDocumentString<MyEditsQuery, MyEditsQueryVariables>;
 export const SearchProductsDocument = new TypedDocumentString(`
     query SearchProducts($query: String!, $storeId: ID, $city: String, $country: String, $sort: ProductSort, $first: Int, $offset: Int) {
   searchProducts(

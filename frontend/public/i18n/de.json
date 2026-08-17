@@ -83,6 +83,7 @@
     "ACCOUNT_GONE": "Dieses Konto existiert nicht mehr",
     "ACCOUNT_DELETE_REQUIRES_LOGIN": "Das Löschen des Kontos erfordert eine Anmeldung",
     "ACCOUNT_DELETE_INVALID_CHALLENGE": "Der Code ist ungültig oder abgelaufen",
+    "CONTRIBUTIONS_REQUIRE_LOGIN": "Die Ansicht deiner Beiträge erfordert eine Anmeldung",
     "TERMS_ACCEPTANCE_REQUIRED": "Für die Registrierung musst du den Nutzungsbedingungen und der Datenschutzerklärung zustimmen",
     "TOO_MANY_REQUESTS": "Zu viele Anfragen, bitte versuch es später erneut",
     "UOM_MISMATCH": "Die Einheit {{p0}} entspricht nicht dem Typ {{p1}}",

@@ -1,0 +1,69 @@
+{
+  "title": "Moje príspevky",
+  "loginRequired": "Výpis vlastných príspevkov vyžaduje prihlásenie.",
+  "loginLink": "Prejsť na prihlásenie",
+  "trustBanner": "Tvoj účet je nový, preto nový tovar a obchody čakajú na potvrdenie od ostatných prispievateľov.",
+  "tabs": {
+    "products": "Tovar",
+    "stores": "Obchody",
+    "observations": "Ceny",
+    "edits": "Úpravy"
+  },
+  "empty": {
+    "products": "Zatiaľ si nezaložil/a žiadny tovar.",
+    "stores": "Zatiaľ si nezaložil/a žiadny obchod.",
+    "observations": "Zatiaľ si nezapísal/a žiadnu cenu.",
+    "edits": "Zatiaľ si neupravil/a žiadny cudzí záznam."
+  },
+  "loadMore": "Načítať ďalšie",
+  "loadFailed": "Výpis sa nepodarilo načítať. Skús to prosím znova.",
+  "createdAtLabel": "Založené",
+  "updatedAtLabel": "Upravené",
+  "changedFieldsLabel": "Zmenené polia:",
+  "field": {
+    "name": "názov",
+    "brand": "značka",
+    "category": "kategória",
+    "unitBase": "základná jednotka",
+    "netContentValue": "hmotnosť/objem",
+    "netContentUom": "jednotka hmotnosti/objemu",
+    "netContentBase": "hmotnosť v základnej jednotke",
+    "piecesInPack": "počet kusov v balení",
+    "isVariableWeight": "premenlivá hmotnosť",
+    "chain": "reťazec",
+    "street": "ulica",
+    "city": "mesto",
+    "postalCode": "PSČ",
+    "ico": "IČO",
+    "lat": "zemepisná šírka",
+    "lon": "zemepisná dĺžka",
+    "geoSource": "zdroj súradníc",
+    "osmRef": "OSM referencia"
+  },
+  "state": {
+    "PUBLIC": "Zverejnené",
+    "AWAITING_CONFIRMATIONS": "Čaká na potvrdenie",
+    "HIDDEN_AFTER_FLAGS": "Skryté po nahlásení",
+    "PENDING_MERGE": "Vaša úprava"
+  },
+  "status": {
+    "public": {
+      "product": "Zverejnené — vidí ho každý.",
+      "store": "Zverejnené — vidí ho každý.",
+      "observation": "Započítava sa do komunitného priemeru (prepočet do pár sekúnd)."
+    },
+    "awaitingConfirmations": {
+      "product": "Vo vyhľadávaní ho zatiaľ vidíte len vy. Ostatní ho nájdu naskenovaním kódu. Zverejní sa všetkým, až v ňom zapíše cenu {{required}} ďalších ľudí — zatiaľ {{received}}.",
+      "store": "Zatiaľ ho vidíte len vy. Zverejní sa, až v ňom zapíše cenu {{required}} ďalších ľudí — zatiaľ {{received}}.",
+      "observation": "Ostatným sa cena ukáže, až sa zverejní podkladový tovar alebo obchod — zatiaľ {{received}} z {{required}} potrebných potvrdení."
+    },
+    "hiddenAfterFlags": {
+      "product": "Skryté po nahlásení, čaká na preskúmanie. Zatiaľ ho vidíte len vy.",
+      "store": "Skryté po nahlásení, čaká na preskúmanie. Zatiaľ ho vidíte len vy.",
+      "observation": "Podkladový tovar alebo obchod bol skrytý po nahlásení — cena zatiaľ nie je vidieť nikomu inému."
+    },
+    "pendingMerge": {
+      "edit": "Vašu úpravu zatiaľ vidíte len vy — zlúčenie s verejným záznamom sa ešte len pripravuje."
+    }
+  }
+}

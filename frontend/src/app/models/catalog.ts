@@ -14,11 +14,16 @@ import type {
   FlagProductMutation,
   FxInfoQuery,
   GeocodeAddressQuery,
+  MyEditsQuery,
+  MyObservationsQuery,
+  MyProductsQuery,
+  MyStoresQuery,
   PhotoFieldsFragment,
   PriceCurrentFieldsFragment,
   PriceHistoryQuery,
   ProductDetailFieldsFragment,
   ProductSummaryFieldsFragment,
+  PublicationStatusFieldsFragment,
   ReverseGeocodeQuery,
   SearchFacetsQuery,
   SearchItemFieldsFragment,
@@ -40,6 +45,7 @@ export {
   PriceKind,
   ProductSort,
   ProductStatus,
+  PublicationState,
   QuantityBasis,
   RecordType,
   UnitBase,
@@ -109,3 +115,13 @@ export type FlagResult = FlagProductMutation['flagRecord'];
 
 /** Zobrazovací měny a stav kurzovního lístku ČNB — pro atribuci na kartě Zdroje dat (docs/lokalizace.md). */
 export type FxInfo = FxInfoQuery['fxInfo'];
+
+/**
+ * "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty") — kdy se
+ * vlastní záznam propaguje globálně, jeden typ pro všechny čtyři sekce výpisu.
+ */
+export type PublicationStatus = PublicationStatusFieldsFragment;
+export type MyProductItem = MyProductsQuery['myProducts']['items'][number];
+export type MyStoreItem = MyStoresQuery['myStores']['items'][number];
+export type MyObservationItem = MyObservationsQuery['myObservations']['items'][number];
+export type MyEditItem = MyEditsQuery['myEdits']['items'][number];

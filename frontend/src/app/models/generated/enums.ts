@@ -44,6 +44,7 @@ export const ErrorCode = {
   ChainNotFound: 'CHAIN_NOT_FOUND',
   ClientVersionTooOld: 'CLIENT_VERSION_TOO_OLD',
   CompanyIdInvalid: 'COMPANY_ID_INVALID',
+  ContributionsRequireLogin: 'CONTRIBUTIONS_REQUIRE_LOGIN',
   DuplicateGenericProduct: 'DUPLICATE_GENERIC_PRODUCT',
   DuplicateProductCode: 'DUPLICATE_PRODUCT_CODE',
   DuplicateStore: 'DUPLICATE_STORE',
@@ -182,6 +183,23 @@ export const ProfileVisibility = {
 } as const;
 
 export type ProfileVisibility = typeof ProfileVisibility[keyof typeof ProfileVisibility];
+/**
+ * Kdy se vlastní záznam propaguje globálně (docs/datovy-model.md, "Uživatelská vrstva nad
+ * globálními daty"; prahy v docs/reputace.md) — jeden zdroj pravdy pro "Moje příspěvky", ať
+ * klient neumí zobrazit protichůdný text na dvou různých obrazovkách.
+ */
+export const PublicationState = {
+  /** DRAFT zboží / PENDING obchod — v hledání zatím vidí jen autor, dokud ho nepotvrdí jiní přispěvatelé. */
+  AwaitingConfirmations: 'AWAITING_CONFIRMATIONS',
+  /** hidden_at != null po nahlášení (core.record_flag) — čeká na přezkum, vidí ho dál jen autor. */
+  HiddenAfterFlags: 'HIDDEN_AFTER_FLAGS',
+  /** Patch v core.product_user_edit/core.store_user_edit — konsolidační job zatím neběží, vidí ho jen autor. */
+  PendingMerge: 'PENDING_MERGE',
+  /** Vidí každý (status ACTIVE). */
+  Public: 'PUBLIC'
+} as const;
+
+export type PublicationState = typeof PublicationState[keyof typeof PublicationState];
 export const QuantityBasis = {
   Package: 'PACKAGE',
   PerKg: 'PER_KG',

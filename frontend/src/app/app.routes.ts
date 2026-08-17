@@ -41,6 +41,13 @@ export const routes: Routes = [
     loadComponent: () => import('./features/profile/profile-page').then((m) => m.ProfilePage),
   },
   {
+    path: 'my',
+    loadComponent: () =>
+      import('./features/my-contributions/my-contributions-page').then(
+        (m) => m.MyContributionsPage,
+      ),
+  },
+  {
     path: 'terms',
     loadComponent: () => import('./features/terms/terms-page').then((m) => m.TermsPage),
   },
@@ -55,6 +62,7 @@ export const routes: Routes = [
   { path: 'prihlaseni', redirectTo: 'login' },
   { path: 'nastaveni', redirectTo: 'settings' },
   { path: 'profil', redirectTo: 'profile' },
+  { path: 'moje-prispevky', redirectTo: 'my' },
   { path: 'podminky-uziti', redirectTo: 'terms' },
   { path: 'zasady-ochrany-osobnich-udaju', redirectTo: 'privacy' },
   { path: '**', redirectTo: '' },

@@ -13,6 +13,10 @@
         <span nz-icon nzType="edit"></span>
         {{ t('login.editProfile') }}
       </button>
+      <button nz-button nzType="default" routerLink="/my">
+        <span nz-icon nzType="unordered-list"></span>
+        {{ t('login.myContributions') }}
+      </button>
       <button nz-button nzType="primary" (click)="logout()">
         <span nz-icon nzType="logout"></span>
         {{ t('login.logout') }}
@@ -51,7 +55,8 @@
             {{ t('login.consentPrefix') }}
             <a routerLink="/terms" target="_blank">{{ t('login.consentTermsLink') }}</a>
             {{ t('login.consentAndLabel') }}
-            <a routerLink="/privacy" target="_blank">{{ t('login.consentPrivacyLink') }}</a>.
+            <a routerLink="/privacy" target="_blank">{{ t('login.consentPrivacyLink') }}</a
+            >.
           </label>
           <button
             nz-button
