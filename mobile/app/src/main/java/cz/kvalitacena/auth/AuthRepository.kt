@@ -99,6 +99,24 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
     }
   }
 
+  /**
+   * Přístupový token vypršel (10min TTL, `app.jwt.access-token-ttl`) nebo appka o restartu
+   * backendu neví — serveru to od "nikdy nepřihlášen" nejde rozeznat
+   * (`JwtAuthenticationFilter` neplatný/prošlý token bez chyby přeskočí, request pokračuje jako
+   * anonymní), takže na to appka reaguje sama, jakmile narazí na chybu s klasifikací
+   * `UNAUTHORIZED` (viz `GraphQlClient`/`MediaClient`). Nejdřív zkusí tichý refresh (refresh
+   * token pořád platný, jen access token dosloužil); až když selže i ten, `accessToken` se
+   * vyčistí, ať `isLoggedIn` (na něm založené) přestane napříč appkou lhát — dřív zůstávala
+   * appka v nekonzistentním stavu: záložka Účet dál hlásila "Přihlášen", zatímco jiné obrazovky
+   * ukazovaly "vyžaduje přihlášení".
+   */
+  suspend fun recoverFromUnauthorized(): Boolean {
+    if (refresh()) return true
+    _accessToken.value = null
+    tokenStore.clear()
+    return false
+  }
+
   suspend fun logout() = withContext(Dispatchers.IO) {
     val refreshToken = tokenStore.getRefreshToken()
     _accessToken.value = null

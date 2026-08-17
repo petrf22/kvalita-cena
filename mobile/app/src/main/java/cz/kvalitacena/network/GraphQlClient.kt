@@ -586,6 +586,21 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     variables: JsonObject,
     responseSerializer: KSerializer<GraphQlResponse<T>>,
   ): T = withContext(Dispatchers.IO) {
+    executeAttempt(query, variables, responseSerializer, allowRecovery = true)
+  }
+
+  /**
+   * [allowRecovery] = false na opakovaném pokusu po [AuthRepository.recoverFromUnauthorized] —
+   * jinak by nekonečně zkoušel refresh dokola, kdyby request selhával jako UNAUTHORIZED i
+   * s čerstvým tokenem (např. účet mezitím zanikl).
+   */
+  private suspend fun <T> executeAttempt(
+    query: String,
+    variables: JsonObject,
+    responseSerializer: KSerializer<GraphQlResponse<T>>,
+    allowRecovery: Boolean,
+  ): T {
+    val hadToken = authRepository.accessToken.value != null
     val requestBody = json.encodeToString(GraphQlRequest(query, variables)).toRequestBody(jsonMediaType)
 
     val builder = Request.Builder().url("${ApiConfig.BASE_URL}/graphql").post(requestBody)
@@ -598,13 +613,21 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
       val parsed = json.decodeFromString(responseSerializer, response.body!!.string())
       if (!parsed.errors.isNullOrEmpty()) {
         val first = parsed.errors.first()
+        // Vypršelý/neplatný access token vypadá pro server stejně jako "nikdy nepřihlášen"
+        // (JwtAuthenticationFilter) — reagujeme proto na klasifikaci chyby, ne na konkrétní
+        // *_REQUIRES_LOGIN kód, aby recovery fungovala pro libovolný chráněný dotaz.
+        if (hadToken && allowRecovery && first.extensions?.classification == "UNAUTHORIZED"
+          && authRepository.recoverFromUnauthorized()
+        ) {
+          return executeAttempt(query, variables, responseSerializer, allowRecovery = false)
+        }
         throw GraphQlAppException(
           first.extensions?.code,
           first.extensions?.params ?: emptyList(),
           parsed.errors.joinToString("; ") { it.message },
         )
       }
-      parsed.data ?: throw TransportException("Prázdná odpověď od serveru")
+      return parsed.data ?: throw TransportException("Prázdná odpověď od serveru")
     }
   }
 }

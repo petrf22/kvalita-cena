@@ -667,12 +667,18 @@ data class MyEditsData(val myEdits: MyEditResult)
 /**
  * `extensions.code`/`params` je strojový kontrakt chyby (docs/lokalizace.md), stejný jako
  * frontend `GraphQlAppError` — `message` je jen lokalizovaný fallback, appka ho ukáže, dokud
- * kód sama nezná (viz `ui/common/ErrorMessages.kt`, `toUiText()`).
+ * kód sama nezná (viz `ui/common/ErrorMessages.kt`, `toUiText()`). `classification` je Spring
+ * for GraphQL `ErrorType` (`GraphQlExceptionHandler.errorTypeFor`) — appka ho čte jen jako
+ * obecný signál "tenhle požadavek vyžadoval přihlášení a nemám ho" (`GraphQlClient.execute`,
+ * `AuthRepository.recoverFromUnauthorized`), ne přes konkrétní `code`, protože vypršelý token
+ * server od "nikdy nepřihlášen" nerozezná a mohl by vrátit kterýkoli z několika *_REQUIRES_LOGIN
+ * kódů.
  */
 @Serializable
 data class GraphQlErrorExtensions(
   val code: String? = null,
   val params: List<JsonElement> = emptyList(),
+  val classification: String? = null,
 )
 
 @Serializable

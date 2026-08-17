@@ -46,16 +46,12 @@ class MediaClient(private val authRepository: AuthRepository, private val client
         .apply { if (!caption.isNullOrBlank()) addFormDataPart("caption", caption) }
         .build()
 
-      val builder = Request.Builder()
-        .url("${ApiConfig.BASE_URL}/api/media/$recordType/$recordId")
-        .post(multipartBody)
-      authRepository.accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
-
-      client.newCall(builder.build()).execute().use { response ->
-        val bodyString = response.body?.string().orEmpty()
-        if (!response.isSuccessful) throw errorFor(response, bodyString, "Nahrání fotky selhalo")
-        json.decodeFromString(Photo.serializer(), bodyString)
-      }
+      uploadAttempt(
+        "${ApiConfig.BASE_URL}/api/media/$recordType/$recordId",
+        multipartBody,
+        "Nahrání fotky selhalo",
+        allowRecovery = true,
+      )
     }
 
   /**
@@ -75,17 +71,39 @@ class MediaClient(private val authRepository: AuthRepository, private val client
         .addFormDataPart("file", "avatar.$extension", bytes.toRequestBody(mimeType.toMediaTypeOrNull()))
         .build()
 
-      val builder = Request.Builder()
-        .url("${ApiConfig.BASE_URL}/api/media/user/avatar")
-        .post(multipartBody)
-      authRepository.accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
-
-      client.newCall(builder.build()).execute().use { response ->
-        val bodyString = response.body?.string().orEmpty()
-        if (!response.isSuccessful) throw errorFor(response, bodyString, "Nahrání avataru selhalo")
-        json.decodeFromString(Photo.serializer(), bodyString)
-      }
+      uploadAttempt("${ApiConfig.BASE_URL}/api/media/user/avatar", multipartBody, "Nahrání avataru selhalo", allowRecovery = true)
     }
+
+  /**
+   * [allowRecovery] = false na opakovaném pokusu po [AuthRepository.recoverFromUnauthorized] —
+   * jinak by nekonečně zkoušel refresh dokola, kdyby 401 přišlo i s čerstvým tokenem (např.
+   * účet mezitím zanikl). [multipartBody] jde bezpečně poslat znovu — části jsou postavené
+   * z `ByteArray` v paměti (`toRequestBody`), ne z jednorázového streamu.
+   */
+  private suspend fun uploadAttempt(
+    url: String,
+    multipartBody: MultipartBody,
+    fallbackAction: String,
+    allowRecovery: Boolean,
+  ): Photo {
+    val hadToken = authRepository.accessToken.value != null
+    val builder = Request.Builder().url(url).post(multipartBody)
+    authRepository.accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
+
+    client.newCall(builder.build()).execute().use { response ->
+      val bodyString = response.body?.string().orEmpty()
+      if (!response.isSuccessful) {
+        // Vypršelý/neplatný access token se serveru tváří jako "nikdy nepřihlášen" a vrátí
+        // stejné PHOTO_*_REQUIRES_LOGIN (401) jako skutečný anonym — proto zkoušíme tichý
+        // refresh na libovolné 401, ne jen na konkrétní kód.
+        if (hadToken && allowRecovery && response.code == 401 && authRepository.recoverFromUnauthorized()) {
+          return uploadAttempt(url, multipartBody, fallbackAction, allowRecovery = false)
+        }
+        throw errorFor(response, bodyString, fallbackAction)
+      }
+      return json.decodeFromString(Photo.serializer(), bodyString)
+    }
+  }
 
   /**
    * Rozbalí `ProblemDetail` tělo (backend `GlobalExceptionHandler`) do [HttpAppException] se
