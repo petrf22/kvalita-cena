@@ -86,6 +86,7 @@ export class StorePicker {
   onSelectId(id: string | null): void {
     const store = this.displayOptions().find((s) => s.id === id) ?? null;
     this.selectedStore.set(store);
+    if (store) this.locationError.set(null);
     this.selectedStoreIdChange.emit(id);
     this.selectedStoreChange.emit(store);
   }
