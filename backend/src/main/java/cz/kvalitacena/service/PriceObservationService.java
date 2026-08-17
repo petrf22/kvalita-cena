@@ -8,8 +8,10 @@ import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.NotFoundException;
+import cz.kvalitacena.exception.ValidationException;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -92,7 +94,14 @@ public class PriceObservationService {
         .source(source)
         .build();
 
-    observation = priceObservationRepository.saveAndFlush(observation);
+    // uq_price_observation_submitter_per_day (1 záznam/uživatel/produkt/obchod/den — hrubá síla
+    // na spamování nefunguje, docs/reputace.md) by jinak spadla jako nepřeložená
+    // DataIntegrityViolationException až do GraphQL/REST vrstvy (INTERNAL_ERROR bez detailu).
+    try {
+      observation = priceObservationRepository.saveAndFlush(observation);
+    } catch (DataIntegrityViolationException e) {
+      throw new ValidationException(ErrorCode.OBSERVATION_ALREADY_SUBMITTED_TODAY, e);
+    }
     // unit_price je v DB GENERATED ALWAYS ... STORED. findById by tu nepomohl — entita je už
     // v persistence kontextu (first-level cache), takže by se vrátila beze změny, bez SELECTu.
     // entityManager.refresh() vynutí skutečné znovunačtení z DB (viz PriceObservation).

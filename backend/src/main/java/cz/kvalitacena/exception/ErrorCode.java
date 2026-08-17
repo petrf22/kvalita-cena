@@ -67,6 +67,11 @@ public enum ErrorCode {
   PHOTO_UNREADABLE("error.photo.unreadable"),
   PHOTO_RESOLUTION_TOO_HIGH("error.photo.resolutionTooHigh"),
 
+  // --- cenové observace
+  // uq_price_observation_submitter_per_day — 1 záznam/uživatel/produkt/obchod/den (hrubá síla
+  // na spamování nefunguje, docs/reputace.md), viz PriceObservationService.submit().
+  OBSERVATION_ALREADY_SUBMITTED_TODAY("error.observation.alreadySubmittedToday"),
+
   // --- kvalita
   QUALITY_REQUIRES_LOGIN("error.quality.requiresLogin"),
   QUALITY_GRADE_OUT_OF_RANGE("error.quality.gradeOutOfRange"),   // {0} = min, {1} = max
