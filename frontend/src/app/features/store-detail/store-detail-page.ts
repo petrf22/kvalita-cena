@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
@@ -15,6 +16,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Store } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
 import { CountryService } from '../../services/country-service';
+import { NavigationHistoryService } from '../../services/navigation-history-service';
 import { StoreService } from '../../services/store-service';
 import { translateError } from '../../shared/error-message';
 import { LocationMap } from '../../shared/location-map';
@@ -48,10 +50,12 @@ import { StoreForm } from '../../shared/store-form';
 })
 export class StoreDetailPage {
   private readonly route = inject(ActivatedRoute);
+  private readonly location = inject(Location);
   private readonly storeService = inject(StoreService);
   private readonly transloco = inject(TranslocoService);
   protected readonly auth = inject(AuthService);
   protected readonly countryService = inject(CountryService);
+  protected readonly navigationHistory = inject(NavigationHistoryService);
 
   protected readonly store = signal<Store | null>(null);
   protected readonly loading = signal(true);
@@ -64,6 +68,11 @@ export class StoreDetailPage {
   constructor() {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) this.loadStore(id);
+  }
+
+  /** Vrátí na stránku, odkud uživatel přišel (`/my`, hledání, detail produktu) — ne vždy na hledání. */
+  protected goBack(): void {
+    this.location.back();
   }
 
   private loadStore(id: string): void {

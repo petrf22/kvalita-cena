@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -20,6 +21,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { PriceKind, PricePoint, Product, Store } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
 import { FormatService } from '../../services/format-service';
+import { NavigationHistoryService } from '../../services/navigation-history-service';
 import { ProductService } from '../../services/product-service';
 import { currencyForCountry } from '../../shared/country-currency';
 import { translateError } from '../../shared/error-message';
@@ -67,10 +69,12 @@ const CHART_RANGES = [7, 30, 90, 365];
 })
 export class ProductDetailPage {
   private readonly route = inject(ActivatedRoute);
+  private readonly location = inject(Location);
   private readonly productService = inject(ProductService);
   private readonly transloco = inject(TranslocoService);
   protected readonly auth = inject(AuthService);
   protected readonly format = inject(FormatService);
+  protected readonly navigationHistory = inject(NavigationHistoryService);
 
   protected readonly priceKindKeys = PRICE_KIND_KEYS;
   protected readonly netContentUomKeys = NET_CONTENT_UOM_KEYS;
@@ -123,6 +127,11 @@ export class ProductDetailPage {
   constructor() {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) this.loadProduct(id);
+  }
+
+  /** Vrátí na stránku, odkud uživatel přišel (`/my`, hledání, jiný detail) — ne vždy na hledání. */
+  protected goBack(): void {
+    this.location.back();
   }
 
   private loadProduct(id: string): void {

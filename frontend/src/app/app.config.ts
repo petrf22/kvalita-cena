@@ -24,6 +24,7 @@ import { authInitializer } from './func/auth-initializer';
 import { displayCurrencyInterceptor } from './func/display-currency-interceptor';
 import { languageInitializer } from './func/language-initializer';
 import { languageInterceptor } from './func/language-interceptor';
+import { navigationHistoryInitializer } from './func/navigation-history-initializer';
 import { tokenInterceptor } from './func/token-interceptor';
 import { icons } from './icons-provider';
 import { AVAILABLE_LANGS, INTL_TAGS, readInitialLang } from './services/language-service';
@@ -78,5 +79,8 @@ export const appConfig: ApplicationConfig = {
     // Jazyk PŘED přihlášením — ať appka nebliká nepřeloženými klíči, než se ověří token.
     provideAppInitializer(languageInitializer()),
     provideAppInitializer(authInitializer()),
+    // PŘED initial navigací routeru — jinak by NavigationHistoryService o té úvodní navigaci
+    // nevěděl (viz func/navigation-history-initializer.ts).
+    provideAppInitializer(navigationHistoryInitializer),
   ],
 };

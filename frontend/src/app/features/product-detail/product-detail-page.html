@@ -1,5 +1,11 @@
 <ng-container *transloco="let t; scope: 'product-detail'">
-  <a routerLink="/">&larr; {{ t('product-detail.backToSearch') }}</a>
+  @if (navigationHistory.canGoBack()) {
+    <button nz-button nzType="link" type="button" class="back-link" (click)="goBack()">
+      &larr; {{ 'common.back' | transloco }}
+    </button>
+  } @else {
+    <a routerLink="/">&larr; {{ t('product-detail.backToSearch') }}</a>
+  }
 
   @if (loading()) {
     <p>{{ t('product-detail.loading') }}</p>
