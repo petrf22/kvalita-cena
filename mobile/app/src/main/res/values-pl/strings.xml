@@ -37,6 +37,7 @@
     <string name="account_logged_in_fallback">Zalogowano</string>
     <string name="account_logout">Wyloguj się</string>
     <string name="account_edit_profile">Edytuj profil</string>
+    <string name="account_my_contributions">Moje wkłady</string>
 
     <string name="login_title">Logowanie</string>
     <string name="login_otp_hint">Wyślemy na Twój e-mail sześciocyfrowy kod, żadnego hasła nie musisz pamiętać.</string>
@@ -287,4 +288,53 @@
     <string name="store_location_find_coordinates">Znajdź współrzędne</string>
     <string name="store_location_use_my_location">Użyj mojej lokalizacji</string>
     <string name="store_location_will_use_map_position">Zostanie użyta pozycja z mapy poniżej / twoja aktualna lokalizacja.</string>
+
+    <!-- "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty"; prahy v docs/reputace.md) -->
+    <string name="my_contributions_title">Moje wkłady</string>
+    <string name="my_contributions_tab_products">Produkty</string>
+    <string name="my_contributions_tab_stores">Sklepy</string>
+    <string name="my_contributions_tab_observations">Ceny</string>
+    <string name="my_contributions_tab_edits">Edycje</string>
+    <string name="my_contributions_empty_products">Nie dodałeś/aś jeszcze żadnego produktu.</string>
+    <string name="my_contributions_empty_stores">Nie dodałeś/aś jeszcze żadnego sklepu.</string>
+    <string name="my_contributions_empty_observations">Nie zapisałeś/aś jeszcze żadnej ceny.</string>
+    <string name="my_contributions_empty_edits">Nie edytowałeś/aś jeszcze cudzego wpisu.</string>
+    <string name="my_contributions_load_more">Wczytaj więcej</string>
+    <string name="my_contributions_created_at_label">Dodano</string>
+    <string name="my_contributions_updated_at_label">Edytowano</string>
+    <string name="my_contributions_changed_fields_label">Zmienione pola:</string>
+    <string name="my_contributions_record_type_product">Produkt</string>
+    <string name="my_contributions_record_type_store">Sklep</string>
+    <string name="my_contributions_field_name">nazwa</string>
+    <string name="my_contributions_field_brand">marka</string>
+    <string name="my_contributions_field_category">kategoria</string>
+    <string name="my_contributions_field_unit_base">jednostka bazowa</string>
+    <string name="my_contributions_field_net_content_value">gramatura/objętość</string>
+    <string name="my_contributions_field_net_content_uom">jednostka gramatury/objętości</string>
+    <string name="my_contributions_field_net_content_base">gramatura w jednostce bazowej</string>
+    <string name="my_contributions_field_pieces_in_pack">liczba sztuk w opakowaniu</string>
+    <string name="my_contributions_field_is_variable_weight">zmienna waga</string>
+    <string name="my_contributions_field_chain">sieć</string>
+    <string name="my_contributions_field_street">ulica</string>
+    <string name="my_contributions_field_city">miasto</string>
+    <string name="my_contributions_field_postal_code">kod pocztowy</string>
+    <string name="my_contributions_field_ico">NIP</string>
+    <string name="my_contributions_field_lat">szerokość geograficzna</string>
+    <string name="my_contributions_field_lon">długość geograficzna</string>
+    <string name="my_contributions_field_geo_source">źródło współrzędnych</string>
+    <string name="my_contributions_field_osm_ref">referencja OSM</string>
+    <string name="my_contributions_state_public">Opublikowano</string>
+    <string name="my_contributions_state_awaiting_confirmations">Czeka na potwierdzenie</string>
+    <string name="my_contributions_state_hidden_after_flags">Ukryto po zgłoszeniu</string>
+    <string name="my_contributions_state_pending_merge">Twoja edycja</string>
+    <string name="my_contributions_status_public_product">Opublikowano — widzi go każdy.</string>
+    <string name="my_contributions_status_public_store">Opublikowano — widzi go każdy.</string>
+    <string name="my_contributions_status_public_observation">Wliczana do średniej społeczności (przeliczenie w ciągu kilku sekund).</string>
+    <string name="my_contributions_status_awaiting_product">W wyszukiwaniu na razie widzisz go tylko Ty. Inni znajdą go, skanując kod. Upubliczni się dla wszystkich, gdy zapisze przy nim cenę %1$d innych osób — na razie %2$d.</string>
+    <string name="my_contributions_status_awaiting_store">Na razie widzisz go tylko Ty. Upubliczni się, gdy zapisze w nim cenę %1$d innych osób — na razie %2$d.</string>
+    <string name="my_contributions_status_awaiting_observation">Inni zobaczą tę cenę, gdy opublikowany zostanie powiązany produkt lub sklep — na razie %2$d z %1$d potrzebnych potwierdzeń.</string>
+    <string name="my_contributions_status_hidden_product">Ukryto po zgłoszeniu, czeka na przegląd. Na razie widzisz go tylko Ty.</string>
+    <string name="my_contributions_status_hidden_store">Ukryto po zgłoszeniu, czeka na przegląd. Na razie widzisz go tylko Ty.</string>
+    <string name="my_contributions_status_hidden_observation">Powiązany produkt lub sklep został ukryty po zgłoszeniu — ta cena nie jest jeszcze widoczna dla nikogo innego.</string>
+    <string name="my_contributions_status_pending_merge_edit">Twoją edycję na razie widzisz tylko Ty — scalenie z publicznym wpisem dopiero się przygotowuje.</string>
 </resources>

@@ -30,6 +30,7 @@ import androidx.navigation.navArgument
 import cz.kvalitacena.ui.account.AccountScreen
 import cz.kvalitacena.ui.common.UpdateRequiredScreen
 import cz.kvalitacena.ui.common.UpdateRequiredState
+import cz.kvalitacena.ui.contributions.MyContributionsScreen
 import cz.kvalitacena.ui.detail.ProductDetailScreen
 import cz.kvalitacena.ui.legal.PrivacyScreen
 import cz.kvalitacena.ui.legal.TermsScreen
@@ -40,6 +41,7 @@ import cz.kvalitacena.ui.navigation.ROUTE_PRICE_ENTRY
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_DETAIL
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_FORM
 import cz.kvalitacena.ui.navigation.ROUTE_PRIVACY
+import cz.kvalitacena.ui.navigation.ROUTE_MY_CONTRIBUTIONS
 import cz.kvalitacena.ui.navigation.ROUTE_PROFILE
 import cz.kvalitacena.ui.navigation.ROUTE_TERMS
 import cz.kvalitacena.ui.navigation.ROUTE_STORE_DETAIL
@@ -131,6 +133,7 @@ private fun AppScaffold() {
       composable(TopLevelDestination.ACCOUNT.route) {
         AccountScreen(
           onEditProfile = { navController.navigate(ROUTE_PROFILE) },
+          onOpenMyContributions = { navController.navigate(ROUTE_MY_CONTRIBUTIONS) },
           onOpenTerms = { navController.navigate(ROUTE_TERMS) },
           onOpenPrivacy = { navController.navigate(ROUTE_PRIVACY) },
         )
@@ -198,6 +201,9 @@ private fun AppScaffold() {
       }
       composable(ROUTE_PROFILE) {
         ProfileScreen(onDone = { navController.popBackStack() })
+      }
+      composable(ROUTE_MY_CONTRIBUTIONS) {
+        MyContributionsScreen()
       }
       composable(ROUTE_TERMS) {
         TermsScreen(onDone = { navController.popBackStack() })

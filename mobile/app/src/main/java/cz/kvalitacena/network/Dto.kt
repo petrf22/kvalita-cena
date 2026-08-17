@@ -472,6 +472,100 @@ data class PriceObservation(
   val status: String,
 )
 
+// --- "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty") ---
+
+/**
+ * Kdy se vlastní záznam propaguje globálně — jeden typ pro všechny čtyři sekce výpisu
+ * (docs/reputace.md, "Práh důvěry pro zveřejnění nového záznamu"). [state] je jedna z
+ * PUBLIC/AWAITING_CONFIRMATIONS/HIDDEN_AFTER_FLAGS/PENDING_MERGE (appka zatím typy ze schématu
+ * negeneruje, viz CLAUDE.md). [confirmationsReceived]/[confirmationsRequired] jsou null mimo
+ * AWAITING_CONFIRMATIONS.
+ */
+@Serializable
+data class PublicationStatus(
+  val state: String,
+  val confirmationsReceived: Int? = null,
+  val confirmationsRequired: Int? = null,
+  val verified: Boolean = false,
+)
+
+@Serializable
+data class MyProductItem(
+  val product: ProductSummary,
+  val createdAt: String,
+  val publication: PublicationStatus,
+)
+
+@Serializable
+data class MyProductResult(
+  val items: List<MyProductItem> = emptyList(),
+  val totalCount: Int = 0,
+  val hasMore: Boolean = false,
+)
+
+@Serializable
+data class MyStoreItem(
+  val store: Store,
+  val createdAt: String,
+  val publication: PublicationStatus,
+)
+
+@Serializable
+data class MyStoreResult(
+  val items: List<MyStoreItem> = emptyList(),
+  val totalCount: Int = 0,
+  val hasMore: Boolean = false,
+)
+
+/**
+ * Vlastní zapsaná cena ve výpisu "Moje příspěvky" — na rozdíl od [MyPrice] (poslední zápis na
+ * kombinaci produkt/obchod/druh ceny, pro kartu "Vaše cena" na detailu produktu) je tohle plný
+ * seznam všech vlastních zápisů, se stavem zveřejnění zděděným od blokujícího katalogového
+ * záznamu (zboží NEBO obchod, cokoli z obou brání zveřejnění).
+ */
+@Serializable
+data class MyObservationItem(
+  val product: ProductSummary,
+  val store: Store,
+  val priceKind: String,
+  val priceAmount: Double,
+  val unitPrice: Double? = null,
+  val currency: String,
+  val converted: ConvertedPrice? = null,
+  val observedAt: String,
+  val createdAt: String,
+  val publication: PublicationStatus,
+)
+
+@Serializable
+data class MyObservationResult(
+  val items: List<MyObservationItem> = emptyList(),
+  val totalCount: Int = 0,
+  val hasMore: Boolean = false,
+)
+
+/**
+ * Vlastní úprava cizího záznamu (core.product_user_edit / core.store_user_edit) — přesně
+ * jeden z [product]/[store] je vyplněný, podle [recordType] (PRODUCT/STORE). Stav zveřejnění
+ * je vždy PENDING_MERGE (konsolidační job zatím neběží).
+ */
+@Serializable
+data class MyEditItem(
+  val recordType: String,
+  val product: ProductSummary? = null,
+  val store: Store? = null,
+  val updatedAt: String,
+  val changedFields: List<String> = emptyList(),
+  val publication: PublicationStatus,
+)
+
+@Serializable
+data class MyEditResult(
+  val items: List<MyEditItem> = emptyList(),
+  val totalCount: Int = 0,
+  val hasMore: Boolean = false,
+)
+
 // --- Obálky GraphQL odpovědí (per dotaz/mutaci) ---
 
 @Serializable
@@ -557,6 +651,18 @@ data class CountriesData(val countries: List<CountryInfo> = emptyList())
 
 @Serializable
 data class SetLocaleData(val setLocale: SetLocaleResult)
+
+@Serializable
+data class MyProductsData(val myProducts: MyProductResult)
+
+@Serializable
+data class MyStoresData(val myStores: MyStoreResult)
+
+@Serializable
+data class MyObservationsData(val myObservations: MyObservationResult)
+
+@Serializable
+data class MyEditsData(val myEdits: MyEditResult)
 
 /**
  * `extensions.code`/`params` je strojový kontrakt chyby (docs/lokalizace.md), stejný jako

@@ -38,6 +38,7 @@
     <string name="account_logged_in_fallback">Přihlášen</string>
     <string name="account_logout">Odhlásit se</string>
     <string name="account_edit_profile">Upravit profil</string>
+    <string name="account_my_contributions">Moje příspěvky</string>
 
     <string name="login_title">Přihlášení</string>
     <string name="login_otp_hint">Pošleme ti na e-mail šestimístný kód, žádné heslo si nemusíš pamatovat.</string>
@@ -356,4 +357,53 @@
     <string name="store_location_find_coordinates">Najít souřadnice</string>
     <string name="store_location_use_my_location">Použít mou polohu</string>
     <string name="store_location_will_use_map_position">Použije se poloha z mapy níž / tvoje aktuální poloha.</string>
+
+    <!-- "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty"; prahy v docs/reputace.md) -->
+    <string name="my_contributions_title">Moje příspěvky</string>
+    <string name="my_contributions_tab_products">Zboží</string>
+    <string name="my_contributions_tab_stores">Obchody</string>
+    <string name="my_contributions_tab_observations">Ceny</string>
+    <string name="my_contributions_tab_edits">Úpravy</string>
+    <string name="my_contributions_empty_products">Zatím jsi nezaložil/a žádné zboží.</string>
+    <string name="my_contributions_empty_stores">Zatím jsi nezaložil/a žádný obchod.</string>
+    <string name="my_contributions_empty_observations">Zatím jsi nezapsal/a žádnou cenu.</string>
+    <string name="my_contributions_empty_edits">Zatím jsi neupravil/a žádný cizí záznam.</string>
+    <string name="my_contributions_load_more">Načíst další</string>
+    <string name="my_contributions_created_at_label">Založeno</string>
+    <string name="my_contributions_updated_at_label">Upraveno</string>
+    <string name="my_contributions_changed_fields_label">Změněná pole:</string>
+    <string name="my_contributions_record_type_product">Zboží</string>
+    <string name="my_contributions_record_type_store">Obchod</string>
+    <string name="my_contributions_field_name">název</string>
+    <string name="my_contributions_field_brand">značka</string>
+    <string name="my_contributions_field_category">kategorie</string>
+    <string name="my_contributions_field_unit_base">základní jednotka</string>
+    <string name="my_contributions_field_net_content_value">gramáž/objem</string>
+    <string name="my_contributions_field_net_content_uom">jednotka gramáže/objemu</string>
+    <string name="my_contributions_field_net_content_base">gramáž v základní jednotce</string>
+    <string name="my_contributions_field_pieces_in_pack">počet kusů v balení</string>
+    <string name="my_contributions_field_is_variable_weight">proměnlivá hmotnost</string>
+    <string name="my_contributions_field_chain">řetězec</string>
+    <string name="my_contributions_field_street">ulice</string>
+    <string name="my_contributions_field_city">město</string>
+    <string name="my_contributions_field_postal_code">PSČ</string>
+    <string name="my_contributions_field_ico">IČO</string>
+    <string name="my_contributions_field_lat">zeměpisná šířka</string>
+    <string name="my_contributions_field_lon">zeměpisná délka</string>
+    <string name="my_contributions_field_geo_source">zdroj souřadnic</string>
+    <string name="my_contributions_field_osm_ref">OSM reference</string>
+    <string name="my_contributions_state_public">Zveřejněno</string>
+    <string name="my_contributions_state_awaiting_confirmations">Čeká na potvrzení</string>
+    <string name="my_contributions_state_hidden_after_flags">Skryto po nahlášení</string>
+    <string name="my_contributions_state_pending_merge">Vaše úprava</string>
+    <string name="my_contributions_status_public_product">Zveřejněno — vidí ho každý.</string>
+    <string name="my_contributions_status_public_store">Zveřejněno — vidí ho každý.</string>
+    <string name="my_contributions_status_public_observation">Započítává se do komunitního průměru (přepočet do pár sekund).</string>
+    <string name="my_contributions_status_awaiting_product">V hledání ho zatím vidíte jen vy. Ostatní ho najdou naskenováním kódu. Zveřejní se všem, až u něj zapíše cenu %1$d dalších lidí — zatím %2$d.</string>
+    <string name="my_contributions_status_awaiting_store">Zatím ho vidíte jen vy. Zveřejní se, až v něm zapíše cenu %1$d dalších lidí — zatím %2$d.</string>
+    <string name="my_contributions_status_awaiting_observation">Ostatním se cena ukáže, až se zveřejní podkladové zboží nebo obchod — zatím %2$d z %1$d potřebných potvrzení.</string>
+    <string name="my_contributions_status_hidden_product">Skryto po nahlášení, čeká na přezkum. Zatím ho vidíte jen vy.</string>
+    <string name="my_contributions_status_hidden_store">Skryto po nahlášení, čeká na přezkum. Zatím ho vidíte jen vy.</string>
+    <string name="my_contributions_status_hidden_observation">Podkladové zboží nebo obchod bylo skryto po nahlášení — cena zatím není vidět nikomu jinému.</string>
+    <string name="my_contributions_status_pending_merge_edit">Vaši úpravu zatím vidíte jen vy — sloučení s veřejným záznamem se teprve připravuje.</string>
 </resources>

@@ -91,6 +91,14 @@ private val SEARCH_ITEM_FIELDS = """
 """
 
 /**
+ * Kdy se vlastní záznam propaguje globálně — jeden fragment pro všechny čtyři sekce "Moje
+ * příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty").
+ */
+private val PUBLICATION_STATUS_FIELDS = """
+  state confirmationsReceived confirmationsRequired verified
+"""
+
+/**
  * Bez Apollo — appka je malá, jeden POST /graphql endpoint stačí (stejná konvence jako
  * frontend/src/app/services/graphql-service.ts).
  */
@@ -490,6 +498,87 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
       put("reason", reason)
     }
     return execute(gql, variables, GraphQlResponse.serializer(FlagRecordData.serializer())).flagRecord
+  }
+
+  /**
+   * "Moje příspěvky" — vlastní založené zboží, nejnovější první, se stavem zveřejnění
+   * (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty"). Vyžaduje přihlášení.
+   */
+  suspend fun myProducts(first: Int = 20, offset: Int = 0): MyProductResult {
+    val gql = """
+      query(${'$'}first: Int, ${'$'}offset: Int) {
+        myProducts(first: ${'$'}first, offset: ${'$'}offset) {
+          totalCount hasMore
+          items {
+            createdAt
+            publication { $PUBLICATION_STATUS_FIELDS }
+            product { $PRODUCT_SUMMARY_FIELDS }
+          }
+        }
+      }
+    """
+    val variables = buildJsonObject { put("first", first); put("offset", offset) }
+    return execute(gql, variables, GraphQlResponse.serializer(MyProductsData.serializer())).myProducts
+  }
+
+  /** Vlastní založené provozovny, stejný princip jako [myProducts]. Vyžaduje přihlášení. */
+  suspend fun myStores(first: Int = 20, offset: Int = 0): MyStoreResult {
+    val gql = """
+      query(${'$'}first: Int, ${'$'}offset: Int) {
+        myStores(first: ${'$'}first, offset: ${'$'}offset) {
+          totalCount hasMore
+          items {
+            createdAt
+            publication { $PUBLICATION_STATUS_FIELDS }
+            store { $STORE_FIELDS }
+          }
+        }
+      }
+    """
+    val variables = buildJsonObject { put("first", first); put("offset", offset) }
+    return execute(gql, variables, GraphQlResponse.serializer(MyStoresData.serializer())).myStores
+  }
+
+  /**
+   * Vlastní zapsané ceny, nejnovější první — stav zveřejnění se dědí od blokujícího
+   * katalogového záznamu (zboží/obchod), samotná cena žádný práh nemá. Vyžaduje přihlášení.
+   */
+  suspend fun myObservations(first: Int = 20, offset: Int = 0): MyObservationResult {
+    val gql = """
+      query(${'$'}first: Int, ${'$'}offset: Int) {
+        myObservations(first: ${'$'}first, offset: ${'$'}offset) {
+          totalCount hasMore
+          items {
+            priceKind priceAmount unitPrice currency observedAt createdAt
+            converted { $CONVERTED_PRICE_FIELDS }
+            publication { $PUBLICATION_STATUS_FIELDS }
+            product { $PRODUCT_SUMMARY_FIELDS }
+            store { $STORE_FIELDS }
+          }
+        }
+      }
+    """
+    val variables = buildJsonObject { put("first", first); put("offset", offset) }
+    return execute(gql, variables, GraphQlResponse.serializer(MyObservationsData.serializer())).myObservations
+  }
+
+  /** Vlastní úpravy CIZÍCH záznamů (core.product_user_edit/core.store_user_edit) — vždy PENDING_MERGE. */
+  suspend fun myEdits(first: Int = 20, offset: Int = 0): MyEditResult {
+    val gql = """
+      query(${'$'}first: Int, ${'$'}offset: Int) {
+        myEdits(first: ${'$'}first, offset: ${'$'}offset) {
+          totalCount hasMore
+          items {
+            recordType updatedAt changedFields
+            publication { $PUBLICATION_STATUS_FIELDS }
+            product { $PRODUCT_SUMMARY_FIELDS }
+            store { $STORE_FIELDS }
+          }
+        }
+      }
+    """
+    val variables = buildJsonObject { put("first", first); put("offset", offset) }
+    return execute(gql, variables, GraphQlResponse.serializer(MyEditsData.serializer())).myEdits
   }
 
   private suspend fun <T> execute(

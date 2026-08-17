@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AccountScreen(
   onEditProfile: () -> Unit = {},
+  onOpenMyContributions: () -> Unit = {},
   onOpenTerms: () -> Unit = {},
   onOpenPrivacy: () -> Unit = {},
 ) {
@@ -44,12 +45,12 @@ fun AccountScreen(
   if (accessToken == null) {
     LoginScreen(onLoggedIn = {}, onOpenTerms = onOpenTerms, onOpenPrivacy = onOpenPrivacy)
   } else {
-    LoggedInContent(onEditProfile)
+    LoggedInContent(onEditProfile, onOpenMyContributions)
   }
 }
 
 @Composable
-private fun LoggedInContent(onEditProfile: () -> Unit) {
+private fun LoggedInContent(onEditProfile: () -> Unit, onOpenMyContributions: () -> Unit) {
   val scope = rememberCoroutineScope()
   var viewer by remember { mutableStateOf<Viewer?>(null) }
   var loading by remember { mutableStateOf(true) }
@@ -76,6 +77,10 @@ private fun LoggedInContent(onEditProfile: () -> Unit) {
     Spacer(Modifier.height(24.dp))
     OutlinedButton(onClick = onEditProfile) {
       Text(stringResource(R.string.account_edit_profile))
+    }
+    Spacer(Modifier.height(8.dp))
+    OutlinedButton(onClick = onOpenMyContributions) {
+      Text(stringResource(R.string.account_my_contributions))
     }
     Spacer(Modifier.height(8.dp))
     Button(onClick = { scope.launch { AppContainer.authRepository.logout() } }) {

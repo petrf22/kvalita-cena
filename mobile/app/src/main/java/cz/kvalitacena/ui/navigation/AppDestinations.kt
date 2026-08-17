@@ -55,6 +55,13 @@ fun productFormRoute(barcode: String? = null) =
 /** Editace profilu (docs/soukromi.md, "Profil uživatele a viditelnost") — ze záložky Účet. */
 const val ROUTE_PROFILE = "profile"
 
+/**
+ * "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty") — vlastní
+ * založené zboží/obchody, vlastní zapsané ceny a vlastní úpravy cizích záznamů, se stavem
+ * zveřejnění. Ze záložky Účet, stejně jako ROUTE_PROFILE.
+ */
+const val ROUTE_MY_CONTRIBUTIONS = "my_contributions"
+
 /** Podmínky užití a Zásady ochrany osobních údajů — z Nastavení i ze souhlasu na přihlášení. */
 const val ROUTE_TERMS = "terms"
 const val ROUTE_PRIVACY = "privacy"

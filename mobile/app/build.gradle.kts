@@ -70,10 +70,12 @@ android {
         buildConfig = true // BuildConfig.VERSION_NAME pro sekci "Zdroje dat" v nastavení
     }
 
-    // AGP 9 nástupce resConfigs — appka zná jen cs/sk/en/pl (docs/lokalizace.md), balit
-    // stringy dalších jazyků z knihoven (Compose, AndroidX) do APK nemá smysl.
+    // AGP 9 nástupce resConfigs — appka zná jen cs/sk/en/pl/de (docs/lokalizace.md), balit
+    // stringy dalších jazyků z knihoven (Compose, AndroidX) do APK nemá smysl. "de" tu chybělo
+    // od chvíle, kdy appka přidala němčinu jako pátý jazyk (commit 58ec6a7) — values-de/ i
+    // AppLang.DE existovaly, ale bez filtru se z APK tiše vyhazovaly.
     androidResources {
-        localeFilters += listOf("cs", "sk", "en", "pl")
+        localeFilters += listOf("cs", "sk", "en", "pl", "de")
     }
 
     // MissingTranslation/ExtraTranslation/MissingQuantity jako error — hlídá, že values-*/
