@@ -48,15 +48,17 @@
             }
           </nz-list>
         }
-        @if (products.hasMore()) {
-          <button
-            nz-button
-            nzType="default"
-            [nzLoading]="products.loading()"
-            (click)="loadMoreProducts()"
-          >
-            {{ t('my-contributions.loadMore') }}
-          </button>
+        @if (products.totalCount() > 0) {
+          <nz-pagination
+            class="section-pagination"
+            [nzPageIndex]="products.pageIndex()"
+            [nzPageSize]="products.pageSize()"
+            [nzTotal]="products.totalCount()"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="pageSizeOptions"
+            (nzPageIndexChange)="onPageIndexChange(products, $event)"
+            (nzPageSizeChange)="onPageSizeChange(products, $event)"
+          />
         }
       </nz-tab>
 
@@ -85,15 +87,17 @@
             }
           </nz-list>
         }
-        @if (stores.hasMore()) {
-          <button
-            nz-button
-            nzType="default"
-            [nzLoading]="stores.loading()"
-            (click)="loadMoreStores()"
-          >
-            {{ t('my-contributions.loadMore') }}
-          </button>
+        @if (stores.totalCount() > 0) {
+          <nz-pagination
+            class="section-pagination"
+            [nzPageIndex]="stores.pageIndex()"
+            [nzPageSize]="stores.pageSize()"
+            [nzTotal]="stores.totalCount()"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="pageSizeOptions"
+            (nzPageIndexChange)="onPageIndexChange(stores, $event)"
+            (nzPageSizeChange)="onPageSizeChange(stores, $event)"
+          />
         }
       </nz-tab>
 
@@ -134,15 +138,17 @@
             }
           </nz-list>
         }
-        @if (observations.hasMore()) {
-          <button
-            nz-button
-            nzType="default"
-            [nzLoading]="observations.loading()"
-            (click)="loadMoreObservations()"
-          >
-            {{ t('my-contributions.loadMore') }}
-          </button>
+        @if (observations.totalCount() > 0) {
+          <nz-pagination
+            class="section-pagination"
+            [nzPageIndex]="observations.pageIndex()"
+            [nzPageSize]="observations.pageSize()"
+            [nzTotal]="observations.totalCount()"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="pageSizeOptions"
+            (nzPageIndexChange)="onPageIndexChange(observations, $event)"
+            (nzPageSizeChange)="onPageSizeChange(observations, $event)"
+          />
         }
       </nz-tab>
 
@@ -183,15 +189,17 @@
             }
           </nz-list>
         }
-        @if (edits.hasMore()) {
-          <button
-            nz-button
-            nzType="default"
-            [nzLoading]="edits.loading()"
-            (click)="loadMoreEdits()"
-          >
-            {{ t('my-contributions.loadMore') }}
-          </button>
+        @if (edits.totalCount() > 0) {
+          <nz-pagination
+            class="section-pagination"
+            [nzPageIndex]="edits.pageIndex()"
+            [nzPageSize]="edits.pageSize()"
+            [nzTotal]="edits.totalCount()"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="pageSizeOptions"
+            (nzPageIndexChange)="onPageIndexChange(edits, $event)"
+            (nzPageSizeChange)="onPageSizeChange(edits, $event)"
+          />
         }
       </nz-tab>
     </nz-tabs>

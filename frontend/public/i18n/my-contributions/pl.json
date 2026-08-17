@@ -15,7 +15,6 @@
     "observations": "Nie zapisałeś/aś jeszcze żadnej ceny.",
     "edits": "Nie edytowałeś/aś jeszcze cudzego wpisu."
   },
-  "loadMore": "Wczytaj więcej",
   "loadFailed": "Nie udało się wczytać listy. Spróbuj ponownie.",
   "createdAtLabel": "Dodano",
   "updatedAtLabel": "Edytowano",

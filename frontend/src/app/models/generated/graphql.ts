@@ -287,7 +287,7 @@ export type MyProductsQueryVariables = Exact<{
 }>;
 
 
-export type MyProductsQuery = { myProducts: { totalCount: number, hasMore: boolean, items: Array<{ createdAt: string, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } } }> } };
+export type MyProductsQuery = { myProducts: { totalCount: number, items: Array<{ createdAt: string, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } } }> } };
 
 export type MyStoresQueryVariables = Exact<{
   first?: number | null | undefined;
@@ -295,7 +295,7 @@ export type MyStoresQueryVariables = Exact<{
 }>;
 
 
-export type MyStoresQuery = { myStores: { totalCount: number, hasMore: boolean, items: Array<{ createdAt: string, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> } };
+export type MyStoresQuery = { myStores: { totalCount: number, items: Array<{ createdAt: string, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> } };
 
 export type MyObservationsQueryVariables = Exact<{
   first?: number | null | undefined;
@@ -303,7 +303,7 @@ export type MyObservationsQueryVariables = Exact<{
 }>;
 
 
-export type MyObservationsQuery = { myObservations: { totalCount: number, hasMore: boolean, items: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, createdAt: string, converted: { amount: number, currency: string, rateDate: string } | null, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> } };
+export type MyObservationsQuery = { myObservations: { totalCount: number, items: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, createdAt: string, converted: { amount: number, currency: string, rateDate: string } | null, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> } };
 
 export type MyEditsQueryVariables = Exact<{
   first?: number | null | undefined;
@@ -311,7 +311,7 @@ export type MyEditsQueryVariables = Exact<{
 }>;
 
 
-export type MyEditsQuery = { myEdits: { totalCount: number, hasMore: boolean, items: Array<{ recordType: RecordType, updatedAt: string, changedFields: Array<string>, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } } | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }> } };
+export type MyEditsQuery = { myEdits: { totalCount: number, items: Array<{ recordType: RecordType, updatedAt: string, changedFields: Array<string>, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } } | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }> } };
 
 export type SearchProductsQueryVariables = Exact<{
   query: string;
@@ -1013,7 +1013,6 @@ export const MyProductsDocument = new TypedDocumentString(`
     query MyProducts($first: Int, $offset: Int) {
   myProducts(first: $first, offset: $offset) {
     totalCount
-    hasMore
     items {
       createdAt
       publication {
@@ -1053,7 +1052,6 @@ export const MyStoresDocument = new TypedDocumentString(`
     query MyStores($first: Int, $offset: Int) {
   myStores(first: $first, offset: $offset) {
     totalCount
-    hasMore
     items {
       createdAt
       publication {
@@ -1095,7 +1093,6 @@ export const MyObservationsDocument = new TypedDocumentString(`
     query MyObservations($first: Int, $offset: Int) {
   myObservations(first: $first, offset: $offset) {
     totalCount
-    hasMore
     items {
       priceKind
       priceAmount
@@ -1171,7 +1168,6 @@ export const MyEditsDocument = new TypedDocumentString(`
     query MyEdits($first: Int, $offset: Int) {
   myEdits(first: $first, offset: $offset) {
     totalCount
-    hasMore
     items {
       recordType
       updatedAt

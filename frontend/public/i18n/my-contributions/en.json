@@ -15,7 +15,6 @@
     "observations": "You haven't logged any prices yet.",
     "edits": "You haven't edited anyone else's record yet."
   },
-  "loadMore": "Load more",
   "loadFailed": "Couldn't load the list. Please try again.",
   "createdAtLabel": "Added",
   "updatedAtLabel": "Edited",

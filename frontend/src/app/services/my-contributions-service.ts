@@ -18,7 +18,6 @@ export class MyContributionsService {
       query MyProducts($first: Int, $offset: Int) {
         myProducts(first: $first, offset: $offset) {
           totalCount
-          hasMore
           items {
             createdAt
             publication {
@@ -39,7 +38,6 @@ export class MyContributionsService {
       query MyStores($first: Int, $offset: Int) {
         myStores(first: $first, offset: $offset) {
           totalCount
-          hasMore
           items {
             createdAt
             publication {
@@ -61,7 +59,6 @@ export class MyContributionsService {
       query MyObservations($first: Int, $offset: Int) {
         myObservations(first: $first, offset: $offset) {
           totalCount
-          hasMore
           items {
             priceKind
             priceAmount
@@ -96,7 +93,6 @@ export class MyContributionsService {
       query MyEdits($first: Int, $offset: Int) {
         myEdits(first: $first, offset: $offset) {
           totalCount
-          hasMore
           items {
             recordType
             updatedAt

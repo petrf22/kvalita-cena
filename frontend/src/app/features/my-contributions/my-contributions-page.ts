@@ -10,6 +10,7 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzListModule } from 'ng-zorro-antd/list';
+import { NzPaginationModule } from 'ng-zorro-antd/pagination';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -24,7 +25,8 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { PublicationStatusBadge } from '../../shared/publication-status';
 import { RelativeDatePipe } from '../../shared/relative-date.pipe';
 
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 /**
  * Strojové názvy polí, která `changedFields` (MyEditItem) posílá — backend úmyslně posílá
@@ -56,25 +58,32 @@ const CHANGED_FIELD_KEYS: Record<string, string> = {
 interface PagedResult<T> {
   items: T[];
   totalCount: number;
-  hasMore: boolean;
 }
 
-/** Stav jedné sekce výpisu (zboží/obchody/ceny/úpravy) — čtyři instance, jedna na záložku. */
+/**
+ * Stav jedné sekce výpisu (zboží/obchody/ceny/úpravy) — čtyři instance, jedna na záložku.
+ * Skutečné stránkování (ne "načíst další"), aby si při hodně položkách appka nikdy netáhla
+ * celý seznam — velikost stránky je uživatelova volba (`nz-pagination`, `nzShowSizeChanger`).
+ */
 interface Section<T> {
   items: WritableSignal<T[]>;
   totalCount: WritableSignal<number>;
-  hasMore: WritableSignal<boolean>;
+  pageIndex: WritableSignal<number>;
+  pageSize: WritableSignal<number>;
   loading: WritableSignal<boolean>;
   error: WritableSignal<string | null>;
+  fetch: (first: number, offset: number) => Observable<PagedResult<T>>;
 }
 
-function createSection<T>(): Section<T> {
+function createSection<T>(fetch: Section<T>['fetch']): Section<T> {
   return {
     items: signal<T[]>([]),
     totalCount: signal(0),
-    hasMore: signal(false),
+    pageIndex: signal(1),
+    pageSize: signal(DEFAULT_PAGE_SIZE),
     loading: signal(false),
     error: signal<string | null>(null),
+    fetch,
   };
 }
 
@@ -94,6 +103,7 @@ function createSection<T>(): Section<T> {
     NzButtonModule,
     NzEmptyModule,
     NzListModule,
+    NzPaginationModule,
     NzSpinModule,
     NzTabsModule,
     NzTagModule,
@@ -113,10 +123,20 @@ export class MyContributionsPage {
 
   protected readonly viewer = signal<Viewer | null>(null);
 
-  protected readonly products = createSection<MyProductItem>();
-  protected readonly stores = createSection<MyStoreItem>();
-  protected readonly observations = createSection<MyObservationItem>();
-  protected readonly edits = createSection<MyEditItem>();
+  protected readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
+
+  protected readonly products = createSection<MyProductItem>((first, offset) =>
+    this.myContributionsService.myProducts(first, offset),
+  );
+  protected readonly stores = createSection<MyStoreItem>((first, offset) =>
+    this.myContributionsService.myStores(first, offset),
+  );
+  protected readonly observations = createSection<MyObservationItem>((first, offset) =>
+    this.myContributionsService.myObservations(first, offset),
+  );
+  protected readonly edits = createSection<MyEditItem>((first, offset) =>
+    this.myContributionsService.myEdits(first, offset),
+  );
 
   protected readonly priceKindKeys = PRICE_KIND_KEYS;
   protected readonly recordTypeKeys = RECORD_TYPE_KEYS;
@@ -125,26 +145,10 @@ export class MyContributionsPage {
   constructor() {
     if (this.auth.isLoggedIn()) {
       this.viewerService.me().subscribe((viewer) => this.viewer.set(viewer));
-      this.loadMore(
-        this.products,
-        (first, offset) => this.myContributionsService.myProducts(first, offset),
-        true,
-      );
-      this.loadMore(
-        this.stores,
-        (first, offset) => this.myContributionsService.myStores(first, offset),
-        true,
-      );
-      this.loadMore(
-        this.observations,
-        (first, offset) => this.myContributionsService.myObservations(first, offset),
-        true,
-      );
-      this.loadMore(
-        this.edits,
-        (first, offset) => this.myContributionsService.myEdits(first, offset),
-        true,
-      );
+      this.load(this.products);
+      this.load(this.stores);
+      this.load(this.observations);
+      this.load(this.edits);
     }
   }
 
@@ -154,51 +158,27 @@ export class MyContributionsPage {
     return key ? this.transloco.translate(key) : field;
   }
 
-  protected loadMoreProducts(): void {
-    this.loadMore(
-      this.products,
-      (first, offset) => this.myContributionsService.myProducts(first, offset),
-      false,
-    );
+  protected onPageIndexChange<T>(section: Section<T>, pageIndex: number): void {
+    section.pageIndex.set(pageIndex);
+    this.load(section);
   }
 
-  protected loadMoreStores(): void {
-    this.loadMore(
-      this.stores,
-      (first, offset) => this.myContributionsService.myStores(first, offset),
-      false,
-    );
+  /** Změna velikosti stránky (uživatelova volba) vždy skočí zpátky na první stránku. */
+  protected onPageSizeChange<T>(section: Section<T>, pageSize: number): void {
+    section.pageSize.set(pageSize);
+    section.pageIndex.set(1);
+    this.load(section);
   }
 
-  protected loadMoreObservations(): void {
-    this.loadMore(
-      this.observations,
-      (first, offset) => this.myContributionsService.myObservations(first, offset),
-      false,
-    );
-  }
-
-  protected loadMoreEdits(): void {
-    this.loadMore(
-      this.edits,
-      (first, offset) => this.myContributionsService.myEdits(first, offset),
-      false,
-    );
-  }
-
-  private loadMore<T>(
-    section: Section<T>,
-    fetch: (first: number, offset: number) => Observable<PagedResult<T>>,
-    reset: boolean,
-  ): void {
-    const offset = reset ? 0 : section.items().length;
+  private load<T>(section: Section<T>): void {
+    const pageSize = section.pageSize();
+    const offset = (section.pageIndex() - 1) * pageSize;
     section.loading.set(true);
     section.error.set(null);
-    fetch(PAGE_SIZE, offset).subscribe({
+    section.fetch(pageSize, offset).subscribe({
       next: (result) => {
-        section.items.update((current) => (reset ? result.items : [...current, ...result.items]));
+        section.items.set(result.items);
         section.totalCount.set(result.totalCount);
-        section.hasMore.set(result.hasMore);
         section.loading.set(false);
       },
       error: () => {
