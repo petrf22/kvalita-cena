@@ -91,4 +91,12 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
       + "JOIN agg.price_current pc ON pc.store_id = s.id "
       + "WHERE s.status = 'ACTIVE' AND s.country = :country ORDER BY s.name", nativeQuery = true)
   List<Store> findDistinctWithPrices(@Param("country") String country);
+
+  /** "Moje příspěvky" (MyContributionsService) — vlastní založené provozovny, nejnovější první. */
+  @Query(value = "SELECT * FROM core.store s WHERE s.created_by_user_id = :userId "
+      + "ORDER BY s.created_at DESC LIMIT :limit OFFSET :offset", nativeQuery = true)
+  List<Store> findByCreatedByUserId(@Param("userId") Long userId, @Param("limit") int limit,
+      @Param("offset") int offset);
+
+  long countByCreatedByUserId(Long userId);
 }

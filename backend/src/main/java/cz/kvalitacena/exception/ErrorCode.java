@@ -102,6 +102,9 @@ public enum ErrorCode {
   ACCOUNT_DELETE_REQUIRES_LOGIN("error.accountDelete.requiresLogin"),
   ACCOUNT_DELETE_INVALID_CHALLENGE("error.accountDelete.invalidChallenge"),
 
+  // --- moje příspěvky (výpis vlastní uživatelské vrstvy, docs/datovy-model.md)
+  CONTRIBUTIONS_REQUIRE_LOGIN("error.contributions.requiresLogin"),
+
   // --- obecné
   ACCOUNT_GONE("error.common.accountGone"),
   TOO_MANY_REQUESTS("error.common.tooManyRequests"),

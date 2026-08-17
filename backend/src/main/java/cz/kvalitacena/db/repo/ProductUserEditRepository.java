@@ -11,7 +11,11 @@ public interface ProductUserEditRepository extends JpaRepository<ProductUserEdit
 
   Optional<ProductUserEdit> findByProductIdAndUserId(Long productId, Long userId);
 
-  /** GDPR export (AccountService) — všechny vlastní úpravy bez ohledu na produkt. */
+  /**
+   * Všechny vlastní úpravy bez ohledu na produkt — GDPR export (AccountService) i "Moje
+   * příspěvky" (MyContributionsService, kde se s hodnotami z StoreUserEditRepository sloučí
+   * a stránkuje v paměti; objem je "vlastní data jednoho člověka", ne celý katalog).
+   */
   List<ProductUserEdit> findByUserId(Long userId);
 
   /** Dávkové dotažení patchů pro seznam produktů a JEDNOHO viewera (hledání, ne N+1). */

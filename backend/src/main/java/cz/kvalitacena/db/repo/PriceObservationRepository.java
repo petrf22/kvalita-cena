@@ -63,6 +63,51 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
       @Param("productIds") Collection<Long> productIds);
 
   /**
+   * Dávková obdoba {@link #countDistinctProductContributorsExcluding} pro výpis "Moje
+   * příspěvky" (MyContributionsService) — jedna stránka výpisu nemá dělat N samostatných
+   * dotazů. Na rozdíl od jednořádkové varianty (kde je vylučovaný autor vždy stejný jako
+   * viewer, protože {@code promoteIfConfirmed} volá se svým vlastním produktem) tady může
+   * jedno zboží ve výpisu {@code myObservations} patřit JINÉMU uživateli, než je viewer
+   * (viewer u něj jen zapsal cenu) — proto se vylučuje skutečný autor záznamu (JOIN na
+   * {@code core.product.created_by_user_id}), ne parametr zvenčí. Bez tohohle JOINu by číslo
+   * ve výpisu neodpovídalo skutečnému prahu, který používá {@code promoteIfConfirmed}.
+   */
+  @Query(value = "SELECT po.product_id AS id, count(DISTINCT COALESCE(po.submitter_id::text, po.id::text)) AS cnt "
+      + "FROM core.price_observation po JOIN core.product p ON p.id = po.product_id "
+      + "WHERE po.product_id IN (:productIds) "
+      + "AND po.submitter_id IS DISTINCT FROM p.created_by_user_id GROUP BY po.product_id", nativeQuery = true)
+  List<ContributorCount> countDistinctProductContributorsExcludingBatch(@Param("productIds") Collection<Long> productIds);
+
+  /** Dávková obdoba {@link #countDistinctContributorsExcluding} — viz {@link #countDistinctProductContributorsExcludingBatch}. */
+  @Query(value = "SELECT po.store_id AS id, count(DISTINCT COALESCE(po.submitter_id::text, po.id::text)) AS cnt "
+      + "FROM core.price_observation po JOIN core.store s ON s.id = po.store_id "
+      + "WHERE po.store_id IN (:storeIds) "
+      + "AND po.submitter_id IS DISTINCT FROM s.created_by_user_id GROUP BY po.store_id", nativeQuery = true)
+  List<ContributorCount> countDistinctContributorsExcludingBatch(@Param("storeIds") Collection<Long> storeIds);
+
+  interface ContributorCount {
+    Long getId();
+
+    long getCnt();
+  }
+
+  /**
+   * "Moje příspěvky" (MyContributionsService) — vlastní zapsané ceny, nejnovější první.
+   * Vrácené entity mají {@code product}/{@code store} jako LAZY proxy (native query), ale
+   * volající si {@code getId()} z proxy přečte bez dotazu a dotáhne obě dávkově přes
+   * {@code findAllById} — žádný N+1, jen jinak rozložený než {@link
+   * #findBySubmitterIdWithProductAndStore} (ten je nestránkovaný, pro GDPR export). Zmizí
+   * odsud po pseudonymizaci (submitter_id NULL po 180 dnech, docs/soukromi.md) — to je záměr.
+   */
+  @Query(value = "SELECT * FROM core.price_observation WHERE submitter_id = :userId "
+      + "ORDER BY observed_at DESC LIMIT :limit OFFSET :offset", nativeQuery = true)
+  List<PriceObservation> findBySubmitterId(@Param("userId") Long userId, @Param("limit") int limit,
+      @Param("offset") int offset);
+
+  @Query("SELECT COUNT(o) FROM PriceObservation o WHERE o.submitter.id = :userId")
+  long countBySubmitterId(@Param("userId") Long userId);
+
+  /**
    * Pseudonymizace (docs/soukromi.md, "Retence vazby observace → uživatel: 180 dní") —
    * {@code submitter_cohort}/{@code frozen_weight} zůstávají (reputace je průběžný čítač, ne
    * odvozená z historie jednotlivých observací), mizí jen vazba na konkrétní účet.

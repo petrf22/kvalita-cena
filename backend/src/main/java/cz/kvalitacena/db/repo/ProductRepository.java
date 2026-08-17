@@ -34,4 +34,12 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
       + "ORDER BY p.is_generic DESC, similarity(core.norm_text(p.name), core.norm_text(:name)) DESC "
       + "LIMIT :limit", nativeQuery = true)
   List<Product> findSimilarByName(@Param("name") String name, @Param("limit") int limit);
+
+  /** "Moje příspěvky" (MyContributionsService) — vlastní založené zboží, nejnovější první. */
+  @Query(value = "SELECT * FROM core.product p WHERE p.created_by_user_id = :userId "
+      + "ORDER BY p.created_at DESC LIMIT :limit OFFSET :offset", nativeQuery = true)
+  List<Product> findByCreatedByUserId(@Param("userId") Long userId, @Param("limit") int limit,
+      @Param("offset") int offset);
+
+  long countByCreatedByUserId(Long userId);
 }
