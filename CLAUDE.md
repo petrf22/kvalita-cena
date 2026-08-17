@@ -168,7 +168,9 @@ zakládání obchodu (`chainId` v `CreateStoreInput` existuje, ale klienti zatí
 vyhodnocovací pravidlo zatím není známé — viz výš), inline edit UI pro ZBOŽÍ na obou klientech
 (mutace jsou hotové, jen je zatím nevolá žádná obrazovka — u OBCHODU už hotové je, viz výš),
 fotka jako důkaz ceny (`core.price_observation`, `f_evid` v `docs/reputace.md` — fotky zatím
-váží jen na katalogový záznam, ne na cenový zápis), lokální AI (`docs/ai.md` — čtení čísel
+váží jen na katalogový záznam, ne na cenový zápis), další jazyky appky nad `de` (fr/es/it/hu/
+ro/hr/si/bg/sr — plán expanze rozšířil na 16 ZEMÍ, ale jazyků je zatím jen pět, viz
+`docs/lokalizace.md`, „Co zbývá"), lokální AI (`docs/ai.md` — čtení čísel
 z fotek, kontrola textů, předfiltr moderace; zatím jen rozhodnutí v docs, žádný kód — výjimkou
 je předfiltr fotek pro moderaci, který podle `docs/ai.md` patří před spuštění veřejného
 provozu, ne až za etapu 2) — viz konec plánu založení projektu pro rozpis a `docs/reputace.md`
