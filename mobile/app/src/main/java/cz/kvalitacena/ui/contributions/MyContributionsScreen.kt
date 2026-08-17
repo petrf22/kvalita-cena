@@ -1,5 +1,6 @@
 package cz.kvalitacena.ui.contributions
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -78,11 +79,15 @@ private val FIELD_LABELS: Map<String, Int> = mapOf(
  * "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty"; prahy
  * v docs/reputace.md) — jádro appky ověřitelné end-to-end: co jsem zadal/a a KDY se to
  * propaguje ostatním, se skutečnými čísly, ne jen štítkem. Dostupné jen přihlášeným, obrazovka
- * sama přihlášení nekontroluje (stejný vzor jako ProfileScreen — viz AccountScreen). Webový
- * protějšek: frontend features/my-contributions/my-contributions-page.ts.
+ * sama přihlášení nekontroluje (stejný vzor jako ProfileScreen — viz AccountScreen). Prokliky na
+ * detail zboží/obchodu jdou přes `NavHost` (`MainActivity.kt`) — návrat zpátky sem (i se
+ * zachovaným stavem stránkování/záložky) tak appka dostane zadarmo z back stacku Compose
+ * Navigation, žádný vlastní "zpět" mechanismus navíc netřeba (na rozdíl od webu, kde SPA routing
+ * stav při navigaci pryč zahazuje — `NavigationHistoryService`). Webový protějšek:
+ * frontend features/my-contributions/my-contributions-page.ts.
  */
 @Composable
-fun MyContributionsScreen() {
+fun MyContributionsScreen(onProductClick: (String) -> Unit, onStoreClick: (String) -> Unit) {
   val viewModel: MyContributionsViewModel = viewModel(
     factory = viewModelFactory { initializer { MyContributionsViewModel(AppContainer.graphQlClient) } },
   )
@@ -106,16 +111,16 @@ fun MyContributionsScreen() {
     }
 
     when (selectedTab) {
-      0 -> ProductsTab(viewModel)
-      1 -> StoresTab(viewModel)
-      2 -> ObservationsTab(viewModel)
-      else -> EditsTab(viewModel)
+      0 -> ProductsTab(viewModel, onProductClick)
+      1 -> StoresTab(viewModel, onStoreClick)
+      2 -> ObservationsTab(viewModel, onProductClick)
+      else -> EditsTab(viewModel, onProductClick, onStoreClick)
     }
   }
 }
 
 @Composable
-private fun ProductsTab(viewModel: MyContributionsViewModel) {
+private fun ProductsTab(viewModel: MyContributionsViewModel, onProductClick: (String) -> Unit) {
   val section = viewModel.products
   ContributionList(
     items = section.items,
@@ -128,7 +133,11 @@ private fun ProductsTab(viewModel: MyContributionsViewModel) {
     onPageChange = { viewModel.changeProductsPage(it) },
     onPageSizeChange = { viewModel.changeProductsPageSize(it) },
   ) { item: MyProductItem ->
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(
+      modifier = Modifier.fillMaxWidth()
+        .clickable { onProductClick(item.product.id) }
+        .padding(vertical = 8.dp),
+    ) {
       Text(item.product.name, style = MaterialTheme.typography.titleSmall)
       Text(
         "${stringResource(R.string.my_contributions_created_at_label)} ${formatRelativeDate(item.createdAt)}",
@@ -141,7 +150,7 @@ private fun ProductsTab(viewModel: MyContributionsViewModel) {
 }
 
 @Composable
-private fun StoresTab(viewModel: MyContributionsViewModel) {
+private fun StoresTab(viewModel: MyContributionsViewModel, onStoreClick: (String) -> Unit) {
   val section = viewModel.stores
   ContributionList(
     items = section.items,
@@ -154,7 +163,11 @@ private fun StoresTab(viewModel: MyContributionsViewModel) {
     onPageChange = { viewModel.changeStoresPage(it) },
     onPageSizeChange = { viewModel.changeStoresPageSize(it) },
   ) { item: MyStoreItem ->
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(
+      modifier = Modifier.fillMaxWidth()
+        .clickable { onStoreClick(item.store.id) }
+        .padding(vertical = 8.dp),
+    ) {
       Text("${item.store.name} — ${item.store.city}", style = MaterialTheme.typography.titleSmall)
       Text(
         "${stringResource(R.string.my_contributions_created_at_label)} ${formatRelativeDate(item.createdAt)}",
@@ -167,7 +180,7 @@ private fun StoresTab(viewModel: MyContributionsViewModel) {
 }
 
 @Composable
-private fun ObservationsTab(viewModel: MyContributionsViewModel) {
+private fun ObservationsTab(viewModel: MyContributionsViewModel, onProductClick: (String) -> Unit) {
   val section = viewModel.observations
   ContributionList(
     items = section.items,
@@ -182,7 +195,12 @@ private fun ObservationsTab(viewModel: MyContributionsViewModel) {
   ) { item: MyObservationItem ->
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
       Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-        Text("${item.product.name} — ${item.store.name} — ${priceKindLabel(item.priceKind)}")
+        // Jen produkt je proklik (stejně jako na webu) — cena patří k dvojici produkt+obchod,
+        // samotný obchod tu proklik nemá.
+        Text(
+          "${item.product.name} — ${item.store.name} — ${priceKindLabel(item.priceKind)}",
+          modifier = Modifier.clickable { onProductClick(item.product.id) },
+        )
         Text(
           rememberMoneyFormatter(item.converted?.currency ?: item.currency)
             .format(item.converted?.amount ?: item.priceAmount),
@@ -199,7 +217,11 @@ private fun ObservationsTab(viewModel: MyContributionsViewModel) {
 }
 
 @Composable
-private fun EditsTab(viewModel: MyContributionsViewModel) {
+private fun EditsTab(
+  viewModel: MyContributionsViewModel,
+  onProductClick: (String) -> Unit,
+  onStoreClick: (String) -> Unit,
+) {
   val section = viewModel.edits
   ContributionList(
     items = section.items,
@@ -219,7 +241,13 @@ private fun EditsTab(viewModel: MyContributionsViewModel) {
         R.string.my_contributions_record_type_store
       }
       val recordName = item.product?.name ?: item.store?.name ?: ""
-      Text("${stringResource(recordLabelRes)}: $recordName", style = MaterialTheme.typography.titleSmall)
+      Text(
+        "${stringResource(recordLabelRes)}: $recordName",
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.clickable {
+          item.product?.let { onProductClick(it.id) } ?: item.store?.let { onStoreClick(it.id) }
+        },
+      )
       Text(
         "${stringResource(R.string.my_contributions_updated_at_label)} ${formatRelativeDate(item.updatedAt)}",
         style = MaterialTheme.typography.bodySmall,

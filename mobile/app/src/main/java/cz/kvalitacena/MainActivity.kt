@@ -203,7 +203,10 @@ private fun AppScaffold() {
         ProfileScreen(onDone = { navController.popBackStack() })
       }
       composable(ROUTE_MY_CONTRIBUTIONS) {
-        MyContributionsScreen()
+        MyContributionsScreen(
+          onProductClick = { productId -> navController.navigate(productDetailRoute(productId)) },
+          onStoreClick = { storeId -> navController.navigate(storeDetailRoute(storeId)) },
+        )
       }
       composable(ROUTE_TERMS) {
         TermsScreen(onDone = { navController.popBackStack() })
