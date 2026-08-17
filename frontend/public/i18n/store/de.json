@@ -1,0 +1,89 @@
+{
+  "form": {
+    "nameLabel": "Name des Geschäfts",
+    "streetLabel": "Straße und Hausnummer (optional)",
+    "cityLabel": "Stadt",
+    "postalCodeLabel": "PLZ (optional)",
+    "countryLabel": "Land",
+    "country": {
+      "CZ": "Tschechien",
+      "SK": "Slowakei",
+      "PL": "Polen",
+      "DE": "Deutschland",
+      "AT": "Österreich",
+      "FR": "Frankreich",
+      "ES": "Spanien",
+      "IT": "Italien",
+      "HR": "Kroatien",
+      "SI": "Slowenien",
+      "BG": "Bulgarien",
+      "HU": "Ungarn",
+      "RO": "Rumänien",
+      "GB": "Vereinigtes Königreich",
+      "CH": "Schweiz",
+      "RS": "Serbien"
+    },
+    "similarWarning": "Meinst du nicht eher eines dieser bereits vorhandenen Geschäfte?",
+    "saveChanges": "Änderungen speichern",
+    "createStore": "Geschäft anlegen"
+  },
+  "companyId": {
+    "sectionTitle": "{{label}} (optional)",
+    "hint": "Für eine Filiale oder einen Einzelunternehmer, bei dem der Name allein nicht zur eindeutigen Identifizierung reicht.",
+    "placeholder": "{{digits}} Ziffern",
+    "loadFromRegistry": "Aus ARES laden",
+    "shapeInvalid": "{{label}} muss {{digits}} Ziffern haben.",
+    "notFoundInRegistry": "Diese Firmennummer haben wir in ARES nicht gefunden.",
+    "label": {
+      "CZ": "IČO",
+      "SK": "IČO",
+      "PL": "NIP",
+      "DE": "USt-IdNr.",
+      "AT": "UID-Nummer",
+      "FR": "SIREN",
+      "ES": "NIF",
+      "IT": "Partita IVA",
+      "HR": "OIB",
+      "SI": "Davčna številka",
+      "BG": "EIK",
+      "HU": "Adószám",
+      "RO": "CUI",
+      "GB": "Company number",
+      "CH": "UID",
+      "RS": "PIB"
+    }
+  },
+  "location": {
+    "sectionTitle": "Koordinaten (optional)",
+    "hint": "Ohne Koordinaten erscheint das Geschäft nicht in der Umgebungssuche, nur in der Suche nach Namen — sie können auch später ergänzt werden.",
+    "findCoordinates": "Koordinaten finden",
+    "useMyLocation": "Meinen Standort verwenden",
+    "willUseMapPosition": "Es wird die Position von der Karte unten / dein aktueller Standort verwendet."
+  },
+  "detail": {
+    "backToSearch": "Zurück zur Suche",
+    "notFound": "Das Geschäft konnte nicht gefunden werden.",
+    "unverified": "Nicht überprüft",
+    "editedByMe": "Deine Bearbeitung",
+    "pendingConfirmation": "Wartet auf Bestätigung",
+    "flag": "Melden",
+    "flagHidden": "Danke für die Meldung — das Geschäft ist jetzt ausgeblendet und wird überprüft.",
+    "flagAcknowledged": "Danke für die Meldung, wir haben sie erfasst.",
+    "photosTitle": "Fotos",
+    "locationTitle": "Standort",
+    "openOnOsm": "Auf OpenStreetMap öffnen",
+    "noLocation": "Dieses Geschäft hat noch keine Koordinaten.",
+    "operatorTitle": "Betreiber",
+    "editModalTitle": "Geschäft bearbeiten"
+  },
+  "picker": {
+    "searchPlaceholder": "Namen oder Stadt des Geschäfts eingeben",
+    "findNearby": "In der Umgebung finden",
+    "addNew": "+ Neues Geschäft",
+    "loginHint": "Das Anlegen eines neuen Geschäfts erfordert eine Anmeldung — wechsle zur Seite Konto.",
+    "newStoreModalTitle": "Neues Geschäft",
+    "geoUnsupported": "Dieser Browser kann den Standort nicht ermitteln — wähle das Geschäft manuell aus.",
+    "noNearbyStores": "In der Umgebung haben wir kein Geschäft gefunden.",
+    "geoPermissionDenied": "Der Zugriff auf den Standort wurde abgelehnt — wähle das Geschäft manuell aus."
+  }
+}

@@ -12,6 +12,7 @@ enum class AppLang(val tag: String, val endonym: String) {
   SK("sk", "Slovenčina"),
   EN("en", "English"),
   PL("pl", "Polski"),
+  DE("de", "Deutsch"),
 }
 
 /**

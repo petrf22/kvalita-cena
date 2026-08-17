@@ -23,7 +23,7 @@ import {
  */
 
 const I18N_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'public', 'i18n');
-const LANGUAGES = ['cs', 'sk', 'en', 'pl'] as const;
+const LANGUAGES = ['cs', 'sk', 'en', 'pl', 'de'] as const;
 const SOURCE_LANG = 'cs';
 
 const INTERPOLATION_PATTERN = /\{\{?\s*(\w+)/g;

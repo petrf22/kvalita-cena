@@ -1,0 +1,12 @@
+{
+  "emptyHint": "Hier hat noch niemand ein Foto hinzugefügt.",
+  "photoAlt": "Foto",
+  "hiddenBadge": "Ausgeblendet",
+  "addPhoto": "Foto hinzufügen",
+  "loginHint": "Das Hinzufügen von Fotos erfordert eine Anmeldung — wechsle zur Seite Konto.",
+  "uploadFailed": "Das Hochladen des Fotos ist fehlgeschlagen, bitte versuch es erneut.",
+  "setAsMain": "Als Hauptfoto festlegen",
+  "flag": "Melden",
+  "flagHidden": "Danke für die Meldung — das Foto ist jetzt ausgeblendet und wird überprüft.",
+  "flagAcknowledged": "Danke für die Meldung, wir haben sie erfasst."
+}

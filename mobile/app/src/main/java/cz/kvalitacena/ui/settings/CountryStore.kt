@@ -10,7 +10,7 @@ private const val PREFS_NAME = "kvalita_a_cena_settings"
 private const val KEY_COUNTRY = "country"
 
 /** Jen výchozí hádanka, než appka stáhne countries()/uživatel zemi sám nastaví — nikdy zdroj pravdy. */
-private val LANG_TO_COUNTRY = mapOf("cs" to "CZ", "sk" to "SK", "pl" to "PL", "en" to "CZ")
+private val LANG_TO_COUNTRY = mapOf("cs" to "CZ", "sk" to "SK", "pl" to "PL", "en" to "CZ", "de" to "DE")
 
 /**
  * Přepínač země nezávislý na jazyku (docs/lokalizace.md, "Country selector v UI") — mobilní

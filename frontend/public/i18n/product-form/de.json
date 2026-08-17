@@ -1,0 +1,16 @@
+{
+  "nameLabel": "Name der Ware",
+  "suggestionsWarning": "Ist es nicht schon eine dieser Positionen?",
+  "genericTag": "generische Position",
+  "categoryLabel": "Kategorie",
+  "categoryPlaceholder": "Kategorie auswählen",
+  "brandLabel": "Marke (optional)",
+  "unitBaseLabel": "Grundeinheit",
+  "variableWeightLabel": "Wiegeware (Preis immer pro kg/l, ohne feste Füllmenge)",
+  "massLabel": "Packungsgewicht (kg)",
+  "volumeLabel": "Packungsvolumen (l)",
+  "piecesInPackLabel": "Stück pro Packung (optional)",
+  "codeLabel": "Strichcode (optional)",
+  "codeHint": "Ohne Code entsteht eine generische Position (z. B. „Gebäck für {{example}}“ vom Kassenbon) — mit geringerer Datenzuverlässigkeit, kann aber trotzdem gespeichert werden.",
+  "submit": "Ware anlegen"
+}

@@ -13,6 +13,7 @@ jazyků, mapu země→měna→locale a pravidla překladu — obdoba toho, čím
 | Slovenčina | `sk` | SK | EUR | |
 | English | `en` | — | — | bez vlastní výchozí země/měny, appka se jím dá používat odkudkoli |
 | Polski | `pl` | PL | PLN | |
+| Deutsch | `de` | DE | EUR | přidáno etapou 2 plánu expanze (2026-08) — pokrývá i AT/CH (`country-locale`) |
 
 Mapa `country → currency` a `country → locale` je na backendu `app.i18n.*`
 (`application.yml`, `I18nProperties`) — jediné místo, které ji zná; frontend/mobil mají jen
@@ -20,16 +21,25 @@ odlehčenou kopii pro NÁPOVĚDU v UI (popisek pole ceny dřív, než zná serve
 
 **Země je nezávislá osa od jazyka** (plán expanze, 2026-08) — appka od srpna 2026 zná i dalších
 13 zemí (Německo, Rakousko, Francie, Španělsko, Itálie, Chorvatsko, Slovinsko, Bulharsko,
-Maďarsko, Rumunsko, Británie, Švýcarsko, Srbsko), aniž by přibyl jediný nový jazyk — nové země
-záměrně míří na `en` v `country-locale` (`application.yml`), stejně jako dřív fungovala
-Británie/Švédsko s existujícím `en`. Rozšíření o zemi je tak jen konfigurace + CHECK constraint
-na `currency` (`db/changelog/2026-08-17/01-countries.yaml`), ne zásah do žádného klienta;
-rozšíření o JAZYK je pořád plná práce popsaná v `## Testy a CI guardy` níže (~700 řetězců na
-jazyk) a dělá se samostatně, podle poptávky. 9 z 13 nových zemí je EUR (nulová práce ve `fx.*`);
-zbylé čtyři (HUF, RON, GBP, CHF) ČNB kótuje stejně jako EUR/PLN. Jedinou výjimkou je Srbsko —
-RSD na lístku ČNB není (ověřeno živě), kurz se stahuje z Národní banky Srbska
-(`service/fx/NbsRateSource`, `app.external.nbs`) jako druhý `ExchangeRateSource` vedle ČNB,
-viz „Kurzovní lístek a zobrazovací měna" níže.
+Maďarsko, Rumunsko, Británie, Švýcarsko, Srbsko). Etapa 1 je přidala BEZE ZMĚNY jazyků — nové
+země bez vlastního jazyka míří na `en` v `country-locale` (`application.yml`). Rozšíření o zemi
+je tak jen konfigurace + CHECK constraint na `currency`
+(`db/changelog/2026-08-17/01-countries.yaml`), ne zásah do žádného klienta; rozšíření o JAZYK je
+pořád plná práce popsaná v `## Testy a CI guardy` níže (~700 řetězců na jazyk) a dělá se
+samostatně, podle poptávky. 9 z 13 nových zemí je EUR (nulová práce ve `fx.*`); zbylé čtyři
+(HUF, RON, GBP, CHF) ČNB kótuje stejně jako EUR/PLN. Jedinou výjimkou je Srbsko — RSD na lístku
+ČNB není (ověřeno živě), kurz se stahuje z Národní banky Srbska (`service/fx/NbsRateSource`,
+`app.external.nbs`) jako druhý `ExchangeRateSource` vedle ČNB, viz „Kurzovní lístek a
+zobrazovací měna" níže.
+
+**Etapa 2 (2026-08) přidala `de` jako první skutečně nový JAZYK** — referenční postup pro
+další jazyky. DE/AT/CH v `country-locale` teď míří na `de` (dřív na `en` jako každá nová země
+bez vlastního jazyka). Objem překladu na jeden jazyk: backend `messages/*_de.properties`
+(errors 67 + handles 49 + mail 8 + attribution 4 + countries 16 = 144 klíčů), web
+`public/i18n/de.json` + 10 scope souborů (356 klíčů), mobil `values-de/strings.xml` (242
+řetězců, `terms_*`/`privacy_*` string-array zůstávají `translatable="false"` jako u ostatních
+jazyků — právní text jen česky). `core.category_i18n` beze změny — katalog kategorií je v
+etapě 1 pořád prázdný (`docs/datovy-model.md`), není co překládat.
 
 **Proč čeština, ne angličtina, je fallback:** appka vznikla pro český trh, drtivá většina dat
 (kategorie, handly, mail) existuje nejdřív česky. Anglický fallback by pro švédského turistu na
@@ -236,12 +246,18 @@ nepřekládají** — `path` slouží k filtrování podle větve stromu a musí
 
 ### Handle: strukturovaně kvůli gramatickému rodu
 
-„Modrý čáp" vs. „Modrá liška" — v cs/sk/pl se přídavné jméno ohýbá podle rodu podstatného, takže
-appka neukládá hotový řetězec, ale `handle_adjective`/`handle_noun`/`handle_number` +
-`Gender` (`HandleGenerator`). `public_handle` zůstává kanonický, jazykově neutrální klíč
-(`blue-stork-4271`) pro unikátnost — ta se musí kontrolovat nad kanonickým tvarem, jinak by se
-dva účty srazily v jednom jazyce a v jiném ne. Vykreslení podle jazyka čtenáře je až na čtení
-(`ViewerGraphQlController`, `messages/handles*.properties`: `handle.adjective.blue.M/F/N`).
+„Modrý čáp" vs. „Modrá liška" — v cs/sk/pl (a od etapy 2 i `de`) se přídavné jméno ohýbá podle
+rodu podstatného, takže appka neukládá hotový řetězec, ale `handle_adjective`/`handle_noun`/
+`handle_number` + `Gender` (`HandleGenerator`). `public_handle` zůstává kanonický, jazykově
+neutrální klíč (`blue-stork-4271`) pro unikátnost — ta se musí kontrolovat nad kanonickým
+tvarem, jinak by se dva účty srazily v jednom jazyce a v jiném ne. Vykreslení podle jazyka
+čtenáře je až na čtení (`ViewerGraphQlController`, `messages/handles*.properties`:
+`handle.adjective.blue.M/F/N`). Němčina navíc potvrdila, že `handle.format={0} {1} #{2}`
+(přídavné jméno před podstatným) sedí i mimo slovanské jazyky — všech dvanáct
+zvířecích podstatných jmen v `HandleGenerator` vyšlo v němčině rodu mužského stejně jako v
+češtině (der Storch, der Dachs, ...), takže žádný nový jazyk zatím nevyžadoval přepsat
+`handle.format` (to by potřebovaly teprve románské jazyky s přídavným jménem za podstatným,
+viz plán expanze).
 
 ### IČO/NIP per zemi
 
@@ -259,8 +275,8 @@ Rozhodnutí (ne `@angular/localize`): runtime přepínání beze změny buildu, 
 i v TS kódu, ne jen v šablonách, jeden build bez per-locale nasazení.
 
 **`LOCALE_ID`/`provideNzI18n` se vyhodnocují jen JEDNOU při bootstrapu** — proto:
-- `registerLocaleData` eagerně pro všechny čtyři jazyky (data jsou jednotky kB, lazy `import()`
-  by přineslo blikání).
+- `registerLocaleData` eagerně pro všech pět jazyků (data jsou jednotky kB, lazy `import()`
+  by přineslo blikání) — nad ~6 jazyků zvážit přechod na lazy, viz plán expanze.
 - **`CurrencyPipe`/`DatePipe`/`DecimalPipe` se v projektu nepoužívají.** Formátování jde přes
   `services/format-service.ts` nad `Intl.*`, který čte jazyk ze signálu `LanguageService.lang`
   a měnu z DAT (multi-měna výš) — `CurrencyPipe` s pevnou měnou by byl špatně i bez i18n.
@@ -274,8 +290,8 @@ platná bez ohledu na to, jestli se stihla uložit). Počáteční jazyk: `local
 `navigator.languages` ∩ podporované → `cs`. `CountryService` (`services/country-service.ts`) je
 stejný vzor pro zemi — nezávislá volba v Nastavení, viz „Country selector v UI" výš.
 
-**Struktura bundlů**: `public/i18n/{cs,sk,en,pl}.json` (kořen: `common`/`nav`/`errors`/`enum`) +
-`public/i18n/<scope>/{cs,sk,en,pl}.json` na stránku/komponentu (`provideTranslocoScope`,
+**Struktura bundlů**: `public/i18n/{cs,sk,en,pl,de}.json` (kořen: `common`/`nav`/`errors`/`enum`) +
+`public/i18n/<scope>/{cs,sk,en,pl,de}.json` na stránku/komponentu (`provideTranslocoScope`,
 staženo spolu s lazy chunkem route). Komponenta vložená do víc stránek (galerie fotek, mapa) má
 vlastní scope přímo na sobě, ne závislý na tom, která stránka ji zrovna použije. Klíč v kódu
 **vždy nese celý prefix scope**, i uvnitř `*transloco="let t; scope: '…'"` (`t('profile.title')`,
@@ -343,13 +359,13 @@ vůbec používá.
 
 | Vrstva | Test | Co hlídá |
 |---|---|---|
-| Backend | `i18n.MessageBundleTest` | sk/en/pl mají přesně stejné klíče jako český základ, každý `ErrorCode` má klíč, počet `{0}`/`{1}` placeholderů sedí napříč jazyky |
+| Backend | `i18n.MessageBundleTest` | sk/en/pl/de mají přesně stejné klíče jako český základ, každý `ErrorCode` má klíč, počet `{0}`/`{1}` placeholderů sedí napříč jazyky |
 | Backend | `i18n.HardcodedTextTest` | žádný nový český text natvrdo ve `throw new *Exception(...)` mimo allowlist technických výjimek |
-| Backend | `i18n.GraphQlErrorLocalizationTest` | `extensions.code` je stejný napříč jazyky, `message` se mění podle `Accept-Language`, neznámý jazyk padá na český základ |
+| Backend | `i18n.GraphQlErrorLocalizationTest` | `extensions.code` je stejný napříč jazyky, `message` se mění podle `Accept-Language` (včetně `de`, `germanIsLocalized`), neznámý jazyk (francouzština — podporovaná ZEMĚ, ne JAZYK) padá na český základ |
 | Backend | `service.fx.FxRateServiceTest` | křížový kurz přes CZK jako pivot, kurz k víkendu padá na poslední pátek (ne rovnost na datu), chybějící kurz vrací prázdný `Optional`, ne výjimku |
-| Backend | `service.fx.ExchangeRateSyncServiceTest` | backfill se odvodí z `min(observed_at)` a je omezen `max-backfill-years`, druhý běh nezaloží duplicity, sledují se jen `app.fx.tracked-currencies` |
+| Backend | `service.fx.ExchangeRateSyncServiceTest` | backfill se odvodí z `min(observed_at)` a je omezen `max-backfill-years`, druhý běh nezaloží duplicity, sledují se jen `app.fx.tracked-currencies`, víc zdrojů (ČNB + NBS) se sloučí a každý řádek si nese svůj `source` |
 | Backend | `service.PriceHistoryServiceTest` | dva dny grafu s různými kurzy dají dva různě přepočtené body (ne jeden dnešní kurz pro celou řadu) |
-| Frontend | `i18n.spec.ts` | každý scope bundle má ve sk/en/pl stejné klíče jako cs, interpolační parametry sedí, žádná hodnota není prázdná/rovná klíči, všech deset `*_KEYS` z `enum-labels.ts` existuje ve všech čtyřech jazycích |
+| Frontend | `i18n.spec.ts` | každý scope bundle má ve sk/en/pl/de stejné klíče jako cs, interpolační parametry sedí, žádná hodnota není prázdná/rovná klíči, všech deset `*_KEYS` z `enum-labels.ts` existuje ve všech pěti jazycích |
 | Frontend | `i18n-keys.spec.ts` | každý literálový klíč použitý v kódu (`t('…')`, `translate('…')`, `'…' \| transloco`) existuje v cs bundlu pod svým scope prefixem — chytá chybějící prefix v šabloně i rozjetý alias scope, ne jen neúplný bundle |
 | Frontend | `no-hardcoded-text.spec.ts` | česká diakritika ve statickém textovém uzlu nebo statickém atributu (`placeholder`, `nzTitle`, `alt`, ...) v libovolné šabloně |
 | Mobil | lint (`MissingTranslation`/`ExtraTranslation`/`MissingQuantity` jako error) | `values-*/` nezaostávají za `values/`, `<plurals>` mají všechny tvary daného jazyka |
@@ -365,5 +381,12 @@ frontend přes `npm test`, mobil přes `:app:testDebugUnitTest :app:lintDebug :a
   `serverMessage` (lokalizovaný, ale ne appkou doladěný), protože `network/Dto.kt` negeneruje
   typy ze schématu jako web (`ERROR_CODE_KEYS`). Vyžadovalo by to buď codegen pro Kotlin, nebo
   ruční `Map<String, Int>` udržovanou v synchronizaci s `ErrorCode` enumem.
-- **Skutečné lidské revize strojových překladů** sk/en/pl — psané s péčí a gramaticky, ale bez
-  rodilého mluvčího na kontrolu.
+- **Skutečné lidské revize strojových překladů** sk/en/pl/de — psané s péčí a gramaticky, ale
+  bez rodilého mluvčího na kontrolu.
+- **Etapa 3+ plánu expanze** — další jazyky nad `de` podle poptávky, stejným postupem. Pozor na
+  slovinštinu (jediná ze 13 nových zemí, jejíž případný budoucí jazyk `sl` má v ICU pluralech
+  4 tvary včetně duálu — MessageFormat/`@jsverse/transloco-messageformat` to zvládnou, ale žádný
+  dosavadní jazyk appky tenhle tvar nevyžadoval, takže by šlo o první ověření naživo) a na
+  románské jazyky (fr/es/it) — jejich přídavné jméno stojí za podstatným, takže `handle.format`
+  by se pro ně muselo přepsat na `{1} {0} #{2}`, na rozdíl od `de`, které vystačilo se stejným
+  pořadím jako čeština.

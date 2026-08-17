@@ -1,19 +1,25 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
-import { NzI18nInterface, NzI18nService, cs_CZ, en_GB, pl_PL, sk_SK } from 'ng-zorro-antd/i18n';
+import { NzI18nInterface, NzI18nService, cs_CZ, de_DE, en_GB, pl_PL, sk_SK } from 'ng-zorro-antd/i18n';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from './auth-service';
 import { ViewerService } from './viewer-service';
 
-export type AppLang = 'cs' | 'sk' | 'en' | 'pl';
+export type AppLang = 'cs' | 'sk' | 'en' | 'pl' | 'de';
 
 /** Jediné místo, které zná seznam podporovaných jazyků — přidání dalšího je jeden řádek sem. */
-export const AVAILABLE_LANGS: readonly AppLang[] = ['cs', 'sk', 'en', 'pl'];
+export const AVAILABLE_LANGS: readonly AppLang[] = ['cs', 'sk', 'en', 'pl', 'de'];
 
 // Locale objekty jednotlivých jazykových balíčků ng-zorro-antd mají mírně odlišný tvar (novější
 // komponenty přibývají do různých jazyků postupně) — NzI18nInterface je společný průnik, který
 // NzI18nService.setLocale skutečně očekává.
-const NZ_LOCALES: Record<AppLang, NzI18nInterface> = { cs: cs_CZ, sk: sk_SK, en: en_GB, pl: pl_PL };
+const NZ_LOCALES: Record<AppLang, NzI18nInterface> = {
+  cs: cs_CZ,
+  sk: sk_SK,
+  en: en_GB,
+  pl: pl_PL,
+  de: de_DE,
+};
 
 /** Pro Intl.* formátování (FormatService, relative-date) — ne totéž co Angular LOCALE_ID. */
 export const INTL_TAGS: Record<AppLang, string> = {
@@ -21,6 +27,7 @@ export const INTL_TAGS: Record<AppLang, string> = {
   sk: 'sk-SK',
   en: 'en-GB',
   pl: 'pl-PL',
+  de: 'de-DE',
 };
 
 const STORAGE_KEY = 'kac.lang';

@@ -1,0 +1,293 @@
+<resources>
+    <string name="app_name">Kvalita a cena</string>
+    <string name="tab_scan">Scannen</string>
+    <string name="tab_search">Suchen</string>
+    <string name="tab_settings">Einstellungen</string>
+    <string name="tab_account">Konto</string>
+    <string name="common_never">nie</string>
+    <string name="error_generic">Etwas ist schiefgelaufen, bitte versuch es erneut.</string>
+    <string name="update_required_title">App aktualisieren</string>
+    <string name="update_required_body">Deine App-Version wird nicht mehr unterstützt. Bitte installiere die aktuelle Version, damit die App wieder funktioniert.</string>
+
+    <string name="common_back">Zurück</string>
+    <string name="common_cancel">Abbrechen</string>
+    <string name="common_delete">Löschen</string>
+    <string name="common_edit">Bearbeiten</string>
+    <string name="common_report">Melden</string>
+    <string name="common_unverified">Nicht überprüft</string>
+    <string name="report_acknowledged">Danke für die Meldung, wir haben sie erfasst.</string>
+
+    <string name="company_id_label_generic">Firmennummer</string>
+    <string name="company_id_label_pl">NIP</string>
+    <string name="company_id_label_de">USt-IdNr.</string>
+    <string name="company_id_label_at">UID-Nummer</string>
+    <string name="company_id_label_fr">SIREN</string>
+    <string name="company_id_label_es">NIF</string>
+    <string name="company_id_label_it">Partita IVA</string>
+    <string name="company_id_label_hr">OIB</string>
+    <string name="company_id_label_si">Davčna številka</string>
+    <string name="company_id_label_bg">EIK</string>
+    <string name="company_id_label_hu">Adószám</string>
+    <string name="company_id_label_ro">CUI</string>
+    <string name="company_id_label_gb">Company number</string>
+    <string name="company_id_label_ch">UID</string>
+    <string name="company_id_label_rs">PIB</string>
+
+    <string name="account_title">Konto</string>
+    <string name="account_logged_in_fallback">Angemeldet</string>
+    <string name="account_logout">Abmelden</string>
+    <string name="account_edit_profile">Profil bearbeiten</string>
+
+    <string name="login_title">Anmeldung</string>
+    <string name="login_otp_hint">Wir senden dir per E-Mail einen sechsstelligen Code, du musst dir kein Passwort merken.</string>
+    <string name="login_email_label">E-Mail</string>
+    <string name="login_consent_prefix">Ich bin einverstanden mit den</string>
+    <string name="login_consent_terms_link">Nutzungsbedingungen</string>
+    <string name="login_consent_and">und der</string>
+    <string name="login_consent_privacy_link">Datenschutzerklärung</string>
+    <string name="login_send_code">Code senden</string>
+    <string name="login_code_hint">Wir haben den Code an %1$s gesendet.</string>
+    <string name="login_code_label">Code aus der E-Mail</string>
+    <string name="login_sign_in">Anmelden</string>
+    <string name="login_change_email">Andere E-Mail eingeben</string>
+    <string name="login_request_failed">Der Code konnte nicht gesendet werden. Bitte versuch es in Kürze erneut.</string>
+    <string name="login_verify_failed">Der Code ist ungültig oder abgelaufen. Bitte versuch es erneut.</string>
+
+    <!-- Profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") -->
+    <string name="profile_title">Profil</string>
+    <string name="profile_load_failed">Das Profil konnte nicht geladen werden.</string>
+    <string name="profile_avatar_title">Profilfoto</string>
+    <string name="profile_avatar_hint">Das Foto wird in der Datenbank NICHT verschlüsselt gespeichert (im Gegensatz zu den Textfeldern unten).</string>
+    <string name="profile_avatar_upload">Foto hochladen</string>
+    <string name="profile_avatar_remove">Foto entfernen</string>
+    <string name="profile_avatar_upload_failed">Das Hochladen des Fotos ist fehlgeschlagen.</string>
+    <string name="profile_first_name_label">Vorname</string>
+    <string name="profile_last_name_label">Nachname</string>
+    <string name="profile_display_name_label">Spitzname</string>
+    <string name="profile_phone_label">Telefon</string>
+    <string name="profile_contact_email_label">Kontakt-E-Mail</string>
+    <string name="profile_encrypted_hint">Der Wert wird in der Datenbank verschlüsselt gespeichert.</string>
+    <string name="profile_login_email_label">Anmelde-E-Mail</string>
+    <string name="profile_change_email_button">E-Mail ändern</string>
+    <string name="profile_save_button">Speichern</string>
+    <string name="profile_save_success">Profil gespeichert.</string>
+    <string name="profile_visibility_title">Sichtbarkeit</string>
+    <string name="profile_visibility_anonymous">Anonym — es wird nur deine Benutzernummer angezeigt</string>
+    <string name="profile_visibility_public">Öffentlich — wähle, welche Angaben angezeigt werden</string>
+    <string name="profile_visibility_friends">Freunde — wähle, welche Angaben deine Freunde sehen</string>
+    <string name="profile_fields_table_title">Welche Angaben werden angezeigt</string>
+    <string name="profile_fields_public_column">Öffentlichkeit</string>
+    <string name="profile_fields_friends_column">Freunde</string>
+    <string name="profile_fields_friends_hint">Freundesgruppen kann die App noch nicht — Häkchen werden wirksam, sobald sie fertig sind.</string>
+    <string name="profile_field_first_name">Vorname</string>
+    <string name="profile_field_last_name">Nachname</string>
+    <string name="profile_field_display_name">Spitzname</string>
+    <string name="profile_field_contact_email">Kontakt-E-Mail</string>
+    <string name="profile_field_phone">Telefon</string>
+    <string name="profile_field_avatar">Profilfoto</string>
+    <string name="profile_links_title">Weitere Informationen</string>
+    <string name="profile_links_coming_soon">In Vorbereitung</string>
+    <string name="profile_links_friends">Freundesliste</string>
+    <string name="profile_links_system_rating">Systembewertung</string>
+    <string name="profile_links_friends_trust">Vertrauen von Freunden</string>
+    <string name="profile_links_stats">Meine Statistiken</string>
+    <string name="profile_email_change_title">Anmelde-E-Mail ändern</string>
+    <string name="profile_email_change_new_email_label">Neue E-Mail-Adresse</string>
+    <string name="profile_email_change_send_code">Code senden</string>
+    <string name="profile_email_change_code_label">Code aus der E-Mail</string>
+    <string name="profile_email_change_code_hint">Wir haben den Code an %1$s gesendet.</string>
+    <string name="profile_email_change_confirm">Änderung bestätigen</string>
+    <string name="profile_email_change_success">Anmelde-E-Mail geändert.</string>
+    <string name="profile_email_change_request_failed">Der Code konnte nicht gesendet werden. Bitte versuch es in Kürze erneut.</string>
+    <string name="profile_email_change_confirm_failed">Der Code ist ungültig oder abgelaufen. Bitte versuch es erneut.</string>
+
+    <string name="scan_camera_permission_hint">Zum Scannen von Strichcodes benötigt die App Zugriff auf die Kamera.</string>
+
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_language">Sprache</string>
+    <string name="settings_country">Land</string>
+    <string name="settings_country_note">Beeinflusst, welche Geschäfte die App in der Standardsuche vorschlägt, und das Standardland/die Standardwährung beim Anlegen eines neuen Geschäfts — unabhängig von der Sprache.</string>
+    <string name="country_name_cz">Tschechien</string>
+    <string name="country_name_sk">Slowakei</string>
+    <string name="country_name_pl">Polen</string>
+    <string name="country_name_de">Deutschland</string>
+    <string name="country_name_at">Österreich</string>
+    <string name="country_name_fr">Frankreich</string>
+    <string name="country_name_es">Spanien</string>
+    <string name="country_name_it">Italien</string>
+    <string name="country_name_hr">Kroatien</string>
+    <string name="country_name_si">Slowenien</string>
+    <string name="country_name_bg">Bulgarien</string>
+    <string name="country_name_hu">Ungarn</string>
+    <string name="country_name_ro">Rumänien</string>
+    <string name="country_name_gb">Vereinigtes Königreich</string>
+    <string name="country_name_ch">Schweiz</string>
+    <string name="country_name_rs">Serbien</string>
+    <string name="settings_currency">Anzeigewährung</string>
+    <string name="settings_currency_store_default">Währung des Geschäfts (Standard)</string>
+    <string name="settings_currency_note">Die Umrechnung dient nur zum Vergleich — den Preis meldest du immer in der Währung des Geschäfts, dies ändert nur die Anzeige.</string>
+    <string name="settings_data_sources">Datenquellen</string>
+    <string name="settings_data_sources_body">Preise und Qualitätsbewertungen sind eigene Community-Daten. Links zu Open Food Facts folgen der ODbL-Lizenz (Open Database License) — Daten werden nie kopiert, die App verweist nur auf die Quelle.</string>
+    <string name="settings_osm_attribution">Die Koordinaten der Geschäfte stammen von OpenStreetMap © OpenStreetMap-Mitwirkende, Lizenz ODbL.</string>
+    <string name="settings_fx_attribution">Die Wechselkurse stammen aus dem Kurslisten der Tschechischen Nationalbank.</string>
+    <string name="settings_app_version">App-Version %1$s</string>
+    <string name="settings_legal_title">Rechtliche Dokumente</string>
+    <string name="settings_terms_link">Nutzungsbedingungen</string>
+    <string name="settings_privacy_link">Datenschutzerklärung</string>
+
+    <!-- Podmínky užití a Zásady ochrany osobních údajů zůstávají zatím jen česky (viz values/strings.xml) —
+         terms_headings/terms_paragraphs/privacy_headings/privacy_paragraphs jsou translatable="false". -->
+    <string name="terms_title">Nutzungsbedingungen</string>
+    <string name="privacy_title">Datenschutzerklärung</string>
+    <string name="legal_czech_only_notice">Dieses Dokument ist derzeit nur auf Tschechisch verfügbar.</string>
+
+    <string name="map_show">Karte anzeigen</string>
+    <string name="map_hint">Tippe auf die Karte oder ziehe die Markierung an die genaue Stelle.</string>
+
+    <string name="photo_alt">Foto</string>
+    <string name="photo_hidden_badge">Ausgeblendet</string>
+    <string name="photo_prev">&lt; Vorherige</string>
+    <string name="photo_next">Weiter &gt;</string>
+    <string name="photo_set_as_main">Als Hauptfoto festlegen</string>
+    <string name="photo_report_hidden">Danke für die Meldung — das Foto ist jetzt ausgeblendet und wird überprüft.</string>
+    <string name="photo_limit_reached">Dieser Eintrag hat bereits die maximale Anzahl von %1$d Fotos.</string>
+    <string name="photo_unsupported_format">Es werden nur JPEG- oder PNG-Fotos unterstützt.</string>
+    <string name="photo_too_large">Das Foto ist zu groß (max. 8 MB).</string>
+    <string name="photo_take_picture">Foto aufnehmen</string>
+    <string name="photo_pick_from_gallery">Aus der Galerie wählen</string>
+
+    <string name="quality_not_rated">Qualität: noch nicht bewertet</string>
+    <string name="quality_rated">Qualität %1$.1f/5</string>
+    <string name="quality_rated_approximate">Qualität %1$.1f/5 (ungefähr)</string>
+
+    <string name="price_kind_regular">Regulärer Preis</string>
+    <string name="price_kind_promo">Aktion</string>
+    <string name="price_kind_club_card">Kundenkarte</string>
+    <string name="price_kind_clearance">Ausverkauf</string>
+    <string name="price_kind_multibuy">Mengenrabatt</string>
+    <string name="price_kind_unknown">Unbekannte Preisart</string>
+    <string name="price_kind_field_label">Preisart</string>
+
+    <string name="quantity_basis_field_label">Der Preis gilt</string>
+    <string name="quantity_basis_package">Pro Packung</string>
+    <string name="quantity_basis_per_kg">Pro Kilogramm</string>
+    <string name="quantity_basis_per_l">Pro Liter</string>
+    <string name="quantity_basis_per_piece">Pro Stück</string>
+
+    <string name="unit_base_count">Stück</string>
+    <string name="unit_base_mass">Gewicht</string>
+    <string name="unit_base_volume">Volumen</string>
+
+    <string name="sort_report_count">Nach Meldeanzahl</string>
+    <string name="sort_price_asc">Nach Preis</string>
+    <string name="sort_quality">Nach Qualität</string>
+    <string name="sort_last_reported">Nach letzter Meldung</string>
+    <string name="sort_name">Nach Name</string>
+
+    <string name="search_field_label">Ware suchen</string>
+    <string name="search_action">Suchen</string>
+    <string name="search_store_filter">Geschäft</string>
+    <string name="search_city_filter">Stadt</string>
+    <string name="search_sort_label">Sortierung</string>
+    <string name="search_filter_all">Alle</string>
+    <string name="search_hint">Gib ein, wonach du suchst.</string>
+    <string name="search_not_found">Wir haben nichts gefunden.</string>
+    <string name="search_failed">Die Suche ist fehlgeschlagen, bitte versuch es erneut.</string>
+    <string name="search_unknown_price">Preis unbekannt</string>
+    <string name="search_confirmations">×%1$d Bestätigungen</string>
+    <string name="search_report_summary">Meldungen insgesamt: %1$d · Letzte: %2$s</string>
+
+    <string name="chart_not_enough_data">Noch nicht genug Meldungen für ein Diagramm</string>
+    <string name="chart_range_7d">7 Tage</string>
+    <string name="chart_range_30d">30 Tage</string>
+    <string name="chart_range_90d">90 Tage</string>
+    <string name="chart_range_365d">365 Tage</string>
+    <string name="chart_last">Letzter: %1$s (%2$s)</string>
+    <string name="chart_min_max">Niedrigster: %1$s (%2$s) · Höchster: %3$s (%4$s)</string>
+    <string name="chart_selected">Ausgewählt: %1$s · %2$s · %3$d× bestätigt</string>
+
+    <string name="product_not_found">Diese Ware konnte nicht gefunden werden.</string>
+    <string name="product_edited_by_me">Deine Bearbeitung</string>
+    <string name="product_draft_pending">Wartet auf Bestätigung — bisher nur für dich sichtbar</string>
+    <string name="product_quality_requires_login">Die Qualitätsbewertung erfordert eine Anmeldung — wechsle zum Tab Konto.</string>
+    <string name="product_price_trend">Preisverlauf</string>
+    <string name="product_cheapest_title">Am günstigsten</string>
+    <string name="product_no_price_yet">Hier hat noch niemand einen Preis eingegeben.</string>
+    <string name="product_prices_by_store">Preise nach Geschäften</string>
+    <string name="product_no_price_be_first">Hier hat noch niemand einen Preis eingegeben — sei der Erste.</string>
+    <string name="product_my_price">Dein Preis</string>
+    <string name="product_more_info">Weitere Informationen</string>
+    <string name="product_write_observation">Preis eingeben</string>
+    <string name="product_reported_summary">%1$d× gemeldet · zuletzt %2$s</string>
+    <string name="product_report_hidden">Danke für die Meldung — der Eintrag ist jetzt ausgeblendet und wird überprüft.</string>
+
+    <string name="price_entry_code_unknown">Den Code %1$s kennen wir im Katalog noch nicht.</string>
+    <string name="price_entry_create_product">Ware anlegen</string>
+    <string name="price_entry_create_product_requires_login">Das Anlegen einer neuen Ware erfordert eine Anmeldung — wechsle zum Tab Konto.</string>
+    <string name="price_entry_current_prices">Aktuelle Preise nach Geschäften</string>
+    <string name="price_entry_price_summary">%1$s (%2$s/Einheit) · %3$d Einträge</string>
+    <string name="price_entry_write_price">Preis eingeben</string>
+    <string name="price_entry_price_label">Preis (%1$s)</string>
+    <string name="price_entry_submit">Preis speichern</string>
+    <string name="price_entry_back_without_price">Zurück ohne Preis einzugeben</string>
+    <string name="price_entry_submit_success">Der Preis wurde gespeichert, danke!</string>
+    <string name="price_entry_location_unavailable">Der Standort konnte nicht ermittelt werden — wähle ein Geschäft, sobald Daten verfügbar sind.</string>
+
+    <string name="product_form_title">Neue Ware</string>
+    <string name="product_form_name_label">Name der Ware</string>
+    <string name="product_form_generic_tag">generische Position</string>
+    <string name="product_form_suggestions_hint">Ist es nicht schon eine dieser Positionen? Tippe darauf, um sie direkt zu verwenden.</string>
+    <string name="product_form_category_label">Kategorie</string>
+    <string name="product_form_category_placeholder">Kategorie auswählen</string>
+    <string name="product_form_brand_label">Marke (optional)</string>
+    <string name="product_form_unit_base_label">Grundeinheit</string>
+    <string name="product_form_variable_weight_label">Wiegeware (Preis immer pro kg/l, ohne feste Füllmenge)</string>
+    <string name="product_form_mass_label">Packungsgewicht (kg)</string>
+    <string name="product_form_volume_label">Packungsvolumen (l)</string>
+    <string name="product_form_pieces_in_pack_label">Stück pro Packung (optional)</string>
+    <string name="product_form_code_label">Strichcode (optional)</string>
+    <string name="product_form_code_hint">Ohne Code entsteht eine generische Position (z. B. „Gebäck für %1$s“ vom Kassenbon) — mit geringerer Datenzuverlässigkeit, kann aber trotzdem gespeichert werden.</string>
+    <string name="product_form_submit">Ware anlegen</string>
+    <string name="product_form_back_without_creating">Zurück ohne Anlegen</string>
+
+    <string name="store_not_found">Dieses Geschäft konnte nicht gefunden werden.</string>
+    <string name="store_edited_by_me">Deine Bearbeitung</string>
+    <string name="store_pending_confirmation">Wartet auf Bestätigung</string>
+    <string name="store_photos_title">Fotos</string>
+    <string name="store_location_title">Standort</string>
+    <string name="store_open_in_map_app">In Karten-App öffnen</string>
+    <string name="store_no_location">Dieses Geschäft hat noch keine Koordinaten.</string>
+    <string name="store_operator_title">Betreiber</string>
+    <string name="store_report_hidden">Danke für die Meldung — das Geschäft ist jetzt ausgeblendet und wird überprüft.</string>
+
+    <string name="store_picker_label">Geschäft</string>
+    <string name="store_picker_add_new">+ Neues Geschäft hinzufügen</string>
+    <string name="store_picker_find_nearby">In der Umgebung finden</string>
+    <string name="store_picker_hint_logged_in">Gib den Namen oder die Stadt des Geschäfts ein, tippe auf „In der Umgebung finden“, oder lege das Geschäft direkt an.</string>
+    <string name="store_picker_hint_anonymous">Gib den Namen oder die Stadt des Geschäfts ein, oder tippe auf „In der Umgebung finden“ — das Anlegen eines neuen Geschäfts erfordert eine Anmeldung.</string>
+    <string name="store_picker_no_nearby_stores">In der Umgebung haben wir kein Geschäft gefunden.</string>
+
+    <string name="store_form_create_title">Neues Geschäft</string>
+    <string name="store_form_edit_title">Geschäft bearbeiten</string>
+    <string name="store_form_name_label">Name des Geschäfts</string>
+    <string name="store_form_street_label">Straße und Hausnummer (optional)</string>
+    <string name="store_form_city_label">Stadt</string>
+    <string name="store_form_postal_code_label">PLZ (optional)</string>
+    <string name="store_form_country_label">Land</string>
+    <string name="store_form_similar_warning">Meinst du nicht eher eines dieser bereits vorhandenen Geschäfte?</string>
+    <string name="store_form_save_changes">Änderungen speichern</string>
+    <string name="store_form_create">Geschäft anlegen</string>
+    <string name="store_form_back_without_creating">Zurück ohne Anlegen</string>
+
+    <string name="store_company_id_section_title">%1$s (optional)</string>
+    <string name="store_company_id_hint">Für eine Filiale oder einen Einzelunternehmer, bei dem der Name allein nicht zur eindeutigen Identifizierung reicht.</string>
+    <string name="store_company_id_load_from_registry">Aus ARES laden</string>
+    <string name="store_company_id_shape_invalid">%1$s muss %2$d Ziffern haben.</string>
+    <string name="store_company_id_not_found_in_registry">Diese Firmennummer haben wir in ARES nicht gefunden.</string>
+
+    <string name="store_location_section_title">Koordinaten (optional)</string>
+    <string name="store_location_hint">Ohne Koordinaten findet „In der Umgebung finden“ das Geschäft nicht, nur die Suche nach Namen — sie können auch später ergänzt werden.</string>
+    <string name="store_location_find_coordinates">Koordinaten finden</string>
+    <string name="store_location_use_my_location">Meinen Standort verwenden</string>
+    <string name="store_location_will_use_map_position">Es wird die Position von der Karte unten / dein aktueller Standort verwendet.</string>
+</resources>

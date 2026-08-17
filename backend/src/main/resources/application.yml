@@ -181,12 +181,12 @@ app:
 
   i18n:
     default-locale: cs
-    supported-locales: [cs, sk, en, pl]
+    supported-locales: [cs, sk, en, pl, de]
     default-country: CZ
     # Rozšíření o dalších 13 zemí (plán expanze, docs/lokalizace.md "Country selector v UI") —
-    # nové země záměrně míří na `en`, dokud pro ně appka nemá vlastní jazyk (žádný literál v
-    # kódu se tím nemění, jen řádek tady + CHECK constraint na currency, viz migrace
-    # 2026-08-17/01-countries.yaml).
+    # nové země bez vlastního jazyka míří na `en` (žádný literál v kódu se tím nemění, jen
+    # řádek tady + CHECK constraint na currency, viz migrace 2026-08-17/01-countries.yaml).
+    # DE/AT/CH už na `de` míří, protože `de` je od etapy 2 podporovaný jazyk appky.
     country-currency:
       CZ: CZK
       SK: EUR
@@ -208,8 +208,8 @@ app:
       CZ: cs
       SK: sk
       PL: pl
-      DE: en
-      AT: en
+      DE: de
+      AT: de
       FR: en
       ES: en
       IT: en
@@ -219,7 +219,7 @@ app:
       HU: en
       RO: en
       GB: en
-      CH: en
+      CH: de
       RS: en
 
   fx:

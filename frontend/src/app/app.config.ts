@@ -1,6 +1,7 @@
 import { registerLocaleData } from '@angular/common';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import cs from '@angular/common/locales/cs';
+import de from '@angular/common/locales/de';
 import en from '@angular/common/locales/en';
 import pl from '@angular/common/locales/pl';
 import sk from '@angular/common/locales/sk';
@@ -28,12 +29,14 @@ import { icons } from './icons-provider';
 import { AVAILABLE_LANGS, INTL_TAGS, readInitialLang } from './services/language-service';
 import { TranslocoHttpLoader } from './services/transloco-loader';
 
-// Všechny čtyři najednou — data jsou drobná (jednotky kB) a runtime přepínání (LanguageService)
-// by je jinak muselo dotahovat asynchronně uprostřed překreslení.
+// Všech pět najednou — data jsou drobná (jednotky kB) a runtime přepínání (LanguageService)
+// by je jinak muselo dotahovat asynchronně uprostřed překreslení. Nad ~6 jazyků zvážit lazy
+// import() (docs/lokalizace.md, plán expanze), dokud se to appce vyplatí eagerně.
 registerLocaleData(cs);
 registerLocaleData(sk);
 registerLocaleData(en);
 registerLocaleData(pl);
+registerLocaleData(de);
 
 export const appConfig: ApplicationConfig = {
   providers: [

@@ -1,0 +1,144 @@
+{
+  "common": {
+    "never": "bisher nie",
+    "loading": "Wird geladen…",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "back": "Zurück",
+    "yes": "Ja",
+    "no": "Nein",
+    "showMap": "Karte anzeigen",
+    "mapHint": "Klicke auf die Karte oder ziehe die Markierung an die genaue Stelle."
+  },
+  "quality": {
+    "notRatedYet": "Qualität: noch nicht bewertet",
+    "rated": "Qualität {{value}}/5",
+    "ratedApproximate": "Qualität {{value}}/5 (ungefähr)"
+  },
+  "nav": {
+    "search": "Suche",
+    "price": "Preis eingeben",
+    "settings": "Einstellungen",
+    "account": "Konto",
+    "login": "Anmeldung"
+  },
+  "errors": {
+    "generic": "Etwas ist schiefgelaufen, bitte versuch es erneut.",
+    "PRODUCT_NOT_FOUND": "Produkt mit dieser ID existiert nicht",
+    "STORE_NOT_FOUND": "Geschäft mit dieser ID existiert nicht",
+    "CATEGORY_NOT_FOUND": "Kategorie mit dieser ID existiert nicht",
+    "CHAIN_NOT_FOUND": "Kette mit dieser ID existiert nicht",
+    "PRODUCT_NAME_REQUIRED": "Der Name des Produkts ist erforderlich",
+    "PRODUCT_NAME_EMPTY": "Der Name des Produkts darf nicht leer sein",
+    "PRODUCT_CATEGORY_REQUIRED": "Die Kategorie ist erforderlich",
+    "PRODUCT_UNIT_BASE_REQUIRED": "Die Grundeinheit (kg/l/Stk) ist erforderlich",
+    "STORE_NAME_REQUIRED": "Der Name des Geschäfts ist erforderlich",
+    "STORE_NAME_EMPTY": "Der Name des Geschäfts darf nicht leer sein",
+    "STORE_CITY_REQUIRED": "Die Stadt ist erforderlich",
+    "STORE_CITY_EMPTY": "Die Stadt darf nicht leer sein",
+    "COMPANY_ID_INVALID": "Die Firmennummer hat kein gültiges Format (8 Ziffern, falsche Prüfziffer)",
+    "UNSUPPORTED_COUNTRY": "Dieses Land kennt die App noch nicht",
+    "STORE_COUNTRY_EDIT_REQUIRES_TRUST": "Die Änderung des Landes eines Geschäfts erfordert höheres Kontovertrauen",
+    "PRODUCT_CREATE_REQUIRES_LOGIN": "Das Anlegen eines Produkts erfordert eine Anmeldung",
+    "PRODUCT_EDIT_REQUIRES_LOGIN": "Das Bearbeiten eines Produkts erfordert eine Anmeldung",
+    "STORE_CREATE_REQUIRES_LOGIN": "Das Anlegen eines Geschäfts erfordert eine Anmeldung",
+    "STORE_EDIT_REQUIRES_LOGIN": "Das Bearbeiten eines Geschäfts erfordert eine Anmeldung",
+    "DUPLICATE_PRODUCT_CODE": "Dieser Code existiert im Katalog schon",
+    "DUPLICATE_GENERIC_PRODUCT": "Dieser generische Artikel existiert im Katalog schon",
+    "DUPLICATE_STORE": "Ein Geschäft mit diesem Namen und dieser Stadt existiert im Katalog schon",
+    "PHOTO_UPLOAD_REQUIRES_LOGIN": "Das Hochladen eines Fotos erfordert eine Anmeldung",
+    "PHOTO_ACTION_REQUIRES_LOGIN": "Diese Aktion erfordert eine Anmeldung",
+    "PHOTO_CANNOT_ATTACH_TO_PHOTO": "Ein Foto kann nicht an ein anderes Foto angehängt werden",
+    "PHOTO_CANNOT_ATTACH_TO_USER": "Das Profilfoto wird über eine eigene Schnittstelle hochgeladen",
+    "PHOTO_LIMIT_REACHED": "Ein Eintrag darf höchstens {{p0}} Fotos haben.",
+    "PHOTO_DELETE_NOT_OWNER": "Nur der Autor darf dieses Foto löschen",
+    "PHOTO_UPDATE_NOT_OWNER": "Nur der Autor darf dieses Foto bearbeiten",
+    "PHOTO_NOT_FOUND": "Foto existiert nicht",
+    "PHOTO_TARGET_RECORD_NOT_FOUND": "Der Eintrag für dieses Foto existiert nicht",
+    "PHOTO_TOO_LARGE": "Das Foto ist zu groß oder leer",
+    "PHOTO_UNSUPPORTED_FORMAT": "Es werden nur JPEG- oder PNG-Fotos unterstützt",
+    "PHOTO_UNREADABLE": "Das Foto konnte nicht gelesen werden",
+    "PHOTO_RESOLUTION_TOO_HIGH": "Das Foto hat eine zu hohe Auflösung",
+    "QUALITY_REQUIRES_LOGIN": "Die Qualitätsbewertung erfordert eine Anmeldung",
+    "QUALITY_GRADE_OUT_OF_RANGE": "Die Note muss zwischen {{p0}} und {{p1}} liegen",
+    "FLAG_REQUIRES_LOGIN": "Das Melden erfordert eine Anmeldung",
+    "FLAG_RECORD_NOT_FOUND": "Der gemeldete Eintrag existiert nicht",
+    "INVALID_CHALLENGE": "Der Code ist ungültig oder abgelaufen",
+    "SESSION_EXPIRED": "Deine Anmeldung ist abgelaufen, bitte melde dich erneut an",
+    "LOCALE_REQUIRES_LOGIN": "Das Speichern der Sprache erfordert eine Anmeldung",
+    "LOCALE_UNSUPPORTED": "Die Sprache {{p0}} wird von der App noch nicht unterstützt",
+    "PROFILE_REQUIRES_LOGIN": "Das Bearbeiten des Profils erfordert eine Anmeldung",
+    "PROFILE_NAME_TOO_LONG": "Vor- und Nachname dürfen höchstens {{p0}} Zeichen haben",
+    "PROFILE_DISPLAY_NAME_TOO_LONG": "Der Spitzname darf höchstens {{p0}} Zeichen haben",
+    "PROFILE_PHONE_INVALID": "Die Telefonnummer hat kein gültiges Format",
+    "PROFILE_EMAIL_INVALID": "Die Kontakt-E-Mail hat kein gültiges Format",
+    "AVATAR_REQUIRES_LOGIN": "Das Hochladen eines Profilfotos erfordert eine Anmeldung",
+    "EMAIL_CHANGE_REQUIRES_LOGIN": "Das Ändern der Anmelde-E-Mail erfordert eine Anmeldung",
+    "EMAIL_CHANGE_SAME_ADDRESS": "Die neue Adresse ist dieselbe wie die aktuelle",
+    "EMAIL_CHANGE_INVALID_CHALLENGE": "Der Code ist ungültig oder abgelaufen",
+    "EMAIL_CHANGE_EMAIL_TAKEN": "Diese E-Mail-Adresse wird bereits von einem anderen Konto verwendet",
+    "ACCOUNT_GONE": "Dieses Konto existiert nicht mehr",
+    "ACCOUNT_DELETE_REQUIRES_LOGIN": "Das Löschen des Kontos erfordert eine Anmeldung",
+    "ACCOUNT_DELETE_INVALID_CHALLENGE": "Der Code ist ungültig oder abgelaufen",
+    "TERMS_ACCEPTANCE_REQUIRED": "Für die Registrierung musst du den Nutzungsbedingungen und der Datenschutzerklärung zustimmen",
+    "TOO_MANY_REQUESTS": "Zu viele Anfragen, bitte versuch es später erneut",
+    "UOM_MISMATCH": "Die Einheit {{p0}} entspricht nicht dem Typ {{p1}}",
+    "VALIDATION_FAILED": "Die eingegebenen Daten sind ungültig",
+    "CLIENT_VERSION_TOO_OLD": "Deine App-Version wird nicht mehr unterstützt, bitte installiere die aktuelle Version"
+  },
+  "enum": {
+    "priceKind": {
+      "REGULAR": "Regulärer Preis",
+      "PROMO": "Aktion",
+      "CLUB_CARD": "Kundenkarte",
+      "CLEARANCE": "Ausverkauf",
+      "MULTIBUY": "Mengenrabatt"
+    },
+    "quantityBasis": {
+      "PACKAGE": "Pro Packung",
+      "PER_KG": "Pro Kilogramm",
+      "PER_L": "Pro Liter",
+      "PER_PIECE": "Pro Stück"
+    },
+    "unitBase": {
+      "MASS": "Gewicht",
+      "VOLUME": "Volumen",
+      "COUNT": "Stück"
+    },
+    "productSort": {
+      "REPORT_COUNT": "Nach Meldeanzahl",
+      "PRICE_ASC": "Nach Preis",
+      "QUALITY": "Nach Qualität",
+      "LAST_REPORTED": "Nach letzter Meldung",
+      "NAME": "Nach Name"
+    },
+    "confidence": {
+      "HIGH": "Hohe Zuverlässigkeit",
+      "MEDIUM": "Mittlere Zuverlässigkeit",
+      "LOW": "Niedrige Zuverlässigkeit"
+    },
+    "netContentUom": {
+      "G": "g",
+      "KG": "kg",
+      "ML": "ml",
+      "L": "l",
+      "PCS": "Stk."
+    },
+    "externalLinkKind": {
+      "OPEN_FOOD_FACTS": "Open Food Facts",
+      "E_NUMBERS": "E-Nummern"
+    },
+    "geoSource": {
+      "COMMUNITY": "Manuell eingegeben",
+      "OSM": "OpenStreetMap"
+    },
+    "recordType": {
+      "PRODUCT": "Ware",
+      "STORE": "Geschäft",
+      "PHOTO": "Foto"
+    }
+  }
+}

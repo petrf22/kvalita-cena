@@ -1,0 +1,19 @@
+{
+  "title": "Wie viel kostet das?",
+  "intro": "Suche nach Waren und sieh, wie sich der Preis zwischen den Geschäften unterscheidet — ohne Anmeldung, ohne Tracking.",
+  "searchPlaceholder": "Z. B. Butter, Brot, Milch…",
+  "search": "Suchen",
+  "storeFilter": "Geschäft: alle",
+  "cityFilter": "Stadt: alle",
+  "notFound": "Wir haben nichts gefunden — versuch ein anderes Wort oder einen anderen Filter.",
+  "hint": "Gib ein, wonach du suchst.",
+  "colProduct": "Ware",
+  "colPrice": "Preis",
+  "colCheapest": "Am günstigsten",
+  "colTotalReports": "Meldungen insgesamt",
+  "colLast": "Letzte",
+  "colQuality": "Qualität",
+  "unverified": "Nicht überprüft",
+  "confirmations": "×{{count}} Bestätigungen",
+  "unknownPrice": "Preis unbekannt"
+}

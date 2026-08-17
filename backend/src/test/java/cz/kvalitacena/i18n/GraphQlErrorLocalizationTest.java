@@ -48,9 +48,23 @@ class GraphQlErrorLocalizationTest {
     assertThat(czech.getMessage()).contains("neexistuje");
   }
 
+  /** de je od etapy 2 plánu expanze podporovaný jazyk appky (docs/lokalizace.md), ne jen země. */
+  @Test
+  void germanIsLocalized() {
+    org.springframework.context.i18n.LocaleContextHolder.setLocale(Locale.GERMAN);
+    GraphQLError error = resolve();
+
+    assertThat(error.getExtensions().get("code")).isEqualTo("PRODUCT_NOT_FOUND");
+    assertThat(error.getMessage()).contains("existiert nicht");
+  }
+
   @Test
   void unknownAcceptLanguageFallsBackToCzech() {
-    org.springframework.context.i18n.LocaleContextHolder.setLocale(Locale.GERMAN);
+    // Francie je od plánu expanze podporovaná ZEMĚ (app.i18n.country-currency), ale appka pro
+    // ni nemá vlastní JAZYKOVÝ bundle (jen cs/sk/en/pl/de) — přesně ten rozdíl, který
+    // docs/lokalizace.md zdůrazňuje. Dřív tu bylo Locale.GERMAN, ale de je od etapy 2
+    // podporovaný jazyk, takže by už nebylo "neznámé".
+    org.springframework.context.i18n.LocaleContextHolder.setLocale(Locale.FRENCH);
     GraphQLError error = resolve();
 
     // ResourceBundleMessageSource s fallbackToSystemLocale=false spadne rovnou na základní

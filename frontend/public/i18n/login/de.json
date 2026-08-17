@@ -1,0 +1,22 @@
+{
+  "accountTitle": "Konto",
+  "loading": "Wird geladen…",
+  "loggedIn": "Angemeldet",
+  "logout": "Abmelden",
+  "editProfile": "Profil bearbeiten",
+  "loginTitle": "Anmeldung",
+  "emailLabel": "E-Mail",
+  "emailPlaceholder": "jan.novak@example.com",
+  "otpHint": "Wir senden dir per E-Mail einen sechsstelligen Code, du musst dir kein Passwort merken.",
+  "consentPrefix": "Ich bin einverstanden mit den",
+  "consentTermsLink": "Nutzungsbedingungen",
+  "consentAndLabel": "und der",
+  "consentPrivacyLink": "Datenschutzerklärung",
+  "sendCode": "Code senden",
+  "codeHint": "Wir haben den Code an {{email}} gesendet.",
+  "codeLabel": "Code aus der E-Mail",
+  "signIn": "Anmelden",
+  "changeEmail": "Andere E-Mail eingeben",
+  "requestFailed": "Der Code konnte nicht gesendet werden. Bitte versuch es in Kürze erneut.",
+  "verifyFailed": "Der Code ist ungültig oder abgelaufen. Bitte versuch es erneut."
+}

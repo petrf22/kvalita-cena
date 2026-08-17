@@ -22,6 +22,7 @@ const LANGUAGE_OPTIONS: { value: AppLang; label: string }[] = [
   { value: 'sk', label: 'Slovenčina' },
   { value: 'en', label: 'English' },
   { value: 'pl', label: 'Polski' },
+  { value: 'de', label: 'Deutsch' },
 ];
 
 /**

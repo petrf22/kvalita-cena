@@ -1,0 +1,67 @@
+{
+  "title": "Profil",
+  "backToAccount": "Zurück zum Konto",
+  "loadFailed": "Das Profil konnte nicht geladen werden.",
+  "avatar": {
+    "title": "Profilfoto",
+    "hint": "Das Foto wird in der Datenbank NICHT verschlüsselt gespeichert (im Gegensatz zu den Textdaten unten).",
+    "upload": "Foto hochladen",
+    "remove": "Foto entfernen",
+    "uploadFailed": "Das Hochladen des Fotos ist fehlgeschlagen."
+  },
+  "fields": {
+    "sectionTitle": "Angaben",
+    "encryptedHint": "Der Wert wird in der Datenbank verschlüsselt gespeichert.",
+    "firstNameLabel": "Vorname",
+    "lastNameLabel": "Nachname",
+    "displayNameLabel": "Spitzname",
+    "phoneLabel": "Telefon",
+    "contactEmailLabel": "Kontakt-E-Mail"
+  },
+  "loginEmail": {
+    "label": "Anmelde-E-Mail",
+    "changeButton": "E-Mail ändern"
+  },
+  "save": {
+    "button": "Speichern",
+    "success": "Das Profil wurde gespeichert."
+  },
+  "visibility": {
+    "sectionTitle": "Sichtbarkeit",
+    "ANONYMOUS": "Anonym — es wird nur die Benutzernummer angezeigt",
+    "PUBLIC": "Öffentlich — wähle, welche Angaben angezeigt werden",
+    "FRIENDS": "Freunde — wähle, welche Angaben Freunde sehen",
+    "fieldsTableTitle": "Welche Angaben werden angezeigt",
+    "publicColumn": "Öffentlichkeit",
+    "friendsColumn": "Freunde",
+    "friendsHint": "Freundesgruppen kann die App noch nicht — die Auswahl wird wirksam, sobald sie fertig sind."
+  },
+  "field": {
+    "FIRST_NAME": "Vorname",
+    "LAST_NAME": "Nachname",
+    "DISPLAY_NAME": "Spitzname",
+    "CONTACT_EMAIL": "Kontakt-E-Mail",
+    "PHONE": "Telefon",
+    "AVATAR": "Profilfoto"
+  },
+  "links": {
+    "sectionTitle": "Weitere Informationen",
+    "comingSoon": "In Vorbereitung",
+    "friends": "Freundesliste",
+    "systemRating": "Systembewertung",
+    "friendsTrust": "Vertrauen von Freunden",
+    "stats": "Meine Statistiken"
+  },
+  "emailChange": {
+    "title": "Anmelde-E-Mail ändern",
+    "newEmailLabel": "Neue E-Mail-Adresse",
+    "sendCode": "Code senden",
+    "codeLabel": "Code aus der E-Mail",
+    "codeHint": "Wir haben den Code an {{email}} gesendet.",
+    "confirm": "Änderung bestätigen",
+    "cancel": "Abbrechen",
+    "success": "Die Anmelde-E-Mail wurde geändert.",
+    "requestFailed": "Der Code konnte nicht gesendet werden. Bitte versuch es in Kürze erneut.",
+    "confirmFailed": "Der Code ist ungültig oder abgelaufen. Bitte versuch es erneut."
+  }
+}
