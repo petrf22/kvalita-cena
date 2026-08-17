@@ -205,6 +205,14 @@ Efekt prahu:
   uživatelů než autora (`countDistinctContributorsExcluding`), jinak by si zakladatel odemkl
   vlastní záznam sám třemi vlastními zápisy.
 
+Autor postup k prahu vidí přímo v UI, ne jen jako "čeká na potvrzení" bez kontextu — výpis
+"Moje příspěvky" (`MyContributionsService`, web `/my`, mobil `ui/contributions/
+MyContributionsScreen.kt`) k němu dopočítá `PublicationStatus.confirmationsReceived` (dávkově,
+stejné leave-one-out přes `countDistinctProductContributorsExcludingBatch`/
+`countDistinctContributorsExcludingBatch`) a `confirmationsRequired`, takže appka umí ukázat
+"zatím 1 ze 3". Prahy samotné (`app.trust.*`, `app.catalog.draft-confirmations`) zůstávají jen
+tady a v `application.yml`, výpis je čistě čtecí vrstva nad nimi.
+
 ## Nahlášení záznamu (etapa 1) — hlasuje se o faktu, ne o člověku
 
 `core.record_flag` (`RecordFlagService`) je etapa-1 implementace principu z "Proč žádné

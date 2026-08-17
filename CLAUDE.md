@@ -90,6 +90,22 @@ obchodu v UI je teď hotová** (web `features/store-detail`, mobil `ui/store/Sto
 nevolá** — `GraphQlClient.updateProduct` (mobil) a `ProductService.updateProduct` (web)
 i backend mutace jsou hotové a otestované, jen na ně nemíří žádná obrazovka.
 
+**Výpis „Moje příspěvky"** (čtecí vrstva nad výše popsanou uživatelskou vrstvou): `myProducts`/
+`myStores`/`myObservations`/`myEdits` (`MyContributionsGraphQlController`,
+`MyContributionsService`, vyžadují přihlášení) vrací vlastní založené zboží/obchody, vlastní
+zapsané ceny a vlastní úpravy cizích záznamů, každý s `PublicationStatus` (`state` PUBLIC/
+AWAITING_CONFIRMATIONS/HIDDEN_AFTER_FLAGS/PENDING_MERGE + konkrétní
+`confirmationsReceived`/`confirmationsRequired`, dopočítané dávkově přes
+`PriceObservationRepository.countDistinctProductContributorsExcludingBatch`/
+`countDistinctContributorsExcludingBatch`) — cíl je, aby uživatel viděl „zatím 1 ze 3", ne jen
+štítek „čeká na potvrzení" bez kontextu. `MyObservationItem.publication` dědí horší ze stavů
+blokujícího zboží a obchodu (cena sama žádný práh nemá). Web má stránku `/my`
+(`features/my-contributions`, odkaz z Účtu, sdílená `shared/publication-status.ts` +
+`publication-status-text.ts` s testem), mobil obrazovku `ui/contributions/
+MyContributionsScreen.kt` + `MyContributionsViewModel.kt` (odkaz z `AccountScreen.kt`,
+`GraphQlClient.myProducts`/`myStores`/`myObservations`/`myEdits`,
+`PublicationStatusText.kt` s JUnit testem) — obojí čtyři záložky Zboží/Obchody/Ceny/Úpravy.
+
 **Fotky zboží a provozoven** (`docs/datovy-model.md`, „Fotky zboží a provozoven"; práh
 nahlášení v `docs/reputace.md`): `core.media` nese metadata, binární obsah (originál i náhled)
 leží mimo databázi za rozhraním `MediaStorage`/`LocalFileSystemMediaStorage`, zpracování

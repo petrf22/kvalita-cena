@@ -258,6 +258,15 @@ a vynutil seq scan, takže se hledá zvlášť přes `p.name` (index) a zvláš�
 (malý LEFT JOIN jen pro jednoho viewera). Skryté (`hidden_at`) záznamy z hledání zmizí úplně,
 i autorovi — přímý dotaz `product(id)`/`productByCode` je autorovi pořád ukáže, s příznakem.
 
+**Čtecí cesta k vlastní uživatelské vrstvě** — GraphQL `myProducts`/`myStores`/
+`myObservations`/`myEdits` (`MyContributionsGraphQlController`/`MyContributionsService`,
+vyžadují přihlášení) vrátí přihlášenému vlastní založené zboží/obchody, vlastní zapsané ceny
+a vlastní patche (`core.product_user_edit`/`core.store_user_edit`) nad cizími záznamy —
+poslední jmenované se ve výpisu vždy označí `PublicationState.PENDING_MERGE`, protože
+konsolidační job (viz výš) zatím neběží. `myProducts`/`myStores` k tomu dopočítají i konkrétní
+`confirmationsReceived`/`confirmationsRequired` (viz `reputace.md`, "Práh důvěry pro
+zveřejnění nového záznamu") — bez toho by uživatel viděl jen "čeká na potvrzení" bez čísel.
+
 ## Fotky zboží a provozoven
 
 `core.media` (`2026-08-08/01-media.yaml`) nese jen metadata jedné fotky — binární obsah

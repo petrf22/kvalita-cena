@@ -211,7 +211,8 @@ Routy:
 - `/` — hledání produktů,
 - `/produkt/:id` — detail, tabulka cen podle typu (běžná/akce/klubová/výprodej/množstevní), formulář na zápis ceny,
 - `/zadat-cenu` — samostatná stránka: najdi/založ zboží (podle názvu i EANu) → najdi/založ obchod → zapiš cenu (i zpětně datovanou),
-- `/prihlaseni` — stejný OTP flow jako výše, jen přes formulář (kód se pořád čte z konzole backendu).
+- `/prihlaseni` — stejný OTP flow jako výše, jen přes formulář (kód se pořád čte z konzole backendu),
+- `/moje-prispevky` — vlastní založené zboží/obchody, vlastní zapsané ceny a vlastní úpravy cizích záznamů se stavem zveřejnění (konkrétní "zatím 1 ze 3", ne jen štítek), odkaz z karty Účet; vyžaduje přihlášení.
 
 Výběr provozovny (`shared/store-picker.ts`, použitý v obou formulářích výše) umí tři cesty:
 napsat název nebo město (`searchStores`), stisknout „Najít v okolí" (`nearbyStores`, potřebuje
@@ -247,7 +248,9 @@ by bylo potřeba změnit `ApiConfig.BASE_URL` na IP hostitele v lokální síti 
 
 Flow v appce: sken (kamera + ZXing) → zadání ceny a typu → výběr provozovny podle polohy
 (`LocationManager`, COARSE) → odeslání. Naskenuj EAN ze seedu (např. `8594001234585` = Máslo
-čerstvé) nebo si ho zobraz jako čárový kód na jiném displeji/vytiskni.
+čerstvé) nebo si ho zobraz jako čárový kód na jiném displeji/vytiskni. Záložka Účet (přihlášený
+stav) má tlačítko "Moje příspěvky" (`ui/contributions/MyContributionsScreen.kt`) — čtyři
+záložky Zboží/Obchody/Ceny/Úpravy se stejným stavem zveřejnění jako na webu.
 
 ## 8. Testy
 
@@ -272,4 +275,4 @@ cd mobile && ./gradlew :app:testDebugUnitTest    # JUnit, jen čistá logika (ge
 | Backend hlásí chybu schématu po ruční změně DB | `ddl-auto: validate` — schéma smí měnit jen Liquibase | vrať se k migracím, neuprav tabulku ručně |
 | `Cannot run program "docker"` při spuštění z IDE | IDE (např. IntelliJ IDEA) běží jako Flatpak, sandbox nevidí hostovský docker | spusť `docker compose up -d` ručně a appku pouštěj přes run konfiguraci s `SPRING_DOCKER_COMPOSE_ENABLED=false` — viz sekce **2. Backend** |
 | `geocodeAddress` vždy vrátí prázdné `candidates` | Nominatim často blokuje datacentrové/sdílené IP (`403 Access denied`, viz jeho usage policy) | obchod jde uložit i bez souřadnic — doplní se později; pro reálné testování geokódování je potřeba běžná domácí IP |
-| Nově založené zboží/obchod „zmizí" — nejde najít ani přes hledání, ani opětovným skenem kódu | čerstvý účet je pod prahem důvěry (`app.trust.*`), záznam vznikl jako `status: DRAFT`, vidí ho jen autor | aktivuj lokálně profil `beta` (`SPRING_PROFILES_ACTIVE=beta`, viz sekce **2. Backend**), nebo počkej/navyš stáří účtu a `observation_count` |
+| Nově založené zboží/obchod „zmizí" — nejde najít ani přes hledání, ani opětovným skenem kódu | čerstvý účet je pod prahem důvěry (`app.trust.*`), záznam vznikl jako `status: DRAFT`, vidí ho jen autor | zkontroluj `/moje-prispevky` — ukáže přesný stav ("zatím X z Y potvrzení"); aktivuj lokálně profil `beta` (`SPRING_PROFILES_ACTIVE=beta`, viz sekce **2. Backend**), nebo počkej/navyš stáří účtu a `observation_count` |
