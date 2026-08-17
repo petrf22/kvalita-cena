@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { INTL_TAGS, LanguageService } from './language-service';
+import { DATE_INPUT_FORMATS, INTL_TAGS, LanguageService } from './language-service';
 
 /**
  * Formátování čísel/měny/data podle aktuálního jazyka — přes `Intl.*`, ne Angular pipy
@@ -40,6 +40,32 @@ export class FormatService {
       minimumFractionDigits: digits,
       maximumFractionDigits: digits,
     }).format(value);
+  }
+
+  /** date-fns tokeny pro `nz-date-picker` — `NzNativeDateAdapter` formátuje přes date-fns, ne
+   *  Intl, a bez explicitního `nzFormat` má natvrdo `yyyy-MM-dd` nezávisle na jazyku. */
+  dateInputFormat(): string {
+    return DATE_INPUT_FORMATS[this.language.lang()];
+  }
+
+  /** `nzFormatter` pro `nz-input-number` (cena, gramáž, počet kusů) — desetinná čárka/tečka
+   *  podle jazyka; bez formatteru bere komponenta jen tečku (docs/lokalizace.md). */
+  readonly numberFormatter = (value: number): string => {
+    if (value == null || Number.isNaN(value)) return '';
+    return String(value).replace('.', this.decimalSeparator());
+  };
+
+  /** `nzParser` k {@link numberFormatter} — čárku i tečku bere shovívavě jako desetinný
+   *  oddělovač bez ohledu na jazyk, aby zapsání s druhým znakem neshodilo formulář. */
+  readonly numberParser = (value: string): number => {
+    return parseFloat(value.replace(this.decimalSeparator(), '.').replace(',', '.'));
+  };
+
+  private decimalSeparator(): string {
+    const part = new Intl.NumberFormat(this.tag())
+      .formatToParts(1.1)
+      .find((p) => p.type === 'decimal');
+    return part?.value ?? '.';
   }
 
   private moneyFormatter(currency: string): Intl.NumberFormat {

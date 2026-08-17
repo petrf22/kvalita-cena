@@ -30,6 +30,16 @@ export const INTL_TAGS: Record<AppLang, string> = {
   de: 'de-DE',
 };
 
+// Pro `nz-date-picker` (FormatService.dateInputFormat) — `NzNativeDateAdapter` formátuje přes
+// date-fns tokeny, ne Intl, takže nejde odvodit ze stejného zdroje jako INTL_TAGS.
+export const DATE_INPUT_FORMATS: Record<AppLang, string> = {
+  cs: 'dd.MM.yyyy',
+  sk: 'dd.MM.yyyy',
+  en: 'dd/MM/yyyy',
+  pl: 'dd.MM.yyyy',
+  de: 'dd.MM.yyyy',
+};
+
 const STORAGE_KEY = 'kac.lang';
 
 function isAppLang(value: string): value is AppLang {

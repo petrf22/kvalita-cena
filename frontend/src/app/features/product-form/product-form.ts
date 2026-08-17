@@ -54,7 +54,7 @@ const UNIT_BASE_ORDER: readonly UnitBase[] = ['COUNT', 'MASS', 'VOLUME'];
 })
 export class ProductForm {
   private readonly productService = inject(ProductService);
-  private readonly format = inject(FormatService);
+  protected readonly format = inject(FormatService);
   private readonly transloco = inject(TranslocoService);
 
   /** Naskenovaný/zadaný kód, který se v katalogu nenašel — předvyplní pole kódu. */

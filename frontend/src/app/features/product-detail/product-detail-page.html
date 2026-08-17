@@ -285,6 +285,8 @@
               name="priceAmount"
               [nzMin]="0"
               [nzStep]="0.5"
+              [nzFormatter]="format.numberFormatter"
+              [nzParser]="format.numberParser"
               style="width: 100%"
             />
           </nz-form-control>
