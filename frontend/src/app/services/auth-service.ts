@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, catchError, map, of, tap } from 'rxjs';
 import { EmailChangeRequestResponse, OtpRequestResponse, TokenResponse } from '../models/auth';
 
 /**
@@ -41,6 +41,24 @@ export class AuthService {
     return this.http
       .post<TokenResponse>('/api/auth/refresh', {}, { withCredentials: true })
       .pipe(tap((token) => this.accessTokenSignal.set(token.accessToken)));
+  }
+
+  /**
+   * Přístupový token vypršel/je neplatný — server to od "nikdy nepřihlášen" nerozezná
+   * (mobilní protějšek: `AuthRepository.recoverFromUnauthorized` v `auth/AuthRepository.kt`).
+   * Nejdřív zkusí tichý refresh (httpOnly cookie s refresh tokenem bývá pořád platná); až
+   * když selže i ten, `accessToken` signál se vyčistí, ať `isLoggedIn` (na něm založené)
+   * přestane napříč appkou lhát — jinak zůstávala appka v nekonzistentním stavu: jedna
+   * obrazovka dál hlásila "Přihlášen", zatímco jiná ukazovala "vyžaduje přihlášení".
+   */
+  recoverFromUnauthorized(): Observable<boolean> {
+    return this.refresh().pipe(
+      map(() => true),
+      catchError(() => {
+        this.accessTokenSignal.set(null);
+        return of(false);
+      }),
+    );
   }
 
   logout(): Observable<void> {
