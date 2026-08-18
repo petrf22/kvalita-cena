@@ -237,78 +237,7 @@
     }
 
     <nz-card [nzTitle]="t('product-detail.submitTitle')" class="submit-card">
-      @if (submitSuccess()) {
-        <nz-alert
-          nzType="success"
-          [nzMessage]="t('product-detail.submitSuccess')"
-          nzShowIcon
-          class="submit-alert"
-        />
-      }
-      @if (submitError()) {
-        <nz-alert nzType="error" [nzMessage]="submitError()" nzShowIcon class="submit-alert" />
-      }
-
-      <form nz-form nzLayout="vertical" (ngSubmit)="submitPrice()">
-        <nz-form-item>
-          <nz-form-label>{{ t('product-detail.storeLabel') }}</nz-form-label>
-          <nz-form-control>
-            <app-store-picker
-              [selectedStoreId]="selectedStoreId()"
-              (selectedStoreIdChange)="selectedStoreId.set($event)"
-              (selectedStoreChange)="onStoreChange($event)"
-            />
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label>{{ t('product-detail.priceKindLabel') }}</nz-form-label>
-          <nz-form-control>
-            <nz-select
-              [ngModel]="priceKind()"
-              (ngModelChange)="priceKind.set($event)"
-              name="priceKind"
-            >
-              @for (kind of selectablePriceKinds; track kind) {
-                <nz-option [nzValue]="kind" [nzLabel]="priceKindKeys[kind] | transloco" />
-              }
-            </nz-select>
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label>
-            {{
-              t('product-detail.priceAmountLabel', {
-                currency: format.currencySymbol(selectedStoreCurrency()),
-              })
-            }}
-          </nz-form-label>
-          <nz-form-control>
-            <nz-input-number
-              [ngModel]="priceAmount()"
-              (ngModelChange)="priceAmount.set($event)"
-              name="priceAmount"
-              [nzMin]="0"
-              [nzStep]="0.5"
-              [nzFormatter]="format.numberFormatter"
-              [nzParser]="format.numberParser"
-              style="width: 100%"
-            />
-          </nz-form-control>
-        </nz-form-item>
-
-        <button
-          nz-button
-          nzType="primary"
-          nzBlock
-          type="submit"
-          [nzLoading]="submitting()"
-          [disabled]="!selectedStoreId() || priceAmount() == null"
-        >
-          {{ t('product-detail.submit') }}
-        </button>
-      </form>
+      <app-price-entry-form [product]="product()!" (submitted)="loadProduct(product()!.id)" />
     </nz-card>
   }
 </ng-container>

@@ -27,7 +27,9 @@ fun priceKindLabel(kind: String): String = stringResource(priceKindLabelRes(kind
 
 /**
  * Druhy ceny nabízené ve formuláři zápisu — stejný seznam jako web `SELECTABLE_PRICE_KINDS`
- * (`shared/enum-labels.ts`). MULTIBUY tu schválně chybí — schéma pro něj vyžaduje i
- * multibuyQty/multibuyTotal (docs/datovy-model.md) a appka je zatím neumí zadat (etapa 2/3).
+ * (`shared/enum-labels.ts`), včetně MULTIBUY (množstevní sleva, `ui/price/PriceEntryScreen.kt`
+ * umí i její pole navíc `multibuyQty`/`multibuyTotal`, docs/datovy-model.md).
+ * `availablePriceKinds` (`ui/price/PriceRowValidation.kt`) z týhle množiny navíc vyloučí druhy
+ * použité v jiných řádcích jedné dávky.
  */
-val SELECTABLE_PRICE_KINDS = listOf("REGULAR", "PROMO", "CLUB_CARD", "CLEARANCE")
+val SELECTABLE_PRICE_KINDS = listOf("REGULAR", "PROMO", "CLUB_CARD", "CLEARANCE", "MULTIBUY")

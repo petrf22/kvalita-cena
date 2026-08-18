@@ -1,0 +1,49 @@
+.form-alert {
+  margin-bottom: 16px;
+}
+
+.prices-label {
+  display: block;
+  font-weight: 600;
+}
+
+.prices-hint {
+  margin: 4px 0 12px;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+}
+
+.price-row {
+  margin-bottom: 8px;
+}
+
+.price-row-fields {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.price-kind-select {
+  flex: 0 0 40%;
+  min-width: 120px;
+}
+
+.price-amount,
+.multibuy-qty {
+  flex: 1;
+  min-width: 0;
+}
+
+.multibuy-hint {
+  margin: 4px 0 0;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
+.add-price {
+  margin-bottom: 16px;
+}
+
+.submit-button {
+  margin-top: 8px;
+}

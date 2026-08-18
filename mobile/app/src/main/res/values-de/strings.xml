@@ -247,6 +247,13 @@
     <string name="price_entry_price_summary">%1$s (%2$s/Einheit) · %3$d Einträge</string>
     <string name="price_entry_write_price">Preis eingeben</string>
     <string name="price_entry_price_label">Preis (%1$s)</string>
+    <string name="price_entry_prices_label">Preise</string>
+    <string name="price_entry_prices_hint">Am Preisschild stehen oft ein regulärer Preis und ein Preis mit Kundenkarte nebeneinander — trag beide auf einmal ein.</string>
+    <string name="price_entry_add_price">Weiteren Preis hinzufügen</string>
+    <string name="price_entry_remove_price">Entfernen</string>
+    <string name="price_entry_multibuy_qty_label">Anzahl</string>
+    <string name="price_entry_multibuy_total_label">Gesamtpreis (%1$s)</string>
+    <string name="price_entry_multibuy_hint">Z. B. „3 Stück für 5 €“ — gib die Anzahl und den Gesamtpreis ein.</string>
     <string name="price_entry_submit">Preis speichern</string>
     <string name="price_entry_back_without_price">Zurück ohne Preis einzugeben</string>
     <string name="price_entry_submit_success">Der Preis wurde gespeichert, danke!</string>

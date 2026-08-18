@@ -6,7 +6,7 @@ import type {
   CreateProductInput,
   PriceKind,
   ProductSort,
-  SubmitObservationInput,
+  SubmitObservationsInput,
   UpdateProductInput,
 } from '../models/generated/graphql';
 
@@ -228,10 +228,11 @@ export class ProductService {
       .pipe(map((data) => data.rateProduct));
   }
 
-  submitObservation(input: SubmitObservationInput) {
+  /** Víc cen z jedné cenovky (běžná + klubová + …) jedním voláním — kolize jediného druhu shodí celou dávku. */
+  submitObservations(input: SubmitObservationsInput) {
     const document = graphql(`
-      mutation SubmitObservation($input: SubmitObservationInput!) {
-        submitObservation(input: $input) {
+      mutation SubmitObservations($input: SubmitObservationsInput!) {
+        submitObservations(input: $input) {
           id
           priceAmount
           currency
@@ -243,6 +244,6 @@ export class ProductService {
         }
       }
     `);
-    return this.graphQl.execute(document, { input }).pipe(map((data) => data.submitObservation));
+    return this.graphQl.execute(document, { input }).pipe(map((data) => data.submitObservations));
   }
 }

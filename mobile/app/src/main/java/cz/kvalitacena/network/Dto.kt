@@ -316,13 +316,30 @@ data class EmailChangeRequestBody(val email: String)
 @Serializable
 data class EmailChangeConfirmBody(val challengeUid: String, val code: String, val email: String)
 
+/**
+ * Jeden řádek formuláře: druh ceny + částka. `priceKind` schválně BEZ Kotlin defaultu —
+ * `encodeDefaults = false` (kotlinx.serialization výchozí, `GraphQlClient.json` ho nemění) by
+ * hodnotu rovnou defaultu do JSONu vůbec nezakódoval, a server na `priceKind` v každém řádku
+ * spoléhá vždy, ne jen když je jiný než REGULAR.
+ */
 @Serializable
-data class SubmitObservationInput(
+data class ObservationPriceInput(
+  val priceKind: String,
+  val priceAmount: Double? = null,
+  val multibuyQty: Int? = null,
+  val multibuyTotal: Double? = null,
+)
+
+/**
+ * Víc cen z jedné cenovky (běžná + klubová + …) jedním voláním — `docs/datovy-model.md`,
+ * "core.price_observation je jádro aplikace". Kolize jediného druhu ceny shodí celou dávku.
+ */
+@Serializable
+data class SubmitObservationsInput(
   val productId: String,
   val storeId: String,
-  val priceAmount: Double,
-  val priceKind: String = "REGULAR",
   val quantityBasis: String = "PACKAGE",
+  val prices: List<ObservationPriceInput>,
 )
 
 @Serializable
@@ -578,7 +595,7 @@ data class ProductData(val product: Product? = null)
 data class NearbyStoresData(val nearbyStores: List<Store> = emptyList())
 
 @Serializable
-data class SubmitObservationData(val submitObservation: PriceObservation)
+data class SubmitObservationsData(val submitObservations: List<PriceObservation>)
 
 @Serializable
 data class SearchProductsData(val searchProducts: ProductSearchResult)

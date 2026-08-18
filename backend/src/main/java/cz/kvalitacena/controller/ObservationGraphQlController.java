@@ -10,6 +10,7 @@ import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -20,7 +21,7 @@ public class ObservationGraphQlController {
   private final HttpServletRequest servletRequest;
 
   @MutationMapping
-  public PriceObservation submitObservation(@Argument SubmitObservationInput input,
+  public List<PriceObservation> submitObservations(@Argument SubmitObservationsInput input,
       Authentication authentication) {
     UUID publicUid = authentication != null && authentication.getPrincipal() instanceof UUID uid
         ? uid

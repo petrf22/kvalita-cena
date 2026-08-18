@@ -89,7 +89,11 @@
     "UOM_MISMATCH": "Unit {{p0}} does not match type {{p1}}",
     "VALIDATION_FAILED": "The submitted data is invalid",
     "CLIENT_VERSION_TOO_OLD": "Your app version is no longer supported, please install the latest version",
-    "OBSERVATION_ALREADY_SUBMITTED_TODAY": "You already reported a price for this product at this store today. Please try again tomorrow."
+    "OBSERVATION_ALREADY_SUBMITTED_TODAY": "You already reported a price for this product at this store today. Please try again tomorrow.",
+    "OBSERVATION_PRICES_REQUIRED": "Enter at least one price.",
+    "OBSERVATION_DUPLICATE_PRICE_KIND": "You have the price type {{p0}} listed twice.",
+    "OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY": "You already reported a {{p0}} price for this product at this store today. Please try again tomorrow.",
+    "OBSERVATION_PRICE_INCOMPLETE": "The {{p0}} price is missing an amount."
   },
   "enum": {
     "priceKind": {

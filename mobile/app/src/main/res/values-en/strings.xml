@@ -245,6 +245,13 @@
     <string name="price_entry_price_summary">%1$s (%2$s/unit) · %3$d reports</string>
     <string name="price_entry_write_price">Record a price</string>
     <string name="price_entry_price_label">Price (%1$s)</string>
+    <string name="price_entry_prices_label">Prices</string>
+    <string name="price_entry_prices_hint">Price tags often show a regular price and a loyalty-card price side by side — enter both at once.</string>
+    <string name="price_entry_add_price">Add another price</string>
+    <string name="price_entry_remove_price">Remove</string>
+    <string name="price_entry_multibuy_qty_label">Quantity</string>
+    <string name="price_entry_multibuy_total_label">Total price (%1$s)</string>
+    <string name="price_entry_multibuy_hint">E.g. \"3 for 50\" — enter the quantity and the total price.</string>
     <string name="price_entry_submit">Record price</string>
     <string name="price_entry_back_without_price">Back without recording a price</string>
     <string name="price_entry_submit_success">Price recorded, thanks!</string>

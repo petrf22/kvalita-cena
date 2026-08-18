@@ -288,18 +288,18 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(FxInfoData.serializer())).fxInfo
   }
 
-  suspend fun submitObservation(input: SubmitObservationInput): PriceObservation {
+  suspend fun submitObservations(input: SubmitObservationsInput): List<PriceObservation> {
     val query = """
-      mutation(${'$'}input: SubmitObservationInput!) {
-        submitObservation(input: ${'$'}input) {
+      mutation(${'$'}input: SubmitObservationsInput!) {
+        submitObservations(input: ${'$'}input) {
           id priceAmount unitPrice priceKind quantityBasis observedAt status
         }
       }
     """
     val variables = buildJsonObject {
-      put("input", json.encodeToJsonElement(SubmitObservationInput.serializer(), input))
+      put("input", json.encodeToJsonElement(SubmitObservationsInput.serializer(), input))
     }
-    return execute(query, variables, GraphQlResponse.serializer(SubmitObservationData.serializer())).submitObservation
+    return execute(query, variables, GraphQlResponse.serializer(SubmitObservationsData.serializer())).submitObservations
   }
 
   /**

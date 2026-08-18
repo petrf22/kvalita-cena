@@ -1,0 +1,17 @@
+{
+  "storeLabel": "Sklep",
+  "priceKindLabel": "Rodzaj ceny",
+  "priceAmountLabel": "Cena ({{currency}})",
+  "quantityBasisLabel": "Cena podana",
+  "observedAtLabel": "Kiedy widziałeś/widziałaś tę cenę (opcjonalnie — inaczej teraz)",
+  "pricesLabel": "Ceny",
+  "pricesHint": "Na metce często jest cena zwykła i cena z kartą lojalnościową — wpisz obie naraz.",
+  "addPrice": "Dodaj kolejną cenę",
+  "removePrice": "Usuń cenę",
+  "multibuyQtyLabel": "Liczba sztuk",
+  "multibuyTotalLabel": "Cena za zestaw ({{currency}})",
+  "multibuyHint": "Np. „3 sztuki za 50 zł” — podaj liczbę sztuk i cenę łączną.",
+  "submit": "Zapisz cenę",
+  "submitSuccess": "Cena została zapisana, dzięki!",
+  "submitFailed": "Zapis się nie powiódł, spróbuj ponownie."
+}

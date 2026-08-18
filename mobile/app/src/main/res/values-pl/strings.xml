@@ -245,6 +245,13 @@
     <string name="price_entry_price_summary">%1$s (%2$s/jednostkę) · %3$d zgłoszeń</string>
     <string name="price_entry_write_price">Zapisz cenę</string>
     <string name="price_entry_price_label">Cena (%1$s)</string>
+    <string name="price_entry_prices_label">Ceny</string>
+    <string name="price_entry_prices_hint">Na metce często jest cena zwykła i cena z kartą lojalnościową — wpisz obie naraz.</string>
+    <string name="price_entry_add_price">Dodaj kolejną cenę</string>
+    <string name="price_entry_remove_price">Usuń</string>
+    <string name="price_entry_multibuy_qty_label">Liczba sztuk</string>
+    <string name="price_entry_multibuy_total_label">Cena za zestaw (%1$s)</string>
+    <string name="price_entry_multibuy_hint">Np. „3 sztuki za 50 zł” — podaj liczbę sztuk i cenę łączną.</string>
     <string name="price_entry_submit">Zapisz cenę</string>
     <string name="price_entry_back_without_price">Wstecz bez podania ceny</string>
     <string name="price_entry_submit_success">Cena została zapisana, dziękujemy!</string>

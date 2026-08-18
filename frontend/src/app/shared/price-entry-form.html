@@ -1,0 +1,155 @@
+<ng-container *transloco="let t; scope: 'price-form'">
+  @if (submitSuccess()) {
+    <nz-alert
+      nzType="success"
+      [nzMessage]="t('price-form.submitSuccess')"
+      nzShowIcon
+      class="form-alert"
+    />
+  }
+  @if (submitError()) {
+    <nz-alert nzType="error" [nzMessage]="submitError()" nzShowIcon class="form-alert" />
+  }
+
+  <form nz-form nzLayout="vertical" (ngSubmit)="submit()">
+    <nz-form-item>
+      <nz-form-label>{{ t('price-form.storeLabel') }}</nz-form-label>
+      <nz-form-control>
+        <app-store-picker
+          [selectedStoreId]="selectedStoreId()"
+          (selectedStoreIdChange)="selectedStoreId.set($event)"
+          (selectedStoreChange)="onStoreChange($event)"
+        />
+      </nz-form-control>
+    </nz-form-item>
+
+    @if (product().isVariableWeight) {
+      <nz-form-item>
+        <nz-form-label>{{ t('price-form.quantityBasisLabel') }}</nz-form-label>
+        <nz-form-control>
+          <nz-select
+            [ngModel]="quantityBasis()"
+            (ngModelChange)="quantityBasis.set($event)"
+            name="quantityBasis"
+          >
+            @for (basis of selectableVariableWeightQuantityBases; track basis) {
+              <nz-option [nzValue]="basis" [nzLabel]="quantityBasisKeys[basis] | transloco" />
+            }
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
+    }
+
+    <nz-form-item>
+      <nz-form-label>{{ t('price-form.observedAtLabel') }}</nz-form-label>
+      <nz-form-control>
+        <nz-date-picker
+          [ngModel]="observedAt()"
+          (ngModelChange)="observedAt.set($event)"
+          name="observedAt"
+          [nzDisabledDate]="isFutureDate"
+          [nzFormat]="format.dateInputFormat()"
+          style="width: 100%"
+        />
+      </nz-form-control>
+    </nz-form-item>
+
+    <label class="prices-label">{{ t('price-form.pricesLabel') }}</label>
+    <p class="prices-hint">{{ t('price-form.pricesHint') }}</p>
+
+    @for (row of rows(); track row.key) {
+      <div class="price-row">
+        <div class="price-row-fields">
+          <nz-select
+            [ngModel]="row.priceKind"
+            (ngModelChange)="updateRowKind(row.key, $event)"
+            [name]="'priceKind' + row.key"
+            [attr.aria-label]="t('price-form.priceKindLabel')"
+            class="price-kind-select"
+          >
+            @for (kind of kindsForRow(row); track kind) {
+              <nz-option [nzValue]="kind" [nzLabel]="priceKindKeys[kind] | transloco" />
+            }
+          </nz-select>
+
+          @if (row.priceKind === 'MULTIBUY') {
+            <nz-input-number
+              [ngModel]="row.multibuyQty"
+              (ngModelChange)="updateRowMultibuyQty(row.key, $event)"
+              [name]="'multibuyQty' + row.key"
+              [nzMin]="2"
+              [nzPrecision]="0"
+              [nzPlaceHolder]="t('price-form.multibuyQtyLabel')"
+              class="multibuy-qty"
+            />
+            <nz-input-number
+              [ngModel]="row.multibuyTotal"
+              (ngModelChange)="updateRowMultibuyTotal(row.key, $event)"
+              [name]="'multibuyTotal' + row.key"
+              [nzMin]="0"
+              [nzStep]="0.5"
+              [nzFormatter]="format.numberFormatter"
+              [nzParser]="format.numberParser"
+              [nzPlaceHolder]="
+                t('price-form.multibuyTotalLabel', {
+                  currency: format.currencySymbol(selectedStoreCurrency()),
+                })
+              "
+              class="price-amount"
+            />
+          } @else {
+            <nz-input-number
+              [ngModel]="row.priceAmount"
+              (ngModelChange)="updateRowAmount(row.key, $event)"
+              [name]="'priceAmount' + row.key"
+              [nzMin]="0"
+              [nzStep]="0.5"
+              [nzFormatter]="format.numberFormatter"
+              [nzParser]="format.numberParser"
+              [nzPlaceHolder]="
+                t('price-form.priceAmountLabel', {
+                  currency: format.currencySymbol(selectedStoreCurrency()),
+                })
+              "
+              class="price-amount"
+            />
+          }
+
+          @if (rows().length > 1) {
+            <button
+              nz-button
+              nzType="text"
+              nzDanger
+              type="button"
+              [attr.aria-label]="t('price-form.removePrice')"
+              (click)="removeRow(row.key)"
+            >
+              <span nz-icon nzType="minus-circle"></span>
+            </button>
+          }
+        </div>
+
+        @if (row.priceKind === 'MULTIBUY') {
+          <p class="multibuy-hint">{{ t('price-form.multibuyHint') }}</p>
+        }
+      </div>
+    }
+
+    <button nz-button nzType="dashed" nzBlock type="button" class="add-price" (click)="addRow()">
+      <span nz-icon nzType="plus"></span>
+      {{ t('price-form.addPrice') }}
+    </button>
+
+    <button
+      nz-button
+      nzType="primary"
+      nzBlock
+      type="submit"
+      class="submit-button"
+      [nzLoading]="submitting()"
+      [disabled]="!canSubmit()"
+    >
+      {{ t('price-form.submit') }}
+    </button>
+  </form>
+</ng-container>

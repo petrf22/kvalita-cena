@@ -42,7 +42,7 @@ typy z GraphQL schématu negeneruje (`network/Dto.kt` mapuje enumy ručně na `S
 Hotovo a ověřeno end-to-end (backend přes curl, web i mobil živě v prohlížeči/emulátoru):
 passwordless auth (OTP + refresh rotace), GraphQL `searchProducts` (filtr obchod/město, řazení,
 stránkování, agregáty v `ProductSearchItem`) / `searchFacets` / `product` / `productByCode` /
-`nearbyStores` / `priceHistory` / `me` / `submitObservation` / `rateProduct`, vážený medián
+`nearbyStores` / `priceHistory` / `me` / `submitObservations` / `rateProduct`, vážený medián
 i denní agregace v `PriceAggregationService` (`agg.price_current` + `agg.price_daily`),
 hodnocení kvality jako známka 1–5 (`core.product_quality_rating`, `QualityRatingService` —
 jen průměr a počet, žádné texty, žádná viditelnost).
@@ -58,13 +58,19 @@ agregátu má zastropovaná na `MEDIUM` — `docs/reputace.md`, „Zboží bez �
 
 Angular: menu Hledání/Zadat cenu/Nastavení/Účet (na mobilním prohlížeči spodní lišta), stránka
 hledání s filtry a tabulkou, detail produktu s SVG grafem vývoje ceny (`price-chart-geometry.ts`,
-testováno Vitestem) a formulářem zápisu ceny přes sdílený `shared/store-picker.ts`, samostatná
-stránka „Zadat cenu" (`features/price-entry`) hledá zboží podle názvu i kódu a umí založit nové
-zboží/obchod (`features/product-form`, `shared/store-form.ts`) včetně zpětného data
-(`observedAt`), stránka nastavení. Android: bottom navigation ze 4 záložek (Sken/Hledat/
-Nastavení/Účet — `ui/navigation/AppDestinations.kt`), hledání, detail s Canvas grafem
-(`PriceChartGeometry.kt`, testováno JUnitem), zápis ceny ze skenu i z detailu přes sdílený
-`ui/common/StorePicker.kt` (napovídání podle názvu/města, ne jen GPS), založení obchodu
+testováno Vitestem) a formulářem zápisu ceny přes sdílenou `shared/price-entry-form.ts`
+(pohlcuje i `shared/store-picker.ts` — nahrazuje dřívější dvě skoro identické kopie formuláře
+na stránce „Zadat cenu" a v detailu produktu), samostatná stránka „Zadat cenu"
+(`features/price-entry`) hledá zboží podle názvu i kódu a umí založit nové zboží/obchod
+(`features/product-form`, `shared/store-form.ts`) včetně zpětného data (`observedAt`), stránka
+nastavení. Zápis ceny umí víc cen z jedné cenovky najednou (`shared/price-rows.ts` — běžná +
+klubová + množstevní/MULTIBUY se zadají jedním „+" formulářem a odešlou jedním voláním
+`submitObservations`, kolize jediného druhu ceny shodí celou dávku). Android: bottom navigation
+ze 4 záložek (Sken/Hledat/Nastavení/Účet — `ui/navigation/AppDestinations.kt`), hledání, detail
+s Canvas grafem (`PriceChartGeometry.kt`, testováno JUnitem), zápis ceny ze skenu i z detailu
+přes sdílený `ui/common/StorePicker.kt` (napovídání podle názvu/města, ne jen GPS) a
+`ui/price/PriceEntryScreen.kt`/`PriceEntryViewModel.kt` se stejným seznamem řádků „(druh ceny,
+částka)" jako web (`ui/price/PriceRowValidation.kt`, testováno JUnitem), založení obchodu
 (`ui/store/StoreFormScreen.kt`) i zboží (`ui/product/ProductFormScreen.kt`), mapa/OFF odkazy.
 
 **Uživatelská vrstva nad globálními daty** (`docs/datovy-model.md`, „Uživatelská vrstva nad
@@ -290,8 +296,11 @@ Aplikační DB uživatel má na `off`/`osm` jen `SELECT`, zapisuje jen synchroni
   hodnotu z produktu — jinak by pozdější oprava gramáže přepsala jednotkové ceny celé historie.
 - **`observed_at` (kdy to uživatel viděl) ≠ `created_at`** (kdy to došlo na server) — kvůli
   offline zápisu z mobilu.
-- **`price_kind` (REGULAR/PROMO/CLUB_CARD/CLEARANCE/MULTIBUY) je součástí klíče agregátu** —
-  akční, klubová a běžná cena se nikdy nemíchají do jedné řady.
+- **`price_kind` (REGULAR/PROMO/CLUB_CARD/CLEARANCE/MULTIBUY) je součástí klíče agregátu**
+  I unikátního indexu observace (`uq_price_observation_submitter_kind_per_day`) — akční,
+  klubová a běžná cena se nikdy nemíchají do jedné řady, a zároveň jde stejný den zapsat víc
+  cen různého druhu z jedné cenovky (`submitObservations`, jedna transakce, kolize jediného
+  druhu shodí celou dávku).
 - **Vnitroobchodní kódy váhového zboží nejsou globální identifikátor** — mají povinný `chain_id`
   (`core.product_code.code_type = STORE_INTERNAL`). EAN se normalizuje na GTIN-14.
 

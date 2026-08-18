@@ -25,14 +25,35 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
   Optional<OffsetDateTime> findEarliestObservedAt();
 
   /**
+   * Které druhy ceny už tenhle uživatel dnes u téhle dvojice (produkt, obchod) zapsal —
+   * pojmenovaná pre-kontrola PŘED unikátním indexem {@code uq_price_observation_submitter_kind_
+   * per_day}. Index zůstává autoritou (závod dvou souběžných requestů), tenhle dotaz existuje
+   * jen proto, aby chybová hláška uměla říct KTERÝ druh ceny koliduje — z {@code
+   * DataIntegrityViolationException} se to zpětně vyčíst nedá (transakce je v tu chvíli už
+   * abortovaná, doptat se nejde). Nativní dotaz kvůli {@code core.day_utc} — tatáž funkce jako
+   * v indexu i v {@code agg.price_daily.day}.
+   */
+  @Query(value = "SELECT DISTINCT price_kind FROM core.price_observation "
+      + "WHERE product_id = :productId AND store_id = :storeId AND submitter_id = :submitterId "
+      + "AND core.day_utc(observed_at) = core.day_utc(CAST(:observedAt AS TIMESTAMPTZ))",
+      nativeQuery = true)
+  List<String> findPriceKindsBySubmitterOnDay(@Param("productId") Long productId,
+      @Param("storeId") Long storeId, @Param("submitterId") Long submitterId,
+      @Param("observedAt") OffsetDateTime observedAt);
+
+  /**
    * Leave-one-out obdoba {@link #countDistinctContributorsExcluding} pro zboží — rozhoduje o
    * promoci DRAFT → ACTIVE (docs/reputace.md, "Zboží bez čárového kódu", "Práh důvěry pro
    * zveřejnění nového záznamu"). Bez vyloučení autora by si zakladatel odemkl vlastní DRAFT
    * sám vlastními zápisy cen. Anonymní observace se nedají mezi sebou rozlišit (submitter_id
-   * je NULL, docs/soukromi.md), proto se každá počítá jako samostatný přispěvatel (COALESCE na
-   * vlastní id) — pesimistický odhad "aspoň tolik různých lidí", ne přesný počet.
+   * je NULL, docs/soukromi.md) — od zavedení dávkového zápisu (submitObservations, víc cen
+   * z jedné cenovky jedním voláním) by "každá observace = samostatný přispěvatel" znamenalo,
+   * že jedno anonymní odeslání tří druhů ceny odemkne DRAFT/PENDING jedním kliknutím. Proto se
+   * fallback počítá za DEN (COALESCE na den, ne na id observace) — všechny anonymní zápisy
+   * jednoho dne se počítají nejvýš jako jedno potvrzení, pořád pesimistický odhad "aspoň tolik
+   * různých lidí", jen ne per řádek.
    */
-  @Query(value = "SELECT count(DISTINCT COALESCE(submitter_id::text, id::text)) "
+  @Query(value = "SELECT count(DISTINCT COALESCE(submitter_id::text, 'anon:' || core.day_utc(observed_at)::text)) "
       + "FROM core.price_observation WHERE product_id = :productId "
       + "AND submitter_id IS DISTINCT FROM :excludingUserId", nativeQuery = true)
   long countDistinctProductContributorsExcluding(@Param("productId") Long productId,
@@ -42,9 +63,10 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
    * Obdoba {@link #countDistinctProductContributorsExcluding}, ale pro provozovny (leave-one-
    * out, docs/reputace.md) — jinak by si zakladatel odemkl PENDING obchod sám třemi vlastními
    * zápisy. Anonymní observace (submitter_id NULL) se počítají dál, jen autorovy vlastní ne —
-   * {@code IS DISTINCT FROM} je s NULL bezpečné oproti {@code !=}.
+   * {@code IS DISTINCT FROM} je s NULL bezpečné oproti {@code !=}. Fallback na den, ne na id
+   * observace — viz {@link #countDistinctProductContributorsExcluding}.
    */
-  @Query(value = "SELECT count(DISTINCT COALESCE(submitter_id::text, id::text)) "
+  @Query(value = "SELECT count(DISTINCT COALESCE(submitter_id::text, 'anon:' || core.day_utc(observed_at)::text)) "
       + "FROM core.price_observation WHERE store_id = :storeId "
       + "AND submitter_id IS DISTINCT FROM :excludingUserId", nativeQuery = true)
   long countDistinctContributorsExcluding(@Param("storeId") Long storeId,
@@ -72,14 +94,14 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
    * {@code core.product.created_by_user_id}), ne parametr zvenčí. Bez tohohle JOINu by číslo
    * ve výpisu neodpovídalo skutečnému prahu, který používá {@code promoteIfConfirmed}.
    */
-  @Query(value = "SELECT po.product_id AS id, count(DISTINCT COALESCE(po.submitter_id::text, po.id::text)) AS cnt "
+  @Query(value = "SELECT po.product_id AS id, count(DISTINCT COALESCE(po.submitter_id::text, 'anon:' || core.day_utc(po.observed_at)::text)) AS cnt "
       + "FROM core.price_observation po JOIN core.product p ON p.id = po.product_id "
       + "WHERE po.product_id IN (:productIds) "
       + "AND po.submitter_id IS DISTINCT FROM p.created_by_user_id GROUP BY po.product_id", nativeQuery = true)
   List<ContributorCount> countDistinctProductContributorsExcludingBatch(@Param("productIds") Collection<Long> productIds);
 
   /** Dávková obdoba {@link #countDistinctContributorsExcluding} — viz {@link #countDistinctProductContributorsExcludingBatch}. */
-  @Query(value = "SELECT po.store_id AS id, count(DISTINCT COALESCE(po.submitter_id::text, po.id::text)) AS cnt "
+  @Query(value = "SELECT po.store_id AS id, count(DISTINCT COALESCE(po.submitter_id::text, 'anon:' || core.day_utc(po.observed_at)::text)) AS cnt "
       + "FROM core.price_observation po JOIN core.store s ON s.id = po.store_id "
       + "WHERE po.store_id IN (:storeIds) "
       + "AND po.submitter_id IS DISTINCT FROM s.created_by_user_id GROUP BY po.store_id", nativeQuery = true)

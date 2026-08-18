@@ -1,0 +1,17 @@
+{
+  "storeLabel": "Obchod",
+  "priceKindLabel": "Druh ceny",
+  "priceAmountLabel": "Cena ({{currency}})",
+  "quantityBasisLabel": "Cena je uvedená",
+  "observedAtLabel": "Kdy jsi cenu viděl(a) (volitelné — jinak teď)",
+  "pricesLabel": "Ceny",
+  "pricesHint": "U cenovky bývá běžná cena i cena s věrnostní kartou — zapiš obě najednou.",
+  "addPrice": "Přidat další cenu",
+  "removePrice": "Odebrat cenu",
+  "multibuyQtyLabel": "Počet kusů",
+  "multibuyTotalLabel": "Cena za balíček ({{currency}})",
+  "multibuyHint": "Např. „3 kusy za 50 Kč“ — zadej počet kusů a celkovou cenu.",
+  "submit": "Zapsat cenu",
+  "submitSuccess": "Cena byla zapsána, díky!",
+  "submitFailed": "Zápis se nepovedl, zkus to prosím znovu."
+}

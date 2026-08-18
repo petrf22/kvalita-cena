@@ -68,9 +68,19 @@ public enum ErrorCode {
   PHOTO_RESOLUTION_TOO_HIGH("error.photo.resolutionTooHigh"),
 
   // --- cenové observace
-  // uq_price_observation_submitter_per_day — 1 záznam/uživatel/produkt/obchod/den (hrubá síla
-  // na spamování nefunguje, docs/reputace.md), viz PriceObservationService.submit().
+  // uq_price_observation_submitter_kind_per_day — 1 záznam/uživatel/produkt/obchod/druh ceny/den
+  // (hrubá síla na spamování nefunguje, docs/reputace.md), viz PriceObservationService.submit().
+  // Používá se výhradně jako fallback ze závodu dvou souběžných requestů (DataIntegrityViolation-
+  // Exception) — druh ceny tam už nejde zjistit, transakce je abortovaná. Předem zjistitelnou
+  // kolizi hlásí OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY, s druhem ceny v {0}.
   OBSERVATION_ALREADY_SUBMITTED_TODAY("error.observation.alreadySubmittedToday"),
+  OBSERVATION_PRICES_REQUIRED("error.observation.pricesRequired"),
+  // {0} = PriceKind — duplicita uvnitř jedné dávky, uživatel má opravit formulář hned.
+  OBSERVATION_DUPLICATE_PRICE_KIND("error.observation.duplicatePriceKind"),
+  // {0} = PriceKind — tenhle druh ceny už dnes u tohohle zboží/obchodu zapsal, má přijít zítra.
+  OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY("error.observation.priceKindAlreadySubmittedToday"),
+  // {0} = PriceKind — chybí částka (nebo u MULTIBUY qty/total).
+  OBSERVATION_PRICE_INCOMPLETE("error.observation.priceIncomplete"),
 
   // --- kvalita
   QUALITY_REQUIRES_LOGIN("error.quality.requiresLogin"),

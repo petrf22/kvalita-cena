@@ -128,7 +128,7 @@ type Query {
 
   """
   Zobrazovací měny a stav kurzovního lístku ČNB (docs/lokalizace.md, "Kurzovní lístek a
-  zobrazovací měna"). USD je jen referenční — cenu v ní zapsat nejde (SubmitObservationInput
+  zobrazovací měna"). USD je jen referenční — cenu v ní zapsat nejde (SubmitObservationsInput
   ji nepřijímá), je to výhradně přepočet pro zobrazení napříč zeměmi.
   """
   fxInfo: FxInfo!
@@ -159,8 +159,14 @@ type Query {
 }
 
 type Mutation {
-  "Zápis cenového záznamu — funguje i anonymně (nižší váha, viz docs/reputace.md)."
-  submitObservation(input: SubmitObservationInput!): PriceObservation!
+  """
+  Zápis jedné nebo víc cen TÉHOŽ zboží v TÉMŽE obchodě — u regálu je běžně cena běžná
+  i klubová, případně množstevní sleva, a všechny se zapisují jedním odesláním. Jedna
+  transakce: kolize jediného druhu ceny s dnešním zápisem shodí celou dávku
+  (uq_price_observation_submitter_kind_per_day, docs/reputace.md). Funguje i anonymně
+  (nižší váha, viz docs/reputace.md). Pořadí výsledku odpovídá pořadí `prices` na vstupu.
+  """
+  submitObservations(input: SubmitObservationsInput!): [PriceObservation!]!
 
   """
   Známka kvality jako ve škole: 1 nejlepší … 5 nejhorší. Jeden záznam na uživatele a produkt
@@ -909,15 +915,16 @@ type PriceObservation {
   status: ObservationStatus!
 }
 
-input SubmitObservationInput {
+"""
+Hlavička dávky: co, kde a kdy. Tyhle údaje jsou z podstaty společné všem cenám z jednoho
+regálu — kdyby byly per řádek, šlo by poslat REGULAR v CZK a CLUB_CARD v EUR pro tutéž
+cenovku (docs/lokalizace.md, "Multi-měna") nebo dva různé produkty v jedné "dávce", u které
+by pak nedávalo smysl, co se má přepočítat (jedna položka agg.recompute_queue).
+"""
+input SubmitObservationsInput {
   productId: ID!
   storeId: ID!
-  priceAmount: BigDecimal!
-  priceKind: PriceKind = REGULAR
   quantityBasis: QuantityBasis = PACKAGE
-  "Povinné jen pro MULTIBUY (např. '3 za 50')."
-  multibuyQty: Int
-  multibuyTotal: BigDecimal
   "Kdy uživatel cenu viděl — chybí-li, použije se teď (docs/datovy-model.md, observed_at ≠ created_at)."
   observedAt: DateTime
   """
@@ -926,6 +933,22 @@ input SubmitObservationInput {
   server hodnotu validuje proti podporovaným měnám, neplatnou tiše ignoruje a dosadí zemi obchodu.
   """
   currency: String
+  """
+  1–5 cen z jednoho regálu. Druh ceny se v seznamu NESMÍ opakovat (nejvýš jedna cena každého
+  druhu na uživatele/produkt/obchod/den) — duplicita shodí celou dávku
+  s OBSERVATION_DUPLICATE_PRICE_KIND.
+  """
+  prices: [ObservationPriceInput!]!
+}
+
+"Jeden řádek formuláře: druh ceny + částka. MULTIBUY má místo priceAmount dvojici qty/total."
+input ObservationPriceInput {
+  priceKind: PriceKind! = REGULAR
+  "Povinná pro všechny druhy kromě MULTIBUY, kde se cena odvodí z multibuyTotal."
+  priceAmount: BigDecimal
+  "Povinné pro MULTIBUY (např. „3 za 50“)."
+  multibuyQty: Int
+  multibuyTotal: BigDecimal
 }
 
 """
@@ -972,6 +995,10 @@ enum ErrorCode {
   PHOTO_UNREADABLE
   PHOTO_RESOLUTION_TOO_HIGH
   OBSERVATION_ALREADY_SUBMITTED_TODAY
+  OBSERVATION_PRICES_REQUIRED
+  OBSERVATION_DUPLICATE_PRICE_KIND
+  OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY
+  OBSERVATION_PRICE_INCOMPLETE
   QUALITY_REQUIRES_LOGIN
   QUALITY_GRADE_OUT_OF_RANGE
   FLAG_REQUIRES_LOGIN

@@ -89,7 +89,11 @@
     "UOM_MISMATCH": "Jednostka {{p0}} nie pasuje do typu {{p1}}",
     "VALIDATION_FAILED": "Podane dane są nieprawidłowe",
     "CLIENT_VERSION_TOO_OLD": "Twoja wersja aplikacji nie jest już obsługiwana, zainstaluj najnowszą wersję",
-    "OBSERVATION_ALREADY_SUBMITTED_TODAY": "Cenę tego produktu w tym sklepie już dziś zgłosiłeś/aś. Spróbuj ponownie jutro."
+    "OBSERVATION_ALREADY_SUBMITTED_TODAY": "Cenę tego produktu w tym sklepie już dziś zgłosiłeś/aś. Spróbuj ponownie jutro.",
+    "OBSERVATION_PRICES_REQUIRED": "Podaj przynajmniej jedną cenę.",
+    "OBSERVATION_DUPLICATE_PRICE_KIND": "Rodzaj ceny {{p0}} masz na liście dwukrotnie.",
+    "OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY": "Cenę typu {{p0}} dla tego produktu w tym sklepie już dziś zgłosiłeś/aś. Spróbuj ponownie jutro.",
+    "OBSERVATION_PRICE_INCOMPLETE": "Przy rodzaju ceny {{p0}} brakuje kwoty."
   },
   "enum": {
     "priceKind": {

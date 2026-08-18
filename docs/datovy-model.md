@@ -61,7 +61,13 @@ server. Agregace a grafy pracují s `observed_at`.
 **`price_kind` je součástí klíče každého agregátu.** `REGULAR`, `PROMO`, `CLUB_CARD`,
 `CLEARANCE`, `MULTIBUY` se nikdy nemíchají do jedné řady — klubová cena zvlášť je pro
 misi projektu podstatná: kdo nemá věrnostní kartu, platí jinou cenu, a přesně to má být
-vidět, ne zprůměrované pryč.
+vidět, ne zprůměrované pryč. **Unikátnost observace zahrnuje druh ceny** — u regálu bývá
+cenovka dvojitá i trojitá (běžná/klubová/množstevní), takže `uq_price_observation_
+submitter_kind_per_day` dovoluje nejvýš jeden záznam na uživatele/produkt/obchod/den/druh
+ceny, ne jen na den. Ceny z jedné cenovky se zapisují jedním voláním
+`submitObservations` (`SubmitObservationsInput.prices`) v jedné transakci — kolize
+jediného druhu ceny shodí **celou dávku** (uživatel má jeden formulář, ne pět opakovaných
+zápisů), a celá dávka dělá jen jednu položku `agg.recompute_queue`.
 
 ### Vnitroobchodní kódy vs. globální EAN
 
@@ -79,8 +85,8 @@ prostý sloupcový `unique: true` — potřebuje `COALESCE`, protože globální
 
 ### Past: `date_trunc` není IMMUTABLE
 
-Unikátní index „1 záznam / uživatel / produkt / obchod / den"
-(`uq_price_observation_submitter_per_day`) potřeboval `date_trunc('day', observed_at)` ve
+Unikátní index „1 záznam / uživatel / produkt / obchod / den / druh ceny"
+(`uq_price_observation_submitter_kind_per_day`) potřeboval `date_trunc('day', observed_at)` ve
 výrazu indexu. `date_trunc(text, timestamptz)` je ale jen `STABLE` (výsledek závisí na
 timezone session), ne `IMMUTABLE`, takže ho Postgres do indexu odmítne
 (`functions in index expression must be marked IMMUTABLE`). Řešení: vlastní immutable
@@ -108,7 +114,7 @@ je přidat nullable `day` do fronty (`NULL` = přepočítat vše), ne to řešit
 scan, jednotky milisekund i při statisících záznamů.
 
 **Den v `agg.price_daily.day` = `core.day_utc(observed_at)`**, tatáž funkce jako u
-`uq_price_observation_submitter_per_day` (viz níže) — záměrně, aby „den" znamenal v celé
+`uq_price_observation_submitter_kind_per_day` (viz níže) — záměrně, aby „den" znamenal v celé
 databázi jednu a tutéž věc. Důsledek: cena zapsaná po půlnoci UTC (např. 01:30 SELČ v létě)
 spadne do předchozího dne podle SELČ. Pro graf je to kosmetika, ne chyba; kdyby se to
 v budoucnu mělo přepnout na den podle pražského času, je to jedna nová `core.day_prague()`

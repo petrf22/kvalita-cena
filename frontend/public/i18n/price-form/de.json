@@ -1,0 +1,17 @@
+{
+  "storeLabel": "Geschäft",
+  "priceKindLabel": "Preisart",
+  "priceAmountLabel": "Preis ({{currency}})",
+  "quantityBasisLabel": "Der Preis gilt",
+  "observedAtLabel": "Wann du den Preis gesehen hast (optional — sonst jetzt)",
+  "pricesLabel": "Preise",
+  "pricesHint": "Am Preisschild stehen oft ein regulärer Preis und ein Preis mit Kundenkarte nebeneinander — trag beide auf einmal ein.",
+  "addPrice": "Weiteren Preis hinzufügen",
+  "removePrice": "Preis entfernen",
+  "multibuyQtyLabel": "Anzahl",
+  "multibuyTotalLabel": "Gesamtpreis ({{currency}})",
+  "multibuyHint": "Z. B. „3 Stück für 5 €“ — gib die Anzahl und den Gesamtpreis ein.",
+  "submit": "Preis speichern",
+  "submitSuccess": "Der Preis wurde gespeichert, danke!",
+  "submitFailed": "Das Speichern ist fehlgeschlagen, bitte versuch es erneut."
+}

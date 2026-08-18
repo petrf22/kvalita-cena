@@ -12,13 +12,5 @@
   "newProductTitle": "New product",
   "genericTag": "(generic item)",
   "changeProduct": "Change product",
-  "submitSuccess": "Price submitted, thanks!",
-  "storeLabel": "Store",
-  "priceKindLabel": "Price type",
-  "quantityBasisLabel": "Price is stated",
-  "priceAmountLabel": "Price ({{currency}})",
-  "observedAtLabel": "When did you see the price (optional — otherwise now)",
-  "submit": "Submit price",
-  "searchFailed": "Search failed, please try again.",
-  "submitFailed": "Submission failed, please try again."
+  "searchFailed": "Search failed, please try again."
 }

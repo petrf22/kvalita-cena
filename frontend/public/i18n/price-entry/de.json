@@ -12,13 +12,5 @@
   "newProductTitle": "Neue Ware",
   "genericTag": "(generische Position)",
   "changeProduct": "Ware ändern",
-  "submitSuccess": "Der Preis wurde gespeichert, danke!",
-  "storeLabel": "Geschäft",
-  "priceKindLabel": "Preisart",
-  "quantityBasisLabel": "Der Preis gilt",
-  "priceAmountLabel": "Preis ({{currency}})",
-  "observedAtLabel": "Wann du den Preis gesehen hast (optional — sonst jetzt)",
-  "submit": "Preis speichern",
-  "searchFailed": "Die Suche ist fehlgeschlagen, bitte versuch es erneut.",
-  "submitFailed": "Das Speichern ist fehlgeschlagen, bitte versuch es erneut."
+  "searchFailed": "Die Suche ist fehlgeschlagen, bitte versuch es erneut."
 }

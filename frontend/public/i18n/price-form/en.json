@@ -1,0 +1,17 @@
+{
+  "storeLabel": "Store",
+  "priceKindLabel": "Price type",
+  "priceAmountLabel": "Price ({{currency}})",
+  "quantityBasisLabel": "Price is stated",
+  "observedAtLabel": "When did you see the price (optional — otherwise now)",
+  "pricesLabel": "Prices",
+  "pricesHint": "Price tags often show a regular price and a loyalty-card price side by side — enter both at once.",
+  "addPrice": "Add another price",
+  "removePrice": "Remove price",
+  "multibuyQtyLabel": "Quantity",
+  "multibuyTotalLabel": "Total price ({{currency}})",
+  "multibuyHint": "E.g. \"3 for 50\" — enter the quantity and the total price.",
+  "submit": "Submit price",
+  "submitSuccess": "Price submitted, thanks!",
+  "submitFailed": "Submission failed, please try again."
+}

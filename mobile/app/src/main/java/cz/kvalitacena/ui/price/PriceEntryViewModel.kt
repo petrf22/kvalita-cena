@@ -9,7 +9,7 @@ import cz.kvalitacena.R
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.Store
-import cz.kvalitacena.network.SubmitObservationInput
+import cz.kvalitacena.network.SubmitObservationsInput
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.storeLabel
 import cz.kvalitacena.ui.common.toUiText
@@ -51,8 +51,12 @@ class PriceEntryViewModel(
   var locationError by mutableStateOf<UiText?>(null)
     private set
 
-  var priceAmount by mutableStateOf("")
-  var priceKind by mutableStateOf("REGULAR")
+  // Seznam řádků "(druh ceny, částka)" — u regálu bývá cena napsaná i dvakrát/třikrát (běžná,
+  // klubová, množstevní), viz PriceRow. Vždy aspoň jeden řádek (removePriceRow ho neodebere).
+  private var nextRowId = 1L
+  var priceRows by mutableStateOf(listOf(PriceRow(id = nextRowId++)))
+    private set
+
   // Jen pro váhové zboží (product.isVariableWeight) — jinak zůstává PACKAGE, viz backend
   // PriceObservationService (PER_KG/PER_L znamená "cena na cedulce je už za kg/l").
   var quantityBasis by mutableStateOf("PACKAGE")
@@ -63,6 +67,23 @@ class PriceEntryViewModel(
     private set
   var submitError by mutableStateOf<UiText?>(null)
     private set
+
+  val canSubmit: Boolean
+    get() = selectedStore != null && arePriceRowsValid(priceRows) && !submitting
+
+  fun addPriceRow() {
+    priceRows = priceRows + PriceRow(id = nextRowId++, priceKind = firstAvailablePriceKind(priceRows))
+  }
+
+  /** Nikdy neodebere poslední řádek — formulář musí vždycky mít aspoň jednu cenu k zápisu. */
+  fun removePriceRow(id: Long) {
+    if (priceRows.size <= 1) return
+    priceRows = priceRows.filter { it.id != id }
+  }
+
+  fun updatePriceRow(id: Long, transform: (PriceRow) -> PriceRow) {
+    priceRows = priceRows.map { if (it.id == id) transform(it) else it }
+  }
 
   init {
     loadProduct()
@@ -160,20 +181,19 @@ class PriceEntryViewModel(
   fun submit() {
     val currentProduct = product ?: return
     val storeId = selectedStore?.id ?: return
-    val amount = priceAmount.replace(',', '.').toDoubleOrNull() ?: return
+    if (!arePriceRowsValid(priceRows)) return
 
     submitting = true
     submitError = null
     submitSuccess = false
     viewModelScope.launch {
       try {
-        graphQlClient.submitObservation(
-          SubmitObservationInput(
+        graphQlClient.submitObservations(
+          SubmitObservationsInput(
             productId = currentProduct.id,
             storeId = storeId,
-            priceAmount = amount,
-            priceKind = priceKind,
             quantityBasis = if (currentProduct.isVariableWeight) quantityBasis else "PACKAGE",
+            prices = toObservationPriceInputs(priceRows),
           ),
         )
         // Obrazovka po úspěchu mizí (návrat na sken), takže není potřeba dohánět stav

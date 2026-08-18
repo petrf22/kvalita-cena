@@ -89,7 +89,11 @@
     "UOM_MISMATCH": "Die Einheit {{p0}} entspricht nicht dem Typ {{p1}}",
     "VALIDATION_FAILED": "Die eingegebenen Daten sind ungültig",
     "CLIENT_VERSION_TOO_OLD": "Deine App-Version wird nicht mehr unterstützt, bitte installiere die aktuelle Version",
-    "OBSERVATION_ALREADY_SUBMITTED_TODAY": "Du hast den Preis für dieses Produkt in diesem Geschäft heute schon erfasst. Bitte versuche es morgen erneut."
+    "OBSERVATION_ALREADY_SUBMITTED_TODAY": "Du hast den Preis für dieses Produkt in diesem Geschäft heute schon erfasst. Bitte versuche es morgen erneut.",
+    "OBSERVATION_PRICES_REQUIRED": "Gib mindestens einen Preis ein.",
+    "OBSERVATION_DUPLICATE_PRICE_KIND": "Die Preisart {{p0}} steht zweimal in der Liste.",
+    "OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY": "Du hast den Preis der Art {{p0}} für dieses Produkt in diesem Geschäft heute schon erfasst. Bitte versuche es morgen erneut.",
+    "OBSERVATION_PRICE_INCOMPLETE": "Bei der Preisart {{p0}} fehlt der Betrag."
   },
   "enum": {
     "priceKind": {

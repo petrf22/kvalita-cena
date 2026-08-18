@@ -142,18 +142,25 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.ValidationFailed]: 'errors.VALIDATION_FAILED',
   [ErrorCode.ClientVersionTooOld]: 'errors.CLIENT_VERSION_TOO_OLD',
   [ErrorCode.ObservationAlreadySubmittedToday]: 'errors.OBSERVATION_ALREADY_SUBMITTED_TODAY',
+  [ErrorCode.ObservationPricesRequired]: 'errors.OBSERVATION_PRICES_REQUIRED',
+  [ErrorCode.ObservationDuplicatePriceKind]: 'errors.OBSERVATION_DUPLICATE_PRICE_KIND',
+  [ErrorCode.ObservationPriceKindAlreadySubmittedToday]:
+    'errors.OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY',
+  [ErrorCode.ObservationPriceIncomplete]: 'errors.OBSERVATION_PRICE_INCOMPLETE',
 };
 
 /**
- * Druhy ceny nabízené ve formuláři zápisu. MULTIBUY tu schválně chybí — schéma pro něj
- * vyžaduje i multibuyQty/multibuyTotal (docs/datovy-model.md) a formuláře je zatím neumí
- * zadat (etapa 2/3, viz CLAUDE.md).
+ * Druhy ceny nabízené ve formuláři zápisu — všech pět hodnot `PriceKind`, včetně MULTIBUY
+ * (množstevní sleva, `shared/price-entry-form.ts` umí i její pole navíc `multibuyQty`/
+ * `multibuyTotal`, docs/datovy-model.md). `availablePriceKinds` (`shared/price-rows.ts`) z týhle
+ * množiny navíc vyloučí druhy použité v jiných řádcích jedné dávky.
  */
 export const SELECTABLE_PRICE_KINDS: readonly PriceKind[] = [
   PriceKind.Regular,
   PriceKind.Promo,
   PriceKind.ClubCard,
   PriceKind.Clearance,
+  PriceKind.Multibuy,
 ];
 
 /** Druhy uvedení ceny nabízené pro váhové zboží (isVariableWeight) — bez PACKAGE, to je výchozí pro ostatní. */

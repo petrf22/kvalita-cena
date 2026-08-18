@@ -1,0 +1,41 @@
+# 01-observation-price-kind-unique.yaml — jeden regál = víc cen (docs/datovy-model.md,
+# "core.price_observation je jádro aplikace"). U cenovky bývá běžná cena a hned vedle cena
+# s věrnostní kartou, případně množstevní sleva; uq_price_observation_submitter_per_day ale
+# dovoloval JEDEN záznam na uživatele/produkt/obchod/den, takže druhá cena z téhož regálu
+# spadla na "cenu jsi dnes už zapsal". price_kind je přitom součástí PK obou agregátů
+# (agg.price_current/agg.price_daily, 2026-08-09/01-agg-currency.yaml) — unikátní index na
+# syrových observacích byl proti nim o jeden sloupec pozadu.
+#
+# Nový index je STRIKTNĚ SLABŠÍ než starý (klíč navíc o sloupec), na existujících datech
+# tedy nemůže selhat: co prošlo starým, projde i novým. Rollback opačně slabší NENÍ a spadne,
+# jakmile v tabulce bude první dávka dvou druhů ceny od téhož uživatele v jeden den — vědomé,
+# rollback patří k návratu na starou verzi appky, která takový stav sama nevyrobí.
+#
+# Pořadí sloupců: price_kind AŽ ZA core.day_utc(observed_at), aby prefix
+# (product_id, store_id, submitter_id, day) zůstal shodný se starým indexem — pre-kontrola
+# v PriceObservationService ("které druhy ceny už dnes tenhle uživatel zapsal") je tak seek.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-18-01-observation-unique-per-price-kind
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              DROP INDEX IF EXISTS core.uq_price_observation_submitter_per_day;
+
+              -- 1 záznam / uživatel / produkt / obchod / DRUH CENY / den (docs/reputace.md,
+              -- "Obrana proti manipulaci obchodníků a řetězců") — strop je tedy 5 řádků
+              -- denně (počet hodnot PriceKind), ne 1, ale pořád jen jedna cena od jednoho
+              -- člověka na jednu cenovku.
+              CREATE UNIQUE INDEX uq_price_observation_submitter_kind_per_day
+                ON core.price_observation
+                (product_id, store_id, submitter_id, core.day_utc(observed_at), price_kind)
+                WHERE submitter_id IS NOT NULL;
+      rollback:
+        - sql:
+            sql: |
+              DROP INDEX IF EXISTS core.uq_price_observation_submitter_kind_per_day;
+
+              CREATE UNIQUE INDEX uq_price_observation_submitter_per_day
+                ON core.price_observation (product_id, store_id, submitter_id, core.day_utc(observed_at))
+                WHERE submitter_id IS NOT NULL;

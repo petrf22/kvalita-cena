@@ -137,7 +137,11 @@ Všechny signály vedou na neveřejný `user_flag`, nikdy na veřejné označen�
 
 ## Obrana proti manipulaci obchodníků a řetězců
 
-1. Nejvýš 1 záznam / účet / produkt / obchod / den (`uq_price_observation_submitter_per_day`).
+1. Nejvýš 1 záznam / účet / produkt / obchod / den **na druh ceny** (`uq_price_observation_
+   submitter_kind_per_day`) — strop je tedy nově 5 řádků denně na jednu dvojici produkt/obchod
+   (počet hodnot `PriceKind`), protože u regálu bývá cenovka dvojitá/trojitá (běžná + klubová +
+   množstevní) a appka je zapisuje jedním `submitObservations`; pořád ale platí „jedna cena
+   JEDNOHO druhu od jednoho člověka na jednu cenovku a den".
 2. Strop 30 % váhy jedné skupiny důvěry v agregátu (přebytek se renormalizuje).
 3. Účty s rolí dodavatele/řetězce nesmí zadávat komunitní observace ve vlastních kategoriích.
 4. **Legitimní kanál místo podvádění**: oficiální ceny přes `official_price_feed`, zobrazené
@@ -188,7 +192,18 @@ je to jeho etapa-1 aproximace, ne nezávisle vymyšlený práh. Až přibude pln
 **`observationCount` je čítač na účtu (`auth.app_user.observation_count`), ne `COUNT(*)` nad
 `core.price_observation`** — ze stejného důvodu jako čítače s útlumem v úvodu dokumentu:
 `submitter_id` se po 180 dnech nuluje (`soukromi.md`), takže počítání přes historii by
-zavedenému uživateli po pauze tiše sebralo důvěru, kterou si dřív vybudoval.
+zavedenému uživateli po pauze tiše sebralo důvěru, kterou si dřív vybudoval. Roste **+1 za
+zápis (dávku)**, ne za řádek — `submitObservations` může uložit až 5 cen z jedné cenovky
+jedním voláním, takže počítat po řádcích by práh `min-observations = 5` šlo naplnit jediným
+odesláním u jednoho regálu místo pěti nezávislých příspěvků.
+
+Ze stejného důvodu je zpřísněné i počítání anonymních potvrzení
+(`countDistinctContributorsExcluding`/`countDistinctProductContributorsExcluding` a jejich
+`…Batch` varianty, `PriceObservationRepository`): dřív se každá anonymní observace počítala
+jako samostatný přispěvatel (žádný `submitter_id` k odlišení), po zavedení dávky by jedno
+anonymní odeslání tří druhů ceny odemklo DRAFT zboží/PENDING obchod jedním kliknutím. Nově se
+všechny anonymní zápisy JEDNOHO DNE počítají nejvýš jako jedno potvrzení (`COALESCE(submitter_id,
+'anon:' || core.day_utc(observed_at))`).
 
 Efekt prahu:
 - **Nad prahem** — nový záznam je hned vidět všem, se štítkem "neověřeno" (`verified_at`

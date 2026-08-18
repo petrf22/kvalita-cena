@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -59,8 +61,11 @@ import java.util.Currency
 import kotlinx.coroutines.launch
 
 // Čísla a nejvýš jedna desetinná čárka nebo tečka — obojí se dál akceptuje shodně
-// (PriceEntryViewModel.submit() převádí čárku na tečku před parsováním).
+// (PriceRowValidation.parseAmount převádí čárku na tečku před parsováním).
 private val PRICE_INPUT_PATTERN = Regex("^\\d*[.,]?\\d*$")
+
+// Jen celé číslo — počet kusů u MULTIBUY ("3 za 50").
+private val QUANTITY_INPUT_PATTERN = Regex("^\\d*$")
 
 private val QUANTITY_BASIS_LABEL_RES = mapOf(
   "PACKAGE" to R.string.quantity_basis_package,
@@ -68,6 +73,10 @@ private val QUANTITY_BASIS_LABEL_RES = mapOf(
   "PER_L" to R.string.quantity_basis_per_l,
   "PER_PIECE" to R.string.quantity_basis_per_piece,
 )
+
+/** Nabídka pro váhové zboží (isVariableWeight) — bez PACKAGE, ten je výchozí jen pro ostatní
+ *  zboží a u váhového nedává smysl (cena na cedulce je vždy za kg/l/kus). Web: shared/enum-labels.ts. */
+private val SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES = listOf("PER_KG", "PER_L", "PER_PIECE")
 
 /**
  * Obrazovky 2–4 flow "sken → cena → výběr provozovny → odeslání" (viz plán projektu). Vstupem
@@ -253,11 +262,12 @@ fun PriceEntryScreen(
         )
         Gap()
 
-        PriceKindDropdown(selected = viewModel.priceKind, onSelect = { viewModel.priceKind = it })
-        Gap()
-
         if (product.isVariableWeight) {
-          QuantityBasisDropdown(selected = viewModel.quantityBasis, onSelect = { viewModel.quantityBasis = it })
+          QuantityBasisDropdown(
+            selected = viewModel.quantityBasis,
+            options = SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES,
+            onSelect = { viewModel.quantityBasis = it },
+          )
           Gap()
         }
 
@@ -266,21 +276,39 @@ fun PriceEntryScreen(
         val currencySymbol = remember(viewModel.selectedStore?.country) {
           Currency.getInstance(currencyForCountry(viewModel.selectedStore?.country)).symbol
         }
-        SingleLineTextField(
-          value = viewModel.priceAmount,
-          onValueChange = { input ->
-            if (input.matches(PRICE_INPUT_PATTERN)) viewModel.priceAmount = input
-          },
-          label = stringResource(R.string.price_entry_price_label, currencySymbol),
-          // Desetinná čárka i tečka se přijímají obě — viz PriceEntryViewModel.submit().
-          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
-          modifier = Modifier.fillMaxWidth(),
+
+        Text(stringResource(R.string.price_entry_prices_label), style = MaterialTheme.typography.titleSmall)
+        Text(
+          stringResource(R.string.price_entry_prices_hint),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Gap()
+
+        viewModel.priceRows.forEach { row ->
+          PriceRowFields(
+            row = row,
+            availableKinds = availablePriceKinds(viewModel.priceRows, row.priceKind),
+            currencySymbol = currencySymbol,
+            removable = viewModel.priceRows.size > 1,
+            onChange = { transform -> viewModel.updatePriceRow(row.id, transform) },
+            onRemove = { viewModel.removePriceRow(row.id) },
+          )
+          Gap()
+        }
+
+        OutlinedButton(
+          onClick = { viewModel.addPriceRow() },
+          enabled = viewModel.priceRows.size < SELECTABLE_PRICE_KINDS.size,
+          modifier = Modifier.fillMaxWidth(),
+        ) {
+          Text(stringResource(R.string.price_entry_add_price))
+        }
         Gap()
 
         Button(
           onClick = { viewModel.submit() },
-          enabled = viewModel.selectedStore != null && viewModel.priceAmount.isNotBlank() && !viewModel.submitting,
+          enabled = viewModel.canSubmit,
           modifier = Modifier.fillMaxWidth(),
         ) {
           if (viewModel.submitting) CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -304,7 +332,7 @@ fun PriceEntryScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PriceKindDropdown(selected: String, onSelect: (String) -> Unit) {
+private fun PriceKindDropdown(selected: String, options: List<String>, onSelect: (String) -> Unit) {
   var expanded by remember { mutableStateOf(false) }
 
   ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
@@ -317,7 +345,7 @@ private fun PriceKindDropdown(selected: String, onSelect: (String) -> Unit) {
       modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
     )
     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-      SELECTABLE_PRICE_KINDS.forEach { value ->
+      options.forEach { value ->
         DropdownMenuItem(
           text = { Text(priceKindLabel(value)) },
           onClick = {
@@ -333,7 +361,7 @@ private fun PriceKindDropdown(selected: String, onSelect: (String) -> Unit) {
 /** Jen pro váhové zboží (product.isVariableWeight) — cena na cedulce bývá za kg/l, ne za balení. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun QuantityBasisDropdown(selected: String, onSelect: (String) -> Unit) {
+private fun QuantityBasisDropdown(selected: String, options: List<String>, onSelect: (String) -> Unit) {
   var expanded by remember { mutableStateOf(false) }
 
   ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
@@ -346,15 +374,78 @@ private fun QuantityBasisDropdown(selected: String, onSelect: (String) -> Unit) 
       modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
     )
     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-      QUANTITY_BASIS_LABEL_RES.forEach { (value, labelRes) ->
+      options.forEach { value ->
         DropdownMenuItem(
-          text = { Text(stringResource(labelRes)) },
+          text = { Text(QUANTITY_BASIS_LABEL_RES[value]?.let { stringResource(it) } ?: value) },
           onClick = {
             onSelect(value)
             expanded = false
           },
         )
       }
+    }
+  }
+}
+
+/** Jeden řádek "(druh ceny, částka)" — u MULTIBUY se místo částky zadává počet kusů + celková
+ *  cena (server si jednotkovou cenu spočítá sám, viz PriceObservationService). */
+@Composable
+private fun PriceRowFields(
+  row: PriceRow,
+  availableKinds: List<String>,
+  currencySymbol: String,
+  removable: Boolean,
+  onChange: ((PriceRow) -> PriceRow) -> Unit,
+  onRemove: () -> Unit,
+) {
+  Column {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      androidx.compose.foundation.layout.Box(modifier = Modifier.weight(1f)) {
+        PriceKindDropdown(
+          selected = row.priceKind,
+          options = availableKinds,
+          onSelect = { kind ->
+            onChange { it.copy(priceKind = kind, priceAmount = "", multibuyQty = "", multibuyTotal = "") }
+          },
+        )
+      }
+      if (removable) {
+        TextButton(onClick = onRemove) {
+          Text(stringResource(R.string.price_entry_remove_price))
+        }
+      }
+    }
+    Gap()
+
+    if (row.priceKind == "MULTIBUY") {
+      SingleLineTextField(
+        value = row.multibuyQty,
+        onValueChange = { input -> if (input.matches(QUANTITY_INPUT_PATTERN)) onChange { it.copy(multibuyQty = input) } },
+        label = stringResource(R.string.price_entry_multibuy_qty_label),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
+        modifier = Modifier.fillMaxWidth(),
+      )
+      Gap()
+      SingleLineTextField(
+        value = row.multibuyTotal,
+        onValueChange = { input -> if (input.matches(PRICE_INPUT_PATTERN)) onChange { it.copy(multibuyTotal = input) } },
+        label = stringResource(R.string.price_entry_multibuy_total_label, currencySymbol),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+        modifier = Modifier.fillMaxWidth(),
+      )
+      Text(
+        stringResource(R.string.price_entry_multibuy_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+    } else {
+      SingleLineTextField(
+        value = row.priceAmount,
+        onValueChange = { input -> if (input.matches(PRICE_INPUT_PATTERN)) onChange { it.copy(priceAmount = input) } },
+        label = stringResource(R.string.price_entry_price_label, currencySymbol),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+        modifier = Modifier.fillMaxWidth(),
+      )
     }
   }
 }

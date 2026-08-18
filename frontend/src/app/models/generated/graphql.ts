@@ -69,6 +69,16 @@ export type NetContentUom =
   | 'ML'
   | 'PCS';
 
+/** Jeden řádek formuláře: druh ceny + částka. MULTIBUY má místo priceAmount dvojici qty/total. */
+export type ObservationPriceInput = {
+  /** Povinné pro MULTIBUY (např. „3 za 50“). */
+  multibuyQty?: number | null | undefined;
+  multibuyTotal?: number | null | undefined;
+  /** Povinná pro všechny druhy kromě MULTIBUY, kde se cena odvodí z multibuyTotal. */
+  priceAmount?: number | null | undefined;
+  priceKind?: PriceKind;
+};
+
 export type ObservationStatus =
   | 'ACTIVE'
   | 'DISPUTED'
@@ -148,20 +158,27 @@ export type RecordType =
   | 'PRODUCT'
   | 'STORE';
 
-export type SubmitObservationInput = {
+/**
+ * Hlavička dávky: co, kde a kdy. Tyhle údaje jsou z podstaty společné všem cenám z jednoho
+ * regálu — kdyby byly per řádek, šlo by poslat REGULAR v CZK a CLUB_CARD v EUR pro tutéž
+ * cenovku (docs/lokalizace.md, "Multi-měna") nebo dva různé produkty v jedné "dávce", u které
+ * by pak nedávalo smysl, co se má přepočítat (jedna položka agg.recompute_queue).
+ */
+export type SubmitObservationsInput = {
   /**
    * ISO-4217 kód měny — chybí-li, dosadí se podle země obchodu (docs/lokalizace.md). Volitelný
    * jen kvůli příhraničním prodejnám, které občas cení v jiné měně, než je země provozovny;
    * server hodnotu validuje proti podporovaným měnám, neplatnou tiše ignoruje a dosadí zemi obchodu.
    */
   currency?: string | null | undefined;
-  /** Povinné jen pro MULTIBUY (např. '3 za 50'). */
-  multibuyQty?: number | null | undefined;
-  multibuyTotal?: number | null | undefined;
   /** Kdy uživatel cenu viděl — chybí-li, použije se teď (docs/datovy-model.md, observed_at ≠ created_at). */
   observedAt?: string | null | undefined;
-  priceAmount: number;
-  priceKind?: PriceKind | null | undefined;
+  /**
+   * 1–5 cen z jednoho regálu. Druh ceny se v seznamu NESMÍ opakovat (nejvýš jedna cena každého
+   * druhu na uživatele/produkt/obchod/den) — duplicita shodí celou dávku
+   * s OBSERVATION_DUPLICATE_PRICE_KIND.
+   */
+  prices: Array<ObservationPriceInput>;
   productId: string;
   quantityBasis?: QuantityBasis | null | undefined;
   storeId: string;
@@ -400,12 +417,12 @@ export type RateProductMutationVariables = Exact<{
 
 export type RateProductMutation = { rateProduct: { average: number | null, count: number } };
 
-export type SubmitObservationMutationVariables = Exact<{
-  input: SubmitObservationInput;
+export type SubmitObservationsMutationVariables = Exact<{
+  input: SubmitObservationsInput;
 }>;
 
 
-export type SubmitObservationMutation = { submitObservation: { id: string, priceAmount: number, currency: string, unitPrice: number | null, priceKind: PriceKind, quantityBasis: QuantityBasis, observedAt: string, status: ObservationStatus } };
+export type SubmitObservationsMutation = { submitObservations: Array<{ id: string, priceAmount: number, currency: string, unitPrice: number | null, priceKind: PriceKind, quantityBasis: QuantityBasis, observedAt: string, status: ObservationStatus }> };
 
 export type NearbyStoresQueryVariables = Exact<{
   lat: number;
@@ -1956,9 +1973,9 @@ export const RateProductDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<RateProductMutation, RateProductMutationVariables>;
-export const SubmitObservationDocument = new TypedDocumentString(`
-    mutation SubmitObservation($input: SubmitObservationInput!) {
-  submitObservation(input: $input) {
+export const SubmitObservationsDocument = new TypedDocumentString(`
+    mutation SubmitObservations($input: SubmitObservationsInput!) {
+  submitObservations(input: $input) {
     id
     priceAmount
     currency
@@ -1969,7 +1986,7 @@ export const SubmitObservationDocument = new TypedDocumentString(`
     status
   }
 }
-    `) as unknown as TypedDocumentString<SubmitObservationMutation, SubmitObservationMutationVariables>;
+    `) as unknown as TypedDocumentString<SubmitObservationsMutation, SubmitObservationsMutationVariables>;
 export const NearbyStoresDocument = new TypedDocumentString(`
     query NearbyStores($lat: Float!, $lon: Float!, $radiusKm: Float) {
   nearbyStores(lat: $lat, lon: $lon, radiusKm: $radiusKm) {

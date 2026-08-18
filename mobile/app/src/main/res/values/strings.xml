@@ -318,6 +318,13 @@
     <string name="price_entry_price_summary">%1$s (%2$s/jednotka) · %3$d záznamy</string>
     <string name="price_entry_write_price">Zadat cenu</string>
     <string name="price_entry_price_label">Cena (%1$s)</string>
+    <string name="price_entry_prices_label">Ceny</string>
+    <string name="price_entry_prices_hint">U cenovky bývá běžná cena i cena s věrnostní kartou — zapiš obě najednou.</string>
+    <string name="price_entry_add_price">Přidat další cenu</string>
+    <string name="price_entry_remove_price">Odebrat</string>
+    <string name="price_entry_multibuy_qty_label">Počet kusů</string>
+    <string name="price_entry_multibuy_total_label">Cena za balíček (%1$s)</string>
+    <string name="price_entry_multibuy_hint">Např. „3 kusy za 50 Kč“ — zadej počet kusů a celkovou cenu.</string>
     <string name="price_entry_submit">Zapsat cenu</string>
     <string name="price_entry_back_without_price">Zpět bez zadání ceny</string>
     <string name="price_entry_submit_success">Cena byla zapsána, díky!</string>

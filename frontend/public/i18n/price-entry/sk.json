@@ -12,13 +12,5 @@
   "newProductTitle": "Nový tovar",
   "genericTag": "(druhová položka)",
   "changeProduct": "Zmeniť tovar",
-  "submitSuccess": "Cena bola zapísaná, vďaka!",
-  "storeLabel": "Obchod",
-  "priceKindLabel": "Druh ceny",
-  "quantityBasisLabel": "Cena je uvedená",
-  "priceAmountLabel": "Cena ({{currency}})",
-  "observedAtLabel": "Kedy si cenu videl(a) (voliteľné — inak teraz)",
-  "submit": "Zapísať cenu",
-  "searchFailed": "Hľadanie sa nepodarilo, skús to prosím znova.",
-  "submitFailed": "Zápis sa nepodaril, skús to prosím znova."
+  "searchFailed": "Hľadanie sa nepodarilo, skús to prosím znova."
 }

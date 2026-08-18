@@ -89,7 +89,11 @@
     "UOM_MISMATCH": "Jednotka {{p0}} nezodpovedá typu {{p1}}",
     "VALIDATION_FAILED": "Zadané údaje nie sú platné",
     "CLIENT_VERSION_TOO_OLD": "Tvoja verzia aplikácie už nie je podporovaná, nainštaluj si prosím aktuálnu verziu",
-    "OBSERVATION_ALREADY_SUBMITTED_TODAY": "Cenu tohto tovaru v tomto obchode si dnes už zapísal/a. Skús to prosím zajtra."
+    "OBSERVATION_ALREADY_SUBMITTED_TODAY": "Cenu tohto tovaru v tomto obchode si dnes už zapísal/a. Skús to prosím zajtra.",
+    "OBSERVATION_PRICES_REQUIRED": "Zadaj aspoň jednu cenu.",
+    "OBSERVATION_DUPLICATE_PRICE_KIND": "Druh ceny {{p0}} máš v zozname dvakrát.",
+    "OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY": "Cenu druhu {{p0}} si pri tomto tovare v tomto obchode dnes už zapísal/a. Skús to prosím zajtra.",
+    "OBSERVATION_PRICE_INCOMPLETE": "Pri druhu ceny {{p0}} chýba suma."
   },
   "enum": {
     "priceKind": {

@@ -31,8 +31,8 @@ import type {
   SearchStoresQuery,
   StoreDetailFieldsFragment,
   StoreFieldsFragment,
-  SubmitObservationInput,
-  SubmitObservationMutation,
+  SubmitObservationsInput,
+  SubmitObservationsMutation,
   UpdateProductInput,
   UpdateStoreInput,
 } from './generated/graphql';
@@ -54,7 +54,7 @@ export {
 export type {
   CreateProductInput,
   CreateStoreInput,
-  SubmitObservationInput,
+  SubmitObservationsInput,
   UpdateProductInput,
   UpdateStoreInput,
 };
@@ -98,7 +98,7 @@ export type ProductSearchResult = SearchProductsQuery['searchProducts'];
 export type SearchFacets = SearchFacetsQuery['searchFacets'];
 export type PricePoint = PriceHistoryQuery['priceHistory']['points'][number];
 export type PriceHistory = PriceHistoryQuery['priceHistory'];
-export type PriceObservation = SubmitObservationMutation['submitObservation'];
+export type PriceObservation = SubmitObservationsMutation['submitObservations'][number];
 export type StoreSearchResult = SearchStoresQuery['searchStores'];
 
 /** Kandidát ze serveru OpenStreetMap Nominatim — nic z tohohle se neukládá kromě lat/lon/osmRef zvoleného kandidáta. */
