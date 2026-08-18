@@ -13,7 +13,9 @@ přesunout do `docs/vydani.md` jako historickou poznámku.
 
 - [ ] **Zřídit `kontakt@kvalitacena.cz`** — přesměrování na skutečnou schránku. Bez něj jsou
   `docs/podminky-uziti.md` a `docs/zasady-ochrany-osobnich-udaju.md` (i odkazy v appce)
-  neplatné — GDPR žádosti a kontaktní e-mail v podmínkách na něj cílí.
+  neplatné — GDPR žádosti a kontaktní e-mail v podmínkách na něj cílí. Adresu teď uvádí i
+  stránka „O aplikaci" (web `features/about`, mobil `ui/about/AboutScreen.kt`), ne jen oba
+  právní dokumenty.
 - [ ] **Doplnit datum účinnosti** v obou dokumentech výš (zatím placeholder
   `[DOPLNIT DATUM ZVEŘEJNĚNÍ]`) — nastavit na den, kdy appka skutečně půjde do provozu (uzavřená
   beta podle plánu), ne dřív.

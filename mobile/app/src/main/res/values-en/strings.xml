@@ -127,14 +127,32 @@
     <string name="settings_currency">Display currency</string>
     <string name="settings_currency_store_default">Store currency (default)</string>
     <string name="settings_currency_note">The conversion is only for comparison — you always report a price in the store\'s currency, this just changes how it\'s displayed.</string>
-    <string name="settings_data_sources">Data sources</string>
-    <string name="settings_data_sources_body">Prices and quality ratings are our own community data. Links to Open Food Facts follow the ODbL (Open Database License) — no data is copied, the app only links to the source.</string>
-    <string name="settings_osm_attribution">Store coordinates are based on OpenStreetMap © OpenStreetMap contributors, ODbL license.</string>
-    <string name="settings_fx_attribution">Exchange rates come from the Czech National Bank\'s daily rate list.</string>
-    <string name="settings_app_version">App version %1$s</string>
+    <string name="settings_about_link">What the app does, where the data comes from, and who runs it</string>
     <string name="settings_legal_title">Legal documents</string>
     <string name="settings_terms_link">Terms of use</string>
     <string name="settings_privacy_link">Privacy policy</string>
+
+    <string name="about_title">About the app</string>
+    <string name="about_what_it_is_title">What the app does</string>
+    <string name="about_what_it_is_text">Kvalita a cena is a community database of prices for everyday goods in stores. Users record the prices they see in stores, the app aggregates them and shows their trend over time and comparison across stores. Alongside chains, the app deliberately makes room for smaller and local suppliers too — it\'s not just about price, but also quality and locality.</string>
+    <string name="about_what_it_is_not_title">What the app isn\'t</string>
+    <string name="about_what_it_is_not_text">The app isn\'t a price comparison service with guaranteed accuracy, nor a source for making purchase decisions on the spot — prices are entered by volunteers and may be outdated, wrong, or have changed in the store since. Before you buy based on a price from the app, check it in the store.</string>
+    <string name="about_data_sources_title">Where the data comes from</string>
+    <string name="about_data_sources_text">Prices and quality ratings are our own community data. Links to Open Food Facts follow the ODbL (Open Database License) — no data is copied, the app only links to the source.</string>
+    <string name="about_osm_attribution">Store coordinates are based on OpenStreetMap © OpenStreetMap contributors, ODbL license.</string>
+    <string name="about_data_sources_other">The app also uses ARES to verify a store\'s company ID and an email service provider to send login codes — neither is stored as the app\'s own data.</string>
+    <string name="about_fx_attribution">Exchange rates come from the Czech National Bank\'s daily rate list.</string>
+    <string name="about_open_source_title">Open source</string>
+    <string name="about_open_source_text">The app is an open project under the GNU AGPL-3.0 license — anyone who runs it as a public service must also make their modifications to the source code available.</string>
+    <string name="about_open_source_link">Source code on GitHub</string>
+    <string name="about_github_url" translatable="false">https://github.com/petrf22/kvalita-cena</string>
+    <string name="about_author_title">Who makes the app</string>
+    <string name="about_author_text">The app was created and is run by Petr Franta as a private individual, not a company. The app is free and has no ads. The project is open to other contributors — a list will be added here once they join.</string>
+    <string name="about_contact_title">Contact and documents</string>
+    <string name="about_contact_text">Questions, feedback, or requests regarding personal data:</string>
+    <string name="about_contact_email" translatable="false">kontakt@kvalitacena.cz</string>
+    <string name="about_version">App version %1$s</string>
+
     <string name="terms_title">Terms of use</string>
     <string name="privacy_title">Privacy policy</string>
     <string name="legal_czech_only_notice">This document is currently only available in Czech.</string>

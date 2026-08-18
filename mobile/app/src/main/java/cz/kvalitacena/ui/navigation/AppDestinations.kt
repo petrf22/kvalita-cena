@@ -65,3 +65,6 @@ const val ROUTE_MY_CONTRIBUTIONS = "my_contributions"
 /** Podmínky užití a Zásady ochrany osobních údajů — z Nastavení i ze souhlasu na přihlášení. */
 const val ROUTE_TERMS = "terms"
 const val ROUTE_PRIVACY = "privacy"
+
+/** "O aplikaci" — z Nastavení, viz [cz.kvalitacena.ui.about.AboutScreen]. */
+const val ROUTE_ABOUT = "about"

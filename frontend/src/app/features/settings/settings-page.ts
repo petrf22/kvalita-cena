@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoService, provideTranslocoScope } from '@jsverse/transloco';
@@ -10,9 +10,7 @@ import {
   DisplayCurrency,
   DisplayCurrencyService,
 } from '../../services/display-currency-service';
-import { FxInfo } from '../../models/catalog';
 import { CountryService } from '../../services/country-service';
-import { FxService } from '../../services/fx-service';
 import { AppLang, LanguageService } from '../../services/language-service';
 import { KNOWN_COUNTRIES } from '../../shared/known-countries';
 
@@ -26,10 +24,12 @@ const LANGUAGE_OPTIONS: { value: AppLang; label: string }[] = [
 ];
 
 /**
- * Stránka "Nastavení" — karta Zdroje dat plní ODbL požadavek "UI vždy uvede zdroj" centrálně,
- * ne jen u jednotlivého odkazu v detailu produktu (docs/datovy-model.md). Přepínač jazyka
- * (docs/lokalizace.md) je jediné místo v appce, kde jde volba jazyka nastavit ručně — jinak se
- * odvozuje z localStorage/navigator.languages (LanguageService.readInitialLang).
+ * Stránka "Nastavení" — jen samotné nastavování (jazyk/země/měna) + odkazy na "O aplikaci"
+ * a právní dokumenty. Karta se zdroji dat (ODbL požadavek "UI vždy uvede zdroj",
+ * docs/datovy-model.md) a řádek s verzí appky se přesunuly na `features/about` — tady zůstal
+ * jen odkaz. Přepínač jazyka (docs/lokalizace.md) je jediné místo v appce, kde jde volba
+ * jazyka nastavit ručně — jinak se odvozuje z localStorage/navigator.languages
+ * (LanguageService.readInitialLang).
  *
  * Přepínač zobrazovací měny (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna") je
  * druhá, nezávislá volba — `null` (měna obchodu) je výchozí, appka pak vůbec neposílá
@@ -51,7 +51,6 @@ const LANGUAGE_OPTIONS: { value: AppLang; label: string }[] = [
   styleUrl: './settings-page.css',
 })
 export class SettingsPage {
-  private readonly fxService = inject(FxService);
   private readonly transloco = inject(TranslocoService);
 
   protected readonly language = inject(LanguageService);
@@ -63,14 +62,6 @@ export class SettingsPage {
   });
   protected readonly displayCurrency = inject(DisplayCurrencyService);
   protected readonly currencyOptions = DISPLAY_CURRENCIES;
-  protected readonly fxInfo = signal<FxInfo | null>(null);
-  protected readonly appVersion = '0.1.0';
-
-  constructor() {
-    // Atribuce zdroje kurzu (docs/lokalizace.md) — jen k zobrazení na kartě, nic z toho
-    // nerozhoduje, jaké měny appka nabídne (to je DISPLAY_CURRENCIES, lehká kopie app.fx).
-    this.fxService.fxInfo().subscribe({ next: (info) => this.fxInfo.set(info) });
-  }
 
   onLanguageChange(lang: AppLang): void {
     void this.language.setLang(lang);

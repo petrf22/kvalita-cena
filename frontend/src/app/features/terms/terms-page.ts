@@ -14,7 +14,7 @@ import { LanguageService } from '../../services/language-service';
   imports: [RouterLink, NzCardModule, TranslocoDirective],
   providers: [provideTranslocoScope('legal')],
   templateUrl: './terms-page.html',
-  styleUrl: '../../shared/legal-page.css',
+  styleUrl: '../../shared/document-page.css',
 })
 export class TermsPage {
   protected readonly language = inject(LanguageService);

@@ -24,12 +24,9 @@
   "currencyLabel": "Anzeigewährung",
   "currencyStoreDefaultOption": "Währung des Geschäfts (Standard)",
   "currencyNote": "Die Umrechnung dient nur zum Vergleich — den Preis meldest du immer in der Währung des Geschäfts, dies ändert nur die Anzeige.",
-  "sourcesTitle": "Datenquellen",
-  "sourcesText": "Preise und Qualitätsbewertungen sind eigene Community-Daten. Links zu Open Food Facts folgen der ODbL-Lizenz (Open Database License) — Daten werden nie kopiert, die App verweist nur auf die Quelle.",
-  "sourcesNote": "Die Koordinaten der Geschäfte stammen von OpenStreetMap © OpenStreetMap-Mitwirkende, Lizenz ODbL.",
-  "fxLabel": "Wechselkurse: {{attribution}}",
+  "aboutTitle": "Über die App",
+  "aboutLink": "Was die App macht, woher die Daten stammen und wer sie betreibt",
   "legalTitle": "Rechtliche Dokumente",
   "termsLink": "Nutzungsbedingungen",
-  "privacyLink": "Datenschutzerklärung",
-  "appVersionLabel": "App-Version {{version}}"
+  "privacyLink": "Datenschutzerklärung"
 }

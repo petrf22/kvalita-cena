@@ -52,12 +52,8 @@
     </nz-form-item>
   </form>
 
-  <nz-card [nzTitle]="t('settings.sourcesTitle')" class="sources-card">
-    <p>{{ t('settings.sourcesText') }}</p>
-    <p class="sources-note">{{ t('settings.sourcesNote') }}</p>
-    @if (fxInfo(); as info) {
-      <p class="sources-note">{{ t('settings.fxLabel', { attribution: info.attribution }) }}</p>
-    }
+  <nz-card [nzTitle]="t('settings.aboutTitle')" class="sources-card">
+    <a routerLink="/about">{{ t('settings.aboutLink') }}</a>
   </nz-card>
 
   <nz-card [nzTitle]="t('settings.legalTitle')" class="sources-card">
@@ -65,6 +61,4 @@
     <br />
     <a routerLink="/privacy">{{ t('settings.privacyLink') }}</a>
   </nz-card>
-
-  <p class="app-version">{{ t('settings.appVersionLabel', { version: appVersion }) }}</p>
 </ng-container>

@@ -1,0 +1,23 @@
+{
+  "title": "About the app",
+  "whatItIsTitle": "What the app does",
+  "whatItIsText": "Kvalita a cena is a community database of prices for everyday goods in stores. Users record the prices they see in stores, the app aggregates them and shows their trend over time and comparison across stores. Alongside chains, the app deliberately makes room for smaller and local suppliers too — it's not just about price, but also quality and locality.",
+  "whatItIsNotTitle": "What the app isn't",
+  "whatItIsNotText": "The app isn't a price comparison service with guaranteed accuracy, nor a source for making purchase decisions on the spot — prices are entered by volunteers and may be outdated, wrong, or have changed in the store since. Before you buy based on a price from the app, check it in the store.",
+  "dataSourcesTitle": "Where the data comes from",
+  "dataSourcesText": "Prices and quality ratings are our own community data. Links to Open Food Facts follow the ODbL (Open Database License) — data is never copied, the app just links to the source.",
+  "dataSourcesOsm": "Store coordinates come from OpenStreetMap © OpenStreetMap contributors, ODbL license.",
+  "dataSourcesOther": "The app also uses ARES to verify a store's company ID and an email service provider to send login codes — neither is stored as the app's own data.",
+  "dataSourcesFx": "Exchange rates: {{attribution}}",
+  "openSourceTitle": "Open source",
+  "openSourceText": "The app is an open project under the GNU AGPL-3.0 license — anyone who runs it as a public service must also make their modifications to the source code available.",
+  "openSourceLink": "Source code on GitHub",
+  "authorTitle": "Who makes the app",
+  "authorText": "The app was created and is run by Petr Franta as a private individual, not a company. The app is free and has no ads. The project is open to other contributors — a list will be added here once they join.",
+  "contactTitle": "Contact and documents",
+  "contactText": "Questions, feedback, or requests regarding personal data:",
+  "termsLink": "Terms of use",
+  "privacyLink": "Privacy policy",
+  "versionLabel": "App version {{version}}",
+  "backLabel": "Back"
+}

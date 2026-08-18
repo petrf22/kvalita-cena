@@ -1,5 +1,6 @@
-/* Sdílené oběma právními stránkami (terms-page, privacy-page) — proto ve shared/, ne
-   u jedné z komponent. */
+/* Sdílené statickými textovými stránkami (terms-page, privacy-page, about-page) — proto ve
+   shared/, ne u jedné z komponent. Třídy si drží prefix "legal-" z doby, kdy soubor sloužil
+   jen právním dokumentům — o about-page nejde přejmenovávat kvůli přejmenování samotnému. */
 
 .legal-card {
   max-width: 760px;

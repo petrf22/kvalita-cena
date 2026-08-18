@@ -27,6 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import cz.kvalitacena.ui.about.AboutScreen
 import cz.kvalitacena.ui.account.AccountScreen
 import cz.kvalitacena.ui.common.UpdateRequiredScreen
 import cz.kvalitacena.ui.common.UpdateRequiredState
@@ -37,6 +38,7 @@ import cz.kvalitacena.ui.legal.TermsScreen
 import cz.kvalitacena.ui.navigation.ARG_BARCODE
 import cz.kvalitacena.ui.navigation.ARG_PRODUCT_ID
 import cz.kvalitacena.ui.navigation.ARG_STORE_ID
+import cz.kvalitacena.ui.navigation.ROUTE_ABOUT
 import cz.kvalitacena.ui.navigation.ROUTE_PRICE_ENTRY
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_DETAIL
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_FORM
@@ -126,6 +128,7 @@ private fun AppScaffold() {
       }
       composable(TopLevelDestination.SETTINGS.route) {
         SettingsScreen(
+          onOpenAbout = { navController.navigate(ROUTE_ABOUT) },
           onOpenTerms = { navController.navigate(ROUTE_TERMS) },
           onOpenPrivacy = { navController.navigate(ROUTE_PRIVACY) },
         )
@@ -213,6 +216,13 @@ private fun AppScaffold() {
       }
       composable(ROUTE_PRIVACY) {
         PrivacyScreen(onDone = { navController.popBackStack() })
+      }
+      composable(ROUTE_ABOUT) {
+        AboutScreen(
+          onDone = { navController.popBackStack() },
+          onOpenTerms = { navController.navigate(ROUTE_TERMS) },
+          onOpenPrivacy = { navController.navigate(ROUTE_PRIVACY) },
+        )
       }
     }
   }

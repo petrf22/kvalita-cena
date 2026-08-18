@@ -25,3 +25,15 @@ fun openMap(context: Context, lat: Double, lon: Double, label: String) {
 fun openUrl(context: Context, url: String) {
   context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }
+
+/** Otevře e-mailovou appku s vyplněným příjemcem (`ui/about/AboutScreen.kt`). Telefon bez
+ * e-mailové appky (typicky emulátor) `ActivityNotFoundException` tiše pohltí — kontakt je
+ * i tak vidět jako text, jen nejde rovnou odeslat. */
+fun openEmail(context: Context, address: String) {
+  val uri = Uri.parse("mailto:$address")
+  try {
+    context.startActivity(Intent(Intent.ACTION_SENDTO, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+  } catch (e: ActivityNotFoundException) {
+    // Nic k udělání — uživatel má adresu vypsanou v textu a může si ji zkopírovat ručně.
+  }
+}

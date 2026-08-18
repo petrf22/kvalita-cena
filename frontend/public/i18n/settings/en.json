@@ -24,12 +24,9 @@
   "currencyLabel": "Display currency",
   "currencyStoreDefaultOption": "Store currency (default)",
   "currencyNote": "The conversion is only for comparison — you always report a price in the store's currency, this just changes how it's displayed.",
-  "sourcesTitle": "Data sources",
-  "sourcesText": "Prices and quality ratings are our own community data. Links to Open Food Facts follow the ODbL (Open Database License) — data is never copied, the app just links to the source.",
-  "sourcesNote": "Store coordinates come from OpenStreetMap © OpenStreetMap contributors, ODbL license.",
-  "fxLabel": "Exchange rates: {{attribution}}",
+  "aboutTitle": "About the app",
+  "aboutLink": "What the app does, where the data comes from, and who runs it",
   "legalTitle": "Legal documents",
   "termsLink": "Terms of use",
-  "privacyLink": "Privacy policy",
-  "appVersionLabel": "App version {{version}}"
+  "privacyLink": "Privacy policy"
 }

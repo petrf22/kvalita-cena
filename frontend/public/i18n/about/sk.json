@@ -1,0 +1,23 @@
+{
+  "title": "O aplikácii",
+  "whatItIsTitle": "Čo appka robí",
+  "whatItIsText": "Kvalita a cena je komunitná databáza cien bežného tovaru v obchodoch. Používatelia zapisujú ceny, ktoré vidia v obchodoch, appka ich agreguje a zobrazuje ich vývoj v čase a porovnanie naprieč obchodmi. Popri reťazcoch appka zámerne dáva priestor aj menším a lokálnym dodávateľom — nejde len o cenu, ale aj o kvalitu a lokálnosť.",
+  "whatItIsNotTitle": "Čo appka nie je",
+  "whatItIsNotText": "Appka nie je cenovým porovnávačom s garantovanou presnosťou ani zdrojom na okamžité uzatváranie nákupov — ceny zapisujú dobrovoľníci, môžu byť neaktuálne, chybné alebo sa medzitým v obchode zmeniť. Skôr než nakúpiš na základe ceny z appky, over si ju v obchode.",
+  "dataSourcesTitle": "Odkiaľ pochádzajú dáta",
+  "dataSourcesText": "Ceny a hodnotenia kvality sú vlastné komunitné dáta. Odkazy do Open Food Facts sú podľa licencie ODbL (Open Database License) — dáta sa nikam nekopírujú, appka len odkazuje na zdroj.",
+  "dataSourcesOsm": "Súradnice prevádzok vychádzajú z OpenStreetMap © prispievatelia OpenStreetMap, licencia ODbL.",
+  "dataSourcesOther": "Appka ďalej používa ARES na overenie IČO prevádzky a poskytovateľa e-mailových služieb na odoslanie prihlasovacích kódov — ani jedno sa neukladá ako vlastné dáta appky.",
+  "dataSourcesFx": "Kurzy mien: {{attribution}}",
+  "openSourceTitle": "Otvorený kód",
+  "openSourceText": "Appka je otvorený projekt pod licenciou GNU AGPL-3.0 — kto ju prevádzkuje ako verejnú službu, musí sprístupniť aj svoje úpravy zdrojového kódu.",
+  "openSourceLink": "Zdrojový kód na GitHube",
+  "authorTitle": "Kto appku robí",
+  "authorText": "Appku vytvoril a prevádzkuje Petr Franta ako súkromná osoba, nie ako firma. Appka je zadarmo a bez reklám. Projekt je otvorený ďalším prispievateľom — zoznam sa sem doplní, až pribudnú.",
+  "contactTitle": "Kontakt a dokumenty",
+  "contactText": "Otázky, pripomienky alebo žiadosti ohľadom osobných údajov:",
+  "termsLink": "Podmienky užívania",
+  "privacyLink": "Zásady ochrany osobných údajov",
+  "versionLabel": "Verzia appky {{version}}",
+  "backLabel": "Späť"
+}

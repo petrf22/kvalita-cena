@@ -1,0 +1,23 @@
+{
+  "title": "O aplikacji",
+  "whatItIsTitle": "Co robi aplikacja",
+  "whatItIsText": "Kvalita a cena to społecznościowa baza cen codziennych produktów w sklepach. Użytkownicy zapisują ceny, które widzą w sklepach, aplikacja je agreguje i pokazuje ich zmiany w czasie oraz porównanie między sklepami. Obok sieci handlowych aplikacja celowo daje miejsce także mniejszym i lokalnym dostawcom — nie chodzi tylko o cenę, ale też o jakość i lokalność.",
+  "whatItIsNotTitle": "Czym aplikacja nie jest",
+  "whatItIsNotText": "Aplikacja nie jest porównywarką cen o gwarantowanej dokładności ani źródłem do natychmiastowego podejmowania decyzji zakupowych — ceny wpisują ochotnicy, mogą być nieaktualne, błędne lub mogły się w międzyczasie zmienić w sklepie. Zanim kupisz na podstawie ceny z aplikacji, sprawdź ją w sklepie.",
+  "dataSourcesTitle": "Skąd pochodzą dane",
+  "dataSourcesText": "Ceny i oceny jakości to własne dane społeczności. Odnośniki do Open Food Facts są zgodne z licencją ODbL (Open Database License) — dane nigdy nie są kopiowane, aplikacja tylko odsyła do źródła.",
+  "dataSourcesOsm": "Współrzędne sklepów pochodzą z OpenStreetMap © współtwórcy OpenStreetMap, licencja ODbL.",
+  "dataSourcesOther": "Aplikacja korzysta też z ARES do weryfikacji numeru firmy sklepu oraz z dostawcy usług e-mail do wysyłania kodów logowania — żadne z tych danych nie jest zapisywane jako własne dane aplikacji.",
+  "dataSourcesFx": "Kursy walut: {{attribution}}",
+  "openSourceTitle": "Otwarty kod",
+  "openSourceText": "Aplikacja jest otwartym projektem na licencji GNU AGPL-3.0 — kto prowadzi ją jako publiczną usługę, musi udostępnić także swoje zmiany w kodzie źródłowym.",
+  "openSourceLink": "Kod źródłowy na GitHubie",
+  "authorTitle": "Kto tworzy aplikację",
+  "authorText": "Aplikację stworzył i prowadzi Petr Franta jako osoba prywatna, a nie firma. Aplikacja jest darmowa i bez reklam. Projekt jest otwarty na kolejnych współtwórców — lista pojawi się tutaj, gdy dołączą.",
+  "contactTitle": "Kontakt i dokumenty",
+  "contactText": "Pytania, uwagi lub wnioski dotyczące danych osobowych:",
+  "termsLink": "Warunki korzystania",
+  "privacyLink": "Polityka prywatności",
+  "versionLabel": "Wersja aplikacji {{version}}",
+  "backLabel": "Wstecz"
+}

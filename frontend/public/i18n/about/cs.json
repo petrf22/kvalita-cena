@@ -1,0 +1,23 @@
+{
+  "title": "O aplikaci",
+  "whatItIsTitle": "Co appka dělá",
+  "whatItIsText": "Kvalita a cena je komunitní databáze cen běžného zboží v obchodech. Uživatelé zapisují ceny, které vidí v obchodech, appka je agreguje a zobrazuje jejich vývoj v čase a porovnání napříč obchody. Vedle řetězců appka záměrně dává prostor i menším a lokálním dodavatelům — nejde jen o cenu, ale i o kvalitu a lokálnost.",
+  "whatItIsNotTitle": "Co appka není",
+  "whatItIsNotText": "Appka není cenovým srovnávačem s garantovanou přesností ani zdrojem k okamžitému uzavírání nákupů — ceny zapisují dobrovolníci, mohou být neaktuální, chybné nebo se mezitím v obchodě změnit. Než uskutečníš nákup na základě ceny z appky, ověř si ji v obchodě.",
+  "dataSourcesTitle": "Odkud se berou data",
+  "dataSourcesText": "Ceny a hodnocení kvality jsou vlastní komunitní data. Odkazy do Open Food Facts jsou podle licence ODbL (Open Database License) — data se nikam nekopírují, appka jen odkazuje na zdroj.",
+  "dataSourcesOsm": "Souřadnice provozoven vycházejí z OpenStreetMap © přispěvatelé OpenStreetMap, licence ODbL.",
+  "dataSourcesOther": "Appka dál používá ARES k ověření IČO provozovny a poskytovatele e-mailových služeb k odeslání přihlašovacích kódů — ani jedno se neukládá jako appčina vlastní data.",
+  "dataSourcesFx": "Kurzy měn: {{attribution}}",
+  "openSourceTitle": "Otevřený kód",
+  "openSourceText": "Appka je otevřený projekt pod licencí GNU AGPL-3.0 — kdo ji provozuje jako veřejnou službu, musí zpřístupnit i své úpravy zdrojového kódu.",
+  "openSourceLink": "Zdrojový kód na GitHubu",
+  "authorTitle": "Kdo appku dělá",
+  "authorText": "Appku vytvořil a provozuje Petr Franta jako soukromá osoba, ne jako firma. Appka je zdarma a bez reklam. Projekt je otevřený dalším přispěvatelům — seznam se sem doplní, až přibudou.",
+  "contactTitle": "Kontakt a dokumenty",
+  "contactText": "Dotazy, připomínky nebo žádosti ohledně osobních údajů:",
+  "termsLink": "Podmínky užití",
+  "privacyLink": "Zásady ochrany osobních údajů",
+  "versionLabel": "Verze appky {{version}}",
+  "backLabel": "Zpět"
+}

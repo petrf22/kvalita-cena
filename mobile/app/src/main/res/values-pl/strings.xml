@@ -127,14 +127,32 @@
     <string name="settings_currency">Waluta wyświetlania</string>
     <string name="settings_currency_store_default">Waluta sklepu (domyślnie)</string>
     <string name="settings_currency_note">Przeliczenie służy tylko do porównania — cenę zawsze zgłaszasz w walucie sklepu, to tylko zmienia sposób jej wyświetlania.</string>
-    <string name="settings_data_sources">Źródła danych</string>
-    <string name="settings_data_sources_body">Ceny i oceny jakości to nasze własne dane społecznościowe. Odnośniki do Open Food Facts są zgodne z licencją ODbL (Open Database License) — dane nigdzie nie są kopiowane, aplikacja tylko odsyła do źródła.</string>
-    <string name="settings_osm_attribution">Współrzędne sklepów pochodzą z OpenStreetMap © współtwórcy OpenStreetMap, licencja ODbL.</string>
-    <string name="settings_fx_attribution">Kursy walut pochodzą z tabeli kursowej Czeskiego Banku Narodowego.</string>
-    <string name="settings_app_version">Wersja aplikacji %1$s</string>
+    <string name="settings_about_link">Co robi aplikacja, skąd pochodzą dane i kto ją prowadzi</string>
     <string name="settings_legal_title">Dokumenty prawne</string>
     <string name="settings_terms_link">Warunki korzystania</string>
     <string name="settings_privacy_link">Polityka prywatności</string>
+
+    <string name="about_title">O aplikacji</string>
+    <string name="about_what_it_is_title">Co robi aplikacja</string>
+    <string name="about_what_it_is_text">Kvalita a cena to społecznościowa baza cen codziennych produktów w sklepach. Użytkownicy zapisują ceny, które widzą w sklepach, aplikacja je agreguje i pokazuje ich zmiany w czasie oraz porównanie między sklepami. Obok sieci handlowych aplikacja celowo daje miejsce także mniejszym i lokalnym dostawcom — nie chodzi tylko o cenę, ale też o jakość i lokalność.</string>
+    <string name="about_what_it_is_not_title">Czym aplikacja nie jest</string>
+    <string name="about_what_it_is_not_text">Aplikacja nie jest porównywarką cen o gwarantowanej dokładności ani źródłem do natychmiastowego podejmowania decyzji zakupowych — ceny wpisują ochotnicy, mogą być nieaktualne, błędne lub mogły się w międzyczasie zmienić w sklepie. Zanim kupisz na podstawie ceny z aplikacji, sprawdź ją w sklepie.</string>
+    <string name="about_data_sources_title">Skąd pochodzą dane</string>
+    <string name="about_data_sources_text">Ceny i oceny jakości to nasze własne dane społecznościowe. Odnośniki do Open Food Facts są zgodne z licencją ODbL (Open Database License) — dane nigdzie nie są kopiowane, aplikacja tylko odsyła do źródła.</string>
+    <string name="about_osm_attribution">Współrzędne sklepów pochodzą z OpenStreetMap © współtwórcy OpenStreetMap, licencja ODbL.</string>
+    <string name="about_data_sources_other">Aplikacja korzysta też z ARES do weryfikacji numeru firmy sklepu oraz z dostawcy usług e-mail do wysyłania kodów logowania — żadne z tych danych nie jest zapisywane jako własne dane aplikacji.</string>
+    <string name="about_fx_attribution">Kursy walut pochodzą z tabeli kursowej Czeskiego Banku Narodowego.</string>
+    <string name="about_open_source_title">Otwarty kod</string>
+    <string name="about_open_source_text">Aplikacja jest otwartym projektem na licencji GNU AGPL-3.0 — kto prowadzi ją jako publiczną usługę, musi udostępnić także swoje zmiany w kodzie źródłowym.</string>
+    <string name="about_open_source_link">Kod źródłowy na GitHubie</string>
+    <string name="about_github_url" translatable="false">https://github.com/petrf22/kvalita-cena</string>
+    <string name="about_author_title">Kto tworzy aplikację</string>
+    <string name="about_author_text">Aplikację stworzył i prowadzi Petr Franta jako osoba prywatna, a nie firma. Aplikacja jest darmowa i bez reklam. Projekt jest otwarty na kolejnych współtwórców — lista pojawi się tutaj, gdy dołączą.</string>
+    <string name="about_contact_title">Kontakt i dokumenty</string>
+    <string name="about_contact_text">Pytania, uwagi lub wnioski dotyczące danych osobowych:</string>
+    <string name="about_contact_email" translatable="false">kontakt@kvalitacena.cz</string>
+    <string name="about_version">Wersja aplikacji %1$s</string>
+
     <string name="terms_title">Warunki korzystania</string>
     <string name="privacy_title">Polityka prywatności</string>
     <string name="legal_czech_only_notice">Ten dokument jest obecnie dostępny tylko w języku czeskim.</string>

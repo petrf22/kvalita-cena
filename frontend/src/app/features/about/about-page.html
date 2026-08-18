@@ -1,0 +1,45 @@
+<ng-container *transloco="let t; scope: 'about'">
+  <nz-card [nzTitle]="t('about.title')" class="legal-card">
+    <div class="legal-body">
+      <h2>{{ t('about.whatItIsTitle') }}</h2>
+      <p>{{ t('about.whatItIsText') }}</p>
+
+      <h2>{{ t('about.whatItIsNotTitle') }}</h2>
+      <p>{{ t('about.whatItIsNotText') }}</p>
+
+      <h2>{{ t('about.dataSourcesTitle') }}</h2>
+      <p>{{ t('about.dataSourcesText') }}</p>
+      <p>{{ t('about.dataSourcesOsm') }}</p>
+      <p>{{ t('about.dataSourcesOther') }}</p>
+      @if (fxInfo(); as info) {
+        <p>{{ t('about.dataSourcesFx', { attribution: info.attribution }) }}</p>
+      }
+
+      <h2>{{ t('about.openSourceTitle') }}</h2>
+      <p>
+        {{ t('about.openSourceText') }}
+        <a href="https://github.com/petrf22/kvalita-cena" target="_blank" rel="noopener">{{
+          t('about.openSourceLink')
+        }}</a>
+      </p>
+
+      <h2>{{ t('about.authorTitle') }}</h2>
+      <p>{{ t('about.authorText') }}</p>
+
+      <h2>{{ t('about.contactTitle') }}</h2>
+      <p>
+        {{ t('about.contactText') }}
+        <a href="mailto:kontakt@kvalitacena.cz">kontakt&#64;kvalitacena.cz</a>
+      </p>
+      <p>
+        <a routerLink="/terms">{{ t('about.termsLink') }}</a>
+        <br />
+        <a routerLink="/privacy">{{ t('about.privacyLink') }}</a>
+      </p>
+    </div>
+
+    <p class="legal-effective-date">{{ t('about.versionLabel', { version: appVersion }) }}</p>
+
+    <a routerLink="/" class="legal-back">{{ t('about.backLabel') }}</a>
+  </nz-card>
+</ng-container>

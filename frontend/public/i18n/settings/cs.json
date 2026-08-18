@@ -24,12 +24,9 @@
   "currencyLabel": "Zobrazovací měna",
   "currencyStoreDefaultOption": "Měna obchodu (výchozí)",
   "currencyNote": "Přepočet slouží jen k porovnání — cenu vždy hlásíte v měně obchodu, tohle jen mění, jak se zobrazuje.",
-  "sourcesTitle": "Zdroje dat",
-  "sourcesText": "Ceny a hodnocení kvality jsou vlastní komunitní data. Odkazy do Open Food Facts jsou podle licence ODbL (Open Database License) — data se nikam nekopírují, appka jen odkazuje na zdroj.",
-  "sourcesNote": "Souřadnice provozoven vycházejí z OpenStreetMap © přispěvatelé OpenStreetMap, licence ODbL.",
-  "fxLabel": "Kurzy měn: {{attribution}}",
+  "aboutTitle": "O aplikaci",
+  "aboutLink": "Co appka dělá, odkud bere data a kdo ji provozuje",
   "legalTitle": "Právní dokumenty",
   "termsLink": "Podmínky užití",
-  "privacyLink": "Zásady ochrany osobních údajů",
-  "appVersionLabel": "Verze appky {{version}}"
+  "privacyLink": "Zásady ochrany osobních údajů"
 }

@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cz.kvalitacena.AppContainer
-import cz.kvalitacena.BuildConfig
 import cz.kvalitacena.R
 import cz.kvalitacena.network.CountryInfo
 import cz.kvalitacena.ui.common.KNOWN_COUNTRIES
@@ -37,10 +36,11 @@ import cz.kvalitacena.ui.common.countryNameRes
 import kotlinx.coroutines.launch
 
 /**
- * Záložka "Nastavení" — placeholder podle zadání ("doplním později"), ale ne prázdný: sekce
- * Zdroje dat plní ODbL požadavek "UI vždy uvede zdroj" centrálně, ne jen u jednotlivého odkazu
- * v detailu produktu (docs/datovy-model.md). Přepínač jazyka (docs/lokalizace.md) je jediné
- * místo v appce, kde jde volba jazyka nastavit ručně — mobilní protějšek webové
+ * Záložka "Nastavení" — jen samotné nastavování (jazyk/země/měna) + odkazy na "O aplikaci"
+ * a právní dokumenty. Sekce Zdroje dat (ODbL požadavek "UI vždy uvede zdroj",
+ * docs/datovy-model.md) a řádek s verzí appky se přesunuly do [cz.kvalitacena.ui.about.AboutScreen]
+ * — tady zůstal jen odkaz. Přepínač jazyka (docs/lokalizace.md) je jediné místo v appce, kde
+ * jde volba jazyka nastavit ručně — mobilní protějšek webové
  * frontend/src/app/features/settings/settings-page.ts.
  *
  * Přepínač zobrazovací měny (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna") je druhá,
@@ -48,7 +48,11 @@ import kotlinx.coroutines.launch
  * neposílá X-Display-Currency a nic nepřepočítává ([DisplayCurrencyStore]).
  */
 @Composable
-fun SettingsScreen(onOpenTerms: () -> Unit = {}, onOpenPrivacy: () -> Unit = {}) {
+fun SettingsScreen(
+  onOpenAbout: () -> Unit = {},
+  onOpenTerms: () -> Unit = {},
+  onOpenPrivacy: () -> Unit = {},
+) {
   val scope = rememberCoroutineScope()
   val accessToken by AppContainer.authRepository.accessToken.collectAsState()
   val isLoggedIn = accessToken != null
@@ -106,20 +110,11 @@ fun SettingsScreen(onOpenTerms: () -> Unit = {}, onOpenPrivacy: () -> Unit = {})
     HorizontalDivider()
     Spacer()
 
-    Text(stringResource(R.string.settings_data_sources), style = MaterialTheme.typography.titleMedium)
-    Spacer()
-    Text(stringResource(R.string.settings_data_sources_body), style = MaterialTheme.typography.bodyMedium)
-    Spacer()
     Text(
-      stringResource(R.string.settings_osm_attribution),
-      style = MaterialTheme.typography.bodySmall,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Spacer()
-    Text(
-      stringResource(R.string.settings_fx_attribution),
-      style = MaterialTheme.typography.bodySmall,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      stringResource(R.string.settings_about_link),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.primary,
+      modifier = Modifier.clickable(onClick = onOpenAbout),
     )
     Spacer()
     HorizontalDivider()
@@ -139,14 +134,6 @@ fun SettingsScreen(onOpenTerms: () -> Unit = {}, onOpenPrivacy: () -> Unit = {})
       style = MaterialTheme.typography.bodyMedium,
       color = MaterialTheme.colorScheme.primary,
       modifier = Modifier.clickable(onClick = onOpenPrivacy),
-    )
-    Spacer()
-    HorizontalDivider()
-    Spacer()
-    Text(
-      stringResource(R.string.settings_app_version, BuildConfig.VERSION_NAME),
-      style = MaterialTheme.typography.bodySmall,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
   }
 }

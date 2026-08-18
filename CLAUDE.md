@@ -175,6 +175,13 @@ zobrazení kódu země u obchodu jen když se liší od zvolené domácí země
 chyb podle `code` na mobilu (appka ukáže `serverMessage`, protože `network/Dto.kt` negeneruje
 typy ze schématu jako web).
 
+**Stránka „O aplikaci"**: popis appky, odkud appka bere data (dřív karta „Zdroje dat"
+v Nastavení, přesunuto sem i s řádkem verze appky), otevřený kód (GNU AGPL-3.0, odkaz na
+`github.com/petrf22/kvalita-cena`) a kontakt — web `features/about` (`/about`, odkaz ze
+`features/settings`), mobil `ui/about/AboutScreen.kt` (odkaz ze `SettingsScreen.kt`, otevírání
+externích odkazů přes `ui/common/ExternalLinks.kt`). Na rozdíl od Podmínek užití/Zásad ochrany
+osobních údajů se text plně překládá do všech pěti jazyků (není to právní text).
+
 Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
 `PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec
 (jen složka `L`), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo jednorázové

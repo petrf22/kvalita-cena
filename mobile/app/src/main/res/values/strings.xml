@@ -128,14 +128,36 @@
     <string name="settings_currency">Zobrazovací měna</string>
     <string name="settings_currency_store_default">Měna obchodu (výchozí)</string>
     <string name="settings_currency_note">Přepočet slouží jen k porovnání — cenu vždy hlásíte v měně obchodu, tohle jen mění, jak se zobrazuje.</string>
-    <string name="settings_data_sources">Zdroje dat</string>
-    <string name="settings_data_sources_body">Ceny a hodnocení kvality jsou vlastní komunitní data. Odkazy do Open Food Facts jsou podle licence ODbL (Open Database License) — data se nikam nekopírují, appka jen odkazuje na zdroj.</string>
-    <string name="settings_osm_attribution">Souřadnice provozoven vycházejí z OpenStreetMap © přispěvatelé OpenStreetMap, licence ODbL.</string>
-    <string name="settings_fx_attribution">Kurzy měn vycházejí z kurzovního lístku České národní banky.</string>
-    <string name="settings_app_version">Verze appky %1$s</string>
+    <string name="settings_about_link">Co appka dělá, odkud bere data a kdo ji provozuje</string>
     <string name="settings_legal_title">Právní dokumenty</string>
     <string name="settings_terms_link">Podmínky užití</string>
     <string name="settings_privacy_link">Zásady ochrany osobních údajů</string>
+
+    <!-- Obrazovka "O aplikaci" — dřív sekce "Zdroje dat" a řádek s verzí appky v Nastavení
+         (settings_data_sources*/settings_osm_attribution/settings_fx_attribution/
+         settings_app_version), přesunuto sem a doplněno o popis appky, otevřený kód, autora
+         a kontakt (docs/nasazeni.md, "Zřídit kontakt@kvalitacena.cz"). Na rozdíl od
+         terms_*/privacy_* výš se plně překládá do všech pěti jazyků. -->
+    <string name="about_title">O aplikaci</string>
+    <string name="about_what_it_is_title">Co appka dělá</string>
+    <string name="about_what_it_is_text">Kvalita a cena je komunitní databáze cen běžného zboží v obchodech. Uživatelé zapisují ceny, které vidí v obchodech, appka je agreguje a zobrazuje jejich vývoj v čase a porovnání napříč obchody. Vedle řetězců appka záměrně dává prostor i menším a lokálním dodavatelům — nejde jen o cenu, ale i o kvalitu a lokálnost.</string>
+    <string name="about_what_it_is_not_title">Co appka není</string>
+    <string name="about_what_it_is_not_text">Appka není cenovým srovnávačem s garantovanou přesností ani zdrojem k okamžitému uzavírání nákupů — ceny zapisují dobrovolníci, mohou být neaktuální, chybné nebo se mezitím v obchodě změnit. Než uskutečníš nákup na základě ceny z appky, ověř si ji v obchodě.</string>
+    <string name="about_data_sources_title">Odkud se berou data</string>
+    <string name="about_data_sources_text">Ceny a hodnocení kvality jsou vlastní komunitní data. Odkazy do Open Food Facts jsou podle licence ODbL (Open Database License) — data se nikam nekopírují, appka jen odkazuje na zdroj.</string>
+    <string name="about_osm_attribution">Souřadnice provozoven vycházejí z OpenStreetMap © přispěvatelé OpenStreetMap, licence ODbL.</string>
+    <string name="about_data_sources_other">Appka dál používá ARES k ověření IČO provozovny a poskytovatele e-mailových služeb k odeslání přihlašovacích kódů — ani jedno se neukládá jako appčina vlastní data.</string>
+    <string name="about_fx_attribution">Kurzy měn vycházejí z kurzovního lístku České národní banky.</string>
+    <string name="about_open_source_title">Otevřený kód</string>
+    <string name="about_open_source_text">Appka je otevřený projekt pod licencí GNU AGPL-3.0 — kdo ji provozuje jako veřejnou službu, musí zpřístupnit i své úpravy zdrojového kódu.</string>
+    <string name="about_open_source_link">Zdrojový kód na GitHubu</string>
+    <string name="about_github_url" translatable="false">https://github.com/petrf22/kvalita-cena</string>
+    <string name="about_author_title">Kdo appku dělá</string>
+    <string name="about_author_text">Appku vytvořil a provozuje Petr Franta jako soukromá osoba, ne jako firma. Appka je zdarma a bez reklam. Projekt je otevřený dalším přispěvatelům — seznam se sem doplní, až přibudou.</string>
+    <string name="about_contact_title">Kontakt a dokumenty</string>
+    <string name="about_contact_text">Dotazy, připomínky nebo žádosti ohledně osobních údajů:</string>
+    <string name="about_contact_email" translatable="false">kontakt@kvalitacena.cz</string>
+    <string name="about_version">Verze appky %1$s</string>
 
     <!-- Podmínky užití a Zásady ochrany osobních údajů zrcadlí docs/podminky-uziti.md a
          docs/zasady-ochrany-osobnich-udaju.md (jeden zdroj pravdy pro znění) — obsah polí níže

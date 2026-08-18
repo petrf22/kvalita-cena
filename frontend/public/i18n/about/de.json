@@ -1,0 +1,23 @@
+{
+  "title": "Über die App",
+  "whatItIsTitle": "Was die App macht",
+  "whatItIsText": "Kvalita a cena ist eine Community-Datenbank für Preise alltäglicher Waren in Geschäften. Nutzer erfassen die Preise, die sie in Geschäften sehen, die App aggregiert sie und zeigt ihre Entwicklung über die Zeit sowie den Vergleich zwischen Geschäften. Neben Ketten räumt die App bewusst auch kleineren und lokalen Anbietern Platz ein — es geht nicht nur um den Preis, sondern auch um Qualität und Lokalität.",
+  "whatItIsNotTitle": "Was die App nicht ist",
+  "whatItIsNotText": "Die App ist kein Preisvergleichsdienst mit garantierter Genauigkeit und keine Quelle für sofortige Kaufentscheidungen — die Preise werden von Freiwilligen eingetragen und können veraltet, falsch sein oder sich im Geschäft inzwischen geändert haben. Bevor du aufgrund eines Preises aus der App einkaufst, überprüfe ihn im Geschäft.",
+  "dataSourcesTitle": "Woher die Daten stammen",
+  "dataSourcesText": "Preise und Qualitätsbewertungen sind eigene Community-Daten. Links zu Open Food Facts folgen der ODbL-Lizenz (Open Database License) — Daten werden nie kopiert, die App verweist nur auf die Quelle.",
+  "dataSourcesOsm": "Die Koordinaten der Geschäfte stammen von OpenStreetMap © OpenStreetMap-Mitwirkende, Lizenz ODbL.",
+  "dataSourcesOther": "Die App nutzt außerdem ARES zur Prüfung der Handelsregisternummer eines Geschäfts und einen E-Mail-Dienstanbieter zum Versand von Anmeldecodes — keines von beidem wird als eigene Daten der App gespeichert.",
+  "dataSourcesFx": "Wechselkurse: {{attribution}}",
+  "openSourceTitle": "Offener Quellcode",
+  "openSourceText": "Die App ist ein offenes Projekt unter der GNU-AGPL-3.0-Lizenz — wer sie als öffentlichen Dienst betreibt, muss auch seine Änderungen am Quellcode zugänglich machen.",
+  "openSourceLink": "Quellcode auf GitHub",
+  "authorTitle": "Wer die App macht",
+  "authorText": "Die App wurde von Petr Franta als Privatperson erstellt und wird von ihm betrieben, nicht als Firma. Die App ist kostenlos und werbefrei. Das Projekt steht weiteren Mitwirkenden offen — eine Liste wird hier ergänzt, sobald sie dazukommen.",
+  "contactTitle": "Kontakt und Dokumente",
+  "contactText": "Fragen, Anmerkungen oder Anträge zu personenbezogenen Daten:",
+  "termsLink": "Nutzungsbedingungen",
+  "privacyLink": "Datenschutzerklärung",
+  "versionLabel": "App-Version {{version}}",
+  "backLabel": "Zurück"
+}
