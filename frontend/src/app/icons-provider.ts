@@ -13,6 +13,7 @@ import {
   PlusCircleOutline,
   PlusOutline,
   RightOutline,
+  SafetyCertificateOutline,
   SearchOutline,
   SettingOutline,
   ShopOutline,
@@ -44,4 +45,5 @@ export const icons = [
   RightOutline,
   EditOutline,
   UnorderedListOutline,
+  SafetyCertificateOutline,
 ];

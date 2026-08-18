@@ -1,0 +1,45 @@
+{
+  "title": "Moderacja",
+  "loginRequired": "Moderacja wymaga zalogowania.",
+  "loginLink": "Przejdź do logowania",
+  "notAuthorized": "Ta strona jest tylko dla moderatorów.",
+  "tabs": {
+    "flagged": "Zgłoszone",
+    "observations": "Ceny",
+    "accounts": "Konta"
+  },
+  "flagged": {
+    "allTypes": "Wszystko",
+    "empty": "W kolejce do przeglądu nic nie ma.",
+    "hidden": "Ukryte",
+    "visible": "Widoczne",
+    "flagCountLabel": "Liczba zgłoszeń:",
+    "lastFlaggedAtLabel": "Ostatnio zgłoszono",
+    "reasonsLabel": "Powody:",
+    "uncover": "Odkryj",
+    "confirmHide": "Potwierdź ukrycie"
+  },
+  "authorLabel": "Autor:",
+  "authorUnknown": "nieznany (anonim lub po pseudonimizacji)",
+  "observations": {
+    "productIdPlaceholder": "ID produktu",
+    "storeIdPlaceholder": "ID sklepu",
+    "filter": "Filtruj",
+    "empty": "Żadna cena nie pasuje do filtra.",
+    "rejected": "Odrzucona",
+    "active": "Aktywna",
+    "restore": "Przywróć",
+    "reject": "Odrzuć"
+  },
+  "accounts": {
+    "hint": "Wklej ID użytkownika (authorPublicUid) skopiowane z kolejki zgłoszeń lub z listy cen.",
+    "publicUidLabel": "ID użytkownika",
+    "publicUidPlaceholder": "np. 1aef910f-7714-4a6e-86db-01a511ef9910",
+    "reasonLabel": "Powód (opcjonalnie)",
+    "reasonPlaceholder": "Dlaczego konto jest zawieszane/przywracane",
+    "suspend": "Zawieś konto",
+    "restore": "Przywróć konto",
+    "suspendedOk": "Konto zostało zawieszone.",
+    "restoredOk": "Konto zostało przywrócone."
+  }
+}

@@ -39,6 +39,7 @@ export const ErrorCode = {
   AccountDeleteInvalidChallenge: 'ACCOUNT_DELETE_INVALID_CHALLENGE',
   AccountDeleteRequiresLogin: 'ACCOUNT_DELETE_REQUIRES_LOGIN',
   AccountGone: 'ACCOUNT_GONE',
+  AccountSuspended: 'ACCOUNT_SUSPENDED',
   AvatarRequiresLogin: 'AVATAR_REQUIRES_LOGIN',
   CategoryNotFound: 'CATEGORY_NOT_FOUND',
   ChainNotFound: 'CHAIN_NOT_FOUND',
@@ -57,6 +58,10 @@ export const ErrorCode = {
   InvalidChallenge: 'INVALID_CHALLENGE',
   LocaleRequiresLogin: 'LOCALE_REQUIRES_LOGIN',
   LocaleUnsupported: 'LOCALE_UNSUPPORTED',
+  ModerationObservationNotFound: 'MODERATION_OBSERVATION_NOT_FOUND',
+  ModerationRecordNotFound: 'MODERATION_RECORD_NOT_FOUND',
+  ModerationRequiresRole: 'MODERATION_REQUIRES_ROLE',
+  ModerationUserNotFound: 'MODERATION_USER_NOT_FOUND',
   ObservationAlreadySubmittedToday: 'OBSERVATION_ALREADY_SUBMITTED_TODAY',
   ObservationDuplicatePriceKind: 'OBSERVATION_DUPLICATE_PRICE_KIND',
   ObservationPricesRequired: 'OBSERVATION_PRICES_REQUIRED',
@@ -112,6 +117,15 @@ export const ExternalLinkKind = {
 } as const;
 
 export type ExternalLinkKind = typeof ExternalLinkKind[keyof typeof ExternalLinkKind];
+/** Výsledek moderátorského přezkumu nahlášeného záznamu (docs/reputace.md, 'Moderace'). */
+export const FlagResolution = {
+  /** Nahlášení bylo neopodstatněné — hidden_at cíle se vrátí na NULL. */
+  Dismissed: 'DISMISSED',
+  /** Nahlášení bylo oprávněné — cíl zůstává (nebo se nově nastaví) skrytý. */
+  Upheld: 'UPHELD'
+} as const;
+
+export type FlagResolution = typeof FlagResolution[keyof typeof FlagResolution];
 export const GeoSource = {
   /** Souřadnice zadal/potvrdil uživatel (ručně, nebo výběrem geokódovaného kandidáta). */
   Community: 'COMMUNITY',

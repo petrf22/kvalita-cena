@@ -82,7 +82,7 @@ class RecordFlagServiceTest {
   void belowThresholdDoesNotHideRecord() {
     givenLoggedInUser();
     when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
-    when(recordFlagRepository.countByRecordTypeAndRecordId(RecordType.PRODUCT, PRODUCT_ID)).thenReturn(2L);
+    when(recordFlagRepository.countByRecordTypeAndRecordIdAndResolvedAtIsNull(RecordType.PRODUCT, PRODUCT_ID)).thenReturn(2L);
 
     FlagResult result = service().flag(RecordType.PRODUCT, PRODUCT_ID, "nesmysl", PUBLIC_UID);
 
@@ -95,7 +95,7 @@ class RecordFlagServiceTest {
   void reachingThresholdHidesRecord() {
     givenLoggedInUser();
     when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
-    when(recordFlagRepository.countByRecordTypeAndRecordId(RecordType.PRODUCT, PRODUCT_ID)).thenReturn(3L);
+    when(recordFlagRepository.countByRecordTypeAndRecordIdAndResolvedAtIsNull(RecordType.PRODUCT, PRODUCT_ID)).thenReturn(3L);
     Product product = Product.builder().id(PRODUCT_ID).build();
     when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
 
@@ -114,7 +114,7 @@ class RecordFlagServiceTest {
     Long mediaId = 99L;
     givenLoggedInUser();
     when(mediaRepository.existsById(mediaId)).thenReturn(true);
-    when(recordFlagRepository.countByRecordTypeAndRecordId(RecordType.PHOTO, mediaId)).thenReturn(1L);
+    when(recordFlagRepository.countByRecordTypeAndRecordIdAndResolvedAtIsNull(RecordType.PHOTO, mediaId)).thenReturn(1L);
     Media media = Media.builder().id(mediaId).build();
     when(mediaRepository.findById(mediaId)).thenReturn(Optional.of(media));
 
@@ -131,7 +131,7 @@ class RecordFlagServiceTest {
   void alreadyHiddenRecordIsNotSavedAgain() {
     givenLoggedInUser();
     when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
-    when(recordFlagRepository.countByRecordTypeAndRecordId(RecordType.PRODUCT, PRODUCT_ID)).thenReturn(3L);
+    when(recordFlagRepository.countByRecordTypeAndRecordIdAndResolvedAtIsNull(RecordType.PRODUCT, PRODUCT_ID)).thenReturn(3L);
     Product alreadyHidden = Product.builder().id(PRODUCT_ID).hiddenAt(java.time.OffsetDateTime.now()).build();
     when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(alreadyHidden));
 

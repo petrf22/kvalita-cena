@@ -12,8 +12,10 @@ import type {
   CreateProductInput,
   CreateStoreInput,
   FlagProductMutation,
+  FlaggedRecordsQuery,
   FxInfoQuery,
   GeocodeAddressQuery,
+  ModerationObservationsQuery,
   MyEditsQuery,
   MyObservationsQuery,
   MyProductsQuery,
@@ -125,3 +127,10 @@ export type MyProductItem = MyProductsQuery['myProducts']['items'][number];
 export type MyStoreItem = MyStoresQuery['myStores']['items'][number];
 export type MyObservationItem = MyObservationsQuery['myObservations']['items'][number];
 export type MyEditItem = MyEditsQuery['myEdits']['items'][number];
+
+/** Fronta k přezkumu (docs/reputace.md, "Moderace") — jen moderátor (T4). */
+export type FlaggedRecordItem = FlaggedRecordsQuery['flaggedRecords']['items'][number];
+
+/** Cena k moderátorskému přezkumu — nesouhlas s cenou nejde nahlásit komunitně, viz setObservationRejected. */
+export type ModerationObservationItem =
+  ModerationObservationsQuery['moderationObservations']['items'][number];

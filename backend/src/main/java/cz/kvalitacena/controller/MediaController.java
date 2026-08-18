@@ -91,7 +91,7 @@ public class MediaController {
         // Avatar profilu nemá hidden_at (record_flag ho nepoužívá) — viditelnost řídí
         // UserProfileService podle visibility/visibleFields majitele (docs/soukromi.md).
         ? userProfileService.isFieldVisible(media.getRecordId(), ProfileField.AVATAR, viewer)
-        : (media.getHiddenAt() == null || media.getUploadedByUserId().equals(viewer.userId())));
+        : (media.getHiddenAt() == null || media.getUploadedByUserId().equals(viewer.userId()) || viewer.moderator()));
     if (!visible) {
       return ResponseEntity.notFound().build();
     }
@@ -99,11 +99,16 @@ public class MediaController {
     if (bytes == null) {
       return ResponseEntity.notFound().build();
     }
+    // Vydáno JEN díky moderátorské větvi výš (obsah je skrytý ostatním, ne autorovi) — nesmí
+    // se vystavit sdílené/CDN cache jako jinak neměnná veřejná fotka (docs/reputace.md, "Moderace").
+    boolean visibleOnlyToModerator = media.getHiddenAt() != null
+        && !media.getUploadedByUserId().equals(viewer.userId()) && viewer.moderator();
+    String cacheControl = visibleOnlyToModerator ? "private, no-store" : "public, max-age=31536000, immutable";
     return ResponseEntity.ok()
         .contentType(MediaType.IMAGE_JPEG)
         // Obsah fotky pod daným id se nikdy nemění (jen její existence) — bezpečné cachovat
         // agresivně, i na veřejných CDN/v prohlížeči.
-        .header(HttpHeaders.CACHE_CONTROL, "public, max-age=31536000, immutable")
+        .header(HttpHeaders.CACHE_CONTROL, cacheControl)
         .eTag("\"" + media.getId() + "-" + variant + "\"")
         .body(bytes);
   }

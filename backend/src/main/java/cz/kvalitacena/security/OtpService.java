@@ -62,6 +62,14 @@ public class OtpService {
       throw new TooManyRequestsException();
     }
 
+    // Pozastavený účet nesmí dostat nový kód — jinak by šlo pozastavení obejít prostým novým
+    // přihlášením (docs/podminky-uziti.md, "Ukončení a vyloučení"). Neexistující účet touhle
+    // větví neprojde (status je null), takže se pořád nedá odlišit od "e-mail neexistuje".
+    if (appUserRepository.findByEmailHash(emailHash)
+        .map(u -> u.getStatus() == AppUserStatus.SUSPENDED).orElse(false)) {
+      throw new ValidationException(ErrorCode.ACCOUNT_SUSPENDED);
+    }
+
     // Na e-mail smí být aktivní nejvýš jedna výzva, jinak by šlo nafarmit desítky pokusů
     // uhodnout 6místný kód (docs/soukromi.md).
     challengeRepository.invalidateActiveChallenges(emailHash, OffsetDateTime.now());
@@ -141,6 +149,11 @@ public class OtpService {
 
     boolean isNewUser = false;
     AppUser user = appUserRepository.findByEmailHash(emailHash).orElse(null);
+    // Kryje případ, kdy se účet pozastaví MEZI requestOtp a verifyOtp (výzva už byla vydaná,
+    // requestOtp výš ji tedy nezachytí) — stejný důvod jako kontrola nad.
+    if (user != null && user.getStatus() == AppUserStatus.SUSPENDED) {
+      throw new ValidationException(ErrorCode.ACCOUNT_SUSPENDED);
+    }
     if (user == null) {
       // Souhlas se zaznamenává PŘI REGISTRACI, ne jen odkazem v UI patičce (docs/soukromi.md) —
       // appka ho vyžaduje tady, ne jen checkboxem na klientovi, ať nejde JIT registraci obejít

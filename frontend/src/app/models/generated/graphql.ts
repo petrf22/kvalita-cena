@@ -56,6 +56,13 @@ export type ExternalLinkKind =
   | 'E_NUMBERS'
   | 'OPEN_FOOD_FACTS';
 
+/** Výsledek moderátorského přezkumu nahlášeného záznamu (docs/reputace.md, 'Moderace'). */
+export type FlagResolution =
+  /** Nahlášení bylo neopodstatněné — hidden_at cíle se vrátí na NULL. */
+  | 'DISMISSED'
+  /** Nahlášení bylo oprávněné — cíl zůstává (nebo se nově nastaví) skrytý. */
+  | 'UPHELD';
+
 export type GeoSource =
   /** Souřadnice zadal/potvrdil uživatel (ručně, nebo výběrem geokódovaného kandidáta). */
   | 'COMMUNITY'
@@ -298,6 +305,52 @@ export type FlagPhotoMutationVariables = Exact<{
 
 export type FlagPhotoMutation = { flagRecord: { flagCount: number, hidden: boolean } };
 
+export type FlaggedRecordsQueryVariables = Exact<{
+  recordType?: RecordType | null | undefined;
+  first?: number | null | undefined;
+  offset?: number | null | undefined;
+}>;
+
+
+export type FlaggedRecordsQuery = { flaggedRecords: { totalCount: number, items: Array<{ recordType: RecordType, recordId: string, flagCount: number, firstFlaggedAt: string, lastFlaggedAt: string, reasons: Array<string>, hidden: boolean, authorPublicUid: string | null, authorHandle: string | null, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } } | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photo: { id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string } | null }> } };
+
+export type ResolveFlagsMutationVariables = Exact<{
+  recordType: RecordType;
+  recordId: string;
+  resolution: FlagResolution;
+}>;
+
+
+export type ResolveFlagsMutation = { resolveFlags: boolean };
+
+export type ModerationObservationsQueryVariables = Exact<{
+  productId?: string | null | undefined;
+  storeId?: string | null | undefined;
+  first?: number | null | undefined;
+  offset?: number | null | undefined;
+}>;
+
+
+export type ModerationObservationsQuery = { moderationObservations: { totalCount: number, items: Array<{ authorPublicUid: string | null, authorHandle: string | null, observation: { id: string, priceAmount: number, currency: string, priceKind: PriceKind, unitPrice: number | null, observedAt: string, status: ObservationStatus, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string } }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } } }> } };
+
+export type SetObservationRejectedMutationVariables = Exact<{
+  id: string;
+  rejected: boolean;
+  reason?: string | null | undefined;
+}>;
+
+
+export type SetObservationRejectedMutation = { setObservationRejected: { id: string, status: ObservationStatus } };
+
+export type SetUserSuspendedMutationVariables = Exact<{
+  publicUid: string;
+  suspended: boolean;
+  reason?: string | null | undefined;
+}>;
+
+
+export type SetUserSuspendedMutation = { setUserSuspended: boolean };
+
 export type MyProductsQueryVariables = Exact<{
   first?: number | null | undefined;
   offset?: number | null | undefined;
@@ -499,7 +552,7 @@ export type CompanyByIcoQuery = { companyByIco: { ico: string, name: string, str
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MeQuery = { me: { publicHandle: string, displayName: string | null, createdAt: string, trusted: boolean, locale: string | null, country: string | null, profile: { firstName: string | null, lastName: string | null, phone: string | null, contactEmail: string | null, loginEmail: string, visibility: ProfileVisibility, visibleFields: Array<{ field: ProfileField, audience: Audience }>, avatar: { id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string } | null } } | null };
+export type MeQuery = { me: { publicHandle: string, displayName: string | null, createdAt: string, trusted: boolean, moderator: boolean, locale: string | null, country: string | null, profile: { firstName: string | null, lastName: string | null, phone: string | null, contactEmail: string | null, loginEmail: string, visibility: ProfileVisibility, visibleFields: Array<{ field: ProfileField, audience: Audience }>, avatar: { id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string } | null } } | null };
 
 export type SetLocaleMutationVariables = Exact<{
   locale: string;
@@ -1026,6 +1079,171 @@ export const FlagPhotoDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<FlagPhotoMutation, FlagPhotoMutationVariables>;
+export const FlaggedRecordsDocument = new TypedDocumentString(`
+    query FlaggedRecords($recordType: RecordType, $first: Int, $offset: Int) {
+  flaggedRecords(recordType: $recordType, first: $first, offset: $offset) {
+    totalCount
+    items {
+      recordType
+      recordId
+      flagCount
+      firstFlaggedAt
+      lastFlaggedAt
+      reasons
+      hidden
+      authorPublicUid
+      authorHandle
+      product {
+        ...ProductSummaryFields
+      }
+      store {
+        ...StoreFields
+      }
+      photo {
+        ...PhotoFields
+      }
+    }
+  }
+}
+    fragment StoreFields on Store {
+  id
+  name
+  street
+  city
+  postalCode
+  country
+  lat
+  lon
+  geoSource
+  ico
+  chain {
+    id
+    name
+    chainType
+  }
+  verified
+  editedByMe
+  pendingConfirmation
+}
+fragment PhotoFields on Photo {
+  id
+  url
+  thumbnailUrl
+  width
+  height
+  caption
+  mine
+  hidden
+  attribution
+}
+fragment ProductSummaryFields on Product {
+  id
+  name
+  brand {
+    id
+    name
+    slug
+  }
+  category {
+    id
+    name
+    slug
+    path
+  }
+  isGeneric
+  verified
+  editedByMe
+}`) as unknown as TypedDocumentString<FlaggedRecordsQuery, FlaggedRecordsQueryVariables>;
+export const ResolveFlagsDocument = new TypedDocumentString(`
+    mutation ResolveFlags($recordType: RecordType!, $recordId: ID!, $resolution: FlagResolution!) {
+  resolveFlags(
+    recordType: $recordType
+    recordId: $recordId
+    resolution: $resolution
+  )
+}
+    `) as unknown as TypedDocumentString<ResolveFlagsMutation, ResolveFlagsMutationVariables>;
+export const ModerationObservationsDocument = new TypedDocumentString(`
+    query ModerationObservations($productId: ID, $storeId: ID, $first: Int, $offset: Int) {
+  moderationObservations(
+    productId: $productId
+    storeId: $storeId
+    first: $first
+    offset: $offset
+  ) {
+    totalCount
+    items {
+      authorPublicUid
+      authorHandle
+      observation {
+        id
+        priceAmount
+        currency
+        priceKind
+        unitPrice
+        observedAt
+        status
+        product {
+          ...ProductSummaryFields
+        }
+        store {
+          ...StoreFields
+        }
+      }
+    }
+  }
+}
+    fragment StoreFields on Store {
+  id
+  name
+  street
+  city
+  postalCode
+  country
+  lat
+  lon
+  geoSource
+  ico
+  chain {
+    id
+    name
+    chainType
+  }
+  verified
+  editedByMe
+  pendingConfirmation
+}
+fragment ProductSummaryFields on Product {
+  id
+  name
+  brand {
+    id
+    name
+    slug
+  }
+  category {
+    id
+    name
+    slug
+    path
+  }
+  isGeneric
+  verified
+  editedByMe
+}`) as unknown as TypedDocumentString<ModerationObservationsQuery, ModerationObservationsQueryVariables>;
+export const SetObservationRejectedDocument = new TypedDocumentString(`
+    mutation SetObservationRejected($id: ID!, $rejected: Boolean!, $reason: String) {
+  setObservationRejected(id: $id, rejected: $rejected, reason: $reason) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<SetObservationRejectedMutation, SetObservationRejectedMutationVariables>;
+export const SetUserSuspendedDocument = new TypedDocumentString(`
+    mutation SetUserSuspended($publicUid: ID!, $suspended: Boolean!, $reason: String) {
+  setUserSuspended(publicUid: $publicUid, suspended: $suspended, reason: $reason)
+}
+    `) as unknown as TypedDocumentString<SetUserSuspendedMutation, SetUserSuspendedMutationVariables>;
 export const MyProductsDocument = new TypedDocumentString(`
     query MyProducts($first: Int, $offset: Int) {
   myProducts(first: $first, offset: $offset) {
@@ -2189,6 +2407,7 @@ export const MeDocument = new TypedDocumentString(`
     displayName
     createdAt
     trusted
+    moderator
     locale
     country
     profile {

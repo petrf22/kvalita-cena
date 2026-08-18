@@ -200,7 +200,7 @@ class MediaServiceTest {
     when(mediaRepository.findByRecordTypeAndRecordIdOrderBySortOrderAscIdAsc(RecordType.PRODUCT, PRODUCT_ID))
         .thenReturn(List.of(visibleToAll, hiddenFromOthers));
 
-    ViewerContext otherViewer = new ViewerContext(UUID.randomUUID(), 12345L, true);
+    ViewerContext otherViewer = new ViewerContext(UUID.randomUUID(), 12345L, true, false);
     List<Photo> photos = service.photosFor(RecordType.PRODUCT, PRODUCT_ID, otherViewer);
 
     assertThat(photos).hasSize(1);
@@ -214,7 +214,7 @@ class MediaServiceTest {
     when(mediaRepository.findByRecordTypeAndRecordIdOrderBySortOrderAscIdAsc(RecordType.PRODUCT, PRODUCT_ID))
         .thenReturn(List.of(hiddenFromOthers));
 
-    ViewerContext author = new ViewerContext(PUBLIC_UID, USER_ID, true);
+    ViewerContext author = new ViewerContext(PUBLIC_UID, USER_ID, true, false);
     List<Photo> photos = service.photosFor(RecordType.PRODUCT, PRODUCT_ID, author);
 
     assertThat(photos).hasSize(1);

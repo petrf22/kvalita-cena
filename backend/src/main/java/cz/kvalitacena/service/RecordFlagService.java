@@ -49,7 +49,7 @@ public class RecordFlagService {
     // ON CONFLICT DO NOTHING nad uq_record_flag_user — druhý hlas téhož člověka nic nezmění.
     recordFlagRepository.insertIgnoringDuplicate(recordType.name(), recordId, user.getId(), blankToNull(reason));
 
-    long flagCount = recordFlagRepository.countByRecordTypeAndRecordId(recordType, recordId);
+    long flagCount = recordFlagRepository.countByRecordTypeAndRecordIdAndResolvedAtIsNull(recordType, recordId);
     boolean hidden = flagCount >= flagsToHide(recordType);
     if (hidden) {
       hideRecord(recordType, recordId);

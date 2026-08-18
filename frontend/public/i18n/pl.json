@@ -98,7 +98,12 @@
     "OBSERVATION_PRICES_REQUIRED": "Podaj przynajmniej jedną cenę.",
     "OBSERVATION_DUPLICATE_PRICE_KIND": "Rodzaj ceny {{p0}} masz na liście dwukrotnie.",
     "OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY": "Cenę typu {{p0}} dla tego produktu w tym sklepie już dziś zgłosiłeś/aś. Spróbuj ponownie jutro.",
-    "OBSERVATION_PRICE_INCOMPLETE": "Przy rodzaju ceny {{p0}} brakuje kwoty."
+    "OBSERVATION_PRICE_INCOMPLETE": "Przy rodzaju ceny {{p0}} brakuje kwoty.",
+    "MODERATION_REQUIRES_ROLE": "Ta akcja jest tylko dla moderatorów.",
+    "MODERATION_RECORD_NOT_FOUND": "Moderowany wpis nie istnieje.",
+    "MODERATION_OBSERVATION_NOT_FOUND": "Moderowana cena nie istnieje.",
+    "MODERATION_USER_NOT_FOUND": "Użytkownik nie istnieje.",
+    "ACCOUNT_SUSPENDED": "To konto jest zawieszone."
   },
   "enum": {
     "priceKind": {

@@ -98,7 +98,12 @@
     "OBSERVATION_PRICES_REQUIRED": "Enter at least one price.",
     "OBSERVATION_DUPLICATE_PRICE_KIND": "You have the price type {{p0}} listed twice.",
     "OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY": "You already reported a {{p0}} price for this product at this store today. Please try again tomorrow.",
-    "OBSERVATION_PRICE_INCOMPLETE": "The {{p0}} price is missing an amount."
+    "OBSERVATION_PRICE_INCOMPLETE": "The {{p0}} price is missing an amount.",
+    "MODERATION_REQUIRES_ROLE": "This action is for moderators only.",
+    "MODERATION_RECORD_NOT_FOUND": "The moderated record does not exist.",
+    "MODERATION_OBSERVATION_NOT_FOUND": "The moderated price does not exist.",
+    "MODERATION_USER_NOT_FOUND": "The user does not exist.",
+    "ACCOUNT_SUSPENDED": "This account is suspended."
   },
   "enum": {
     "priceKind": {

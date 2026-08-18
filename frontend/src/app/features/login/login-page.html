@@ -17,6 +17,12 @@
         <span nz-icon nzType="unordered-list"></span>
         {{ t('login.myContributions') }}
       </button>
+      @if (viewer()?.moderator) {
+        <button nz-button nzType="default" routerLink="/moderation">
+          <span nz-icon nzType="safety-certificate"></span>
+          {{ t('login.moderation') }}
+        </button>
+      }
       <button nz-button nzType="primary" (click)="logout()">
         <span nz-icon nzType="logout"></span>
         {{ t('login.logout') }}

@@ -257,6 +257,44 @@ u důvěryhodného autora zboží/obchodu), ale jediné nahlášení ji rovnou s
 na `hidden_at`** — jen řadí frontu k přezkumu, stejně jako zbytek téhle sekce hlasuje o
 záznamu, nikdy o člověku.
 
+## Moderace (etapa 1) — nástroj pro T4
+
+Odstavec výš popisuje, jak se záznam SKRYJE (`flagRecord`/`RecordFlagService`) — tenhle popisuje,
+co se s ním stane dál, protože „čeká na přezkum" dřív nemělo kým se naplnit. Implementace:
+`ModerationService`/`ModerationGraphQlController` (backend), stránka `/moderation` (jen web —
+nástroj provozovatele, ne appky, mobil ji nemá).
+
+- **Kdo je moderátor**: sloupec `auth.app_user.is_moderator`, nastavuje se ručně SQL příkazem na
+  serveru (`docs/nasazeni.md`) — žádné UI na jmenování, odpovídá „T4 | ruční" v tabulce výš.
+  Promítne se do JWT autorizace (`ROLE_MODERATOR`) nejpozději do 60 s (TTL cache v
+  `JwtAuthenticationFilter`, stejný mechanismus jako u `token_version`).
+- **Fronta** (`flaggedRecords`) vypíše nevyřízená nahlášení (`core.record_flag.resolved_at IS
+  NULL`), seskupená podle záznamu, včetně skrytého obsahu — moderátor vidí to, co `hidden_at`
+  schovává ostatním (predikáty viditelnosti v `ProductGraphQlController`/`StoreGraphQlController`/
+  `MediaService`/`MediaController` mají navíc větev `|| viewer.moderator()`).
+- **`resolveFlags(recordType, recordId, resolution)` je jediná cesta zpět**: `DISMISSED` vrátí
+  `hidden_at` na `NULL` (dřív `RecordFlagService.hideRecord` byl jednosměrný — chybné nahlášení
+  bylo trvalé), `UPHELD` skrytí potvrdí nebo ho rovnou nastaví, i když automatický práh
+  `app.moderation.flags-to-hide` ještě nebyl dosažen — moderátorovo rozhodnutí je silnější než
+  práh. Po vyřízení se stará nahlášení nepočítají znovu do prahu (`RecordFlagRepository.
+  countByRecordTypeAndRecordIdAndResolvedAtIsNull`), jinak by jediný nový hlas skryl odkrytý
+  záznam okamžitě zpátky.
+- **Ceny nejde nahlásit komunitně** — `core.record_flag` míří jen na katalogové záznamy (viz
+  „Nahlášení záznamu" výš, „ne na cenové spory"). Moderátor k vadné ceně přistupuje přímo přes
+  autora/zboží/obchod (`moderationObservations`) a zamítá ji (`setObservationRejected` →
+  `ObservationStatus.REJECTED`), což vždy zařadí dotčenou buňku do `agg.recompute_queue`
+  (`RecomputeReason.MODERATION`) — bez toho by zamítnutá cena zůstala v grafu ještě několik dní.
+- **Pozastavení účtu** (`setUserSuspended`, docs/podminky-uziti.md, „Ukončení a vyloučení") —
+  `AppUserStatus.SUSPENDED` + inkrement `token_version` + revokace refresh tokenů
+  (`RefreshTokenService.revokeAllForUser`). Pozastavený účet se přestane autentizovat nejpozději
+  do 60 s a nedostane nový přihlašovací kód (`OtpService` kontroluje status před `requestOtp`
+  i `verifyOtp`) — pozastavení se tak nedá obejít novým přihlášením.
+- **Kdo nahlásil zůstává skryté i moderátorovi** (`record_flag.user_id` z API nejde ven,
+  `docs/soukromi.md`) — moderátor vidí jen počty a texty důvodů. **Kdo záznam založil/nahrál**
+  (`authorPublicUid`/`authorHandle` na `FlaggedRecordItem`/`ModerationObservationItem`) vidí
+  naopak jen moderátor, jinak nemá jak uplatnit „Ukončení a vyloučení" z podmínek užití — je to
+  jiná informace se schválně jiným pravidlem, viz `docs/soukromi.md`.
+
 ## Hodnocení kvality zboží (etapa 1)
 
 Jen známka 1–5 (jako ve škole, 1 nejlepší), bez textů, bez skupin důvěry — implementace

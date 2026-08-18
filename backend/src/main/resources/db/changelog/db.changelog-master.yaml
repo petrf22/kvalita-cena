@@ -25,3 +25,4 @@ databaseChangeLog:
   - include: { file: 2026-08-16/01-store-country.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-17/01-countries.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-18/01-observation-price-kind-unique.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-18/02-moderation.yaml, relativeToChangelogFile: true }

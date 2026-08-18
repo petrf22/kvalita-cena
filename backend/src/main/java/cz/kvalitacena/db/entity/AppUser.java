@@ -70,6 +70,12 @@ public class AppUser implements Persistable<Long> {
   @Column(name = "status", nullable = false, length = 20)
   private AppUserStatus status;
 
+  // T4 (docs/reputace.md, "Odstupňování přístupu") — nastavuje se ručně SQL příkazem na
+  // serveru (docs/nasazeni.md), appka nemá žádné UI na jmenování moderátora.
+  @Column(name = "is_moderator", nullable = false)
+  @Builder.Default
+  private boolean moderator = false;
+
   // Inkrement zneplatní všechny access tokeny bez nutnosti revokačního seznamu.
   @Column(name = "token_version", nullable = false)
   @Builder.Default

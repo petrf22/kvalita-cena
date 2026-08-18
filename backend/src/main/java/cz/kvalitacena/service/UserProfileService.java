@@ -145,7 +145,7 @@ public class UserProfileService {
     if (media == null) {
       return null;
     }
-    return mediaService.toPhoto(media, new ViewerContext(user.getPublicUid(), user.getId(), false));
+    return mediaService.toPhoto(media, new ViewerContext(user.getPublicUid(), user.getId(), false, user.isModerator()));
   }
 
   private void applyEncryptedField(Boolean clear, String rawValue, Function<String, String> validator,

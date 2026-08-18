@@ -2,6 +2,7 @@ package cz.kvalitacena.security;
 
 import cz.kvalitacena.config.RefreshTokenProperties;
 import cz.kvalitacena.db.entity.AppUser;
+import cz.kvalitacena.db.entity.AppUserStatus;
 import cz.kvalitacena.db.entity.ClientKind;
 import cz.kvalitacena.db.entity.RefreshToken;
 import cz.kvalitacena.db.entity.RevokeReason;
@@ -63,6 +64,13 @@ public class RefreshTokenService {
       throw new RefreshTokenInvalidException();
     }
     if (current.getExpiresAt().isBefore(now)) {
+      throw new RefreshTokenInvalidException();
+    }
+    // Pozastavený účet (docs/podminky-uziti.md, "Ukončení a vyloučení") nesmí obnovit session —
+    // setUserSuspended tokeny už revokuje, tohle je pojistka proti souběhu. Stejný kód jako
+    // "token neexistuje/vypršel" (ne ACCOUNT_SUSPENDED z OtpService), ať se stav účtu
+    // nedá zjistit obyčejným obnovovacím requestem.
+    if (current.getUser().getStatus() != AppUserStatus.ACTIVE) {
       throw new RefreshTokenInvalidException();
     }
     if (current.getUsedAt() != null) {

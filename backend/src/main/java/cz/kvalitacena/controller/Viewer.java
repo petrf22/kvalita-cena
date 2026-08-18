@@ -13,5 +13,5 @@ import java.time.OffsetDateTime;
  * "já", takže se nikdy nefiltruje podle {@code visibility}.
  */
 public record Viewer(String publicHandle, String displayName, OffsetDateTime createdAt, boolean trusted,
-    String locale, String country, Profile profile) {
+    boolean moderator, String locale, String country, Profile profile) {
 }

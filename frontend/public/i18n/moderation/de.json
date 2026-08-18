@@ -1,0 +1,45 @@
+{
+  "title": "Moderation",
+  "loginRequired": "Für die Moderation ist eine Anmeldung erforderlich.",
+  "loginLink": "Zur Anmeldung",
+  "notAuthorized": "Diese Seite ist nur für Moderatoren.",
+  "tabs": {
+    "flagged": "Gemeldet",
+    "observations": "Preise",
+    "accounts": "Konten"
+  },
+  "flagged": {
+    "allTypes": "Alle",
+    "empty": "In der Warteschlange gibt es nichts zu prüfen.",
+    "hidden": "Ausgeblendet",
+    "visible": "Sichtbar",
+    "flagCountLabel": "Anzahl Meldungen:",
+    "lastFlaggedAtLabel": "Zuletzt gemeldet",
+    "reasonsLabel": "Gründe:",
+    "uncover": "Wieder einblenden",
+    "confirmHide": "Ausblenden bestätigen"
+  },
+  "authorLabel": "Autor:",
+  "authorUnknown": "unbekannt (anonym oder pseudonymisiert)",
+  "observations": {
+    "productIdPlaceholder": "Produkt-ID",
+    "storeIdPlaceholder": "Geschäfts-ID",
+    "filter": "Filtern",
+    "empty": "Keine Preise entsprechen dem Filter.",
+    "rejected": "Abgelehnt",
+    "active": "Aktiv",
+    "restore": "Wiederherstellen",
+    "reject": "Ablehnen"
+  },
+  "accounts": {
+    "hint": "Füge die Benutzer-ID (authorPublicUid) ein, die aus der Meldungswarteschlange oder der Preisliste kopiert wurde.",
+    "publicUidLabel": "Benutzer-ID",
+    "publicUidPlaceholder": "z. B. 1aef910f-7714-4a6e-86db-01a511ef9910",
+    "reasonLabel": "Grund (optional)",
+    "reasonPlaceholder": "Warum das Konto gesperrt/wiederhergestellt wird",
+    "suspend": "Konto sperren",
+    "restore": "Konto wiederherstellen",
+    "suspendedOk": "Das Konto wurde gesperrt.",
+    "restoredOk": "Das Konto wurde wiederhergestellt."
+  }
+}

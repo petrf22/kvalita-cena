@@ -156,6 +156,20 @@ type Query {
   autor, dokud neproběhne (zatím nenapsaný) konsolidační job. Vyžaduje přihlášení.
   """
   myEdits(first: Int = 20, offset: Int = 0): MyEditResult!
+
+  """
+  Fronta nahlášených záznamů čekajících na přezkum (docs/reputace.md, "Moderace") — bez
+  recordType všechny tři typy najednou. Jen moderátor (T4), jinak MODERATION_REQUIRES_ROLE.
+  """
+  flaggedRecords(recordType: RecordType, first: Int = 20, offset: Int = 0): FlaggedRecordResult!
+
+  """
+  Ceny k moderátorskému přezkumu — cenu nejde nahlásit komunitně (viz setObservationRejected),
+  takže moderátor k ní přistupuje přímo přes autora/zboží/obchod. Bez filtru nejnovější napříč
+  celou appkou. Jen moderátor.
+  """
+  moderationObservations(authorPublicUid: ID, productId: ID, storeId: ID,
+    first: Int = 20, offset: Int = 0): ModerationObservationResult!
 }
 
 type Mutation {
@@ -238,6 +252,29 @@ type Mutation {
 
   "Smazání avatara profilu. Vyžaduje přihlášení."
   deleteAvatar: Viewer!
+
+  """
+  Vyřízení všech dosud nevyřízených nahlášení jednoho záznamu (docs/reputace.md, "Moderace").
+  DISMISSED vrátí hidden_at cíle na NULL (jediná cesta zpět, jinak by chybné nahlášení bylo
+  trvalé), UPHELD ho nastaví/ponechá. Jen moderátor (T4).
+  """
+  resolveFlags(recordType: RecordType!, recordId: ID!, resolution: FlagResolution!): Boolean!
+
+  """
+  Zamítnutí/obnovení jednotlivé ceny moderátorem — nesouhlas s cenou nejde nahlásit komunitně
+  (docs/reputace.md, cena se opravuje novým zápisem, ne flagem), takže tohle je jediná cesta,
+  jak vadnou cenu dostat ven z agregátu. Vždy zařadí dotčenou buňku do přepočtu
+  (agg.recompute_queue), jinak by REJECTED cena zůstala viditelná v grafu ještě několik dní.
+  Jen moderátor.
+  """
+  setObservationRejected(id: ID!, rejected: Boolean!, reason: String): PriceObservation!
+
+  """
+  Pozastavení/obnovení účtu (docs/podminky-uziti.md, "Ukončení a vyloučení") — pozastavený
+  účet se přestane autentizovat nejpozději do 60 s a nedostane nový přihlašovací kód. Jen
+  moderátor.
+  """
+  setUserSuspended(publicUid: ID!, suspended: Boolean!, reason: String): Boolean!
 }
 
 enum RecordType {
@@ -305,6 +342,61 @@ type FlagResult {
   flagCount: Int!
   "True, pokud nahlášení právě teď (nebo už dřív) záznam skrylo."
   hidden: Boolean!
+}
+
+"Výsledek moderátorského přezkumu nahlášeného záznamu (docs/reputace.md, 'Moderace')."
+enum FlagResolution {
+  "Nahlášení bylo neopodstatněné — hidden_at cíle se vrátí na NULL."
+  DISMISSED
+  "Nahlášení bylo oprávněné — cíl zůstává (nebo se nově nastaví) skrytý."
+  UPHELD
+}
+
+"""
+Jeden nahlášený záznam ve frontě k přezkumu — přesně jedno z product/store/photo je vyplněné,
+podle recordType (stejný polymorfní tvar jako MyEditItem). Vrací se i skrytý cíl (moderátor
+vidí to, co ostatním hidden_at schovává).
+"""
+type FlaggedRecordItem {
+  recordType: RecordType!
+  recordId: ID!
+  "Kolik různých lidí záznam nahlásilo — může být i pod prahem, pokud sem moderátor přišel jinou cestou."
+  flagCount: Int!
+  firstFlaggedAt: DateTime!
+  lastFlaggedAt: DateTime!
+  "Texty od nahlašovatelů (core.record_flag.reason), bez vazby na to, kdo je napsal (docs/soukromi.md)."
+  reasons: [String!]!
+  hidden: Boolean!
+  "Kdo záznam založil/nahrál — null u anonymního příspěvku nebo po pseudonymizaci (180 dní)."
+  authorPublicUid: ID
+  "Vykreslená podoba ('Modrý čáp #4271'), ne kanonický klíč — jen pro čtení, k identifikaci použij authorPublicUid."
+  authorHandle: String
+  "Vyplněno jen pro recordType PRODUCT, jinak null."
+  product: Product
+  "Vyplněno jen pro recordType STORE, jinak null."
+  store: Store
+  "Vyplněno jen pro recordType PHOTO, jinak null."
+  photo: Photo
+}
+
+type FlaggedRecordResult {
+  items: [FlaggedRecordItem!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
+type ModerationObservationItem {
+  observation: PriceObservation!
+  "Null u anonymního příspěvku nebo po pseudonymizaci (180 dní, docs/soukromi.md)."
+  authorPublicUid: ID
+  "Vykreslená podoba ('Modrý čáp #4271'), ne kanonický klíč."
+  authorHandle: String
+}
+
+type ModerationObservationResult {
+  items: [ModerationObservationItem!]!
+  totalCount: Int!
+  hasMore: Boolean!
 }
 
 input CreateStoreInput {
@@ -664,6 +756,8 @@ type Viewer {
   createdAt: DateTime!
   "Práh důvěry (docs/reputace.md) — vysvětluje klientovi, proč nový obchod/zboží zatím vidí jen on."
   trusted: Boolean!
+  "T4 (docs/reputace.md, 'Odstupňování přístupu') — řídí zobrazení odkazu na /moderation. Nastavuje se ručně na serveru, appka nemá UI na jmenování."
+  moderator: Boolean!
   "Uložená preference jazyka (setLocale) — null, dokud si ji uživatel nenastaví (docs/lokalizace.md)."
   locale: String
   "Uložená preference země — null, dokud si ji uživatel nenastaví."
@@ -1003,9 +1097,14 @@ enum ErrorCode {
   QUALITY_GRADE_OUT_OF_RANGE
   FLAG_REQUIRES_LOGIN
   FLAG_RECORD_NOT_FOUND
+  MODERATION_REQUIRES_ROLE
+  MODERATION_RECORD_NOT_FOUND
+  MODERATION_OBSERVATION_NOT_FOUND
+  MODERATION_USER_NOT_FOUND
   INVALID_CHALLENGE
   SESSION_EXPIRED
   TERMS_ACCEPTANCE_REQUIRED
+  ACCOUNT_SUSPENDED
   LOCALE_REQUIRES_LOGIN
   LOCALE_UNSUPPORTED
   PROFILE_REQUIRES_LOGIN

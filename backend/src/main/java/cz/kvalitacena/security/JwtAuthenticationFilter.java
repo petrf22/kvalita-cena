@@ -3,6 +3,7 @@ package cz.kvalitacena.security;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import cz.kvalitacena.db.entity.AppUser;
+import cz.kvalitacena.db.entity.AppUserStatus;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -36,7 +37,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private final JwtService jwtService;
   private final AppUserRepository appUserRepository;
 
-  private final Cache<UUID, Integer> tokenVersionCache = Caffeine.newBuilder()
+  // Drží i status a roli, ne jen token_version — pozastavený účet (docs/podminky-uziti.md,
+  // "Ukončení a vyloučení") se tak přestane autentizovat nejpozději do 60 s bez nutnosti
+  // revokačního seznamu, stejným mechanismem jako globální odhlášení přes token_version.
+  private record CachedUser(int tokenVersion, AppUserStatus status, boolean moderator) {
+  }
+
+  private final Cache<UUID, CachedUser> userCache = Caffeine.newBuilder()
       .expireAfterWrite(Duration.ofSeconds(60))
       .build();
 
@@ -48,16 +55,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     if (header != null && header.startsWith("Bearer ")) {
       String token = header.substring("Bearer ".length());
       jwtService.parse(token).ifPresent(parsed -> {
-        Integer currentVersion = tokenVersionCache.get(parsed.publicUid(),
-            uid -> appUserRepository.findByPublicUid(uid).map(AppUser::getTokenVersion).orElse(null));
+        CachedUser cached = userCache.get(parsed.publicUid(),
+            uid -> appUserRepository.findByPublicUid(uid)
+                .map(u -> new CachedUser(u.getTokenVersion(), u.getStatus(), u.isModerator()))
+                .orElse(null));
 
-        if (currentVersion != null && currentVersion.intValue() == parsed.tokenVersion()) {
+        if (cached != null && cached.tokenVersion() == parsed.tokenVersion()
+            && cached.status() == AppUserStatus.ACTIVE) {
+          List<SimpleGrantedAuthority> authorities = cached.moderator()
+              ? List.of(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority("ROLE_MODERATOR"))
+              : List.of(new SimpleGrantedAuthority("ROLE_USER"));
           var authentication = new UsernamePasswordAuthenticationToken(
-              parsed.publicUid(), null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+              parsed.publicUid(), null, authorities);
           SecurityContextHolder.getContext().setAuthentication(authentication);
         }
-        // Jinak (token_version se změnil = globální odhlášení, nebo účet zmizel) request
-        // zůstává neautentizovaný — chráněné endpointy pak samy vrátí 401.
+        // Jinak (token_version se změnil = globální odhlášení, účet zmizel, nebo status není
+        // ACTIVE = pozastavený/anonymizovaný) request zůstává neautentizovaný — chráněné
+        // endpointy pak samy vrátí 401.
       });
     }
 

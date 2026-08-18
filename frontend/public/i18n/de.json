@@ -98,7 +98,12 @@
     "OBSERVATION_PRICES_REQUIRED": "Gib mindestens einen Preis ein.",
     "OBSERVATION_DUPLICATE_PRICE_KIND": "Die Preisart {{p0}} steht zweimal in der Liste.",
     "OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY": "Du hast den Preis der Art {{p0}} für dieses Produkt in diesem Geschäft heute schon erfasst. Bitte versuche es morgen erneut.",
-    "OBSERVATION_PRICE_INCOMPLETE": "Bei der Preisart {{p0}} fehlt der Betrag."
+    "OBSERVATION_PRICE_INCOMPLETE": "Bei der Preisart {{p0}} fehlt der Betrag.",
+    "MODERATION_REQUIRES_ROLE": "Diese Aktion ist nur für Moderatoren.",
+    "MODERATION_RECORD_NOT_FOUND": "Der moderierte Eintrag existiert nicht.",
+    "MODERATION_OBSERVATION_NOT_FOUND": "Der moderierte Preis existiert nicht.",
+    "MODERATION_USER_NOT_FOUND": "Der Benutzer existiert nicht.",
+    "ACCOUNT_SUSPENDED": "Dieses Konto ist gesperrt."
   },
   "enum": {
     "priceKind": {

@@ -98,7 +98,12 @@
     "OBSERVATION_PRICES_REQUIRED": "Zadej aspoň jednu cenu.",
     "OBSERVATION_DUPLICATE_PRICE_KIND": "Druh ceny {{p0}} máš v seznamu dvakrát.",
     "OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY": "Cenu druhu {{p0}} jsi u tohohle zboží v tomhle obchodě dnes už zapsal/a. Zkus to prosím zítra.",
-    "OBSERVATION_PRICE_INCOMPLETE": "U druhu ceny {{p0}} chybí částka."
+    "OBSERVATION_PRICE_INCOMPLETE": "U druhu ceny {{p0}} chybí částka.",
+    "MODERATION_REQUIRES_ROLE": "Tahle akce je jen pro moderátory.",
+    "MODERATION_RECORD_NOT_FOUND": "Moderovaný záznam neexistuje.",
+    "MODERATION_OBSERVATION_NOT_FOUND": "Moderovaná cena neexistuje.",
+    "MODERATION_USER_NOT_FOUND": "Uživatel neexistuje.",
+    "ACCOUNT_SUSPENDED": "Tenhle účet je pozastavený."
   },
   "enum": {
     "priceKind": {

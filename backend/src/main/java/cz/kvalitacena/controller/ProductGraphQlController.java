@@ -133,7 +133,7 @@ public class ProductGraphQlController {
   private boolean isVisible(Product product, ViewerContext viewer) {
     boolean visibleStatus = product.getStatus() == ProductStatus.ACTIVE || product.getStatus() == ProductStatus.DRAFT;
     if (!visibleStatus) return false;
-    return product.getHiddenAt() == null || sameUser(product.getCreatedByUserId(), viewer);
+    return product.getHiddenAt() == null || sameUser(product.getCreatedByUserId(), viewer) || viewer.moderator();
   }
 
   private boolean sameUser(Long createdByUserId, ViewerContext viewer) {
@@ -178,7 +178,7 @@ public class ProductGraphQlController {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
     int limit = Math.max(1, Math.min(first == null ? 10 : first, MAX_SUGGESTIONS));
     List<Product> matches = productRepository.findSimilarByName(name.trim(), limit).stream()
-        .filter(p -> p.getHiddenAt() == null || sameUser(p.getCreatedByUserId(), viewer))
+        .filter(p -> p.getHiddenAt() == null || sameUser(p.getCreatedByUserId(), viewer) || viewer.moderator())
         .toList();
     return productOverlayService.applyOverlay(matches, viewer.userId());
   }

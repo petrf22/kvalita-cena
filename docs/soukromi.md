@@ -139,6 +139,20 @@ z veřejného rejstříku ekonomických subjektů (ARES), fakt o provozovateli o
 pseudonymizační logika jako jinde v `core.*`). Volitelné potvrzení přes `companyByIco` čte
 jen z veřejného ARES, nic z appky do ARES neposílá.
 
+**Moderátor vidí autora, nikdy nahlašovatele — dvě různé věci se schválně jiným pravidlem**
+(`docs/reputace.md`, „Moderace"):
+
+- **Kdo záznam NAHLÁSIL** (`core.record_flag.user_id`) z API nejde ven ani moderátorovi —
+  slouží výhradně k vynucení „jeden hlas na člověka a záznam" (`uq_record_flag_user`), stejně
+  jako `product_quality_rating.user_id` výš. Nahlášení je vždy o FAKTU, ne o autorovi ani
+  o nahlašovateli.
+- **Kdo záznam ZALOŽIL/nahrál** (`created_by_user_id`/`uploaded_by_user_id`) moderátor VIDÍ
+  jako `authorPublicUid`/`authorHandle` (`FlaggedRecordItem`, `ModerationObservationItem`) —
+  bez toho by nešlo uplatnit „Ukončení a vyloučení" z `docs/podminky-uziti.md` (pozastavit účet
+  za opakované porušování). Je to `public_uid`/vykreslený `public_handle`, stejná identita jako
+  jinde v API, jen tady navíc gatovaná rolí — na veřejných typech (`Product`, `Store`, `Photo`)
+  se autor nikde neobjevuje, jen v moderátorském pohledu.
+
 ## Profil uživatele a viditelnost
 
 Přihlášený uživatel si smí volitelně vyplnit jméno, příjmení, telefon, kontaktní e-mail

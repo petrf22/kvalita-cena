@@ -11,6 +11,7 @@ import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface PriceObservationRepository extends JpaRepository<PriceObservation, Long> {
 
@@ -163,4 +164,33 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
 
     Long getStoreId();
   }
+
+  /**
+   * Výběr cen pro moderaci (ModerationService) — cenu nejde nahlásit komunitně
+   * (docs/reputace.md, "Nahlášení záznamu…", nesouhlas s cenou = nový zápis, ne flag), takže
+   * moderátor k ní přistupuje přímo přes autora/zboží/obchod, ne přes frontu jako u
+   * core.record_flag. Filtruje se přes {@code public_uid}, NIKDY přes rendered handle
+   * (docs/soukromi.md — jazykově vykreslený text "Modrý čáp #4271" se nedá spolehlivě
+   * rozebrat zpátky na kanonický klíč).
+   */
+  @Query(value = "SELECT po.* FROM core.price_observation po "
+      + "LEFT JOIN auth.app_user u ON u.id = po.submitter_id "
+      + "WHERE (:authorPublicUid IS NULL OR u.public_uid = :authorPublicUid) "
+      + "AND (:productId IS NULL OR po.product_id = :productId) "
+      + "AND (:storeId IS NULL OR po.store_id = :storeId) "
+      // id jako tiebreaker — dávkově seedovaná data mají u víc řádků identický created_at,
+      // takže samotné ORDER BY created_at DESC dává Postgresu volnost vracet je v jiném pořadí
+      // mezi dvěma voláními a stránkování (LIMIT/OFFSET) by řádky nedeterministicky přeskakovalo.
+      + "ORDER BY po.created_at DESC, po.id DESC LIMIT :limit OFFSET :offset", nativeQuery = true)
+  List<PriceObservation> findForModeration(@Param("authorPublicUid") UUID authorPublicUid,
+      @Param("productId") Long productId, @Param("storeId") Long storeId,
+      @Param("limit") int limit, @Param("offset") int offset);
+
+  @Query(value = "SELECT count(*) FROM core.price_observation po "
+      + "LEFT JOIN auth.app_user u ON u.id = po.submitter_id "
+      + "WHERE (:authorPublicUid IS NULL OR u.public_uid = :authorPublicUid) "
+      + "AND (:productId IS NULL OR po.product_id = :productId) "
+      + "AND (:storeId IS NULL OR po.store_id = :storeId)", nativeQuery = true)
+  long countForModeration(@Param("authorPublicUid") UUID authorPublicUid,
+      @Param("productId") Long productId, @Param("storeId") Long storeId);
 }

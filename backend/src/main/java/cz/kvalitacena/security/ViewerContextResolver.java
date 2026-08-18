@@ -24,7 +24,7 @@ public class ViewerContextResolver {
       return ViewerContext.ANONYMOUS;
     }
     return appUserRepository.findByPublicUid(publicUid)
-        .map(user -> new ViewerContext(publicUid, user.getId(), trustLevelService.isTrusted(user)))
+        .map(user -> new ViewerContext(publicUid, user.getId(), trustLevelService.isTrusted(user), user.isModerator()))
         .orElse(ViewerContext.ANONYMOUS);
   }
 }

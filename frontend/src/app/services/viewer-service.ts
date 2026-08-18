@@ -17,6 +17,7 @@ export class ViewerService {
           displayName
           createdAt
           trusted
+          moderator
           locale
           country
           profile {

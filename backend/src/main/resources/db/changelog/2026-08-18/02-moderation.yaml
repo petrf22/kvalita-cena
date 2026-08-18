@@ -1,0 +1,105 @@
+# 02-moderation.yaml — moderační vrstva (T4, docs/reputace.md "Odstupňování přístupu") nad
+# nahlašováním z 2026-08-06/04-user-layer.yaml. Dvě věci chyběly: kdo je moderátor a jak
+# vyřízené nahlášení odlišit od čekajícího — core.record_flag dosud neuměla zapsat výsledek
+# přezkumu, takže "čeká na přezkum" z RecordFlagService nemělo kam dojít.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-18-02-app-user-add-is-moderator
+      author: Petr F.
+      comment: >
+        T4 je "ruční" (docs/reputace.md) — sloupec se nastavuje přímo SQL příkazem na serveru
+        (docs/nasazeni.md), appka nemá žádné UI na jmenování moderátora.
+      changes:
+        - addColumn:
+            schemaName: auth
+            tableName: app_user
+            columns:
+              - column:
+                  name: is_moderator
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 2026-08-18-02-refresh-token-revoke-reason-add-suspended
+      author: Petr F.
+      comment: >
+        setUserSuspended (ModerationService) volá RefreshTokenService.revokeAllForUser — chybějící
+        hodnota v CHECK by insert shodila hned při prvním pozastavení účtu s aktivní session.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE auth.refresh_token DROP CONSTRAINT chk_refresh_token_revoke_reason;
+              ALTER TABLE auth.refresh_token
+                ADD CONSTRAINT chk_refresh_token_revoke_reason
+                  CHECK (revoke_reason IS NULL
+                    OR revoke_reason IN ('ROTATED', 'REUSE_DETECTED', 'LOGOUT', 'USER_REVOKED', 'EXPIRED', 'SUSPENDED'));
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE auth.refresh_token DROP CONSTRAINT chk_refresh_token_revoke_reason;
+              ALTER TABLE auth.refresh_token
+                ADD CONSTRAINT chk_refresh_token_revoke_reason
+                  CHECK (revoke_reason IS NULL
+                    OR revoke_reason IN ('ROTATED', 'REUSE_DETECTED', 'LOGOUT', 'USER_REVOKED', 'EXPIRED'));
+
+  - changeSet:
+      id: 2026-08-18-02-record-flag-add-resolution
+      author: Petr F.
+      comment: >
+        Bez tohohle se nevyřízené nahlášení nedalo odlišit od vyřízeného a hidden_at nemělo
+        cestu zpět na NULL (RecordFlagService.hideRecord byl jednosměrný).
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: record_flag
+            columns:
+              - column:
+                  name: resolved_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: resolved_by_user_id
+                  type: BIGINT
+              - column:
+                  name: resolution
+                  type: VARCHAR(10)
+        - addForeignKeyConstraint:
+            constraintName: fk_record_flag_resolved_by
+            baseTableSchemaName: core
+            baseTableName: record_flag
+            baseColumnNames: resolved_by_user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - sql:
+            sql: |
+              ALTER TABLE core.record_flag
+                ADD CONSTRAINT chk_record_flag_resolution
+                CHECK (resolution IN ('DISMISSED', 'UPHELD'));
+
+              -- Fronta k přezkumu se ptá výhradně na nevyřízené — částečný index přesně
+              -- na tenhle dotaz (ModerationService.flaggedRecords).
+              CREATE INDEX idx_record_flag_unresolved
+                ON core.record_flag (record_type, record_id)
+                WHERE resolved_at IS NULL;
+      rollback:
+        - sql:
+            sql: |
+              DROP INDEX IF EXISTS core.idx_record_flag_unresolved;
+              ALTER TABLE core.record_flag DROP CONSTRAINT IF EXISTS chk_record_flag_resolution;
+        - dropForeignKeyConstraint:
+            baseTableSchemaName: core
+            baseTableName: record_flag
+            constraintName: fk_record_flag_resolved_by
+        - dropColumn:
+            schemaName: core
+            tableName: record_flag
+            columns:
+              - column:
+                  name: resolved_at
+              - column:
+                  name: resolved_by_user_id
+              - column:
+                  name: resolution

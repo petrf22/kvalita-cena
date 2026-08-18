@@ -1,0 +1,282 @@
+<ng-container *transloco="let t; scope: 'moderation'">
+  <h1>{{ t('moderation.title') }}</h1>
+
+  @if (!auth.isLoggedIn()) {
+    <nz-alert
+      nzType="info"
+      [nzMessage]="t('moderation.loginRequired')"
+      nzShowIcon
+      class="section-alert"
+    />
+    <a routerLink="/login">{{ t('moderation.loginLink') }}</a>
+  } @else if (viewerLoading()) {
+    <nz-spin />
+  } @else if (!viewer()?.moderator) {
+    <nz-alert
+      nzType="warning"
+      [nzMessage]="t('moderation.notAuthorized')"
+      nzShowIcon
+      class="section-alert"
+    />
+  } @else {
+    <nz-tabs>
+      <nz-tab [nzTitle]="t('moderation.tabs.flagged')">
+        <nz-select
+          class="type-filter"
+          [ngModel]="recordTypeFilter()"
+          (ngModelChange)="recordTypeFilter.set($event); onRecordTypeFilterChange()"
+        >
+          @for (value of recordTypeFilterOptions; track value) {
+            <nz-option
+              [nzValue]="value"
+              [nzLabel]="
+                value ? (recordTypeKeys[value] | transloco) : t('moderation.flagged.allTypes')
+              "
+            />
+          }
+        </nz-select>
+
+        @if (flagged.error()) {
+          <nz-alert nzType="error" [nzMessage]="flagged.error()" nzShowIcon class="section-alert" />
+        }
+        @if (flagged.loading() && flagged.items().length === 0) {
+          <nz-spin />
+        } @else if (flagged.items().length === 0) {
+          <nz-empty [nzNotFoundContent]="t('moderation.flagged.empty')" />
+        } @else {
+          <nz-list>
+            @for (item of flagged.items(); track item.recordType + item.recordId) {
+              <nz-list-item>
+                <div class="item-main">
+                  <nz-tag>{{ recordTypeKeys[item.recordType] | transloco }}</nz-tag>
+                  @if (item.recordType === 'PRODUCT' && item.product) {
+                    <a [routerLink]="['/product', item.product.id]">{{ item.product.name }}</a>
+                  } @else if (item.recordType === 'STORE' && item.store) {
+                    <a [routerLink]="['/store', item.store.id]"
+                      >{{ item.store.name }} — {{ item.store.city }}</a
+                    >
+                  } @else if (item.recordType === 'PHOTO' && item.photo) {
+                    <img
+                      [src]="item.photo.thumbnailUrl"
+                      [alt]="item.photo.caption ?? ''"
+                      class="photo-thumb"
+                    />
+                  }
+                  @if (item.hidden) {
+                    <nz-tag nzColor="red">{{ t('moderation.flagged.hidden') }}</nz-tag>
+                  } @else {
+                    <nz-tag nzColor="green">{{ t('moderation.flagged.visible') }}</nz-tag>
+                  }
+                </div>
+                <p class="item-meta">
+                  {{ t('moderation.flagged.flagCountLabel') }} {{ item.flagCount }} —
+                  {{ t('moderation.flagged.lastFlaggedAtLabel') }}
+                  {{ item.lastFlaggedAt | relativeDate }}
+                </p>
+                @if (item.reasons.length > 0) {
+                  <p class="item-meta">
+                    {{ t('moderation.flagged.reasonsLabel') }} {{ item.reasons.join(', ') }}
+                  </p>
+                }
+                <p class="item-meta">
+                  {{ t('moderation.authorLabel') }}
+                  {{ item.authorHandle ?? t('moderation.authorUnknown') }}
+                  @if (item.authorPublicUid) {
+                    <code class="public-uid">{{ item.authorPublicUid }}</code>
+                  }
+                </p>
+                <div class="item-actions">
+                  <button
+                    nz-button
+                    nzType="default"
+                    [nzLoading]="flaggedActionLoading() === item.recordType + item.recordId"
+                    (click)="resolveFlags(item, 'DISMISSED')"
+                  >
+                    {{ t('moderation.flagged.uncover') }}
+                  </button>
+                  <button
+                    nz-button
+                    nzType="primary"
+                    nzDanger
+                    [nzLoading]="flaggedActionLoading() === item.recordType + item.recordId"
+                    (click)="resolveFlags(item, 'UPHELD')"
+                  >
+                    {{ t('moderation.flagged.confirmHide') }}
+                  </button>
+                </div>
+              </nz-list-item>
+            }
+          </nz-list>
+        }
+        @if (flagged.totalCount() > 0) {
+          <nz-pagination
+            class="section-pagination"
+            [nzPageIndex]="flagged.pageIndex()"
+            [nzPageSize]="flagged.pageSize()"
+            [nzTotal]="flagged.totalCount()"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="pageSizeOptions"
+            (nzPageIndexChange)="onPageIndexChange(flagged, $event)"
+            (nzPageSizeChange)="onPageSizeChange(flagged, $event)"
+          />
+        }
+      </nz-tab>
+
+      <nz-tab [nzTitle]="t('moderation.tabs.observations')">
+        <div class="observation-filters">
+          <input
+            nz-input
+            class="filter-input"
+            [placeholder]="t('moderation.observations.productIdPlaceholder')"
+            [ngModel]="observationProductId()"
+            (ngModelChange)="observationProductId.set($event)"
+          />
+          <input
+            nz-input
+            class="filter-input"
+            [placeholder]="t('moderation.observations.storeIdPlaceholder')"
+            [ngModel]="observationStoreId()"
+            (ngModelChange)="observationStoreId.set($event)"
+          />
+          <button nz-button nzType="default" (click)="onObservationFilterChange()">
+            {{ t('moderation.observations.filter') }}
+          </button>
+        </div>
+
+        @if (observations.error()) {
+          <nz-alert
+            nzType="error"
+            [nzMessage]="observations.error()"
+            nzShowIcon
+            class="section-alert"
+          />
+        }
+        @if (observations.loading() && observations.items().length === 0) {
+          <nz-spin />
+        } @else if (observations.items().length === 0) {
+          <nz-empty [nzNotFoundContent]="t('moderation.observations.empty')" />
+        } @else {
+          <nz-list>
+            @for (item of observations.items(); track item.observation.id) {
+              <nz-list-item>
+                <div class="item-main">
+                  <a [routerLink]="['/product', item.observation.product.id]">{{
+                    item.observation.product.name
+                  }}</a>
+                  — {{ item.observation.store.name }} —
+                  {{ priceKindKeys[item.observation.priceKind] | transloco }}:
+                  {{ item.observation.priceAmount | money: item.observation.currency }}
+                  @if (item.observation.status === 'REJECTED') {
+                    <nz-tag nzColor="red">{{ t('moderation.observations.rejected') }}</nz-tag>
+                  } @else {
+                    <nz-tag nzColor="green">{{ t('moderation.observations.active') }}</nz-tag>
+                  }
+                </div>
+                <p class="item-meta">
+                  {{ t('moderation.authorLabel') }}
+                  {{ item.authorHandle ?? t('moderation.authorUnknown') }}
+                  @if (item.authorPublicUid) {
+                    <code class="public-uid">{{ item.authorPublicUid }}</code>
+                  }
+                  — {{ item.observation.observedAt | relativeDate }}
+                </p>
+                <div class="item-actions">
+                  @if (item.observation.status === 'REJECTED') {
+                    <button
+                      nz-button
+                      nzType="default"
+                      [nzLoading]="observationActionLoading() === item.observation.id"
+                      (click)="setObservationRejected(item, false)"
+                    >
+                      {{ t('moderation.observations.restore') }}
+                    </button>
+                  } @else {
+                    <button
+                      nz-button
+                      nzType="primary"
+                      nzDanger
+                      [nzLoading]="observationActionLoading() === item.observation.id"
+                      (click)="setObservationRejected(item, true)"
+                    >
+                      {{ t('moderation.observations.reject') }}
+                    </button>
+                  }
+                </div>
+              </nz-list-item>
+            }
+          </nz-list>
+        }
+        @if (observations.totalCount() > 0) {
+          <nz-pagination
+            class="section-pagination"
+            [nzPageIndex]="observations.pageIndex()"
+            [nzPageSize]="observations.pageSize()"
+            [nzTotal]="observations.totalCount()"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="pageSizeOptions"
+            (nzPageIndexChange)="onPageIndexChange(observations, $event)"
+            (nzPageSizeChange)="onPageSizeChange(observations, $event)"
+          />
+        }
+      </nz-tab>
+
+      <nz-tab [nzTitle]="t('moderation.tabs.accounts')">
+        <p class="accounts-hint">{{ t('moderation.accounts.hint') }}</p>
+        <nz-form-item>
+          <nz-form-label>{{ t('moderation.accounts.publicUidLabel') }}</nz-form-label>
+          <nz-form-control>
+            <input
+              nz-input
+              [placeholder]="t('moderation.accounts.publicUidPlaceholder')"
+              [ngModel]="suspendPublicUid()"
+              (ngModelChange)="suspendPublicUid.set($event)"
+            />
+          </nz-form-control>
+        </nz-form-item>
+        <nz-form-item>
+          <nz-form-label>{{ t('moderation.accounts.reasonLabel') }}</nz-form-label>
+          <nz-form-control>
+            <textarea
+              nz-input
+              [placeholder]="t('moderation.accounts.reasonPlaceholder')"
+              [ngModel]="suspendReason()"
+              (ngModelChange)="suspendReason.set($event)"
+            ></textarea>
+          </nz-form-control>
+        </nz-form-item>
+        @if (suspendResult()) {
+          <nz-alert
+            nzType="success"
+            [nzMessage]="suspendResult()"
+            nzShowIcon
+            class="section-alert"
+          />
+        }
+        @if (suspendError()) {
+          <nz-alert nzType="error" [nzMessage]="suspendError()" nzShowIcon class="section-alert" />
+        }
+        <div class="item-actions">
+          <button
+            nz-button
+            nzType="primary"
+            nzDanger
+            [nzLoading]="suspendLoading()"
+            [disabled]="!suspendPublicUid().trim()"
+            (click)="setUserSuspended(true)"
+          >
+            {{ t('moderation.accounts.suspend') }}
+          </button>
+          <button
+            nz-button
+            nzType="default"
+            [nzLoading]="suspendLoading()"
+            [disabled]="!suspendPublicUid().trim()"
+            (click)="setUserSuspended(false)"
+          >
+            {{ t('moderation.accounts.restore') }}
+          </button>
+        </div>
+      </nz-tab>
+    </nz-tabs>
+  }
+</ng-container>

@@ -75,9 +75,10 @@ public class StoreGraphQlController {
    */
   private boolean isVisible(Store store, ViewerContext viewer) {
     boolean ownerOrActive = store.getStatus() == StoreStatus.ACTIVE
-        || (store.getStatus() == StoreStatus.PENDING && sameUser(store.getCreatedByUserId(), viewer));
+        || (store.getStatus() == StoreStatus.PENDING && sameUser(store.getCreatedByUserId(), viewer))
+        || viewer.moderator();
     if (!ownerOrActive) return false;
-    return store.getHiddenAt() == null || sameUser(store.getCreatedByUserId(), viewer);
+    return store.getHiddenAt() == null || sameUser(store.getCreatedByUserId(), viewer) || viewer.moderator();
   }
 
   private boolean sameUser(Long createdByUserId, ViewerContext viewer) {

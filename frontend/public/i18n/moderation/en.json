@@ -1,0 +1,45 @@
+{
+  "title": "Moderation",
+  "loginRequired": "Moderation requires signing in.",
+  "loginLink": "Go to sign in",
+  "notAuthorized": "This page is for moderators only.",
+  "tabs": {
+    "flagged": "Flagged",
+    "observations": "Prices",
+    "accounts": "Accounts"
+  },
+  "flagged": {
+    "allTypes": "All",
+    "empty": "Nothing is waiting for review.",
+    "hidden": "Hidden",
+    "visible": "Visible",
+    "flagCountLabel": "Flag count:",
+    "lastFlaggedAtLabel": "Last flagged",
+    "reasonsLabel": "Reasons:",
+    "uncover": "Uncover",
+    "confirmHide": "Confirm hiding"
+  },
+  "authorLabel": "Author:",
+  "authorUnknown": "unknown (anonymous or pseudonymized)",
+  "observations": {
+    "productIdPlaceholder": "Product ID",
+    "storeIdPlaceholder": "Store ID",
+    "filter": "Filter",
+    "empty": "No prices match the filter.",
+    "rejected": "Rejected",
+    "active": "Active",
+    "restore": "Restore",
+    "reject": "Reject"
+  },
+  "accounts": {
+    "hint": "Paste the user ID (authorPublicUid) copied from the flagged records queue or the price list.",
+    "publicUidLabel": "User ID",
+    "publicUidPlaceholder": "e.g. 1aef910f-7714-4a6e-86db-01a511ef9910",
+    "reasonLabel": "Reason (optional)",
+    "reasonPlaceholder": "Why the account is being suspended/restored",
+    "suspend": "Suspend account",
+    "restore": "Restore account",
+    "suspendedOk": "The account was suspended.",
+    "restoredOk": "The account was restored."
+  }
+}

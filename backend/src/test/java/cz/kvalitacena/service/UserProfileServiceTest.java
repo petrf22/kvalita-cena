@@ -175,7 +175,7 @@ class UserProfileServiceTest {
   @Test
   void ownerAlwaysSeesEveryFieldEvenWhenAnonymous() {
     // Vlastník je poznán rovnou z ViewerContext.userId() — profil se vůbec nenačítá.
-    ViewerContext owner = new ViewerContext(PUBLIC_UID, USER_ID, false);
+    ViewerContext owner = new ViewerContext(PUBLIC_UID, USER_ID, false, false);
 
     assertThat(service.isFieldVisible(USER_ID, ProfileField.PHONE, owner)).isTrue();
     verifyNoInteractions(userProfileRepository);
@@ -185,7 +185,7 @@ class UserProfileServiceTest {
   void anonymousVisibilityBlocksStrangersEvenWithMatrixRows() {
     when(userProfileRepository.findById(USER_ID))
         .thenReturn(Optional.of(UserProfile.builder().userId(USER_ID).visibility(ProfileVisibility.ANONYMOUS).build()));
-    ViewerContext stranger = new ViewerContext(UUID.randomUUID(), 999L, false);
+    ViewerContext stranger = new ViewerContext(UUID.randomUUID(), 999L, false, false);
 
     assertThat(service.isFieldVisible(USER_ID, ProfileField.PHONE, stranger)).isFalse();
     verifyNoInteractions(fieldVisibilityRepository);
@@ -197,7 +197,7 @@ class UserProfileServiceTest {
         .thenReturn(Optional.of(UserProfile.builder().userId(USER_ID).visibility(ProfileVisibility.PUBLIC).build()));
     when(fieldVisibilityRepository.existsByUserIdAndFieldAndAudience(USER_ID, ProfileField.PHONE, Audience.PUBLIC))
         .thenReturn(true);
-    ViewerContext stranger = new ViewerContext(UUID.randomUUID(), 999L, false);
+    ViewerContext stranger = new ViewerContext(UUID.randomUUID(), 999L, false, false);
 
     assertThat(service.isFieldVisible(USER_ID, ProfileField.PHONE, stranger)).isTrue();
   }
@@ -208,7 +208,7 @@ class UserProfileServiceTest {
         .thenReturn(Optional.of(UserProfile.builder().userId(USER_ID).visibility(ProfileVisibility.FRIENDS).build()));
     when(fieldVisibilityRepository.existsByUserIdAndFieldAndAudience(USER_ID, ProfileField.PHONE, Audience.PUBLIC))
         .thenReturn(false);
-    ViewerContext someoneElse = new ViewerContext(UUID.randomUUID(), 999L, false);
+    ViewerContext someoneElse = new ViewerContext(UUID.randomUUID(), 999L, false, false);
 
     assertThat(service.isFieldVisible(USER_ID, ProfileField.PHONE, someoneElse)).isFalse();
   }

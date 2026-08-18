@@ -165,7 +165,7 @@ public class MediaService {
   }
 
   private boolean visibleTo(Media media, ViewerContext viewer) {
-    return !media.isHidden() || media.getUploadedByUserId().equals(viewer.userId());
+    return !media.isHidden() || media.getUploadedByUserId().equals(viewer.userId()) || viewer.moderator();
   }
 
   /**
@@ -206,7 +206,7 @@ public class MediaService {
         });
 
     replaceAvatar(user, media);
-    ViewerContext self = new ViewerContext(user.getPublicUid(), user.getId(), false);
+    ViewerContext self = new ViewerContext(user.getPublicUid(), user.getId(), false, user.isModerator());
     return toPhoto(media, self);
   }
 

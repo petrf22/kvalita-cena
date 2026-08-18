@@ -59,6 +59,13 @@ export const routes: Routes = [
     path: 'privacy',
     loadComponent: () => import('./features/privacy/privacy-page').then((m) => m.PrivacyPage),
   },
+  {
+    // Nástroj pro T4 (docs/reputace.md, "Moderace") — jen web, appka roli sama nevynucuje,
+    // jen podle ní zobrazuje odkaz (features/login/login-page.html); server je autoritativní.
+    path: 'moderation',
+    loadComponent: () =>
+      import('./features/moderation/moderation-page').then((m) => m.ModerationPage),
+  },
   // Staré české cesty — zachovány kvůli existujícím odkazům/záložkám.
   { path: 'produkt/:id', redirectTo: 'product/:id' },
   { path: 'obchod/:id', redirectTo: 'store/:id' },
@@ -69,5 +76,6 @@ export const routes: Routes = [
   { path: 'moje-prispevky', redirectTo: 'my' },
   { path: 'podminky-uziti', redirectTo: 'terms' },
   { path: 'zasady-ochrany-osobnich-udaju', redirectTo: 'privacy' },
+  { path: 'moderace', redirectTo: 'moderation' },
   { path: '**', redirectTo: '' },
 ];

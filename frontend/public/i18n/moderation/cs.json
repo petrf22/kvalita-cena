@@ -1,0 +1,45 @@
+{
+  "title": "Moderace",
+  "loginRequired": "Moderace vyžaduje přihlášení.",
+  "loginLink": "Přejít na přihlášení",
+  "notAuthorized": "Tahle stránka je jen pro moderátory.",
+  "tabs": {
+    "flagged": "Nahlášené",
+    "observations": "Ceny",
+    "accounts": "Účty"
+  },
+  "flagged": {
+    "allTypes": "Vše",
+    "empty": "Ve frontě k přezkumu nic není.",
+    "hidden": "Skryto",
+    "visible": "Viditelné",
+    "flagCountLabel": "Počet nahlášení:",
+    "lastFlaggedAtLabel": "Naposledy nahlášeno",
+    "reasonsLabel": "Důvody:",
+    "uncover": "Odkrýt",
+    "confirmHide": "Potvrdit skrytí"
+  },
+  "authorLabel": "Autor:",
+  "authorUnknown": "neznámý (anonym nebo po pseudonymizaci)",
+  "observations": {
+    "productIdPlaceholder": "ID zboží",
+    "storeIdPlaceholder": "ID obchodu",
+    "filter": "Filtrovat",
+    "empty": "Žádné ceny neodpovídají filtru.",
+    "rejected": "Zamítnuto",
+    "active": "Platí",
+    "restore": "Obnovit",
+    "reject": "Zamítnout"
+  },
+  "accounts": {
+    "hint": "Vlož ID uživatele (authorPublicUid) zkopírované z fronty nahlášení nebo z výpisu cen.",
+    "publicUidLabel": "ID uživatele",
+    "publicUidPlaceholder": "např. 1aef910f-7714-4a6e-86db-01a511ef9910",
+    "reasonLabel": "Důvod (nepovinné)",
+    "reasonPlaceholder": "Proč se účet pozastavuje/obnovuje",
+    "suspend": "Pozastavit účet",
+    "restore": "Obnovit účet",
+    "suspendedOk": "Účet byl pozastaven.",
+    "restoredOk": "Účet byl obnoven."
+  }
+}

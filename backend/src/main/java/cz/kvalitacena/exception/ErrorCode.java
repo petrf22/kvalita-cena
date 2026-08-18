@@ -90,10 +90,20 @@ public enum ErrorCode {
   FLAG_REQUIRES_LOGIN("error.flag.requiresLogin"),
   FLAG_RECORD_NOT_FOUND("error.flag.recordNotFound"),
 
+  // --- moderace (etapa 1, docs/reputace.md "Moderace") — jen T4, docs/podminky-uziti.md čl. 6-7
+  MODERATION_REQUIRES_ROLE("error.moderation.requiresRole"),
+  MODERATION_RECORD_NOT_FOUND("error.moderation.recordNotFound"),
+  MODERATION_OBSERVATION_NOT_FOUND("error.moderation.observationNotFound"),
+  MODERATION_USER_NOT_FOUND("error.moderation.userNotFound"),
+
   // --- auth
   INVALID_CHALLENGE("error.auth.invalidChallenge"),
   SESSION_EXPIRED("error.auth.sessionExpired"),
   TERMS_ACCEPTANCE_REQUIRED("error.auth.termsAcceptanceRequired"),
+  // Pozastavený účet (docs/podminky-uziti.md, "Ukončení a vyloučení") — odmítá se už na OTP,
+  // ne až tichým vypadnutím ze SecurityContextu (JwtAuthenticationFilter), jinak by uživatel
+  // nevěděl proč se nemůže přihlásit.
+  ACCOUNT_SUSPENDED("error.auth.accountSuspended"),
 
   // --- preference jazyka/země (docs/lokalizace.md)
   LOCALE_REQUIRES_LOGIN("error.locale.requiresLogin"),

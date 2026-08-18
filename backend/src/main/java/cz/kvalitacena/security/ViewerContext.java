@@ -12,9 +12,9 @@ import java.util.UUID;
  * GraphQL batchuje PER REQUEST, takže viewer z requestu stačí — ale žádná cache PŘES requesty
  * (Caffeine, {@code @Cacheable}) sem nesmí přibýt bez {@code (id, viewerId)} klíče.
  */
-public record ViewerContext(UUID publicUid, Long userId, boolean trusted) {
+public record ViewerContext(UUID publicUid, Long userId, boolean trusted, boolean moderator) {
 
-  public static final ViewerContext ANONYMOUS = new ViewerContext(null, null, false);
+  public static final ViewerContext ANONYMOUS = new ViewerContext(null, null, false, false);
 
   public boolean isAnonymous() {
     return userId == null;

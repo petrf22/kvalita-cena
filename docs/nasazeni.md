@@ -75,6 +75,14 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
 - [ ] V `.env` na serveru nastavit `SPRING_PROFILES_ACTIVE=prod,beta` (viz `.env.example`) a
   restartovat (`docker compose -f compose.prod.yaml up -d`) — profil `beta` se dá kdykoli
   vypnout zpět na `prod` bez editace kódu.
+- [ ] **Označit sebe (a případně dalšího důvěryhodného člověka) jako moderátora** — nástroj
+  pro přezkum nahlášených záznamů (`docs/reputace.md`, „Moderace", T4) je hotový, ale appka
+  nemá UI na jmenování, jen ruční SQL na serveru:
+  ```sql
+  UPDATE auth.app_user SET is_moderator = true WHERE public_handle = '<handle z /moderation nebo DB>';
+  ```
+  Bez aspoň jednoho moderátora nemá nahlášený obsah (fotky, zboží, obchody) kdo přezkoumat —
+  udělat PŘED pozváním prvních lidí, ne až po prvním nahlášení.
 - **Katalog obchodů se záměrně nepředvyplňuje** — zvažovalo se ruční přepsání poboček
   velkých řetězců (COOP, Penny) i hromadný import z OpenStreetMap, ale u objemu, o který by
   reálně šlo (tisíce poboček napříč velkými řetězci), obojí naráží na stejné riziko z druhé

@@ -82,7 +82,7 @@ důvěry autora (`TrustLevelService`, stáří účtu + `auth.app_user.observati
 prahem je vidět jen autorovi, dokud ho nepotvrdí `app.catalog.draft-confirmations` jiných
 přispěvatelů (leave-one-out, stejně jako bezkódové zboží výš). Nahlášení (`core.record_flag`,
 `RecordFlagService`, `flagRecord`) skryje záznam po `app.moderation.flags-to-hide` různých
-hlasů — hlasuje se o záznamu, nikdy o autorovi. Čtení s překryvem (`ProductOverlayService`/
+hlasů — hlasuje se o záznamu, nikdy o autorovi; přezkum viz „Moderace" níže. Čtení s překryvem (`ProductOverlayService`/
 `StoreOverlayService`, `ViewerContext`/`ViewerContextResolver`) vrací vždy DETACHED kopii
 entity (`toBuilder()`), nikdy nepřepisuje spravovanou entitu uvnitř transakce — Product/Store
 mají proto GraphQL pole `verified`/`editedByMe` (Store navíc `pendingConfirmation`), Product
@@ -111,6 +111,26 @@ blokujícího zboží a obchodu (cena sama žádný práh nemá). Web má strán
 MyContributionsScreen.kt` + `MyContributionsViewModel.kt` (odkaz z `AccountScreen.kt`,
 `GraphQlClient.myProducts`/`myStores`/`myObservations`/`myEdits`,
 `PublicationStatusText.kt` s JUnit testem) — obojí čtyři záložky Zboží/Obchody/Ceny/Úpravy.
+
+**Moderace** (`docs/reputace.md`, „Moderace"; T4 v „Odstupňování přístupu"): nástroj pro
+přezkum nahlášených záznamů, chyběl přesně tam, kde appka i uživatelům slibovala „čeká na
+přezkum". `ModerationService`/`ModerationGraphQlController` — role je sloupec
+`auth.app_user.is_moderator` (nastavuje se ručně SQL, `docs/nasazeni.md`, promítne se do
+`ROLE_MODERATOR` nejpozději do 60 s přes stejnou TTL cache v `JwtAuthenticationFilter`, co
+hlídá `token_version`). `flaggedRecords` vypíše frontu nevyřízených nahlášení včetně skrytého
+obsahu (predikáty viditelnosti v `Product`/`Store`/`MediaController`/`MediaService` mají navíc
+větev `|| viewer.moderator()`); `resolveFlags` je jediná cesta zpět (`DISMISSED` vrátí
+`hidden_at` na `NULL`, `UPHELD` skrytí potvrdí i pod prahem). Cenu nejde nahlásit komunitně
+(`core.record_flag` míří jen na katalog), moderátor ji zamítá přímo přes
+`moderationObservations`/`setObservationRejected` → `ObservationStatus.REJECTED` + povinné
+zařazení do `agg.recompute_queue`. `setUserSuspended` pozastaví účet
+(`docs/podminky-uziti.md`, „Ukončení a vyloučení") — `AppUserStatus.SUSPENDED` blokuje
+autentizaci i nový OTP kód (`OtpService`), refresh tokeny se revokují
+(`RefreshTokenService.revokeAllForUser`). Kdo nahlásil zůstává skryté i moderátorovi
+(`record_flag.user_id`), kdo záznam založil vidí naopak jen moderátor
+(`authorPublicUid`/`authorHandle`) — dvě různé věci se schválně jiným pravidlem
+(`docs/soukromi.md`). Jen web (`/moderation`, odkaz z Účtu jen pro moderátora), mobil nemá —
+je to nástroj provozovatele, ne appky.
 
 **Fotky zboží a provozoven** (`docs/datovy-model.md`, „Fotky zboží a provozoven"; práh
 nahlášení v `docs/reputace.md`): `core.media` nese metadata, binární obsah (originál i náhled)

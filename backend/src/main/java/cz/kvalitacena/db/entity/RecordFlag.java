@@ -46,6 +46,18 @@ public class RecordFlag implements Persistable<Long> {
   @Column(name = "created_at", nullable = false, columnDefinition = "TIMESTAMPTZ")
   private OffsetDateTime createdAt;
 
+  // Vyplní ModerationService.resolveFlags — NULL = "čeká na přezkum" (docs/reputace.md,
+  // "Moderace"). Bez tohohle nešlo vyřízené nahlášení odlišit od čekajícího.
+  @Column(name = "resolved_at", columnDefinition = "TIMESTAMPTZ")
+  private OffsetDateTime resolvedAt;
+
+  @Column(name = "resolved_by_user_id")
+  private Long resolvedByUserId;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "resolution", length = 10)
+  private FlagResolution resolution;
+
   @PrePersist
   protected void onCreate() {
     createdAt = OffsetDateTime.now();

@@ -5,5 +5,7 @@ public enum RevokeReason {
   REUSE_DETECTED,
   LOGOUT,
   USER_REVOKED,
-  EXPIRED
+  EXPIRED,
+  /** Moderátor pozastavil účet (docs/podminky-uziti.md, "Ukončení a vyloučení") — viz ModerationService.setUserSuspended. */
+  SUSPENDED
 }

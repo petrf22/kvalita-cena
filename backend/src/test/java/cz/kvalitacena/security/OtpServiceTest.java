@@ -3,11 +3,13 @@ package cz.kvalitacena.security;
 import cz.kvalitacena.config.LegalProperties;
 import cz.kvalitacena.config.OtpProperties;
 import cz.kvalitacena.db.entity.AppUser;
+import cz.kvalitacena.db.entity.AppUserStatus;
 import cz.kvalitacena.db.entity.ChallengePurpose;
 import cz.kvalitacena.db.entity.ClientKind;
 import cz.kvalitacena.db.entity.LoginChallenge;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.LoginChallengeRepository;
+import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.service.OtpMailSender;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +26,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -149,6 +152,34 @@ class OtpServiceTest {
     verify(appUserRepository).save(userCaptor.capture());
     assertThat(userCaptor.getValue().getTermsAcceptedAt()).isNotNull();
     assertThat(userCaptor.getValue().getTermsVersion()).isEqualTo("3");
+  }
+
+  @Test
+  void requestOtpRejectsSuspendedAccount() {
+    when(rateLimiter.tryAcquireForRequest(any(), any())).thenReturn(true);
+    when(appUserRepository.findByEmailHash(EMAIL_HASH))
+        .thenReturn(Optional.of(AppUser.builder().id(5L).status(AppUserStatus.SUSPENDED).build()));
+
+    ValidationException error = catchThrowableOfType(ValidationException.class,
+        () -> service.requestOtp("uzivatel@example.com", ClientKind.WEB, "1.2.3.4"));
+
+    assertThat(error.getCode()).isEqualTo(ErrorCode.ACCOUNT_SUSPENDED);
+    verify(challengeRepository, never()).save(any());
+  }
+
+  @Test
+  void verifyOtpRejectsSuspendedAccount() {
+    LoginChallenge challenge = validChallenge();
+    stubValidCode(challenge);
+    when(appUserRepository.findByEmailHash(EMAIL_HASH))
+        .thenReturn(Optional.of(AppUser.builder().id(5L).status(AppUserStatus.SUSPENDED).build()));
+
+    ValidationException error = catchThrowableOfType(ValidationException.class,
+        () -> service.verifyOtp(challenge.getChallengeUid(), "123456", "uzivatel@example.com", null,
+            ClientKind.WEB, "device"));
+
+    assertThat(error.getCode()).isEqualTo(ErrorCode.ACCOUNT_SUSPENDED);
+    verify(appUserRepository, never()).save(any());
   }
 
   @Test
