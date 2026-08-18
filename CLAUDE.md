@@ -19,8 +19,8 @@ Dvě zadání, která jdou proti samozřejmým řešením a určují celou archi
    bylo technicky nejjednodušší. Detaily: `docs/reputace.md`.
 
 Plán založení a odůvodnění klíčových rozhodnutí: `docs/` (jednotlivé dokumenty datový model,
-reputace, soukromí, AI, vydání — odkaz na samostatný plánovací soubor mimo repo tu dřív byl, ale
-ten soubor už neexistuje).
+reputace, soukromí, AI, vydání, rozvoj — odkaz na samostatný plánovací soubor mimo repo tu dřív
+byl, ale ten soubor už neexistuje).
 
 ## Monorepo — tři samostatné aplikace
 
@@ -189,8 +189,10 @@ ro/hr/si/bg/sr — plán expanze rozšířil na 16 ZEMÍ, ale jazyků je zatím 
 `docs/lokalizace.md`, „Co zbývá"), lokální AI (`docs/ai.md` — čtení čísel
 z fotek, kontrola textů, předfiltr moderace; zatím jen rozhodnutí v docs, žádný kód — výjimkou
 je předfiltr fotek pro moderaci, který podle `docs/ai.md` patří před spuštění veřejného
-provozu, ne až za etapu 2) — viz konec plánu založení projektu pro rozpis a `docs/reputace.md`
-pro poznámku o hodnocení kvality vs. dodavatelích.
+provozu, ne až za etapu 2) — viz `docs/reputace.md` pro poznámku o hodnocení kvality vs.
+dodavatelích. Další rozvojové nápady mimo etapu 1 (nezávazné, k realizaci až přijde řada) jsou
+v `docs/rozvoj.md`: pojmenování slevové karty podle obchodu, ceny předem z akčního letáku,
+načtení celé účtenky, nákup podle receptu nebo seznamu.
 
 ## Příkazy
 

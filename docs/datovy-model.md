@@ -336,6 +336,9 @@ lokální dodavatelé (`core.supplier`, `core.supplier_offer`) a `core.access_po
 to všechno je popsané v plánu založení projektu a přijde v etapě 2/3. Tabulky pro ně
 ještě nejsou v changelogu, aby se neležel mrtvý kód/schéma, které nikdo nepoužívá.
 
+Nápady mimo tenhle plán (název věrnostního programu podle obchodu, ceny předem z akčního
+letáku, načtení celé účtenky, nákup podle receptu nebo seznamu) jsou v `docs/rozvoj.md`.
+
 **Konsolidační job** (vyhodnocuje `processed_at IS NULL` frontu z "Uživatelská vrstva nad
 globálními daty" výš a rozhoduje, kdy patch/nový záznam povýšit na `verified_at`) taky ještě
 není napsaný — vyhodnocovací pravidlo zatím není známé. Existuje jen to, co bude potřebovat

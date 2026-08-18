@@ -53,7 +53,7 @@ můžou přepočítat jindy jinak.
 | Úloha | Kdy | Poznámka |
 |---|---|---|
 | Předfiltr fotek pro moderaci | **před spuštěním veřejného provozu** | `core.media` existuje už dnes. Míří přímo na to, co `soukromi.md` („Otevřená rizika") označuje za reálný limit projektu — kapacitu moderace jednoho člověka. Práh `app.moderation.photo-flags-to-hide = 1` funguje jen tehdy, když závadnou fotku někdo uvidí — model ji jen posune ve frontě k přezkumu výš, neskryje ji sám (viz „AI nikdy nerozhoduje" výš). |
-| OCR ceny z fotky | s dodělaným `f_evid` (zbytek etapy 1 — fotka jako důkaz ceny) | `reputace.md` s tím už počítá (`f_evid = 1,30 účtenka+OCR / 1,15 foto cedulky`), ale schéma dnes neukládá druh důkazu, jen že fotka existuje — viz níže. |
+| OCR ceny z fotky | s dodělaným `f_evid` (zbytek etapy 1 — fotka jako důkaz ceny) | `reputace.md` s tím už počítá (`f_evid = 1,30 účtenka+OCR / 1,15 foto cedulky`), ale schéma dnes neukládá druh důkazu, jen že fotka existuje — viz níže. Rozšíření na vytěžení celé účtenky (víc položek najednou, uložení jako přehled nákupu) je rozvojový nápad zapsaný v `docs/rozvoj.md`. |
 | Kontrola textů recenzí | etapa 2 | Až vznikne `core.product_review`. Dnes nemá co kontrolovat — volný text je jen `Media.caption` (200 zn.) a `RecordFlag.reason` (500 zn.), ani jedno není recenze. |
 | Detekce anomálií u cen | etapa 2/3, jako doplněk | **Statistická pravidla zůstávají primární** — `BIASED`/`IMPOSSIBLE`/`TELEPORT`/`BURST`/`CLUSTER`/`COMMERCIAL` (`reputace.md`, „Detekce zneužití") jsou deterministická a laditelná, což je u reputační váhy přednost, ne nedostatek. LLM tu má smysl jen na případy, které pravidla nezachytí, a jeho výstup je vždy poradní stejně jako u ostatních úloh výš — nikdy nový vstup do `w`. |
 
