@@ -11,6 +11,10 @@ import { AuthService } from './services/auth-service';
  * app.css přepne na spodní lištu, stejný princip jako bottom navigation v mobile appce
  * (mobile/.../ui/navigation/AppDestinations.kt). Přihlášení/odhlášení řeší features/login,
  * ne hlavička (dřív tam bylo tlačítko dvakrát — v hlavičce i na stránce).
+ *
+ * Patička (`nz-footer`) nese odkazy „O aplikaci"/„Podmínky užití"/„Zásady ochrany osobních
+ * údajů" na každé stránce — dřív byly schované jen v Nastavení. Přepínače jazyk/země/měna na
+ * `/settings` zůstávají (parita s mobilní SettingsScreen.kt), do patičky nejdou.
  */
 @Component({
   selector: 'app-root',

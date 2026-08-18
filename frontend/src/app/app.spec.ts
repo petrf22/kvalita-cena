@@ -25,6 +25,11 @@ describe('App', () => {
                 account: 'Účet',
                 login: 'Přihlášení',
               },
+              footer: {
+                about: 'O aplikaci',
+                terms: 'Podmínky užití',
+                privacy: 'Zásady ochrany osobních údajů',
+              },
             },
           },
           translocoConfig: { availableLangs: ['cs'], defaultLang: 'cs' },
@@ -45,5 +50,17 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.app-title')?.textContent).toContain('Kvalita a cena');
+  });
+
+  it('should render footer links to about/terms/privacy on every page', async () => {
+    const fixture = TestBed.createComponent(App);
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const links = Array.from(compiled.querySelectorAll('.app-footer a')) as HTMLAnchorElement[];
+    expect(links.map((a) => a.getAttribute('routerLink'))).toEqual([
+      '/about',
+      '/terms',
+      '/privacy',
+    ]);
   });
 });

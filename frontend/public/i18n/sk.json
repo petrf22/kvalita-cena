@@ -25,6 +25,11 @@
     "account": "Účet",
     "login": "Prihlásenie"
   },
+  "footer": {
+    "about": "O aplikácii",
+    "terms": "Podmienky užívania",
+    "privacy": "Zásady ochrany osobných údajov"
+  },
   "errors": {
     "generic": "Niečo sa pokazilo, skús to prosím znova.",
     "PRODUCT_NOT_FOUND": "Produkt s týmto id neexistuje",

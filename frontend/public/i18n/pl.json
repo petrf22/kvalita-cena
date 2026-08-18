@@ -25,6 +25,11 @@
     "account": "Konto",
     "login": "Logowanie"
   },
+  "footer": {
+    "about": "O aplikacji",
+    "terms": "Warunki korzystania",
+    "privacy": "Polityka prywatności"
+  },
   "errors": {
     "generic": "Coś poszło nie tak, spróbuj ponownie.",
     "PRODUCT_NOT_FOUND": "Produkt o tym id nie istnieje",

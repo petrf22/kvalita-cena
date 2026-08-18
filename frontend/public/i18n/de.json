@@ -25,6 +25,11 @@
     "account": "Konto",
     "login": "Anmeldung"
   },
+  "footer": {
+    "about": "Über die App",
+    "terms": "Nutzungsbedingungen",
+    "privacy": "Datenschutzerklärung"
+  },
   "errors": {
     "generic": "Etwas ist schiefgelaufen, bitte versuch es erneut.",
     "PRODUCT_NOT_FOUND": "Produkt mit dieser ID existiert nicht",

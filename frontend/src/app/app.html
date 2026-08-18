@@ -30,4 +30,9 @@
   <nz-content class="app-content">
     <router-outlet />
   </nz-content>
+  <nz-footer class="app-footer">
+    <a routerLink="/about">{{ 'footer.about' | transloco }}</a>
+    <a routerLink="/terms">{{ 'footer.terms' | transloco }}</a>
+    <a routerLink="/privacy">{{ 'footer.privacy' | transloco }}</a>
+  </nz-footer>
 </nz-layout>

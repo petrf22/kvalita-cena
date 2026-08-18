@@ -23,10 +23,5 @@
   },
   "currencyLabel": "Anzeigewährung",
   "currencyStoreDefaultOption": "Währung des Geschäfts (Standard)",
-  "currencyNote": "Die Umrechnung dient nur zum Vergleich — den Preis meldest du immer in der Währung des Geschäfts, dies ändert nur die Anzeige.",
-  "aboutTitle": "Über die App",
-  "aboutLink": "Was die App macht, woher die Daten stammen und wer sie betreibt",
-  "legalTitle": "Rechtliche Dokumente",
-  "termsLink": "Nutzungsbedingungen",
-  "privacyLink": "Datenschutzerklärung"
+  "currencyNote": "Die Umrechnung dient nur zum Vergleich — den Preis meldest du immer in der Währung des Geschäfts, dies ändert nur die Anzeige."
 }

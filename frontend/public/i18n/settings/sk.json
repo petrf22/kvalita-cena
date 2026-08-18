@@ -23,10 +23,5 @@
   },
   "currencyLabel": "Zobrazovacia mena",
   "currencyStoreDefaultOption": "Mena obchodu (predvolené)",
-  "currencyNote": "Prepočet slúži len na porovnanie — cenu vždy hlásite v mene obchodu, toto len mení, ako sa zobrazuje.",
-  "aboutTitle": "O aplikácii",
-  "aboutLink": "Čo appka robí, odkiaľ berie dáta a kto ju prevádzkuje",
-  "legalTitle": "Právne dokumenty",
-  "termsLink": "Podmienky užívania",
-  "privacyLink": "Zásady ochrany osobných údajov"
+  "currencyNote": "Prepočet slúži len na porovnanie — cenu vždy hlásite v mene obchodu, toto len mení, ako sa zobrazuje."
 }

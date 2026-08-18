@@ -2,6 +2,27 @@
   min-height: 100vh;
 }
 
+/* Patička se drží dole i na krátkých stránkách (viz nz-content flex níže). */
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  border-top: 1px solid #f0f0f0;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.app-footer a {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.app-footer a:hover {
+  color: rgba(0, 0, 0, 0.88);
+}
+
 .app-header {
   display: flex;
   align-items: center;
@@ -27,6 +48,7 @@
 
 /* Seznam hledání má víc sloupců než dřívější jednoduchý výpis — 720px bylo na tabulku úzké. */
 .app-content {
+  flex: 1;
   padding: 24px;
   max-width: 1080px;
   margin: 0 auto;
@@ -61,6 +83,10 @@
   }
 
   .app-content {
+    padding: 16px;
+  }
+
+  .app-footer {
     padding: 16px;
     padding-bottom: 72px; /* místo pro fixní spodní menu */
   }

@@ -23,10 +23,5 @@
   },
   "currencyLabel": "Waluta wyświetlania",
   "currencyStoreDefaultOption": "Waluta sklepu (domyślnie)",
-  "currencyNote": "Przeliczenie służy tylko do porównania — cenę zawsze zgłaszasz w walucie sklepu, to tylko zmienia sposób jej wyświetlania.",
-  "aboutTitle": "O aplikacji",
-  "aboutLink": "Co robi aplikacja, skąd pochodzą dane i kto ją prowadzi",
-  "legalTitle": "Dokumenty prawne",
-  "termsLink": "Warunki korzystania",
-  "privacyLink": "Polityka prywatności"
+  "currencyNote": "Przeliczenie służy tylko do porównania — cenę zawsze zgłaszasz w walucie sklepu, to tylko zmienia sposób jej wyświetlania."
 }

@@ -1,8 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoService, provideTranslocoScope } from '@jsverse/transloco';
-import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import {
@@ -24,12 +22,12 @@ const LANGUAGE_OPTIONS: { value: AppLang; label: string }[] = [
 ];
 
 /**
- * Stránka "Nastavení" — jen samotné nastavování (jazyk/země/měna) + odkazy na "O aplikaci"
- * a právní dokumenty. Karta se zdroji dat (ODbL požadavek "UI vždy uvede zdroj",
- * docs/datovy-model.md) a řádek s verzí appky se přesunuly na `features/about` — tady zůstal
- * jen odkaz. Přepínač jazyka (docs/lokalizace.md) je jediné místo v appce, kde jde volba
- * jazyka nastavit ručně — jinak se odvozuje z localStorage/navigator.languages
- * (LanguageService.readInitialLang).
+ * Stránka "Nastavení" — jen samotné nastavování (jazyk/země/měna). Odkazy na "O aplikaci" a
+ * právní dokumenty odsud byly přesunuty do patičky (`app.html`), jsou vidět na každé stránce.
+ * Karta se zdroji dat (ODbL požadavek "UI vždy uvede zdroj", docs/datovy-model.md) a řádek
+ * s verzí appky jsou na `features/about`. Přepínač jazyka (docs/lokalizace.md) je jediné místo
+ * v appce, kde jde volba jazyka nastavit ručně — jinak se odvozuje z localStorage/
+ * navigator.languages (LanguageService.readInitialLang).
  *
  * Přepínač zobrazovací měny (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna") je
  * druhá, nezávislá volba — `null` (měna obchodu) je výchozí, appka pak vůbec neposílá
@@ -38,17 +36,9 @@ const LANGUAGE_OPTIONS: { value: AppLang; label: string }[] = [
  */
 @Component({
   selector: 'app-settings-page',
-  imports: [
-    FormsModule,
-    RouterLink,
-    NzCardModule,
-    NzFormModule,
-    NzSelectModule,
-    TranslocoDirective,
-  ],
+  imports: [FormsModule, NzFormModule, NzSelectModule, TranslocoDirective],
   providers: [provideTranslocoScope('settings')],
   templateUrl: './settings-page.html',
-  styleUrl: './settings-page.css',
 })
 export class SettingsPage {
   private readonly transloco = inject(TranslocoService);

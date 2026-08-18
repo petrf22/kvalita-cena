@@ -25,6 +25,11 @@
     "account": "Account",
     "login": "Sign in"
   },
+  "footer": {
+    "about": "About the app",
+    "terms": "Terms of use",
+    "privacy": "Privacy policy"
+  },
   "errors": {
     "generic": "Something went wrong, please try again.",
     "PRODUCT_NOT_FOUND": "Product with this id does not exist",

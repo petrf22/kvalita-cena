@@ -23,10 +23,5 @@
   },
   "currencyLabel": "Display currency",
   "currencyStoreDefaultOption": "Store currency (default)",
-  "currencyNote": "The conversion is only for comparison — you always report a price in the store's currency, this just changes how it's displayed.",
-  "aboutTitle": "About the app",
-  "aboutLink": "What the app does, where the data comes from, and who runs it",
-  "legalTitle": "Legal documents",
-  "termsLink": "Terms of use",
-  "privacyLink": "Privacy policy"
+  "currencyNote": "The conversion is only for comparison — you always report a price in the store's currency, this just changes how it's displayed."
 }

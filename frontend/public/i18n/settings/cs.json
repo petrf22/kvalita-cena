@@ -23,10 +23,5 @@
   },
   "currencyLabel": "Zobrazovací měna",
   "currencyStoreDefaultOption": "Měna obchodu (výchozí)",
-  "currencyNote": "Přepočet slouží jen k porovnání — cenu vždy hlásíte v měně obchodu, tohle jen mění, jak se zobrazuje.",
-  "aboutTitle": "O aplikaci",
-  "aboutLink": "Co appka dělá, odkud bere data a kdo ji provozuje",
-  "legalTitle": "Právní dokumenty",
-  "termsLink": "Podmínky užití",
-  "privacyLink": "Zásady ochrany osobních údajů"
+  "currencyNote": "Přepočet slouží jen k porovnání — cenu vždy hlásíte v měně obchodu, tohle jen mění, jak se zobrazuje."
 }
