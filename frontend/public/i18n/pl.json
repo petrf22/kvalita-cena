@@ -88,7 +88,8 @@
     "TOO_MANY_REQUESTS": "Zbyt wiele żądań, spróbuj ponownie później",
     "UOM_MISMATCH": "Jednostka {{p0}} nie pasuje do typu {{p1}}",
     "VALIDATION_FAILED": "Podane dane są nieprawidłowe",
-    "CLIENT_VERSION_TOO_OLD": "Twoja wersja aplikacji nie jest już obsługiwana, zainstaluj najnowszą wersję"
+    "CLIENT_VERSION_TOO_OLD": "Twoja wersja aplikacji nie jest już obsługiwana, zainstaluj najnowszą wersję",
+    "OBSERVATION_ALREADY_SUBMITTED_TODAY": "Cenę tego produktu w tym sklepie już dziś zgłosiłeś/aś. Spróbuj ponownie jutro."
   },
   "enum": {
     "priceKind": {

@@ -141,6 +141,7 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.UomMismatch]: 'errors.UOM_MISMATCH',
   [ErrorCode.ValidationFailed]: 'errors.VALIDATION_FAILED',
   [ErrorCode.ClientVersionTooOld]: 'errors.CLIENT_VERSION_TOO_OLD',
+  [ErrorCode.ObservationAlreadySubmittedToday]: 'errors.OBSERVATION_ALREADY_SUBMITTED_TODAY',
 };
 
 /**

@@ -88,7 +88,8 @@
     "TOO_MANY_REQUESTS": "Příliš mnoho požadavků, zkus to prosím později",
     "UOM_MISMATCH": "Jednotka {{p0}} neodpovídá typu {{p1}}",
     "VALIDATION_FAILED": "Zadané údaje nejsou platné",
-    "CLIENT_VERSION_TOO_OLD": "Tvoje verze aplikace už není podporovaná, nainstaluj prosím aktuální verzi"
+    "CLIENT_VERSION_TOO_OLD": "Tvoje verze aplikace už není podporovaná, nainstaluj prosím aktuální verzi",
+    "OBSERVATION_ALREADY_SUBMITTED_TODAY": "Cenu tohoto zboží v tomto obchodě jsi dnes už zapsal/a. Zkus to prosím zítra."
   },
   "enum": {
     "priceKind": {

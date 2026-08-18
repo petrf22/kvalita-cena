@@ -57,6 +57,7 @@ export const ErrorCode = {
   InvalidChallenge: 'INVALID_CHALLENGE',
   LocaleRequiresLogin: 'LOCALE_REQUIRES_LOGIN',
   LocaleUnsupported: 'LOCALE_UNSUPPORTED',
+  ObservationAlreadySubmittedToday: 'OBSERVATION_ALREADY_SUBMITTED_TODAY',
   PhotoActionRequiresLogin: 'PHOTO_ACTION_REQUIRES_LOGIN',
   PhotoCannotAttachToPhoto: 'PHOTO_CANNOT_ATTACH_TO_PHOTO',
   PhotoCannotAttachToUser: 'PHOTO_CANNOT_ATTACH_TO_USER',
