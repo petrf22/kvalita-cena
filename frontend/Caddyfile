@@ -1,23 +1,35 @@
 # SITE_ADDRESS = doména appky (kvalitacena.cz v produkci) — Caddy si pro ni sám obstará TLS
 # (Let's Encrypt). Bez proměnné/DNS namířeného na server naslouchá jen na :80, ať jde image
-# vyzkoušet i lokálně (docs/vydani.md plán, fáze "minimální produkční nasazení").
-{$SITE_ADDRESS:http://localhost}
+# vyzkoušet i lokálně (docs/vydani.md plán, fáze "minimální produkční nasazení"). Dva site
+# bloky teď musí mít výslovné složené závorky (Caddyfile syntax), jinak druhá adresa níže
+# spadne na "unrecognized directive".
+{$SITE_ADDRESS:http://localhost} {
+	encode gzip
 
-encode gzip
+	# Stejný origin jako web (viz komentář v Dockerfile) — /api a /graphql jdou na backend
+	# kontejner podle jména služby z compose.prod.yaml, ne přes veřejnou adresu.
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
 
-# Stejný origin jako web (viz komentář v Dockerfile) — /api a /graphql jdou na backend
-# kontejner podle jména služby z compose.prod.yaml, ne přes veřejnou adresu.
-handle /api/* {
-	reverse_proxy backend:8080
+	handle /graphql {
+		reverse_proxy backend:8080
+	}
+
+	# Angular SPA — neznámá cesta padá na index.html, o zbytek routingu se postará klient.
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
 }
 
-handle /graphql {
-	reverse_proxy backend:8080
-}
+# API_ADDRESS = api.kvalitacena.cz v produkci (mobile/app/build.gradle.kts, release BASE_URL) —
+# vlastní site blok, jinak by Caddy pro tenhle hostname vůbec nezískal TLS certifikát a
+# release APK by neměl kam mluvit (docs/nasazeni.md, DNS záznamy). Web na tuhle adresu nemíří,
+# proxuje se sem rovnou celý provoz, žádný SPA fallback.
+{$API_ADDRESS:http://api.localhost} {
+	encode gzip
 
-# Angular SPA — neznámá cesta padá na index.html, o zbytek routingu se postará klient.
-handle {
-	root * /srv
-	try_files {path} /index.html
-	file_server
+	reverse_proxy backend:8080
 }

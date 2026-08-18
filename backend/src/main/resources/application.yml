@@ -92,6 +92,9 @@ app:
     otp:
       # V MVP (etapa 1) se kód místo odesílání e-mailem loguje do konzole (viz OtpService).
       mail-enabled: false
+      # Použije se jen když se mail-enabled lokálně přepne na true (např. proti Mailpit) —
+      # v produkci vždy z SMTP_FROM, viz application-prod.yml.
+      mail-from: "KvalitaACena <dev@example.com>"
       code-ttl: PT10M
       resend-cooldown: PT1M
       max-attempts: 5

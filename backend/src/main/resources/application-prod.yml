@@ -54,6 +54,9 @@ app:
   auth:
     otp:
       mail-enabled: true
+      # Bez ověřené odesílací adresy většina SMTP poskytovatelů zprávu s ověřenou doménou
+      # rovnou odmítne — proto bez defaultu, appka bez ní v produkci nenastartuje.
+      mail-from: ${SMTP_FROM}
   media:
     root: ${MEDIA_ROOT}
   external:

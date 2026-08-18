@@ -50,8 +50,11 @@ přesunout do `docs/vydani.md` jako historickou poznámku.
   - `POSTGRES_USER`/`POSTGRES_PASSWORD` — libovolné silné heslo, jen pro appku samotnou
   - `JWT_SECRET`/`EMAIL_HASH_PEPPER`/`EMAIL_ENC_KEY` — hodnoty vygenerované v kroku 1 výš
   - `SITE_ADDRESS=https://kvalitacena.cz`
+  - `API_ADDRESS=https://api.kvalitacena.cz` — vlastní site blok v `frontend/Caddyfile` pro
+    mobilní klienty, bez něj Caddy pro tenhle hostname nezíská TLS certifikát
 - [ ] `git clone` repa na server, `docker compose -f compose.prod.yaml up -d --build`.
-- [ ] Ověřit, že Caddy dostal TLS certifikát (Let's Encrypt, automaticky) — `https://kvalitacena.cz`
+- [ ] Ověřit, že Caddy dostal TLS certifikát (Let's Encrypt, automaticky) pro OBĚ domény —
+  `https://kvalitacena.cz` i `https://api.kvalitacena.cz`
   musí být bez varování prohlížeče.
 - [ ] Nastavit cron zálohu (`pg_dump` + `rsync`/snapshot adresáře médií na cíl z kroku 1) —
   a **vyzkoušet obnovu** na čistou instanci, ne jen že záloha proběhla bez chyby.

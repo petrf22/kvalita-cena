@@ -22,6 +22,7 @@ public class SmtpOtpMailSender implements OtpMailSender {
   @Override
   public void sendOtpCode(String email, String code, Locale locale) {
     SimpleMailMessage message = new SimpleMailMessage();
+    message.setFrom(otpProperties.getMailFrom());
     message.setTo(email);
     message.setSubject(messages.get("mail.otp.subject", locale));
     // Platnost se čte z konfigurace, ne natvrdo — dřív text tvrdil "10 minut" bez ohledu na
@@ -33,6 +34,7 @@ public class SmtpOtpMailSender implements OtpMailSender {
   @Override
   public void sendEmailChangeCode(String email, String code, Locale locale) {
     SimpleMailMessage message = new SimpleMailMessage();
+    message.setFrom(otpProperties.getMailFrom());
     message.setTo(email);
     message.setSubject(messages.get("mail.emailChange.subject", locale));
     message.setText(messages.get("mail.emailChange.body", locale, code, otpProperties.getCodeTtl().toMinutes()));
@@ -42,6 +44,7 @@ public class SmtpOtpMailSender implements OtpMailSender {
   @Override
   public void sendEmailChangeConflict(String email, Locale locale) {
     SimpleMailMessage message = new SimpleMailMessage();
+    message.setFrom(otpProperties.getMailFrom());
     message.setTo(email);
     message.setSubject(messages.get("mail.emailChange.conflictSubject", locale));
     message.setText(messages.get("mail.emailChange.conflictBody", locale));
@@ -51,6 +54,7 @@ public class SmtpOtpMailSender implements OtpMailSender {
   @Override
   public void sendAccountDeleteCode(String email, String code, Locale locale) {
     SimpleMailMessage message = new SimpleMailMessage();
+    message.setFrom(otpProperties.getMailFrom());
     message.setTo(email);
     message.setSubject(messages.get("mail.accountDelete.subject", locale));
     message.setText(messages.get("mail.accountDelete.body", locale, code, otpProperties.getCodeTtl().toMinutes()));

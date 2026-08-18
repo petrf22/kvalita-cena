@@ -15,4 +15,10 @@ public class OtpProperties {
   private Duration codeTtl;
   private Duration resendCooldown;
   private int maxAttempts;
+  /**
+   * Odesílací adresa pro všechny e-maily (OTP, změna e-mailu, výmaz účtu) — bez ní
+   * {@code SmtpOtpMailSender} posílal zprávy bez hlavičky {@code From}, což většina SMTP
+   * poskytovatelů s ověřenou odesílací doménou rovnou odmítne (docs/nasazeni.md).
+   */
+  private String mailFrom;
 }

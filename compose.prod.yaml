@@ -47,6 +47,9 @@ services:
     restart: unless-stopped
     environment:
       - SITE_ADDRESS=${SITE_ADDRESS:-http://localhost}
+      # api.kvalitacena.cz — vlastní site blok v Caddyfile, jinak by mobilní release build
+      # (mobile/app/build.gradle.kts) neměl kam mluvit.
+      - API_ADDRESS=${API_ADDRESS:-http://api.localhost}
     ports:
       - '80:80'
       - '443:443'
