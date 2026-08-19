@@ -1,0 +1,107 @@
+path,slug,parent_slug,name,sort_order
+potraviny,potraviny,,Potraviny,10
+potraviny/mlecne,mlecne,potraviny,Mléčné výrobky,10
+potraviny/mlecne/maslo,maslo,mlecne,Máslo,10
+potraviny/mlecne/tvaroh-a-termix,tvaroh-a-termix,mlecne,Tvaroh a termix,15
+potraviny/mlecne/syry,syry,mlecne,Sýry,20
+potraviny/mlecne/smetana-a-zakysane-vyrobky,smetana-a-zakysane-vyrobky,mlecne,Smetana a zakysané výrobky,25
+potraviny/mlecne/jogurty,jogurty,mlecne,Jogurty,30
+potraviny/mlecne/mleko,mleko,mlecne,Mléko,40
+potraviny/mlecne/rostlinne-alternativy-mleka,rostlinne-alternativy-mleka,mlecne,Rostlinné alternativy mléka,45
+potraviny/vejce,vejce,potraviny,Vejce,15
+potraviny/pecivo,pecivo,potraviny,Pečivo,20
+potraviny/pecivo/chleba,chleba,pecivo,Chléb,10
+potraviny/pecivo/rohliky-a-bezne-pecivo,rohliky-a-bezne-pecivo,pecivo,Rohlíky a běžné pečivo,20
+potraviny/pecivo/sladke-pecivo-a-kolace,sladke-pecivo-a-kolace,pecivo,Sladké pečivo a koláče,30
+potraviny/pecivo/trvanlive-pecivo,trvanlive-pecivo,pecivo,Trvanlivé pečivo,40
+potraviny/maso-uzeniny,maso-uzeniny,potraviny,Maso a uzeniny,30
+potraviny/maso-uzeniny/cerstve-maso,cerstve-maso,maso-uzeniny,Čerstvé maso,10
+potraviny/maso-uzeniny/drubez,drubez,maso-uzeniny,Drůbež,20
+potraviny/maso-uzeniny/uzeniny-a-salamy,uzeniny-a-salamy,maso-uzeniny,Uzeniny a salámy,30
+potraviny/ryby-a-morske-plody,ryby-a-morske-plody,potraviny,Ryby a mořské plody,35
+potraviny/ovoce-zelenina,ovoce-zelenina,potraviny,Ovoce a zelenina,40
+potraviny/ovoce-zelenina/cerstve-ovoce,cerstve-ovoce,ovoce-zelenina,Čerstvé ovoce,10
+potraviny/ovoce-zelenina/cerstva-zelenina,cerstva-zelenina,ovoce-zelenina,Čerstvá zelenina,20
+potraviny/ovoce-zelenina/susene-ovoce-a-orechy,susene-ovoce-a-orechy,ovoce-zelenina,Sušené ovoce a ořechy,30
+potraviny/lahudky-hotova-jidla,lahudky-hotova-jidla,potraviny,Lahůdky a hotová jídla,45
+potraviny/trvanlive,trvanlive,potraviny,Trvanlivé potraviny,50
+potraviny/trvanlive/testoviny,testoviny,trvanlive,Těstoviny,10
+potraviny/trvanlive/mouka-a-suroviny-na-peceni,mouka-a-suroviny-na-peceni,trvanlive,Mouka a suroviny na pečení,15
+potraviny/trvanlive/ryze-lusteniny,ryze-lusteniny,trvanlive,Rýže a luštěniny,20
+potraviny/trvanlive/oleje-a-octy,oleje-a-octy,trvanlive,Oleje a octy,25
+potraviny/trvanlive/konzervy,konzervy,trvanlive,Konzervy,30
+potraviny/trvanlive/omacky-a-dochucovadla,omacky-a-dochucovadla,trvanlive,Omáčky a dochucovadla,35
+potraviny/koreni-a-ochucovadla,koreni-a-ochucovadla,potraviny,Koření a ochucovadla,55
+potraviny/mrazene,mrazene,potraviny,Mražené potraviny,60
+potraviny/mrazene/mrazena-zelenina-a-ovoce,mrazena-zelenina-a-ovoce,mrazene,Mražená zelenina a ovoce,10
+potraviny/mrazene/mrazene-maso-a-ryby,mrazene-maso-a-ryby,mrazene,Mražené maso a ryby,20
+potraviny/mrazene/mrazena-hotova-jidla,mrazena-hotova-jidla,mrazene,Mražená hotová jídla,30
+potraviny/mrazene/zmrzlina,zmrzlina,mrazene,Zmrzlina,40
+potraviny/sladkosti,sladkosti,potraviny,Sladkosti a snacky,70
+potraviny/sladkosti/cokolada,cokolada,sladkosti,Čokoláda,10
+potraviny/sladkosti/susenky-a-oplatky,susenky-a-oplatky,sladkosti,Sušenky a oplatky,20
+potraviny/sladkosti/bramborove-lupinky-a-slane-snacky,bramborove-lupinky-a-slane-snacky,sladkosti,Bramborové lupínky a slané snacky,30
+potraviny/sladkosti/zvykacky-a-bonbony,zvykacky-a-bonbony,sladkosti,Žvýkačky a bonbóny,40
+potraviny/special-vyziva,special-vyziva,potraviny,Zdravá a bezlepková výživa,75
+napoje,napoje,,Nápoje,20
+napoje/voda-limonady,voda-limonady,napoje,Voda a limonády,10
+napoje/voda-limonady/balena-voda,balena-voda,voda-limonady,Balená voda,10
+napoje/voda-limonady/limonady-a-kola,limonady-a-kola,voda-limonady,Limonády a kola,20
+napoje/dzusy-a-siropy,dzusy-a-siropy,napoje,Džusy a sirupy,15
+napoje/alkohol,alkohol,napoje,Alkoholické nápoje,20
+napoje/alkohol/pivo,pivo,alkohol,Pivo,10
+napoje/alkohol/vino,vino,alkohol,Víno,20
+napoje/alkohol/destilaty,destilaty,alkohol,Destiláty,30
+napoje/energeticke-a-sportovni-napoje,energeticke-a-sportovni-napoje,napoje,Energetické a sportovní nápoje,25
+napoje/kava-caj,kava-caj,napoje,Káva a čaj,30
+napoje/kava-caj/kava,kava,kava-caj,Káva,10
+napoje/kava-caj/caj,caj,kava-caj,Čaj,20
+drogerie,drogerie,,Drogerie a kosmetika,30
+drogerie/hygiena,hygiena,drogerie,Osobní hygiena,10
+drogerie/hygiena/pece-o-pokozku,pece-o-pokozku,hygiena,Péče o pokožku,10
+drogerie/hygiena/pece-o-vlasy,pece-o-vlasy,hygiena,Péče o vlasy,20
+drogerie/hygiena/ustni-hygiena,ustni-hygiena,hygiena,Ústní hygiena,30
+drogerie/hygiena/damska-hygiena,damska-hygiena,hygiena,Dámská hygiena,40
+drogerie/hygiena/holeni-a-depilace,holeni-a-depilace,hygiena,Holení a depilace,50
+drogerie/kosmetika,kosmetika,drogerie,Kosmetika,15
+drogerie/kosmetika/dekorativni-kosmetika,dekorativni-kosmetika,kosmetika,Dekorativní kosmetika,10
+drogerie/kosmetika/parfemy,parfemy,kosmetika,Parfémy,20
+drogerie/kosmetika/pece-o-nehty,pece-o-nehty,kosmetika,Péče o nehty,30
+drogerie/cistici-prostredky,cistici-prostredky,drogerie,Čisticí prostředky,20
+drogerie/cistici-prostredky/pracie-prostredky,pracie-prostredky,cistici-prostredky,Prací prostředky,10
+drogerie/cistici-prostredky/prostredky-na-nadobi,prostredky-na-nadobi,cistici-prostredky,Prostředky na nádobí,20
+drogerie/cistici-prostredky/univerzalni-cistice,univerzalni-cistice,cistici-prostredky,Univerzální čističe,30
+drogerie/zdravi-a-lekarna,zdravi-a-lekarna,drogerie,Zdraví a volně prodejné léky,25
+drogerie/zdravi-a-lekarna/vitaminy-a-doplnky-stravy,vitaminy-a-doplnky-stravy,zdravi-a-lekarna,Vitamíny a doplňky stravy,10
+drogerie/zdravi-a-lekarna/volne-prodejne-leky,volne-prodejne-leky,zdravi-a-lekarna,Volně prodejné léky,20
+domacnost,domacnost,,Domácnost,40
+domacnost/papirove-zbozi,papirove-zbozi,domacnost,Papírové zboží,10
+domacnost/papirove-zbozi/toaletni-papir,toaletni-papir,papirove-zbozi,Toaletní papír,10
+domacnost/papirove-zbozi/kuchynske-utery,kuchynske-utery,papirove-zbozi,Kuchyňské utěrky,20
+domacnost/papirove-zbozi/kapesniky,kapesniky,papirove-zbozi,Kapesníky,30
+domacnost/kuchynske-potreby,kuchynske-potreby,domacnost,Kuchyňské potřeby,20
+domacnost/kuchynske-potreby/nadobi-na-vareni,nadobi-na-vareni,kuchynske-potreby,Nádobí na vaření,10
+domacnost/kuchynske-potreby/kuchynske-doplnky,kuchynske-doplnky,kuchynske-potreby,Kuchyňské doplňky,20
+domacnost/uklidove-pomucky,uklidove-pomucky,domacnost,Úklidové pomůcky,30
+domacnost/uklidove-pomucky/houbicky-a-hadry,houbicky-a-hadry,uklidove-pomucky,Houbičky a hadry,10
+domacnost/uklidove-pomucky/pytle-na-odpad,pytle-na-odpad,uklidove-pomucky,Pytle na odpad,20
+domacnost/zahrada-a-venku,zahrada-a-venku,domacnost,Zahrada a venkovní vybavení,40
+domacnost/svicky-a-bytove-doplnky,svicky-a-bytove-doplnky,domacnost,Svíčky a bytové doplňky,50
+domacnost/naradi-a-baterie,naradi-a-baterie,domacnost,Nářadí a baterie,60
+detske-zbozi,detske-zbozi,,Dětské zboží,50
+detske-zbozi/detska-vyziva,detska-vyziva,detske-zbozi,Dětská výživa,10
+detske-zbozi/detska-vyziva/kojenecke-mleko,kojenecke-mleko,detska-vyziva,Kojenecké mléko,10
+detske-zbozi/detska-vyziva/prikrmy,prikrmy,detska-vyziva,Příkrmy,20
+detske-zbozi/plenky-a-hygiena,plenky-a-hygiena,detske-zbozi,Plenky a dětská hygiena,20
+detske-zbozi/plenky-a-hygiena/plenky,plenky,plenky-a-hygiena,Plenky,10
+detske-zbozi/plenky-a-hygiena/vlhcene-ubrousky,vlhcene-ubrousky,plenky-a-hygiena,Vlhčené ubrousky,20
+detske-zbozi/detska-kosmetika,detska-kosmetika,detske-zbozi,Dětská kosmetika,30
+detske-zbozi/detske-potreby-a-hracky,detske-potreby-a-hracky,detske-zbozi,Dětské potřeby a hračky,40
+chovatelske-potreby,chovatelske-potreby,,Chovatelské potřeby,60
+chovatelske-potreby/krmivo-pro-psy,krmivo-pro-psy,chovatelske-potreby,Krmivo pro psy,10
+chovatelske-potreby/krmivo-pro-kocky,krmivo-pro-kocky,chovatelske-potreby,Krmivo pro kočky,20
+chovatelske-potreby/krmivo-pro-hlodavce-a-ptaky,krmivo-pro-hlodavce-a-ptaky,chovatelske-potreby,Krmivo pro hlodavce a ptáky,30
+chovatelske-potreby/pamlsky-pro-zvirata,pamlsky-pro-zvirata,chovatelske-potreby,Pamlsky pro zvířata,40
+chovatelske-potreby/potreby-pro-zvirata,potreby-pro-zvirata,chovatelske-potreby,Potřeby pro zvířata,50
+chovatelske-potreby/potreby-pro-zvirata/hygiena-pro-zvirata,hygiena-pro-zvirata,potreby-pro-zvirata,Hygiena pro zvířata,10
+chovatelske-potreby/potreby-pro-zvirata/doplnky-a-hracky-pro-zvirata,doplnky-a-hracky-pro-zvirata,potreby-pro-zvirata,Doplňky a hračky pro zvířata,20

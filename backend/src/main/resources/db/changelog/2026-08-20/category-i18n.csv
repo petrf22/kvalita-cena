@@ -1,0 +1,425 @@
+slug,locale,name
+potraviny,sk,Potraviny
+potraviny,en,Food
+potraviny,pl,Żywność
+potraviny,de,Lebensmittel
+mlecne,sk,Mliečne výrobky
+mlecne,en,Dairy
+mlecne,pl,Nabiał
+mlecne,de,Milchprodukte
+maslo,sk,Maslo
+maslo,en,Butter
+maslo,pl,Masło
+maslo,de,Butter
+tvaroh-a-termix,sk,Tvaroh a tvarohové dezerty
+tvaroh-a-termix,en,Curd Cheese and Sweet Curd Snacks
+tvaroh-a-termix,pl,Twaróg i serki homogenizowane
+tvaroh-a-termix,de,Quark und Quarkspeisen
+syry,sk,Syry
+syry,en,Cheese
+syry,pl,Sery
+syry,de,Käse
+smetana-a-zakysane-vyrobky,sk,Smotana a kysnuté výrobky
+smetana-a-zakysane-vyrobky,en,Cream and Cultured Dairy
+smetana-a-zakysane-vyrobky,pl,Śmietana i produkty fermentowane
+smetana-a-zakysane-vyrobky,de,Sahne und Sauermilchprodukte
+jogurty,sk,Jogurty
+jogurty,en,Yogurts
+jogurty,pl,Jogurty
+jogurty,de,Joghurt
+mleko,sk,Mlieko
+mleko,en,Milk
+mleko,pl,Mleko
+mleko,de,Milch
+rostlinne-alternativy-mleka,sk,Rastlinné alternatívy mlieka
+rostlinne-alternativy-mleka,en,Plant-Based Milk Alternatives
+rostlinne-alternativy-mleka,pl,Roślinne zamienniki mleka
+rostlinne-alternativy-mleka,de,Pflanzliche Milchalternativen
+vejce,sk,Vajcia
+vejce,en,Eggs
+vejce,pl,Jaja
+vejce,de,Eier
+pecivo,sk,Pečivo
+pecivo,en,Bakery
+pecivo,pl,Pieczywo
+pecivo,de,Backwaren
+chleba,sk,Chlieb
+chleba,en,Bread
+chleba,pl,Chleb
+chleba,de,Brot
+rohliky-a-bezne-pecivo,sk,Rožky a bežné pečivo
+rohliky-a-bezne-pecivo,en,Rolls and Everyday Bakery
+rohliky-a-bezne-pecivo,pl,Bułki i pieczywo codzienne
+rohliky-a-bezne-pecivo,de,Brötchen und tägliches Gebäck
+sladke-pecivo-a-kolace,sk,Sladké pečivo a koláče
+sladke-pecivo-a-kolace,en,Sweet Pastries and Cakes
+sladke-pecivo-a-kolace,pl,Słodkie wypieki i ciasta
+sladke-pecivo-a-kolace,de,Süßgebäck und Kuchen
+trvanlive-pecivo,sk,Trvanlivé pečivo
+trvanlive-pecivo,en,Long-Life Bakery
+trvanlive-pecivo,pl,Pieczywo trwałe
+trvanlive-pecivo,de,Haltbares Gebäck
+maso-uzeniny,sk,Mäso a údeniny
+maso-uzeniny,en,Meat and Deli
+maso-uzeniny,pl,Mięso i wędliny
+maso-uzeniny,de,Fleisch und Wurstwaren
+cerstve-maso,sk,Čerstvé mäso
+cerstve-maso,en,Fresh Meat
+cerstve-maso,pl,Świeże mięso
+cerstve-maso,de,Frisches Fleisch
+drubez,sk,Hydina
+drubez,en,Poultry
+drubez,pl,Drób
+drubez,de,Geflügel
+uzeniny-a-salamy,sk,Údeniny a salámy
+uzeniny-a-salamy,en,Deli Meats and Sausages
+uzeniny-a-salamy,pl,Wędliny i kiełbasy
+uzeniny-a-salamy,de,Wurstwaren
+ryby-a-morske-plody,sk,Ryby a morské plody
+ryby-a-morske-plody,en,Fish and Seafood
+ryby-a-morske-plody,pl,Ryby i owoce morza
+ryby-a-morske-plody,de,Fisch und Meeresfrüchte
+ovoce-zelenina,sk,Ovocie a zelenina
+ovoce-zelenina,en,Fruits and Vegetables
+ovoce-zelenina,pl,Owoce i warzywa
+ovoce-zelenina,de,Obst und Gemüse
+cerstve-ovoce,sk,Čerstvé ovocie
+cerstve-ovoce,en,Fresh Fruit
+cerstve-ovoce,pl,Świeże owoce
+cerstve-ovoce,de,Frisches Obst
+cerstva-zelenina,sk,Čerstvá zelenina
+cerstva-zelenina,en,Fresh Vegetables
+cerstva-zelenina,pl,Świeże warzywa
+cerstva-zelenina,de,Frisches Gemüse
+susene-ovoce-a-orechy,sk,Sušené ovocie a orechy
+susene-ovoce-a-orechy,en,Dried Fruit and Nuts
+susene-ovoce-a-orechy,pl,Suszone owoce i orzechy
+susene-ovoce-a-orechy,de,Trockenfrüchte und Nüsse
+lahudky-hotova-jidla,sk,Lahôdky a hotové jedlá
+lahudky-hotova-jidla,en,Deli and Ready Meals
+lahudky-hotova-jidla,pl,Delikatesy i dania gotowe
+lahudky-hotova-jidla,de,Feinkost und Fertiggerichte
+trvanlive,sk,Trvanlivé potraviny
+trvanlive,en,Pantry
+trvanlive,pl,Produkty spożywcze trwałe
+trvanlive,de,Haltbare Lebensmittel
+testoviny,sk,Cestoviny
+testoviny,en,Pasta
+testoviny,pl,Makarony
+testoviny,de,Nudeln
+mouka-a-suroviny-na-peceni,sk,Múka a suroviny na pečenie
+mouka-a-suroviny-na-peceni,en,Flour and Baking Ingredients
+mouka-a-suroviny-na-peceni,pl,Mąka i produkty do pieczenia
+mouka-a-suroviny-na-peceni,de,Mehl und Backzutaten
+ryze-lusteniny,sk,Ryža a strukoviny
+ryze-lusteniny,en,Rice and Legumes
+ryze-lusteniny,pl,Ryż i rośliny strączkowe
+ryze-lusteniny,de,Reis und Hülsenfrüchte
+oleje-a-octy,sk,Oleje a octy
+oleje-a-octy,en,Oils and Vinegars
+oleje-a-octy,pl,Oleje i octy
+oleje-a-octy,de,Öle und Essig
+konzervy,sk,Konzervy
+konzervy,en,Canned Food
+konzervy,pl,Konserwy
+konzervy,de,Konserven
+omacky-a-dochucovadla,sk,Omáčky a dochucovadlá
+omacky-a-dochucovadla,en,Sauces and Condiments
+omacky-a-dochucovadla,pl,Sosy i dodatki smakowe
+omacky-a-dochucovadla,de,Soßen und Würzmittel
+koreni-a-ochucovadla,sk,Koreniny a ochucovadlá
+koreni-a-ochucovadla,en,Spices and Seasonings
+koreni-a-ochucovadla,pl,Przyprawy i dodatki smakowe
+koreni-a-ochucovadla,de,Gewürze und Würzmittel
+mrazene,sk,Mrazené potraviny
+mrazene,en,Frozen Food
+mrazene,pl,Mrożonki
+mrazene,de,Tiefkühlkost
+mrazena-zelenina-a-ovoce,sk,Mrazená zelenina a ovocie
+mrazena-zelenina-a-ovoce,en,Frozen Vegetables and Fruit
+mrazena-zelenina-a-ovoce,pl,Mrożone warzywa i owoce
+mrazena-zelenina-a-ovoce,de,Tiefkühlgemüse und -obst
+mrazene-maso-a-ryby,sk,Mrazené mäso a ryby
+mrazene-maso-a-ryby,en,Frozen Meat and Fish
+mrazene-maso-a-ryby,pl,Mrożone mięso i ryby
+mrazene-maso-a-ryby,de,Tiefkühlfleisch und -fisch
+mrazena-hotova-jidla,sk,Mrazené hotové jedlá
+mrazena-hotova-jidla,en,Frozen Ready Meals
+mrazena-hotova-jidla,pl,Mrożone dania gotowe
+mrazena-hotova-jidla,de,Tiefkühlfertiggerichte
+zmrzlina,sk,Zmrzlina
+zmrzlina,en,Ice Cream
+zmrzlina,pl,Lody
+zmrzlina,de,Speiseeis
+sladkosti,sk,Sladkosti a snacky
+sladkosti,en,Sweets and Snacks
+sladkosti,pl,Słodycze i przekąski
+sladkosti,de,Süßwaren und Snacks
+cokolada,sk,Čokoláda
+cokolada,en,Chocolate
+cokolada,pl,Czekolada
+cokolada,de,Schokolade
+susenky-a-oplatky,sk,Sušienky a oblátky
+susenky-a-oplatky,en,Biscuits and Wafers
+susenky-a-oplatky,pl,Ciastka i wafle
+susenky-a-oplatky,de,Kekse und Waffeln
+bramborove-lupinky-a-slane-snacky,sk,Zemiakové lupienky a slané snacky
+bramborove-lupinky-a-slane-snacky,en,Potato Chips and Savory Snacks
+bramborove-lupinky-a-slane-snacky,pl,Chipsy ziemniaczane i słone przekąski
+bramborove-lupinky-a-slane-snacky,de,Kartoffelchips und salzige Snacks
+zvykacky-a-bonbony,sk,Žuvačky a cukríky
+zvykacky-a-bonbony,en,Chewing Gum and Candy
+zvykacky-a-bonbony,pl,Gumy do żucia i cukierki
+zvykacky-a-bonbony,de,Kaugummi und Bonbons
+special-vyziva,sk,Zdravá a bezlepková výživa
+special-vyziva,en,Health and Gluten-Free Food
+special-vyziva,pl,Żywność zdrowa i bezglutenowa
+special-vyziva,de,Gesunde und glutenfreie Lebensmittel
+napoje,sk,Nápoje
+napoje,en,Beverages
+napoje,pl,Napoje
+napoje,de,Getränke
+voda-limonady,sk,Voda a limonády
+voda-limonady,en,Water and Soft Drinks
+voda-limonady,pl,Woda i napoje gazowane
+voda-limonady,de,Wasser und Limonaden
+balena-voda,sk,Balená voda
+balena-voda,en,Bottled Water
+balena-voda,pl,Woda butelkowana
+balena-voda,de,Abgefülltes Wasser
+limonady-a-kola,sk,Limonády a kola
+limonady-a-kola,en,Soft Drinks and Cola
+limonady-a-kola,pl,Lemoniady i cola
+limonady-a-kola,de,Limonaden und Cola
+dzusy-a-siropy,sk,Džúsy a sirupy
+dzusy-a-siropy,en,Juices and Syrups
+dzusy-a-siropy,pl,Soki i syropy
+dzusy-a-siropy,de,Säfte und Sirupe
+alkohol,sk,Alkoholické nápoje
+alkohol,en,Alcoholic Beverages
+alkohol,pl,Napoje alkoholowe
+alkohol,de,Alkoholische Getränke
+pivo,sk,Pivo
+pivo,en,Beer
+pivo,pl,Piwo
+pivo,de,Bier
+vino,sk,Víno
+vino,en,Wine
+vino,pl,Wino
+vino,de,Wein
+destilaty,sk,Destiláty
+destilaty,en,Spirits
+destilaty,pl,Alkohole mocne
+destilaty,de,Spirituosen
+energeticke-a-sportovni-napoje,sk,Energetické a športové nápoje
+energeticke-a-sportovni-napoje,en,Energy and Sports Drinks
+energeticke-a-sportovni-napoje,pl,Napoje energetyczne i izotoniczne
+energeticke-a-sportovni-napoje,de,Energie- und Sportgetränke
+kava-caj,sk,Káva a čaj
+kava-caj,en,Coffee and Tea
+kava-caj,pl,Kawa i herbata
+kava-caj,de,Kaffee und Tee
+kava,sk,Káva
+kava,en,Coffee
+kava,pl,Kawa
+kava,de,Kaffee
+caj,sk,Čaj
+caj,en,Tea
+caj,pl,Herbata
+caj,de,Tee
+drogerie,sk,Drogéria a kozmetika
+drogerie,en,Drugstore and Cosmetics
+drogerie,pl,Drogeria i kosmetyki
+drogerie,de,Drogerie und Kosmetik
+hygiena,sk,Osobná hygiena
+hygiena,en,Personal Care
+hygiena,pl,Higiena osobista
+hygiena,de,Körperpflege
+pece-o-pokozku,sk,Starostlivosť o pokožku
+pece-o-pokozku,en,Skin Care
+pece-o-pokozku,pl,Pielęgnacja skóry
+pece-o-pokozku,de,Hautpflege
+pece-o-vlasy,sk,Starostlivosť o vlasy
+pece-o-vlasy,en,Hair Care
+pece-o-vlasy,pl,Pielęgnacja włosów
+pece-o-vlasy,de,Haarpflege
+ustni-hygiena,sk,Ústna hygiena
+ustni-hygiena,en,Oral Care
+ustni-hygiena,pl,Higiena jamy ustnej
+ustni-hygiena,de,Mundhygiene
+damska-hygiena,sk,Dámska hygiena
+damska-hygiena,en,Feminine Hygiene
+damska-hygiena,pl,Higiena kobieca
+damska-hygiena,de,Damenhygiene
+holeni-a-depilace,sk,Holenie a depilácia
+holeni-a-depilace,en,Shaving and Hair Removal
+holeni-a-depilace,pl,Golenie i depilacja
+holeni-a-depilace,de,Rasur und Haarentfernung
+kosmetika,sk,Kozmetika
+kosmetika,en,Cosmetics
+kosmetika,pl,Kosmetyki
+kosmetika,de,Kosmetik
+dekorativni-kosmetika,sk,Dekoratívna kozmetika
+dekorativni-kosmetika,en,Makeup
+dekorativni-kosmetika,pl,Kosmetyki kolorowe
+dekorativni-kosmetika,de,Dekorative Kosmetik
+parfemy,sk,Parfumy
+parfemy,en,Perfumes
+parfemy,pl,Perfumy
+parfemy,de,Parfüm
+pece-o-nehty,sk,Starostlivosť o nechty
+pece-o-nehty,en,Nail Care
+pece-o-nehty,pl,Pielęgnacja paznokci
+pece-o-nehty,de,Nagelpflege
+cistici-prostredky,sk,Čistiace prostriedky
+cistici-prostredky,en,Cleaning Products
+cistici-prostredky,pl,Środki czystości
+cistici-prostredky,de,Reinigungsmittel
+pracie-prostredky,sk,Pracie prostriedky
+pracie-prostredky,en,Laundry Detergents
+pracie-prostredky,pl,Środki piorące
+pracie-prostredky,de,Waschmittel
+prostredky-na-nadobi,sk,Prostriedky na riad
+prostredky-na-nadobi,en,Dishwashing Products
+prostredky-na-nadobi,pl,Środki do naczyń
+prostredky-na-nadobi,de,Spülmittel
+univerzalni-cistice,sk,Univerzálne čističe
+univerzalni-cistice,en,All-Purpose Cleaners
+univerzalni-cistice,pl,Środki uniwersalne
+univerzalni-cistice,de,Allzweckreiniger
+zdravi-a-lekarna,sk,Zdravie a voľnopredajné lieky
+zdravi-a-lekarna,en,Health and Over-the-Counter Medicine
+zdravi-a-lekarna,pl,Zdrowie i leki bez recepty
+zdravi-a-lekarna,de,Gesundheit und rezeptfreie Arzneimittel
+vitaminy-a-doplnky-stravy,sk,Vitamíny a doplnky výživy
+vitaminy-a-doplnky-stravy,en,Vitamins and Supplements
+vitaminy-a-doplnky-stravy,pl,Witaminy i suplementy diety
+vitaminy-a-doplnky-stravy,de,Vitamine und Nahrungsergänzungsmittel
+volne-prodejne-leky,sk,Voľnopredajné lieky
+volne-prodejne-leky,en,Over-the-Counter Medicine
+volne-prodejne-leky,pl,Leki bez recepty
+volne-prodejne-leky,de,Rezeptfreie Arzneimittel
+domacnost,sk,Domácnosť
+domacnost,en,Household
+domacnost,pl,Dom
+domacnost,de,Haushalt
+papirove-zbozi,sk,Papierový tovar
+papirove-zbozi,en,Paper Products
+papirove-zbozi,pl,Artykuły papierowe
+papirove-zbozi,de,Papierwaren
+toaletni-papir,sk,Toaletný papier
+toaletni-papir,en,Toilet Paper
+toaletni-papir,pl,Papier toaletowy
+toaletni-papir,de,Toilettenpapier
+kuchynske-utery,sk,Kuchynské utierky
+kuchynske-utery,en,Paper Towels
+kuchynske-utery,pl,Ręczniki kuchenne
+kuchynske-utery,de,Küchentücher
+kapesniky,sk,Vreckovky
+kapesniky,en,Tissues
+kapesniky,pl,Chusteczki higieniczne
+kapesniky,de,Taschentücher
+kuchynske-potreby,sk,Kuchynské potreby
+kuchynske-potreby,en,Kitchenware
+kuchynske-potreby,pl,Artykuły kuchenne
+kuchynske-potreby,de,Küchenbedarf
+nadobi-na-vareni,sk,Riad na varenie
+nadobi-na-vareni,en,Cookware
+nadobi-na-vareni,pl,Naczynia do gotowania
+nadobi-na-vareni,de,Kochgeschirr
+kuchynske-doplnky,sk,Kuchynské doplnky
+kuchynske-doplnky,en,Kitchen Accessories
+kuchynske-doplnky,pl,Akcesoria kuchenne
+kuchynske-doplnky,de,Küchenzubehör
+uklidove-pomucky,sk,Upratovacie pomôcky
+uklidove-pomucky,en,Cleaning Supplies
+uklidove-pomucky,pl,Akcesoria do sprzątania
+uklidove-pomucky,de,Putzzubehör
+houbicky-a-hadry,sk,Hubky a handry
+houbicky-a-hadry,en,Sponges and Cloths
+houbicky-a-hadry,pl,Gąbki i ściereczki
+houbicky-a-hadry,de,Schwämme und Tücher
+pytle-na-odpad,sk,Vrecia na odpad
+pytle-na-odpad,en,Trash Bags
+pytle-na-odpad,pl,Worki na śmieci
+pytle-na-odpad,de,Müllbeutel
+zahrada-a-venku,sk,Záhrada a vonkajšie vybavenie
+zahrada-a-venku,en,Garden and Outdoor
+zahrada-a-venku,pl,Ogród i wyposażenie zewnętrzne
+zahrada-a-venku,de,Garten und Außenbereich
+svicky-a-bytove-doplnky,sk,Sviečky a bytové doplnky
+svicky-a-bytove-doplnky,en,Candles and Home Accessories
+svicky-a-bytove-doplnky,pl,Świece i dodatki do domu
+svicky-a-bytove-doplnky,de,Kerzen und Wohnaccessoires
+naradi-a-baterie,sk,Náradie a batérie
+naradi-a-baterie,en,Tools and Batteries
+naradi-a-baterie,pl,Narzędzia i baterie
+naradi-a-baterie,de,Werkzeug und Batterien
+detske-zbozi,sk,Detský tovar
+detske-zbozi,en,Baby and Kids
+detske-zbozi,pl,Artykuły dziecięce
+detske-zbozi,de,Baby- und Kinderartikel
+detska-vyziva,sk,Detská výživa
+detska-vyziva,en,Baby Food
+detska-vyziva,pl,Żywność dla niemowląt
+detska-vyziva,de,Babynahrung
+kojenecke-mleko,sk,Dojčenské mlieko
+kojenecke-mleko,en,Infant Formula
+kojenecke-mleko,pl,Mleko dla niemowląt
+kojenecke-mleko,de,Säuglingsmilch
+prikrmy,sk,Príkrmy
+prikrmy,en,Baby Purées
+prikrmy,pl,Odżywki dla niemowląt
+prikrmy,de,Beikost
+plenky-a-hygiena,sk,Plienky a detská hygiena
+plenky-a-hygiena,en,Diapers and Baby Hygiene
+plenky-a-hygiena,pl,Pieluchy i higiena niemowląt
+plenky-a-hygiena,de,Windeln und Babyhygiene
+plenky,sk,Plienky
+plenky,en,Diapers
+plenky,pl,Pieluchy
+plenky,de,Windeln
+vlhcene-ubrousky,sk,Vlhčené obrúsky
+vlhcene-ubrousky,en,Wet Wipes
+vlhcene-ubrousky,pl,Chusteczki nawilżane
+vlhcene-ubrousky,de,Feuchttücher
+detska-kosmetika,sk,Detská kozmetika
+detska-kosmetika,en,Baby Cosmetics
+detska-kosmetika,pl,Kosmetyki dla dzieci
+detska-kosmetika,de,Babykosmetik
+detske-potreby-a-hracky,sk,Detské potreby a hračky
+detske-potreby-a-hracky,en,Baby Gear and Toys
+detske-potreby-a-hracky,pl,Artykuły dziecięce i zabawki
+detske-potreby-a-hracky,de,Babyausstattung und Spielzeug
+chovatelske-potreby,sk,Chovateľské potreby
+chovatelske-potreby,en,Pet Supplies
+chovatelske-potreby,pl,Artykuły dla zwierząt
+chovatelske-potreby,de,Tierbedarf
+krmivo-pro-psy,sk,Krmivo pre psy
+krmivo-pro-psy,en,Dog Food
+krmivo-pro-psy,pl,Karma dla psów
+krmivo-pro-psy,de,Hundefutter
+krmivo-pro-kocky,sk,Krmivo pre mačky
+krmivo-pro-kocky,en,Cat Food
+krmivo-pro-kocky,pl,Karma dla kotów
+krmivo-pro-kocky,de,Katzenfutter
+krmivo-pro-hlodavce-a-ptaky,sk,Krmivo pre hlodavce a vtáky
+krmivo-pro-hlodavce-a-ptaky,en,Food for Rodents and Birds
+krmivo-pro-hlodavce-a-ptaky,pl,Karma dla gryzoni i ptaków
+krmivo-pro-hlodavce-a-ptaky,de,Futter für Nagetiere und Vögel
+pamlsky-pro-zvirata,sk,Maškrty pre zvieratá
+pamlsky-pro-zvirata,en,Pet Treats
+pamlsky-pro-zvirata,pl,Przysmaki dla zwierząt
+pamlsky-pro-zvirata,de,Tiersnacks
+potreby-pro-zvirata,sk,Potreby pre zvieratá
+potreby-pro-zvirata,en,Pet Accessories
+potreby-pro-zvirata,pl,Akcesoria dla zwierząt
+potreby-pro-zvirata,de,Tierzubehör
+hygiena-pro-zvirata,sk,Hygiena pre zvieratá
+hygiena-pro-zvirata,en,Pet Hygiene
+hygiena-pro-zvirata,pl,Higiena zwierząt
+hygiena-pro-zvirata,de,Tierhygiene
+doplnky-a-hracky-pro-zvirata,sk,Doplnky a hračky pre zvieratá
+doplnky-a-hracky-pro-zvirata,en,Accessories and Toys for Pets
+doplnky-a-hracky-pro-zvirata,pl,Dodatki i zabawki dla zwierząt
+doplnky-a-hracky-pro-zvirata,de,Zubehör und Spielzeug für Tiere

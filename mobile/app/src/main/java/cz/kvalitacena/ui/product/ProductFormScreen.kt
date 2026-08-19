@@ -12,25 +12,18 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -39,10 +32,10 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
-import cz.kvalitacena.network.Category
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.SearchableDropdown
 import cz.kvalitacena.ui.common.SingleLineTextField
+import cz.kvalitacena.ui.common.categoryChoicesFor
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 
 private val UNIT_BASE_LABEL_RES = mapOf(
@@ -56,7 +49,6 @@ private val UNIT_BASE_LABEL_RES = mapOf(
  * ProductFormViewModel), teprve když se mezi nimi nic nehodí, jde založit nové. `barcode` je
  * naskenovaný kód, který se v katalogu nenašel (viz PriceEntryScreen), předvyplní pole kódu.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductFormScreen(barcode: String?, onDone: () -> Unit) {
   val viewModel: ProductFormViewModel = viewModel(
@@ -98,10 +90,20 @@ fun ProductFormScreen(barcode: String?, onDone: () -> Unit) {
     }
     Gap()
 
-    CategoryDropdown(
-      categories = viewModel.categories,
-      selectedId = viewModel.selectedCategoryId,
-      onSelect = { viewModel.selectedCategoryId = it },
+    // LocalConfiguration.current.locales[0], ne Locale.getDefault() — appka může jazyk
+    // přepnout za běhu (docs/lokalizace.md), stejný důvod jako RelativeDate.kt/Money.kt.
+    val locale = LocalConfiguration.current.locales[0]
+    val categoryChoices = remember(viewModel.categories, viewModel.categoryQuery, locale) {
+      categoryChoicesFor(viewModel.categoryQuery, viewModel.categories, locale)
+    }
+    SearchableDropdown(
+      query = viewModel.categoryQuery,
+      onQueryChange = viewModel::onCategoryQueryChange,
+      suggestions = categoryChoices,
+      onSelect = { viewModel.onCategorySelected(it.category) },
+      itemLabel = { it.label },
+      label = stringResource(R.string.product_form_category_label),
+      modifier = Modifier.fillMaxWidth(),
     )
     Gap()
 
@@ -193,35 +195,6 @@ fun ProductFormScreen(barcode: String?, onDone: () -> Unit) {
     Gap()
     OutlinedButton(onClick = onDone, enabled = !viewModel.saving, modifier = Modifier.fillMaxWidth()) {
       Text(stringResource(R.string.product_form_back_without_creating))
-    }
-  }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CategoryDropdown(categories: List<Category>, selectedId: String?, onSelect: (String) -> Unit) {
-  var expanded by remember { mutableStateOf(false) }
-  val selectedLabel = categories.find { it.id == selectedId }?.name ?: stringResource(R.string.product_form_category_placeholder)
-
-  ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-    SingleLineTextField(
-      value = selectedLabel,
-      onValueChange = {},
-      readOnly = true,
-      label = stringResource(R.string.product_form_category_label),
-      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-      modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-    )
-    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-      categories.forEach { category ->
-        DropdownMenuItem(
-          text = { Text(category.name) },
-          onClick = {
-            onSelect(category.id)
-            expanded = false
-          },
-        )
-      }
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   TranslocoDirective,
@@ -6,20 +6,26 @@ import {
   TranslocoService,
   provideTranslocoScope,
 } from '@jsverse/transloco';
+import type { NzTreeNode } from 'ng-zorro-antd/core/tree';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
-import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
-import { Category, Product, ProductSummary, UnitBase } from '../../models/catalog';
+import { NzTreeSelectModule } from 'ng-zorro-antd/tree-select';
+import { Product, ProductSummary, UnitBase } from '../../models/catalog';
+import type { CategoriesQuery } from '../../models/generated/graphql';
 import { FormatService } from '../../services/format-service';
+import { INTL_TAGS, LanguageService } from '../../services/language-service';
 import { ProductService } from '../../services/product-service';
+import { buildCategoryTree, categoryBreadcrumb } from '../../shared/category-tree';
 import { translateError } from '../../shared/error-message';
 import { UNIT_BASE_KEYS } from '../../shared/enum-labels';
 import { impliedNetContentUom, isProductFormValid } from './product-form-validation';
+
+type CategoryOption = CategoriesQuery['categories'][number];
 
 const SUGGESTIONS_DEBOUNCE_MS = 300;
 
@@ -40,7 +46,7 @@ const UNIT_BASE_ORDER: readonly UnitBase[] = ['COUNT', 'MASS', 'VOLUME'];
     NzFormModule,
     NzInputModule,
     NzInputNumberModule,
-    NzSelectModule,
+    NzTreeSelectModule,
     NzRadioModule,
     NzSwitchModule,
     NzButtonModule,
@@ -56,6 +62,7 @@ export class ProductForm {
   private readonly productService = inject(ProductService);
   protected readonly format = inject(FormatService);
   private readonly transloco = inject(TranslocoService);
+  private readonly language = inject(LanguageService);
 
   /** Naskenovaný/zadaný kód, který se v katalogu nenašel — předvyplní pole kódu. */
   @Input() set barcode(value: string | null | undefined) {
@@ -73,8 +80,19 @@ export class ProductForm {
   protected readonly suggestionsLoading = signal(false);
   private suggestionsTimer?: ReturnType<typeof setTimeout>;
 
-  protected readonly categories = signal<Category[]>([]);
+  protected readonly categories = signal<CategoryOption[]>([]);
   protected readonly selectedCategoryId = signal<string | null>(null);
+
+  /** Strom pro `nz-tree-select` (shared/category-tree.ts) — přeskládaný podle sortOrder, ne
+   *  podle abecedního pořadí, ve kterém kategorie vrací `Query.categories`. */
+  protected readonly categoryTree = computed(() =>
+    buildCategoryTree(this.categories(), INTL_TAGS[this.language.lang()]),
+  );
+
+  /** Uzavřené pole výběru ukáže celou větev ("Potraviny › Mléčné výrobky › Máslo"), ne jen
+   *  list — samotné jméno listu by bez kontextu nebylo poznat, pod čím v číselníku leží. */
+  protected readonly categoryDisplayWith = (node: NzTreeNode): string =>
+    categoryBreadcrumb(node.key, this.categories());
 
   protected readonly brandName = signal('');
   protected readonly unitBase = signal<UnitBase>('COUNT');

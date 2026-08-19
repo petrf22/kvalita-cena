@@ -38,8 +38,9 @@ bez vlastního jazyka). Objem překladu na jeden jazyk: backend `messages/*_de.p
 (errors 67 + handles 49 + mail 8 + attribution 4 + countries 16 = 144 klíčů), web
 `public/i18n/de.json` + 10 scope souborů (356 klíčů), mobil `values-de/strings.xml` (242
 řetězců, `terms_*`/`privacy_*` string-array zůstávají `translatable="false"` jako u ostatních
-jazyků — právní text jen česky). `core.category_i18n` beze změny — katalog kategorií je v
-etapě 1 pořád prázdný (`docs/datovy-model.md`), není co překládat.
+jazyků — právní text jen česky). `core.category_i18n` v době psaní ještě beze změny — katalog
+kategorií byl prázdný (`docs/datovy-model.md`), nebylo co překládat. Doplněno až
+`2026-08-20/01-category-tree.yaml` (~106 kategorií × 4 jazyky, viz „Kategorie" níž).
 
 **Proč čeština, ne angličtina, je fallback:** appka vznikla pro český trh, drtivá většina dat
 (kategorie, handly, mail) existuje nejdřív česky. Anglický fallback by pro švédského turistu na
@@ -237,12 +238,30 @@ kdykoli znovu stažitelná data (stejný důvod jako `off`/`osm`), ale na rozdí
 
 ### Kategorie: `core.category_i18n`, ne klíče v bundlech
 
-Kategorie jsou **data, ne UI chrome** — rostou (seed zatím jen zlomek reálného stromu) a musí
-jít řadit/filtrovat v SQL (`ORDER BY name` se správnou collation pro `č`/`ř`/`ł`). Klíče v
+Kategorie jsou **data, ne UI chrome** — rostou (od `2026-08-20/01-category-tree.yaml` ~106
+položek, šest kořenů, max tři úrovně; startovní seed z `2026-08-19` měl jen 24). Klíče v
 klientských bundlech by každou novou kategorii vázaly na koordinované vydání webu i mobilu;
 tabulka `PK (category_id, locale)` řeší přidání jako jeden `INSERT`. `core.category.name`
 zůstává zdrojová čeština a fallback (`COALESCE(i18n.name, category.name)`). **`slug`/`path` se
 nepřekládají** — `path` slouží k filtrování podle větve stromu a musí být napříč jazyky totožná.
+
+**Řazení je čtecí odpovědnost klienta, ne SQL.** `Query.categories` vrací plochý seznam řazený
+podle `path` (`CategoryRepository.findAllByOrderByPathAsc`, abecedně podle slugu) — `ORDER BY`
+podle přeloženého `name` v SQL nejde vůbec sestavit, protože lokalizace se skládá až za
+dotazem (`ProductGraphQlController.categoryName`, `@BatchMapping`). Backend proto navíc posílá
+`Category.sortOrder` (kurátorské pořadí SOUROZENCŮ v jedné větvi) a klient si strom poskládá a
+seřadí sám přes `Intl.Collator`/`java.text.Collator` podle aktuálního jazyka appky — `č`/`ř`/`ł`
+tak řadí správně nezávisle na tom, v jaké collation běží Postgres (web `shared/category-tree.ts`,
+mobil `ui/common/CategoryTree.kt`).
+
+**Rozšíření číselníku** (další jazyk, další kategorie): oba CSV soubory pod
+`backend/.../db/changelog/2026-08-20/` (`category.csv` — `path,slug,parent_slug,name,sort_order`;
+`category-i18n.csv` — `slug,locale,name`, BEZ řádků pro `cs`) jsou čitelný zdroj pravdy celého
+stromu — doplnit řádky a přidat další Liquibase changeset ve stejném vzoru (staging tabulky →
+`INSERT ... ON CONFLICT DO UPDATE` po úrovních stromu → úklid). `CategorySeedIntegrationTest`
+(Testcontainers) hlídá, že každá kategorie má `path` odpovídající řetězci rodičů a překlad pro
+**každý** jazyk z `app.i18n.supported-locales` mimo `cs` — přidání jazyka bez odpovídajících
+řádků v `category-i18n.csv` shodí testy, ne až tichý pád na český fallback za běhu.
 
 ### Handle: strukturovaně kvůli gramatickému rodu
 

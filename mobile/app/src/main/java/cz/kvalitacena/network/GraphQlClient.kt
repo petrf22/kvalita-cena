@@ -337,9 +337,12 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     return execute(gql, variables, GraphQlResponse.serializer(ProductSuggestionsData.serializer())).productSuggestions
   }
 
-  /** Plochý seznam kategorií pro formulář nového zboží. */
+  /**
+   * Plochý seznam kategorií pro formulář nového zboží — sortOrder navíc oproti Product.category
+   * fragmentům výš (řádky 52/79), klient si z něj staví strom (ui/common/CategoryTree.kt).
+   */
   suspend fun categories(): List<Category> {
-    val gql = "{ categories { id name slug path } }"
+    val gql = "{ categories { id name slug path sortOrder } }"
     return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(CategoriesData.serializer())).categories
   }
 

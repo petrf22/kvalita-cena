@@ -26,8 +26,13 @@ data class TokenResponse(val accessToken: String, val refreshToken: String? = nu
 @Serializable
 data class Brand(val id: String, val name: String, val slug: String)
 
+/**
+ * [sortOrder] je pořadí SOUROZENCŮ v jedné větvi stromu (backend `schema.graphqls`, `type
+ * Category`), ne globální řazení — jen `CategoryTree` (ui/common/CategoryTree.kt) ho čte, proto
+ * default 0 pro dotazy, které ho neselectují (Product.category fragment v [GraphQlClient]).
+ */
 @Serializable
-data class Category(val id: String, val name: String, val slug: String, val path: String)
+data class Category(val id: String, val name: String, val slug: String, val path: String, val sortOrder: Int = 0)
 
 @Serializable
 data class RetailChain(val id: String, val name: String, val chainType: String)

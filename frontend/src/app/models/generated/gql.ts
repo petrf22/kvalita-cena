@@ -45,7 +45,7 @@ type Documents = {
     "\n      query Product($id: ID!) {\n        product(id: $id) {\n          ...ProductDetailFields\n        }\n      }\n    ": typeof types.ProductDocument,
     "\n      query ProductByCode($code: String!) {\n        productByCode(code: $code) {\n          ...ProductDetailFields\n        }\n      }\n    ": typeof types.ProductByCodeDocument,
     "\n      query ProductSuggestions($name: String!, $first: Int) {\n        productSuggestions(name: $name, first: $first) {\n          ...ProductSummaryFields\n        }\n      }\n    ": typeof types.ProductSuggestionsDocument,
-    "\n      query Categories {\n        categories {\n          id\n          name\n          slug\n          path\n        }\n      }\n    ": typeof types.CategoriesDocument,
+    "\n      query Categories {\n        categories {\n          id\n          name\n          slug\n          path\n          sortOrder\n        }\n      }\n    ": typeof types.CategoriesDocument,
     "\n      mutation CreateProduct($input: CreateProductInput!) {\n        createProduct(input: $input) {\n          ...ProductDetailFields\n        }\n      }\n    ": typeof types.CreateProductDocument,
     "\n      mutation UpdateProduct($id: ID!, $input: UpdateProductInput!) {\n        updateProduct(id: $id, input: $input) {\n          ...ProductDetailFields\n        }\n      }\n    ": typeof types.UpdateProductDocument,
     "\n      mutation FlagProduct($recordId: ID!, $reason: String) {\n        flagRecord(recordType: PRODUCT, recordId: $recordId, reason: $reason) {\n          flagCount\n          hidden\n        }\n      }\n    ": typeof types.FlagProductDocument,
@@ -97,7 +97,7 @@ const documents: Documents = {
     "\n      query Product($id: ID!) {\n        product(id: $id) {\n          ...ProductDetailFields\n        }\n      }\n    ": types.ProductDocument,
     "\n      query ProductByCode($code: String!) {\n        productByCode(code: $code) {\n          ...ProductDetailFields\n        }\n      }\n    ": types.ProductByCodeDocument,
     "\n      query ProductSuggestions($name: String!, $first: Int) {\n        productSuggestions(name: $name, first: $first) {\n          ...ProductSummaryFields\n        }\n      }\n    ": types.ProductSuggestionsDocument,
-    "\n      query Categories {\n        categories {\n          id\n          name\n          slug\n          path\n        }\n      }\n    ": types.CategoriesDocument,
+    "\n      query Categories {\n        categories {\n          id\n          name\n          slug\n          path\n          sortOrder\n        }\n      }\n    ": types.CategoriesDocument,
     "\n      mutation CreateProduct($input: CreateProductInput!) {\n        createProduct(input: $input) {\n          ...ProductDetailFields\n        }\n      }\n    ": types.CreateProductDocument,
     "\n      mutation UpdateProduct($id: ID!, $input: UpdateProductInput!) {\n        updateProduct(id: $id, input: $input) {\n          ...ProductDetailFields\n        }\n      }\n    ": types.UpdateProductDocument,
     "\n      mutation FlagProduct($recordId: ID!, $reason: String) {\n        flagRecord(recordType: PRODUCT, recordId: $recordId, reason: $reason) {\n          flagCount\n          hidden\n        }\n      }\n    ": types.FlagProductDocument,
@@ -242,7 +242,7 @@ export function graphql(source: "\n      query ProductSuggestions($name: String!
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n      query Categories {\n        categories {\n          id\n          name\n          slug\n          path\n        }\n      }\n    "): typeof import('./graphql').CategoriesDocument;
+export function graphql(source: "\n      query Categories {\n        categories {\n          id\n          name\n          slug\n          path\n          sortOrder\n        }\n      }\n    "): typeof import('./graphql').CategoriesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

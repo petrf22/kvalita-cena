@@ -125,7 +125,10 @@ export class ProductService {
       .pipe(map((data) => data.productSuggestions));
   }
 
-  /** Plochý seznam kategorií pro formulář nového zboží. */
+  /**
+   * Plochý seznam kategorií pro formulář nového zboží — `sortOrder` navíc oproti fragmentu
+   * `ProductSummaryFields`, klient si z něj staví strom (`shared/category-tree.ts`).
+   */
   categories() {
     const document = graphql(`
       query Categories {
@@ -134,6 +137,7 @@ export class ProductService {
           name
           slug
           path
+          sortOrder
         }
       }
     `);

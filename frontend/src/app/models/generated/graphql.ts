@@ -428,7 +428,7 @@ export type ProductSuggestionsQuery = { productSuggestions: Array<{ id: string, 
 export type CategoriesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type CategoriesQuery = { categories: Array<{ id: string, name: string, slug: string, path: string }> };
+export type CategoriesQuery = { categories: Array<{ id: string, name: string, slug: string, path: string, sortOrder: number }> };
 
 export type CreateProductMutationVariables = Exact<{
   input: CreateProductInput;
@@ -1868,6 +1868,7 @@ export const CategoriesDocument = new TypedDocumentString(`
     name
     slug
     path
+    sortOrder
   }
 }
     `) as unknown as TypedDocumentString<CategoriesQuery, CategoriesQueryVariables>;

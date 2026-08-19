@@ -41,16 +41,16 @@
     <nz-form-item>
       <nz-form-label>{{ t('product-form.categoryLabel') }}</nz-form-label>
       <nz-form-control>
-        <nz-select
+        <nz-tree-select
           [ngModel]="selectedCategoryId()"
           (ngModelChange)="selectedCategoryId.set($event)"
           name="category"
+          [nzNodes]="categoryTree()"
           [nzPlaceHolder]="t('product-form.categoryPlaceholder')"
-        >
-          @for (category of categories(); track category.id) {
-            <nz-option [nzValue]="category.id" [nzLabel]="category.name" />
-          }
-        </nz-select>
+          [nzShowSearch]="true"
+          [nzDisplayWith]="categoryDisplayWith"
+          [nzDropdownStyle]="{ 'max-height': '400px', 'overflow-y': 'auto' }"
+        />
       </nz-form-control>
     </nz-form-item>
 

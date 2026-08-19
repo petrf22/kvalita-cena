@@ -64,7 +64,10 @@ type Query {
   """
   productSuggestions(name: String!, first: Int = 10): [Product!]!
 
-  "Plochý seznam kategorií pro zakládání zboží — hierarchii nese Category.path."
+  """
+  Plochý seznam kategorií pro zakládání zboží — hierarchii nese Category.path (řetězec
+  slugů), pořadí sourozenců v jedné větvi Category.sortOrder. Klient si strom staví sám.
+  """
   categories: [Category!]!
 
   """
@@ -440,7 +443,16 @@ type Category {
   id: ID!
   name: String!
   slug: String!
+  "Hierarchii nese path (řetězec slugů), tohle je jen pořadí SOUROZENCŮ v jedné větvi."
   path: String!
+  """
+  Kurátorské pořadí mezi sourozenci v jedné větvi stromu (docs/nasazeni.md, kap. 4) — NE
+  globální řazení celého číselníku. `Query.categories` vrací plochý seznam řazený podle
+  `path` (abecedně podle slugu), takže klient MUSÍ sourozence přeskládat sám podle
+  `(sortOrder, name)` při stavbě stromu pro výběr, jinak by např. "Dětské zboží" předběhlo
+  "Potraviny".
+  """
+  sortOrder: Int!
 }
 
 enum UnitBase {

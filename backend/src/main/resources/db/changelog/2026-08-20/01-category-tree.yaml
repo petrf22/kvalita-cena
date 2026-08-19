@@ -1,0 +1,144 @@
+# 01-category-tree.yaml — rozšíření startovního číselníku ze 2026-08-19/01-category-seed.yaml
+# (24 položek, jen Potraviny/Nápoje/Drogerie/Domácnost) na plný strom pro běžný supermarket
+# (~106 položek, šest kořenů, max tři úrovně) a doplnění core.category_i18n pro sk/en/pl/de —
+# ta zůstávala od 2026-08-09/03-category-i18n.yaml prázdná (docs/lokalizace.md, "Kategorie").
+#
+# Zdroj taxonomie je VLASTNÍ strom tvarovaný jako supermarket, ne import CPV/CZ-CPA — CPV je
+# slovník pro veřejné zakázky (potraviny v oddílu 15, drogerie roztroušená jinde) a CZ-CPA
+# člení podle výroby, ne podle nákupu, navíc jen česky. Import cizí databáze do core.* by taky
+# šel proti rozestupu core/off/osm z docs/datovy-model.md. Zadní vrátka pro oficiální kódy
+# (CPV/CZ-CPA) zůstávají otevřená přes budoucí core.category_external_code — viz docs/rozvoj.md.
+#
+# Migrace je ADITIVNÍ: žádný z 24 dosavadních slugů nemění parent_slug ani path, jen některé
+# dostávají čitelnější "name" (core.product.category_id na ně míří, přerodičování by bylo
+# datová migrace, ne schéma). Zdroj obou CSV je editovatelný — rozšíření číselníku (docs/
+# rozvoj.md) znamená doplnit řádky sem a přidat další changeset se stejným vzorem.
+#
+# category.csv: path,slug,parent_slug,name,sort_order — path je v CSV explicitně (řetězec
+# slugů), ne dopočítávaný rekurzivním CTE. category-i18n.csv: slug,locale,name — BEZ řádků
+# pro "cs" (čeština zůstává zdroj a fallback v core.category.name samotné).
+#
+# Staging tabulky nesou syrová CSV data se slugy, ne s core.category.id — id se nikdy
+# neobjevuje v souboru pod verzovací kontrolou, jinak by seed záležel na pořadí zápisu a
+# rozešel by identity sekvenci. Vlastní INSERT do core.category jde ve třech průchodech podle
+# hloubky stromu (kořen → L2 → L3), aby FK na parent_id vždy ukazovalo na už vloženého rodiče.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-20-01-category-tree-staging
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: category_seed_staging
+            columns:
+              - column: { name: path, type: VARCHAR(400) }
+              - column: { name: slug, type: VARCHAR(140) }
+              - column: { name: parent_slug, type: VARCHAR(140) }
+              - column: { name: name, type: VARCHAR(120) }
+              - column: { name: sort_order, type: INT }
+        - createTable:
+            schemaName: core
+            tableName: category_i18n_seed_staging
+            columns:
+              - column: { name: slug, type: VARCHAR(140) }
+              - column: { name: locale, type: VARCHAR(5) }
+              - column: { name: name, type: VARCHAR(120) }
+        - loadData:
+            schemaName: core
+            tableName: category_seed_staging
+            file: category.csv
+            relativeToChangelogFile: true
+            separator: ","
+            encoding: UTF-8
+            columns:
+              - column: { name: path, type: STRING }
+              - column: { name: slug, type: STRING }
+              - column: { name: parent_slug, type: STRING }
+              - column: { name: name, type: STRING }
+              - column: { name: sort_order, type: NUMERIC }
+        - loadData:
+            schemaName: core
+            tableName: category_i18n_seed_staging
+            file: category-i18n.csv
+            relativeToChangelogFile: true
+            separator: ","
+            encoding: UTF-8
+            columns:
+              - column: { name: slug, type: STRING }
+              - column: { name: locale, type: STRING }
+              - column: { name: name, type: STRING }
+      rollback:
+        - dropTable: { schemaName: core, tableName: category_seed_staging }
+        - dropTable: { schemaName: core, tableName: category_i18n_seed_staging }
+
+  - changeSet:
+      id: 2026-08-20-02-category-tree-insert
+      author: Petr F.
+      comment: >
+        Idempotentní (ON CONFLICT DO UPDATE), takže bezpečně dojede i nad DB, kde už
+        2026-08-19/01-category-seed.yaml naseedovala prvních 24 kategorií.
+      changes:
+        - sql:
+            sql: |
+              -- COALESCE(parent_slug, '') = '' místo přímého porovnání — loadData u prázdné
+              -- CSV buňky pro STRING sloupec ukládá '', ale nespoléhat na to napříč verzemi.
+              --
+              -- Průchod 1: kořeny (parent_slug prázdný) — path == slug, parent_id NULL.
+              INSERT INTO core.category (slug, name, path, sort_order, parent_id)
+              SELECT slug, name, path, sort_order, NULL
+              FROM core.category_seed_staging
+              WHERE COALESCE(parent_slug, '') = ''
+              ON CONFLICT (slug) DO UPDATE
+                SET name = excluded.name, path = excluded.path, sort_order = excluded.sort_order;
+
+              -- Průchod 2: druhá úroveň — rodič už existuje z průchodu 1.
+              INSERT INTO core.category (slug, name, path, sort_order, parent_id)
+              SELECT s.slug, s.name, s.path, s.sort_order, p.id
+              FROM core.category_seed_staging s
+              JOIN core.category p ON p.slug = s.parent_slug
+              WHERE COALESCE(s.parent_slug, '') <> '' AND p.parent_id IS NULL
+              ON CONFLICT (slug) DO UPDATE
+                SET name = excluded.name, path = excluded.path, sort_order = excluded.sort_order,
+                    parent_id = excluded.parent_id;
+
+              -- Průchod 3: třetí úroveň — rodič už existuje z průchodu 2.
+              INSERT INTO core.category (slug, name, path, sort_order, parent_id)
+              SELECT s.slug, s.name, s.path, s.sort_order, p.id
+              FROM core.category_seed_staging s
+              JOIN core.category p ON p.slug = s.parent_slug
+              WHERE COALESCE(s.parent_slug, '') <> '' AND p.parent_id IS NOT NULL
+              ON CONFLICT (slug) DO UPDATE
+                SET name = excluded.name, path = excluded.path, sort_order = excluded.sort_order,
+                    parent_id = excluded.parent_id;
+
+              -- Překlady — čeština se nepřekládá (core.category.name je zdroj), proto jen
+              -- sk/en/pl/de ze stagingu, klíčované přes slug na nově přiřazené core.category.id.
+              INSERT INTO core.category_i18n (category_id, locale, name)
+              SELECT c.id, i.locale, i.name
+              FROM core.category_i18n_seed_staging i
+              JOIN core.category c ON c.slug = i.slug
+              ON CONFLICT (category_id, locale) DO UPDATE SET name = excluded.name;
+      rollback:
+        - sql:
+            sql: |
+              DELETE FROM core.category_i18n
+              WHERE category_id IN (
+                SELECT id FROM core.category
+                WHERE slug IN (SELECT slug FROM core.category_seed_staging)
+              );
+              -- Jen nově přidané slugy (24 dosavadních zůstávají — mířilo by na ně zboží).
+              DELETE FROM core.category
+              WHERE slug IN (SELECT slug FROM core.category_seed_staging)
+                AND slug NOT IN (
+                  'potraviny','napoje','drogerie','domacnost','mlecne','pecivo','maso-uzeniny',
+                  'ovoce-zelenina','trvanlive','mrazene','sladkosti','maslo','syry','jogurty',
+                  'mleko','testoviny','ryze-lusteniny','konzervy','voda-limonady','alkohol',
+                  'kava-caj','hygiena','cistici-prostredky','papirove-zbozi'
+                );
+
+  - changeSet:
+      id: 2026-08-20-03-category-tree-staging-cleanup
+      author: Petr F.
+      changes:
+        - dropTable: { schemaName: core, tableName: category_seed_staging }
+        - dropTable: { schemaName: core, tableName: category_i18n_seed_staging }

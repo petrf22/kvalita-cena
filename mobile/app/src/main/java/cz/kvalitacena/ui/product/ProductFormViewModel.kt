@@ -11,6 +11,7 @@ import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.ProductSummary
 import cz.kvalitacena.ui.common.UiText
+import cz.kvalitacena.ui.common.categoryBreadcrumb
 import cz.kvalitacena.ui.common.toUiText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -42,6 +43,25 @@ class ProductFormViewModel(
   var categories by mutableStateOf<List<Category>>(emptyList())
     private set
   var selectedCategoryId by mutableStateOf<String?>(null)
+    private set
+
+  /** Text v hledacím poli kategorie — prázdný ukáže celý strom, jinak plochý filtr podle jména
+   *  (ui/common/CategoryTree.kt, zrcadlo frontend shared/category-tree.ts). Po výběru appka
+   *  sem dosadí breadcrumb vybrané kategorie, stejný vzor jako PriceEntryViewModel.storeQuery.
+   *  Samotnou nabídku (`CategoryChoice`) skládá `ProductFormScreen` z `categoryChoicesFor` —
+   *  potřebuje `LocalConfiguration.current.locales[0]` pro řazení sourozenců, což ViewModel
+   *  mimo Compose kontext nemá (stejný důvod jako RelativeDate.kt/Money.kt). */
+  var categoryQuery by mutableStateOf("")
+    private set
+
+  fun onCategoryQueryChange(query: String) {
+    categoryQuery = query
+  }
+
+  fun onCategorySelected(category: Category) {
+    selectedCategoryId = category.id
+    categoryQuery = categoryBreadcrumb(category, categories)
+  }
 
   var brandName by mutableStateOf("")
   var unitBase by mutableStateOf("COUNT")

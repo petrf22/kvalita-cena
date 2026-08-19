@@ -117,21 +117,37 @@ dodatečně.
 
 ## Rozšíření číselníku kategorií zboží (fáze 2)
 
-**Zadání:** `core.category` nese jen startovní sadu 24 kategorií zavedenou migrací
-`backend/.../db/changelog/2026-08-19/01-category-seed.yaml` (viz `docs/nasazeni.md`, kap. 4) —
-běžné potravinářské skupiny do dvou úrovní hloubky (např. `potraviny/mlecne/maslo`), ne
-kompletní taxonomie. Chybí pokrytí mimo potraviny/nápoje/drogerii/domácnost do hloubky, kterou
-bude reálný katalog časem potřebovat (kosmetika, domácí mazlíčci, dětské potřeby apod.), a
-chybí `core.category_i18n` překlady pro sk/en/pl (dnes jen český `name`, ostatní jazyky padají
-na český fallback stejně jako u zboží — `docs/lokalizace.md`).
+**Stav:** startovní sada 24 kategorií (`2026-08-19/01-category-seed.yaml`) byla nahrazena
+plným stromem pro běžný supermarket — `2026-08-20/01-category-tree.yaml`, ~106 položek, šest
+kořenů (Potraviny/Nápoje/Drogerie a kosmetika/Domácnost/Dětské zboží/Chovatelské potřeby), max
+tři úrovně hloubky, `core.category_i18n` doplněná pro všechny čtyři jazyky mimo češtinu (sk/en/
+pl/de). Klienti staví hierarchický výběr (`nz-tree-select` na webu, `SearchableDropdown` nad
+`CategoryTree.kt` na mobilu) místo dřívějšího plochého seznamu — viz `docs/lokalizace.md`,
+„Kategorie". Zdroj taxonomie je vlastní strom tvarovaný jako supermarket, ne import CPV/CZ-CPA
+(úřednické názvy, jiné členění, atribuční povinnost — zvažováno a zamítnuto při návrhu).
 
-Kategorie je pořád fixní, kurátorský číselník, ne uživatelský obsah — `createCategory` mutace
-v GraphQL schématu záměrně neexistuje (na rozdíl od zboží/obchodu, které si uživatelé zakládají
-sami). Rozšíření tedy jde stejnou cestou jako vznik startovní sady: další Liquibase migrace s
-`INSERT INTO core.category`, ne nová appková funkce. Otevřená otázka: až narostou requesty od
-uživatelů na chybějící kategorii (přes nahlášení nebo jinak), jestli se přidávání zpřístupní
-nějakým lehkým UI pro moderátora (`ModerationService`, `docs/reputace.md` — „Moderace"), nebo
-zůstane čistě ruční SQL/migrace jako dnes.
+**Co zbývá:**
+
+- **Kategorie je dnes prakticky write-only** — dá se podle ní zadat zboží, ale `searchFacets`/
+  `searchProducts` podle ní nefiltrují (jen obchod/město/country). Přidat filtr znamená nový
+  argument `searchProducts`, větev podle `Category.path` (prefix match na řetězec slugů) a UI
+  na obou klientech (fasety vedle stávajícího filtru obchodu).
+- **Zadní vrátka pro oficiální kódy** (CPV/CZ-CPA/UNSPSC) zůstávají otevřená, ne implementovaná
+  — až bude skutečná potřeba interoperability, jde o samostatnou tabulku
+  `core.category_external_code (category_id, scheme, code)` + entita/repozitář + volitelné pole
+  na GraphQL `Category` přes stejný `@BatchMapping` vzor jako `categoryName`. Tabulka, ne sloupec
+  na `core.category` — jedna nákupní kategorie typicky odpovídá VÍC kódům cizího číselníku (jiné
+  členění), 1:1 sloupec by to nedokázal vyjádřit. Klienti by se měnit nemuseli vůbec.
+- Číselník je pořád fixní, kurátorský — `createCategory` mutace v GraphQL schématu záměrně
+  neexistuje (na rozdíl od zboží/obchodu, které si uživatelé zakládají sami). Další rozšíření
+  jde stejnou cestou jako vznik obou sad výš: doplnit řádky do `category.csv`/
+  `category-i18n.csv` (`backend/.../db/changelog/2026-08-20/`) a přidat další Liquibase
+  changeset ve stejném vzoru — `CategorySeedIntegrationTest` (Testcontainers) hlídá konzistenci
+  (`path` odpovídá řetězci rodičů, každá kategorie má překlad pro každý podporovaný jazyk mimo
+  češtinu). Otevřená otázka: až narostou requesty od uživatelů na chybějící kategorii (přes
+  nahlášení nebo jinak), jestli se přidávání zpřístupní nějakým lehkým UI pro moderátora
+  (`ModerationService`, `docs/reputace.md` — „Moderace"), nebo zůstane čistě ruční
+  CSV/migrace jako dnes.
 
 ## Nákup podle receptu nebo seznamu (fáze 3)
 
