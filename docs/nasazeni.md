@@ -86,6 +86,14 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   ```
   Bez aspoň jednoho moderátora nemá nahlášený obsah (fotky, zboží, obchody) kdo přezkoumat —
   udělat PŘED pozváním prvních lidí, ne až po prvním nahlášení.
+- **Číselník kategorií zboží byl bez seedu úplně prázdný** — objevilo se to při prvním ručním
+  testu 2026-08-19: `CreateProductInput.categoryId` je v GraphQL schématu povinné (`ID!`) a
+  žádná `createCategory` mutace neexistuje (kategorie je fixní číselník, ne uživatelský obsah
+  jako zboží/obchod), takže appka bez seedu nešla reálně použít — nedalo se založit jediné
+  zboží. Opraveno migrací `backend/.../db/changelog/2026-08-19/01-category-seed.yaml` (24
+  kategorií, běžná potravinářská taxonomie), proběhne automaticky s dalším nasazením, žádný
+  ruční krok navíc netřeba. Je to jen startovní sada, ne kompletní taxonomie — rozšíření
+  číselníku zůstává budoucí práce (`docs/rozvoj.md`).
 - **Katalog obchodů se záměrně nepředvyplňuje** — zvažovalo se ruční přepsání poboček
   velkých řetězců (COOP, Penny) i hromadný import z OpenStreetMap, ale u objemu, o který by
   reálně šlo (tisíce poboček napříč velkými řetězci), obojí naráží na stejné riziko z druhé

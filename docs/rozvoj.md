@@ -115,6 +115,24 @@ kategorie osobních dat a bude si žádat vlastní oddíl v `docs/soukromi.md` (
 retence, vztah k pseudonymizaci po 180 dnech) — psát ho zároveň s návrhem téhle funkce, ne
 dodatečně.
 
+## Rozšíření číselníku kategorií zboží (fáze 2)
+
+**Zadání:** `core.category` nese jen startovní sadu 24 kategorií zavedenou migrací
+`backend/.../db/changelog/2026-08-19/01-category-seed.yaml` (viz `docs/nasazeni.md`, kap. 4) —
+běžné potravinářské skupiny do dvou úrovní hloubky (např. `potraviny/mlecne/maslo`), ne
+kompletní taxonomie. Chybí pokrytí mimo potraviny/nápoje/drogerii/domácnost do hloubky, kterou
+bude reálný katalog časem potřebovat (kosmetika, domácí mazlíčci, dětské potřeby apod.), a
+chybí `core.category_i18n` překlady pro sk/en/pl (dnes jen český `name`, ostatní jazyky padají
+na český fallback stejně jako u zboží — `docs/lokalizace.md`).
+
+Kategorie je pořád fixní, kurátorský číselník, ne uživatelský obsah — `createCategory` mutace
+v GraphQL schématu záměrně neexistuje (na rozdíl od zboží/obchodu, které si uživatelé zakládají
+sami). Rozšíření tedy jde stejnou cestou jako vznik startovní sady: další Liquibase migrace s
+`INSERT INTO core.category`, ne nová appková funkce. Otevřená otázka: až narostou requesty od
+uživatelů na chybějící kategorii (přes nahlášení nebo jinak), jestli se přidávání zpřístupní
+nějakým lehkým UI pro moderátora (`ModerationService`, `docs/reputace.md` — „Moderace"), nebo
+zůstane čistě ruční SQL/migrace jako dnes.
+
 ## Nákup podle receptu nebo seznamu (fáze 3)
 
 **Zadání:** uživatel vybere recept (způsob zadávání receptů zatím nevymyšlen) nebo vlastní

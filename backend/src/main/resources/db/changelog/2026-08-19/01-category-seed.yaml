@@ -1,0 +1,80 @@
+# 01-category-seed.yaml — core.category zůstávala prázdná od 2026-07-26/03-catalog.yaml
+# (komentář v 2026-08-09/03-category-i18n.yaml: "seed číselníku je samostatný úkol"). Bez
+# aspoň jedné kategorie ale CreateProductInput.categoryId (ID!, povinné pole) nejde vyplnit
+# vůbec ničím a nejde založit jediné zboží — objevilo se to při ručním testu moderace, appka
+# byla bez tohohle prakticky nespustitelná pro první uživatele.
+#
+# Startovní sada běžných potravinářských kategorií (ne kompletní taxonomie — jen aby appka šla
+# reálně použít; rozšíření číselníku je samostatná budoucí práce). core.category.name je česky
+# jako zdroj i fallback stejně jako u zboží (docs/lokalizace.md) — core.category_i18n pro sk/en/pl
+# se nedoplňuje, dokud UI běží (CategoryName resolver spadne na český název).
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-19-01-category-seed
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO core.category (name, slug, path, sort_order) VALUES
+                ('Potraviny', 'potraviny', 'potraviny', 10),
+                ('Nápoje', 'napoje', 'napoje', 20),
+                ('Drogerie', 'drogerie', 'drogerie', 30),
+                ('Domácnost', 'domacnost', 'domacnost', 40);
+
+              INSERT INTO core.category (parent_id, name, slug, path, sort_order)
+                SELECT id, v.name, v.slug, 'potraviny/' || v.slug, v.sort_order
+                FROM core.category, (VALUES
+                  ('Mléčné výrobky', 'mlecne', 10),
+                  ('Pečivo', 'pecivo', 20),
+                  ('Maso a uzeniny', 'maso-uzeniny', 30),
+                  ('Ovoce a zelenina', 'ovoce-zelenina', 40),
+                  ('Trvanlivé potraviny', 'trvanlive', 50),
+                  ('Mražené potraviny', 'mrazene', 60),
+                  ('Sladkosti a snacky', 'sladkosti', 70)
+                ) AS v(name, slug, sort_order)
+                WHERE core.category.slug = 'potraviny';
+
+              INSERT INTO core.category (parent_id, name, slug, path, sort_order)
+                SELECT id, v.name, v.slug, 'potraviny/mlecne/' || v.slug, v.sort_order
+                FROM core.category, (VALUES
+                  ('Máslo', 'maslo', 10),
+                  ('Sýry', 'syry', 20),
+                  ('Jogurty', 'jogurty', 30),
+                  ('Mléko', 'mleko', 40)
+                ) AS v(name, slug, sort_order)
+                WHERE core.category.slug = 'mlecne';
+
+              INSERT INTO core.category (parent_id, name, slug, path, sort_order)
+                SELECT id, v.name, v.slug, 'potraviny/trvanlive/' || v.slug, v.sort_order
+                FROM core.category, (VALUES
+                  ('Těstoviny', 'testoviny', 10),
+                  ('Rýže a luštěniny', 'ryze-lusteniny', 20),
+                  ('Konzervy', 'konzervy', 30)
+                ) AS v(name, slug, sort_order)
+                WHERE core.category.slug = 'trvanlive';
+
+              INSERT INTO core.category (parent_id, name, slug, path, sort_order)
+                SELECT id, v.name, v.slug, 'napoje/' || v.slug, v.sort_order
+                FROM core.category, (VALUES
+                  ('Voda a limonády', 'voda-limonady', 10),
+                  ('Alkoholické nápoje', 'alkohol', 20),
+                  ('Káva a čaj', 'kava-caj', 30)
+                ) AS v(name, slug, sort_order)
+                WHERE core.category.slug = 'napoje';
+
+              INSERT INTO core.category (parent_id, name, slug, path, sort_order)
+                SELECT id, v.name, v.slug, 'drogerie/' || v.slug, v.sort_order
+                FROM core.category, (VALUES
+                  ('Osobní hygiena', 'hygiena', 10),
+                  ('Čisticí prostředky', 'cistici-prostredky', 20)
+                ) AS v(name, slug, sort_order)
+                WHERE core.category.slug = 'drogerie';
+
+              INSERT INTO core.category (parent_id, name, slug, path, sort_order)
+                SELECT id, 'Papírové zboží', 'papirove-zbozi', 'domacnost/papirove-zbozi', 10
+                FROM core.category
+                WHERE core.category.slug = 'domacnost';
+      rollback:
+        - sql:
+            sql: |
+              DELETE FROM core.category;
