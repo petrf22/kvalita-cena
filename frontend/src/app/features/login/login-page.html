@@ -58,11 +58,13 @@
             name="consent"
             class="login-consent"
           >
-            {{ t('login.consentPrefix') }}
-            <a routerLink="/terms" target="_blank">{{ t('login.consentTermsLink') }}</a>
-            {{ t('login.consentAndLabel') }}
-            <a routerLink="/privacy" target="_blank">{{ t('login.consentPrivacyLink') }}</a
-            >.
+            <span>
+              {{ t('login.consentPrefix') }}
+              <a routerLink="/terms" target="_blank">{{ t('login.consentTermsLink') }}</a>
+              {{ t('login.consentAndLabel') }}
+              <a routerLink="/privacy" target="_blank">{{ t('login.consentPrivacyLink') }}</a
+              >.
+            </span>
           </label>
           <button
             nz-button
