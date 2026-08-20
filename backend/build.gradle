@@ -73,8 +73,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-testcontainers'
     // Spring Boot 4.1.0 (velmi čerstvý) zatím dependency-management BOM verzi Testcontainers
     // neřídí — verze proto natvrdo tady, ne přes BOM jako ostatní závislosti v tomhle souboru.
-    testImplementation 'org.testcontainers:junit-jupiter:1.20.4'
-    testImplementation 'org.testcontainers:postgresql:1.20.4'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    testImplementation 'org.testcontainers:postgresql:1.21.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
