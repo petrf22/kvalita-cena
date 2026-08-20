@@ -1,0 +1,28 @@
+.feedback-card {
+  max-width: 480px;
+  margin: 48px auto 0;
+}
+
+.feedback-intro {
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 16px;
+}
+
+.feedback-alert {
+  margin-bottom: 16px;
+}
+
+.feedback-hint {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.feedback-again {
+  margin-top: 16px;
+}
+
+.feedback-back {
+  display: block;
+  margin-top: 16px;
+}

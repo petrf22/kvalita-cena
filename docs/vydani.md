@@ -57,6 +57,13 @@ Postup:
 
 Registrace balíčku aplikaci **nevydává** — jen rezervuje jméno a sváže ho s ověřenou identitou.
 
+### Ikona pro listing
+
+Play vyžaduje 512×512 PNG ikonu appky u store listingu (jinou položku než APK ikony samotné —
+ty jde nahrát ze `tools/icons/play-store-icon-512.png`, jde o stejný motiv jako Android launcher
+ikona, viz `docs/branding.md`). Feature graphic (1024×500) pro listing zatím chybí a je mimo
+rozsah `docs/branding.md`.
+
 ### Play App Signing
 
 Doporučení: **vygenerovat klíč lokálně (viz výš) a nahrát ho do Play App Signing** („use your
@@ -92,6 +99,22 @@ vizuálně na emulátoru s API 36 (viz Ověření v plánu migrace repa).
   přesunuté do `src/debug/res/xml/`, atribut `android:networkSecurityConfig` je jen
   v `src/debug/AndroidManifest.xml` (manifest merger ho přidá k `<application>` jen pro debug
   build). `android:usesCleartextTraffic="false"` v `src/main/AndroidManifest.xml` platí vždy.
+
+## Verze — kde se mění při vydání
+
+Tři nezávislé zdroje, žádný sjednocující mechanismus (tag-based release neexistuje):
+
+- **Backend** — `backend/build.gradle`, `version = '0.1.0-SNAPSHOT'`.
+- **Web** — `frontend/package.json`, `"version": "0.1.0"`. Appka ji sama nikde nečte natvrdo:
+  `tools/version/write-version.mjs` z ní při `npm start`/`npm run build` (přes `pre*` npm
+  hooky) vygeneruje `src/app/version.ts`, odkud čte `features/about/about-page.ts` i
+  `services/feedback-service.ts` (`core.feedback.app_version` u webových hlášení).
+- **Mobil** — `mobile/app/build.gradle.kts`, `versionCode`/`versionName` — appka je čte přes
+  `BuildConfig.VERSION_NAME` (`ui/about/AboutScreen.kt`, `ui/feedback/FeedbackViewModel.kt`,
+  `crash/CrashReporter.kt`) i `BuildConfig.VERSION_CODE` (`ClientVersionInterceptor`, hlavička
+  `X-Client-Version` — `ClientVersionFilter` na serveru ji porovnává s
+  `app.client.min-android-version` a starý klient zablokuje srozumitelnou obrazovkou, ne
+  nesrozumitelnou chybou z každého jednotlivého volání).
 
 ## Co vydání pořád blokuje
 

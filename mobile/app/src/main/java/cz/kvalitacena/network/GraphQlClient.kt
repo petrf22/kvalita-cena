@@ -504,6 +504,24 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
   }
 
   /**
+   * Zpětná vazba od uživatele appky (core.feedback, docs/nasazeni.md "Než pozvat první lidi") —
+   * funguje i BEZ přihlášení, na rozdíl od flagRecord. Klient/verze/IP čte server sám
+   * z hlaviček (X-Client-Kind/X-Client-Version posílá appka u každého requestu), appVersion
+   * v inputu je jen doplňková informace.
+   */
+  suspend fun submitFeedback(input: FeedbackInput): FeedbackResult {
+    val gql = """
+      mutation(${'$'}input: FeedbackInput!) {
+        submitFeedback(input: ${'$'}input) { id }
+      }
+    """
+    val variables = buildJsonObject {
+      put("input", json.encodeToJsonElement(FeedbackInput.serializer(), input))
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(SubmitFeedbackData.serializer())).submitFeedback
+  }
+
+  /**
    * "Moje příspěvky" — vlastní založené zboží, nejnovější první, se stavem zveřejnění
    * (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty"). Vyžaduje přihlášení.
    */

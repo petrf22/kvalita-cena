@@ -1,13 +1,16 @@
 {
   "name": "frontend",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "scripts": {
     "ng": "ng",
+    "prestart": "node tools/version/write-version.mjs",
     "start": "ng serve --proxy-config proxy.conf.json",
+    "prebuild": "node tools/version/write-version.mjs",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "codegen": "graphql-codegen"
+    "codegen": "graphql-codegen",
+    "write-version": "node tools/version/write-version.mjs"
   },
   "private": true,
   "packageManager": "npm@11.16.0",

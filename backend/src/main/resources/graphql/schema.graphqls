@@ -173,6 +173,12 @@ type Query {
   """
   moderationObservations(authorPublicUid: ID, productId: ID, storeId: ID,
     first: Int = 20, offset: Int = 0): ModerationObservationResult!
+
+  """
+  Fronta zpětné vazby od uživatelů appky (core.feedback, docs/nasazeni.md "Než pozvat první
+  lidi") — handled null vrací obojí, jinak filtruje podle vyřízeno/nevyřízeno. Jen moderátor.
+  """
+  feedbackItems(handled: Boolean, first: Int = 20, offset: Int = 0): FeedbackItemResult!
 }
 
 type Mutation {
@@ -255,6 +261,17 @@ type Mutation {
 
   "Smazání avatara profilu. Vyžaduje přihlášení."
   deleteAvatar: Viewer!
+
+  """
+  Zpětná vazba od uživatele appky (core.feedback) — funguje i BEZ přihlášení, na rozdíl od
+  flagRecord/rateProduct. Klient/verze appky/IP se čtou ze serveru (hlaviček), ne z inputu.
+  """
+  submitFeedback(input: FeedbackInput!): FeedbackResult!
+
+  """
+  Vyřízení/vrácení jednoho hlášení zpětné vazby do fronty (core.feedback). Jen moderátor.
+  """
+  setFeedbackHandled(id: ID!, handled: Boolean!, note: String): Boolean!
 
   """
   Vyřízení všech dosud nevyřízených nahlášení jednoho záznamu (docs/reputace.md, "Moderace").
@@ -398,6 +415,66 @@ type ModerationObservationItem {
 
 type ModerationObservationResult {
   items: [ModerationObservationItem!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
+"Odkud přišel request (core.feedback.client_kind) — odvozeno server-side z X-Client-Kind, nikdy z inputu."
+enum ClientKind {
+  WEB
+  ANDROID
+}
+
+"Kategorie zpětné vazby (core.feedback) — jen k roztřídění fronty, nemění chování."
+enum FeedbackCategory {
+  BUG
+  IDEA
+  CONTENT
+  OTHER
+}
+
+input FeedbackInput {
+  category: FeedbackCategory!
+  message: String!
+  "Nepovinný — odpověď je pak možná jen u přihlášeného odesílatele."
+  contactEmail: String
+  "Route/obrazovka, ze které se odesílalo (jen orientační)."
+  pageRef: String
+  appVersion: String
+  "Volitelně přiložený záznam o posledním pádu appky (mobil) — nikdy neodchází bez akce uživatele."
+  diagnostics: String
+}
+
+type FeedbackResult {
+  id: ID!
+}
+
+"""
+Jedno hlášení ve frontě zpětné vazby (jen moderátor) — na rozdíl od FlaggedRecordItem se autor
+VRACÍ (authorPublicUid/authorHandle/contactEmail), protože bez něj není komu odpovědět
+(docs/soukromi.md, vědomá odchylka od nahlašování). authorPublicUid je null u anonyma.
+"""
+type FeedbackItem {
+  id: ID!
+  category: FeedbackCategory!
+  message: String!
+  contactEmail: String
+  clientKind: ClientKind!
+  appVersion: String
+  platformInfo: String
+  locale: String
+  country: String
+  pageRef: String
+  diagnostics: String
+  createdAt: DateTime!
+  handled: Boolean!
+  handledNote: String
+  authorPublicUid: ID
+  authorHandle: String
+}
+
+type FeedbackItemResult {
+  items: [FeedbackItem!]!
   totalCount: Int!
   hasMore: Boolean!
 }
@@ -1113,6 +1190,10 @@ enum ErrorCode {
   MODERATION_RECORD_NOT_FOUND
   MODERATION_OBSERVATION_NOT_FOUND
   MODERATION_USER_NOT_FOUND
+  FEEDBACK_MESSAGE_REQUIRED
+  FEEDBACK_MESSAGE_TOO_LONG
+  FEEDBACK_CONTACT_EMAIL_INVALID
+  FEEDBACK_NOT_FOUND
   INVALID_CHALLENGE
   SESSION_EXPIRED
   TERMS_ACCEPTANCE_REQUIRED

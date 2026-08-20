@@ -333,6 +333,35 @@ RecordType` (pro `flagRecord`) proto `USER` vůbec neobsahuje, jen Java/Kotlin e
 nenahlašuje stejným kanálem jako fotka zboží/obchodu (`docs/reputace.md`, "žádné veřejné
 negativní hodnocení uživatelů" — nahlašování cizího avataru by tomu odporovalo).
 
+## Zpětná vazba
+
+`core.feedback` (`2026-08-20/02-feedback.yaml`) je jediný first-party kanál zpětné vazby od
+uživatelů appky (`docs/nasazeni.md`, „Než pozvat první lidi" — uzavřená beta neměla kam
+posílat hlášení, jen `mailto:` na dosud nezřízenou schránku). Funguje **i anonymně**
+(`user_id` nullable) — zrovna nepřihlášený tester narazí na nejcennější hlášení, třeba že se
+nedokázal přihlásit vůbec.
+
+**Vědomá odchylka od `core.record_flag`:** tam se `user_id` z API nikdy nevrací
+(`docs/soukromi.md`), tady se autor (je-li přihlášený) naopak vrací moderátorovi vždycky —
+jinak není komu na hlášení odpovědět. Je to jiná věc s jiným pravidlem, stejně jako dnes
+`authorPublicUid` u `FlaggedRecordItem` vs. skrytý `record_flag.user_id`
+(`docs/reputace.md`, „Moderace"). Volitelný `contact_email_enc` (`BYTEA`, šifrovaný stejným
+AES-256-GCM jako ostatní textová PII profilu, `EmailCipher.encryptValue`) dovolí i anonymnímu
+odesílateli nechat kontakt na sebe, aniž by si zakládal účet.
+
+`client_kind`/`app_version`/`platform_info`/`locale`/`country`/`page_ref` se čtou/odvozují na
+serveru z hlaviček requestu (`X-Client-Kind`, `X-Client-Version` u mobilu — `FeedbackGraphQlController`
+stejným způsobem jako `ObservationGraphQlController.resolveSource`), ne z toho, co klient
+tvrdí v inputu — jen `appVersion` je klientem dodaná doplňková hodnota. `diagnostics`
+(volitelný stacktrace posledního pádu appky, jen Android) se přenáší v `FeedbackInput`, appka
+ho tam ale vloží JEN po výslovné akci uživatele (`ui/feedback/FeedbackScreen.kt`, checkbox
+s výchozí hodnotou nezaškrtnuto) — nikdy automaticky, viz `docs/soukromi.md`.
+
+Fronta pro moderátora (`feedbackItems`/`setFeedbackHandled`) žije v `ModerationGraphQlController`
+vedle existující fronty nahlášení, ne jako samostatný gatovaný kontroler — logika je ve vlastní
+`FeedbackService`, jen autorizace (`requireModerator`) se sdílí. Jen web (`/moderation`, záložka
+„Zpětná vazba"), stejně jako zbytek moderace není appce, je nástroj provozovatele.
+
 ## Co ještě není v etapě 1
 
 `agg.price_weekly_national` (týdenní řady pro delší grafy), plné textové recenze

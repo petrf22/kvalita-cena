@@ -128,6 +128,7 @@
     <string name="settings_currency_store_default">Mena obchodu (predvolené)</string>
     <string name="settings_currency_note">Prepočet slúži len na porovnanie — cenu vždy hlásite v mene obchodu, toto len mení, ako sa zobrazuje.</string>
     <string name="settings_about_link">Čo appka robí, odkiaľ berie dáta a kto ju prevádzkuje</string>
+    <string name="settings_feedback_link">Napísať spätnú väzbu appke</string>
     <string name="settings_legal_title">Právne dokumenty</string>
     <string name="settings_terms_link">Podmienky užívania</string>
     <string name="settings_privacy_link">Zásady ochrany osobných údajov</string>
@@ -151,7 +152,25 @@
     <string name="about_contact_title">Kontakt a dokumenty</string>
     <string name="about_contact_text">Otázky, pripomienky alebo žiadosti ohľadom osobných údajov:</string>
     <string name="about_contact_email" translatable="false">kontakt@kvalitacena.cz</string>
+    <string name="about_feedback_link">Napísať spätnú väzbu appke</string>
     <string name="about_version">Verzia appky %1$s</string>
+
+    <string name="feedback_title">Spätná väzba</string>
+    <string name="feedback_intro">Narazil/a si na chybu, alebo máš nápad na zlepšenie? Napíš nám to sem — funguje to aj bez prihlásenia.</string>
+    <string name="feedback_category_label">Kategória</string>
+    <string name="feedback_category_bug">Chyba</string>
+    <string name="feedback_category_idea">Nápad</string>
+    <string name="feedback_category_content">Obsah (tovar/obchod)</string>
+    <string name="feedback_category_other">Iné</string>
+    <string name="feedback_message_label">Správa</string>
+    <string name="feedback_message_placeholder">Čo sa stalo, čo si skúšal/a, čo si čakal/a…</string>
+    <string name="feedback_contact_email_label">Kontaktný e-mail (nepovinné)</string>
+    <string name="feedback_contact_email_hint">Ak necháš e-mail, môžeme sa ozvať s doplňujúcou otázkou alebo odpoveďou.</string>
+    <string name="feedback_attach_crash_report">Priložiť záznam o poslednom páde appky</string>
+    <string name="feedback_send">Odoslať</string>
+    <string name="feedback_sending">Odosielam…</string>
+    <string name="feedback_send_another">Poslať ďalšiu</string>
+    <string name="feedback_thanks">Ďakujeme za spätnú väzbu, pomáha appku zlepšiť.</string>
 
     <string name="terms_title">Podmienky užívania</string>
     <string name="privacy_title">Zásady ochrany osobných údajov</string>

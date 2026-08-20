@@ -33,12 +33,15 @@ import cz.kvalitacena.ui.common.UpdateRequiredScreen
 import cz.kvalitacena.ui.common.UpdateRequiredState
 import cz.kvalitacena.ui.contributions.MyContributionsScreen
 import cz.kvalitacena.ui.detail.ProductDetailScreen
+import cz.kvalitacena.ui.feedback.FeedbackScreen
 import cz.kvalitacena.ui.legal.PrivacyScreen
 import cz.kvalitacena.ui.legal.TermsScreen
 import cz.kvalitacena.ui.navigation.ARG_BARCODE
+import cz.kvalitacena.ui.navigation.ARG_FEEDBACK_SOURCE
 import cz.kvalitacena.ui.navigation.ARG_PRODUCT_ID
 import cz.kvalitacena.ui.navigation.ARG_STORE_ID
 import cz.kvalitacena.ui.navigation.ROUTE_ABOUT
+import cz.kvalitacena.ui.navigation.ROUTE_FEEDBACK
 import cz.kvalitacena.ui.navigation.ROUTE_PRICE_ENTRY
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_DETAIL
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_FORM
@@ -49,6 +52,7 @@ import cz.kvalitacena.ui.navigation.ROUTE_TERMS
 import cz.kvalitacena.ui.navigation.ROUTE_STORE_DETAIL
 import cz.kvalitacena.ui.navigation.ROUTE_STORE_FORM
 import cz.kvalitacena.ui.navigation.TopLevelDestination
+import cz.kvalitacena.ui.navigation.feedbackRoute
 import cz.kvalitacena.ui.navigation.priceEntryRouteByBarcode
 import cz.kvalitacena.ui.navigation.priceEntryRouteByProductId
 import cz.kvalitacena.ui.navigation.productDetailRoute
@@ -129,6 +133,7 @@ private fun AppScaffold() {
       composable(TopLevelDestination.SETTINGS.route) {
         SettingsScreen(
           onOpenAbout = { navController.navigate(ROUTE_ABOUT) },
+          onOpenFeedback = { navController.navigate(feedbackRoute("settings")) },
           onOpenTerms = { navController.navigate(ROUTE_TERMS) },
           onOpenPrivacy = { navController.navigate(ROUTE_PRIVACY) },
         )
@@ -220,9 +225,17 @@ private fun AppScaffold() {
       composable(ROUTE_ABOUT) {
         AboutScreen(
           onDone = { navController.popBackStack() },
+          onOpenFeedback = { navController.navigate(feedbackRoute("about")) },
           onOpenTerms = { navController.navigate(ROUTE_TERMS) },
           onOpenPrivacy = { navController.navigate(ROUTE_PRIVACY) },
         )
+      }
+      composable(
+        ROUTE_FEEDBACK,
+        arguments = listOf(navArgument(ARG_FEEDBACK_SOURCE) { type = NavType.StringType; nullable = true; defaultValue = null }),
+      ) { backStackEntry ->
+        val source = backStackEntry.arguments?.getString(ARG_FEEDBACK_SOURCE) ?: "unknown"
+        FeedbackScreen(source = source, onDone = { navController.popBackStack() })
       }
     }
   }

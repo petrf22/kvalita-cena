@@ -27,6 +27,7 @@
   },
   "footer": {
     "about": "O aplikacji",
+    "feedback": "Opinie",
     "terms": "Warunki korzystania",
     "privacy": "Polityka prywatności"
   },
@@ -103,7 +104,11 @@
     "MODERATION_RECORD_NOT_FOUND": "Moderowany wpis nie istnieje.",
     "MODERATION_OBSERVATION_NOT_FOUND": "Moderowana cena nie istnieje.",
     "MODERATION_USER_NOT_FOUND": "Użytkownik nie istnieje.",
-    "ACCOUNT_SUSPENDED": "To konto jest zawieszone."
+    "ACCOUNT_SUSPENDED": "To konto jest zawieszone.",
+    "FEEDBACK_MESSAGE_REQUIRED": "Napisz proszę wiadomość",
+    "FEEDBACK_MESSAGE_TOO_LONG": "Wiadomość może mieć najwyżej {{p0}} znaków",
+    "FEEDBACK_CONTACT_EMAIL_INVALID": "Kontaktowy e-mail ma nieprawidłowy format",
+    "FEEDBACK_NOT_FOUND": "To zgłoszenie nie istnieje"
   },
   "enum": {
     "priceKind": {
@@ -155,6 +160,16 @@
       "PRODUCT": "Produkt",
       "STORE": "Sklep",
       "PHOTO": "Zdjęcie"
+    },
+    "feedbackCategory": {
+      "BUG": "Błąd",
+      "IDEA": "Pomysł",
+      "CONTENT": "Treść (produkt/sklep)",
+      "OTHER": "Inne"
+    },
+    "clientKind": {
+      "WEB": "Web",
+      "ANDROID": "Aplikacja Android"
     }
   }
 }

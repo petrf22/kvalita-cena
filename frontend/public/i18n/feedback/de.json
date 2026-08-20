@@ -1,0 +1,14 @@
+{
+  "title": "Feedback",
+  "intro": "Einen Fehler gefunden oder eine Idee für eine Verbesserung? Schreib uns hier — es funktioniert auch ohne Anmeldung.",
+  "categoryLabel": "Kategorie",
+  "messageLabel": "Nachricht",
+  "messagePlaceholder": "Was ist passiert, was hast du versucht, was hast du erwartet…",
+  "contactEmailLabel": "Kontakt-E-Mail (optional)",
+  "contactEmailPlaceholder": "du@email.de",
+  "contactEmailHint": "Wenn du eine E-Mail hinterlässt, melden wir uns eventuell mit einer Rückfrage oder Antwort.",
+  "send": "Absenden",
+  "thanks": "Danke für dein Feedback, es hilft, die App zu verbessern.",
+  "sendAnother": "Weiteres senden",
+  "back": "Zurück zur Suche"
+}

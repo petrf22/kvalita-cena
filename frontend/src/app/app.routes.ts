@@ -52,6 +52,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/about/about-page').then((m) => m.AboutPage),
   },
   {
+    path: 'feedback',
+    loadComponent: () => import('./features/feedback/feedback-page').then((m) => m.FeedbackPage),
+  },
+  {
     path: 'terms',
     loadComponent: () => import('./features/terms/terms-page').then((m) => m.TermsPage),
   },
@@ -77,5 +81,6 @@ export const routes: Routes = [
   { path: 'podminky-uziti', redirectTo: 'terms' },
   { path: 'zasady-ochrany-osobnich-udaju', redirectTo: 'privacy' },
   { path: 'moderace', redirectTo: 'moderation' },
+  { path: 'zpetna-vazba', redirectTo: 'feedback' },
   { path: '**', redirectTo: '' },
 ];

@@ -14,6 +14,13 @@ export const ChainType = {
 } as const;
 
 export type ChainType = typeof ChainType[keyof typeof ChainType];
+/** Odkud přišel request (core.feedback.client_kind) — odvozeno server-side z X-Client-Kind, nikdy z inputu. */
+export const ClientKind = {
+  Android: 'ANDROID',
+  Web: 'WEB'
+} as const;
+
+export type ClientKind = typeof ClientKind[keyof typeof ClientKind];
 export const CodeType = {
   Gtin: 'GTIN',
   Plu: 'PLU',
@@ -53,6 +60,10 @@ export const ErrorCode = {
   EmailChangeInvalidChallenge: 'EMAIL_CHANGE_INVALID_CHALLENGE',
   EmailChangeRequiresLogin: 'EMAIL_CHANGE_REQUIRES_LOGIN',
   EmailChangeSameAddress: 'EMAIL_CHANGE_SAME_ADDRESS',
+  FeedbackContactEmailInvalid: 'FEEDBACK_CONTACT_EMAIL_INVALID',
+  FeedbackMessageRequired: 'FEEDBACK_MESSAGE_REQUIRED',
+  FeedbackMessageTooLong: 'FEEDBACK_MESSAGE_TOO_LONG',
+  FeedbackNotFound: 'FEEDBACK_NOT_FOUND',
   FlagRecordNotFound: 'FLAG_RECORD_NOT_FOUND',
   FlagRequiresLogin: 'FLAG_REQUIRES_LOGIN',
   InvalidChallenge: 'INVALID_CHALLENGE',
@@ -117,6 +128,15 @@ export const ExternalLinkKind = {
 } as const;
 
 export type ExternalLinkKind = typeof ExternalLinkKind[keyof typeof ExternalLinkKind];
+/** Kategorie zpětné vazby (core.feedback) — jen k roztřídění fronty, nemění chování. */
+export const FeedbackCategory = {
+  Bug: 'BUG',
+  Content: 'CONTENT',
+  Idea: 'IDEA',
+  Other: 'OTHER'
+} as const;
+
+export type FeedbackCategory = typeof FeedbackCategory[keyof typeof FeedbackCategory];
 /** Výsledek moderátorského přezkumu nahlášeného záznamu (docs/reputace.md, 'Moderace'). */
 export const FlagResolution = {
   /** Nahlášení bylo neopodstatněné — hidden_at cíle se vrátí na NULL. */

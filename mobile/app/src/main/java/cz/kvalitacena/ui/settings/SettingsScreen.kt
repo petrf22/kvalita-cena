@@ -50,6 +50,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
   onOpenAbout: () -> Unit = {},
+  onOpenFeedback: () -> Unit = {},
   onOpenTerms: () -> Unit = {},
   onOpenPrivacy: () -> Unit = {},
 ) {
@@ -115,6 +116,13 @@ fun SettingsScreen(
       style = MaterialTheme.typography.bodyMedium,
       color = MaterialTheme.colorScheme.primary,
       modifier = Modifier.clickable(onClick = onOpenAbout),
+    )
+    Spacer()
+    Text(
+      stringResource(R.string.settings_feedback_link),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.primary,
+      modifier = Modifier.clickable(onClick = onOpenFeedback),
     )
     Spacer()
     HorizontalDivider()

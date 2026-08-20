@@ -16,6 +16,7 @@
   "authorText": "The app was created and is run by Petr Franta as a private individual, not a company. The app is free and has no ads. The project is open to other contributors — a list will be added here once they join.",
   "contactTitle": "Contact and documents",
   "contactText": "Questions, feedback, or requests regarding personal data:",
+  "feedbackLink": "Send feedback about the app",
   "termsLink": "Terms of use",
   "privacyLink": "Privacy policy",
   "versionLabel": "App version {{version}}",

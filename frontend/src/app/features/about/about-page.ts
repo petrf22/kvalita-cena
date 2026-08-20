@@ -4,12 +4,14 @@ import { TranslocoDirective, provideTranslocoScope } from '@jsverse/transloco';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { FxInfo } from '../../models/catalog';
 import { FxService } from '../../services/fx-service';
+import { APP_VERSION } from '../../version';
 
 /**
  * Stránka "O aplikaci" — co appka dělá, odkud bere data (dřív karta "Zdroje dat" v Nastavení,
- * i s appVersion sem přesunuto, viz CLAUDE.md), otevřený kód a kontakt. Vzor terms-page.ts/
- * privacy-page.ts, ale text se (na rozdíl od právních dokumentů) plně překládá do všech pěti
- * jazyků — není to právní text s rizikem nepřesného strojového překladu.
+ * i s appVersion sem přesunuto, viz CLAUDE.md), otevřený kód, kontakt a odkaz na zpětnou vazbu
+ * (features/feedback). Vzor terms-page.ts/privacy-page.ts, ale text se (na rozdíl od právních
+ * dokumentů) plně překládá do všech pěti jazyků — není to právní text s rizikem nepřesného
+ * strojového překladu.
  */
 @Component({
   selector: 'app-about-page',
@@ -22,7 +24,9 @@ export class AboutPage {
   private readonly fxService = inject(FxService);
 
   protected readonly fxInfo = signal<FxInfo | null>(null);
-  protected readonly appVersion = '0.1.0';
+  // Generováno z package.json (tools/version/write-version.mjs) — dřív natvrdo v kódu,
+  // nesouhlasilo s package.json ani s tím, co appka skutečně posílá jako core.feedback.app_version.
+  protected readonly appVersion = APP_VERSION;
 
   constructor() {
     // Atribuce zdroje kurzu (docs/lokalizace.md) — jen k zobrazení, nic z toho nerozhoduje,

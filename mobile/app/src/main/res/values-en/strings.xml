@@ -128,6 +128,7 @@
     <string name="settings_currency_store_default">Store currency (default)</string>
     <string name="settings_currency_note">The conversion is only for comparison — you always report a price in the store\'s currency, this just changes how it\'s displayed.</string>
     <string name="settings_about_link">What the app does, where the data comes from, and who runs it</string>
+    <string name="settings_feedback_link">Send feedback about the app</string>
     <string name="settings_legal_title">Legal documents</string>
     <string name="settings_terms_link">Terms of use</string>
     <string name="settings_privacy_link">Privacy policy</string>
@@ -151,7 +152,25 @@
     <string name="about_contact_title">Contact and documents</string>
     <string name="about_contact_text">Questions, feedback, or requests regarding personal data:</string>
     <string name="about_contact_email" translatable="false">kontakt@kvalitacena.cz</string>
+    <string name="about_feedback_link">Send feedback about the app</string>
     <string name="about_version">App version %1$s</string>
+
+    <string name="feedback_title">Feedback</string>
+    <string name="feedback_intro">Found a bug, or have an idea for an improvement? Write to us here — it works even without signing in.</string>
+    <string name="feedback_category_label">Category</string>
+    <string name="feedback_category_bug">Bug</string>
+    <string name="feedback_category_idea">Idea</string>
+    <string name="feedback_category_content">Content (product/store)</string>
+    <string name="feedback_category_other">Other</string>
+    <string name="feedback_message_label">Message</string>
+    <string name="feedback_message_placeholder">What happened, what did you try, what did you expect…</string>
+    <string name="feedback_contact_email_label">Contact email (optional)</string>
+    <string name="feedback_contact_email_hint">If you leave an email, we may follow up with a question or an answer.</string>
+    <string name="feedback_attach_crash_report">Attach the last crash report</string>
+    <string name="feedback_send">Send</string>
+    <string name="feedback_sending">Sending…</string>
+    <string name="feedback_send_another">Send another</string>
+    <string name="feedback_thanks">Thanks for the feedback, it helps improve the app.</string>
 
     <string name="terms_title">Terms of use</string>
     <string name="privacy_title">Privacy policy</string>

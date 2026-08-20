@@ -208,6 +208,30 @@ v Nastavení, přesunuto sem i s řádkem verze appky), otevřený kód (GNU AGP
 externích odkazů přes `ui/common/ExternalLinks.kt`). Na rozdíl od Podmínek užití/Zásad ochrany
 osobních údajů se text plně překládá do všech pěti jazyků (není to právní text).
 
+**Vizuální identita**: ikona appky (misky vah, `#1677FF`) i favicon/PWA manifest/Android
+launcher z ní odvozené — `docs/branding.md` je zdroj pravdy, geometrie sama žije v
+`tools/icons/generate.py` (`python3 tools/icons/generate.py` po každé úpravě kresby).
+
+**Zpětná vazba** (`docs/datovy-model.md`, „Zpětná vazba"; `docs/nasazeni.md`, „Než pozvat
+první lidi"): jediný first-party kanál pro uzavřenou betu — appka dřív neměla žádný způsob,
+jak od testerů dostat hlášení, jen `mailto:` na dosud nezřízenou schránku.
+`core.feedback`/`FeedbackService`/`FeedbackGraphQlController` (mutace `submitFeedback`
+funguje i BEZ přihlášení, na rozdíl od `flagRecord`), fronta pro moderátora
+(`feedbackItems`/`setFeedbackHandled`) přidaná do existujícího `ModerationGraphQlController`
+jako čtvrtá záložka na `/moderation`. Autor SE (na rozdíl od `record_flag`) moderátorovi
+vrací i s dešifrovaným volitelným kontaktním e-mailem — jinak není komu odpovědět
+(`docs/soukromi.md`, vědomá odchylka od nahlašování). Web `features/feedback` (`/feedback`,
+odkaz z patičky i „O aplikaci"), mobil `ui/feedback/FeedbackScreen.kt` (odkaz z Nastavení
+i „O aplikaci"), oba i s neregistrovaným uživatelem. Android navíc zachytává pády bez třetí
+strany (`crash/CrashReporter.kt`, `Thread.setDefaultUncaughtExceptionHandler`) — záznam
+zůstává jen v `filesDir`, appka ho nabídne přiložit k hlášení až po výslovném zaškrtnutí
+(výchozí nezaškrtnuto), nikdy neodchází sám od sebe. Verze appky na webu se generuje
+z `package.json` (`tools/version/write-version.mjs` → `src/app/version.ts`, `npm run
+prestart`/`prebuild`) místo dřívější natvrdo zapsané konstanty; mobil odjakživa četl
+`BuildConfig.VERSION_NAME`. `dev/beta-report.sql` je provozní přehled bez analytiky
+(kolik lidí zapsalo cenu, kolik čeká na potvrzení/moderaci) pro ruční kontrolu při běžící
+betě.
+
 Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
 `PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec
 (jen složka `L`), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo jednorázové

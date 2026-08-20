@@ -3,6 +3,7 @@ package cz.kvalitacena
 import android.content.Context
 import cz.kvalitacena.auth.AuthRepository
 import cz.kvalitacena.network.AcceptLanguageInterceptor
+import cz.kvalitacena.network.ClientKindInterceptor
 import cz.kvalitacena.network.ClientVersionInterceptor
 import cz.kvalitacena.network.DisplayCurrencyInterceptor
 import cz.kvalitacena.network.GraphQlClient
@@ -42,6 +43,7 @@ object AppContainer {
       .addInterceptor(AcceptLanguageInterceptor())
       .addInterceptor(DisplayCurrencyInterceptor(displayCurrencyStore))
       .addInterceptor(ClientVersionInterceptor())
+      .addInterceptor(ClientKindInterceptor())
       .build()
     authRepository = AuthRepository(context.applicationContext, httpClient)
     graphQlClient = GraphQlClient(authRepository, httpClient)

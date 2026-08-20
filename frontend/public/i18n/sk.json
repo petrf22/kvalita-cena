@@ -27,6 +27,7 @@
   },
   "footer": {
     "about": "O aplikácii",
+    "feedback": "Spätná väzba",
     "terms": "Podmienky užívania",
     "privacy": "Zásady ochrany osobných údajov"
   },
@@ -103,7 +104,11 @@
     "MODERATION_RECORD_NOT_FOUND": "Moderovaný záznam neexistuje.",
     "MODERATION_OBSERVATION_NOT_FOUND": "Moderovaná cena neexistuje.",
     "MODERATION_USER_NOT_FOUND": "Používateľ neexistuje.",
-    "ACCOUNT_SUSPENDED": "Tento účet je pozastavený."
+    "ACCOUNT_SUSPENDED": "Tento účet je pozastavený.",
+    "FEEDBACK_MESSAGE_REQUIRED": "Napíš prosím správu",
+    "FEEDBACK_MESSAGE_TOO_LONG": "Správa smie mať najviac {{p0}} znakov",
+    "FEEDBACK_CONTACT_EMAIL_INVALID": "Kontaktný e-mail nemá platný tvar",
+    "FEEDBACK_NOT_FOUND": "Hlásenie spätnej väzby neexistuje"
   },
   "enum": {
     "priceKind": {
@@ -155,6 +160,16 @@
       "PRODUCT": "Tovar",
       "STORE": "Obchod",
       "PHOTO": "Fotka"
+    },
+    "feedbackCategory": {
+      "BUG": "Chyba",
+      "IDEA": "Nápad",
+      "CONTENT": "Obsah (tovar/obchod)",
+      "OTHER": "Iné"
+    },
+    "clientKind": {
+      "WEB": "Web",
+      "ANDROID": "Android appka"
     }
   }
 }

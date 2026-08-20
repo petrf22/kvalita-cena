@@ -96,6 +96,12 @@ public enum ErrorCode {
   MODERATION_OBSERVATION_NOT_FOUND("error.moderation.observationNotFound"),
   MODERATION_USER_NOT_FOUND("error.moderation.userNotFound"),
 
+  // --- zpětná vazba (core.feedback, docs/nasazeni.md "Než pozvat první lidi")
+  FEEDBACK_MESSAGE_REQUIRED("error.feedback.messageRequired"),
+  FEEDBACK_MESSAGE_TOO_LONG("error.feedback.messageTooLong"),         // {0} = max délka
+  FEEDBACK_CONTACT_EMAIL_INVALID("error.feedback.contactEmailInvalid"),
+  FEEDBACK_NOT_FOUND("error.feedback.notFound"),
+
   // --- auth
   INVALID_CHALLENGE("error.auth.invalidChallenge"),
   SESSION_EXPIRED("error.auth.sessionExpired"),

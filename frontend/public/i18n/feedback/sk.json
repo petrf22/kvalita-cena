@@ -1,0 +1,14 @@
+{
+  "title": "Spätná väzba",
+  "intro": "Narazil/a si na chybu, alebo máš nápad na zlepšenie? Napíš nám to sem — funguje to aj bez prihlásenia.",
+  "categoryLabel": "Kategória",
+  "messageLabel": "Správa",
+  "messagePlaceholder": "Čo sa stalo, čo si skúšal/a, čo si čakal/a…",
+  "contactEmailLabel": "Kontaktný e-mail (nepovinné)",
+  "contactEmailPlaceholder": "tvoj@email.sk",
+  "contactEmailHint": "Ak necháš e-mail, môžeme sa ozvať s doplňujúcou otázkou alebo odpoveďou.",
+  "send": "Odoslať",
+  "thanks": "Ďakujeme za spätnú väzbu, pomáha appku zlepšiť.",
+  "sendAnother": "Poslať ďalšiu",
+  "back": "Späť na hľadanie"
+}

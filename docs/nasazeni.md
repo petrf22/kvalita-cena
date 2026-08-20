@@ -108,10 +108,58 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   ke skutečně velkému pokrytí by bylo naostro postavit `osm.*` schéma se sync jobem (čtení
   spojené s `core.*` až za běhu, stejný princip jako appka má pro Open Food Facts) —
   samostatná vícedenní architektonická práce, ne krok téhle bety.
+- [x] **Kanál zpětné vazby** — appka dřív neměla žádný způsob, jak od testerů dostat hlášení,
+  jen `mailto:kontakt@kvalitacena.cz` na „O aplikaci" (a ta schránka pořád není zřízená, viz
+  bod 1 výš — pořád nutná jako záložní kanál pro GDPR žádosti, in-app formulář ji nenahrazuje).
+  In-app formulář (`core.feedback`, funguje i bez přihlášení, `docs/datovy-model.md`, „Zpětná
+  vazba") na webu i Androidu je hotový, fronta pro provozovatele je čtvrtá záložka na
+  `/moderation`. Nic dalšího tu nezbývá zapnout.
 - [ ] **Před Fází 3** (veřejné spuštění): vrátit `SPRING_PROFILES_ACTIVE` zpět na jen `prod`
   a `frontend/public/robots.txt` buď smazat, nebo povolit indexaci (`Disallow:` prázdné) —
   jinak appka po zveřejnění zůstane neviditelná pro vyhledávače a prahy důvěry 0/0/1 by
   fungovaly i pro veřejnost, ne jen pozvané lidi.
+- [ ] **Před Fází 3: posílit obranu formuláře zpětné vazby proti spamu.** Dnešní obrana
+  (`FeedbackRateLimiter`, `app.feedback.max-per-day-per-ip: 20`) stačí na uzavřenou betu
+  s osobně pozvanými lidmi, ale ne na veřejný formulář dostupný komukoli:
+  - 20 odeslání/den na IP je velkorysé pro anonymní útočníka z jedné IP; proti
+    distribuovanému spamu (víc IP) appka nemá vůbec nic.
+  - žádný CAPTCHA/honeypot — appka nerozezná bota od člověka.
+  - na rozdíl od `core.record_flag` (`app.moderation.flags-to-hide`) nemá `core.feedback`
+    žádné automatické skrytí/prioritizaci — při náporu by fronta na `/moderation` rychle
+    zavalila jediného moderátora (`docs/soukromi.md`, „kapacita moderace jednoho člověka").
+  Řešit až tady, ne dřív — do té doby appku nikdo zvenčí nenajde (`robots.txt` výš).
+
+### Protokol bety — koho pozvat a co s nálezy
+
+Profil `beta` (prahy 0/0/1) dává smysl jen pro OSOBNĚ pozvané lidi, ne pro veřejnou výzvu —
+s cizími lidmi bez vztahu k appce by studený start dopadl stejně jako bez sníženého prahu,
+jen s hůř diagnostikovatelnými nálezy. Doporučený postup:
+
+1. Pozvat osobně (zprávou/e-mailem s odkazem), ne veřejným příspěvkem — desítky lidí, ne
+   stovky, ať zůstane kapacita moderace i na zpětnou vazbu zvládnutelná (`docs/reputace.md`,
+   „Otevřená rizika").
+2. Každému dát stejný minimální scénář, ať appka projde celý tok, ne jen náhodné klikání:
+   přihlásit se (OTP), najít zboží podle jména i skenem, zapsat cenu z mobilu i z webu,
+   založit chybějící obchod, nahrát fotku, zkusit `/feedback` schválně (i s prázdnou zprávou).
+3. Ozvat se každému znovu přibližně jednou týdně — ne čekat, až se sami ozvou. Zpětná vazba
+   z formuláře (`/moderation`, záložka „Zpětná vazba") je jeden zdroj, přímá zpráva testerovi
+   „jak to jde" druhý — appka první beta test (19. 8. 2026, prázdný číselník kategorií, viz
+   výš) našla ručním klikáním, ne čekáním na formulář, který tou dobou ještě neexistoval.
+4. Nálezy, které nejsou jen jednotlivé hlášení k vyřízení, ale mění, co appka ještě
+   potřebuje (jako prázdný číselník kategorií), zapisovat rovnou sem do `docs/nasazeni.md`
+   stejným stylem jako existující položky — ne nechat je zapadnout v chatu/paměti.
+
+### Provozní přehled bez analytiky
+
+Appka nemá (a mít nesmí, `docs/soukromi.md`) žádnou analytiku — signál „appka se používá/
+appka se nepoužívá" jde jen přímým dotazem do databáze. `dev/beta-report.sql` je sada
+dotazů pro rychlou kontrolu při běžícím testu (kolik lidí zapsalo cenu za posledních 7 dní,
+kolik zboží/obchodů visí v `DRAFT` déle než pár dní, kolik nahlášení a kolik zpětné vazby
+čeká na vyřízení):
+
+```bash
+docker compose exec -T postgres psql -U postgres -d kvalitaacena < dev/beta-report.sql
+```
 
 ---
 

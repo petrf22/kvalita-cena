@@ -6,6 +6,7 @@
   "tabs": {
     "flagged": "Flagged",
     "observations": "Prices",
+    "feedback": "Feedback",
     "accounts": "Accounts"
   },
   "flagged": {
@@ -30,6 +31,17 @@
     "active": "Active",
     "restore": "Restore",
     "reject": "Reject"
+  },
+  "feedback": {
+    "unhandled": "Unhandled",
+    "handled": "Handled",
+    "allStates": "All",
+    "empty": "No feedback matches the filter.",
+    "contactEmailLabel": "Contact:",
+    "anonymous": "anonymous",
+    "diagnosticsLabel": "Crash report",
+    "reopen": "Reopen",
+    "markHandled": "Mark as handled"
   },
   "accounts": {
     "hint": "Paste the user ID (authorPublicUid) copied from the flagged records queue or the price list.",

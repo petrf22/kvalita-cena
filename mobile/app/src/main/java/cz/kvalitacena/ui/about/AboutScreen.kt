@@ -1,10 +1,12 @@
 package cz.kvalitacena.ui.about
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -14,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import cz.kvalitacena.BuildConfig
@@ -29,12 +32,23 @@ import cz.kvalitacena.ui.common.openUrl
  * protějšek: `frontend/src/app/features/about/about-page.ts`.
  */
 @Composable
-fun AboutScreen(onDone: () -> Unit, onOpenTerms: () -> Unit = {}, onOpenPrivacy: () -> Unit = {}) {
+fun AboutScreen(
+  onDone: () -> Unit,
+  onOpenFeedback: () -> Unit = {},
+  onOpenTerms: () -> Unit = {},
+  onOpenPrivacy: () -> Unit = {},
+) {
   val context = LocalContext.current
   val githubUrl = stringResource(R.string.about_github_url)
   val contactEmail = stringResource(R.string.about_contact_email)
 
   Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+    Image(
+      painter = painterResource(R.drawable.ic_logo),
+      contentDescription = stringResource(R.string.app_name),
+      modifier = Modifier.size(48.dp),
+    )
+    Spacer()
     Text(stringResource(R.string.about_title), style = MaterialTheme.typography.headlineSmall)
     Spacer()
 
@@ -107,6 +121,13 @@ fun AboutScreen(onDone: () -> Unit, onOpenTerms: () -> Unit = {}, onOpenPrivacy:
       style = MaterialTheme.typography.bodyMedium,
       color = MaterialTheme.colorScheme.primary,
       modifier = Modifier.clickable { openEmail(context, contactEmail) },
+    )
+    Spacer()
+    Text(
+      stringResource(R.string.about_feedback_link),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.primary,
+      modifier = Modifier.clickable(onClick = onOpenFeedback),
     )
     Spacer()
     Text(

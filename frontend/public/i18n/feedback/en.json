@@ -1,0 +1,14 @@
+{
+  "title": "Feedback",
+  "intro": "Found a bug, or have an idea for an improvement? Write to us here — it works even without signing in.",
+  "categoryLabel": "Category",
+  "messageLabel": "Message",
+  "messagePlaceholder": "What happened, what did you try, what did you expect…",
+  "contactEmailLabel": "Contact email (optional)",
+  "contactEmailPlaceholder": "you@email.com",
+  "contactEmailHint": "If you leave an email, we may follow up with a question or an answer.",
+  "send": "Send",
+  "thanks": "Thanks for the feedback, it helps improve the app.",
+  "sendAnother": "Send another",
+  "back": "Back to search"
+}

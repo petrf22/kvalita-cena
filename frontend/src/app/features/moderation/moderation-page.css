@@ -56,6 +56,23 @@
   margin-bottom: 16px;
 }
 
+.item-message {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+}
+
+.feedback-diagnostics {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.feedback-diagnostics pre {
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
 .section-pagination {
   margin-top: 16px;
   text-align: right;

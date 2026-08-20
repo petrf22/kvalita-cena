@@ -128,6 +128,7 @@
     <string name="settings_currency_store_default">Waluta sklepu (domyślnie)</string>
     <string name="settings_currency_note">Przeliczenie służy tylko do porównania — cenę zawsze zgłaszasz w walucie sklepu, to tylko zmienia sposób jej wyświetlania.</string>
     <string name="settings_about_link">Co robi aplikacja, skąd pochodzą dane i kto ją prowadzi</string>
+    <string name="settings_feedback_link">Wyślij opinię o aplikacji</string>
     <string name="settings_legal_title">Dokumenty prawne</string>
     <string name="settings_terms_link">Warunki korzystania</string>
     <string name="settings_privacy_link">Polityka prywatności</string>
@@ -151,7 +152,25 @@
     <string name="about_contact_title">Kontakt i dokumenty</string>
     <string name="about_contact_text">Pytania, uwagi lub wnioski dotyczące danych osobowych:</string>
     <string name="about_contact_email" translatable="false">kontakt@kvalitacena.cz</string>
+    <string name="about_feedback_link">Wyślij opinię o aplikacji</string>
     <string name="about_version">Wersja aplikacji %1$s</string>
+
+    <string name="feedback_title">Opinie</string>
+    <string name="feedback_intro">Znalazłeś/aś błąd albo masz pomysł na ulepszenie? Napisz do nas tutaj — działa to nawet bez logowania.</string>
+    <string name="feedback_category_label">Kategoria</string>
+    <string name="feedback_category_bug">Błąd</string>
+    <string name="feedback_category_idea">Pomysł</string>
+    <string name="feedback_category_content">Treść (produkt/sklep)</string>
+    <string name="feedback_category_other">Inne</string>
+    <string name="feedback_message_label">Wiadomość</string>
+    <string name="feedback_message_placeholder">Co się stało, co próbowałeś/aś, czego się spodziewałeś/aś…</string>
+    <string name="feedback_contact_email_label">Kontaktowy e-mail (opcjonalnie)</string>
+    <string name="feedback_contact_email_hint">Jeśli zostawisz e-mail, możemy się odezwać z dodatkowym pytaniem lub odpowiedzią.</string>
+    <string name="feedback_attach_crash_report">Dołącz zapis ostatniej awarii aplikacji</string>
+    <string name="feedback_send">Wyślij</string>
+    <string name="feedback_sending">Wysyłanie…</string>
+    <string name="feedback_send_another">Wyślij kolejną</string>
+    <string name="feedback_thanks">Dziękujemy za opinię, pomaga ulepszać aplikację.</string>
 
     <string name="terms_title">Warunki korzystania</string>
     <string name="privacy_title">Polityka prywatności</string>

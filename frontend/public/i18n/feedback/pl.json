@@ -1,0 +1,14 @@
+{
+  "title": "Opinie",
+  "intro": "Znalazłeś/aś błąd albo masz pomysł na ulepszenie? Napisz do nas tutaj — działa to nawet bez logowania.",
+  "categoryLabel": "Kategoria",
+  "messageLabel": "Wiadomość",
+  "messagePlaceholder": "Co się stało, co próbowałeś/aś, czego się spodziewałeś/aś…",
+  "contactEmailLabel": "Kontaktowy e-mail (opcjonalnie)",
+  "contactEmailPlaceholder": "ty@email.pl",
+  "contactEmailHint": "Jeśli zostawisz e-mail, możemy się odezwać z dodatkowym pytaniem lub odpowiedzią.",
+  "send": "Wyślij",
+  "thanks": "Dziękujemy za opinię, pomaga ulepszać aplikację.",
+  "sendAnother": "Wyślij kolejną",
+  "back": "Powrót do wyszukiwania"
+}

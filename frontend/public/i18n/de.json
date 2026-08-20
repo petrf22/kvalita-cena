@@ -27,6 +27,7 @@
   },
   "footer": {
     "about": "Über die App",
+    "feedback": "Feedback",
     "terms": "Nutzungsbedingungen",
     "privacy": "Datenschutzerklärung"
   },
@@ -103,7 +104,11 @@
     "MODERATION_RECORD_NOT_FOUND": "Der moderierte Eintrag existiert nicht.",
     "MODERATION_OBSERVATION_NOT_FOUND": "Der moderierte Preis existiert nicht.",
     "MODERATION_USER_NOT_FOUND": "Der Benutzer existiert nicht.",
-    "ACCOUNT_SUSPENDED": "Dieses Konto ist gesperrt."
+    "ACCOUNT_SUSPENDED": "Dieses Konto ist gesperrt.",
+    "FEEDBACK_MESSAGE_REQUIRED": "Bitte schreibe eine Nachricht",
+    "FEEDBACK_MESSAGE_TOO_LONG": "Die Nachricht darf höchstens {{p0}} Zeichen haben",
+    "FEEDBACK_CONTACT_EMAIL_INVALID": "Die Kontakt-E-Mail hat ein ungültiges Format",
+    "FEEDBACK_NOT_FOUND": "Dieses Feedback existiert nicht"
   },
   "enum": {
     "priceKind": {
@@ -155,6 +160,16 @@
       "PRODUCT": "Ware",
       "STORE": "Geschäft",
       "PHOTO": "Foto"
+    },
+    "feedbackCategory": {
+      "BUG": "Fehler",
+      "IDEA": "Idee",
+      "CONTENT": "Inhalt (Ware/Geschäft)",
+      "OTHER": "Sonstiges"
+    },
+    "clientKind": {
+      "WEB": "Web",
+      "ANDROID": "Android-App"
     }
   }
 }

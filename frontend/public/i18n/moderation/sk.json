@@ -6,6 +6,7 @@
   "tabs": {
     "flagged": "Nahlásené",
     "observations": "Ceny",
+    "feedback": "Spätná väzba",
     "accounts": "Účty"
   },
   "flagged": {
@@ -30,6 +31,17 @@
     "active": "Platí",
     "restore": "Obnoviť",
     "reject": "Zamietnuť"
+  },
+  "feedback": {
+    "unhandled": "Nevybavené",
+    "handled": "Vybavené",
+    "allStates": "Všetko",
+    "empty": "Žiadna spätná väzba nezodpovedá filtru.",
+    "contactEmailLabel": "Kontakt:",
+    "anonymous": "anonym",
+    "diagnosticsLabel": "Záznam o páde appky",
+    "reopen": "Vrátiť do fronty",
+    "markHandled": "Označiť ako vybavené"
   },
   "accounts": {
     "hint": "Vlož ID používateľa (authorPublicUid) skopírované z fronty nahlásení alebo z výpisu cien.",

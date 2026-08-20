@@ -1,12 +1,16 @@
 package cz.kvalitacena
 
 import android.app.Application
+import cz.kvalitacena.crash.CrashReporter
 import org.osmdroid.config.Configuration
 
 class KvalitaACenaApplication : Application() {
   override fun onCreate() {
     super.onCreate()
     AppContainer.init(this)
+    // Bez třetí strany (docs/soukromi.md) — viz CrashReporter. Musí naběhnout co nejdřív, ať
+    // zachytí i pády, ke kterým dojde ještě během inicializace zbytku appky.
+    CrashReporter.install(this, BuildConfig.VERSION_NAME)
 
     // Cache dlaždic do appce vlastního (scoped) adresáře — bez tohle by osmdroid defaultně
     // sáhl na veřejné externí úložiště a vyžadoval WRITE_EXTERNAL_STORAGE, které appka nemá

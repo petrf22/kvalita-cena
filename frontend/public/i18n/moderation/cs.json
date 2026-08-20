@@ -6,6 +6,7 @@
   "tabs": {
     "flagged": "Nahlášené",
     "observations": "Ceny",
+    "feedback": "Zpětná vazba",
     "accounts": "Účty"
   },
   "flagged": {
@@ -30,6 +31,17 @@
     "active": "Platí",
     "restore": "Obnovit",
     "reject": "Zamítnout"
+  },
+  "feedback": {
+    "unhandled": "Nevyřízené",
+    "handled": "Vyřízené",
+    "allStates": "Vše",
+    "empty": "Žádná zpětná vazba neodpovídá filtru.",
+    "contactEmailLabel": "Kontakt:",
+    "anonymous": "anonym",
+    "diagnosticsLabel": "Záznam o pádu appky",
+    "reopen": "Vrátit do fronty",
+    "markHandled": "Označit jako vyřízené"
   },
   "accounts": {
     "hint": "Vlož ID uživatele (authorPublicUid) zkopírované z fronty nahlášení nebo z výpisu cen.",

@@ -1,0 +1,14 @@
+{
+  "title": "Zpětná vazba",
+  "intro": "Narazil/a jsi na chybu, nebo máš nápad na zlepšení? Napiš nám to sem — funguje to i bez přihlášení.",
+  "categoryLabel": "Kategorie",
+  "messageLabel": "Zpráva",
+  "messagePlaceholder": "Co se stalo, co jsi zkoušel/a, co jsi čekal/a…",
+  "contactEmailLabel": "Kontaktní e-mail (nepovinné)",
+  "contactEmailPlaceholder": "tvuj@email.cz",
+  "contactEmailHint": "Necháš-li e-mail, můžeme se ozvat s doplňující otázkou nebo odpovědí.",
+  "send": "Odeslat",
+  "thanks": "Díky za zpětnou vazbu, pomáhá appku zlepšit.",
+  "sendAnother": "Poslat další",
+  "back": "Zpět na hledání"
+}

@@ -200,6 +200,25 @@ jen vlastník), takže appka se dál nechová jako appka, co si říká o jméno
   explicitním `deleteAvatar`, ne až při smazání účtu — sirotčí soubory po smazaném účtu jsou
   známý zbytkový dluh, stejný jako u ostatních fotek v `core.media`.
 
+## Zpětná vazba
+
+`core.feedback` (docs/datovy-model.md, „Zpětná vazba"; kanál sám: docs/nasazeni.md, „Než
+pozvat první lidi") je jediné místo v appce, kde se **vědomě opouští** pravidlo „autor
+z API nikdy nejde ven" z předchozích sekcí — `FeedbackItem.authorPublicUid`/`authorHandle`
+i dešifrovaný `contactEmail` se moderátorovi vrací vždy, protože bez nich by na hlášení
+nešlo odpovědět. Nejde o nedopatření, je to jiná věc s jiným pravidlem, přesně jako `record_flag`
+schválně skrývá nahlašovatele (`docs/reputace.md`, „Moderace") — u nahlášení jde o hlas proti
+faktu, u zpětné vazby o žádost o pomoc, kde je anonymita naopak na škodu. Volitelný kontaktní
+e-mail je šifrovaný stejným AES-256-GCM jako zbytek textové PII profilu výš.
+
+**`diagnostics` (volitelný stacktrace posledního pádu appky, jen Android, `crash/CrashReporter.kt`)
+se do requestu vloží JEN po výslovné akci uživatele** — checkbox ve `ui/feedback/FeedbackScreen.kt`
+má výchozí hodnotu nezaškrtnuto, appka žádný záznam o pádu neposílá sama od sebe ani ho
+nikam mimo appku neodesílá bez tohohle kroku. Samotné zachytávání pádu je bez třetí strany
+(Sentry/Crashlytics by porušily slib „žádná analytika ani sledovací nástroje třetích stran"
+níž) — soubor zůstává jen v `filesDir` appky, dokud ho uživatel sám nepřiloží ke zprávě nebo
+appku neodinstaluje.
+
 ## Passwordless auth (e-mail → OTP kód → token)
 
 Implementace: `security/OtpService.java`, `security/RefreshTokenService.java`,

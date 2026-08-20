@@ -98,6 +98,15 @@ Appka krátkodobě loguje technická data (např. IP adresu u přihlašovacích 
 ochraně proti zneužití (např. hromadnému zkoušení přihlašovacích kódů) — tahle data neslouží
 k profilování ani analytice a appka je neuchovává dlouhodobě.
 
+### 3.8 Zpětná vazba appce
+
+Formulář zpětné vazby (dostupný i bez přihlášení) uloží text zprávy, kategorii, volitelný
+kontaktní e-mail (jen pokud ho sám/sama vyplníš) a technické údaje o appce, ze které hlášení
+přišlo (verze appky, platforma, jazyk, obrazovka). Na Androidu si můžeš navíc dobrovolně
+přiložit záznam o posledním pádu appky — appka ho bez tvého výslovného zaškrtnutí nikdy
+neodešle, standardně zůstává jen v appce na tvém telefonu. Hlášení vidí jen provozovatel,
+slouží výhradně ke zlepšování appky.
+
 ## 4. Proč údaje zpracováváme (právní základ)
 
 - **Plnění smlouvy** (čl. 6 odst. 1 písm. b) GDPR) — přihlašovací e-mail a vazba cenových
@@ -118,6 +127,7 @@ k profilování ani analytice a appka je neuchovává dlouhodobě.
 | Volitelný profil (jméno, telefon, kontaktní e-mail, avatar) | po dobu trvání účtu, smazáno s účtem |
 | Přihlašovací e-mail (hash a šifrovaná podoba) | po dobu trvání účtu |
 | Technická data (IP u přihlašovacích pokusů) | krátkodobě, jen pro ochranu proti zneužití |
+| Zpětná vazba appce | po dobu, než ji provozovatel vyřídí a přestane být potřebná |
 
 ## 6. Komu údaje předáváme
 

@@ -52,13 +52,14 @@ describe('App', () => {
     expect(compiled.querySelector('.app-title')?.textContent).toContain('Kvalita a cena');
   });
 
-  it('should render footer links to about/terms/privacy on every page', async () => {
+  it('should render footer links to about/feedback/terms/privacy on every page', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     const links = Array.from(compiled.querySelectorAll('.app-footer a')) as HTMLAnchorElement[];
     expect(links.map((a) => a.getAttribute('routerLink'))).toEqual([
       '/about',
+      '/feedback',
       '/terms',
       '/privacy',
     ]);

@@ -20,11 +20,21 @@ import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Observable } from 'rxjs';
 import { Viewer } from '../../models/auth';
-import { FlaggedRecordItem, ModerationObservationItem, RecordType } from '../../models/catalog';
+import {
+  FeedbackItem,
+  FlaggedRecordItem,
+  ModerationObservationItem,
+  RecordType,
+} from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
 import { ModerationService } from '../../services/moderation-service';
 import { ViewerService } from '../../services/viewer-service';
-import { PRICE_KIND_KEYS, RECORD_TYPE_KEYS } from '../../shared/enum-labels';
+import {
+  CLIENT_KIND_KEYS,
+  FEEDBACK_CATEGORY_KEYS,
+  PRICE_KIND_KEYS,
+  RECORD_TYPE_KEYS,
+} from '../../shared/enum-labels';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { RelativeDatePipe } from '../../shared/relative-date.pipe';
 import { translateError } from '../../shared/error-message';
@@ -142,6 +152,15 @@ export class ModerationPage {
   protected readonly suspendResult = signal<string | null>(null);
   protected readonly suspendError = signal<string | null>(null);
 
+  protected readonly feedbackCategoryKeys = FEEDBACK_CATEGORY_KEYS;
+  protected readonly clientKindKeys = CLIENT_KIND_KEYS;
+  // false = jen nevyřízené (výchozí, ať fronta začne tím, co ještě čeká), null = obojí.
+  protected readonly feedbackHandledFilter = signal<boolean | null>(false);
+  protected readonly feedback = createSection<FeedbackItem>((first, offset) =>
+    this.moderationService.feedbackItems(this.feedbackHandledFilter(), first, offset),
+  );
+  protected readonly feedbackActionLoading = signal<string | null>(null);
+
   constructor() {
     if (this.auth.isLoggedIn()) {
       this.viewerLoading.set(true);
@@ -152,6 +171,7 @@ export class ModerationPage {
           if (viewer?.moderator) {
             this.load(this.flagged);
             this.load(this.observations);
+            this.load(this.feedback);
           }
         },
         error: () => this.viewerLoading.set(false),
@@ -206,6 +226,25 @@ export class ModerationPage {
       error: (err: unknown) => {
         this.observationActionLoading.set(null);
         this.observations.error.set(translateError(err, this.transloco));
+      },
+    });
+  }
+
+  protected onFeedbackFilterChange(): void {
+    this.feedback.pageIndex.set(1);
+    this.load(this.feedback);
+  }
+
+  protected setFeedbackHandled(item: FeedbackItem, handled: boolean): void {
+    this.feedbackActionLoading.set(item.id);
+    this.moderationService.setFeedbackHandled(item.id, handled, null).subscribe({
+      next: () => {
+        this.feedbackActionLoading.set(null);
+        this.load(this.feedback);
+      },
+      error: (err: unknown) => {
+        this.feedbackActionLoading.set(null);
+        this.feedback.error.set(translateError(err, this.transloco));
       },
     });
   }

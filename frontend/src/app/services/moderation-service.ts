@@ -122,4 +122,47 @@ export class ModerationService {
       .execute(document, { publicUid, suspended, reason })
       .pipe(map((data) => data.setUserSuspended));
   }
+
+  /** Fronta zpětné vazby od uživatelů appky (core.feedback) — handled null vrací obojí. */
+  feedbackItems(handled: boolean | null, first = 20, offset = 0) {
+    const document = graphql(`
+      query FeedbackItems($handled: Boolean, $first: Int, $offset: Int) {
+        feedbackItems(handled: $handled, first: $first, offset: $offset) {
+          totalCount
+          items {
+            id
+            category
+            message
+            contactEmail
+            clientKind
+            appVersion
+            platformInfo
+            locale
+            country
+            pageRef
+            diagnostics
+            createdAt
+            handled
+            handledNote
+            authorPublicUid
+            authorHandle
+          }
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { handled, first, offset })
+      .pipe(map((data) => data.feedbackItems));
+  }
+
+  setFeedbackHandled(id: string, handled: boolean, note: string | null) {
+    const document = graphql(`
+      mutation SetFeedbackHandled($id: ID!, $handled: Boolean!, $note: String) {
+        setFeedbackHandled(id: $id, handled: $handled, note: $note)
+      }
+    `);
+    return this.graphQl
+      .execute(document, { id, handled, note })
+      .pipe(map((data) => data.setFeedbackHandled));
+  }
 }

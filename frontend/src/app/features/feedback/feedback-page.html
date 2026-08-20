@@ -1,0 +1,76 @@
+<ng-container *transloco="let t; scope: 'feedback'">
+  <nz-card class="feedback-card" [nzTitle]="t('feedback.title')">
+    @if (submitted()) {
+      <nz-alert nzType="success" [nzMessage]="t('feedback.thanks')" nzShowIcon />
+      <button nz-button nzType="default" class="feedback-again" (click)="submitAnother()">
+        {{ t('feedback.sendAnother') }}
+      </button>
+    } @else {
+      <p class="feedback-intro">{{ t('feedback.intro') }}</p>
+
+      @if (errorMessage()) {
+        <nz-alert nzType="error" [nzMessage]="errorMessage()" class="feedback-alert" nzShowIcon />
+      }
+
+      <form nz-form nzLayout="vertical" (ngSubmit)="submit()">
+        <nz-form-item>
+          <nz-form-label>{{ t('feedback.categoryLabel') }}</nz-form-label>
+          <nz-form-control>
+            <nz-select
+              [ngModel]="category()"
+              (ngModelChange)="category.set($event)"
+              name="category"
+            >
+              @for (value of categoryOptions; track value) {
+                <nz-option [nzValue]="value" [nzLabel]="categoryKeys[value] | transloco" />
+              }
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>{{ t('feedback.messageLabel') }}</nz-form-label>
+          <nz-form-control>
+            <textarea
+              nz-input
+              name="message"
+              rows="6"
+              [placeholder]="t('feedback.messagePlaceholder')"
+              [ngModel]="message()"
+              (ngModelChange)="message.set($event)"
+              required
+            ></textarea>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>{{ t('feedback.contactEmailLabel') }}</nz-form-label>
+          <nz-form-control>
+            <input
+              nz-input
+              type="email"
+              name="contactEmail"
+              [placeholder]="t('feedback.contactEmailPlaceholder')"
+              [ngModel]="contactEmail()"
+              (ngModelChange)="contactEmail.set($event)"
+            />
+          </nz-form-control>
+          <p class="feedback-hint">{{ t('feedback.contactEmailHint') }}</p>
+        </nz-form-item>
+
+        <button
+          nz-button
+          nzType="primary"
+          nzBlock
+          [nzLoading]="loading()"
+          [disabled]="!message().trim()"
+          type="submit"
+        >
+          {{ t('feedback.send') }}
+        </button>
+      </form>
+    }
+
+    <a routerLink="/" class="feedback-back">{{ t('feedback.back') }}</a>
+  </nz-card>
+</ng-container>

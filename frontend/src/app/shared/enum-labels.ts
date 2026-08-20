@@ -1,6 +1,8 @@
 import {
+  ClientKind,
   Confidence,
   ExternalLinkKind,
+  FeedbackCategory,
   GeoSource,
   NetContentUom,
   PriceKind,
@@ -77,6 +79,20 @@ export const RECORD_TYPE_KEYS: Record<RecordType, string> = {
   [RecordType.Photo]: 'enum.recordType.PHOTO',
 };
 
+/** Kategorie zpětné vazby (core.feedback) — nabídka ve formuláři i popisek ve frontě moderace. */
+export const FEEDBACK_CATEGORY_KEYS: Record<FeedbackCategory, string> = {
+  [FeedbackCategory.Bug]: 'enum.feedbackCategory.BUG',
+  [FeedbackCategory.Idea]: 'enum.feedbackCategory.IDEA',
+  [FeedbackCategory.Content]: 'enum.feedbackCategory.CONTENT',
+  [FeedbackCategory.Other]: 'enum.feedbackCategory.OTHER',
+};
+
+/** Odkud hlášení přišlo (core.feedback.client_kind) — jen popisek ve frontě moderace. */
+export const CLIENT_KIND_KEYS: Record<ClientKind, string> = {
+  [ClientKind.Web]: 'enum.clientKind.WEB',
+  [ClientKind.Android]: 'enum.clientKind.ANDROID',
+};
+
 /** Díky `enum ErrorCode` ve `schema.graphqls` (docs/lokalizace.md) generuje codegen i tohle zadarmo. */
 export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.ProductNotFound]: 'errors.PRODUCT_NOT_FOUND',
@@ -122,6 +138,10 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.ModerationRecordNotFound]: 'errors.MODERATION_RECORD_NOT_FOUND',
   [ErrorCode.ModerationObservationNotFound]: 'errors.MODERATION_OBSERVATION_NOT_FOUND',
   [ErrorCode.ModerationUserNotFound]: 'errors.MODERATION_USER_NOT_FOUND',
+  [ErrorCode.FeedbackMessageRequired]: 'errors.FEEDBACK_MESSAGE_REQUIRED',
+  [ErrorCode.FeedbackMessageTooLong]: 'errors.FEEDBACK_MESSAGE_TOO_LONG',
+  [ErrorCode.FeedbackContactEmailInvalid]: 'errors.FEEDBACK_CONTACT_EMAIL_INVALID',
+  [ErrorCode.FeedbackNotFound]: 'errors.FEEDBACK_NOT_FOUND',
   [ErrorCode.InvalidChallenge]: 'errors.INVALID_CHALLENGE',
   [ErrorCode.SessionExpired]: 'errors.SESSION_EXPIRED',
   [ErrorCode.LocaleRequiresLogin]: 'errors.LOCALE_REQUIRES_LOGIN',

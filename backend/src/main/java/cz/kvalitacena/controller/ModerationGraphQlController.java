@@ -8,6 +8,7 @@ import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.UnauthorizedException;
 import cz.kvalitacena.security.ViewerContext;
 import cz.kvalitacena.security.ViewerContextResolver;
+import cz.kvalitacena.service.FeedbackService;
 import cz.kvalitacena.service.ModerationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -20,7 +21,10 @@ import java.util.UUID;
 
 /**
  * Nástroj pro T4 (docs/reputace.md, "Odstupňování přístupu") — přezkum fronty nahlášených
- * záznamů, zamítání cen a pozastavování účtů. Autorizace je predikát tady v kontroleru
+ * záznamů, zamítání cen a pozastavování účtů, a od {@code feedbackItems}/{@code
+ * setFeedbackHandled} i frontu zpětné vazby (core.feedback, {@link FeedbackService}) —
+ * logika žije v samostatné service, tady se jen přidává na existující {@code requireModerator}
+ * místo zavádění druhého gatovaného kontroleru. Autorizace je predikát tady v kontroleru
  * ({@code requireModerator}), stejná konvence jako {@code requireLoggedIn} v
  * {@link MyContributionsGraphQlController} — ne {@code @PreAuthorize}, ačkoli by fungovalo
  * ({@code SecurityConfig} má {@code @EnableMethodSecurity} zapnuté).
@@ -30,7 +34,23 @@ import java.util.UUID;
 public class ModerationGraphQlController {
 
   private final ModerationService moderationService;
+  private final FeedbackService feedbackService;
   private final ViewerContextResolver viewerContextResolver;
+
+  @QueryMapping
+  public FeedbackItemResult feedbackItems(@Argument Boolean handled, @Argument Integer first,
+      @Argument Integer offset, Authentication authentication) {
+    requireModerator(authentication);
+    return feedbackService.list(handled, first, offset);
+  }
+
+  @MutationMapping
+  public Boolean setFeedbackHandled(@Argument Long id, @Argument boolean handled, @Argument String note,
+      Authentication authentication) {
+    Long moderatorUserId = requireModerator(authentication);
+    feedbackService.setHandled(id, handled, note, moderatorUserId);
+    return true;
+  }
 
   @QueryMapping
   public FlaggedRecordResult flaggedRecords(@Argument RecordType recordType, @Argument Integer first,

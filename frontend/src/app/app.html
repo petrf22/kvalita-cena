@@ -1,6 +1,9 @@
 <nz-layout class="app-layout">
   <nz-header class="app-header">
-    <a routerLink="/" class="app-title">Kvalita a cena</a>
+    <a routerLink="/" class="app-title">
+      <img src="favicon.svg" alt="" width="24" height="24" />
+      Kvalita a cena
+    </a>
     <ul nz-menu nzMode="horizontal" nzTheme="light" class="app-menu">
       <li
         nz-menu-item
@@ -32,6 +35,7 @@
   </nz-content>
   <nz-footer class="app-footer">
     <a routerLink="/about">{{ 'footer.about' | transloco }}</a>
+    <a routerLink="/feedback">{{ 'footer.feedback' | transloco }}</a>
     <a routerLink="/terms">{{ 'footer.terms' | transloco }}</a>
     <a routerLink="/privacy">{{ 'footer.privacy' | transloco }}</a>
   </nz-footer>

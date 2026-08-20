@@ -483,6 +483,24 @@ data class FlagResult(
   val hidden: Boolean,
 )
 
+/**
+ * Zpětná vazba od uživatele appky (core.feedback) — na rozdíl od flagRecord funguje i BEZ
+ * přihlášení (docs/nasazeni.md, "Než pozvat první lidi"). appVersion se posílá jako doplňková
+ * informace, appka navíc posílá i X-Client-Version u KAŽDÉHO requestu (ClientVersionInterceptor).
+ */
+@Serializable
+data class FeedbackInput(
+  val category: String,
+  val message: String,
+  val contactEmail: String? = null,
+  val pageRef: String? = null,
+  val appVersion: String? = null,
+  val diagnostics: String? = null,
+)
+
+@Serializable
+data class FeedbackResult(val id: String)
+
 @Serializable
 data class PriceObservation(
   val id: String,
@@ -664,6 +682,9 @@ data class DeletePhotoData(val deletePhoto: Boolean)
 
 @Serializable
 data class FlagRecordData(val flagRecord: FlagResult)
+
+@Serializable
+data class SubmitFeedbackData(val submitFeedback: FeedbackResult)
 
 @Serializable
 data class FxInfoData(val fxInfo: FxInfo)

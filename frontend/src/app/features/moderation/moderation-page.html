@@ -220,6 +220,107 @@
         }
       </nz-tab>
 
+      <nz-tab [nzTitle]="t('moderation.tabs.feedback')">
+        <nz-select
+          class="type-filter"
+          [ngModel]="feedbackHandledFilter()"
+          (ngModelChange)="feedbackHandledFilter.set($event); onFeedbackFilterChange()"
+        >
+          <nz-option [nzValue]="false" [nzLabel]="t('moderation.feedback.unhandled')" />
+          <nz-option [nzValue]="true" [nzLabel]="t('moderation.feedback.handled')" />
+          <nz-option [nzValue]="null" [nzLabel]="t('moderation.feedback.allStates')" />
+        </nz-select>
+
+        @if (feedback.error()) {
+          <nz-alert
+            nzType="error"
+            [nzMessage]="feedback.error()"
+            nzShowIcon
+            class="section-alert"
+          />
+        }
+        @if (feedback.loading() && feedback.items().length === 0) {
+          <nz-spin />
+        } @else if (feedback.items().length === 0) {
+          <nz-empty [nzNotFoundContent]="t('moderation.feedback.empty')" />
+        } @else {
+          <nz-list>
+            @for (item of feedback.items(); track item.id) {
+              <nz-list-item>
+                <div class="item-main">
+                  <nz-tag>{{ feedbackCategoryKeys[item.category] | transloco }}</nz-tag>
+                  <nz-tag>{{ clientKindKeys[item.clientKind] | transloco }}</nz-tag>
+                  @if (item.handled) {
+                    <nz-tag nzColor="green">{{ t('moderation.feedback.handled') }}</nz-tag>
+                  } @else {
+                    <nz-tag nzColor="red">{{ t('moderation.feedback.unhandled') }}</nz-tag>
+                  }
+                </div>
+                <p class="item-message">{{ item.message }}</p>
+                <p class="item-meta">
+                  {{ item.appVersion ?? '?' }} — {{ item.locale ?? '?' }}/{{ item.country ?? '?' }}
+                  @if (item.pageRef) {
+                    — {{ item.pageRef }}
+                  }
+                  — {{ item.createdAt | relativeDate }}
+                </p>
+                @if (item.contactEmail) {
+                  <p class="item-meta">
+                    {{ t('moderation.feedback.contactEmailLabel') }} {{ item.contactEmail }}
+                  </p>
+                }
+                <p class="item-meta">
+                  {{ t('moderation.authorLabel') }}
+                  {{ item.authorHandle ?? t('moderation.feedback.anonymous') }}
+                  @if (item.authorPublicUid) {
+                    <code class="public-uid">{{ item.authorPublicUid }}</code>
+                  }
+                </p>
+                @if (item.diagnostics) {
+                  <details class="feedback-diagnostics">
+                    <summary>{{ t('moderation.feedback.diagnosticsLabel') }}</summary>
+                    <pre>{{ item.diagnostics }}</pre>
+                  </details>
+                }
+                <div class="item-actions">
+                  @if (item.handled) {
+                    <button
+                      nz-button
+                      nzType="default"
+                      [nzLoading]="feedbackActionLoading() === item.id"
+                      (click)="setFeedbackHandled(item, false)"
+                    >
+                      {{ t('moderation.feedback.reopen') }}
+                    </button>
+                  } @else {
+                    <button
+                      nz-button
+                      nzType="primary"
+                      [nzLoading]="feedbackActionLoading() === item.id"
+                      (click)="setFeedbackHandled(item, true)"
+                    >
+                      {{ t('moderation.feedback.markHandled') }}
+                    </button>
+                  }
+                </div>
+              </nz-list-item>
+            }
+          </nz-list>
+        }
+        @if (feedback.totalCount() > 0) {
+          <nz-pagination
+            class="section-pagination"
+            [nzPageIndex]="feedback.pageIndex()"
+            [nzPageSize]="feedback.pageSize()"
+            [nzTotal]="feedback.totalCount()"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="pageSizeOptions"
+            (nzPageIndexChange)="onPageIndexChange(feedback, $event)"
+            (nzPageSizeChange)="onPageSizeChange(feedback, $event)"
+          />
+        }
+      </nz-tab>
+
       <nz-tab [nzTitle]="t('moderation.tabs.accounts')">
         <p class="accounts-hint">{{ t('moderation.accounts.hint') }}</p>
         <nz-form-item>

@@ -27,6 +27,7 @@
   },
   "footer": {
     "about": "About the app",
+    "feedback": "Feedback",
     "terms": "Terms of use",
     "privacy": "Privacy policy"
   },
@@ -103,7 +104,11 @@
     "MODERATION_RECORD_NOT_FOUND": "The moderated record does not exist.",
     "MODERATION_OBSERVATION_NOT_FOUND": "The moderated price does not exist.",
     "MODERATION_USER_NOT_FOUND": "The user does not exist.",
-    "ACCOUNT_SUSPENDED": "This account is suspended."
+    "ACCOUNT_SUSPENDED": "This account is suspended.",
+    "FEEDBACK_MESSAGE_REQUIRED": "Please write a message",
+    "FEEDBACK_MESSAGE_TOO_LONG": "Message may have at most {{p0}} characters",
+    "FEEDBACK_CONTACT_EMAIL_INVALID": "Contact email has an invalid format",
+    "FEEDBACK_NOT_FOUND": "This feedback item does not exist"
   },
   "enum": {
     "priceKind": {
@@ -155,6 +160,16 @@
       "PRODUCT": "Product",
       "STORE": "Store",
       "PHOTO": "Photo"
+    },
+    "feedbackCategory": {
+      "BUG": "Bug",
+      "IDEA": "Idea",
+      "CONTENT": "Content (product/store)",
+      "OTHER": "Other"
+    },
+    "clientKind": {
+      "WEB": "Web",
+      "ANDROID": "Android app"
     }
   }
 }

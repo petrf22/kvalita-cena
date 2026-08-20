@@ -16,6 +16,11 @@ export type ChainType =
   | 'MARKET'
   | 'ONLINE';
 
+/** Odkud přišel request (core.feedback.client_kind) — odvozeno server-side z X-Client-Kind, nikdy z inputu. */
+export type ClientKind =
+  | 'ANDROID'
+  | 'WEB';
+
 export type Confidence =
   | 'HIGH'
   | 'LOW'
@@ -55,6 +60,25 @@ export type CreateStoreInput = {
 export type ExternalLinkKind =
   | 'E_NUMBERS'
   | 'OPEN_FOOD_FACTS';
+
+/** Kategorie zpětné vazby (core.feedback) — jen k roztřídění fronty, nemění chování. */
+export type FeedbackCategory =
+  | 'BUG'
+  | 'CONTENT'
+  | 'IDEA'
+  | 'OTHER';
+
+export type FeedbackInput = {
+  appVersion?: string | null | undefined;
+  category: FeedbackCategory;
+  /** Nepovinný — odpověď je pak možná jen u přihlášeného odesílatele. */
+  contactEmail?: string | null | undefined;
+  /** Volitelně přiložený záznam o posledním pádu appky (mobil) — nikdy neodchází bez akce uživatele. */
+  diagnostics?: string | null | undefined;
+  message: string;
+  /** Route/obrazovka, ze které se odesílalo (jen orientační). */
+  pageRef?: string | null | undefined;
+};
 
 /** Výsledek moderátorského přezkumu nahlášeného záznamu (docs/reputace.md, 'Moderace'). */
 export type FlagResolution =
@@ -254,6 +278,13 @@ export type CountriesQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type CountriesQuery = { countries: Array<{ code: string, currency: string, defaultLocale: string | null }> };
 
+export type SubmitFeedbackMutationVariables = Exact<{
+  input: FeedbackInput;
+}>;
+
+
+export type SubmitFeedbackMutation = { submitFeedback: { id: string } };
+
 export type FxInfoQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -350,6 +381,24 @@ export type SetUserSuspendedMutationVariables = Exact<{
 
 
 export type SetUserSuspendedMutation = { setUserSuspended: boolean };
+
+export type FeedbackItemsQueryVariables = Exact<{
+  handled?: boolean | null | undefined;
+  first?: number | null | undefined;
+  offset?: number | null | undefined;
+}>;
+
+
+export type FeedbackItemsQuery = { feedbackItems: { totalCount: number, items: Array<{ id: string, category: FeedbackCategory, message: string, contactEmail: string | null, clientKind: ClientKind, appVersion: string | null, platformInfo: string | null, locale: string | null, country: string | null, pageRef: string | null, diagnostics: string | null, createdAt: string, handled: boolean, handledNote: string | null, authorPublicUid: string | null, authorHandle: string | null }> } };
+
+export type SetFeedbackHandledMutationVariables = Exact<{
+  id: string;
+  handled: boolean;
+  note?: string | null | undefined;
+}>;
+
+
+export type SetFeedbackHandledMutation = { setFeedbackHandled: boolean };
 
 export type MyProductsQueryVariables = Exact<{
   first?: number | null | undefined;
@@ -1040,6 +1089,13 @@ export const CountriesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<CountriesQuery, CountriesQueryVariables>;
+export const SubmitFeedbackDocument = new TypedDocumentString(`
+    mutation SubmitFeedback($input: FeedbackInput!) {
+  submitFeedback(input: $input) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<SubmitFeedbackMutation, SubmitFeedbackMutationVariables>;
 export const FxInfoDocument = new TypedDocumentString(`
     query FxInfo {
   fxInfo {
@@ -1244,6 +1300,36 @@ export const SetUserSuspendedDocument = new TypedDocumentString(`
   setUserSuspended(publicUid: $publicUid, suspended: $suspended, reason: $reason)
 }
     `) as unknown as TypedDocumentString<SetUserSuspendedMutation, SetUserSuspendedMutationVariables>;
+export const FeedbackItemsDocument = new TypedDocumentString(`
+    query FeedbackItems($handled: Boolean, $first: Int, $offset: Int) {
+  feedbackItems(handled: $handled, first: $first, offset: $offset) {
+    totalCount
+    items {
+      id
+      category
+      message
+      contactEmail
+      clientKind
+      appVersion
+      platformInfo
+      locale
+      country
+      pageRef
+      diagnostics
+      createdAt
+      handled
+      handledNote
+      authorPublicUid
+      authorHandle
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<FeedbackItemsQuery, FeedbackItemsQueryVariables>;
+export const SetFeedbackHandledDocument = new TypedDocumentString(`
+    mutation SetFeedbackHandled($id: ID!, $handled: Boolean!, $note: String) {
+  setFeedbackHandled(id: $id, handled: $handled, note: $note)
+}
+    `) as unknown as TypedDocumentString<SetFeedbackHandledMutation, SetFeedbackHandledMutationVariables>;
 export const MyProductsDocument = new TypedDocumentString(`
     query MyProducts($first: Int, $offset: Int) {
   myProducts(first: $first, offset: $offset) {

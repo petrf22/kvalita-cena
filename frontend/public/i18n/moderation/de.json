@@ -6,6 +6,7 @@
   "tabs": {
     "flagged": "Gemeldet",
     "observations": "Preise",
+    "feedback": "Feedback",
     "accounts": "Konten"
   },
   "flagged": {
@@ -30,6 +31,17 @@
     "active": "Aktiv",
     "restore": "Wiederherstellen",
     "reject": "Ablehnen"
+  },
+  "feedback": {
+    "unhandled": "Unbearbeitet",
+    "handled": "Bearbeitet",
+    "allStates": "Alle",
+    "empty": "Kein Feedback entspricht dem Filter.",
+    "contactEmailLabel": "Kontakt:",
+    "anonymous": "anonym",
+    "diagnosticsLabel": "Absturzbericht",
+    "reopen": "Wieder öffnen",
+    "markHandled": "Als bearbeitet markieren"
   },
   "accounts": {
     "hint": "Füge die Benutzer-ID (authorPublicUid) ein, die aus der Meldungswarteschlange oder der Preisliste kopiert wurde.",

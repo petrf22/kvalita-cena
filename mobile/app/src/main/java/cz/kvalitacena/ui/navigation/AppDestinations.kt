@@ -68,3 +68,13 @@ const val ROUTE_PRIVACY = "privacy"
 
 /** "O aplikaci" — z Nastavení, viz [cz.kvalitacena.ui.about.AboutScreen]. */
 const val ROUTE_ABOUT = "about"
+
+/**
+ * Zpětná vazba (core.feedback, docs/nasazeni.md "Než pozvat první lidi") — z Nastavení i
+ * z "O aplikaci", funguje i bez přihlášení. `source` v query je orientační popis obrazovky,
+ * ze které se sem vstoupilo (core.feedback.page_ref), viz [cz.kvalitacena.ui.feedback.FeedbackScreen].
+ */
+const val ARG_FEEDBACK_SOURCE = "source"
+const val ROUTE_FEEDBACK = "feedback?$ARG_FEEDBACK_SOURCE={$ARG_FEEDBACK_SOURCE}"
+
+fun feedbackRoute(source: String) = "feedback?$ARG_FEEDBACK_SOURCE=$source"

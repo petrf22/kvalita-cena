@@ -1,0 +1,128 @@
+# 02-feedback.yaml — core.feedback (docs/nasazeni.md, "Než pozvat první lidi" — uzavřená beta
+# neměla žádný kanál zpětné vazby, jen mailto na "O aplikaci" mířící na dosud nezřízenou
+# schránku). Na rozdíl od core.record_flag necílí na jiný záznam a autor SE vrací moderátorovi
+# (docs/soukromi.md) — jinak není komu na hlášení odpovědět.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-20-02-create-core-feedback
+      author: Petr F.
+      comment: >
+        Zpětná vazba od uživatele appky, funguje i anonymně (user_id nullable) — zrovna
+        nepřihlášený tester narazí na nejcennější hlášení, třeba že se nedokázal přihlásit.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: feedback
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+              - column:
+                  name: category
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: message
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: contact_email_enc
+                  type: BYTEA
+              - column:
+                  name: client_kind
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: app_version
+                  type: VARCHAR(30)
+              - column:
+                  name: platform_info
+                  type: VARCHAR(200)
+              - column:
+                  name: locale
+                  type: VARCHAR(10)
+              - column:
+                  name: country
+                  type: VARCHAR(2)
+              - column:
+                  name: page_ref
+                  type: VARCHAR(200)
+              - column:
+                  name: diagnostics
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: handled_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: handled_by_user_id
+                  type: BIGINT
+              - column:
+                  name: handled_note
+                  type: VARCHAR(500)
+        - addForeignKeyConstraint:
+            constraintName: fk_feedback_user
+            baseTableSchemaName: core
+            baseTableName: feedback
+            baseColumnNames: user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            constraintName: fk_feedback_handled_by
+            baseTableSchemaName: core
+            baseTableName: feedback
+            baseColumnNames: handled_by_user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - sql:
+            sql: |
+              ALTER TABLE core.feedback
+                ADD CONSTRAINT chk_feedback_category
+                CHECK (category IN ('BUG', 'IDEA', 'CONTENT', 'OTHER'));
+
+              ALTER TABLE core.feedback
+                ADD CONSTRAINT chk_feedback_client_kind
+                CHECK (client_kind IN ('WEB', 'ANDROID'));
+
+              -- Fronta k vyřízení se ptá výhradně na nevyřízené (vzor idx_record_flag_unresolved).
+              CREATE INDEX idx_feedback_unhandled ON core.feedback (created_at)
+                WHERE handled_at IS NULL;
+      rollback:
+        - dropIndex:
+            schemaName: core
+            tableName: feedback
+            indexName: idx_feedback_unhandled
+        - sql:
+            sql: |
+              ALTER TABLE core.feedback DROP CONSTRAINT IF EXISTS chk_feedback_category;
+              ALTER TABLE core.feedback DROP CONSTRAINT IF EXISTS chk_feedback_client_kind;
+        - dropForeignKeyConstraint:
+            baseTableSchemaName: core
+            baseTableName: feedback
+            constraintName: fk_feedback_user
+        - dropForeignKeyConstraint:
+            baseTableSchemaName: core
+            baseTableName: feedback
+            constraintName: fk_feedback_handled_by
+        - dropTable:
+            schemaName: core
+            tableName: feedback

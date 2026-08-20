@@ -11,6 +11,7 @@ import type {
   CompanyByIcoQuery,
   CreateProductInput,
   CreateStoreInput,
+  FeedbackItemsQuery,
   FlagProductMutation,
   FlaggedRecordsQuery,
   FxInfoQuery,
@@ -40,8 +41,10 @@ import type {
 } from './generated/graphql';
 
 export {
+  ClientKind,
   Confidence,
   ExternalLinkKind,
+  FeedbackCategory,
   GeoSource,
   NetContentUom,
   PriceKind,
@@ -134,3 +137,6 @@ export type FlaggedRecordItem = FlaggedRecordsQuery['flaggedRecords']['items'][n
 /** Cena k moderátorskému přezkumu — nesouhlas s cenou nejde nahlásit komunitně, viz setObservationRejected. */
 export type ModerationObservationItem =
   ModerationObservationsQuery['moderationObservations']['items'][number];
+
+/** Jedno hlášení ve frontě zpětné vazby (core.feedback, jen moderátor) — docs/nasazeni.md. */
+export type FeedbackItem = FeedbackItemsQuery['feedbackItems']['items'][number];

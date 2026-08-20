@@ -6,6 +6,7 @@
   "tabs": {
     "flagged": "Zgłoszone",
     "observations": "Ceny",
+    "feedback": "Opinie",
     "accounts": "Konta"
   },
   "flagged": {
@@ -30,6 +31,17 @@
     "active": "Aktywna",
     "restore": "Przywróć",
     "reject": "Odrzuć"
+  },
+  "feedback": {
+    "unhandled": "Nierozpatrzone",
+    "handled": "Rozpatrzone",
+    "allStates": "Wszystko",
+    "empty": "Żadna opinia nie pasuje do filtra.",
+    "contactEmailLabel": "Kontakt:",
+    "anonymous": "anonimowe",
+    "diagnosticsLabel": "Raport awarii",
+    "reopen": "Cofnij do kolejki",
+    "markHandled": "Oznacz jako rozpatrzone"
   },
   "accounts": {
     "hint": "Wklej ID użytkownika (authorPublicUid) skopiowane z kolejki zgłoszeń lub z listy cen.",
