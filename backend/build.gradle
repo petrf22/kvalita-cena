@@ -49,7 +49,7 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
     // Argon2PasswordEncoder (Spring Security) potřebuje na classpath Bouncy Castle
-    implementation 'org.bouncycastle:bcprov-jdk18on:1.85'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.85.2'
 
     // Čtení EXIF orientace nahraných fotek (ImageProcessingService) — Apache-2.0. Vlastní
     // parser APP1 segmentu je klasické místo na chyby, tohle je pro to standardní knihovna.
