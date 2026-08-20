@@ -9,6 +9,25 @@ backendu a webu).
 Odškrtávej rovnou v tomhle souboru a commituj — až bude všechno hotové, dá se to smazat nebo
 přesunout do `docs/vydani.md` jako historickou poznámku.
 
+**Pořadí sekcí 1–4 je tematické, ne sekvenční — tři závislosti mezi nimi jsou tvrdé a nevratné:**
+
+1. **Datum účinnosti (sekce 1) musí být nasazené DŘÍV, než vznikne první účet (sekce 4).** JIT
+   registrace při první úspěšné verifikaci OTP zapisuje `terms_accepted_at`/`terms_version` —
+   účet založený na buildu s `[DOPLNIT DATUM ZVEŘEJNĚNÍ]` má souhlas s dokumentem bez data
+   účinnosti, opravitelné jen novou verzí podmínek, ne editací starého data zpětně.
+2. **`EMAIL_HASH_PEPPER` (sekce 1) musí být finální před úplně prvním účtem, včetně vlastního.**
+   Pozdější změna hodnoty = ten účet je navždy nepřihlásitelný (viz sekce 1 níž).
+3. **Bez fungujícího SMTP (sekce 3) se nepřihlásí nikdo, včetně provozovatele** — appka
+   nastartuje i s neplatnými SMTP údaji, ale `POST /api/auth/otp/request` je transakční a
+   odeslání e-mailu je uvnitř transakce; chyba SMTP shodí celý požadavek dřív, než se výzva
+   vůbec uloží. Nemá to obchvat přes DB (žádný seed účet), jen dočasnou berličku popsanou
+   v sekci 3.
+
+Doporučené pořadí prací: rozjet server (sekce 2) proti IP, ne proti doméně, ať se nejpravděpodobnější
+selhání (build appky na serveru, viz sekce 2) neřeší zároveň s laděním DNS a Let's Encrypt limitů;
+teprve pak přepnout DNS a TLS; SMTP dodělat, jakmile je vybraný poskytovatel; datum účinnosti a
+zapnutí bety (sekce 1 a 4) nechat jako poslední krok těsně před první pozvánkou.
+
 ## 1. Nezávislé na poskytovateli (jde udělat kdykoli předem)
 
 - [ ] **Zřídit `kontakt@kvalitacena.cz`** — přesměrování na skutečnou schránku. Bez něj jsou
@@ -30,11 +49,17 @@ přesunout do `docs/vydani.md` jako historickou poznámku.
   free tier stačí. Nepoužívat vlastní SMTP na VPS (skončí ve spamu). Kandidáti k porovnání:
   Resend, Postmark, Amazon SES, Mailgun — u všech potřeba: API/SMTP přihlašovací údaje +
   ověřená odesílací doména.
-- [x] **VPS poskytovatel: Hetzner Cloud.** Nejlevnější spolehlivá varianta s perzistentním
-  diskem (appka fotky drží mimo databázi na disku, `docs/datovy-model.md` — PaaS s efemérním
-  filesystémem jako Cloud Run/Heroku nejde použít), servery v EU (Německo/Finsko — sedí
-  k tomu, jak appka od začátku řeší lokalitu dat), nejmenší instance řádově 4–5 €/měsíc =
-  přesně těch 120–250 Kč z odhadu níž. Založit účet, nejmenší instanci s KVM + SSD.
+- [x] **VPS poskytovatel: Hetzner Cloud**, ne Gigaserver (kde appka má doménu i e-mail) — záměrně
+  jiný dodavatel, ať jeden výpadek nevezme server, doménu i kontaktní schránku pro GDPR žádosti
+  naráz. Nejlevnější spolehlivá varianta s perzistentním diskem (appka fotky drží mimo databázi
+  na disku, `docs/datovy-model.md` — PaaS s efemérním filesystémem jako Cloud Run/Heroku nejde
+  použít), servery v EU (Německo/Finsko — sedí k tomu, jak appka od začátku řeší lokalitu dat).
+  Odhad „4–5 €/měsíc" z dřívějška je po dubnovém zdražení Hetzneru (~+36 %, vyšší ceny DRAM)
+  zastaralý — počítat spíš s 5–6 € + DPH. **Instance minimálně 2 vCPU / 4 GB RAM** (např. CX23
+  nebo ARM CAX11) — ne kvůli běhu appky samotné, ale protože `compose.prod.yaml` staví backend
+  i frontend přímo na serveru (Gradle + `ng build`); přidat i **2 GB swap** jako pojistku proti
+  OOM při buildu, ať selhání vypadá jako pomalý build, ne jako nesouvisející pád. Založit účet,
+  instanci s KVM + SSD.
 - [ ] **Vybrat cíl pro offsite zálohu** (jiný poskytovatel než Hetzner výš, ať jeden výpadek
   nevezme obojí) — B2/S3-kompatibilní úložiště s levným cold storage stačí, appka zálohuje jen
   `pg_dump` + adresář `app.media.root`. Hetzner má vlastní Storage Box, ale pro skutečnou
@@ -42,33 +67,84 @@ přesunout do `docs/vydani.md` jako historickou poznámku.
 
 ## 2. Po výběru VPS
 
-- [ ] Založit server, nainstalovat Docker + Docker Compose.
-- [ ] **DNS záznamy** na doméně `kvalitacena.cz` (u registrátora domény, ne u VPS):
-  - `A`/`AAAA` `kvalitacena.cz` → IP serveru (web, Caddy)
-  - `A`/`AAAA` `api.kvalitacena.cz` → stejná IP (mobil, viz `mobile/app/build.gradle.kts`)
-- [ ] Zkopírovat `.env.example` → `.env` na server, doplnit:
-  - `POSTGRES_USER`/`POSTGRES_PASSWORD` — libovolné silné heslo, jen pro appku samotnou
-  - `JWT_SECRET`/`EMAIL_HASH_PEPPER`/`EMAIL_ENC_KEY` — hodnoty vygenerované v kroku 1 výš
-  - `SITE_ADDRESS=https://kvalitacena.cz`
-  - `API_ADDRESS=https://api.kvalitacena.cz` — vlastní site blok v `frontend/Caddyfile` pro
-    mobilní klienty, bez něj Caddy pro tenhle hostname nezíská TLS certifikát
-- [ ] `git clone` repa na server, `docker compose -f compose.prod.yaml up -d --build`.
-- [ ] Ověřit, že Caddy dostal TLS certifikát (Let's Encrypt, automaticky) pro OBĚ domény —
-  `https://kvalitacena.cz` i `https://api.kvalitacena.cz`
-  musí být bez varování prohlížeče.
-- [ ] Nastavit cron zálohu (`pg_dump` + `rsync`/snapshot adresáře médií na cíl z kroku 1) —
-  a **vyzkoušet obnovu** na čistou instanci, ne jen že záloha proběhla bez chyby.
+Doporučeno rozjet appku nejdřív **proti IP, bez DNS** (kroky 1–3 níže), a teprve pak přepnout
+domény na server (krok 4) — build appky na serveru je nejpravděpodobnější místo prvního selhání
+(viz „Sekvenční build" níž) a není důvod to ladit ve chvíli, kdy doména už míří na prázdnou IP.
+
+1. [ ] Založit server, nainstalovat Docker + Docker Compose plugin, non-root uživatel se
+   SSH klíčem, `ufw` (22/80/443), `unattended-upgrades`, **2 GB swap** (viz sekce 1 výš).
+2. [ ] `git clone` repa na server, `cp .env.example .env`, doplnit:
+   - `POSTGRES_USER`/`POSTGRES_PASSWORD` — libovolné silné heslo (bez znaku `$`, viz níž), jen
+     pro appku samotnou
+   - `JWT_SECRET`/`EMAIL_HASH_PEPPER`/`EMAIL_ENC_KEY` — hodnoty vygenerované v kroku 1 výš
+   - `SITE_ADDRESS=http://<IP serveru>`, `API_ADDRESS` **zatím nevyplňovat** (default
+     `http://api.localhost` v `.env.example`/`compose.prod.yaml`) — adresy s explicitním
+     `http://` schématem Caddy nechá jen na `:80`, ACME se vůbec nespustí, takže tahle fáze
+     nemůže vyčerpat žádný rate limit Let's Encrypt
+   - `SPRING_PROFILES_ACTIVE=prod,beta` (viz sekce 4)
+
+   **`POSTGRES_PASSWORD` generovat přes `openssl rand -hex 32`, ne `-base64 32`** — jde do
+   `compose.prod.yaml` přes interpolaci `${POSTGRES_PASSWORD}`, kde znak `$` z base64 abecedy
+   Compose sám expanduje. `JWT_SECRET`/`EMAIL_HASH_PEPPER`/`EMAIL_ENC_KEY` naproti tomu jdou přes
+   `env_file` (literálně) — tam base64 s `+`/`/`/`=` vadit nebude, `EMAIL_ENC_KEY` ale musí po
+   dekódování vyjít na přesně 16/24/32 bajtů.
+3. [ ] **Sekvenční build** — ne jedno `up -d --build`, které staví backend (Gradle) i web
+   (`npm ci` + `ng build`) paralelně a na malé instanci může spolu s Postgresem vyčerpat RAM:
+   ```bash
+   docker compose -f compose.prod.yaml build backend
+   docker compose -f compose.prod.yaml build web
+   docker compose -f compose.prod.yaml up -d
+   ```
+   Ověřit: `curl http://<IP>/` (Angular index), `curl http://<IP>/graphql` (odpoví), v logu
+   backendu (`docker compose -f compose.prod.yaml logs backend`) dokončený Liquibase bez chyb.
+   Přihlášení v téhle fázi ověřit nejde — `cookie-secure: true` v produkčním profilu znamená, že
+   se refresh cookie po obyčejném HTTP nenastaví.
+4. [ ] **DNS záznamy** na doméně `kvalitacena.cz` (u registrátora domény, ne u VPS) — nejdřív
+   snížit TTL na 300 s a počkat, až doběhne starý, pak přepsat:
+   - `A`/`AAAA` `kvalitacena.cz` → IP serveru (web, Caddy)
+   - `api.kvalitacena.cz` je dnes CNAME na `kvalitacena.cz` (ne vlastní `A` záznam) — propíše se
+     samo, není potřeba měnit zvlášť
+   - **MX ani SPF neměnit** — e-mail zůstává u dosavadního poskytovatele domény, viz sekce 3
+   - Ověřit `dig +short kvalitacena.cz` a `dig +short api.kvalitacena.cz` z jiného stroje, než
+     appka i doména budou skutečně souhlasit s IP serveru
+5. [ ] Přepsat v `.env` `SITE_ADDRESS=https://kvalitacena.cz` a
+   `API_ADDRESS=https://api.kvalitacena.cz`, `docker compose -f compose.prod.yaml up -d`
+   (recreatne jen `web`). Ověřit, že Caddy dostal TLS certifikát (Let's Encrypt, automaticky) pro
+   OBĚ domény — `https://kvalitacena.cz` i `https://api.kvalitacena.cz` musí být bez varování
+   prohlížeče, včetně `https://api.kvalitacena.cz/actuator/health` → `{"status":"UP"}`.
+
+   **Nikdy `docker compose -f compose.prod.yaml down -v`** — v `compose.prod.yaml` nejsou žádné
+   externí volumes, smazalo by to certifikáty i celou produkční databázi naráz. Opakované mazání
+   `caddy-data` navíc vyčerpá limit Let's Encrypt na 5 identických certifikátů týdně.
+6. [ ] Nastavit cron zálohu — `ops/backup.sh` (`pg_dump` + archiv adresáře médií, cíl z kroku 1
+   výš je zatím jen komentovaný návod v skriptu, doplnit po výběru poskytovatele) a
+   **vyzkoušet obnovu** na čistou instanci, postup v `ops/README.md` — u hodinové fakturace
+   Hetzneru stojí zkouška pár korun, není důvod ji přeskočit.
 
 ## 3. Po výběru SMTP poskytovatele
 
 - [ ] Doplnit do `.env` na serveru: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`.
 - [ ] U poskytovatele ověřit odesílací doménu `kvalitacena.cz` a nastavit **SPF, DKIM, DMARC**
   (poskytovatel dá přesné DNS záznamy k vložení) — bez nich OTP e-maily končí ve spamu nebo se
-  vůbec nedoručí.
+  vůbec nedoručí. **Doména už jeden SPF TXT záznam má** (mail zůstává u Gigaserveru, viz sekce 1
+  výš, ověřeno přes `dig kvalitacena.cz TXT`:
+  `v=spf1 mx a include:smtp-gw.gigaserver.cz ~all`) — nový `include:` se musí přidat do TOHOTO
+  záznamu, ne vložit jako druhý TXT. Dva SPF záznamy na jednom jménu = trvalá
+  chyba SPF vyhodnocení = neprojde žádná pošta, včetně OTP a včetně `kontakt@`. DMARC nastavit
+  zpočátku na `p=none`, ne rovnou `p=reject` — dokud odesílá víc poskytovatelů z jedné domény,
+  přísnější politika by mohla blokovat i legitimní OTP.
 - [ ] Doplnit `NOMINATIM_USER_AGENT` do `.env` s reálným kontaktem (`kontakt@kvalitacena.cz`) —
   vyžaduje to usage policy OpenStreetMap Nominatim, jinak riziko zablokování IP serveru.
 - [ ] Restartovat appku (`docker compose -f compose.prod.yaml up -d`), ověřit doručení testovacím
-  přihlášením na skutečnou schránku (ne do spamu).
+  přihlášením na **externí** schránku (Gmail apod., ne `@kvalitacena.cz` — zbytečná komplikace
+  při DMARC/loop detekci), a že zpráva skončí v doručené poště, ne ve spamu.
+
+**Nouzová berlička, když se ověření domény u SMTP protáhne:** appka bez fungujícího SMTP
+nenastartuje ani nepustí dovnitř nikoho (viz úvodní „Pořadí" výš) — `APP_AUTH_OTP_MAIL_ENABLED
+=false` v `.env` (zakomentované v `.env.example`) přepne na `ConsoleOtpMailSender`, kód se místo
+e-mailu vypíše do logu backendu. Neposílá se klientovi, takže to není bezpečnostní díra, jen
+provozní berlička — **vrátit zpátky na `true` (smazat/zakomentovat proměnnou) dřív, než appku
+uvidí kdokoli další**, jinak testeři nedostanou kód a budou ho čekat marně.
 
 ## 4. Než pozvat první lidi (uzavřená beta, Fáze 2 plánu) — kód hotový, zbývá jen zapnout
 
@@ -78,14 +154,27 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
 - [ ] V `.env` na serveru nastavit `SPRING_PROFILES_ACTIVE=prod,beta` (viz `.env.example`) a
   restartovat (`docker compose -f compose.prod.yaml up -d`) — profil `beta` se dá kdykoli
   vypnout zpět na `prod` bez editace kódu.
-- [ ] **Označit sebe (a případně dalšího důvěryhodného člověka) jako moderátora** — nástroj
-  pro přezkum nahlášených záznamů (`docs/reputace.md`, „Moderace", T4) je hotový, ale appka
-  nemá UI na jmenování, jen ruční SQL na serveru:
+- [ ] **Přihlásit se poprvé** (vlastním externím e-mailem, JIT registrace při první OTP
+  verifikaci) a **označit sebe (a případně dalšího důvěryhodného člověka) jako moderátora** —
+  nástroj pro přezkum nahlášených záznamů (`docs/reputace.md`, „Moderace", T4) je hotový, ale
+  appka nemá UI na jmenování, jen ruční SQL na serveru. **Past:** `public_handle` v DB je
+  jazykově neutrální kanonický klíč (`blue-stork-4271`), zatímco appka v `/moderation` i profilu
+  zobrazuje lokalizovanou podobu („Modrý čáp #4271") — opsaný handle z obrazovky do `UPDATE`
+  zaktualizuje 0 řádků. Nejdřív zjistit skutečnou hodnotu:
   ```sql
-  UPDATE auth.app_user SET is_moderator = true WHERE public_handle = '<handle z /moderation nebo DB>';
+  SELECT id, public_handle, created_at FROM auth.app_user ORDER BY created_at;
+  UPDATE auth.app_user SET is_moderator = true WHERE public_handle = '<kanonický handle výš>';
   ```
-  Bez aspoň jednoho moderátora nemá nahlášený obsah (fotky, zboží, obchody) kdo přezkoumat —
-  udělat PŘED pozváním prvních lidí, ne až po prvním nahlášení.
+  Odhlašovat se po `UPDATE` není potřeba — appka čte `is_moderator` z DB přes minutovou cache,
+  stačí počkat a stránku obnovit. Bez aspoň jednoho moderátora nemá nahlášený obsah (fotky,
+  zboží, obchody) kdo přezkoumat — udělat PŘED pozváním prvních lidí, ne až po prvním nahlášení.
+- [ ] **Založit pár obchodů a zboží ve svém okolí** — katalog se záměrně nepředvyplňuje (viz
+  níž), ale úplně prázdná appka prvního testera spolehlivě odradí. S profilem `beta` (prahy
+  0/0/1) jsou vlastní záznamy vidět hned, bez čekání na potvrzení.
+- [ ] **Vyřešit, jak testeři dostanou instalační APK** — appka zatím nemá kde ho nabídnout ke
+  stažení (stránka „O aplikaci" na webu žádný odkaz nemá, Caddy servíruje jen statický Angular
+  build). Do doby, než je hotové vydání na Play (`docs/vydani.md`), poslat APK přílohou/přes
+  úložiště, nebo použít Play internal testing s opt-in odkazem, pokud už existuje.
 - **Číselník kategorií zboží byl bez seedu úplně prázdný** — objevilo se to při prvním ručním
   testu 2026-08-19: `CreateProductInput.categoryId` je v GraphQL schématu povinné (`ID!`) a
   žádná `createCategory` mutace neexistuje (kategorie je fixní číselník, ne uživatelský obsah
@@ -158,8 +247,12 @@ kolik zboží/obchodů visí v `DRAFT` déle než pár dní, kolik nahlášení 
 čeká na vyřízení):
 
 ```bash
-docker compose exec -T postgres psql -U postgres -d kvalitaacena < dev/beta-report.sql
+docker compose -f compose.prod.yaml exec -T postgres psql -U "$POSTGRES_USER" -d kvalitaacena < dev/beta-report.sql
 ```
+
+(role `postgres` v produkci neexistuje — `compose.prod.yaml` nastavuje `POSTGRES_USER` z `.env`;
+bez `-f compose.prod.yaml` by `docker compose` na serveru sáhl na dev `compose.yaml`, který tam
+ani neběží.)
 
 ---
 

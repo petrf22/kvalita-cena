@@ -1,3 +1,14 @@
+# Globální blok (musí být první, bez adresy) — ACME_EMAIL dostává Let's Encrypt upozornění na
+# blížící se expiraci/problém s obnovou certifikátu, jinak by si toho appka nevšimla (žádná
+# analytika/monitoring, docs/soukromi.md). ACME_CA jde přepnout na Let's Encrypt staging
+# (https://acme-staging-v02.api.letsencrypt.org/directory) při prvním ladění DNS/Caddyfile na
+# produkci, ať se nepálí ostrý rate limit (docs/nasazeni.md) — výchozí hodnota je ostrá produkční
+# autorita, takže bez proměnné se chování nemění.
+{
+	email {$ACME_EMAIL:kontakt@kvalitacena.cz}
+	acme_ca {$ACME_CA:https://acme-v02.api.letsencrypt.org/directory}
+}
+
 # SITE_ADDRESS = doména appky (kvalitacena.cz v produkci) — Caddy si pro ni sám obstará TLS
 # (Let's Encrypt). Bez proměnné/DNS namířeného na server naslouchá jen na :80, ať jde image
 # vyzkoušet i lokálně (docs/vydani.md plán, fáze "minimální produkční nasazení"). Dva site
@@ -32,4 +43,13 @@
 	encode gzip
 
 	reverse_proxy backend:8080
+}
+
+# WWW_ADDRESS = www.kvalitacena.cz, nepovinné — appka na `www.` nikdy nemířila, tenhle blok
+# jen zachytí případné odkazy/DNS omylem s "www" a přesměruje na kanonickou adresu bez ní. Bez
+# nastavené proměnné (a bez DNS na "www.localhost") se blok nikdy neaktivuje, chování appky se
+# nemění. Vyžaduje vlastní A/AAAA záznam na `www.kvalitacena.cz` (docs/nasazeni.md), jinak Caddy
+# nemá pro co získat certifikát.
+{$WWW_ADDRESS:http://www.localhost} {
+	redir https://kvalitacena.cz{uri} permanent
 }

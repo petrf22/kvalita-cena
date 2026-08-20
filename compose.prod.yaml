@@ -19,6 +19,11 @@ services:
       - kvalita-a-cena-postgres-data-prod:/var/lib/postgresql/data
     # Žádné `ports:` — na rozdíl od dev compose.yaml tu Postgres nemá být dostupný z hostitele,
     # jen z backend kontejneru přes interní síť compose.
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d kvalitaacena']
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   backend:
     build:
@@ -39,7 +44,11 @@ services:
       # Fotky leží mimo databázi (docs/datovy-model.md) — zálohuje se nezávisle na pg_dump.
       - kvalita-a-cena-media-prod:/data/media
     depends_on:
-      - postgres
+      postgres:
+        # Bez tohohle appka na prvním startu nejspíš zkusí připojit dřív, než Postgres skutečně
+        # přijímá spojení, a spadne — `restart: unless-stopped` ji sice znovu zvedne, ale logy
+        # z prvního pokusu pak vypadají jako chyba, kterou nejsou.
+        condition: service_healthy
 
   web:
     build:
@@ -50,6 +59,11 @@ services:
       # api.kvalitacena.cz — vlastní site blok v Caddyfile, jinak by mobilní release build
       # (mobile/app/build.gradle.kts) neměl kam mluvit.
       - API_ADDRESS=${API_ADDRESS:-http://api.localhost}
+      # Všechny tři nepovinné, prázdný default nechává Caddyfile na jeho vlastních defaultech
+      # (viz komentáře tam) — appka bez nich funguje stejně jako dřív.
+      - WWW_ADDRESS=${WWW_ADDRESS:-http://www.localhost}
+      - ACME_EMAIL=${ACME_EMAIL:-kontakt@kvalitacena.cz}
+      - ACME_CA=${ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
     ports:
       - '80:80'
       - '443:443'

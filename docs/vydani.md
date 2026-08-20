@@ -62,7 +62,20 @@ Registrace balíčku aplikaci **nevydává** — jen rezervuje jméno a sváže 
 Play vyžaduje 512×512 PNG ikonu appky u store listingu (jinou položku než APK ikony samotné —
 ty jde nahrát ze `tools/icons/play-store-icon-512.png`, jde o stejný motiv jako Android launcher
 ikona, viz `docs/branding.md`). Feature graphic (1024×500) pro listing zatím chybí a je mimo
-rozsah `docs/branding.md`.
+rozsah `docs/branding.md`. Listing dál vyžaduje aspoň dva screenshoty telefonu (zatím žádné) a
+krátký/dlouhý popis appky.
+
+### Nahrávaný formát a App access
+
+Play přijímá k publikaci jen **AAB** (`./gradlew :app:bundleRelease`), ne APK — `apksigner
+verify`/registrace otisku klíče výš pořád platí na APK (přímá distribuce, F-Droid), ale do Play
+Console jde nahrát bundle. Podepisuje se stejným `signingConfig` jako `assembleRelease`.
+
+Recenzent appky se přes OTP nedostane (žádný testovací účet předem neexistuje, kód chodí na
+reálnou schránku) — ve formuláři **App access** je potřeba deklarovat, že podstatná část appky
+funguje bez přihlášení: čtení GraphQL (hledání, detail produktu, ceny) je `permitAll` a
+zobrazuje se i anonymně (`app.history.anonymous-max-days: 90`), přihlášení je potřeba jen pro
+zápis ceny/založení záznamu.
 
 ### Play App Signing
 
@@ -104,7 +117,7 @@ vizuálně na emulátoru s API 36 (viz Ověření v plánu migrace repa).
 
 Tři nezávislé zdroje, žádný sjednocující mechanismus (tag-based release neexistuje):
 
-- **Backend** — `backend/build.gradle`, `version = '0.1.0-SNAPSHOT'`.
+- **Backend** — `backend/build.gradle`, `version = '0.1.0'`.
 - **Web** — `frontend/package.json`, `"version": "0.1.0"`. Appka ji sama nikde nečte natvrdo:
   `tools/version/write-version.mjs` z ní při `npm start`/`npm run build` (přes `pre*` npm
   hooky) vygeneruje `src/app/version.ts`, odkud čte `features/about/about-page.ts` i

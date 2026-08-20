@@ -1,0 +1,8 @@
+# Omezuje build kontext produkčního image (backend/Dockerfile) na zdrojáky, které se
+# do COPY skutečně používají — bez tohohle by lokální build artefakty a data zbytečně
+# nafukovaly kontext posílaný do Dockeru, u dat navíc jde o soukromé zálohy/média mimo repo.
+build/
+.gradle/
+data/
+.git/
+*.md

@@ -1,0 +1,8 @@
+# Omezuje build kontext produkčního image (frontend/Dockerfile). Kritické zejména pro
+# node_modules — Dockerfile dělá `COPY . .` AŽ PO `npm ci`, takže zatoulaný lokální
+# node_modules (jiná platforma než node:24-alpine) by přepsal výsledek čisté instalace.
+node_modules/
+dist/
+.angular/
+.git/
+npm-debug.log*
