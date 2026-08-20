@@ -23,7 +23,7 @@ argumentu (i v terminálu, i v úlohách níže) sáhne na stejného Node jako z
 
 - **F5** — `Web: dev server + Chrome`: nastartuje `npm start` a otevře `http://localhost:4200/`
   v ladicím Chromu (breakpointy fungují přímo v TS/HTML zdrojích). `Web: Chrome (server už
-  běží)` je stejné, jen bez spouštění serveru — použij, když ho máš puštěný v terminálu.
+běží)` je stejné, jen bez spouštění serveru — použij, když ho máš puštěný v terminálu.
   `Testy: Vitest (ladění)` spustí `ng test --watch=false` s připojeným debuggerem.
 - **Ctrl+Shift+B** — `web: build` (`npm run build`).
 - **Ctrl+Shift+P → Tasks: Run Task** — dál `web: testy (watch)`, `web: testy (jednorázově)`,
