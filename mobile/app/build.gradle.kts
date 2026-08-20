@@ -94,7 +94,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(platform("androidx.compose:compose-bom:2026.06.01"))
+    implementation(platform("androidx.compose:compose-bom:2026.08.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -107,7 +107,7 @@ dependencies {
     // systémový LocaleManager od API 33, pod tím si volbu persistuje sama. Vyžaduje
     // AppCompatActivity (MainActivity.kt) — bez zaregistrované AppCompatDelegate instance je
     // setApplicationLocales() no-op na všech API úrovních.
-    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("androidx.appcompat:appcompat:1.8.0")
     implementation("androidx.navigation:navigation-compose:2.9.8")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
