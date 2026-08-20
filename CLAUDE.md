@@ -201,6 +201,11 @@ zobrazení kódu země u obchodu jen když se liší od zvolené domácí země
 chyb podle `code` na mobilu (appka ukáže `serverMessage`, protože `network/Dto.kt` negeneruje
 typy ze schématu jako web).
 
+**Vizuální identita**: ikona appky (rámeček skeneru s pruhy čárového kódu, `#1677FF`) i
+favicon/PWA manifest/Android launcher z ní odvozené — `docs/branding.md` je zdroj pravdy,
+geometrie sama žije v `tools/icons/generate.py` (`python3 tools/icons/generate.py` po každé
+úpravě kresby).
+
 **Stránka „O aplikaci"**: popis appky, odkud appka bere data (dřív karta „Zdroje dat"
 v Nastavení, přesunuto sem i s řádkem verze appky), otevřený kód (GNU AGPL-3.0, odkaz na
 `github.com/petrf22/kvalita-cena`) a kontakt — web `features/about` (`/about`, odkaz ze

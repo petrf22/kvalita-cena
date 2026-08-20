@@ -57,6 +57,13 @@ Postup:
 
 Registrace balíčku aplikaci **nevydává** — jen rezervuje jméno a sváže ho s ověřenou identitou.
 
+### Ikona pro listing
+
+Play vyžaduje 512×512 PNG ikonu appky u store listingu (jinou položku než APK ikony samotné —
+ty jde nahrát ze `tools/icons/play-store-icon-512.png`, jde o stejný motiv jako Android launcher
+ikona, viz `docs/branding.md`). Feature graphic (1024×500) pro listing zatím chybí a je mimo
+rozsah `docs/branding.md`.
+
 ### Play App Signing
 
 Doporučení: **vygenerovat klíč lokálně (viz výš) a nahrát ho do Play App Signing** („use your

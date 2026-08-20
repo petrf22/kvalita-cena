@@ -58,6 +58,10 @@ mobile/captures/
 *.keystore
 mobile/keystore.properties
 
+# --- tools/ (Python) ---
+__pycache__/
+*.pyc
+
 # --- OS ---
 .DS_Store
 Thumbs.db
