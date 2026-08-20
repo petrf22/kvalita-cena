@@ -82,13 +82,15 @@ export class GraphQlService {
             // — reagujeme proto na klasifikaci chyby, ne na konkrétní *_REQUIRES_LOGIN kód, aby
             // recovery fungovala pro libovolný chráněný dotaz.
             if (hadToken && allowRecovery && first.extensions?.classification === 'UNAUTHORIZED') {
-              return this.authService.recoverFromUnauthorized().pipe(
-                switchMap((recovered) =>
-                  recovered
-                    ? this.executeAttempt(document, variables, false)
-                    : throwError(() => this.toAppError(response.errors!)),
-                ),
-              );
+              return this.authService
+                .recoverFromUnauthorized()
+                .pipe(
+                  switchMap((recovered) =>
+                    recovered
+                      ? this.executeAttempt(document, variables, false)
+                      : throwError(() => this.toAppError(response.errors!)),
+                  ),
+                );
             }
             return throwError(() => this.toAppError(response.errors!));
           }

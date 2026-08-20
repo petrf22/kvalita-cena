@@ -15,7 +15,13 @@ export interface CountryOption {
 const STORAGE_KEY = 'kac.country';
 
 /** Jen výchozí HÁDANKA, než appka stáhne countries() nebo než si uživatel zemi sám nastaví — nikdy zdroj pravdy. */
-const LANG_TO_COUNTRY: Record<string, string> = { cs: 'CZ', sk: 'SK', pl: 'PL', en: 'CZ', de: 'DE' };
+const LANG_TO_COUNTRY: Record<string, string> = {
+  cs: 'CZ',
+  sk: 'SK',
+  pl: 'PL',
+  en: 'CZ',
+  de: 'DE',
+};
 
 function readInitialCountry(): string {
   return localStorage.getItem(STORAGE_KEY) ?? LANG_TO_COUNTRY[readInitialLang()] ?? 'CZ';

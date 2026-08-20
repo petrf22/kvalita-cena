@@ -26,7 +26,12 @@ export class AuthService {
    * `termsAccepted` se vyžaduje jen při JIT registraci nového účtu (docs/soukromi.md, "GDPR") —
    * backend ho ignoruje, pokud e-mail už patří existujícímu účtu (přihlášení, ne registrace).
    */
-  verifyOtp(challengeUid: string, code: string, email: string, termsAccepted: boolean): Observable<TokenResponse> {
+  verifyOtp(
+    challengeUid: string,
+    code: string,
+    email: string,
+    termsAccepted: boolean,
+  ): Observable<TokenResponse> {
     return this.http
       .post<TokenResponse>(
         '/api/auth/otp/verify',

@@ -3,7 +3,10 @@ import { inject } from '@angular/core';
 import { Observable, catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../services/auth-service';
 
-function withAuthHeader(req: HttpRequest<unknown>, accessToken: string | null): HttpRequest<unknown> {
+function withAuthHeader(
+  req: HttpRequest<unknown>,
+  accessToken: string | null,
+): HttpRequest<unknown> {
   return accessToken ? req.clone({ setHeaders: { Authorization: `Bearer ${accessToken}` } }) : req;
 }
 

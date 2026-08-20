@@ -1,6 +1,14 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
-import { NzI18nInterface, NzI18nService, cs_CZ, de_DE, en_GB, pl_PL, sk_SK } from 'ng-zorro-antd/i18n';
+import {
+  NzI18nInterface,
+  NzI18nService,
+  cs_CZ,
+  de_DE,
+  en_GB,
+  pl_PL,
+  sk_SK,
+} from 'ng-zorro-antd/i18n';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from './auth-service';
 import { ViewerService } from './viewer-service';

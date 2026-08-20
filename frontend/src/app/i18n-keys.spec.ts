@@ -119,9 +119,7 @@ describe('i18n-keys: every translate key used in code resolves in the cs bundle'
     const exists = found.dynamic
       ? [...resolvable].some((k) => k.startsWith(found.key))
       : resolvable.has(found.key);
-    expect(exists, `key "${found.key}" (from ${found.file}) not found in any cs bundle`).toBe(
-      true,
-    );
+    expect(exists, `key "${found.key}" (from ${found.file}) not found in any cs bundle`).toBe(true);
   });
 
   it('found at least one key per known scope (sanity check the extraction itself works)', () => {

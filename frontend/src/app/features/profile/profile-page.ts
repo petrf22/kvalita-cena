@@ -15,7 +15,13 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
-import { Audience, Profile, ProfileField, ProfileFieldAudience, ProfileVisibility } from '../../models/auth';
+import {
+  Audience,
+  Profile,
+  ProfileField,
+  ProfileFieldAudience,
+  ProfileVisibility,
+} from '../../models/auth';
 import { UpdateProfileInput } from '../../models/generated/graphql';
 import { translateError } from '../../shared/error-message';
 import { ALLOWED_PHOTO_TYPES, MAX_PHOTO_BYTES } from '../../shared/photo-upload-validation';
@@ -145,12 +151,17 @@ export class ProfilePage {
     this.friendsFields.set(this.fieldsFor(profile.visibleFields, Audience.Friends));
   }
 
-  private fieldsFor(entries: readonly ProfileFieldAudience[], audience: Audience): ReadonlySet<ProfileField> {
+  private fieldsFor(
+    entries: readonly ProfileFieldAudience[],
+    audience: Audience,
+  ): ReadonlySet<ProfileField> {
     return new Set(entries.filter((e) => e.audience === audience).map((e) => e.field));
   }
 
   protected isChecked(field: ProfileField, audience: Audience): boolean {
-    return audience === Audience.Public ? this.publicFields().has(field) : this.friendsFields().has(field);
+    return audience === Audience.Public
+      ? this.publicFields().has(field)
+      : this.friendsFields().has(field);
   }
 
   protected toggleField(field: ProfileField, audience: Audience): void {
@@ -307,5 +318,7 @@ export class ProfilePage {
     });
   }
 
-  protected readonly visibilityIsAnonymous = computed(() => this.visibility() === ProfileVisibility.Anonymous);
+  protected readonly visibilityIsAnonymous = computed(
+    () => this.visibility() === ProfileVisibility.Anonymous,
+  );
 }

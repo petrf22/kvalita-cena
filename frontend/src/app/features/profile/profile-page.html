@@ -32,7 +32,13 @@
             }
           </div>
         </div>
-        <input #avatarInput type="file" accept="image/jpeg,image/png" hidden (change)="onAvatarSelected($event)" />
+        <input
+          #avatarInput
+          type="file"
+          accept="image/jpeg,image/png"
+          hidden
+          (change)="onAvatarSelected($event)"
+        />
         <p class="hint">{{ t('profile.avatar.hint') }}</p>
         @if (avatarError()) {
           <nz-alert nzType="error" [nzMessage]="avatarError()" nzShowIcon class="section-alert" />
@@ -44,20 +50,40 @@
           <nz-form-item>
             <nz-form-label>
               {{ t('profile.fields.firstNameLabel') }}
-              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('profile.fields.encryptedHint')"></span>
+              <span
+                nz-icon
+                nzType="info-circle"
+                nz-tooltip
+                [nzTooltipTitle]="t('profile.fields.encryptedHint')"
+              ></span>
             </nz-form-label>
             <nz-form-control>
-              <input nz-input [ngModel]="firstName()" (ngModelChange)="firstName.set($event)" name="firstName" />
+              <input
+                nz-input
+                [ngModel]="firstName()"
+                (ngModelChange)="firstName.set($event)"
+                name="firstName"
+              />
             </nz-form-control>
           </nz-form-item>
 
           <nz-form-item>
             <nz-form-label>
               {{ t('profile.fields.lastNameLabel') }}
-              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('profile.fields.encryptedHint')"></span>
+              <span
+                nz-icon
+                nzType="info-circle"
+                nz-tooltip
+                [nzTooltipTitle]="t('profile.fields.encryptedHint')"
+              ></span>
             </nz-form-label>
             <nz-form-control>
-              <input nz-input [ngModel]="lastName()" (ngModelChange)="lastName.set($event)" name="lastName" />
+              <input
+                nz-input
+                [ngModel]="lastName()"
+                (ngModelChange)="lastName.set($event)"
+                name="lastName"
+              />
             </nz-form-control>
           </nz-form-item>
 
@@ -76,17 +102,32 @@
           <nz-form-item>
             <nz-form-label>
               {{ t('profile.fields.phoneLabel') }}
-              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('profile.fields.encryptedHint')"></span>
+              <span
+                nz-icon
+                nzType="info-circle"
+                nz-tooltip
+                [nzTooltipTitle]="t('profile.fields.encryptedHint')"
+              ></span>
             </nz-form-label>
             <nz-form-control>
-              <input nz-input [ngModel]="phone()" (ngModelChange)="phone.set($event)" name="phone" />
+              <input
+                nz-input
+                [ngModel]="phone()"
+                (ngModelChange)="phone.set($event)"
+                name="phone"
+              />
             </nz-form-control>
           </nz-form-item>
 
           <nz-form-item>
             <nz-form-label>
               {{ t('profile.fields.contactEmailLabel') }}
-              <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('profile.fields.encryptedHint')"></span>
+              <span
+                nz-icon
+                nzType="info-circle"
+                nz-tooltip
+                [nzTooltipTitle]="t('profile.fields.encryptedHint')"
+              ></span>
             </nz-form-label>
             <nz-form-control>
               <input
@@ -109,10 +150,20 @@
       </nz-card>
 
       <nz-card [nzTitle]="t('profile.visibility.sectionTitle')" class="section-card">
-        <nz-radio-group [ngModel]="visibility()" (ngModelChange)="visibility.set($event)" name="visibility">
-          <label nz-radio [nzValue]="ProfileVisibility.Anonymous">{{ t('profile.visibility.ANONYMOUS') }}</label>
-          <label nz-radio [nzValue]="ProfileVisibility.Public">{{ t('profile.visibility.PUBLIC') }}</label>
-          <label nz-radio [nzValue]="ProfileVisibility.Friends">{{ t('profile.visibility.FRIENDS') }}</label>
+        <nz-radio-group
+          [ngModel]="visibility()"
+          (ngModelChange)="visibility.set($event)"
+          name="visibility"
+        >
+          <label nz-radio [nzValue]="ProfileVisibility.Anonymous">{{
+            t('profile.visibility.ANONYMOUS')
+          }}</label>
+          <label nz-radio [nzValue]="ProfileVisibility.Public">{{
+            t('profile.visibility.PUBLIC')
+          }}</label>
+          <label nz-radio [nzValue]="ProfileVisibility.Friends">{{
+            t('profile.visibility.FRIENDS')
+          }}</label>
         </nz-radio-group>
 
         @if (!visibilityIsAnonymous()) {
@@ -124,7 +175,12 @@
                 <th>{{ t('profile.visibility.publicColumn') }}</th>
                 <th>
                   {{ t('profile.visibility.friendsColumn') }}
-                  <span nz-icon nzType="info-circle" nz-tooltip [nzTooltipTitle]="t('profile.visibility.friendsHint')"></span>
+                  <span
+                    nz-icon
+                    nzType="info-circle"
+                    nz-tooltip
+                    [nzTooltipTitle]="t('profile.visibility.friendsHint')"
+                  ></span>
                 </th>
               </tr>
             </thead>
@@ -161,7 +217,13 @@
       @if (saveMessage()) {
         <nz-alert nzType="success" [nzMessage]="saveMessage()" nzShowIcon class="section-alert" />
       }
-      <button nz-button nzType="primary" [nzLoading]="saving()" (click)="save()" class="save-button">
+      <button
+        nz-button
+        nzType="primary"
+        [nzLoading]="saving()"
+        (click)="save()"
+        class="save-button"
+      >
         {{ t('profile.save.button') }}
       </button>
 
@@ -199,7 +261,12 @@
         <nz-alert nzType="success" [nzMessage]="t('profile.emailChange.success')" nzShowIcon />
       } @else {
         @if (emailChangeError()) {
-          <nz-alert nzType="error" [nzMessage]="emailChangeError()" nzShowIcon class="section-alert" />
+          <nz-alert
+            nzType="error"
+            [nzMessage]="emailChangeError()"
+            nzShowIcon
+            class="section-alert"
+          />
         }
         @if (emailChangeStep() === 'email') {
           <form nz-form nzLayout="vertical" (ngSubmit)="requestEmailChangeCode()">

@@ -19,20 +19,19 @@
 
       <h2>2. Základní princip: appka tě nesleduje</h2>
       <p>
-        Cílem appky je, aby co nejvíc lidí mělo přehled o cenách — ne sledovat, kdo kde
-        nakupuje. Tenhle princip je promítnutý přímo do toho, jak appka ukládá data, ne jen do
-        tohoto textu:
+        Cílem appky je, aby co nejvíc lidí mělo přehled o cenách — ne sledovat, kdo kde nakupuje.
+        Tenhle princip je promítnutý přímo do toho, jak appka ukládá data, ne jen do tohoto textu:
       </p>
       <ul>
         <li>appka nikdy neukládá tvoji GPS polohu,</li>
         <li>
-          appka nepoužívá žádnou analytiku ani sledovací nástroje třetích stran, žádnou
-          reklamu, žádné externí fonty,
+          appka nepoužívá žádnou analytiku ani sledovací nástroje třetích stran, žádnou reklamu,
+          žádné externí fonty,
         </li>
         <li>appka nemá funkci sledovat jiné uživatele ani vidět jejich historii nákupů,</li>
         <li>
-          appka nepoužívá cookies pro sledování — jediná cookie, kterou appka nastavuje (na
-          webu), slouží výhradně k udržení přihlášení a nikam se z ní nic nevyčítá.
+          appka nepoužívá cookies pro sledování — jediná cookie, kterou appka nastavuje (na webu),
+          slouží výhradně k udržení přihlášení a nikam se z ní nic nevyčítá.
         </li>
       </ul>
 
@@ -40,111 +39,107 @@
 
       <h3>3.1 Přihlašovací e-mail</h3>
       <p>
-        E-mail, kterým se přihlašuješ, se v databázi neukládá v čitelné podobě. Ukládá se
-        jednak jako nevratný otisk (slouží jen k tomu, aby appka při přihlášení poznala, že jde
-        o stejný e-mail), jednak zašifrovaný (aby ti appka mohla poslat přihlašovací kód nebo
-        pozdější oznámení) — čitelný je jen appce se šifrovacím klíčem, který se v databázi
-        nenachází.
+        E-mail, kterým se přihlašuješ, se v databázi neukládá v čitelné podobě. Ukládá se jednak
+        jako nevratný otisk (slouží jen k tomu, aby appka při přihlášení poznala, že jde o stejný
+        e-mail), jednak zašifrovaný (aby ti appka mohla poslat přihlašovací kód nebo pozdější
+        oznámení) — čitelný je jen appce se šifrovacím klíčem, který se v databázi nenachází.
       </p>
 
       <h3>3.2 Volitelný profil</h3>
       <p>
         Pokud se rozhodneš appce sdělit jméno, příjmení, telefon, kontaktní e-mail (jiný než
-        přihlašovací) nebo nahrát profilovou fotku, jsou to čistě dobrovolné údaje — appka po
-        nich nikde nežádá a bez nich appka plně funguje. Textové údaje profilu jsou zašifrované
-        stejným způsobem jako přihlašovací e-mail. Výchozí viditelnost profilu je nastavená
-        tak, že ho vidíš jen ty; pokud se rozhodneš profil zveřejnit, appka ti dá kontrolu nad
-        tím, které konkrétní pole uvidí kdo.
+        přihlašovací) nebo nahrát profilovou fotku, jsou to čistě dobrovolné údaje — appka po nich
+        nikde nežádá a bez nich appka plně funguje. Textové údaje profilu jsou zašifrované stejným
+        způsobem jako přihlašovací e-mail. Výchozí viditelnost profilu je nastavená tak, že ho vidíš
+        jen ty; pokud se rozhodneš profil zveřejnit, appka ti dá kontrolu nad tím, které konkrétní
+        pole uvidí kdo.
       </p>
 
       <h3>3.3 Cenové záznamy a hodnocení, které vložíš</h3>
       <p>
-        Cena, kterou zapíšeš, se propojí s tvým účtem — díky tomu appka dokáže rozpoznat
-        spolehlivé přispěvatele a bránit se zneužití. Tahle vazba ale <strong>není trvalá</strong>:
-        po 180 dnech appka automaticky vazbu na tvůj konkrétní účet zruší, záznam zůstane
-        v datech jen jako anonymizovaná statistika (číslo do grafu vývoje ceny), bez možnosti
-        dohledat, kdo ho zapsal. 180 dní je nejdelší doba, kterou appka potřebuje na to, aby
-        dokázala odhalit podezřelé vzorce chování nebo vyřešit spor o cenu.
+        Cena, kterou zapíšeš, se propojí s tvým účtem — díky tomu appka dokáže rozpoznat spolehlivé
+        přispěvatele a bránit se zneužití. Tahle vazba ale <strong>není trvalá</strong>: po 180
+        dnech appka automaticky vazbu na tvůj konkrétní účet zruší, záznam zůstane v datech jen jako
+        anonymizovaná statistika (číslo do grafu vývoje ceny), bez možnosti dohledat, kdo ho zapsal.
+        180 dní je nejdelší doba, kterou appka potřebuje na to, aby dokázala odhalit podezřelé
+        vzorce chování nebo vyřešit spor o cenu.
       </p>
       <p>
-        Z tohoto pravidla existují dvě záměrné výjimky, protože bez trvalé vazby by appka
-        ztratila funkci, kterou od nich uživatelé očekávají:
+        Z tohoto pravidla existují dvě záměrné výjimky, protože bez trvalé vazby by appka ztratila
+        funkci, kterou od nich uživatelé očekávají:
       </p>
       <ul>
         <li>
-          <strong>Hodnocení kvality zboží</strong> (známka 1–5) zůstává navázané na tvůj účet
-          po celou dobu trvání účtu — jinak by šlo systém obejít opakovaným hodnocením stejné
-          věci. Navenek appka vždy zobrazuje jen průměr a počet hodnocení, nikdy seznam „kdo
-          jak ohodnotil".
+          <strong>Hodnocení kvality zboží</strong> (známka 1–5) zůstává navázané na tvůj účet po
+          celou dobu trvání účtu — jinak by šlo systém obejít opakovaným hodnocením stejné věci.
+          Navenek appka vždy zobrazuje jen průměr a počet hodnocení, nikdy seznam „kdo jak
+          ohodnotil".
         </li>
         <li>
-          <strong>Tvoje vlastní úpravy existujícího zboží/obchodu</strong> (např. oprava
-          názvu nebo adresy) zůstávají navázané na tvůj účet, dokud účet existuje — jinak by ti
-          po půl roce tiše zmizely vlastní opravy. I tady appka navenek ukazuje jen výslednou
-          opravenou hodnotu, ne kdo ji udělal.
+          <strong>Tvoje vlastní úpravy existujícího zboží/obchodu</strong> (např. oprava názvu nebo
+          adresy) zůstávají navázané na tvůj účet, dokud účet existuje — jinak by ti po půl roce
+          tiše zmizely vlastní opravy. I tady appka navenek ukazuje jen výslednou opravenou hodnotu,
+          ne kdo ji udělal.
         </li>
       </ul>
       <p>Obě výjimky se smažou při smazání účtu (viz „Tvá práva" níže).</p>
 
       <h3>3.4 Poloha</h3>
       <p>
-        Appka <strong>nikdy neukládá tvoji GPS polohu</strong>. Když appce dovolíš najít
-        obchody v okolí, appka polohu použije jen k dotazu „co je nablízku" a hned zapomene —
-        do databáze ani do logů se nezapisuje. Souřadnice obchodů (veřejný fakt, ne osobní
-        údaj — totéž, co je na ceduli u vchodu) appka získává buď od tebe při založení obchodu,
-        nebo z OpenStreetMap; dotaz na OpenStreetMap přitom vždy posílá appka sama ze svého
-        serveru, ne tvůj telefon nebo prohlížeč — tvoje IP adresa se tak k OpenStreetMap nikdy
-        nedostane. Jedinou vědomou výjimkou je mapa samotná (viz bod 3.6 níže).
+        Appka <strong>nikdy neukládá tvoji GPS polohu</strong>. Když appce dovolíš najít obchody v
+        okolí, appka polohu použije jen k dotazu „co je nablízku" a hned zapomene — do databáze ani
+        do logů se nezapisuje. Souřadnice obchodů (veřejný fakt, ne osobní údaj — totéž, co je na
+        ceduli u vchodu) appka získává buď od tebe při založení obchodu, nebo z OpenStreetMap; dotaz
+        na OpenStreetMap přitom vždy posílá appka sama ze svého serveru, ne tvůj telefon nebo
+        prohlížeč — tvoje IP adresa se tak k OpenStreetMap nikdy nedostane. Jedinou vědomou výjimkou
+        je mapa samotná (viz bod 3.6 níže).
       </p>
 
       <h3>3.5 Fotky zboží a provozoven</h3>
       <p>
         Fotka z mobilu běžně v sobě nese skrytá data — mimo jiné i přesné GPS souřadnice, kde
         vznikla. Appka každou nahranou fotku před uložením kompletně překreslí z jednotlivých
-        obrazových bodů do nového souboru — výsledek tak nikdy nenese žádná skrytá data
-        z originálu, protože fotku negeneruje kopírováním originálu, ale úplně nově z jeho
-        obsahu.
+        obrazových bodů do nového souboru — výsledek tak nikdy nenese žádná skrytá data z originálu,
+        protože fotku negeneruje kopírováním originálu, ale úplně nově z jeho obsahu.
       </p>
       <p>
         Fotky se dají kdykoli smazat (vlastní) nebo nahlásit (cizí, pokud jsou nevhodné nebo
-        porušují cizí práva) — nahlášení fotky appka bere obzvlášť vážně, stačí k dočasnému
-        skrytí jediné nahlášení, než ho někdo přezkoumá.
+        porušují cizí práva) — nahlášení fotky appka bere obzvlášť vážně, stačí k dočasnému skrytí
+        jediné nahlášení, než ho někdo přezkoumá.
       </p>
 
       <h3>3.6 Mapa (vědomá výjimka)</h3>
       <p>
-        Pokud si na detailu obchodu otevřeš mapu, appka mapové podklady (dlaždice) stahuje
-        přímo z tvého telefonu/prohlížeče z OpenStreetMap — na rozdíl od geokódování adres výš
-        tahle jedna věc jde přímo z klienta, ne přes náš server, protože proxy pro mapové
-        dlaždice by vyžadovala vlastní infrastrukturu nebo komerční smlouvu s OpenStreetMap
-        Foundation. Znamená to, že OpenStreetMap při otevření mapy uvidí tvoji IP adresu —
-        appka tomu předchází tím, že se mapa nenačte, dokud si o ni výslovně neřekneš (není
-        součástí běžného zobrazení stránky).
+        Pokud si na detailu obchodu otevřeš mapu, appka mapové podklady (dlaždice) stahuje přímo z
+        tvého telefonu/prohlížeče z OpenStreetMap — na rozdíl od geokódování adres výš tahle jedna
+        věc jde přímo z klienta, ne přes náš server, protože proxy pro mapové dlaždice by vyžadovala
+        vlastní infrastrukturu nebo komerční smlouvu s OpenStreetMap Foundation. Znamená to, že
+        OpenStreetMap při otevření mapy uvidí tvoji IP adresu — appka tomu předchází tím, že se mapa
+        nenačte, dokud si o ni výslovně neřekneš (není součástí běžného zobrazení stránky).
       </p>
 
       <h3>3.7 Technická data</h3>
       <p>
         Appka krátkodobě loguje technická data (např. IP adresu u přihlašovacích pokusů) kvůli
-        ochraně proti zneužití (např. hromadnému zkoušení přihlašovacích kódů) — tahle data
-        neslouží k profilování ani analytice a appka je neuchovává dlouhodobě.
+        ochraně proti zneužití (např. hromadnému zkoušení přihlašovacích kódů) — tahle data neslouží
+        k profilování ani analytice a appka je neuchovává dlouhodobě.
       </p>
 
       <h2>4. Proč údaje zpracováváme (právní základ)</h2>
       <ul>
         <li>
-          <strong>Plnění smlouvy</strong> (čl. 6 odst. 1 písm. b) GDPR) — přihlašovací e-mail
-          a vazba cenových záznamů na účet, bez kterých by appka nemohla fungovat tak, jak ji
+          <strong>Plnění smlouvy</strong> (čl. 6 odst. 1 písm. b) GDPR) — přihlašovací e-mail a
+          vazba cenových záznamů na účet, bez kterých by appka nemohla fungovat tak, jak ji
           používáš.
         </li>
         <li>
           <strong>Oprávněný zájem</strong> (čl. 6 odst. 1 písm. f) GDPR) — ochrana appky před
-          zneužitím (podezřelé vzorce chování, rate limiting, dočasná vazba záznam→účet do
-          180 dnů).
+          zneužitím (podezřelé vzorce chování, rate limiting, dočasná vazba záznam→účet do 180 dnů).
         </li>
         <li>
-          <strong>Souhlas</strong> (čl. 6 odst. 1 písm. a) GDPR) — volitelný profil (jméno,
-          telefon, kontaktní e-mail, avatar) a jeho případné zveřejnění; souhlas můžeš kdykoli
-          odvolat smazáním příslušného údaje v appce.
+          <strong>Souhlas</strong> (čl. 6 odst. 1 písm. a) GDPR) — volitelný profil (jméno, telefon,
+          kontaktní e-mail, avatar) a jeho případné zveřejnění; souhlas můžeš kdykoli odvolat
+          smazáním příslušného údaje v appce.
         </li>
       </ul>
 
@@ -187,47 +182,44 @@
       <h2>6. Komu údaje předáváme</h2>
       <p>
         Osobní údaje nikomu neprodáváme ani je nepoužíváme k reklamě. Appka pracuje s těmito
-        externími službami, u kterých se — mimo výjimku mapových dlaždic v bodě 3.6 — appka
-        vždy staví mezi tebe a danou službu jako prostředník, takže se k nim tvoje IP adresa
-        ani jiný identifikátor nedostane:
+        externími službami, u kterých se — mimo výjimku mapových dlaždic v bodě 3.6 — appka vždy
+        staví mezi tebe a danou službu jako prostředník, takže se k nim tvoje IP adresa ani jiný
+        identifikátor nedostane:
       </p>
       <ul>
         <li>
-          <strong>OpenStreetMap (Nominatim)</strong> — vyhledání/ověření adresy provozovny;
-          dotaz posílá appka ze svého serveru.
+          <strong>OpenStreetMap (Nominatim)</strong> — vyhledání/ověření adresy provozovny; dotaz
+          posílá appka ze svého serveru.
         </li>
         <li>
-          <strong>Open Food Facts</strong> — veřejné údaje o zboží (název, kategorie), žádná
-          osobní data appka tomuhle zdroji neposílá.
+          <strong>Open Food Facts</strong> — veřejné údaje o zboží (název, kategorie), žádná osobní
+          data appka tomuhle zdroji neposílá.
         </li>
         <li>
-          <strong>ARES</strong> (veřejný rejstřík ekonomických subjektů) — jen volitelné
-          ověření IČO provozovny při zakládání obchodu; to je údaj o firmě, ne o tobě.
+          <strong>ARES</strong> (veřejný rejstřík ekonomických subjektů) — jen volitelné ověření IČO
+          provozovny při zakládání obchodu; to je údaj o firmě, ne o tobě.
         </li>
         <li>
-          <strong>Česká národní banka</strong> — kurzovní lístek pro přepočet zobrazovací
-          měny; appka mu nic neposílá, jen si stahuje veřejně dostupná data.
+          <strong>Česká národní banka</strong> — kurzovní lístek pro přepočet zobrazovací měny;
+          appka mu nic neposílá, jen si stahuje veřejně dostupná data.
         </li>
         <li>
-          <strong>Poskytovatel e-mailových služeb</strong>, přes kterého appka posílá
-          přihlašovací kódy — zpracovává tvůj e-mail v roli zpracovatele, výhradně k doručení
-          zprávy.
+          <strong>Poskytovatel e-mailových služeb</strong>, přes kterého appka posílá přihlašovací
+          kódy — zpracovává tvůj e-mail v roli zpracovatele, výhradně k doručení zprávy.
         </li>
       </ul>
-      <p>
-        Appka neběží na cizí analytické platformě a nemá vestavěné žádné sledovací pixely.
-      </p>
+      <p>Appka neběží na cizí analytické platformě a nemá vestavěné žádné sledovací pixely.</p>
 
       <h2>7. Cookies</h2>
       <p>
-        Appka na webu používá jedinou cookie: <code>httpOnly</code> cookie s přihlašovacím
-        tokenem, nutnou k tomu, aby ses po přihlášení nemusel(a) znovu přihlašovat při každé
-        stránce. Tahle cookie neslouží k analytice ani reklamě, appka z ní nic nevyčítá — je to
-        čistě technická nutnost provozu, appka proto nezobrazuje cookie lištu.
+        Appka na webu používá jedinou cookie: <code>httpOnly</code> cookie s přihlašovacím tokenem,
+        nutnou k tomu, aby ses po přihlášení nemusel(a) znovu přihlašovat při každé stránce. Tahle
+        cookie neslouží k analytice ani reklamě, appka z ní nic nevyčítá — je to čistě technická
+        nutnost provozu, appka proto nezobrazuje cookie lištu.
       </p>
       <p>
-        Mobilní appka žádné cookies nepoužívá; přihlašovací token ukládá zašifrovaný přímo
-        v zabezpečeném úložišti telefonu.
+        Mobilní appka žádné cookies nepoužívá; přihlašovací token ukládá zašifrovaný přímo v
+        zabezpečeném úložišti telefonu.
       </p>
 
       <h2>8. Zabezpečení</h2>
@@ -238,15 +230,15 @@
         </li>
         <li>Přihlašovací kódy appka neukládá v čitelné podobě, jen jejich kryptografický otisk.</li>
         <li>
-          Fotky appka před uložením kompletně přegeneruje, aby nikdy nenesly skrytá metadata
-          z originálu (viz bod 3.5).
+          Fotky appka před uložením kompletně přegeneruje, aby nikdy nenesly skrytá metadata z
+          originálu (viz bod 3.5).
         </li>
         <li>Přístup appky ke zdrojovému kódu, databázi a serveru má výhradně provozovatel.</li>
       </ul>
       <p>
-        Žádný systém není stoprocentně bezpečný, ale appka je navržená tak, aby v případě
-        úniku dat (např. zálohy databáze) uniklá data sama o sobě neobsahovala čitelné e-maily
-        ani jiné osobní údaje bez šifrovacího klíče, který je uložený odděleně.
+        Žádný systém není stoprocentně bezpečný, ale appka je navržená tak, aby v případě úniku dat
+        (např. zálohy databáze) uniklá data sama o sobě neobsahovala čitelné e-maily ani jiné osobní
+        údaje bez šifrovacího klíče, který je uložený odděleně.
       </p>
 
       <h2>9. Tvá práva</h2>
@@ -254,15 +246,16 @@
       <ul>
         <li><strong>na přístup</strong> — vědět, jaké údaje o tobě appka má,</li>
         <li>
-          <strong>na opravu</strong> — nepřesné údaje profilu si opravíš přímo v appce
-          (Nastavení → Účet),
+          <strong>na opravu</strong> — nepřesné údaje profilu si opravíš přímo v appce (Nastavení →
+          Účet),
         </li>
         <li>
-          <strong>na výmaz</strong> — smazat účet a rozhodnout, co se stane s tvými cenovými
-          záznamy (buď zůstanou jako anonymizovaná statistika bez vazby na tebe, nebo se
-          smažou i ony),
+          <strong>na výmaz</strong> — smazat účet a rozhodnout, co se stane s tvými cenovými záznamy
+          (buď zůstanou jako anonymizovaná statistika bez vazby na tebe, nebo se smažou i ony),
         </li>
-        <li><strong>na přenositelnost</strong> — vyžádat si vlastní data ve strojově čitelné podobě,</li>
+        <li>
+          <strong>na přenositelnost</strong> — vyžádat si vlastní data ve strojově čitelné podobě,
+        </li>
         <li><strong>vznést námitku</strong> proti zpracování založenému na oprávněném zájmu,</li>
         <li>
           <strong>podat stížnost</strong> u
@@ -272,34 +265,32 @@
         </li>
       </ul>
       <p>
-        Samoobslužný export a smazání dat v appce se teprve připravuje. Do té doby si o kterékoli
-        z těchto práv napiš na <a href="mailto:kontakt@kvalitacena.cz">kontakt&#64;kvalitacena.cz</a>
+        Samoobslužný export a smazání dat v appce se teprve připravuje. Do té doby si o kterékoli z
+        těchto práv napiš na <a href="mailto:kontakt@kvalitacena.cz">kontakt&#64;kvalitacena.cz</a>
         — vyřídíme to ručně, obvykle do několika dní.
       </p>
 
       <h2>10. Věk</h2>
       <p>
         Appka je určená lidem starším 15 let (viz
-        <a routerLink="/terms">Podmínky užití</a>). Pokud zjistíme, že appku používá dítě
-        mladší 15 let bez souhlasu zákonného zástupce, účet na žádost zákonného zástupce
-        smažeme.
+        <a routerLink="/terms">Podmínky užití</a>). Pokud zjistíme, že appku používá dítě mladší 15
+        let bez souhlasu zákonného zástupce, účet na žádost zákonného zástupce smažeme.
       </p>
 
       <h2>11. Budoucí strojové zpracování fotek</h2>
       <p>
-        Appka do budoucna plánuje automatizovanou předběžnou kontrolu nahraných fotek kvůli
-        moderaci (např. odhalení zjevně nevhodného obsahu, než ho uvidí člověk). Tohle
-        zpracování poběží na počítači provozovatele, ne přes cloudovou službu třetí strany —
-        fotky by tak neopustily appku o nic víc, než dnes. Tenhle text aktualizujeme, až se to
-        skutečně zapne.
+        Appka do budoucna plánuje automatizovanou předběžnou kontrolu nahraných fotek kvůli moderaci
+        (např. odhalení zjevně nevhodného obsahu, než ho uvidí člověk). Tohle zpracování poběží na
+        počítači provozovatele, ne přes cloudovou službu třetí strany — fotky by tak neopustily
+        appku o nic víc, než dnes. Tenhle text aktualizujeme, až se to skutečně zapne.
       </p>
 
       <h2>12. Změny těchto zásad</h2>
       <p>
-        Zásady se mohou měnit, zejména s tím, jak appka přibývá funkcemi. O podstatné změně
-        (zejména o rozšíření zpracovávaných údajů) budeme přihlášené uživatele informovat
-        e-mailem nebo oznámením v appce s přiměřeným předstihem. Datum aktuálního znění je na
-        začátku tohoto dokumentu.
+        Zásady se mohou měnit, zejména s tím, jak appka přibývá funkcemi. O podstatné změně (zejména
+        o rozšíření zpracovávaných údajů) budeme přihlášené uživatele informovat e-mailem nebo
+        oznámením v appce s přiměřeným předstihem. Datum aktuálního znění je na začátku tohoto
+        dokumentu.
       </p>
 
       <h2>13. Kontakt</h2>
