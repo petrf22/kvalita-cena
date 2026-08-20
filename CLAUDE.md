@@ -208,10 +208,6 @@ v Nastavení, přesunuto sem i s řádkem verze appky), otevřený kód (GNU AGP
 externích odkazů přes `ui/common/ExternalLinks.kt`). Na rozdíl od Podmínek užití/Zásad ochrany
 osobních údajů se text plně překládá do všech pěti jazyků (není to právní text).
 
-**Vizuální identita**: ikona appky (misky vah, `#1677FF`) i favicon/PWA manifest/Android
-launcher z ní odvozené — `docs/branding.md` je zdroj pravdy, geometrie sama žije v
-`tools/icons/generate.py` (`python3 tools/icons/generate.py` po každé úpravě kresby).
-
 **Zpětná vazba** (`docs/datovy-model.md`, „Zpětná vazba"; `docs/nasazeni.md`, „Než pozvat
 první lidi"): jediný first-party kanál pro uzavřenou betu — appka dřív neměla žádný způsob,
 jak od testerů dostat hlášení, jen `mailto:` na dosud nezřízenou schránku.
