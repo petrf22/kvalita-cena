@@ -50,12 +50,18 @@ vývoji to nemá vliv.
 
 Postup:
 
-1. `play.google.com/console` → **Settings → Developer account** — ověřit platnost identity.
-2. **Ověření vývojáře pro Android → Názvy balíčků** — zkontrolovat, co je zaregistrované.
-3. Založit aplikaci s `cz.kvalitacena` — tím se balíček **zaregistruje automaticky** a jméno se
-   zabere; jde to i dřív, než je co nahrát, aplikace zůstane v konceptu.
+1. [x] `play.google.com/console` → **Settings → Developer account** — ověřit platnost identity.
+   Účet `petrf` (ID 8022299090683233755) je ověřený (e-mail, telefon, identita Petr Franta).
+2. [x] **Ověření vývojáře pro Android → Názvy balíčků** — `cz.kvalitacena` je zaregistrovaný,
+   stav **Registrováno**, klíč u něj má stav **Ověřeno** a otisk (`D6:03:9C:24:...:77:0F`)
+   souhlasí s tím, co je zapsané výš u „Podpisový klíč" — žádná kolize identity mezi stroji.
+3. [x] Založit aplikaci s `cz.kvalitacena` — hotovo 2026-08-21, aplikace „Kvalita a cena"
+   (ID 4974901661372614749) je v konzoli jako **Koncept**, čeština, zdarma.
 
 Registrace balíčku aplikaci **nevydává** — jen rezervuje jméno a sváže ho s ověřenou identitou.
+Zbývá store listing (ikona hotová, feature graphic a screenshoty ne), Data safety formulář,
+URL zásad soukromí (čeká na živý `kvalitacena.cz`, `docs/nasazeni.md`), Play App Signing
+(nahrání vlastního klíče — nevratné po prvním uploadu, viz níž) a upload AAB.
 
 ### Ikona pro listing
 
