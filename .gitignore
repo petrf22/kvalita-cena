@@ -65,3 +65,6 @@ __pycache__/
 # --- OS ---
 .DS_Store
 Thumbs.db
+
+# Pojistka proti náhodnému commitu tajemství omylem uloženého do kořene repa (docs/nasazeni.md)
+mail.txt

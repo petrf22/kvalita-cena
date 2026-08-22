@@ -25,16 +25,16 @@ přesunout do `docs/vydani.md` jako historickou poznámku.
 
 Doporučené pořadí prací: rozjet server (sekce 2) proti IP, ne proti doméně, ať se nejpravděpodobnější
 selhání (build appky na serveru, viz sekce 2) neřeší zároveň s laděním DNS a Let's Encrypt limitů;
-teprve pak přepnout DNS a TLS; SMTP dodělat, jakmile je vybraný poskytovatel; datum účinnosti a
-zapnutí bety (sekce 1 a 4) nechat jako poslední krok těsně před první pozvánkou.
+teprve pak přepnout DNS a TLS; SMTP (sekce 3, poskytovatel je už vybraný — Gigaserver) doplnit
+spolu s TLS krokem; datum účinnosti a zapnutí bety (sekce 1 a 4) nechat jako poslední krok těsně
+před první pozvánkou.
 
 ## 1. Nezávislé na poskytovateli (jde udělat kdykoli předem)
 
-- [ ] **Zřídit `kontakt@kvalitacena.cz`** — přesměrování na skutečnou schránku. Bez něj jsou
-  `docs/podminky-uziti.md` a `docs/zasady-ochrany-osobnich-udaju.md` (i odkazy v appce)
-  neplatné — GDPR žádosti a kontaktní e-mail v podmínkách na něj cílí. Adresu teď uvádí i
-  stránka „O aplikaci" (web `features/about`, mobil `ui/about/AboutScreen.kt`), ne jen oba
-  právní dokumenty.
+- [x] **Zřídit `kontakt@kvalitacena.cz`** — hotovo 2026-08-22, schránka u Gigaserveru (tarif
+  Smart), přesměrování na osobní Gmail. Heslo ke schránce je mimo repo (~/.config/kvalitacena),
+  ne v `.env` — používá se jen jednorázově přes webmail/přeposílání, appka na ni sama nepíše.
+  Tahle schránka je teď zároveň SMTP účet pro OTP e-maily, viz sekce 3.
 - [ ] **Doplnit datum účinnosti** v obou dokumentech výš (zatím placeholder
   `[DOPLNIT DATUM ZVEŘEJNĚNÍ]`) — nastavit na den, kdy appka skutečně půjde do provozu (uzavřená
   beta podle plánu), ne dřív.
@@ -45,10 +45,10 @@ zapnutí bety (sekce 1 a 4) nechat jako poslední krok těsně před první pozv
   Uložit **mimo repo i mimo tenhle stroj** (heslo manažer / šifrovaný trezor), stejný režim
   jako podpisový klíč mobilní appky (`docs/vydani.md`). **`EMAIL_HASH_PEPPER` musí být finální
   před prvním reálným účtem** — pozdější změna = nikdo se nepřihlásí (`docs/soukromi.md`).
-- [ ] **Vybrat SMTP poskytovatele pro OTP e-maily** (přihlašovací kódy) — nízkoobjemový provoz,
-  free tier stačí. Nepoužívat vlastní SMTP na VPS (skončí ve spamu). Kandidáti k porovnání:
-  Resend, Postmark, Amazon SES, Mailgun — u všech potřeba: API/SMTP přihlašovací údaje +
-  ověřená odesílací doména.
+- [x] **SMTP pro OTP e-maily: Gigaserver, ne dedikovaný poskytovatel** — rozhodnuto 2026-08-22.
+  Použije se schránka `kontakt@kvalitacena.cz` (sekce výš) jako SMTP účet, `mail.gigaserver.cz`
+  port **587** (STARTTLS). Detaily a past s portem 465 viz sekce 3. Výměna za Resend/Postmark
+  je odložená na „Před Fází 3" níž — dnes odpadá registrace i ověření odesílací domény.
 - [x] **VPS poskytovatel: Hetzner Cloud**, ne Gigaserver (kde appka má doménu i e-mail) — záměrně
   jiný dodavatel, ať jeden výpadek nevezme server, doménu i kontaktní schránku pro GDPR žádosti
   naráz. Nejlevnější spolehlivá varianta s perzistentním diskem (appka fotky drží mimo databázi
@@ -59,7 +59,10 @@ zapnutí bety (sekce 1 a 4) nechat jako poslední krok těsně před první pozv
   nebo ARM CAX11) — ne kvůli běhu appky samotné, ale protože `compose.prod.yaml` staví backend
   i frontend přímo na serveru (Gradle + `ng build`); přidat i **2 GB swap** jako pojistku proti
   OOM při buildu, ať selhání vypadá jako pomalý build, ne jako nesouvisející pád. Založit účet,
-  instanci s KVM + SSD.
+  instanci s KVM + SSD. **Účet zřízený 2026-08-22**, instance zatím ne (sekce 2).
+  **Past:** Hetzner blokuje odchozí porty **25 a 465** na všech cloud serverech (proti zneužití
+  pro spam); odblokování jde žádat podporou až po měsíci provozu a první zaplacené faktuře.
+  Port **587** blokovaný není — proto SMTP níž běží přes něj, ne přes 465 z údajů schránky.
 - [ ] **Vybrat cíl pro offsite zálohu** (jiný poskytovatel než Hetzner výš, ať jeden výpadek
   nevezme obojí) — B2/S3-kompatibilní úložiště s levným cold storage stačí, appka zálohuje jen
   `pg_dump` + adresář `app.media.root`. Hetzner má vlastní Storage Box, ale pro skutečnou
@@ -121,23 +124,42 @@ domény na server (krok 4) — build appky na serveru je nejpravděpodobnější
    **vyzkoušet obnovu** na čistou instanci, postup v `ops/README.md` — u hodinové fakturace
    Hetzneru stojí zkouška pár korun, není důvod ji přeskočit.
 
-## 3. Po výběru SMTP poskytovatele
+## 3. SMTP pro OTP e-maily — Gigaserver (rozhodnuto 2026-08-22)
 
-- [ ] Doplnit do `.env` na serveru: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`.
-- [ ] U poskytovatele ověřit odesílací doménu `kvalitacena.cz` a nastavit **SPF, DKIM, DMARC**
-  (poskytovatel dá přesné DNS záznamy k vložení) — bez nich OTP e-maily končí ve spamu nebo se
-  vůbec nedoručí. **Doména už jeden SPF TXT záznam má** (mail zůstává u Gigaserveru, viz sekce 1
-  výš, ověřeno přes `dig kvalitacena.cz TXT`:
-  `v=spf1 mx a include:smtp-gw.gigaserver.cz ~all`) — nový `include:` se musí přidat do TOHOTO
-  záznamu, ne vložit jako druhý TXT. Dva SPF záznamy na jednom jménu = trvalá
-  chyba SPF vyhodnocení = neprojde žádná pošta, včetně OTP a včetně `kontakt@`. DMARC nastavit
-  zpočátku na `p=none`, ne rovnou `p=reject` — dokud odesílá víc poskytovatelů z jedné domény,
-  přísnější politika by mohla blokovat i legitimní OTP.
+Rozhodnutí: použít rovnou schránku `kontakt@kvalitacena.cz` (sekce 1) jako SMTP účet, ne
+zřizovat dedikovaného poskytovatele (Resend/Postmark/SES). Dvě zjištění, která to udělala
+snazší volbou pro betu než plánovaná registrace u samostatného poskytovatele:
+
+- `application-prod.yml` má `spring.mail.properties.mail.smtp.starttls.enable: true` a
+  `auth: true`, ale ne `ssl.enable` — to je přesně konfigurace pro **port 587**, ne pro
+  SSL port 465 z údajů schránky. Shodou okolností je to zároveň jediný odchozí SMTP port,
+  který **Hetzner neblokuje** (viz past v sekci 1) — 465 by z Hetzneru mlčky nefungoval, i
+  kdyby se v kódu doplnilo `ssl.enable`.
+- SPF na `kvalitacena.cz` už dnes obsahuje Gigaserver (`dig kvalitacena.cz TXT`:
+  `v=spf1 mx a include:smtp-gw.gigaserver.cz ~all`) — **žádná změna DNS není potřeba.**
+
+Cena za jednoduchost: horší doručitelnost ze sdílené IP webhostingu a žádné dodací logy jako
+u dedikovaného poskytovatele. Přijatelné pro desítky osobně pozvaných testerů, ne pro veřejný
+provoz — výměna je naplánovaná do „Před Fází 3" níž.
+
+- [ ] Doplnit do `.env` na serveru:
+  ```
+  SMTP_HOST=mail.gigaserver.cz
+  SMTP_PORT=587
+  SMTP_USERNAME=kontakt@kvalitacena.cz
+  SMTP_PASSWORD=<heslo schránky, viz sekce 1>
+  SMTP_FROM=KvalitaACena <kontakt@kvalitacena.cz>
+  ```
 - [ ] Doplnit `NOMINATIM_USER_AGENT` do `.env` s reálným kontaktem (`kontakt@kvalitacena.cz`) —
   vyžaduje to usage policy OpenStreetMap Nominatim, jinak riziko zablokování IP serveru.
 - [ ] Restartovat appku (`docker compose -f compose.prod.yaml up -d`), ověřit doručení testovacím
   přihlášením na **externí** schránku (Gmail apod., ne `@kvalitacena.cz` — zbytečná komplikace
   při DMARC/loop detekci), a že zpráva skončí v doručené poště, ne ve spamu.
+
+**Past pro budoucí výměnu poskytovatele (Před Fází 3, ne teď):** nový `include:` se musí přidat
+do STÁVAJÍCÍHO SPF TXT záznamu, ne vložit jako druhý. Dva SPF záznamy na jednom jménu = trvalá
+chyba SPF vyhodnocení = neprojde žádná pošta, včetně OTP a včetně `kontakt@`. DMARC při té
+příležitosti nastavit zpočátku na `p=none`, ne rovnou `p=reject`.
 
 **Nouzová berlička, když se ověření domény u SMTP protáhne:** appka bez fungujícího SMTP
 nenastartuje ani nepustí dovnitř nikoho (viz úvodní „Pořadí" výš) — `APP_AUTH_OTP_MAIL_ENABLED
@@ -198,8 +220,8 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   spojené s `core.*` až za běhu, stejný princip jako appka má pro Open Food Facts) —
   samostatná vícedenní architektonická práce, ne krok téhle bety.
 - [x] **Kanál zpětné vazby** — appka dřív neměla žádný způsob, jak od testerů dostat hlášení,
-  jen `mailto:kontakt@kvalitacena.cz` na „O aplikaci" (a ta schránka pořád není zřízená, viz
-  bod 1 výš — pořád nutná jako záložní kanál pro GDPR žádosti, in-app formulář ji nenahrazuje).
+  jen `mailto:kontakt@kvalitacena.cz` na „O aplikaci" (schránka je od 2026-08-22 zřízená,
+  sekce 1 výš — pořád nutná jako záložní kanál pro GDPR žádosti, in-app formulář ji nenahrazuje).
   In-app formulář (`core.feedback`, funguje i bez přihlášení, `docs/datovy-model.md`, „Zpětná
   vazba") na webu i Androidu je hotový, fronta pro provozovatele je čtvrtá záložka na
   `/moderation`. Nic dalšího tu nezbývá zapnout.
@@ -207,6 +229,11 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   a `frontend/public/robots.txt` buď smazat, nebo povolit indexaci (`Disallow:` prázdné) —
   jinak appka po zveřejnění zůstane neviditelná pro vyhledávače a prahy důvěry 0/0/1 by
   fungovaly i pro veřejnost, ne jen pozvané lidi.
+- [ ] **Před Fází 3: vyměnit SMTP Gigaserveru za dedikovaného poskytovatele** (Resend/Postmark/
+  SES/Mailgun, sekce 3) — sdílená IP webhostingu stačí na desítky osobně pozvaných testerů, ne
+  na veřejný provoz s neznámým objemem a bez kontroly nad doručitelností. Tehdy teprve přijde
+  na řadu ověření odesílací domény u nového poskytovatele a sloučení jeho `include:` do
+  stávajícího SPF záznamu (past popsaná v sekci 3 výš).
 - [ ] **Před Fází 3: posílit obranu formuláře zpětné vazby proti spamu.** Dnešní obrana
   (`FeedbackRateLimiter`, `app.feedback.max-per-day-per-ip: 20`) stačí na uzavřenou betu
   s osobně pozvanými lidmi, ale ne na veřejný formulář dostupný komukoli:
