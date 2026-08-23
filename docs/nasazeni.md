@@ -119,10 +119,16 @@ domény na server (krok 4) — build appky na serveru je nejpravděpodobnější
    **Nikdy `docker compose -f compose.prod.yaml down -v`** — v `compose.prod.yaml` nejsou žádné
    externí volumes, smazalo by to certifikáty i celou produkční databázi naráz. Opakované mazání
    `caddy-data` navíc vyčerpá limit Let's Encrypt na 5 identických certifikátů týdně.
-6. [ ] Nastavit cron zálohu — `ops/backup.sh` (`pg_dump` + archiv adresáře médií, cíl z kroku 1
-   výš je zatím jen komentovaný návod v skriptu, doplnit po výběru poskytovatele) a
-   **vyzkoušet obnovu** na čistou instanci, postup v `ops/README.md` — u hodinové fakturace
-   Hetzneru stojí zkouška pár korun, není důvod ji přeskočit.
+6. [x] Nastavit cron zálohu — `ops/backup.sh` (`pg_dump` + archiv adresáře médií; cíl offsite
+   úložiště z kroku 1 výš zůstává jen komentovaný návod v skriptu, doplnit po výběru
+   poskytovatele) a **vyzkoušet obnovu** na čistou instanci, hotovo 2026-08-24 podle
+   `ops/README.md`. Zkouška odhalila a opravila reálný bug: `compose.prod.yaml` nechávalo
+   volume `kvalita-a-cena-media-prod` bez `name:` přepisu, Docker Compose ji tak automaticky
+   prefixoval podle názvu adresáře repa, zatímco `ops/backup.sh` čte holé jméno bez prefixu —
+   zálohy fotek tak byly od nasazení appky prázdné, i když skript hlásil úspěch. Opraveno
+   pojmenováním volume napevno (commit `9a7b338`); po nasazení opravy je nutné
+   `docker compose -f compose.prod.yaml up -d --force-recreate backend`, prosté `up -d`
+   běžící kontejner na novou volume nepřepojí.
 
 ## 3. SMTP pro OTP e-maily — Gigaserver (rozhodnuto 2026-08-22)
 
