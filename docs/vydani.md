@@ -74,9 +74,9 @@ Feature graphic (1024×500) je hotový — `tools/icons/feature-graphic.py` (spu
 s textem, ne ikona), ale sdílí přes import geometrii i barvu (`#1677FF`) z `generate.py`, ať se
 nikdy vizuálně nerozejdou. Výstup: `tools/icons/play-store-feature-graphic.png`.
 
-Listing dál vyžaduje aspoň dva screenshoty telefonu (zatím žádné — appka zatím nikdy neběžela
-jako release build, screenshoty jde pořídit až z emulátoru/zařízení s nainstalovaným APK) a
-krátký/dlouhý popis appky (návrh textů níže, „Texty pro store listing").
+Dva screenshoty jsou hotové — `tools/icons/final-screenshot-1-search.png` a
+`final-screenshot-2-settings.png`, pořízené z debug buildu proti produkčnímu API. Krátký/dlouhý
+popis appky viz „Texty pro store listing" níže.
 
 ### Texty pro store listing
 
