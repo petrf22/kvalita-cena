@@ -67,9 +67,50 @@ URL zásad soukromí (čeká na živý `kvalitacena.cz`, `docs/nasazeni.md`), Pl
 
 Play vyžaduje 512×512 PNG ikonu appky u store listingu (jinou položku než APK ikony samotné —
 ty jde nahrát ze `tools/icons/play-store-icon-512.png`, jde o stejný motiv jako Android launcher
-ikona, viz `docs/branding.md`). Feature graphic (1024×500) pro listing zatím chybí a je mimo
-rozsah `docs/branding.md`. Listing dál vyžaduje aspoň dva screenshoty telefonu (zatím žádné) a
-krátký/dlouhý popis appky.
+ikona, viz `docs/branding.md`).
+
+Feature graphic (1024×500) je hotový — `tools/icons/feature-graphic.py` (spustit
+`python3 tools/icons/feature-graphic.py`), samostatný skript mimo `docs/branding.md` (banner
+s textem, ne ikona), ale sdílí přes import geometrii i barvu (`#1677FF`) z `generate.py`, ať se
+nikdy vizuálně nerozejdou. Výstup: `tools/icons/play-store-feature-graphic.png`.
+
+Listing dál vyžaduje aspoň dva screenshoty telefonu (zatím žádné — appka zatím nikdy neběžela
+jako release build, screenshoty jde pořídit až z emulátoru/zařízení s nainstalovaným APK) a
+krátký/dlouhý popis appky (návrh textů níže, „Texty pro store listing").
+
+### Texty pro store listing
+
+Návrh, k doplnění/úpravě přímo ve formuláři Play Console — drží se jen toho, co appka v etapě 1
+skutečně umí (`docs/stav-implementace.md`), nic nepřislibuje dopředu (recenze, lokální
+dodavatelé apod. ještě nejsou).
+
+**Krátký popis** (limit 80 znaků — ověřit počet přímo v Play Console, český text s diakritikou
+se počítá znak za znak, ne byte):
+```
+Sleduj ceny v obchodech okolo tebe – komunitně, bez sledování uživatelů.
+```
+
+**Dlouhý popis** (limit 4000 znaků):
+```
+Kvalita a cena je komunitní appka pro sledování cen běžného zboží v obchodech.
+
+Naskenuj čárový kód na cenovce, zapiš cenu a obchod — appka z toho postaví přehled aktuální
+ceny, vývoj v čase a srovnání napříč obchody ve tvém okolí. Vidíš, jestli je zboží dnes levnější
+nebo dražší než obvykle, a kde ho v okolí seženeš nejlevněji.
+
+Data appky tvoří lidé, kteří appku používají — čím víc vás bude zapisovat ceny, tím přesnější
+a aktuálnější přehled appka nabídne. Appka počítá s tím, že přispěvatelé dělají chyby i omylem,
+proto ceny porovnává napříč víc zápisy, ne jen podle jednoho posledního.
+
+Soukromí bereme vážně: appka uživatele mezi sebou nesleduje, polohu zpracovává jen jako
+zaokrouhlenou obec/město, ne přesné souřadnice, a osobní údaje po čase pseudonymizuje.
+Komunita je záměrně nastavená pozitivně — appka nenabízí veřejné negativní hodnocení lidí.
+
+Appka je zdarma a bez reklam.
+```
+
+Kontaktní e-mail pro listing (Play vyžaduje veřejný kontakt, ne jen v `docs/podminky-uziti.md`):
+`kontakt@kvalitacena.cz`.
 
 ### Nahrávaný formát a App access
 
