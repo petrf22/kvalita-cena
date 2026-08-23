@@ -75,8 +75,21 @@ services:
     depends_on:
       - backend
 
+# `name:` u kvalita-a-cena-media-prod napevno vypíná automatický prefix podle jména Compose
+# projektu (odvozený z názvu adresáře, viz komentář nahoře) — bez něj `ops/backup.sh` (holé
+# jméno v proměnné MEDIA_VOLUME) čte/zálohuje JINOU volume, než do které appka skutečně
+# zapisuje. Objeveno 2026-08-24 při zkoušce obnovy: `docker volume ls` ukázal dvojici
+# `kvalita-a-cena-media-prod` (prázdná, omylem založená bez prefixu diagnostickým příkazem) a
+# `kvalita-cena_kvalita-a-cena-media-prod` (skutečná, s nahranou fotkou) vedle sebe — zálohy
+# fotek tak byly od začátku prázdné, i když skript "úspěšně" doběhl. Postgres/Caddy volumes níž
+# mají teoreticky stejné riziko (jiný název adresáře repa = jiný prefix = appka by "začala
+# nanovo" s prázdnou volume), ale nic je dnes nečte podle holého jména jako `ops/backup.sh`
+# médium — proto zůstávají bez `name:`, ať se nemusí migrovat běžící produkční databáze a TLS
+# certifikáty jen kvůli teoretickému riziku. Pokud by na ně někdy vzniklo podobné venkovní
+# odkazování, patří sem stejná oprava.
 volumes:
   kvalita-a-cena-postgres-data-prod:
   kvalita-a-cena-media-prod:
+    name: kvalita-a-cena-media-prod
   caddy-data:
   caddy-config:
