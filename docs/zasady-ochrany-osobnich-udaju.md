@@ -1,6 +1,6 @@
 # Zásady ochrany osobních údajů
 
-Platí od [DOPLNIT DATUM ZVEŘEJNĚNÍ]. Toto je aktuálně platné znění; předchozí verze viz
+Platí od 24. srpna 2026. Toto je aktuálně platné znění; předchozí verze viz
 historie tohoto souboru.
 
 ## 1. Kdo je správce

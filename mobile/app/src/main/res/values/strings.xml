@@ -190,7 +190,7 @@
     <string name="terms_title">Podmínky užití</string>
     <string name="privacy_title">Zásady ochrany osobních údajů</string>
     <string name="legal_czech_only_notice">Tento dokument je zatím k dispozici jen v češtině.</string>
-    <string name="legal_effective_date" translatable="false">Platí od [DOPLNIT DATUM ZVEŘEJNĚNÍ].</string>
+    <string name="legal_effective_date" translatable="false">Platí od 24. srpna 2026.</string>
 
     <string-array name="terms_headings" translatable="false">
         <item>1. Kdo podmínky vydává</item>

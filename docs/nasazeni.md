@@ -35,9 +35,10 @@ před první pozvánkou.
   Smart), přesměrování na osobní Gmail. Heslo ke schránce je mimo repo (~/.config/kvalitacena),
   ne v `.env` — používá se jen jednorázově přes webmail/přeposílání, appka na ni sama nepíše.
   Tahle schránka je teď zároveň SMTP účet pro OTP e-maily, viz sekce 3.
-- [ ] **Doplnit datum účinnosti** v obou dokumentech výš (zatím placeholder
-  `[DOPLNIT DATUM ZVEŘEJNĚNÍ]`) — nastavit na den, kdy appka skutečně půjde do provozu (uzavřená
-  beta podle plánu), ne dřív.
+- [x] **Doplnit datum účinnosti** — hotovo 2026-08-24, „Platí od 24. srpna 2026." na všech pěti
+  místech (`docs/podminky-uziti.md`, `docs/zasady-ochrany-osobnich-udaju.md`,
+  `frontend/.../terms-page.html`, `frontend/.../privacy-page.html`,
+  `mobile/.../values/strings.xml`) — týž den, kdy appka reálně jde do uzavřené bety.
 - [ ] **Vygenerovat produkční tajemství** — nezávisle na hostingu, dá se udělat kdykoli:
   ```
   openssl rand -base64 32   # spustit 3× zvlášť pro JWT_SECRET / EMAIL_HASH_PEPPER / EMAIL_ENC_KEY
