@@ -88,6 +88,18 @@ class ProfileViewModel(
   var emailChangeSuccess by mutableStateOf(false)
     private set
 
+  // --- Výmaz účtu (samostatný modal/tok) ---
+  var deleteAccountVisible by mutableStateOf(false)
+    private set
+  var deleteAccountStep by mutableStateOf("confirm")
+    private set
+  var deleteAccountCode by mutableStateOf("")
+  private var deleteAccountChallengeUid: String? = null
+  var deleteAccountLoading by mutableStateOf(false)
+    private set
+  var deleteAccountError by mutableStateOf<UiText?>(null)
+    private set
+
   init {
     load()
   }
@@ -252,6 +264,72 @@ class ProfileViewModel(
         emailChangeLoading = false
       }
     }
+  }
+
+  // --- Výmaz účtu ---
+
+  /**
+   * Znovuotevření modalu NESMÍ zahodit už vyžádaný (a třeba platný) kód — jinak by druhý klik
+   * na "Smazat účet" po prvním úspěšném odeslání kódu vynutil nový požadavek, který kvůli
+   * 60s cooldownu (`OtpRateLimiter`) skoro jistě selže, a uživatel by se ke kroku se zadáním
+   * kódu vůbec nedostal (webový protějšek: profile-page.ts, stejná past). Reset se proto dělá
+   * jen tehdy, když ještě žádná výzva neběží.
+   */
+  fun openDeleteAccountModal() {
+    deleteAccountError = null
+    if (deleteAccountChallengeUid == null) {
+      deleteAccountCode = ""
+      deleteAccountStep = "confirm"
+    }
+    deleteAccountVisible = true
+  }
+
+  fun closeDeleteAccountModal() {
+    deleteAccountVisible = false
+  }
+
+  fun requestDeleteAccountCode() {
+    deleteAccountLoading = true
+    deleteAccountError = null
+    viewModelScope.launch {
+      try {
+        val response = authRepository.requestAccountDelete()
+        deleteAccountChallengeUid = response.challengeUid
+        deleteAccountStep = "code"
+      } catch (e: Exception) {
+        deleteAccountError = e.toUiText()
+      } finally {
+        deleteAccountLoading = false
+      }
+    }
+  }
+
+  fun confirmDeleteAccountCode(onDeleted: () -> Unit) {
+    val challengeUid = deleteAccountChallengeUid ?: return
+    val code = deleteAccountCode.trim()
+    if (code.isBlank()) return
+    deleteAccountLoading = true
+    deleteAccountError = null
+    viewModelScope.launch {
+      try {
+        authRepository.confirmAccountDelete(challengeUid, code)
+        deleteAccountVisible = false
+        onDeleted()
+      } catch (e: Exception) {
+        deleteAccountError = e.toUiText()
+      } finally {
+        deleteAccountLoading = false
+      }
+    }
+  }
+
+  /** Únikový poklop pro vypršelý/vyčerpaný kód — jinak by uživatel uvízl na kroku se
+   *  zadáním kódu bez šance vyžádat si nový (viz [openDeleteAccountModal]). */
+  fun restartDeleteAccountRequest() {
+    deleteAccountChallengeUid = null
+    deleteAccountCode = ""
+    deleteAccountStep = "confirm"
+    deleteAccountError = null
   }
 }
 

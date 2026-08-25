@@ -321,6 +321,11 @@ data class EmailChangeRequestBody(val email: String)
 @Serializable
 data class EmailChangeConfirmBody(val challengeUid: String, val code: String, val email: String)
 
+// --- REST DTO pro výmaz účtu (/api/me/delete/*, ne GraphQL) — docs/soukromi.md, "GDPR" ---
+
+@Serializable
+data class AccountDeleteConfirmBody(val challengeUid: String, val code: String)
+
 /**
  * Jeden řádek formuláře: druh ceny + částka. `priceKind` schválně BEZ Kotlin defaultu —
  * `encodeDefaults = false` (kotlinx.serialization výchozí, `GraphQlClient.json` ho nemění) by

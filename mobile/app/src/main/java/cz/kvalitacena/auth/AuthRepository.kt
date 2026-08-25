@@ -1,9 +1,11 @@
 package cz.kvalitacena.auth
 
 import android.content.Context
+import cz.kvalitacena.network.AccountDeleteConfirmBody
 import cz.kvalitacena.network.ApiConfig
 import cz.kvalitacena.network.EmailChangeConfirmBody
 import cz.kvalitacena.network.EmailChangeRequestBody
+import cz.kvalitacena.network.HttpAppException
 import cz.kvalitacena.network.OtpRequestBody
 import cz.kvalitacena.network.OtpRequestResponse
 import cz.kvalitacena.network.OtpVerifyBody
@@ -15,12 +17,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 
 /**
  * Passwordless auth (e-mail → OTP kód → token) — mobilní protějšek k
@@ -176,6 +180,59 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
       }
       refresh()
     }
+
+  /** Výmaz účtu (docs/soukromi.md, "GDPR") — dvoukrokový OTP tok jako změna e-mailu, jen na
+   *  už vlastněnou adresu ({@code AccountController.java}). Nikdy nenabízí volbu, co se stane
+   *  s cenovými zápisy — appka je vždy jen anonymizuje, nikdy skutečně nemaže. */
+  suspend fun requestAccountDelete(): OtpRequestResponse = withContext(Dispatchers.IO) {
+    val builder = Request.Builder()
+      .url("${ApiConfig.BASE_URL}/api/me/delete/request")
+      .header("X-Client-Kind", "ANDROID")
+      .post("".toRequestBody(jsonMediaType))
+    _accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
+
+    client.newCall(builder.build()).execute().use { response ->
+      if (!response.isSuccessful) throw errorFor(response, "Odeslání kódu selhalo")
+      json.decodeFromString<OtpRequestResponse>(response.body!!.string())
+    }
+  }
+
+  /** Účet po úspěchu na serveru zaniká, appka proto rovnou zahodí lokální token stejně jako {@link logout}. */
+  suspend fun confirmAccountDelete(challengeUid: String, code: String): Unit = withContext(Dispatchers.IO) {
+    val body = json.encodeToString(AccountDeleteConfirmBody(challengeUid, code)).toRequestBody(jsonMediaType)
+    val builder = Request.Builder()
+      .url("${ApiConfig.BASE_URL}/api/me/delete/confirm")
+      .header("X-Client-Kind", "ANDROID")
+      .post(body)
+    _accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
+
+    client.newCall(builder.build()).execute().use { response ->
+      if (!response.isSuccessful) throw errorFor(response, "Smazání účtu selhalo")
+    }
+    _accessToken.value = null
+    tokenStore.clear()
+  }
+
+  /** RFC 7807 `ProblemDetail` tvar — jen pole, která appka umí zobrazit (viz backend `GlobalExceptionHandler`). */
+  @Serializable
+  private data class ProblemDetailBody(val detail: String? = null, val code: String? = null)
+
+  /**
+   * Rozbalí `ProblemDetail` tělo do [HttpAppException] se skutečnou lokalizovanou hláškou —
+   * stejný princip jako `MediaClient.errorFor`, jen tenhle soubor dřív REST chyby (na rozdíl
+   * od GraphQL) zahazoval úplně a ukazoval jen obecný text s HTTP kódem (viz web
+   * `shared/error-message.ts`, stejná mezera do nedávna).
+   */
+  private fun errorFor(response: Response, fallbackAction: String): Exception {
+    val bodyString = response.body?.string().orEmpty()
+    val problem = runCatching { json.decodeFromString(ProblemDetailBody.serializer(), bodyString) }.getOrNull()
+    val detail = problem?.detail
+    return if (!detail.isNullOrBlank()) {
+      HttpAppException(problem.code, detail)
+    } else {
+      TransportException("$fallbackAction (${response.code})")
+    }
+  }
 
   private fun applyToken(token: TokenResponse) {
     _accessToken.value = token.accessToken

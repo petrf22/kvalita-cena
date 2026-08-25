@@ -101,6 +101,16 @@
     <string name="profile_email_change_success">E-mail logowania został zmieniony.</string>
     <string name="profile_email_change_request_failed">Nie udało się wysłać kodu. Spróbuj ponownie za chwilę.</string>
     <string name="profile_email_change_confirm_failed">Kod jest nieprawidłowy lub wygasł. Spróbuj ponownie.</string>
+    <string name="profile_delete_account_title">Usuń konto</string>
+    <string name="profile_delete_account_open_button">Usuń konto</string>
+    <string name="profile_delete_account_hint">Appka pozwala trwale usunąć konto.</string>
+    <string name="profile_delete_account_irreversible">To nieodwracalna decyzja.</string>
+    <string name="profile_delete_account_anonymize_explanation">Twoje zapisy cen zostaną jako zanonimizowana statystyka, bez powiązania z Tobą — appka ich nie usuwa, to wspólne dane społeczności, nie Twoje dane osobowe.</string>
+    <string name="profile_delete_account_send_code">Wyślij kod weryfikacyjny</string>
+    <string name="profile_delete_account_code_label">Kod z e-maila</string>
+    <string name="profile_delete_account_code_hint">Wysłaliśmy kod na Twój adres e-mail logowania.</string>
+    <string name="profile_delete_account_confirm">Trwale usuń konto</string>
+    <string name="profile_delete_account_request_new_code">Wyślij nowy kod</string>
 
     <string name="scan_camera_permission_hint">Do skanowania kodów kreskowych aplikacja potrzebuje dostępu do aparatu.</string>
 

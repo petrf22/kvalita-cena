@@ -101,6 +101,16 @@
     <string name="profile_email_change_success">Sign-in email changed.</string>
     <string name="profile_email_change_request_failed">Couldn\'t send the code. Please try again shortly.</string>
     <string name="profile_email_change_confirm_failed">The code is invalid or has expired. Please try again.</string>
+    <string name="profile_delete_account_title">Delete account</string>
+    <string name="profile_delete_account_open_button">Delete account</string>
+    <string name="profile_delete_account_hint">You can permanently delete your account.</string>
+    <string name="profile_delete_account_irreversible">This is an irreversible decision.</string>
+    <string name="profile_delete_account_anonymize_explanation">Your submitted prices stay as anonymized statistics, unlinked from you — the app doesn\'t delete them, since they\'re shared community data, not your personal data.</string>
+    <string name="profile_delete_account_send_code">Send verification code</string>
+    <string name="profile_delete_account_code_label">Code from the email</string>
+    <string name="profile_delete_account_code_hint">We sent a code to your sign-in email.</string>
+    <string name="profile_delete_account_confirm">Permanently delete account</string>
+    <string name="profile_delete_account_request_new_code">Send a new code</string>
 
     <string name="scan_camera_permission_hint">To scan barcodes, the app needs access to the camera.</string>
 

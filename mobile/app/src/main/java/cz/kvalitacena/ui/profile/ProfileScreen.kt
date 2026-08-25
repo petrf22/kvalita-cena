@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -277,6 +279,26 @@ fun ProfileScreen(onDone: () -> Unit) {
       }
     }
     Gap()
+
+    HorizontalDivider()
+    Gap()
+    Text(stringResource(R.string.profile_delete_account_title), style = MaterialTheme.typography.titleMedium)
+    Gap()
+    Text(
+      stringResource(R.string.profile_delete_account_hint),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Gap()
+    OutlinedButton(
+      onClick = { viewModel.openDeleteAccountModal() },
+      colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+      border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+    ) {
+      Text(stringResource(R.string.profile_delete_account_open_button))
+    }
+    Gap()
+
     OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
       Text(stringResource(R.string.common_back))
     }
@@ -284,6 +306,9 @@ fun ProfileScreen(onDone: () -> Unit) {
 
   if (viewModel.emailChangeVisible) {
     EmailChangeDialog(viewModel)
+  }
+  if (viewModel.deleteAccountVisible) {
+    DeleteAccountDialog(viewModel, onDeleted = onDone)
   }
 }
 
@@ -356,6 +381,72 @@ private fun EmailChangeDialog(viewModel: ProfileViewModel) {
       if (!viewModel.emailChangeSuccess) {
         TextButton(onClick = { viewModel.closeEmailChangeModal() }) { Text(stringResource(R.string.common_cancel)) }
       }
+    },
+  )
+}
+
+/** Nevratné, bez volby režimu (docs/soukromi.md, "GDPR") — appka cenové zápisy vždy jen
+ *  anonymizuje, nikdy nemaže, takže tu na rozdíl od [EmailChangeDialog] není žádný přepínač. */
+@Composable
+private fun DeleteAccountDialog(viewModel: ProfileViewModel, onDeleted: () -> Unit) {
+  AlertDialog(
+    onDismissRequest = { viewModel.closeDeleteAccountModal() },
+    title = { Text(stringResource(R.string.profile_delete_account_title)) },
+    text = {
+      Column {
+        viewModel.deleteAccountError?.let {
+          Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+          Gap()
+        }
+        if (viewModel.deleteAccountStep == "confirm") {
+          Text(
+            stringResource(R.string.profile_delete_account_irreversible),
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodyMedium,
+          )
+          Gap()
+          Text(
+            stringResource(R.string.profile_delete_account_anonymize_explanation),
+            style = MaterialTheme.typography.bodySmall,
+          )
+        } else {
+          Text(stringResource(R.string.profile_delete_account_code_hint))
+          Gap()
+          SingleLineTextField(
+            value = viewModel.deleteAccountCode,
+            onValueChange = { viewModel.deleteAccountCode = it },
+            label = stringResource(R.string.profile_delete_account_code_label),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth(),
+          )
+          Gap()
+          TextButton(onClick = { viewModel.restartDeleteAccountRequest() }) {
+            Text(stringResource(R.string.profile_delete_account_request_new_code))
+          }
+        }
+      }
+    },
+    confirmButton = {
+      if (viewModel.deleteAccountStep == "confirm") {
+        TextButton(
+          onClick = { viewModel.requestDeleteAccountCode() },
+          enabled = !viewModel.deleteAccountLoading,
+        ) {
+          if (viewModel.deleteAccountLoading) CircularProgressIndicator(modifier = Modifier.size(18.dp))
+          else Text(stringResource(R.string.profile_delete_account_send_code))
+        }
+      } else {
+        TextButton(
+          onClick = { viewModel.confirmDeleteAccountCode(onDeleted) },
+          enabled = viewModel.deleteAccountCode.isNotBlank() && !viewModel.deleteAccountLoading,
+        ) {
+          if (viewModel.deleteAccountLoading) CircularProgressIndicator(modifier = Modifier.size(18.dp))
+          else Text(stringResource(R.string.profile_delete_account_confirm))
+        }
+      }
+    },
+    dismissButton = {
+      TextButton(onClick = { viewModel.closeDeleteAccountModal() }) { Text(stringResource(R.string.common_cancel)) }
     },
   )
 }

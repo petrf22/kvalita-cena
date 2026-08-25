@@ -101,6 +101,16 @@
     <string name="profile_email_change_success">Prihlasovací e-mail bol zmenený.</string>
     <string name="profile_email_change_request_failed">Nepodarilo sa odoslať kód. Skús to prosím znova za chvíľu.</string>
     <string name="profile_email_change_confirm_failed">Kód je neplatný alebo vypršal. Skús to prosím znova.</string>
+    <string name="profile_delete_account_title">Zmazať účet</string>
+    <string name="profile_delete_account_open_button">Zmazať účet</string>
+    <string name="profile_delete_account_hint">Appka umožňuje účet natrvalo zmazať.</string>
+    <string name="profile_delete_account_irreversible">Toto je nevratné rozhodnutie.</string>
+    <string name="profile_delete_account_anonymize_explanation">Tvoje cenové záznamy zostanú ako anonymizovaná štatistika bez väzby na teba — appka ich nemaže, ide o zdieľané komunitné dáta, nie o tvoj osobný údaj.</string>
+    <string name="profile_delete_account_send_code">Poslať overovací kód</string>
+    <string name="profile_delete_account_code_label">Kód z e-mailu</string>
+    <string name="profile_delete_account_code_hint">Kód sme poslali na tvoj prihlasovací e-mail.</string>
+    <string name="profile_delete_account_confirm">Nenávratne zmazať účet</string>
+    <string name="profile_delete_account_request_new_code">Poslať nový kód</string>
 
     <string name="scan_camera_permission_hint">Na skenovanie čiarových kódov appka potrebuje prístup ku kamere.</string>
 

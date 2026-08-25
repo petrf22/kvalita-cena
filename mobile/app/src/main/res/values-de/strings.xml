@@ -101,6 +101,16 @@
     <string name="profile_email_change_success">Anmelde-E-Mail geändert.</string>
     <string name="profile_email_change_request_failed">Der Code konnte nicht gesendet werden. Bitte versuch es in Kürze erneut.</string>
     <string name="profile_email_change_confirm_failed">Der Code ist ungültig oder abgelaufen. Bitte versuch es erneut.</string>
+    <string name="profile_delete_account_title">Konto löschen</string>
+    <string name="profile_delete_account_open_button">Konto löschen</string>
+    <string name="profile_delete_account_hint">Du kannst dein Konto dauerhaft löschen.</string>
+    <string name="profile_delete_account_irreversible">Dies ist eine unwiderrufliche Entscheidung.</string>
+    <string name="profile_delete_account_anonymize_explanation">Deine erfassten Preise bleiben als anonymisierte Statistik ohne Bezug zu dir erhalten — die App löscht sie nicht, da es sich um gemeinsame Community-Daten handelt, nicht um deine personenbezogenen Daten.</string>
+    <string name="profile_delete_account_send_code">Bestätigungscode senden</string>
+    <string name="profile_delete_account_code_label">Code aus der E-Mail</string>
+    <string name="profile_delete_account_code_hint">Wir haben einen Code an deine Anmelde-E-Mail-Adresse gesendet.</string>
+    <string name="profile_delete_account_confirm">Konto endgültig löschen</string>
+    <string name="profile_delete_account_request_new_code">Neuen Code senden</string>
 
     <string name="scan_camera_permission_hint">Zum Scannen von Strichcodes benötigt die App Zugriff auf die Kamera.</string>
 
