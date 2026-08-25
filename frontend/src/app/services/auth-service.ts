@@ -1,7 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, map, of, tap } from 'rxjs';
-import { EmailChangeRequestResponse, OtpRequestResponse, TokenResponse } from '../models/auth';
+import {
+  AccountDeleteRequestResponse,
+  EmailChangeRequestResponse,
+  OtpRequestResponse,
+  TokenResponse,
+} from '../models/auth';
 
 /**
  * Passwordless přihlášení (e-mail → OTP kód → token) — viz docs/soukromi.md v backendu.
@@ -90,5 +95,19 @@ export class AuthService {
       code,
       email: newEmail,
     });
+  }
+
+  /**
+   * Výmaz účtu (docs/zasady-ochrany-osobnich-udaju.md, "Tvá práva") — dvoukrokový OTP tok jako
+   * změna e-mailu, jen na už vlastněnou adresu ({@code AccountController.java}).
+   */
+  requestAccountDelete(): Observable<AccountDeleteRequestResponse> {
+    return this.http.post<AccountDeleteRequestResponse>('/api/me/delete/request', {});
+  }
+
+  confirmAccountDelete(challengeUid: string, code: string): Observable<void> {
+    return this.http
+      .post<void>('/api/me/delete/confirm', { challengeUid, code })
+      .pipe(tap(() => this.accessTokenSignal.set(null)));
   }
 }

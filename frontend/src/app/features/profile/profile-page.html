@@ -247,6 +247,14 @@
           </nz-list-item>
         </nz-list>
       </nz-card>
+
+      <nz-card [nzTitle]="t('profile.deleteAccount.title')" class="section-card">
+        <p class="hint">{{ t('profile.deleteAccount.hint') }}</p>
+        <button nz-button nzDanger type="button" (click)="openDeleteModal()">
+          <span nz-icon nzType="delete"></span>
+          {{ t('profile.deleteAccount.openButton') }}
+        </button>
+      </nz-card>
     }
   </div>
 
@@ -308,6 +316,56 @@
             </button>
           </form>
         }
+      }
+    </ng-container>
+  </nz-modal>
+
+  <nz-modal
+    [nzVisible]="deleteVisible()"
+    [nzTitle]="t('profile.deleteAccount.title')"
+    [nzFooter]="null"
+    (nzOnCancel)="closeDeleteModal()"
+  >
+    <ng-container *nzModalContent>
+      @if (deleteError()) {
+        <nz-alert nzType="error" [nzMessage]="deleteError()" nzShowIcon class="section-alert" />
+      }
+      @if (deleteStep() === 'confirm') {
+        <nz-alert
+          nzType="warning"
+          [nzMessage]="t('profile.deleteAccount.irreversible')"
+          nzShowIcon
+          class="section-alert"
+        />
+        <p class="hint">{{ t('profile.deleteAccount.anonymizeExplanation') }}</p>
+        <form nz-form nzLayout="vertical" (ngSubmit)="requestDeleteCode()">
+          <button nz-button nzType="primary" nzDanger [nzLoading]="deleteLoading()" type="submit">
+            {{ t('profile.deleteAccount.sendCode') }}
+          </button>
+        </form>
+      } @else {
+        <form nz-form nzLayout="vertical" (ngSubmit)="confirmDeleteCode()">
+          <p class="hint">{{ t('profile.deleteAccount.codeHint') }}</p>
+          <nz-form-item>
+            <nz-form-label>{{ t('profile.deleteAccount.codeLabel') }}</nz-form-label>
+            <nz-form-control>
+              <input
+                nz-input
+                inputmode="numeric"
+                name="deleteCode"
+                [ngModel]="deleteCode()"
+                (ngModelChange)="deleteCode.set($event)"
+                required
+              />
+            </nz-form-control>
+          </nz-form-item>
+          <button nz-button nzType="primary" nzDanger [nzLoading]="deleteLoading()" type="submit">
+            {{ t('profile.deleteAccount.confirm') }}
+          </button>
+          <button nz-button nzType="link" type="button" (click)="restartDeleteRequest()">
+            {{ t('profile.deleteAccount.requestNewCode') }}
+          </button>
+        </form>
       }
     </ng-container>
   </nz-modal>

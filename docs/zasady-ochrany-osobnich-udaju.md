@@ -178,16 +178,17 @@ Podle GDPR máš právo:
 
 - **na přístup** — vědět, jaké údaje o tobě appka má,
 - **na opravu** — nepřesné údaje profilu si opravíš přímo v appce (Nastavení → Účet),
-- **na výmaz** — smazat účet a rozhodnout, co se stane s tvými cenovými záznamy (buď
-  zůstanou jako anonymizovaná statistika bez vazby na tebe, nebo se smažou i ony),
+- **na výmaz** — smazat účet přímo v appce (Účet → Profil → Smazat účet, ověřeno kódem
+  z e-mailu); tvoje cenové záznamy přitom zůstanou jako anonymizovaná statistika bez vazby na
+  tebe — appka je nemaže, jde o sdílená komunitní data, ne o tvůj osobní údaj,
 - **na přenositelnost** — vyžádat si vlastní data ve strojově čitelné podobě,
 - **vznést námitku** proti zpracování založenému na oprávněném zájmu,
 - **podat stížnost** u Úřadu pro ochranu osobních údajů (www.uoou.cz), pokud máš pocit, že
   appka s tvými údaji nezachází správně.
 
-Samoobslužný export a smazání dat v appce se teprve připravuje. Do té doby si o kterékoli
-z těchto práv napiš na **kontakt@kvalitacena.cz** — vyřídíme to ručně, obvykle do několika
-dní.
+Samoobslužný export dat v appce se teprve připravuje. Do té doby (i pro přístup nebo opravu,
+kterou appka sama nenabízí) si napiš na **kontakt@kvalitacena.cz** — vyřídíme to ručně, obvykle
+do několika dní.
 
 ## 10. Věk
 

@@ -17,8 +17,10 @@ X ← X · 0.5^((t_now − t_prev) / H) + Δ
 ```
 
 kde `H` je poločas rozpadu. Výpočet je O(1) a nepotřebuje log událostí — což je to, co
-umožňuje po 180 dnech smazat vazbu `price_observation.submitter_id` na uživatele (viz
-`soukromi.md`), aniž by se reputace rozbila. Soukromí a výkon se tu shodují.
+umožňuje po 180 dnech (nebo při výmazu účtu, `soukromi.md`, „GDPR") smazat vazbu
+`price_observation.submitter_id` na uživatele, aniž by se reputace rozbila. Soukromí a výkon
+se tu shodují. Váhu `L` to nemění — je snapshotovaná do `price_observation.submitter_kind`
+při zápisu ceny, ne odvozená z toho, jestli `submitter_id` pořád ukazuje na živý účet.
 
 ```
 A = (agree_w + 4) / (agree_w + disagree_w + 8)          přesnost, Bayesovské vyhlazení, start 0,5

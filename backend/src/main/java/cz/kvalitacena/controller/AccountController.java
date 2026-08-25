@@ -54,7 +54,7 @@ public class AccountController {
   public ResponseEntity<Void> confirmDelete(@Valid @RequestBody AccountDeleteConfirmRequest request,
       Authentication authentication) {
     AppUser user = requireCurrentUser(authentication);
-    accountService.confirmDelete(user, request.challengeUid(), request.code(), request.mode());
+    accountService.confirmDelete(user, request.challengeUid(), request.code());
     return ResponseEntity.noContent().build();
   }
 

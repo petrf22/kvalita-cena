@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoService, provideTranslocoScope } from '@jsverse/transloco';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
@@ -79,6 +79,7 @@ export class ProfilePage {
   private readonly mediaService = inject(MediaService);
   protected readonly auth = inject(AuthService);
   private readonly transloco = inject(TranslocoService);
+  private readonly router = inject(Router);
 
   protected readonly ProfileVisibility = ProfileVisibility;
   protected readonly ProfileField = ProfileField;
@@ -115,6 +116,14 @@ export class ProfilePage {
   protected readonly emailChangeLoading = signal(false);
   protected readonly emailChangeError = signal<string | null>(null);
   protected readonly emailChangeSuccess = signal(false);
+
+  // --- Výmaz účtu (samostatný modal/tok) ---
+  protected readonly deleteVisible = signal(false);
+  protected readonly deleteStep = signal<'confirm' | 'code'>('confirm');
+  protected readonly deleteCode = signal('');
+  protected readonly deleteChallengeUid = signal<string | null>(null);
+  protected readonly deleteLoading = signal(false);
+  protected readonly deleteError = signal<string | null>(null);
 
   constructor() {
     this.load();
@@ -321,4 +330,70 @@ export class ProfilePage {
   protected readonly visibilityIsAnonymous = computed(
     () => this.visibility() === ProfileVisibility.Anonymous,
   );
+
+  // --- Výmaz účtu ---
+
+  /**
+   * Znovuotevření modalu NESMÍ zahodit už vyžádaný (a třeba platný) kód — jinak by druhý klik
+   * na "Smazat účet" po prvním úspěšném odeslání kódu vynutil nový požadavek, který kvůli
+   * 60s cooldownu (`OtpRateLimiter`) skoro jistě selže, a uživatel by se ke kroku se zadáním
+   * kódu vůbec nedostal. Reset se proto dělá jen tehdy, když ještě žádná výzva neběží.
+   */
+  openDeleteModal(): void {
+    this.deleteError.set(null);
+    if (!this.deleteChallengeUid()) {
+      this.deleteCode.set('');
+      this.deleteStep.set('confirm');
+    }
+    this.deleteVisible.set(true);
+  }
+
+  closeDeleteModal(): void {
+    this.deleteVisible.set(false);
+  }
+
+  requestDeleteCode(): void {
+    this.deleteLoading.set(true);
+    this.deleteError.set(null);
+    this.auth.requestAccountDelete().subscribe({
+      next: (response) => {
+        this.deleteLoading.set(false);
+        this.deleteChallengeUid.set(response.challengeUid);
+        this.deleteStep.set('code');
+      },
+      error: (err) => {
+        this.deleteLoading.set(false);
+        this.deleteError.set(translateError(err, this.transloco));
+      },
+    });
+  }
+
+  confirmDeleteCode(): void {
+    const challengeUid = this.deleteChallengeUid();
+    const code = this.deleteCode().trim();
+    if (!challengeUid || !code) return;
+
+    this.deleteLoading.set(true);
+    this.deleteError.set(null);
+    this.auth.confirmAccountDelete(challengeUid, code).subscribe({
+      next: () => {
+        this.deleteLoading.set(false);
+        this.deleteVisible.set(false);
+        void this.router.navigate(['/']);
+      },
+      error: (err) => {
+        this.deleteLoading.set(false);
+        this.deleteError.set(translateError(err, this.transloco));
+      },
+    });
+  }
+
+  /** Únikový poklop pro vypršelý/vyčerpaný kód — jinak by uživatel uvízl na kroku se
+   *  zadáním kódu bez šance vyžádat si nový (viz {@link openDeleteModal}). */
+  restartDeleteRequest(): void {
+    this.deleteChallengeUid.set(null);
+    this.deleteCode.set('');
+    this.deleteStep.set('confirm');
+    this.deleteError.set(null);
+  }
 }

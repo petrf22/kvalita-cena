@@ -21,6 +21,9 @@ export interface TokenResponse {
  */
 export type EmailChangeRequestResponse = OtpRequestResponse;
 
+/** REST DTO pro výmaz účtu (/api/me/delete/*, ne GraphQL) — docs/soukromi.md, "GDPR". */
+export type AccountDeleteRequestResponse = OtpRequestResponse;
+
 /** Veřejná identita přihlášeného uživatele — bez e-mailu a bez DB id (docs/soukromi.md). */
 export type Viewer = NonNullable<MeQuery['me']>;
 

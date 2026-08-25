@@ -194,7 +194,8 @@ public class ModerationService {
     observation.setStatus(rejected ? ObservationStatus.REJECTED : ObservationStatus.ACTIVE);
     observation = priceObservationRepository.save(observation);
     // Bez tohohle by REJECTED/obnovená cena zůstala v agg.price_current/price_daily beze
-    // změny ještě několik dní (AccountService má stejnou past zapsanou u DELETE_CONTENT).
+    // změny ještě několik dní — bulk operace nad price_observation sám žádný přepočet
+    // nespustí, viz PriceAggregationService.enqueueRecompute.
     priceAggregationService.enqueueRecompute(observation.getProduct().getId(), observation.getStore().getId(),
         RecomputeReason.MODERATION);
     log.info("Moderátor {} cenu {} (produkt {}, obchod {}), důvod: {}",

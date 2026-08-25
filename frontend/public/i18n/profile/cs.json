@@ -63,5 +63,17 @@
     "success": "Přihlašovací e-mail byl změněn.",
     "requestFailed": "Nepodařilo se odeslat kód. Zkus to prosím znovu za chvíli.",
     "confirmFailed": "Kód je neplatný nebo vypršel. Zkus to prosím znovu."
+  },
+  "deleteAccount": {
+    "title": "Smazat účet",
+    "hint": "Appka umožňuje účet trvale smazat.",
+    "openButton": "Smazat účet",
+    "irreversible": "Tohle je nevratné rozhodnutí.",
+    "anonymizeExplanation": "Tvé cenové zápisy zůstanou jako anonymizovaná statistika bez vazby na tebe — appka je nemaže, jde o sdílená komunitní data, ne o tvůj osobní údaj.",
+    "sendCode": "Poslat ověřovací kód",
+    "codeLabel": "Kód z e-mailu",
+    "codeHint": "Kód jsme poslali na tvůj přihlašovací e-mail.",
+    "confirm": "Nevratně smazat účet",
+    "requestNewCode": "Poslat nový kód"
   }
 }

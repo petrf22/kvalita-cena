@@ -63,5 +63,17 @@
     "success": "Sign-in email changed.",
     "requestFailed": "Couldn't send the code. Please try again shortly.",
     "confirmFailed": "The code is invalid or has expired. Please try again."
+  },
+  "deleteAccount": {
+    "title": "Delete account",
+    "hint": "You can permanently delete your account.",
+    "openButton": "Delete account",
+    "irreversible": "This is an irreversible decision.",
+    "anonymizeExplanation": "Your submitted prices stay as anonymized statistics, unlinked from you — the app doesn't delete them, since they're shared community data, not your personal data.",
+    "sendCode": "Send verification code",
+    "codeLabel": "Code from the email",
+    "codeHint": "We sent a code to your sign-in email.",
+    "confirm": "Permanently delete account",
+    "requestNewCode": "Send a new code"
   }
 }

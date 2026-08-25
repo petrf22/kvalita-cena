@@ -63,5 +63,17 @@
     "success": "E-mail logowania został zmieniony.",
     "requestFailed": "Nie udało się wysłać kodu. Spróbuj ponownie za chwilę.",
     "confirmFailed": "Kod jest nieprawidłowy lub wygasł. Spróbuj ponownie."
+  },
+  "deleteAccount": {
+    "title": "Usuń konto",
+    "hint": "Appka pozwala trwale usunąć konto.",
+    "openButton": "Usuń konto",
+    "irreversible": "To nieodwracalna decyzja.",
+    "anonymizeExplanation": "Twoje zapisy cen zostaną jako zanonimizowana statystyka, bez powiązania z Tobą — appka ich nie usuwa, to wspólne dane społeczności, nie Twoje dane osobowe.",
+    "sendCode": "Wyślij kod weryfikacyjny",
+    "codeLabel": "Kod z e-maila",
+    "codeHint": "Wysłaliśmy kod na Twój adres e-mail logowania.",
+    "confirm": "Trwale usuń konto",
+    "requestNewCode": "Wyślij nowy kod"
   }
 }

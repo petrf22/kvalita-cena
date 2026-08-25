@@ -146,26 +146,6 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
   List<PriceObservation> findBySubmitterIdWithProductAndStore(@Param("userId") Long userId);
 
   /**
-   * Výmaz účtu, režim {@code DELETE_CONTENT} (docs/soukromi.md, "GDPR") — na rozdíl od
-   * {@link #pseudonymizeObservationsBefore} observace skutečně mizí, ne jen vazba na účet.
-   * Dotčené buňky agregátu je potřeba zvlášť zařadit do přepočtu (viz {@code AccountService}) —
-   * bulk DELETE sám žádný trigger na {@code agg.recompute_queue} nespustí.
-   */
-  @Query("SELECT DISTINCT o.product.id AS productId, o.store.id AS storeId "
-      + "FROM PriceObservation o WHERE o.submitter.id = :userId")
-  List<ObservationCell> findDistinctProductStoreBySubmitterId(@Param("userId") Long userId);
-
-  @Modifying
-  @Query("DELETE FROM PriceObservation o WHERE o.submitter.id = :userId")
-  int deleteBySubmitterId(@Param("userId") Long userId);
-
-  interface ObservationCell {
-    Long getProductId();
-
-    Long getStoreId();
-  }
-
-  /**
    * Výběr cen pro moderaci (ModerationService) — cenu nejde nahlásit komunitně
    * (docs/reputace.md, "Nahlášení záznamu…", nesouhlas s cenou = nový zápis, ne flag), takže
    * moderátor k ní přistupuje přímo přes autora/zboží/obchod, ne přes frontu jako u

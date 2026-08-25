@@ -273,27 +273,30 @@ Export a výmaz (`AccountService`, `AccountController`) jsou hotové — REST to
   neriskuje. `user_flag` skórovací systém z původního plánu neexistuje (etapa 1 má jen složku
   `L`, viz `reputace.md`) — export ho tedy neobsahuje, není co exportovat.
 - **Výmaz**: dvoukrokový OTP tok jako změna e-mailu (`POST /api/me/delete/request` +
-  `/confirm`), kód jde vždy na už vlastněnou přihlašovací adresu. `mode` se volí až u
-  `confirm`, dva režimy:
-  - `ANONYMIZE` — observace zůstávají jako agregovaná statistika ve veřejném zájmu. Appka pro
-    to nemusí dělat nic navíc: `fk_price_observation_submitter` je `ON DELETE SET NULL`, takže
-    smazání řádku `auth.app_user` observace samo anonymizuje, stejným mechanismem jako denní
-    pseudonymizace po 180 dnech.
-  - `DELETE_CONTENT` — observace uživatele se skutečně smažou (ne jen zruší vazba), s ručním
-    zařazením dotčených buněk do `agg.recompute_queue` (`RecomputeReason.MODERATION`) — bulk
-    DELETE sám žádný přepočet nespustí.
-  - V obou režimech appka nejdřív smaže SOUBORY fotek z disku (`MediaStorage`, včetně avataru),
-    teprve pak řádek `app_user` — ten kaskádou smaže zbytek (`user_profile`,
-    `product_quality_rating`, `product_user_edit`/`store_user_edit`, `record_flag`, `media`
-    řádky v DB, `refresh_token`). Katalogová data (zboží, obchod), na která uživatel jen
-    přispěl cenou, samozřejmě zůstávají — mažou/anonymizují se jen věci navázané na *jeho* účet.
+  `/confirm`), kód jde vždy na už vlastněnou přihlašovací adresu. Uživatel si NEVYBÍRÁ, co se
+  stane s jeho cenovými zápisy — appka je vždy jen anonymizuje, nikdy skutečně nemaže: jde
+  o sdílená komunitní data (cena/produkt/obchod), ne o jeho osobní údaj, appka proto nedává
+  jednotlivci možnost jednostranně o nich rozhodnout. `fk_price_observation_submitter` je
+  `ON DELETE SET NULL`, takže smazání řádku `auth.app_user` observace samo anonymizuje, stejným
+  mechanismem jako denní pseudonymizace po 180 dnech — appka pro to nemusí dělat nic navíc.
+  Váhu při agregaci to nemění: `PriceAggregationService.weightFor` čte samostatný
+  snapshotovaný sloupec `submitter_kind` (`REGISTERED`/`ANONYMOUS`, nastavený při zápisu ceny,
+  viz `reputace.md`), ne `submitter_id` — observace registrovaného uživatele tak zůstává
+  vážená jako registrovaná i po smazání jeho účtu, ne jako anonymní.
+
+  Appka nejdřív smaže SOUBORY fotek z disku (`MediaStorage`, včetně avataru), teprve pak řádek
+  `app_user` — ten kaskádou smaže zbytek (`user_profile`, `product_quality_rating`,
+  `product_user_edit`/`store_user_edit`, `record_flag`, `media` řádky v DB, `refresh_token`).
+  Katalogová data (zboží, obchod), na která uživatel jen přispěl cenou, samozřejmě zůstávají —
+  mažou/anonymizují se jen věci navázané na *jeho* účet.
 - Žádná analytika třetích stran, žádné externí fonty ani CDN. Jediná cookie je `httpOnly`
   refresh token → není potřeba cookie lišta.
 - Plánovaná AI (`ai.md`) běží lokálně u provozovatele, ne přes cloudové API — jinak by tahle
   věta neplatila.
 
-**Neimplementováno**: appka export/výmaz zatím nenabízí v UI (web ani mobil) — jen na kontaktní
-e-mail, ručně (viz `docs/zasady-ochrany-osobnich-udaju.md`, „Tvá práva").
+**Neimplementováno**: appka výmaz účtu nabízí v UI na webu (`features/profile`), na mobilu
+zatím ne. Export (`GET /api/me/export`) nenabízí v UI žádný klient — jen na kontaktní e-mail,
+ručně (viz `docs/zasady-ochrany-osobnich-udaju.md`, „Tvá práva").
 
 ## Otevřená rizika / co hlídat
 

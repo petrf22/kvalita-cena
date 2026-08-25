@@ -8,7 +8,6 @@ import cz.kvalitacena.controller.AccountExportResponse.ProductEditExport;
 import cz.kvalitacena.controller.AccountExportResponse.ProfileExport;
 import cz.kvalitacena.controller.AccountExportResponse.QualityRatingExport;
 import cz.kvalitacena.controller.AccountExportResponse.StoreEditExport;
-import cz.kvalitacena.db.entity.AccountDeleteMode;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.ChallengePurpose;
 import cz.kvalitacena.db.entity.ClientKind;
@@ -18,7 +17,6 @@ import cz.kvalitacena.db.entity.PriceObservation;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.ProductQualityRating;
 import cz.kvalitacena.db.entity.ProductUserEdit;
-import cz.kvalitacena.db.entity.RecomputeReason;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.entity.StoreUserEdit;
 import cz.kvalitacena.db.entity.UserProfile;
@@ -26,7 +24,6 @@ import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.LoginChallengeRepository;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
-import cz.kvalitacena.db.repo.PriceObservationRepository.ObservationCell;
 import cz.kvalitacena.db.repo.ProductQualityRatingRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ProductUserEditRepository;
@@ -63,13 +60,15 @@ import java.util.stream.Collectors;
  * adresu (žádné riziko hijacku cizí schránky, žádná potřeba nerozlišitelné odpovědi) — kód
  * dokazuje, že žádost podává skutečný vlastník účtu, ne jen někdo s ukradeným access tokenem.
  *
- * <p>{@link AccountDeleteMode#ANONYMIZE} nevyžaduje ŽÁDNOU zvláštní práci nad
- * {@code price_observation} — {@code fk_price_observation_submitter} je už
- * {@code ON DELETE SET NULL}, takže smazání {@link AppUser} řádku observace samo anonymizuje,
- * stejným mechanismem jako denní {@link PseudonymizationService}. {@link
- * AccountDeleteMode#DELETE_CONTENT} naopak observace SKUTEČNĚ maže (ne jen nuluje vazbu), proto
- * to musí proběhnout explicitně PŘED smazáním uživatele a s ručním zařazením dotčených buněk do
- * {@code agg.recompute_queue} — bulk DELETE žádný přepočet sám nespustí.
+ * <p>Výmaz VŽDY jen anonymizuje, nikdy skutečně nemaže {@code price_observation} — uživatel
+ * si nevybírá, jestli sdílená komunitní cenová data zůstanou (nejde o jeho osobní údaj, jde
+ * jen o zpětnou vazbu na jeho identitu). Appka pro to nemusí dělat nic navíc:
+ * {@code fk_price_observation_submitter} je {@code ON DELETE SET NULL}, takže smazání {@link
+ * AppUser} řádku observace samo anonymizuje, stejným mechanismem jako denní {@link
+ * PseudonymizationService}. Váhu při agregaci to nemění — {@code PriceAggregationService
+ * .weightFor} čte samostatný snapshotovaný sloupec {@code submitter_kind}, ne
+ * {@code submitter_id}, takže observace registrovaného uživatele zůstává vážená jako
+ * registrovaná i po smazání účtu.
  */
 @Slf4j
 @Service
@@ -92,7 +91,6 @@ public class AccountService {
   private final OtpRateLimiter rateLimiter;
   private final OtpProperties otpProperties;
   private final OtpMailSender mailSender;
-  private final PriceAggregationService priceAggregationService;
   private final SecureRandom secureRandom = new SecureRandom();
 
   @Transactional(readOnly = true)
@@ -184,16 +182,22 @@ public class AccountService {
   }
 
   /**
-   * Nevratné. Pořadí je záměrné: nejdřív smazat SOUBORY fotek (dokud ještě víme, které
-   * {@code storageKey} k uživateli patří), teprve pak DB řádek {@link AppUser} — ten smaže
-   * kaskádou zbytek ({@code user_profile}, {@code product_quality_rating},
-   * {@code product_user_edit}/{@code store_user_edit}, {@code record_flag}, {@code media},
-   * {@code refresh_token}; viz FK přehled u jednotlivých Liquibase changelogů). Opačné pořadí
-   * by po neúspěšném mazání souboru nechalo appku s DB řádkem ukazujícím na soubor, který už
-   * mezitím zmizel.
+   * Nevratné (co do samotného účtu — cenové observace přežívají anonymizované, viz níž).
+   * Pořadí je záměrné: nejdřív smazat SOUBORY fotek (dokud ještě víme, které {@code
+   * storageKey} k uživateli patří), teprve pak DB řádek {@link AppUser} — ten smaže kaskádou
+   * zbytek ({@code user_profile}, {@code product_quality_rating}, {@code product_user_edit}/
+   * {@code store_user_edit}, {@code record_flag}, {@code media}, {@code refresh_token}; viz FK
+   * přehled u jednotlivých Liquibase changelogů). Opačné pořadí by po neúspěšném mazání
+   * souboru nechalo appku s DB řádkem ukazujícím na soubor, který už mezitím zmizel.
+   *
+   * <p>Cenové {@code price_observation} se NIKDY skutečně nemažou — appka nedává uživateli na
+   * výběr, jestli sdílená komunitní data zůstanou (docs/soukromi.md, "GDPR"). Jediné, co tenhle
+   * krok dělá, je smazat {@link AppUser}: {@code fk_price_observation_submitter} je {@code ON
+   * DELETE SET NULL}, takže observace samy anonymizují stejným mechanismem jako denní {@link
+   * PseudonymizationService}.
    */
   @Transactional
-  public void confirmDelete(AppUser currentUser, UUID challengeUid, String code, AccountDeleteMode mode) {
+  public void confirmDelete(AppUser currentUser, UUID challengeUid, String code) {
     LoginChallenge challenge = challengeRepository.findByChallengeUidAndConsumedAtIsNull(challengeUid)
         .filter(c -> c.getPurpose() == ChallengePurpose.DELETE_ACCOUNT)
         .orElseThrow(() -> new ValidationException(ErrorCode.ACCOUNT_DELETE_INVALID_CHALLENGE));
@@ -217,21 +221,12 @@ public class AccountService {
     challenge.setConsumedAt(OffsetDateTime.now());
     challengeRepository.save(challenge);
 
-    if (mode == AccountDeleteMode.DELETE_CONTENT) {
-      List<ObservationCell> cells = priceObservationRepository.findDistinctProductStoreBySubmitterId(currentUser.getId());
-      priceObservationRepository.deleteBySubmitterId(currentUser.getId());
-      cells.forEach(cell ->
-          priceAggregationService.enqueueRecompute(cell.getProductId(), cell.getStoreId(), RecomputeReason.MODERATION));
-    }
-    // ANONYMIZE: nic extra netřeba — fk_price_observation_submitter je ON DELETE SET NULL,
-    // smazání uživatele níž observace samo anonymizuje.
-
     for (Media media : mediaRepository.findByUploadedByUserId(currentUser.getId())) {
       mediaStorage.delete(media.getStorageKey());
     }
 
     appUserRepository.delete(currentUser);
-    log.info("Účet {} smazán (režim {}).", currentUser.getPublicHandle(), mode);
+    log.info("Účet {} smazán.", currentUser.getPublicHandle());
   }
 
   private Map<Long, String> productNames(List<Long> productIds) {

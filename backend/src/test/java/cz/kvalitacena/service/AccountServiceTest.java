@@ -1,18 +1,15 @@
 package cz.kvalitacena.service;
 
 import cz.kvalitacena.config.OtpProperties;
-import cz.kvalitacena.db.entity.AccountDeleteMode;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.ChallengePurpose;
 import cz.kvalitacena.db.entity.ClientKind;
 import cz.kvalitacena.db.entity.LoginChallenge;
 import cz.kvalitacena.db.entity.Media;
-import cz.kvalitacena.db.entity.RecomputeReason;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.LoginChallengeRepository;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
-import cz.kvalitacena.db.repo.PriceObservationRepository.ObservationCell;
 import cz.kvalitacena.db.repo.ProductQualityRatingRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ProductUserEditRepository;
@@ -45,10 +42,8 @@ import static org.mockito.Mockito.*;
 /**
  * Výmaz účtu je nevratný, proto testy ověřují hlavně dvě věci: že se OTP challenge validuje
  * stejně přísně jako u {@link EmailChangeServiceTest} (jiný účel, cizí e-mail, expirace,
- * vyčerpané pokusy, špatný kód), a že {@link AccountDeleteMode} rozhoduje, jestli observace
- * mizí skutečně (DELETE_CONTENT, s ručním zařazením do přepočtu) nebo je nechá jen anonymizovat
- * cizí klíč (ANONYMIZE — fk_price_observation_submitter je ON DELETE SET NULL, žádná explicitní
- * akce navíc).
+ * vyčerpané pokusy, špatný kód), a že observace appka nikdy skutečně nemaže — jen anonymizuje
+ * cizí klíč (fk_price_observation_submitter je ON DELETE SET NULL, žádná explicitní akce navíc).
  */
 @ExtendWith(MockitoExtension.class)
 class AccountServiceTest {
@@ -86,8 +81,6 @@ class AccountServiceTest {
   private OtpRateLimiter rateLimiter;
   @Mock
   private OtpMailSender mailSender;
-  @Mock
-  private PriceAggregationService priceAggregationService;
 
   private OtpProperties properties;
   private AccountService service;
@@ -104,7 +97,7 @@ class AccountServiceTest {
     service = new AccountService(appUserRepository, userProfileRepository, priceObservationRepository,
         qualityRatingRepository, productUserEditRepository, storeUserEditRepository, productRepository,
         storeRepository, mediaRepository, mediaStorage, challengeRepository, emailCipher, codeEncoder,
-        rateLimiter, properties, mailSender, priceAggregationService);
+        rateLimiter, properties, mailSender);
     currentUser = AppUser.builder().id(USER_ID).emailHash(EMAIL_HASH).publicHandle("blue-stork-1").build();
 
     lenient().when(emailCipher.normalize(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -159,7 +152,7 @@ class AccountServiceTest {
     when(challengeRepository.findByChallengeUidAndConsumedAtIsNull(loginChallenge.getChallengeUid()))
         .thenReturn(Optional.of(loginChallenge));
 
-    assertThatThrownBy(() -> service.confirmDelete(currentUser, loginChallenge.getChallengeUid(), "123456", AccountDeleteMode.ANONYMIZE))
+    assertThatThrownBy(() -> service.confirmDelete(currentUser, loginChallenge.getChallengeUid(), "123456"))
         .isInstanceOf(ValidationException.class);
     verify(appUserRepository, never()).delete(any());
   }
@@ -171,7 +164,7 @@ class AccountServiceTest {
     when(challengeRepository.findByChallengeUidAndConsumedAtIsNull(challenge.getChallengeUid()))
         .thenReturn(Optional.of(challenge));
 
-    assertThatThrownBy(() -> service.confirmDelete(currentUser, challenge.getChallengeUid(), "123456", AccountDeleteMode.ANONYMIZE))
+    assertThatThrownBy(() -> service.confirmDelete(currentUser, challenge.getChallengeUid(), "123456"))
         .isInstanceOf(ValidationException.class);
     verify(appUserRepository, never()).delete(any());
   }
@@ -183,7 +176,7 @@ class AccountServiceTest {
     when(challengeRepository.findByChallengeUidAndConsumedAtIsNull(challenge.getChallengeUid()))
         .thenReturn(Optional.of(challenge));
 
-    assertThatThrownBy(() -> service.confirmDelete(currentUser, challenge.getChallengeUid(), "123456", AccountDeleteMode.ANONYMIZE))
+    assertThatThrownBy(() -> service.confirmDelete(currentUser, challenge.getChallengeUid(), "123456"))
         .isInstanceOf(ValidationException.class);
   }
 
@@ -194,7 +187,7 @@ class AccountServiceTest {
         .thenReturn(Optional.of(challenge));
     when(challengeRepository.incrementAttempts(challenge.getId())).thenReturn(0);
 
-    assertThatThrownBy(() -> service.confirmDelete(currentUser, challenge.getChallengeUid(), "123456", AccountDeleteMode.ANONYMIZE))
+    assertThatThrownBy(() -> service.confirmDelete(currentUser, challenge.getChallengeUid(), "123456"))
         .isInstanceOf(ValidationException.class);
     verify(codeEncoder, never()).matches(any(), any());
   }
@@ -207,13 +200,13 @@ class AccountServiceTest {
     when(challengeRepository.incrementAttempts(challenge.getId())).thenReturn(1);
     when(codeEncoder.matches("000000", "hash")).thenReturn(false);
 
-    assertThatThrownBy(() -> service.confirmDelete(currentUser, challenge.getChallengeUid(), "000000", AccountDeleteMode.ANONYMIZE))
+    assertThatThrownBy(() -> service.confirmDelete(currentUser, challenge.getChallengeUid(), "000000"))
         .isInstanceOf(ValidationException.class);
     verify(appUserRepository, never()).delete(any());
   }
 
   @Test
-  void anonymizeModeLeavesObservationDeletionToTheDatabaseForeignKey() {
+  void deletionLeavesObservationAnonymizationToTheDatabaseForeignKey() {
     LoginChallenge challenge = validChallenge();
     when(challengeRepository.findByChallengeUidAndConsumedAtIsNull(challenge.getChallengeUid()))
         .thenReturn(Optional.of(challenge));
@@ -221,42 +214,14 @@ class AccountServiceTest {
     when(codeEncoder.matches("123456", "hash")).thenReturn(true);
     when(mediaRepository.findByUploadedByUserId(USER_ID)).thenReturn(List.of());
 
-    service.confirmDelete(currentUser, challenge.getChallengeUid(), "123456", AccountDeleteMode.ANONYMIZE);
+    service.confirmDelete(currentUser, challenge.getChallengeUid(), "123456");
 
-    // ANONYMIZE se spoléhá na fk_price_observation_submitter ON DELETE SET NULL — appka sama
-    // observace nemaže ani nepřepočítává agregát.
-    verify(priceObservationRepository, never()).deleteBySubmitterId(any());
-    verify(priceAggregationService, never()).enqueueRecompute(any(), any(), any());
+    // Appka observace nikdy nemaže ani nespouští žádný přepočet — spoléhá se výhradně na
+    // fk_price_observation_submitter ON DELETE SET NULL, žádná explicitní interakce s
+    // priceObservationRepository navíc.
+    verifyNoInteractions(priceObservationRepository);
     verify(appUserRepository).delete(currentUser);
     assertThat(challenge.getConsumedAt()).isNotNull();
-  }
-
-  @Test
-  void deleteContentModeRemovesObservationsAndEnqueuesRecomputeForEachAffectedCell() {
-    LoginChallenge challenge = validChallenge();
-    when(challengeRepository.findByChallengeUidAndConsumedAtIsNull(challenge.getChallengeUid()))
-        .thenReturn(Optional.of(challenge));
-    when(challengeRepository.incrementAttempts(challenge.getId())).thenReturn(1);
-    when(codeEncoder.matches("123456", "hash")).thenReturn(true);
-    ObservationCell cell = new ObservationCell() {
-      @Override
-      public Long getProductId() {
-        return 42L;
-      }
-
-      @Override
-      public Long getStoreId() {
-        return 7L;
-      }
-    };
-    when(priceObservationRepository.findDistinctProductStoreBySubmitterId(USER_ID)).thenReturn(List.of(cell));
-    when(mediaRepository.findByUploadedByUserId(USER_ID)).thenReturn(List.of());
-
-    service.confirmDelete(currentUser, challenge.getChallengeUid(), "123456", AccountDeleteMode.DELETE_CONTENT);
-
-    verify(priceObservationRepository).deleteBySubmitterId(USER_ID);
-    verify(priceAggregationService).enqueueRecompute(42L, 7L, RecomputeReason.MODERATION);
-    verify(appUserRepository).delete(currentUser);
   }
 
   @Test
@@ -269,7 +234,7 @@ class AccountServiceTest {
     Media avatar = Media.builder().id(1L).storageKey("2026/08/abc.jpg").uploadedByUserId(USER_ID).build();
     when(mediaRepository.findByUploadedByUserId(USER_ID)).thenReturn(List.of(avatar));
 
-    service.confirmDelete(currentUser, challenge.getChallengeUid(), "123456", AccountDeleteMode.ANONYMIZE);
+    service.confirmDelete(currentUser, challenge.getChallengeUid(), "123456");
 
     verify(mediaStorage).delete("2026/08/abc.jpg");
     verify(appUserRepository).delete(currentUser);

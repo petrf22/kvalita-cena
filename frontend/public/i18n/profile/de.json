@@ -63,5 +63,17 @@
     "success": "Die Anmelde-E-Mail wurde geändert.",
     "requestFailed": "Der Code konnte nicht gesendet werden. Bitte versuch es in Kürze erneut.",
     "confirmFailed": "Der Code ist ungültig oder abgelaufen. Bitte versuch es erneut."
+  },
+  "deleteAccount": {
+    "title": "Konto löschen",
+    "hint": "Du kannst dein Konto dauerhaft löschen.",
+    "openButton": "Konto löschen",
+    "irreversible": "Dies ist eine unwiderrufliche Entscheidung.",
+    "anonymizeExplanation": "Deine erfassten Preise bleiben als anonymisierte Statistik ohne Bezug zu dir erhalten — die App löscht sie nicht, da es sich um gemeinsame Community-Daten handelt, nicht um deine personenbezogenen Daten.",
+    "sendCode": "Bestätigungscode senden",
+    "codeLabel": "Code aus der E-Mail",
+    "codeHint": "Wir haben einen Code an deine Anmelde-E-Mail-Adresse gesendet.",
+    "confirm": "Konto endgültig löschen",
+    "requestNewCode": "Neuen Code senden"
   }
 }
