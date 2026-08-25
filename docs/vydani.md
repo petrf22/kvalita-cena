@@ -126,11 +126,28 @@ zápis ceny/založení záznamu.
 
 ### Play App Signing
 
-Doporučení: **vygenerovat klíč lokálně (viz výš) a nahrát ho do Play App Signing** („use your
-own signing key"), místo aby Google generoval a držel klíč sám. Důvod: appka se má distribuovat
-i mimo Play (přímé APK z `kvalitacena.cz`, F-Droid) — bez vlastního klíče by měla dvě různé
-identity pod jedním balíčkem podle distribučního kanálu. Rozhodnutí platí jen do prvního uploadu,
-pak se nedá vzít zpět.
+**Zastaralé, viz níž — původní plán počítal s volbou, kterou Play Console u nových appek
+(`cz.kvalitacena` založena 2026-08-21) už nenabízí.** Doporučení bylo vygenerovat klíč lokálně
+a nahrát ho do Play App Signing přes PEPK („use your own signing key"), místo aby Google
+generoval a držel klíč sám — důvod: appka se má distribuovat i mimo Play (přímé APK
+z `kvalitacena.cz`, F-Droid), bez vlastního klíče má dvě různé identity pod jedním balíčkem
+podle distribučního kanálu.
+
+**Realita (zjištěno 2026-08-25 při skutečném nastavování):** stránka „App integrity" se
+přesunula do **Ochrana Obchodu Play → Podepisování aplikací**, a Google tam už MÁ vlastní
+**podpisový klíč aplikace** vygenerovaný a aktivní („Používá se") — bez jakékoli volby PEPK
+uploadu předem. `docs/branding.md`/tenhle dokument sledovaný otisk `D6:03:9C:24:...:77:0F` je
+otisk NAŠEHO klíče (`kvalitacena-release.jks`), ale ten, co Play u appky drží jako „Podpisový
+klíč aplikace", je jiný (`EB:67:6C:74:...:2D:E5`) — Google-spravovaný, ne náš. Sekce
+„Certifikát klíče pro nahrávání" je prázdná do prvního uploadu AAB — náš klíč se zaregistruje
+jako **upload key** automaticky tím, čím podepíšeme první `bundleRelease`, žádný ruční PEPK
+krok není potřeba ani dostupný.
+
+**Důsledek:** appka distribuovaná přes Play ponese Googlem spravovaný podpis (app signing
+key), zatímco přímé APK z `kvalitacena.cz` ponese náš `kvalitacena-release.jks` (upload key) —
+dvě různé identity mezi kanály zůstávají, jen už ne z naší volby, ale protože Google Play
+App Signing je u nově založených appek povinné. Otevřené riziko k hlídání, ne vyřešené —
+viz i F-Droid níž, který přidává třetí identitu.
 
 ### F-Droid — otevřené riziko, ne hotový postup
 
