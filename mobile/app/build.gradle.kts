@@ -46,8 +46,6 @@ android {
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080\"")
         }
         release {
-            // Zatím neexistující produkční backend (docs/vydani.md) — release build je
-            // od teď "release-ready", ne že appka má kam mluvit.
             buildConfigField("String", "BASE_URL", "\"https://api.kvalitacena.cz\"")
             isMinifyEnabled = true
             proguardFiles(
@@ -56,6 +54,14 @@ android {
             )
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
+            }
+            // Připraveno pro budoucí vlastní nativní kód — u dnešních závislostí (ZXing-cpp,
+            // CameraX) to Play Console upozornění "Nahrajte soubor se symboly" NEřeší: jejich
+            // .so knihovny přicházejí z Maven artefaktů už stripnuté (ověřeno `readelf -S`,
+            // žádná .debug_*/.symtab sekce), takže AGP nemá odkud symboly vytáhnout. Bezpečné
+            // nechat zapnuté — jen čistě informativní upozornění appku nijak neblokuje.
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
             }
         }
     }
