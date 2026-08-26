@@ -21,6 +21,13 @@
       }}{{ store()!.country !== countryService.country() ? ' (' + store()!.country + ')' : '' }}
     </p>
 
+    @if (store()!.url; as websiteUrl) {
+      <a [href]="websiteUrl" target="_blank" rel="noopener" class="website-link">
+        <span nz-icon nzType="link"></span>
+        {{ t('store.detail.openWebsite') }}
+      </a>
+    }
+
     <div class="status-badges">
       @if (!store()!.verified) {
         <nz-tag>{{ t('store.detail.unverified') }}</nz-tag>

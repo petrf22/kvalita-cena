@@ -42,6 +42,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -214,14 +215,30 @@ public class ProductGraphQlController {
     return stripped.isEmpty() ? gtin : stripped;
   }
 
+  /**
+   * Vypršelá akční cena (PROMO s promoValidTo v minulosti, docs/datovy-model.md) se tu vyřadí,
+   * ale zůstává v agg.price_current i v {@code stats()} — jde jen o to, co appka nabízí jako
+   * AKTUÁLNÍ cenu, historie v grafu (agg.price_daily) se nemění a počet přispěvatelů
+   * v ProductStats neklesá jen proto, že akce skončila. Filtr je záměrně tady, ne v
+   * {@link #pricesByProductId}, kterou sdílí i {@code stats()}.
+   */
   @BatchMapping(typeName = "Product", field = "prices")
   public Map<Product, List<PriceCurrent>> prices(List<Product> products) {
     Map<Long, List<PriceCurrent>> byProduct = pricesByProductId(products);
     Map<Product, List<PriceCurrent>> result = new LinkedHashMap<>();
     for (Product p : products) {
-      result.put(p, byProduct.getOrDefault(p.getId(), List.of()));
+      List<PriceCurrent> prices = byProduct.getOrDefault(p.getId(), List.of()).stream()
+          .filter(pc -> !isExpiredPromo(pc))
+          .toList();
+      result.put(p, prices);
     }
     return result;
+  }
+
+  private static boolean isExpiredPromo(PriceCurrent priceCurrent) {
+    return priceCurrent.getPriceKind() == PriceKind.PROMO
+        && priceCurrent.getPromoValidTo() != null
+        && priceCurrent.getPromoValidTo().isBefore(LocalDate.now());
   }
 
   @BatchMapping(typeName = "Product", field = "codes")

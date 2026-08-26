@@ -71,6 +71,12 @@ app-photo-gallery {
   font-size: 12px;
 }
 
+.promo-validity-note {
+  display: block;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
 .chart-controls {
   display: flex;
   justify-content: space-between;

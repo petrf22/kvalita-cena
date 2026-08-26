@@ -243,6 +243,8 @@ export class ProductService {
           unitPrice
           priceKind
           quantityBasis
+          promoValidFrom
+          promoValidTo
           observedAt
           status
         }

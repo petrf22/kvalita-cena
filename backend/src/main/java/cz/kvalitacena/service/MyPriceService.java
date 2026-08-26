@@ -44,6 +44,7 @@ public class MyPriceService {
         : fxRateService.convert(observation.getPriceAmount(), observation.getCurrency(), displayCurrency,
             observation.getObservedAt().atZoneSameInstant(ZoneOffset.UTC).toLocalDate()));
     return new MyPrice(observation.getStore(), observation.getPriceKind(), observation.getPriceAmount(),
-        observation.getUnitPrice(), observation.getObservedAt(), observation.getCurrency(), converted);
+        observation.getUnitPrice(), observation.getObservedAt(), observation.getCurrency(), converted,
+        observation.getPromoValidFrom(), observation.getPromoValidTo());
   }
 }

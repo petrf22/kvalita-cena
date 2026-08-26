@@ -9,24 +9,26 @@
           <p>{{ viewer()!.displayName }}</p>
         }
       }
-      <button nz-button nzType="default" routerLink="/profile">
-        <span nz-icon nzType="edit"></span>
-        {{ t('login.editProfile') }}
-      </button>
-      <button nz-button nzType="default" routerLink="/my">
-        <span nz-icon nzType="unordered-list"></span>
-        {{ t('login.myContributions') }}
-      </button>
-      @if (viewer()?.moderator) {
-        <button nz-button nzType="default" routerLink="/moderation">
-          <span nz-icon nzType="safety-certificate"></span>
-          {{ t('login.moderation') }}
+      <div class="account-actions">
+        <button nz-button nzType="default" routerLink="/profile">
+          <span nz-icon nzType="edit"></span>
+          {{ t('login.editProfile') }}
         </button>
-      }
-      <button nz-button nzType="primary" (click)="logout()">
-        <span nz-icon nzType="logout"></span>
-        {{ t('login.logout') }}
-      </button>
+        <button nz-button nzType="default" routerLink="/my">
+          <span nz-icon nzType="unordered-list"></span>
+          {{ t('login.myContributions') }}
+        </button>
+        @if (viewer()?.moderator) {
+          <button nz-button nzType="default" routerLink="/moderation">
+            <span nz-icon nzType="safety-certificate"></span>
+            {{ t('login.moderation') }}
+          </button>
+        }
+        <button nz-button nzType="primary" (click)="logout()">
+          <span nz-icon nzType="logout"></span>
+          {{ t('login.logout') }}
+        </button>
+      </div>
     </nz-card>
   } @else {
     <nz-card class="login-card" [nzTitle]="t('login.loginTitle')">

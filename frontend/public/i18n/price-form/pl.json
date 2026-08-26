@@ -11,6 +11,9 @@
   "multibuyQtyLabel": "Liczba sztuk",
   "multibuyTotalLabel": "Cena za zestaw ({{currency}})",
   "multibuyHint": "Np. „3 sztuki za 50 zł” — podaj liczbę sztuk i cenę łączną.",
+  "promoValidFromLabel": "Promocja obowiązuje od",
+  "promoValidToLabel": "Promocja obowiązuje do",
+  "promoValidityHint": "Obie daty są opcjonalne — „od” nie może być w przyszłości, „do” może.",
   "submit": "Zapisz cenę",
   "submitSuccess": "Cena została zapisana, dzięki!",
   "submitFailed": "Zapis się nie powiódł, spróbuj ponownie."

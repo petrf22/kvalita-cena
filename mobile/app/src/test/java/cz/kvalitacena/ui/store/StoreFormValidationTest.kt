@@ -30,4 +30,18 @@ class StoreFormValidationTest {
     assertFalse(isIcoShapeValid("123456789"))
     assertFalse(isIcoShapeValid("1234567X"))
   }
+
+  @Test
+  fun blankUrlIsValid() {
+    assertTrue(isUrlShapeValid(""))
+  }
+
+  @Test
+  fun urlMustBeHttpOrHttps() {
+    assertTrue(isUrlShapeValid("https://www.example.cz/prodejna"))
+    assertTrue(isUrlShapeValid("http://example.cz"))
+    assertFalse(isUrlShapeValid("ftp://example.cz"))
+    assertFalse(isUrlShapeValid("not-a-url"))
+    assertFalse(isUrlShapeValid("javascript:alert(1)"))
+  }
 }

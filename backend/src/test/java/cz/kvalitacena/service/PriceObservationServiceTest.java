@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -91,11 +92,15 @@ class PriceObservationServiceTest {
   }
 
   private static ObservationPriceInput price(PriceKind kind, String amount) {
-    return new ObservationPriceInput(kind, amount == null ? null : new BigDecimal(amount), null, null);
+    return new ObservationPriceInput(kind, amount == null ? null : new BigDecimal(amount), null, null, null, null);
   }
 
   private static ObservationPriceInput multibuy(int qty, String total) {
-    return new ObservationPriceInput(PriceKind.MULTIBUY, null, qty, new BigDecimal(total));
+    return new ObservationPriceInput(PriceKind.MULTIBUY, null, qty, new BigDecimal(total), null, null);
+  }
+
+  private static ObservationPriceInput promo(String amount, LocalDate validFrom, LocalDate validTo) {
+    return new ObservationPriceInput(PriceKind.PROMO, new BigDecimal(amount), null, null, validFrom, validTo);
   }
 
   private static SubmitObservationsInput input(List<ObservationPriceInput> prices) {
@@ -233,6 +238,49 @@ class PriceObservationServiceTest {
   }
 
   @Test
+  void promoValidityIsStoredOnTheObservation() {
+    LocalDate from = LocalDate.now().minusDays(2);
+    LocalDate to = LocalDate.now().plusDays(5);
+
+    service.submit(input(List.of(promo("19.90", from, to))), PUBLIC_UID, ObservationSource.WEB);
+
+    verify(priceObservationRepository).saveAllAndFlush(savedCaptor.capture());
+    PriceObservation saved = savedCaptor.getValue().get(0);
+    assertThat(saved.getPromoValidFrom()).isEqualTo(from);
+    assertThat(saved.getPromoValidTo()).isEqualTo(to);
+  }
+
+  @Test
+  void promoValidityOnNonPromoKindIsRejected() {
+    ObservationPriceInput regularWithValidity = new ObservationPriceInput(
+        PriceKind.REGULAR, new BigDecimal("29.90"), null, null, null, LocalDate.now());
+
+    AppException error = submitAndCaptureError(input(List.of(regularWithValidity)));
+
+    assertThat(error.getCode()).isEqualTo(ErrorCode.OBSERVATION_PROMO_VALIDITY_NOT_ALLOWED);
+    assertThat(error.getArgs()).containsExactly("REGULAR");
+    verifyNoInteractions(priceObservationRepository, priceAggregationService, appUserRepository);
+  }
+
+  @Test
+  void promoValidFromAfterValidToIsRejected() {
+    AppException error = submitAndCaptureError(input(List.of(
+        promo("19.90", LocalDate.now(), LocalDate.now().minusDays(1)))));
+
+    assertThat(error.getCode()).isEqualTo(ErrorCode.OBSERVATION_PROMO_VALIDITY_RANGE_INVALID);
+    verifyNoInteractions(priceObservationRepository, priceAggregationService, appUserRepository);
+  }
+
+  @Test
+  void promoValidFromInFutureIsRejected() {
+    AppException error = submitAndCaptureError(input(List.of(
+        promo("19.90", LocalDate.now().plusDays(1), null))));
+
+    assertThat(error.getCode()).isEqualTo(ErrorCode.OBSERVATION_PROMO_VALID_FROM_IN_FUTURE);
+    verifyNoInteractions(priceObservationRepository, priceAggregationService, appUserRepository);
+  }
+
+  @Test
   void multibuyRowDoesNotAffectNetContentOfOtherRows() {
     product.setNetContentBase(new BigDecimal("0.5"));
 
@@ -277,7 +325,7 @@ class PriceObservationServiceTest {
   @Test
   void multibuyWithoutQtyOrTotalIsRejected() {
     AppException error = submitAndCaptureError(
-        input(List.of(new ObservationPriceInput(PriceKind.MULTIBUY, null, null, null))));
+        input(List.of(new ObservationPriceInput(PriceKind.MULTIBUY, null, null, null, null, null))));
 
     assertThat(error.getCode()).isEqualTo(ErrorCode.OBSERVATION_PRICE_INCOMPLETE);
     assertThat(error.getArgs()).containsExactly("MULTIBUY");

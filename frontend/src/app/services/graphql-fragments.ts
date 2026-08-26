@@ -20,6 +20,7 @@ export const storeFieldsFragment = graphql(`
     lon
     geoSource
     ico
+    url
     chain {
       id
       name
@@ -110,6 +111,7 @@ export const priceCurrentFieldsFragment = graphql(`
     converted {
       ...ConvertedPriceFields
     }
+    promoValidTo
   }
 `);
 
@@ -186,6 +188,8 @@ export const productDetailFieldsFragment = graphql(`
       converted {
         ...ConvertedPriceFields
       }
+      promoValidFrom
+      promoValidTo
     }
     photos {
       ...PhotoFields

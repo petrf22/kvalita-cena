@@ -20,6 +20,7 @@
   "colConfidence": "Wiarygodność",
   "colLastReported": "Ostatnie zgłoszenie",
   "observationCount": "{count, plural, one {# wpis} few {# wpisy} many {# wpisów} other {# wpisów}}",
+  "promoValidUntil": "ważna do {{date}}",
   "myPricesTitle": "Twoja cena",
   "externalLinksTitle": "Więcej informacji",
   "submitTitle": "Dodaj cenę",

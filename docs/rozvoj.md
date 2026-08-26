@@ -53,18 +53,23 @@ viditelnou platností „od–do". Příbuzný případ: majitel obchodu zadá p
 protože zboží je k mání jen v určitém čase (např. „příští středa 16:00, brambory a mrkev na
 náměstí").
 
-`core.price_observation` už **má `promo_valid_to`** (`PriceObservation.java`) — chybí protějšek
-`promo_valid_from`, a hlavně: pole dnes **není nikde v GraphQL schématu ani v klientech**
-(nezadává se, nezobrazuje se). Základ tedy existuje jako sloupec, ale funkce chybí celá.
+`core.price_observation` má `promo_valid_from`/`promo_valid_to` (`PriceObservation.java`), obě
+zapojené v GraphQL schématu i v obou klientech — ale jen pro akci, která **už běží**:
+`promo_valid_from` nesmí být v budoucnu, appka tedy zapisuje platnost ceny, kterou uživatel
+VIDĚL v regále, ne cenu, která se teprve chystá (viz `docs/datovy-model.md`,
+„`core.price_observation` — jádro celé aplikace"). Vypršelou akci pak `ProductGraphQlController`
+při čtení vyřadí z aktuálních cen (`agg.price_current.promo_valid_to`), historie v grafu zůstává.
 
-Zásadní rozdíl proti dnešnímu modelu: `observed_at` znamená „kdy to uživatel VIDĚL"
-(`docs/datovy-model.md`, „`core.price_observation` — jádro celé aplikace"), vždy v minulosti nebo
-přítomnosti. Cena z letáku je naopak **oznámení budoucí platnosti** — potřeba rozhodnout, jestli
-jde o `price_observation` s platností posunutou do budoucna, nebo o samostatný typ záznamu
-(např. `core.price_announcement`). Doporučení k rozvaze: **oddělený záznam**, protože do
-agregace (`agg.price_current`/`agg.price_daily`, vážený medián) budoucí/neplatná cena vstoupit
-nesmí — nejčistší je, aby vůbec nebyla v tabulce, kterou agregace čte, a překlopila se do
-`price_observation` (a tím do agregátu) až v den, kdy platnost skutečně začne.
+Zásadní rozdíl proti tomuhle modelu: `observed_at` znamená „kdy to uživatel VIDĚL", vždy
+v minulosti nebo přítomnosti. Cena z letáku je naopak **oznámení budoucí platnosti** — potřeba
+rozhodnout, jestli jde o `price_observation` s platností posunutou do budoucna, nebo o
+samostatný typ záznamu (např. `core.price_announcement`). Doporučení k rozvaze: **oddělený
+záznam**, protože do agregace (`agg.price_current`/`agg.price_daily`, vážený medián)
+budoucí/neplatná cena vstoupit nesmí — nejčistší je, aby vůbec nebyla v tabulce, kterou
+agregace čte, a překlopila se do `price_observation` (a tím do agregátu) až v den, kdy
+platnost skutečně začne. Existující `promo_valid_from`/`promo_valid_to` na observaci se
+tímhle nepoužijí znovu — mají už jasně vymezenou roli (platnost právě běžící akce) a
+zavádět do nich druhý, časově opačný význam by matlo obě čtení.
 
 Důvěryhodnost: leták je fakt vyhlášený obchodem, ne pozorování v regálu — jiný charakter důkazu
 než `f_evid` z `docs/reputace.md`. Otevřená otázka: jak se taková cena váží a jak se pozná (a co

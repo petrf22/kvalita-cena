@@ -32,6 +32,7 @@ public enum ErrorCode {
   STORE_NAME_EMPTY("error.store.nameEmpty"),
   STORE_CITY_REQUIRED("error.store.cityRequired"),
   STORE_CITY_EMPTY("error.store.cityEmpty"),
+  STORE_URL_INVALID("error.store.urlInvalid"),
   COMPANY_ID_INVALID("error.store.companyIdInvalid"),
   UNSUPPORTED_COUNTRY("error.store.unsupportedCountry"),
   // Country má na rozdíl od zbytku updateStore tvrdý dopad na měnu/IČO pro VŠECHNY uživatele
@@ -81,6 +82,10 @@ public enum ErrorCode {
   OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY("error.observation.priceKindAlreadySubmittedToday"),
   // {0} = PriceKind — chybí částka (nebo u MULTIBUY qty/total).
   OBSERVATION_PRICE_INCOMPLETE("error.observation.priceIncomplete"),
+  // {0} = PriceKind — platnost akce smí mít jen PROMO.
+  OBSERVATION_PROMO_VALIDITY_NOT_ALLOWED("error.observation.promoValidityNotAllowed"),
+  OBSERVATION_PROMO_VALIDITY_RANGE_INVALID("error.observation.promoValidityRangeInvalid"),
+  OBSERVATION_PROMO_VALID_FROM_IN_FUTURE("error.observation.promoValidFromInFuture"),
 
   // --- kvalita
   QUALITY_REQUIRES_LOGIN("error.quality.requiresLogin"),

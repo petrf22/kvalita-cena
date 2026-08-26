@@ -46,7 +46,10 @@ export function translateError(err: unknown, transloco: TranslocoService): strin
     const body = err.error as ProblemDetailBody | null;
     if (body?.code) {
       const key = `errors.${body.code}`;
-      const translated = transloco.translate(key, paramsObject(body.code, body.params ?? [], transloco));
+      const translated = transloco.translate(
+        key,
+        paramsObject(body.code, body.params ?? [], transloco),
+      );
       if (translated !== key) return translated;
     }
     if (body?.detail) return body.detail;

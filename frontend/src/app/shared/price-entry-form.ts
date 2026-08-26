@@ -32,6 +32,18 @@ import {
 } from './price-rows';
 import { StorePicker } from './store-picker';
 
+/** Datum → ISO (YYYY-MM-DD) v místním čase, ne UTC — Date.toISOString() by u večerních zápisů posunulo den. */
+function toIsoDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function fromIsoDate(iso: string | null): Date | null {
+  return iso ? new Date(`${iso}T00:00:00`) : null;
+}
+
 /**
  * Celá zápisová cesta ceny — obchod, seznam řádků "(druh ceny, částka)" s "+"/"−" a odeslání
  * — jako jedna sdílená komponenta, ať `price-entry-page` (nejdřív hledá zboží) i
@@ -86,8 +98,11 @@ export class PriceEntryForm {
     () => this.selectedStoreId() != null && arePriceRowsValid(this.rows()) && !this.submitting(),
   );
 
-  /** observed_at nesmí být v budoucnosti — uživatel zapisuje cenu, kterou už viděl. */
+  /** observed_at i promoValidFrom nesmí být v budoucnosti — uživatel zapisuje, co už VIDĚL v regále. */
   protected readonly isFutureDate = (date: Date): boolean => date.getTime() > Date.now();
+
+  /** PriceRow drží datum jako ISO string (posílá se přímo v mutaci) — nz-date-picker chce Date. */
+  protected readonly fromIsoDate = fromIsoDate;
 
   /** Nabídka druhu ceny pro konkrétní řádek — vyloučí druhy použité v ostatních řádcích. */
   protected kindsForRow(row: PriceRow): readonly PriceKind[] {
@@ -112,7 +127,15 @@ export class PriceEntryForm {
     this.rows.update((rows) =>
       rows.map((row) =>
         row.key === key
-          ? { ...row, priceKind, priceAmount: null, multibuyQty: null, multibuyTotal: null }
+          ? {
+              ...row,
+              priceKind,
+              priceAmount: null,
+              multibuyQty: null,
+              multibuyTotal: null,
+              promoValidFrom: null,
+              promoValidTo: null,
+            }
           : row,
       ),
     );
@@ -133,6 +156,22 @@ export class PriceEntryForm {
   updateRowMultibuyTotal(key: number, multibuyTotal: number | null): void {
     this.rows.update((rows) =>
       rows.map((row) => (row.key === key ? { ...row, multibuyTotal } : row)),
+    );
+  }
+
+  updateRowPromoValidFrom(key: number, date: Date | null): void {
+    this.rows.update((rows) =>
+      rows.map((row) =>
+        row.key === key ? { ...row, promoValidFrom: date ? toIsoDate(date) : null } : row,
+      ),
+    );
+  }
+
+  updateRowPromoValidTo(key: number, date: Date | null): void {
+    this.rows.update((rows) =>
+      rows.map((row) =>
+        row.key === key ? { ...row, promoValidTo: date ? toIsoDate(date) : null } : row,
+      ),
     );
   }
 

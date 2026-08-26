@@ -17,6 +17,8 @@ function row(overrides: Partial<PriceRow> = {}): PriceRow {
     priceAmount: null,
     multibuyQty: null,
     multibuyTotal: null,
+    promoValidFrom: null,
+    promoValidTo: null,
     ...overrides,
   };
 }
@@ -39,6 +41,60 @@ describe('isPriceRowValid', () => {
     ).toBe(false);
     expect(
       isPriceRowValid(row({ priceKind: PriceKind.Multibuy, multibuyQty: 3, multibuyTotal: null })),
+    ).toBe(false);
+  });
+});
+
+function isoDateOffset(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+describe('isPriceRowValid — promo validity', () => {
+  it('allows PROMO without any validity dates', () => {
+    expect(isPriceRowValid(row({ priceKind: PriceKind.Promo, priceAmount: 19.9 }))).toBe(true);
+  });
+
+  it('allows PROMO with a validity range in the past/near future', () => {
+    expect(
+      isPriceRowValid(
+        row({
+          priceKind: PriceKind.Promo,
+          priceAmount: 19.9,
+          promoValidFrom: isoDateOffset(-2),
+          promoValidTo: isoDateOffset(5),
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects validity dates on any kind other than PROMO', () => {
+    expect(
+      isPriceRowValid(
+        row({ priceKind: PriceKind.Regular, priceAmount: 29.9, promoValidTo: isoDateOffset(5) }),
+      ),
+    ).toBe(false);
+  });
+
+  it('rejects promoValidFrom after promoValidTo', () => {
+    expect(
+      isPriceRowValid(
+        row({
+          priceKind: PriceKind.Promo,
+          priceAmount: 19.9,
+          promoValidFrom: isoDateOffset(0),
+          promoValidTo: isoDateOffset(-1),
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it('rejects promoValidFrom in the future', () => {
+    expect(
+      isPriceRowValid(
+        row({ priceKind: PriceKind.Promo, priceAmount: 19.9, promoValidFrom: isoDateOffset(1) }),
+      ),
     ).toBe(false);
   });
 });
@@ -118,6 +174,29 @@ describe('toObservationPriceInputs', () => {
       multibuyTotal: 50,
     });
     expect(input).not.toHaveProperty('priceAmount');
+  });
+
+  it('sends promoValidFrom/promoValidTo only for PROMO', () => {
+    const [promoInput] = toObservationPriceInputs([
+      row({
+        priceKind: PriceKind.Promo,
+        priceAmount: 19.9,
+        promoValidFrom: '2026-08-01',
+        promoValidTo: '2026-08-31',
+      }),
+    ]);
+    expect(promoInput).toEqual({
+      priceKind: PriceKind.Promo,
+      priceAmount: 19.9,
+      promoValidFrom: '2026-08-01',
+      promoValidTo: '2026-08-31',
+    });
+
+    const [regularInput] = toObservationPriceInputs([
+      row({ priceKind: PriceKind.Regular, priceAmount: 29.9 }),
+    ]);
+    expect(regularInput).not.toHaveProperty('promoValidFrom');
+    expect(regularInput).not.toHaveProperty('promoValidTo');
   });
 });
 

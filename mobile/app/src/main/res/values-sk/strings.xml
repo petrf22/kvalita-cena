@@ -266,6 +266,7 @@
     <string name="product_write_observation">Zapísať cenu</string>
     <string name="product_reported_summary">%1$d× nahlásené · naposledy %2$s</string>
     <string name="product_report_hidden">Ďakujeme za nahlásenie — položka je teraz skrytá a čaká na preskúmanie.</string>
+    <string name="product_promo_valid_until">platí do %1$s</string>
 
     <string name="price_entry_code_unknown">Kód %1$s zatiaľ v katalógu nepoznáme.</string>
     <string name="price_entry_create_product">Založiť tovar</string>
@@ -281,6 +282,9 @@
     <string name="price_entry_multibuy_qty_label">Počet kusov</string>
     <string name="price_entry_multibuy_total_label">Cena za balíček (%1$s)</string>
     <string name="price_entry_multibuy_hint">Napr. „3 kusy za 50 Kč“ — zadaj počet kusov a celkovú cenu.</string>
+    <string name="price_entry_promo_valid_from_label">Akcia platí od</string>
+    <string name="price_entry_promo_valid_to_label">Akcia platí do</string>
+    <string name="price_entry_promo_validity_hint">Oba dátumy sú voliteľné — od nesmie byť v budúcnosti, do môže.</string>
     <string name="price_entry_submit">Zapísať cenu</string>
     <string name="price_entry_back_without_price">Späť bez zadania ceny</string>
     <string name="price_entry_submit_success">Cena bola zapísaná, ďakujeme!</string>
@@ -309,6 +313,7 @@
     <string name="store_photos_title">Fotky</string>
     <string name="store_location_title">Poloha</string>
     <string name="store_open_in_map_app">Otvoriť v mapovej aplikácii</string>
+    <string name="store_open_website">Otvoriť web obchodu</string>
     <string name="store_no_location">Táto prevádzka zatiaľ nemá súradnice.</string>
     <string name="store_operator_title">Prevádzkovateľ</string>
     <string name="store_report_hidden">Ďakujeme za nahlásenie — prevádzka je teraz skrytá a čaká na preskúmanie.</string>
@@ -326,6 +331,8 @@
     <string name="store_form_street_label">Ulica a číslo (voliteľné)</string>
     <string name="store_form_city_label">Mesto</string>
     <string name="store_form_postal_code_label">PSČ (voliteľné)</string>
+    <string name="store_form_url_label">Web obchodu (voliteľné)</string>
+    <string name="store_form_url_invalid">Odkaz musí začínať http:// alebo https://.</string>
     <string name="store_form_country_label">Krajina</string>
     <string name="store_form_similar_warning">Nemyslíš skôr niektorý z týchto už existujúcich obchodov?</string>
     <string name="store_form_save_changes">Uložiť zmeny</string>

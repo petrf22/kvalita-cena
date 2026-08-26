@@ -266,6 +266,7 @@
     <string name="product_write_observation">Record a price</string>
     <string name="product_reported_summary">reported %1$d× · last %2$s</string>
     <string name="product_report_hidden">Thanks for reporting — the item is now hidden and awaiting review.</string>
+    <string name="product_promo_valid_until">valid until %1$s</string>
 
     <string name="price_entry_code_unknown">We don\'t yet know the code %1$s in the catalog.</string>
     <string name="price_entry_create_product">Create product</string>
@@ -281,6 +282,9 @@
     <string name="price_entry_multibuy_qty_label">Quantity</string>
     <string name="price_entry_multibuy_total_label">Total price (%1$s)</string>
     <string name="price_entry_multibuy_hint">E.g. \"3 for 50\" — enter the quantity and the total price.</string>
+    <string name="price_entry_promo_valid_from_label">Promo valid from</string>
+    <string name="price_entry_promo_valid_to_label">Promo valid until</string>
+    <string name="price_entry_promo_validity_hint">Both dates are optional — \"from\" can\'t be in the future, \"until\" can.</string>
     <string name="price_entry_submit">Record price</string>
     <string name="price_entry_back_without_price">Back without recording a price</string>
     <string name="price_entry_submit_success">Price recorded, thanks!</string>
@@ -309,6 +313,7 @@
     <string name="store_photos_title">Photos</string>
     <string name="store_location_title">Location</string>
     <string name="store_open_in_map_app">Open in maps app</string>
+    <string name="store_open_website">Open store website</string>
     <string name="store_no_location">This store doesn\'t have coordinates yet.</string>
     <string name="store_operator_title">Operator</string>
     <string name="store_report_hidden">Thanks for reporting — the store is now hidden and awaiting review.</string>
@@ -326,6 +331,8 @@
     <string name="store_form_street_label">Street and number (optional)</string>
     <string name="store_form_city_label">City</string>
     <string name="store_form_postal_code_label">Postal code (optional)</string>
+    <string name="store_form_url_label">Store website (optional)</string>
+    <string name="store_form_url_invalid">The link must start with http:// or https://.</string>
     <string name="store_form_country_label">Country</string>
     <string name="store_form_similar_warning">Did you mean one of these existing stores?</string>
     <string name="store_form_save_changes">Save changes</string>

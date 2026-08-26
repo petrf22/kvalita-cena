@@ -60,6 +60,12 @@ public class Store implements Persistable<Long> {
   @Column(name = "osm_ref", length = 32)
   private String osmRef;
 
+  // Odkaz na stránku provozovny u řetězce — jako street/city/postalCode jde skutečná hodnota
+  // vždy přes uživatelskou vrstvu (StoreUserEdit, StoreOverlayService), tenhle sloupec je
+  // globální fakt, který přepíše až konsolidace (docs/datovy-model.md).
+  @Column(name = "url", length = 300)
+  private String url;
+
   // Volitelný identifikátor provozovatele (podniková prodejna družstva, OSVČ) — u CZ 8 číslic,
   // ověřitelné v ARES (docs/soukromi.md — veřejný rejstřík, ne osobní údaj). Délka 20 kvůli
   // dalším zemím (PL NIP 10, FR SIRET 14, CH UID 12+ — CompanyIdValidators, docs/lokalizace.md).

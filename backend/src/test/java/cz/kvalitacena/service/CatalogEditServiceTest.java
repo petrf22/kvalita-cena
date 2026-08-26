@@ -113,7 +113,7 @@ class CatalogEditServiceTest {
   @Test
   void anonymousCannotUpdateStore() {
     UpdateStoreInput input = new UpdateStoreInput("Nový název", null, null, null, null, null, null,
-        null, null, null, null, null, null, null, null);
+        null, null, null, null, null, null, null, null, null, null);
     assertThatThrownBy(() -> service().updateStore(STORE_ID, input, null))
         .isInstanceOf(UnauthorizedException.class);
   }
@@ -193,7 +193,51 @@ class CatalogEditServiceTest {
     when(storeUserEditRepository.findByStoreIdAndUserId(STORE_ID, USER_ID)).thenReturn(Optional.empty());
 
     UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
-        null, "12345678", null, null, null, null, null);
+        null, "12345678", null, null, null, null, null, null, null);
+    assertThatThrownBy(() -> service().updateStore(STORE_ID, input, PUBLIC_UID))
+        .isInstanceOf(ValidationException.class);
+  }
+
+  @Test
+  void changedUrlIsStoredInPatch() {
+    givenLoggedInUser();
+    when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(Store.builder().id(STORE_ID)
+        .name("Obchod").city("Brno").country("CZ").build()));
+    when(storeUserEditRepository.findByStoreIdAndUserId(STORE_ID, USER_ID)).thenReturn(Optional.empty());
+
+    UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, "https://www.example.cz/prodejna", null);
+    service().updateStore(STORE_ID, input, PUBLIC_UID);
+
+    ArgumentCaptor<StoreUserEdit> captor = ArgumentCaptor.forClass(StoreUserEdit.class);
+    verify(storeUserEditRepository).save(captor.capture());
+    assertThat(captor.getValue().getUrl()).isEqualTo("https://www.example.cz/prodejna");
+  }
+
+  @Test
+  void urlEqualToGlobalValueIsNotStoredAsPatch() {
+    givenLoggedInUser();
+    when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(Store.builder().id(STORE_ID)
+        .name("Obchod").city("Brno").country("CZ").url("https://www.example.cz/prodejna").build()));
+    when(storeUserEditRepository.findByStoreIdAndUserId(STORE_ID, USER_ID)).thenReturn(Optional.empty());
+
+    UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, "https://www.example.cz/prodejna", null);
+    service().updateStore(STORE_ID, input, PUBLIC_UID);
+
+    verify(storeUserEditRepository, never()).save(any());
+    verify(storeUserEditRepository, never()).delete(any());
+  }
+
+  @Test
+  void invalidUrlIsRejected() {
+    givenLoggedInUser();
+    when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(Store.builder().id(STORE_ID)
+        .name("Obchod").city("Brno").country("CZ").build()));
+    when(storeUserEditRepository.findByStoreIdAndUserId(STORE_ID, USER_ID)).thenReturn(Optional.empty());
+
+    UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, "not-a-url", null);
     assertThatThrownBy(() -> service().updateStore(STORE_ID, input, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
   }
@@ -212,7 +256,7 @@ class CatalogEditServiceTest {
     when(storeUserEditRepository.findByStoreIdAndUserId(STORE_ID, USER_ID)).thenReturn(Optional.empty());
 
     UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
-        "SK", null, null, null, null, null, null);
+        "SK", null, null, null, null, null, null, null, null);
     service().updateStore(STORE_ID, input, PUBLIC_UID);
 
     assertThat(store.getCountry()).isEqualTo("SK");
@@ -230,7 +274,7 @@ class CatalogEditServiceTest {
     when(storeUserEditRepository.findByStoreIdAndUserId(STORE_ID, USER_ID)).thenReturn(Optional.empty());
 
     UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
-        "SK", null, null, null, null, null, null);
+        "SK", null, null, null, null, null, null, null, null);
     assertThatThrownBy(() -> service().updateStore(STORE_ID, input, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
     verify(storeRepository, never()).save(any());
@@ -244,7 +288,7 @@ class CatalogEditServiceTest {
     when(storeUserEditRepository.findByStoreIdAndUserId(STORE_ID, USER_ID)).thenReturn(Optional.empty());
 
     UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
-        "AT", null, null, null, null, null, null);
+        "AT", null, null, null, null, null, null, null, null);
     assertThatThrownBy(() -> service().updateStore(STORE_ID, input, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
   }
@@ -259,7 +303,7 @@ class CatalogEditServiceTest {
     // Stejná země jako globální hodnota — nejde o skutečnou změnu, trustLevelService se
     // vůbec nezavolá (nemockovaný isTrusted by jinak vrátil Mockito default false a spadlo by).
     UpdateStoreInput input = new UpdateStoreInput(null, null, null, null, null, null, null, null,
-        "CZ", null, null, null, null, null, null);
+        "CZ", null, null, null, null, null, null, null, null);
     service().updateStore(STORE_ID, input, PUBLIC_UID);
 
     verify(storeRepository, never()).save(any());

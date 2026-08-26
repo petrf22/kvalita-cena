@@ -93,6 +93,7 @@ export class StoreForm {
   protected readonly city = signal('');
   protected readonly postalCode = signal('');
   protected readonly ico = signal('');
+  protected readonly url = signal('');
 
   /**
    * Určuje popisek/tvar IČO-NIP a viditelnost "Načíst z ARES" (docs/lokalizace.md) a je teď i
@@ -146,6 +147,7 @@ export class StoreForm {
       this.city.set(store.city);
       this.postalCode.set(store.postalCode ?? '');
       this.ico.set(store.ico ?? '');
+      this.url.set(store.url ?? '');
       this.country.set(store.country);
       // Store (GraphQL) nevrací osmRef zvoleného kandidáta (jen core.store.osm_ref interně),
       // takže se u editace nedá obnovit "vybraný kandidát" — jen souřadnice samotné. Dokud
@@ -298,7 +300,12 @@ export class StoreForm {
   }
 
   isValid(): boolean {
-    return this.name().trim().length > 0 && this.city().trim().length > 0 && this.isIcoShapeValid();
+    return (
+      this.name().trim().length > 0 &&
+      this.city().trim().length > 0 &&
+      this.isIcoShapeValid() &&
+      this.isUrlShapeValid()
+    );
   }
 
   isIcoShapeValid(): boolean {
@@ -306,6 +313,18 @@ export class StoreForm {
     if (ico === '') return true;
     const digits = this.companyIdDigits();
     return digits == null || new RegExp(`^\\d{${digits}}$`).test(ico);
+  }
+
+  /** Jen tvar (http/https + host) — appka odkaz nikdy nenačítá, viz backend UrlValidation. */
+  isUrlShapeValid(): boolean {
+    const url = this.url().trim();
+    if (url === '') return true;
+    try {
+      const parsed = new URL(url);
+      return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.host !== '';
+    } catch {
+      return false;
+    }
   }
 
   submit(): void {
@@ -335,6 +354,7 @@ export class StoreForm {
           lon,
           geoSource,
           osmRef,
+          url: this.url().trim() || null,
         });
 
     request.subscribe({
@@ -375,6 +395,8 @@ export class StoreForm {
       lon,
       geoSource,
       osmRef,
+      url: this.url().trim() || null,
+      clearUrl: this.url().trim() === '',
     };
   }
 }

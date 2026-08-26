@@ -20,6 +20,7 @@
   "colConfidence": "Confidence",
   "colLastReported": "Last reported",
   "observationCount": "{count, plural, one {# record} other {# records}}",
+  "promoValidUntil": "valid until {{date}}",
   "myPricesTitle": "Your price",
   "externalLinksTitle": "More information",
   "submitTitle": "Add price",

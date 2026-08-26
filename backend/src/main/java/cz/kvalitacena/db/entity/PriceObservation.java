@@ -65,6 +65,11 @@ public class PriceObservation implements Persistable<Long> {
   @Column(name = "unit_price", insertable = false, updatable = false, precision = 12, scale = 4)
   private BigDecimal unitPrice;
 
+  // Platnost akce (jen PROMO) — promoValidFrom nesmí být v budoucnu, viz PriceObservationService
+  // (docs/datovy-model.md). Ceny z letáku, kde OD ještě nezačalo, zůstávají mimo tenhle model.
+  @Column(name = "promo_valid_from")
+  private LocalDate promoValidFrom;
+
   @Column(name = "promo_valid_to")
   private LocalDate promoValidTo;
 

@@ -131,6 +131,15 @@ public class PriceAggregationService {
         .max(Comparator.naturalOrder())
         .orElse(null);
 
+    // MAX napříč observacemi buňky, ne medián — radši akci zobrazit o něco déle než skrýt
+    // ještě platnou (docs/datovy-model.md). Vypršelou akci teprve filtruje čtecí vrstva
+    // (ProductGraphQlController), tahle hodnota jen říká, kdy poslední z nich přestane platit.
+    LocalDate promoValidTo = observations.stream()
+        .map(PriceObservation::getPromoValidTo)
+        .filter(Objects::nonNull)
+        .max(Comparator.naturalOrder())
+        .orElse(null);
+
     PriceCurrentId id = new PriceCurrentId(productId, storeId, kindCurrency.priceKind(), kindCurrency.currency());
     PriceCurrent priceCurrent = priceCurrentRepository.findById(id).orElseGet(() ->
         PriceCurrent.builder().productId(productId).storeId(storeId)
@@ -143,6 +152,7 @@ public class PriceAggregationService {
     priceCurrent.setSumWeight(stats.sumWeight());
     priceCurrent.setLastObservedAt(lastObservedAt);
     priceCurrent.setConfidence(confidenceFor(stats.nEff(), generic));
+    priceCurrent.setPromoValidTo(promoValidTo);
 
     priceCurrentRepository.save(priceCurrent);
   }

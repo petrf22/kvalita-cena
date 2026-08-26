@@ -48,7 +48,7 @@ public record AccountExportResponse(
 
   /** country tu není — updateStore ji zapisuje přímo do core.store, ne do patche (docs/lokalizace.md, "Country selector v UI"). */
   public record StoreEditExport(String storeName, String name, String street, String city,
-      String postalCode, String ico, BigDecimal lat, BigDecimal lon,
+      String postalCode, String ico, BigDecimal lat, BigDecimal lon, String url,
       List<String> clearedFields, OffsetDateTime updatedAt) {
   }
 }

@@ -11,6 +11,9 @@
   "multibuyQtyLabel": "Anzahl",
   "multibuyTotalLabel": "Gesamtpreis ({{currency}})",
   "multibuyHint": "Z. B. „3 Stück für 5 €“ — gib die Anzahl und den Gesamtpreis ein.",
+  "promoValidFromLabel": "Aktion gültig ab",
+  "promoValidToLabel": "Aktion gültig bis",
+  "promoValidityHint": "Beide Daten sind optional — „ab“ darf nicht in der Zukunft liegen, „bis“ schon.",
   "submit": "Preis speichern",
   "submitSuccess": "Der Preis wurde gespeichert, danke!",
   "submitFailed": "Das Speichern ist fehlgeschlagen, bitte versuch es erneut."

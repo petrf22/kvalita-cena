@@ -19,3 +19,11 @@ fun isIcoShapeValid(ico: String, country: String? = "CZ"): Boolean {
   val digits = companyIdDigits(country) ?: return true
   return ico.matches(Regex("^\\d{$digits}$"))
 }
+
+/** Jen tvar (http/https + host) — appka odkaz nikdy nenačítá, viz backend UrlValidation. */
+fun isUrlShapeValid(url: String): Boolean {
+  if (url.isBlank()) return true
+  val uri = runCatching { java.net.URI(url) }.getOrNull() ?: return false
+  val scheme = uri.scheme?.lowercase()
+  return (scheme == "http" || scheme == "https") && !uri.host.isNullOrBlank()
+}

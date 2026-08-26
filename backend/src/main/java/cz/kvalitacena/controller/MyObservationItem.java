@@ -5,6 +5,7 @@ import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.Store;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 /**
@@ -15,5 +16,6 @@ import java.time.OffsetDateTime;
  */
 public record MyObservationItem(Product product, Store store, PriceKind priceKind, BigDecimal priceAmount,
                                   BigDecimal unitPrice, String currency, ConvertedPrice converted,
+                                  LocalDate promoValidFrom, LocalDate promoValidTo,
                                   OffsetDateTime observedAt, OffsetDateTime createdAt, PublicationStatus publication) {
 }

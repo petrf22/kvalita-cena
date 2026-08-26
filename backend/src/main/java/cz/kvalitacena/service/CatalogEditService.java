@@ -238,6 +238,18 @@ public class CatalogEditService {
       edit.setOsmRef(input.osmRef().equals(store.getOsmRef()) ? null : input.osmRef());
     }
 
+    if (input.url() != null) {
+      String trimmed = input.url().trim();
+      if (!UrlValidation.isValidStoreUrl(trimmed)) {
+        throw new ValidationException(ErrorCode.STORE_URL_INVALID);
+      }
+      edit.setUrl(trimmed.equals(store.getUrl()) ? null : trimmed);
+      cleared.remove("url");
+    } else if (Boolean.TRUE.equals(input.clearUrl())) {
+      edit.setUrl(null);
+      setCleared(cleared, "url", store.getUrl() != null);
+    }
+
     edit.setClearedFields(cleared);
     if (isStoreEditEmpty(edit)) {
       existing.ifPresent(storeUserEditRepository::delete);
@@ -274,7 +286,8 @@ public class CatalogEditService {
     return edit.getName() == null && edit.getChainId() == null && edit.getStreet() == null
         && edit.getCity() == null && edit.getPostalCode() == null
         && edit.getIco() == null && edit.getLat() == null && edit.getLon() == null
-        && edit.getGeoSource() == null && edit.getOsmRef() == null && edit.getClearedFields().isEmpty();
+        && edit.getGeoSource() == null && edit.getOsmRef() == null && edit.getUrl() == null
+        && edit.getClearedFields().isEmpty();
   }
 
   private boolean bigDecimalEquals(BigDecimal a, BigDecimal b) {

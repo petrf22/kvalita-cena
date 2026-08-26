@@ -52,6 +52,9 @@ data class Store(
   val lon: Double? = null,
   val geoSource: String = "COMMUNITY",
   val ico: String? = null,
+  // Odkaz na stránku provozovny (u řetězce) — volitelný, jako street/city jde přes
+  // core.store_user_edit (docs/datovy-model.md).
+  val url: String? = null,
   // Uživatelská vrstva nad globálními daty (docs/datovy-model.md) — konsolidační job zatím
   // neběží, takže verified je v etapě 1 vždy false.
   val verified: Boolean = false,
@@ -111,6 +114,9 @@ data class PriceCurrent(
   // ISO-4217 kód (docs/lokalizace.md) — vždy vyplněné, appka ho nesmí nahradit natvrdo "Kč".
   val currency: String,
   val converted: ConvertedPrice? = null,
+  // MAX(promoValidTo) napříč observacemi buňky (jen PROMO) — vypršelou akci server do
+  // Product.prices vůbec nevrátí (docs/datovy-model.md), takže je-li vyplněné, akce ještě platí.
+  val promoValidTo: String? = null,
 )
 
 @Serializable
@@ -153,6 +159,8 @@ data class MyPrice(
   val observedAt: String,
   val currency: String,
   val converted: ConvertedPrice? = null,
+  val promoValidFrom: String? = null,
+  val promoValidTo: String? = null,
 )
 
 /** Lehčí varianta Product pro řádek seznamu hledání — bez cen a bez agregátů (ty jsou na ProductSearchItem). */
@@ -338,6 +346,10 @@ data class ObservationPriceInput(
   val priceAmount: Double? = null,
   val multibuyQty: Int? = null,
   val multibuyTotal: Double? = null,
+  // Platnost akce (jen PROMO, docs/datovy-model.md) — obě nepovinné, promoValidFrom nesmí
+  // být v budoucnu (server to validuje, appka jen zrcadlí).
+  val promoValidFrom: String? = null,
+  val promoValidTo: String? = null,
 )
 
 /**
@@ -423,6 +435,7 @@ data class CreateStoreInput(
   val lon: Double? = null,
   val geoSource: String? = null,
   val osmRef: String? = null,
+  val url: String? = null,
 )
 
 @Serializable
@@ -471,6 +484,8 @@ data class UpdateStoreInput(
   val lon: Double? = null,
   val geoSource: String? = null,
   val osmRef: String? = null,
+  val url: String? = null,
+  val clearUrl: Boolean = false,
 )
 
 /** Zobrazovací měny a stav kurzovního lístku ČNB — pro atribuci v Nastavení (docs/lokalizace.md). */
@@ -513,6 +528,8 @@ data class PriceObservation(
   val unitPrice: Double? = null,
   val priceKind: String,
   val quantityBasis: String,
+  val promoValidFrom: String? = null,
+  val promoValidTo: String? = null,
   val observedAt: String,
   val status: String,
 )
@@ -577,6 +594,8 @@ data class MyObservationItem(
   val unitPrice: Double? = null,
   val currency: String,
   val converted: ConvertedPrice? = null,
+  val promoValidFrom: String? = null,
+  val promoValidTo: String? = null,
   val observedAt: String,
   val createdAt: String,
   val publication: PublicationStatus,

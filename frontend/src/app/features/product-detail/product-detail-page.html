@@ -169,7 +169,14 @@
                 <td>
                   <a [routerLink]="['/store', price.store.id]">{{ price.store.name }}</a>
                 </td>
-                <td>{{ priceKindKeys[price.priceKind] | transloco }}</td>
+                <td>
+                  {{ priceKindKeys[price.priceKind] | transloco }}
+                  @if (price.promoValidTo) {
+                    <span class="promo-validity-note">{{
+                      t('product-detail.promoValidUntil', { date: format.date(price.promoValidTo) })
+                    }}</span>
+                  }
+                </td>
                 <td>{{ price.priceAmount | money: price.currency }}</td>
                 <td>
                   @if (price.converted; as converted) {
@@ -215,6 +222,11 @@
                 {{ mp.priceAmount | money: mp.currency }}
               }
               <span class="my-price-date">({{ mp.observedAt | relativeDate }})</span>
+              @if (mp.promoValidTo) {
+                <span class="promo-validity-note">{{
+                  t('product-detail.promoValidUntil', { date: format.date(mp.promoValidTo) })
+                }}</span>
+              }
             </li>
           }
         </ul>

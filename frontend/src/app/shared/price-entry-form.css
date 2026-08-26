@@ -40,6 +40,23 @@
   font-size: 12px;
 }
 
+.promo-validity {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.promo-validity nz-date-picker {
+  flex: 1;
+  min-width: 0;
+}
+
+.promo-validity-hint {
+  margin: 4px 0 0;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
 .add-price {
   margin-bottom: 16px;
 }

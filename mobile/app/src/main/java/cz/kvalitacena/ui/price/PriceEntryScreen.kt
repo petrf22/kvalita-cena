@@ -1,10 +1,12 @@
 package cz.kvalitacena.ui.price
 
 import android.Manifest
+import android.app.DatePickerDialog
 import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -52,11 +54,13 @@ import cz.kvalitacena.R
 import cz.kvalitacena.location.getCurrentLocation
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.SELECTABLE_PRICE_KINDS
+import cz.kvalitacena.ui.common.formatShortDate
 import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.StorePicker
 import cz.kvalitacena.ui.common.currencyForCountry
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
+import java.time.LocalDate
 import java.util.Currency
 import kotlinx.coroutines.launch
 
@@ -224,6 +228,13 @@ fun PriceEntryScreen(
                   ),
                   style = MaterialTheme.typography.bodySmall,
                 )
+                price.promoValidTo?.let { validTo ->
+                  Text(
+                    stringResource(R.string.product_promo_valid_until, formatShortDate(validTo)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                  )
+                }
               }
               HorizontalDivider()
             }
@@ -447,6 +458,70 @@ private fun PriceRowFields(
         modifier = Modifier.fillMaxWidth(),
       )
     }
+
+    if (row.priceKind == "PROMO") {
+      Gap()
+      Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        PromoDateField(
+          value = row.promoValidFrom,
+          label = stringResource(R.string.price_entry_promo_valid_from_label),
+          // Od nesmí být v budoucnu — zapisuje se cena, kterou uživatel VIDĚL v regále.
+          maxDate = LocalDate.now(),
+          onChange = { date -> onChange { it.copy(promoValidFrom = date) } },
+          modifier = Modifier.weight(1f),
+        )
+        PromoDateField(
+          value = row.promoValidTo,
+          label = stringResource(R.string.price_entry_promo_valid_to_label),
+          maxDate = null,
+          onChange = { date -> onChange { it.copy(promoValidTo = date) } },
+          modifier = Modifier.weight(1f),
+        )
+      }
+      Text(
+        stringResource(R.string.price_entry_promo_validity_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+    }
+  }
+}
+
+/** Datum jako ISO řetězec (yyyy-MM-dd) — klik na pole otevře nativní [android.app.DatePickerDialog],
+ *  pole samo je jen pro zobrazení (readOnly), ať klávesnice nenabízí volný text do datumu. */
+@Composable
+private fun PromoDateField(
+  value: String,
+  label: String,
+  maxDate: LocalDate?,
+  onChange: (String) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val context = LocalContext.current
+  androidx.compose.foundation.layout.Box(modifier = modifier) {
+    SingleLineTextField(
+      value = value,
+      onValueChange = {},
+      readOnly = true,
+      label = label,
+      modifier = Modifier.fillMaxWidth(),
+    )
+    androidx.compose.foundation.layout.Box(
+      modifier = Modifier.matchParentSize().clickable {
+        val initial = value.takeIf { it.isNotBlank() }?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+          ?: maxDate ?: LocalDate.now()
+        val dialog = DatePickerDialog(
+          context,
+          { _, year, month, dayOfMonth -> onChange(LocalDate.of(year, month + 1, dayOfMonth).toString()) },
+          initial.year,
+          initial.monthValue - 1,
+          initial.dayOfMonth,
+        )
+        if (maxDate != null) dialog.datePicker.maxDate = maxDate.atStartOfDay(java.time.ZoneId.systemDefault())
+          .toInstant().toEpochMilli()
+        dialog.show()
+      },
+    )
   }
 }
 

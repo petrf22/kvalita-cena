@@ -25,5 +25,7 @@ public record UpdateStoreInput(
     BigDecimal lat,
     BigDecimal lon,
     GeoSource geoSource,
-    String osmRef) {
+    String osmRef,
+    String url,
+    Boolean clearUrl) {
 }

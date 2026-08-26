@@ -43,6 +43,11 @@
   margin-right: 24px;
 }
 
+.app-title img {
+  width: 40px;
+  height: 40px;
+}
+
 .app-menu {
   border-bottom: none;
   flex: 1;
@@ -62,6 +67,10 @@
 /* Na mobilním prohlížeči se stejné menu chová jako klasické spodní menu (viz zadání). */
 @media (max-width: 600px) {
   .app-title {
+    margin-right: 0;
+  }
+
+  .app-title-text {
     display: none;
   }
 

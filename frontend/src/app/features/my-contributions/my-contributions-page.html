@@ -132,6 +132,11 @@
                     {{ item.priceAmount | money: item.currency }}
                   }
                   <span class="item-date">({{ item.observedAt | relativeDate }})</span>
+                  @if (item.promoValidTo) {
+                    <span class="item-date">{{
+                      t('my-contributions.promoValidUntil', { date: format.date(item.promoValidTo) })
+                    }}</span>
+                  }
                 </div>
                 <app-publication-status [status]="item.publication" kind="observation" />
               </nz-list-item>

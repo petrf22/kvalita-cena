@@ -31,7 +31,10 @@ na stránce „Zadat cenu" a v detailu produktu), samostatná stránka „Zadat 
 (`features/product-form`, `shared/store-form.ts`) včetně zpětného data (`observedAt`), stránka
 nastavení. Zápis ceny umí víc cen z jedné cenovky najednou (`shared/price-rows.ts` — běžná +
 klubová + množstevní/MULTIBUY se zadají jedním „+" formulářem a odešlou jedním voláním
-`submitObservations`, kolize jediného druhu ceny shodí celou dávku). Android: bottom navigation
+`submitObservations`, kolize jediného druhu ceny shodí celou dávku). PROMO navíc umí nepovinnou
+platnost „od–do" (`promo_valid_from`/`promo_valid_to`, `docs/datovy-model.md`) — `od` nesmí být
+v budoucnu, vypršelá akce zmizí z aktuálních cen (`ProductGraphQlController`, filtr při čtení),
+v grafu historie zůstává. Android: bottom navigation
 ze 4 záložek (Sken/Hledat/Nastavení/Účet — `ui/navigation/AppDestinations.kt`), hledání, detail
 s Canvas grafem (`PriceChartGeometry.kt`, testováno JUnitem), zápis ceny ze skenu i z detailu
 přes sdílený `ui/common/StorePicker.kt` (napovídání podle názvu/města, ne jen GPS) a
@@ -57,7 +60,9 @@ i Android odráží čtecí stranu stejným rozsahem (badge „neověřeno"/„v
 tlačítko „Nahlásit", gating zakládání pro anonyma — web `store-picker`/`price-entry-page`,
 mobil `ui/common/StorePicker.kt`/`ui/price/PriceEntryScreen.kt`) — **inline úprava existujícího
 obchodu v UI je teď hotová** (web `features/store-detail`, mobil `ui/store/StoreDetailScreen.kt`
-+ `StoreFormScreen.kt` v režimu editace, oba volají `updateStore`); **inline úprava zboží
++ `StoreFormScreen.kt` v režimu editace, oba volají `updateStore`) — obchod má i nepovinné pole
+`url` (odkaz na jeho stránku u řetězce), stejnou cestou přes `core.store_user_edit` jako
+street/postalCode; **inline úprava zboží
 (`updateProduct` z formuláře) zatím na žádném z klientů nechybí implementačně, ale UI ji pořád
 nevolá** — `GraphQlClient.updateProduct` (mobil) a `ProductService.updateProduct` (web)
 i backend mutace jsou hotové a otestované, jen na ně nemíří žádná obrazovka.

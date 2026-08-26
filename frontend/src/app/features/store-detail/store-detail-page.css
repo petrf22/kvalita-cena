@@ -8,6 +8,14 @@
   margin-bottom: 16px;
 }
 
+.website-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
 .status-badges {
   display: flex;
   align-items: center;

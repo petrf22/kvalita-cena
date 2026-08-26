@@ -65,6 +65,8 @@ public class StoreOverlayService {
     if (edit.getLon() != null) builder.lon(edit.getLon());
     if (edit.getGeoSource() != null) builder.geoSource(GeoSource.valueOf(edit.getGeoSource()));
     if (edit.getOsmRef() != null) builder.osmRef(edit.getOsmRef());
+    if (edit.getUrl() != null) builder.url(edit.getUrl());
+    else if (edit.getClearedFields().contains("url")) builder.url(null);
     builder.editedByMe(true);
     return builder.build();
   }

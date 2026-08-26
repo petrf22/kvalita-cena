@@ -46,6 +46,23 @@
     </nz-form-item>
 
     <nz-form-item>
+      <nz-form-label>{{ t('store.form.urlLabel') }}</nz-form-label>
+      <nz-form-control [nzValidateStatus]="isUrlShapeValid() ? '' : 'error'">
+        <input
+          nz-input
+          name="url"
+          type="url"
+          [ngModel]="url()"
+          (ngModelChange)="url.set($event)"
+          [placeholder]="t('store.form.urlPlaceholder')"
+        />
+        @if (!isUrlShapeValid()) {
+          <div class="field-error">{{ t('store.form.urlInvalid') }}</div>
+        }
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
       <nz-form-label>{{ t('store.form.countryLabel') }}</nz-form-label>
       <nz-form-control>
         <nz-select name="country" [ngModel]="country()" (ngModelChange)="country.set($event)">

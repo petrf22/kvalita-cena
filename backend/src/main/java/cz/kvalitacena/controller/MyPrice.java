@@ -4,6 +4,7 @@ import cz.kvalitacena.db.entity.PriceKind;
 import cz.kvalitacena.db.entity.Store;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 /**
@@ -12,5 +13,6 @@ import java.time.OffsetDateTime;
  * PriceAggregationService (běží jen co pár sekund, ale uživatel má vidět svůj zápis okamžitě).
  */
 public record MyPrice(Store store, PriceKind priceKind, BigDecimal priceAmount, BigDecimal unitPrice,
-                       OffsetDateTime observedAt, String currency, ConvertedPrice converted) {
+                       OffsetDateTime observedAt, String currency, ConvertedPrice converted,
+                       LocalDate promoValidFrom, LocalDate promoValidTo) {
 }

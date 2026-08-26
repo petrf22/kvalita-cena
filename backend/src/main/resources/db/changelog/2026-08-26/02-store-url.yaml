@@ -1,0 +1,34 @@
+# 02-store-url.yaml — nepovinný odkaz na stránku provozovny (docs/datovy-model.md).
+#
+# core.retail_chain.website (VARCHAR(300), 2026-07-26/02-stores.yaml) existuje jako precedens
+# pro délku, ale nikdy neopustil DB (chybí v GraphQL schématu) — tahle migrace se ho netýká.
+#
+# core.store.url jde stejnou cestou jako street/city/postalCode: sám o sobě je NEVIDITELNÝ,
+# skutečná hodnota se vždy zapisuje do core.store_user_edit (uživatelská vrstva nad globálními
+# daty, docs/datovy-model.md) a promítá se přes StoreOverlayService — na rozdíl od country
+# nemá URL žádný dopad na měnu ani validaci pro ostatní uživatele, takže nepotřebuje vyšší
+# důvěru jako country (viz 2026-08-16/01-store-country.yaml).
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-26-02-store-url
+      author: Petr F.
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: store
+            columns:
+              - column:
+                  name: url
+                  type: VARCHAR(300)
+
+  - changeSet:
+      id: 2026-08-26-02-store-user-edit-url
+      author: Petr F.
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: store_user_edit
+            columns:
+              - column:
+                  name: url
+                  type: VARCHAR(300)

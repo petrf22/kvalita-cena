@@ -1,5 +1,6 @@
 package cz.kvalitacena.ui.price
 
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -12,7 +13,9 @@ private fun row(
   priceAmount: String = "",
   multibuyQty: String = "",
   multibuyTotal: String = "",
-) = PriceRow(id, priceKind, priceAmount, multibuyQty, multibuyTotal)
+  promoValidFrom: String = "",
+  promoValidTo: String = "",
+) = PriceRow(id, priceKind, priceAmount, multibuyQty, multibuyTotal, promoValidFrom, promoValidTo)
 
 class PriceRowValidationTest {
 
@@ -107,5 +110,49 @@ class PriceRowValidationTest {
     assertEquals(29.9, inputs[0].priceAmount)
     assertNull(inputs[0].multibuyQty)
     assertNull(inputs[0].multibuyTotal)
+  }
+
+  @Test
+  fun promoAllowsNoValidityDates() {
+    assertTrue(isPriceRowValid(row(priceKind = "PROMO", priceAmount = "19.9")))
+  }
+
+  @Test
+  fun promoAllowsAValidityRangeInThePastOrNearFuture() {
+    val from = LocalDate.now().minusDays(2).toString()
+    val to = LocalDate.now().plusDays(5).toString()
+    assertTrue(isPriceRowValid(row(priceKind = "PROMO", priceAmount = "19.9", promoValidFrom = from, promoValidTo = to)))
+  }
+
+  @Test
+  fun validityDatesAreRejectedOnAnyKindOtherThanPromo() {
+    val to = LocalDate.now().plusDays(5).toString()
+    assertFalse(isPriceRowValid(row(priceKind = "REGULAR", priceAmount = "29.9", promoValidTo = to)))
+  }
+
+  @Test
+  fun promoValidFromAfterValidToIsRejected() {
+    val from = LocalDate.now().toString()
+    val to = LocalDate.now().minusDays(1).toString()
+    assertFalse(isPriceRowValid(row(priceKind = "PROMO", priceAmount = "19.9", promoValidFrom = from, promoValidTo = to)))
+  }
+
+  @Test
+  fun promoValidFromInTheFutureIsRejected() {
+    val from = LocalDate.now().plusDays(1).toString()
+    assertFalse(isPriceRowValid(row(priceKind = "PROMO", priceAmount = "19.9", promoValidFrom = from)))
+  }
+
+  @Test
+  fun mappingSendsValidityDatesOnlyForPromo() {
+    val promoInputs = toObservationPriceInputs(
+      listOf(row(priceKind = "PROMO", priceAmount = "19.9", promoValidFrom = "2026-08-01", promoValidTo = "2026-08-31")),
+    )
+    assertEquals("2026-08-01", promoInputs[0].promoValidFrom)
+    assertEquals("2026-08-31", promoInputs[0].promoValidTo)
+
+    val regularInputs = toObservationPriceInputs(listOf(row(priceKind = "REGULAR", priceAmount = "29.9")))
+    assertNull(regularInputs[0].promoValidFrom)
+    assertNull(regularInputs[0].promoValidTo)
   }
 }

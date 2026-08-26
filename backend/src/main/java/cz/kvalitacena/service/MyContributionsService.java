@@ -230,7 +230,8 @@ public class MyContributionsService {
             displayCurrency, observation.getObservedAt().atZoneSameInstant(ZoneOffset.UTC).toLocalDate()));
 
     return new MyObservationItem(product, store, observation.getPriceKind(), observation.getPriceAmount(),
-        observation.getUnitPrice(), observation.getCurrency(), converted, observation.getObservedAt(),
+        observation.getUnitPrice(), observation.getCurrency(), converted,
+        observation.getPromoValidFrom(), observation.getPromoValidTo(), observation.getObservedAt(),
         observation.getCreatedAt(), publication);
   }
 
@@ -268,6 +269,7 @@ public class MyContributionsService {
     if (edit.getLon() != null) fields.add("lon");
     if (edit.getGeoSource() != null) fields.add("geoSource");
     if (edit.getOsmRef() != null) fields.add("osmRef");
+    if (edit.getUrl() != null || edit.getClearedFields().contains("url")) fields.add("url");
     return fields;
   }
 

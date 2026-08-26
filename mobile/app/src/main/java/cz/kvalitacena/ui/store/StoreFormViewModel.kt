@@ -48,6 +48,7 @@ class StoreFormViewModel(
   var city by mutableStateOf("")
   var postalCode by mutableStateOf("")
   var ico by mutableStateOf("")
+  var url by mutableStateOf("")
 
   /**
    * Určuje popisek/tvar IČO-NIP a viditelnost "Načíst z ARES" (docs/lokalizace.md). Uživatel ji
@@ -109,6 +110,7 @@ class StoreFormViewModel(
           city = store.city
           postalCode = store.postalCode.orEmpty()
           ico = store.ico.orEmpty()
+          url = store.url.orEmpty()
           country = store.country
           // Store (GraphQL) nevrací osmRef zvoleného kandidáta (jen core.store.osm_ref
           // interně), takže se u editace nedá obnovit "vybraný kandidát" — jen souřadnice
@@ -241,7 +243,7 @@ class StoreFormViewModel(
   }
 
   fun submit() {
-    if (!isStoreFormValid(name, city) || !isIcoShapeValid(ico, country)) return
+    if (!isStoreFormValid(name, city) || !isIcoShapeValid(ico, country) || !isUrlShapeValid(url)) return
     saving = true
     saveError = null
     val lat = selectedCandidate?.lat ?: manualLat
@@ -269,6 +271,8 @@ class StoreFormViewModel(
             lon = lon,
             geoSource = geoSource,
             osmRef = osmRef,
+            url = url.trim().ifBlank { null },
+            clearUrl = url.trim().isEmpty(),
           )
           graphQlClient.updateStore(editingStoreId!!, input)
         } else {
@@ -283,6 +287,7 @@ class StoreFormViewModel(
             lon = lon,
             geoSource = geoSource,
             osmRef = osmRef,
+            url = url.trim().ifBlank { null },
           )
           graphQlClient.createStore(input)
         }

@@ -4,6 +4,9 @@
     "streetLabel": "Street and number (optional)",
     "cityLabel": "City",
     "postalCodeLabel": "Postal code (optional)",
+    "urlLabel": "Store website (optional)",
+    "urlPlaceholder": "https://www.example.com/store",
+    "urlInvalid": "The link must start with http:// or https://.",
     "countryLabel": "Country",
     "country": {
       "CZ": "Czechia",
@@ -72,6 +75,7 @@
     "photosTitle": "Photos",
     "locationTitle": "Location",
     "openOnOsm": "Open on OpenStreetMap",
+    "openWebsite": "Open store website",
     "noLocation": "This store doesn't have coordinates yet.",
     "operatorTitle": "Operator",
     "editModalTitle": "Edit store"

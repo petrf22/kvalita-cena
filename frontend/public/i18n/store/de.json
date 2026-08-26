@@ -4,6 +4,9 @@
     "streetLabel": "Straße und Hausnummer (optional)",
     "cityLabel": "Stadt",
     "postalCodeLabel": "PLZ (optional)",
+    "urlLabel": "Website des Geschäfts (optional)",
+    "urlPlaceholder": "https://www.beispiel.de/filiale",
+    "urlInvalid": "Der Link muss mit http:// oder https:// beginnen.",
     "countryLabel": "Land",
     "country": {
       "CZ": "Tschechien",
@@ -72,6 +75,7 @@
     "photosTitle": "Fotos",
     "locationTitle": "Standort",
     "openOnOsm": "Auf OpenStreetMap öffnen",
+    "openWebsite": "Website des Geschäfts öffnen",
     "noLocation": "Dieses Geschäft hat noch keine Koordinaten.",
     "operatorTitle": "Betreiber",
     "editModalTitle": "Geschäft bearbeiten"

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 /**
@@ -66,4 +67,10 @@ public class PriceCurrent {
   @Column(name = "confidence", nullable = false, length = 10)
   @Builder.Default
   private Confidence confidence = Confidence.LOW;
+
+  // MAX(promo_valid_to) napříč observacemi buňky (PriceAggregationService) — radši akci
+  // zobrazit o něco déle než skrýt ještě platnou. Vypršelou akci filtruje až čtecí vrstva
+  // (ProductGraphQlController), ne agregace samotná (docs/datovy-model.md).
+  @Column(name = "promo_valid_to")
+  private LocalDate promoValidTo;
 }

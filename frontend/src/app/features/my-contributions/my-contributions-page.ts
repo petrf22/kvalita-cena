@@ -18,6 +18,7 @@ import { Observable } from 'rxjs';
 import { Viewer } from '../../models/auth';
 import { MyEditItem, MyObservationItem, MyProductItem, MyStoreItem } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
+import { FormatService } from '../../services/format-service';
 import { MyContributionsService } from '../../services/my-contributions-service';
 import { ViewerService } from '../../services/viewer-service';
 import { PRICE_KIND_KEYS, RECORD_TYPE_KEYS } from '../../shared/enum-labels';
@@ -53,6 +54,7 @@ const CHANGED_FIELD_KEYS: Record<string, string> = {
   lon: 'my-contributions.field.lon',
   geoSource: 'my-contributions.field.geoSource',
   osmRef: 'my-contributions.field.osmRef',
+  url: 'my-contributions.field.url',
 };
 
 interface PagedResult<T> {
@@ -120,6 +122,7 @@ export class MyContributionsPage {
   private readonly viewerService = inject(ViewerService);
   private readonly myContributionsService = inject(MyContributionsService);
   private readonly transloco = inject(TranslocoService);
+  protected readonly format = inject(FormatService);
 
   protected readonly viewer = signal<Viewer | null>(null);
 

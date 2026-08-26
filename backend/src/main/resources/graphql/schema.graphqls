@@ -355,6 +355,9 @@ input UpdateStoreInput {
   lon: Float
   geoSource: GeoSource
   osmRef: String
+  "Odkaz na stránku provozovny (u řetězce) — jako street/city jde přes core.store_user_edit."
+  url: String
+  clearUrl: Boolean = false
 }
 
 type FlagResult {
@@ -494,6 +497,8 @@ input CreateStoreInput {
   lon: Float
   geoSource: GeoSource
   osmRef: String
+  "Odkaz na stránku provozovny (u řetězce) — jako street/city jde přes core.store_user_edit."
+  url: String
 }
 
 input CreateProductInput {
@@ -627,6 +632,10 @@ type MyPrice {
   currency: String!
   "Přepočet do zobrazovací měny kurzem k observedAt (X-Display-Currency)."
   converted: ConvertedPrice
+  "Platnost akce (jen PROMO)."
+  promoValidFrom: Date
+  "Platnost akce (jen PROMO)."
+  promoValidTo: Date
 }
 
 """
@@ -688,6 +697,10 @@ type MyObservationItem {
   currency: String!
   "Přepočet do zobrazovací měny kurzem k observedAt (X-Display-Currency), stejný princip jako MyPrice.converted."
   converted: ConvertedPrice
+  "Platnost akce (jen PROMO)."
+  promoValidFrom: Date
+  "Platnost akce (jen PROMO)."
+  promoValidTo: Date
   observedAt: DateTime!
   createdAt: DateTime!
   """
@@ -965,6 +978,8 @@ type Store {
   geoSource: GeoSource!
   "Volitelný identifikátor provozovatele (podniková prodejna, OSVČ) — 8 číslic, viz docs/soukromi.md."
   ico: String
+  "Odkaz na stránku provozovny (u řetězce) — volitelný."
+  url: String
   "Konsolidační job zatím neběží — v etapě 1 vždy false, klient zobrazí štítek 'neověřeno'."
   verified: Boolean!
   "True, pokud pro tuhle provozovnu existuje uživatelův patch (core.store_user_edit)."
@@ -1069,6 +1084,12 @@ type PriceCurrent {
   currency: String!
   "Přepočet unitPrice do zobrazovací měny kurzem k lastObservedAt (X-Display-Currency)."
   converted: ConvertedPrice
+  """
+  MAX(promoValidTo) napříč observacemi buňky (jen PROMO, jinak null). Vypršelou akci
+  Product.prices vůbec nevrátí (ProductGraphQlController filtruje při čtení,
+  docs/datovy-model.md) — je-li tahle buňka vidět a pole je vyplněné, akce ještě platí.
+  """
+  promoValidTo: Date
 }
 
 enum QuantityBasis {
@@ -1094,6 +1115,10 @@ type PriceObservation {
   priceKind: PriceKind!
   quantityBasis: QuantityBasis!
   unitPrice: BigDecimal
+  "Platnost akce (jen PROMO) — kdy uživatel viděl, že akce začala platit."
+  promoValidFrom: Date
+  "Platnost akce (jen PROMO) — do kdy akce platí."
+  promoValidTo: Date
   observedAt: DateTime!
   status: ObservationStatus!
 }
@@ -1132,6 +1157,14 @@ input ObservationPriceInput {
   "Povinné pro MULTIBUY (např. „3 za 50“)."
   multibuyQty: Int
   multibuyTotal: BigDecimal
+  """
+  Platnost akce — smí se vyplnit jen u PROMO (jinak OBSERVATION_PROMO_VALIDITY_NOT_ALLOWED).
+  Obě pole nepovinná. Nesmí být v budoucnu — zapisuje se cena, kterou uživatel VIDĚL v regále,
+  ne cena z letáku, která ještě nezačala platit (jinak OBSERVATION_PROMO_VALID_FROM_IN_FUTURE).
+  """
+  promoValidFrom: Date
+  "Platnost akce — do kdy platí. Musí být >= promoValidFrom, jinak OBSERVATION_PROMO_VALIDITY_RANGE_INVALID."
+  promoValidTo: Date
 }
 
 """
@@ -1154,6 +1187,7 @@ enum ErrorCode {
   STORE_NAME_EMPTY
   STORE_CITY_REQUIRED
   STORE_CITY_EMPTY
+  STORE_URL_INVALID
   COMPANY_ID_INVALID
   UNSUPPORTED_COUNTRY
   STORE_COUNTRY_EDIT_REQUIRES_TRUST
@@ -1182,6 +1216,9 @@ enum ErrorCode {
   OBSERVATION_DUPLICATE_PRICE_KIND
   OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY
   OBSERVATION_PRICE_INCOMPLETE
+  OBSERVATION_PROMO_VALIDITY_NOT_ALLOWED
+  OBSERVATION_PROMO_VALIDITY_RANGE_INVALID
+  OBSERVATION_PROMO_VALID_FROM_IN_FUTURE
   QUALITY_REQUIRES_LOGIN
   QUALITY_GRADE_OUT_OF_RANGE
   FLAG_REQUIRES_LOGIN

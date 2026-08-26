@@ -20,6 +20,7 @@
   "colConfidence": "Spoľahlivosť",
   "colLastReported": "Posledné hlásenie",
   "observationCount": "{count, plural, one {# záznam} few {# záznamy} many {# záznamu} other {# záznamov}}",
+  "promoValidUntil": "platí do {{date}}",
   "myPricesTitle": "Vaša cena",
   "externalLinksTitle": "Ďalšie informácie",
   "submitTitle": "Zadať cenu",

@@ -4,6 +4,9 @@
     "streetLabel": "Ulice a číslo (volitelné)",
     "cityLabel": "Město",
     "postalCodeLabel": "PSČ (volitelné)",
+    "urlLabel": "Web obchodu (volitelné)",
+    "urlPlaceholder": "https://www.priklad.cz/prodejna",
+    "urlInvalid": "Odkaz musí začínat http:// nebo https://.",
     "countryLabel": "Země",
     "country": {
       "CZ": "Česko",
@@ -72,6 +75,7 @@
     "photosTitle": "Fotky",
     "locationTitle": "Poloha",
     "openOnOsm": "Otevřít na OpenStreetMap",
+    "openWebsite": "Otevřít web obchodu",
     "noLocation": "Tahle provozovna zatím nemá souřadnice.",
     "operatorTitle": "Provozovatel",
     "editModalTitle": "Upravit obchod"

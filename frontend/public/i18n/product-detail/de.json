@@ -20,6 +20,7 @@
   "colConfidence": "Zuverlässigkeit",
   "colLastReported": "Letzte Meldung",
   "observationCount": "{count, plural, one {# Eintrag} other {# Einträge}}",
+  "promoValidUntil": "gültig bis {{date}}",
   "myPricesTitle": "Dein Preis",
   "externalLinksTitle": "Weitere Informationen",
   "submitTitle": "Preis eingeben",

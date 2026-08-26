@@ -15,5 +15,6 @@ public record CreateStoreInput(
     BigDecimal lat,
     BigDecimal lon,
     GeoSource geoSource,
-    String osmRef) {
+    String osmRef,
+    String url) {
 }

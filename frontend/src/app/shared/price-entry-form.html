@@ -132,6 +132,27 @@
         @if (row.priceKind === 'MULTIBUY') {
           <p class="multibuy-hint">{{ t('price-form.multibuyHint') }}</p>
         }
+
+        @if (row.priceKind === 'PROMO') {
+          <div class="promo-validity">
+            <nz-date-picker
+              [ngModel]="fromIsoDate(row.promoValidFrom)"
+              (ngModelChange)="updateRowPromoValidFrom(row.key, $event)"
+              [name]="'promoValidFrom' + row.key"
+              [nzDisabledDate]="isFutureDate"
+              [nzFormat]="format.dateInputFormat()"
+              [nzPlaceHolder]="t('price-form.promoValidFromLabel')"
+            />
+            <nz-date-picker
+              [ngModel]="fromIsoDate(row.promoValidTo)"
+              (ngModelChange)="updateRowPromoValidTo(row.key, $event)"
+              [name]="'promoValidTo' + row.key"
+              [nzFormat]="format.dateInputFormat()"
+              [nzPlaceHolder]="t('price-form.promoValidToLabel')"
+            />
+          </div>
+          <p class="promo-validity-hint">{{ t('price-form.promoValidityHint') }}</p>
+        }
       </div>
     }
 

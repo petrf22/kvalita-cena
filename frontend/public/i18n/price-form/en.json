@@ -11,6 +11,9 @@
   "multibuyQtyLabel": "Quantity",
   "multibuyTotalLabel": "Total price ({{currency}})",
   "multibuyHint": "E.g. \"3 for 50\" — enter the quantity and the total price.",
+  "promoValidFromLabel": "Promo valid from",
+  "promoValidToLabel": "Promo valid until",
+  "promoValidityHint": "Both dates are optional — \"from\" can't be in the future, \"until\" can.",
   "submit": "Submit price",
   "submitSuccess": "Price submitted, thanks!",
   "submitFailed": "Submission failed, please try again."

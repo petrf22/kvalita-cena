@@ -19,6 +19,7 @@
   "createdAtLabel": "Založené",
   "updatedAtLabel": "Upravené",
   "changedFieldsLabel": "Zmenené polia:",
+  "promoValidUntil": "platí do {{date}}",
   "field": {
     "name": "názov",
     "brand": "značka",
@@ -37,7 +38,8 @@
     "lat": "zemepisná šírka",
     "lon": "zemepisná dĺžka",
     "geoSource": "zdroj súradníc",
-    "osmRef": "OSM referencia"
+    "osmRef": "OSM referencia",
+    "url": "web"
   },
   "state": {
     "PUBLIC": "Zverejnené",

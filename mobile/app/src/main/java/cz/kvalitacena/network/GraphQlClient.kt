@@ -16,7 +16,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 private val STORE_FIELDS = """
-  id name street city postalCode country lat lon geoSource ico chain { id name chainType }
+  id name street city postalCode country lat lon geoSource ico url chain { id name chainType }
   verified editedByMe pendingConfirmation
 """
 
@@ -42,7 +42,7 @@ private val CONVERTED_PRICE_FIELDS = "amount currency rateDate"
 
 private val PRICE_CURRENT_FIELDS = """
   store { $STORE_FIELDS }
-  priceKind unitPrice priceAmount nObs nEff lastObservedAt confidence currency
+  priceKind unitPrice priceAmount nObs nEff lastObservedAt confidence currency promoValidTo
   converted { $CONVERTED_PRICE_FIELDS }
 """
 
@@ -68,6 +68,7 @@ private val PRODUCT_DETAIL_FIELDS = """
   externalLinks { kind label url attribution }
   myPrices {
     store { $STORE_FIELDS } priceKind priceAmount unitPrice observedAt currency
+    promoValidFrom promoValidTo
     converted { $CONVERTED_PRICE_FIELDS }
   }
   photos { $PHOTO_FIELDS }
@@ -292,7 +293,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     val query = """
       mutation(${'$'}input: SubmitObservationsInput!) {
         submitObservations(input: ${'$'}input) {
-          id priceAmount unitPrice priceKind quantityBasis observedAt status
+          id priceAmount unitPrice priceKind quantityBasis promoValidFrom promoValidTo observedAt status
         }
       }
     """
@@ -570,7 +571,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
         myObservations(first: ${'$'}first, offset: ${'$'}offset) {
           totalCount hasMore
           items {
-            priceKind priceAmount unitPrice currency observedAt createdAt
+            priceKind priceAmount unitPrice currency promoValidFrom promoValidTo observedAt createdAt
             converted { $CONVERTED_PRICE_FIELDS }
             publication { $PUBLICATION_STATUS_FIELDS }
             product { $PRODUCT_SUMMARY_FIELDS }

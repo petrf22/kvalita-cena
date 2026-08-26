@@ -64,6 +64,8 @@ export class MyContributionsService {
             priceAmount
             unitPrice
             currency
+            promoValidFrom
+            promoValidTo
             observedAt
             createdAt
             converted {

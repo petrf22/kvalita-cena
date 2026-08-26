@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -65,6 +66,7 @@ public class PriceObservationService {
         throw new ValidationException(ErrorCode.OBSERVATION_DUPLICATE_PRICE_KIND, kind.name());
       }
       validateShape(kind, price);
+      validatePromoValidity(kind, price);
     }
 
     Product product = productRepository.findById(input.productId())
@@ -127,6 +129,8 @@ public class PriceObservationService {
           .multibuyQty(price.multibuyQty())
           .multibuyTotal(price.multibuyTotal())
           .netContentBase(netContentBase)
+          .promoValidFrom(price.promoValidFrom())
+          .promoValidTo(price.promoValidTo())
           .observedAt(observedAt)
           .submitter(submitter)
           .submitterKind(submitter != null ? SubmitterKind.REGISTERED : SubmitterKind.ANONYMOUS)
@@ -182,6 +186,28 @@ public class PriceObservationService {
         : price.priceAmount() == null;
     if (incomplete) {
       throw new ValidationException(ErrorCode.OBSERVATION_PRICE_INCOMPLETE, kind.name());
+    }
+  }
+
+  /**
+   * Platnost akce (docs/datovy-model.md) — obě pole nepovinná, smí se vyplnit jen u PROMO
+   * (u ostatních druhů cena žádnou platnost nemá). {@code promoValidFrom} nesmí být v
+   * budoucnu: zapisuje se cena, kterou uživatel VIDĚL v regále, ne cena z letáku, která ještě
+   * nezačala platit (ta zůstává mimo tenhle model, docs/rozvoj.md).
+   */
+  private static void validatePromoValidity(PriceKind kind, ObservationPriceInput price) {
+    if (price.promoValidFrom() == null && price.promoValidTo() == null) {
+      return;
+    }
+    if (kind != PriceKind.PROMO) {
+      throw new ValidationException(ErrorCode.OBSERVATION_PROMO_VALIDITY_NOT_ALLOWED, kind.name());
+    }
+    if (price.promoValidFrom() != null && price.promoValidTo() != null
+        && price.promoValidFrom().isAfter(price.promoValidTo())) {
+      throw new ValidationException(ErrorCode.OBSERVATION_PROMO_VALIDITY_RANGE_INVALID);
+    }
+    if (price.promoValidFrom() != null && price.promoValidFrom().isAfter(LocalDate.now())) {
+      throw new ValidationException(ErrorCode.OBSERVATION_PROMO_VALID_FROM_IN_FUTURE);
     }
   }
 }

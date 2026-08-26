@@ -4,6 +4,9 @@
     "streetLabel": "Ulica i numer (opcjonalnie)",
     "cityLabel": "Miasto",
     "postalCodeLabel": "Kod pocztowy (opcjonalnie)",
+    "urlLabel": "Strona sklepu (opcjonalnie)",
+    "urlPlaceholder": "https://www.przyklad.pl/sklep",
+    "urlInvalid": "Link musi zaczynać się od http:// lub https://.",
     "countryLabel": "Kraj",
     "country": {
       "CZ": "Czechy",
@@ -72,6 +75,7 @@
     "photosTitle": "Zdjęcia",
     "locationTitle": "Lokalizacja",
     "openOnOsm": "Otwórz w OpenStreetMap",
+    "openWebsite": "Otwórz stronę sklepu",
     "noLocation": "Ten sklep nie ma jeszcze współrzędnych.",
     "operatorTitle": "Operator",
     "editModalTitle": "Edytuj sklep"

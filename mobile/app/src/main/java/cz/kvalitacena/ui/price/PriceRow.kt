@@ -13,4 +13,7 @@ data class PriceRow(
   val priceAmount: String = "",
   val multibuyQty: String = "",
   val multibuyTotal: String = "",
+  // Platnost akce (jen PROMO, docs/datovy-model.md) — ISO datum (yyyy-MM-dd) nebo "" = nezadáno.
+  val promoValidFrom: String = "",
+  val promoValidTo: String = "",
 )

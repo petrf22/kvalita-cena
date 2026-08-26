@@ -268,6 +268,7 @@
     <string name="product_write_observation">Preis eingeben</string>
     <string name="product_reported_summary">%1$d× gemeldet · zuletzt %2$s</string>
     <string name="product_report_hidden">Danke für die Meldung — der Eintrag ist jetzt ausgeblendet und wird überprüft.</string>
+    <string name="product_promo_valid_until">gültig bis %1$s</string>
 
     <string name="price_entry_code_unknown">Den Code %1$s kennen wir im Katalog noch nicht.</string>
     <string name="price_entry_create_product">Ware anlegen</string>
@@ -283,6 +284,9 @@
     <string name="price_entry_multibuy_qty_label">Anzahl</string>
     <string name="price_entry_multibuy_total_label">Gesamtpreis (%1$s)</string>
     <string name="price_entry_multibuy_hint">Z. B. „3 Stück für 5 €“ — gib die Anzahl und den Gesamtpreis ein.</string>
+    <string name="price_entry_promo_valid_from_label">Aktion gültig ab</string>
+    <string name="price_entry_promo_valid_to_label">Aktion gültig bis</string>
+    <string name="price_entry_promo_validity_hint">Beide Daten sind optional — „ab“ darf nicht in der Zukunft liegen, „bis“ schon.</string>
     <string name="price_entry_submit">Preis speichern</string>
     <string name="price_entry_back_without_price">Zurück ohne Preis einzugeben</string>
     <string name="price_entry_submit_success">Der Preis wurde gespeichert, danke!</string>
@@ -311,6 +315,7 @@
     <string name="store_photos_title">Fotos</string>
     <string name="store_location_title">Standort</string>
     <string name="store_open_in_map_app">In Karten-App öffnen</string>
+    <string name="store_open_website">Website des Geschäfts öffnen</string>
     <string name="store_no_location">Dieses Geschäft hat noch keine Koordinaten.</string>
     <string name="store_operator_title">Betreiber</string>
     <string name="store_report_hidden">Danke für die Meldung — das Geschäft ist jetzt ausgeblendet und wird überprüft.</string>
@@ -328,6 +333,8 @@
     <string name="store_form_street_label">Straße und Hausnummer (optional)</string>
     <string name="store_form_city_label">Stadt</string>
     <string name="store_form_postal_code_label">PLZ (optional)</string>
+    <string name="store_form_url_label">Website des Geschäfts (optional)</string>
+    <string name="store_form_url_invalid">Der Link muss mit http:// oder https:// beginnen.</string>
     <string name="store_form_country_label">Land</string>
     <string name="store_form_similar_warning">Meinst du nicht eher eines dieser bereits vorhandenen Geschäfte?</string>
     <string name="store_form_save_changes">Änderungen speichern</string>

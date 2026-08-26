@@ -150,6 +150,18 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       modifier = Modifier.fillMaxWidth(),
     )
     Gap()
+    SingleLineTextField(
+      value = viewModel.url,
+      onValueChange = { viewModel.url = it },
+      label = stringResource(R.string.store_form_url_label),
+      isError = viewModel.url.isNotBlank() && !isUrlShapeValid(viewModel.url),
+      supportingText = if (viewModel.url.isNotBlank() && !isUrlShapeValid(viewModel.url)) {
+        { Text(stringResource(R.string.store_form_url_invalid)) }
+      } else null,
+      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+      modifier = Modifier.fillMaxWidth(),
+    )
+    Gap()
 
     CountryDropdown(selected = viewModel.country, onSelect = { viewModel.country = it })
     Gap()
@@ -263,7 +275,8 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     Button(
       onClick = { viewModel.submit() },
       enabled = isStoreFormValid(viewModel.name, viewModel.city) &&
-        isIcoShapeValid(viewModel.ico, viewModel.country) && !viewModel.saving,
+        isIcoShapeValid(viewModel.ico, viewModel.country) &&
+        isUrlShapeValid(viewModel.url) && !viewModel.saving,
       modifier = Modifier.fillMaxWidth(),
     ) {
       if (viewModel.saving) CircularProgressIndicator(modifier = Modifier.size(20.dp))

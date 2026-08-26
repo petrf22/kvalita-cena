@@ -19,6 +19,7 @@
   "createdAtLabel": "Dodano",
   "updatedAtLabel": "Edytowano",
   "changedFieldsLabel": "Zmienione pola:",
+  "promoValidUntil": "ważna do {{date}}",
   "field": {
     "name": "nazwa",
     "brand": "marka",
@@ -37,7 +38,8 @@
     "lat": "szerokość geograficzna",
     "lon": "długość geograficzna",
     "geoSource": "źródło współrzędnych",
-    "osmRef": "referencja OSM"
+    "osmRef": "referencja OSM",
+    "url": "strona internetowa"
   },
   "state": {
     "PUBLIC": "Opublikowano",

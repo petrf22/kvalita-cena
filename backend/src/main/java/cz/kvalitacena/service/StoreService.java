@@ -74,6 +74,10 @@ public class StoreService {
         }
       });
     }
+    String url = blankToNull(input.url());
+    if (url != null && !UrlValidation.isValidStoreUrl(url)) {
+      throw new ValidationException(ErrorCode.STORE_URL_INVALID);
+    }
     if (!catalogRateLimiter.tryAcquireStoreCreation(viewerPublicUid)) {
       throw new TooManyRequestsException();
     }
@@ -103,6 +107,7 @@ public class StoreService {
         .lon(input.lon())
         .geoSource(input.geoSource() != null ? input.geoSource() : GeoSource.COMMUNITY)
         .osmRef(input.osmRef())
+        .url(url)
         .status(status)
         .createdByUserId(user.getId())
         .build();

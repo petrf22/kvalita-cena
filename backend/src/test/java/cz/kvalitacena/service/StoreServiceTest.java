@@ -78,7 +78,7 @@ class StoreServiceTest {
 
   private CreateStoreInput input(String name, String city) {
     return new CreateStoreInput(name, null, "Hlavní 1", city, "60200", "CZ", null,
-        new BigDecimal("49.2"), new BigDecimal("16.6"), null, null);
+        new BigDecimal("49.2"), new BigDecimal("16.6"), null, null, null);
   }
 
   @Test
@@ -105,9 +105,32 @@ class StoreServiceTest {
   void malformedIcoIsRejected() {
     givenLoggedInUser();
     CreateStoreInput bad = new CreateStoreInput("Obchod", null, null, "Brno", null, "CZ",
-        "123", null, null, null, null);
+        "123", null, null, null, null, null);
     assertThatThrownBy(() -> service().create(bad, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
+  }
+
+  @Test
+  void malformedUrlIsRejected() {
+    givenLoggedInUser();
+    CreateStoreInput bad = new CreateStoreInput("Obchod", null, null, "Brno", null, "CZ",
+        null, null, null, null, null, "not-a-url");
+    assertThatThrownBy(() -> service().create(bad, PUBLIC_UID))
+        .isInstanceOf(ValidationException.class);
+  }
+
+  @Test
+  void validUrlIsStoredOnCreation() {
+    givenLoggedInUser();
+    when(catalogRateLimiter.tryAcquireStoreCreation(PUBLIC_UID)).thenReturn(true);
+    when(trustLevelService.isTrusted(any())).thenReturn(true);
+    when(storeRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    CreateStoreInput input = new CreateStoreInput("Obchod", null, null, "Brno", null, "CZ",
+        null, null, null, null, null, "https://www.example.cz/prodejna");
+    Store saved = service().create(input, PUBLIC_UID);
+
+    assertThat(saved.getUrl()).isEqualTo("https://www.example.cz/prodejna");
   }
 
   @Test
@@ -190,7 +213,7 @@ class StoreServiceTest {
     when(storeRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
     CreateStoreInput input = new CreateStoreInput("Obchod", null, null, "Bratislava", null, null,
-        null, null, null, null, null);
+        null, null, null, null, null, null);
     Store saved = service().create(input, PUBLIC_UID);
 
     // CountryResolver.resolve: chybějící explicitní country -> app_user.country (SK), nikdy
@@ -202,7 +225,7 @@ class StoreServiceTest {
   void unsupportedCountryIsRejected() {
     givenLoggedInUser();
     CreateStoreInput input = new CreateStoreInput("Obchod", null, null, "Brno", null, "AT",
-        null, null, null, null, null);
+        null, null, null, null, null, null);
     assertThatThrownBy(() -> service().create(input, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
   }

@@ -69,6 +69,16 @@ ceny, ne jen na den. Ceny z jedné cenovky se zapisují jedním voláním
 jediného druhu ceny shodí **celou dávku** (uživatel má jeden formulář, ne pět opakovaných
 zápisů), a celá dávka dělá jen jednu položku `agg.recompute_queue`.
 
+**Platnost akce (`promo_valid_from`/`promo_valid_to`) se filtruje při čtení, ne v agregaci.**
+Obě pole jsou nepovinná a smí je mít jen `PROMO` — `promo_valid_from` nesmí být v budoucnu,
+protože se zapisuje cena, kterou uživatel VIDĚL v regále, ne cena z letáku, která ještě
+nezačala platit (ta zůstává mimo tenhle model, viz `docs/rozvoj.md`, "Ceny předem z akčního
+letáku"). `agg.price_current.promo_valid_to` drží `MAX(promo_valid_to)` napříč observacemi
+buňky (raději akci zobrazit o něco déle než skrýt ještě platnou) — `PriceAggregationService`
+ho jen dopočítává, samotné vyřazení vypršelé akce z `Product.prices` dělá až
+`ProductGraphQlController` při čtení. Žádný noční job, žádný přepočet navíc: historie v
+`agg.price_daily` a počet přispěvatelů ve `ProductStats` se vypršením akce nemění.
+
 ### Vnitroobchodní kódy vs. globální EAN
 
 `core.product_code.code_type`:

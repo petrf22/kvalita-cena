@@ -69,6 +69,9 @@ public class StoreUserEdit {
   @Column(name = "osm_ref", length = 32)
   private String osmRef;
 
+  @Column(name = "url", length = 300)
+  private String url;
+
   @Column(name = "cleared_fields")
   @Builder.Default
   private List<String> clearedFields = new ArrayList<>();

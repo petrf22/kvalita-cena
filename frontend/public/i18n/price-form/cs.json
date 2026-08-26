@@ -11,6 +11,9 @@
   "multibuyQtyLabel": "Počet kusů",
   "multibuyTotalLabel": "Cena za balíček ({{currency}})",
   "multibuyHint": "Např. „3 kusy za 50 Kč“ — zadej počet kusů a celkovou cenu.",
+  "promoValidFromLabel": "Akce platí od",
+  "promoValidToLabel": "Akce platí do",
+  "promoValidityHint": "Obě data jsou volitelná — od nesmí být v budoucnu, do může.",
   "submit": "Zapsat cenu",
   "submitSuccess": "Cena byla zapsána, díky!",
   "submitFailed": "Zápis se nepovedl, zkus to prosím znovu."

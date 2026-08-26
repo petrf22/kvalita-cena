@@ -122,7 +122,7 @@ public class AccountService {
     Map<Long, String> storeNamesForEdits = storeNames(storeEdits.stream().map(StoreUserEdit::getStoreId).toList());
     List<StoreEditExport> storeEditExports = storeEdits.stream()
         .map(e -> new StoreEditExport(storeNamesForEdits.get(e.getStoreId()), e.getName(), e.getStreet(),
-            e.getCity(), e.getPostalCode(), e.getIco(), e.getLat(), e.getLon(),
+            e.getCity(), e.getPostalCode(), e.getIco(), e.getLat(), e.getLon(), e.getUrl(),
             e.getClearedFields(), e.getUpdatedAt()))
         .toList();
 

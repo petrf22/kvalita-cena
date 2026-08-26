@@ -2,6 +2,7 @@ package cz.kvalitacena.ui.price
 
 import cz.kvalitacena.network.ObservationPriceInput
 import cz.kvalitacena.ui.common.SELECTABLE_PRICE_KINDS
+import java.time.LocalDate
 
 /**
  * Čistá validace/dopočty pro víc cen z jedné cenovky — mimo Compose, ať jde otestovat JUnitem
@@ -17,13 +18,33 @@ import cz.kvalitacena.ui.common.SELECTABLE_PRICE_KINDS
  */
 fun parseAmount(raw: String): Double? = raw.replace(',', '.').toDoubleOrNull()
 
-fun isPriceRowValid(row: PriceRow): Boolean =
-  if (row.priceKind == "MULTIBUY") {
+/**
+ * Platnost akce smí mít jen PROMO, `promoValidFrom` nesmí být v budoucnu (zapisuje se cena,
+ * kterou uživatel VIDĚL v regále, ne cena z letáku — docs/rozvoj.md) a `od` nesmí být po `do`.
+ * Zrcadlí `PriceObservationService.validatePromoValidity` na backendu a web `price-rows.ts`.
+ */
+fun isPromoValidityValid(row: PriceRow): Boolean {
+  if (row.priceKind != "PROMO") {
+    return row.promoValidFrom.isBlank() && row.promoValidTo.isBlank()
+  }
+  val from = row.promoValidFrom.takeIf { it.isNotBlank() }?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+  val to = row.promoValidTo.takeIf { it.isNotBlank() }?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
+  if (row.promoValidFrom.isNotBlank() && from == null) return false
+  if (row.promoValidTo.isNotBlank() && to == null) return false
+  if (from != null && to != null && from.isAfter(to)) return false
+  if (from != null && from.isAfter(LocalDate.now())) return false
+  return true
+}
+
+fun isPriceRowValid(row: PriceRow): Boolean {
+  if (!isPromoValidityValid(row)) return false
+  return if (row.priceKind == "MULTIBUY") {
     val qty = row.multibuyQty.toIntOrNull()
     qty != null && qty >= 2 && parseAmount(row.multibuyTotal) != null
   } else {
     parseAmount(row.priceAmount) != null
   }
+}
 
 /** První druh ceny, který se v seznamu opakuje (v pořadí, ve kterém ho uživatel vidí podruhé), nebo null. */
 fun duplicatePriceKind(rows: List<PriceRow>): String? {
@@ -62,6 +83,13 @@ fun toObservationPriceInputs(rows: List<PriceRow>): List<ObservationPriceInput> 
         priceKind = row.priceKind,
         multibuyQty = row.multibuyQty.toIntOrNull(),
         multibuyTotal = parseAmount(row.multibuyTotal),
+      )
+    } else if (row.priceKind == "PROMO") {
+      ObservationPriceInput(
+        priceKind = row.priceKind,
+        priceAmount = parseAmount(row.priceAmount),
+        promoValidFrom = row.promoValidFrom.takeIf { it.isNotBlank() },
+        promoValidTo = row.promoValidTo.takeIf { it.isNotBlank() },
       )
     } else {
       ObservationPriceInput(priceKind = row.priceKind, priceAmount = parseAmount(row.priceAmount))

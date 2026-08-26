@@ -19,6 +19,7 @@
   "createdAtLabel": "Added",
   "updatedAtLabel": "Edited",
   "changedFieldsLabel": "Changed fields:",
+  "promoValidUntil": "valid until {{date}}",
   "field": {
     "name": "name",
     "brand": "brand",
@@ -37,7 +38,8 @@
     "lat": "latitude",
     "lon": "longitude",
     "geoSource": "coordinate source",
-    "osmRef": "OSM reference"
+    "osmRef": "OSM reference",
+    "url": "website"
   },
   "state": {
     "PUBLIC": "Published",

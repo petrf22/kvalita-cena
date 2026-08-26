@@ -107,6 +107,7 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.StoreNameEmpty]: 'errors.STORE_NAME_EMPTY',
   [ErrorCode.StoreCityRequired]: 'errors.STORE_CITY_REQUIRED',
   [ErrorCode.StoreCityEmpty]: 'errors.STORE_CITY_EMPTY',
+  [ErrorCode.StoreUrlInvalid]: 'errors.STORE_URL_INVALID',
   [ErrorCode.CompanyIdInvalid]: 'errors.COMPANY_ID_INVALID',
   [ErrorCode.UnsupportedCountry]: 'errors.UNSUPPORTED_COUNTRY',
   [ErrorCode.StoreCountryEditRequiresTrust]: 'errors.STORE_COUNTRY_EDIT_REQUIRES_TRUST',
@@ -172,6 +173,10 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.ObservationPriceKindAlreadySubmittedToday]:
     'errors.OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY',
   [ErrorCode.ObservationPriceIncomplete]: 'errors.OBSERVATION_PRICE_INCOMPLETE',
+  [ErrorCode.ObservationPromoValidityNotAllowed]: 'errors.OBSERVATION_PROMO_VALIDITY_NOT_ALLOWED',
+  [ErrorCode.ObservationPromoValidityRangeInvalid]:
+    'errors.OBSERVATION_PROMO_VALIDITY_RANGE_INVALID',
+  [ErrorCode.ObservationPromoValidFromInFuture]: 'errors.OBSERVATION_PROMO_VALID_FROM_IN_FUTURE',
 };
 
 /**

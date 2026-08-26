@@ -4,6 +4,9 @@
     "streetLabel": "Ulica a číslo (voliteľné)",
     "cityLabel": "Mesto",
     "postalCodeLabel": "PSČ (voliteľné)",
+    "urlLabel": "Web obchodu (voliteľné)",
+    "urlPlaceholder": "https://www.priklad.sk/predajna",
+    "urlInvalid": "Odkaz musí začínať http:// alebo https://.",
     "countryLabel": "Krajina",
     "country": {
       "CZ": "Česko",
@@ -72,6 +75,7 @@
     "photosTitle": "Fotky",
     "locationTitle": "Poloha",
     "openOnOsm": "Otvoriť na OpenStreetMap",
+    "openWebsite": "Otvoriť web obchodu",
     "noLocation": "Táto prevádzka zatiaľ nemá súradnice.",
     "operatorTitle": "Prevádzkovateľ",
     "editModalTitle": "Upraviť obchod"

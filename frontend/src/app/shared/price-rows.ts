@@ -15,9 +15,42 @@ export interface PriceRow {
   priceAmount: number | null;
   multibuyQty: number | null;
   multibuyTotal: number | null;
+  /** Platnost akce (jen PROMO) — ISO datum (YYYY-MM-DD), jinak vždy null. */
+  promoValidFrom: string | null;
+  promoValidTo: string | null;
+}
+
+/** Dnešní datum jako ISO řetězec (YYYY-MM-DD) — pro porovnání s promoValidFrom bez časové složky. */
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * Platnost akce smí mít jen PROMO, `promoValidFrom` nesmí být v budoucnu (zapisuje se cena,
+ * kterou uživatel VIDĚL v regále, ne cena z letáku — docs/rozvoj.md) a `od` nesmí být po `do`.
+ * Zrcadlí PriceObservationService.validatePromoValidity na backendu.
+ */
+function isPromoValidityValid(row: PriceRow): boolean {
+  if (row.priceKind !== 'PROMO') {
+    return row.promoValidFrom == null && row.promoValidTo == null;
+  }
+  if (
+    row.promoValidFrom != null &&
+    row.promoValidTo != null &&
+    row.promoValidFrom > row.promoValidTo
+  ) {
+    return false;
+  }
+  if (row.promoValidFrom != null && row.promoValidFrom > todayIso()) {
+    return false;
+  }
+  return true;
 }
 
 export function isPriceRowValid(row: PriceRow): boolean {
+  if (!isPromoValidityValid(row)) {
+    return false;
+  }
   if (row.priceKind === 'MULTIBUY') {
     return row.multibuyQty != null && row.multibuyQty >= 2 && row.multibuyTotal != null;
   }
@@ -52,7 +85,14 @@ export function toObservationPriceInputs(rows: readonly PriceRow[]): Observation
           multibuyQty: row.multibuyQty,
           multibuyTotal: row.multibuyTotal,
         }
-      : { priceKind: row.priceKind, priceAmount: row.priceAmount },
+      : row.priceKind === 'PROMO'
+        ? {
+            priceKind: row.priceKind,
+            priceAmount: row.priceAmount,
+            promoValidFrom: row.promoValidFrom,
+            promoValidTo: row.promoValidTo,
+          }
+        : { priceKind: row.priceKind, priceAmount: row.priceAmount },
   );
 }
 
@@ -81,5 +121,7 @@ export function newPriceRow(key: number, rows: readonly PriceRow[]): PriceRow {
     priceAmount: null,
     multibuyQty: null,
     multibuyTotal: null,
+    promoValidFrom: null,
+    promoValidTo: null,
   };
 }

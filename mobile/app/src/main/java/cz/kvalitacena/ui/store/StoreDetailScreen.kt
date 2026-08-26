@@ -37,6 +37,7 @@ import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.PhotoGallery
 import cz.kvalitacena.ui.common.PhotoPicker
 import cz.kvalitacena.ui.common.openMap
+import cz.kvalitacena.ui.common.openUrl
 
 /**
  * Detail provozovny — adresa, mapa, fotky, editace a nahlášení. Doplňuje CLAUDE.md, „inline
@@ -86,6 +87,15 @@ fun StoreDetailScreen(storeId: String, onEditStore: (String) -> Unit) {
         val addressLine = listOfNotNull(store.chain?.name, listOfNotNull(store.street, cityWithCountry).joinToString(", "))
           .joinToString(" · ")
         if (addressLine.isNotBlank()) Text(addressLine, style = MaterialTheme.typography.bodyMedium)
+
+        store.url?.let { websiteUrl ->
+          TextButton(
+            onClick = { openUrl(context, websiteUrl) },
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+          ) {
+            Text(stringResource(R.string.store_open_website))
+          }
+        }
 
         Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
           if (!store.verified) AssistChip(onClick = {}, label = { Text(stringResource(R.string.common_unverified)) })

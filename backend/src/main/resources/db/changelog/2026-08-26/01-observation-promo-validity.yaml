@@ -1,0 +1,61 @@
+# 01-observation-promo-validity.yaml — časová platnost akční ceny (docs/datovy-model.md).
+#
+# core.price_observation.promo_valid_to existuje od úplně první migrace, ale byl to mrtvý
+# sloupec — chyběl protějšek promo_valid_from a hlavně celá cesta zápisu/čtení (GraphQL,
+# service, klienti). Doplňuje se:
+#
+# 1) core.price_observation.promo_valid_from — kdy akce začala platit. Vždy v minulosti nebo
+#    dnešek (validuje PriceObservationService), NIKDY v budoucnu — zapisuje se cena, kterou
+#    uživatel VIDĚL v regále, ne cena z letáku, která ještě nezačala platit. Ceny z letáku
+#    (docs/rozvoj.md, "Ceny předem z akčního letáku") zůstávají mimo rozsah, řeší se případně
+#    samostatným core.price_announcement.
+#
+# 2) CHECK, že rozsah dává smysl, když jsou vyplněná obě pole.
+#
+# 3) agg.price_current.promo_valid_to — bez tohohle by šlo platnost zobrazit jen tam, kde se
+#    čte ze syrových observací (MyPrice, MyObservationItem), ne v hlavní tabulce aktuálních cen
+#    (PriceCurrent), která je agregát přes všechny přispěvatele. NENÍ součástí primárního
+#    klíče — jen datový sloupec, PriceAggregationService do něj ukládá MAX(promo_valid_to)
+#    napříč observacemi buňky (radši akci zobrazit o něco déle než skrýt ještě platnou).
+#    Filtrování vypršelé akce je až v čtecí vrstvě (ProductGraphQlController), ne tady — žádný
+#    noční job, žádný přepočet navíc.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-26-01-price-observation-promo-valid-from
+      author: Petr F.
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: price_observation
+            columns:
+              - column:
+                  name: promo_valid_from
+                  type: DATE
+
+  - changeSet:
+      id: 2026-08-26-01-price-observation-promo-validity-check
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.price_observation
+                ADD CONSTRAINT chk_price_observation_promo_validity
+                  CHECK (promo_valid_from IS NULL OR promo_valid_to IS NULL
+                    OR promo_valid_from <= promo_valid_to);
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE core.price_observation
+                DROP CONSTRAINT IF EXISTS chk_price_observation_promo_validity;
+
+  - changeSet:
+      id: 2026-08-26-01-agg-price-current-promo-valid-to
+      author: Petr F.
+      changes:
+        - addColumn:
+            schemaName: agg
+            tableName: price_current
+            columns:
+              - column:
+                  name: promo_valid_to
+                  type: DATE
