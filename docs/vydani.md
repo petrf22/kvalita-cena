@@ -59,9 +59,10 @@ Postup:
    (ID 4974901661372614749) je v konzoli jako **Koncept**, čeština, zdarma.
 
 Registrace balíčku aplikaci **nevydává** — jen rezervuje jméno a sváže ho s ověřenou identitou.
-Zbývá store listing (ikona hotová, feature graphic a screenshoty ne), Data safety formulář,
-URL zásad soukromí (čeká na živý `kvalitacena.cz`, `docs/nasazeni.md`), Play App Signing
-(nahrání vlastního klíče — nevratné po prvním uploadu, viz níž) a upload AAB.
+Store listing, Data safety, Content rating, App access a Play App Signing jsou hotové (viz
+sekce níž) a AAB je nahraný — appka běží v **Internal testing**, ověřeno 2026-08-26 na reálném
+zařízení proti produkci (OTP přihlášení, hledání, zápis ceny, fotka). Cesta k produkčnímu
+vydání dál vede přes uzavřený test, viz „Cesta do produkce" níž.
 
 ### Ikona pro listing
 
@@ -149,6 +150,47 @@ dvě různé identity mezi kanály zůstávají, jen už ne z naší volby, ale 
 App Signing je u nově založených appek povinné. Otevřené riziko k hlídání, ne vyřešené —
 viz i F-Droid níž, který přidává třetí identitu.
 
+### Data safety a Content rating — zaznamenané odpovědi
+
+Deklarace je závazná a při každé aktualizaci se v Play Console znovu potvrzuje — odpovědi tady
+zapsané, ať se příště nemusí dohledávat znovu z `docs/soukromi.md`.
+
+**Data safety** (`docs/soukromi.md`, oprávnění `mobile/app/src/main/AndroidManifest.xml`):
+žádné sdílení s třetími stranami, šifrovaný přenos (HTTPS), appka nabízí smazání účtu (web,
+`docs/soukromi.md`, „GDPR"), žádná analytika třetích stran.
+
+| Datový typ | Sbírá | Povinné? | Účel | Poznámka |
+|---|---|---|---|---|
+| E-mail | Ano | Povinné | Funkce aplikace, Správa účtu | Bez dočasného zpracování — ukládá se trvale (hash + šifrovaná podoba) po dobu trvání účtu |
+| Přibližná poloha | Ano | Volitelné | Funkce aplikace | Manifest má jen `ACCESS_COARSE_LOCATION`; souřadnice se **neukládají** — zaškrtnuto „zpracováno dočasně" |
+| Fotky | Ano | Volitelné | Funkce aplikace | EXIF včetně GPS se na serveru odstraní překódováním |
+| Jiný uživatelský obsah | Ano | Volitelné | Funkce aplikace | Text zpětné vazby, ceny, katalogové úpravy |
+| Adresa URL ke smazání účtu | — | — | — | `https://kvalitacena.cz/profile` (self-service smazání účtu, web) |
+
+Crash logy a fotoaparát se **nedeklarují** — crash log appka posílá jen ručně přiloženě ke
+zpětné vazbě (`crash/CrashReporter.kt`, checkbox nezaškrtnutý), fotoaparát je jen oprávnění, ne
+datový typ.
+
+**Content rating** (IARC dotazník): kategorie Utility, žádné násilí/nahota/hazard, uživatelský
+obsah + moderace potvrzeny Ano, cílová skupina 18+, appka není vládní/finanční/zdravotní.
+Výsledek: nejnižší věková kategorie.
+
+**App access**: appka nemá testovací účet předem — recenzent se přihlásí vlastním e-mailem
+(passwordless OTP, účet vznikne automaticky), většina appky (hledání, detail, ceny) funguje
+i bez přihlášení.
+
+### Cesta do produkce — uzavřený test (12 testerů / 14 dní)
+
+Osobní vývojářský účet (na rozdíl od organizačního) potřebuje před přístupem k produkčnímu
+vydání **uzavřený test (Closed testing) s aspoň 12 testery, kteří jsou opt-in přihlášení
+14 dní v kuse**. Interní testování (viz výš) se do téhle kvóty nepočítá — je to jen ověřovací
+krok před uzavřeným testem, ne jeho náhrada. Lhůta začíná běžet, až je 12. tester skutečně
+opt-in, ne dnem založení tracku — čím dřív se track založí a testeři pozvou, tím dřív jde
+žádat o produkci.
+
+**Stav k 2026-08-26:** appka je jen v Internal testing (1 tester, sám provozovatel), uzavřený
+test zatím založený není — čeká se, až bude k dispozici 12 lidí ochotných appku 14 dní testovat.
+
 ### F-Droid — otevřené riziko, ne hotový postup
 
 F-Droid standardně staví ze zdrojáků a podepisuje **svým** klíčem, což by znamenalo třetí
@@ -195,11 +237,7 @@ Tři nezávislé zdroje, žádný sjednocující mechanismus (tag-based release 
 
 ## Co vydání pořád blokuje
 
-Tenhle dokument řeší, jak appka **umí** vzniknout jako podepsané APK a jak se zaregistruje
-balíček — samo vydání blokuje ještě:
-
-- **Neexistuje produkční backend** na `api.kvalitacena.cz` — release build nemá kam mluvit.
-  Hlavní blokátor, ne registrace balíčku.
-- **Play požaduje** URL zásad ochrany soukromí (obsah je hotový v `docs/soukromi.md`, teď je
-  konečně kam ho pověsit), formulář Data safety (kamera, poloha, fotky, pseudonymizace po
-  180 dnech — viz `docs/soukromi.md`) a obsahový rating.
+Produkční backend běží od 2026-08-24, appka je nahraná a funkčně ověřená v Internal testing
+(viz „Cesta do produkce" výš) — jediné, co teď brání produkčnímu vydání appky na Play, je
+**uzavřený test s 12 testery po dobu 14 dní**, viz tamtéž. Než se sežene 12 lidí, appku jinak
+nic nebrzdí.
