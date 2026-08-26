@@ -18,4 +18,12 @@ object NavigationResults {
 
   /** Stejný vzor, ale pro editaci existující provozovny (StoreFormScreen storeId != null) — StoreDetailScreen ho vyzvedne. */
   var updatedStore: Store? = null
+
+  /**
+   * Tlačítko "Hledat ceny tohoto zboží" na PriceEntryScreen (naskenovaný kód, nebo název u
+   * vstupu z detailu) — záložka Hledat nemá vlastní route argument, protože by ji rozbila
+   * `popUpTo(startDestination) { inclusive = true }` ve spodní liště (MainActivity), stejný
+   * in-memory mezikrok jako newStore/newProduct výš.
+   */
+  var searchQuery: String? = null
 }

@@ -190,6 +190,9 @@
 
     <string name="map_show">Karte anzeigen</string>
     <string name="map_hint">Tippe auf die Karte oder ziehe die Markierung an die genaue Stelle.</string>
+    <string name="map_my_location">Mein Standort</string>
+    <string name="map_location_unavailable">Standort konnte nicht ermittelt werden.</string>
+    <string name="store_map_show">Geschäfte auf der Karte anzeigen</string>
 
     <string name="photo_alt">Foto</string>
     <string name="photo_hidden_badge">Ausgeblendet</string>
@@ -276,6 +279,8 @@
     <string name="price_entry_current_prices">Aktuelle Preise nach Geschäften</string>
     <string name="price_entry_price_summary">%1$s (%2$s/Einheit) · %3$d Einträge</string>
     <string name="price_entry_write_price">Preis eingeben</string>
+    <string name="price_entry_hide">Preiseingabe ausblenden</string>
+    <string name="price_entry_search_this_code">Preise für diesen Artikel suchen</string>
     <string name="price_entry_price_label">Preis (%1$s)</string>
     <string name="price_entry_prices_label">Preise</string>
     <string name="price_entry_prices_hint">Am Preisschild stehen oft ein regulärer Preis und ein Preis mit Kundenkarte nebeneinander — trag beide auf einmal ein.</string>

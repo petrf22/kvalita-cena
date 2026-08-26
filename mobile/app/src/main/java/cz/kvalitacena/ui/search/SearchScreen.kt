@@ -44,6 +44,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.network.ProductSearchItem
+import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.QualityBadge
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.formatRelativeDate
@@ -61,10 +62,24 @@ fun SearchScreen(onProductClick: (String) -> Unit) {
   val viewModel: SearchViewModel = viewModel(
     factory = viewModelFactory {
       initializer {
-        SearchViewModel(AppContainer.graphQlClient, AppContainer.authRepository, AppContainer.countryStore)
+        SearchViewModel(
+          AppContainer.graphQlClient,
+          AppContainer.authRepository,
+          AppContainer.countryStore,
+          AppContainer.searchFilterStore,
+        )
       }
     },
   )
+
+  // Vyzvednutí kódu/názvu z PriceEntryScreen ("Hledat ceny tohoto zboží") — stejný vzor jako
+  // NavigationResults.newStore/newProduct v PriceEntryScreen.
+  LaunchedEffect(Unit) {
+    NavigationResults.searchQuery?.let {
+      viewModel.applyExternalQuery(it)
+      NavigationResults.searchQuery = null
+    }
+  }
 
   Column(modifier = Modifier.fillMaxSize()) {
     Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {

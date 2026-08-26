@@ -2,6 +2,10 @@ package cz.kvalitacena.db.repo;
 
 public record ProductSearchCriteria(
     String query,
+    // GTIN-14 normalizace dotazu (ProductSearchService), NULL když dotaz nevypadá jako čárový
+    // kód — appka tak tlačítkem "Hledat ceny tohoto zboží" najde zboží podle EANu, ne jen podle
+    // názvu (viz ProductSearchRepositoryImpl, matched CTE).
+    String codeQuery,
     Long storeId,
     String city,
     // Nikdy null v praxi (ProductGraphQlController.resolveCountry vždy dosadí konkrétní

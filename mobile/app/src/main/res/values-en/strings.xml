@@ -188,6 +188,9 @@
 
     <string name="map_show">Show map</string>
     <string name="map_hint">Tap the map or drag the marker to the exact spot.</string>
+    <string name="map_my_location">My location</string>
+    <string name="map_location_unavailable">Couldn\'t determine your location.</string>
+    <string name="store_map_show">Show stores on map</string>
 
     <string name="photo_alt">Photo</string>
     <string name="photo_hidden_badge">Hidden</string>
@@ -274,6 +277,8 @@
     <string name="price_entry_current_prices">Current prices by store</string>
     <string name="price_entry_price_summary">%1$s (%2$s/unit) · %3$d reports</string>
     <string name="price_entry_write_price">Record a price</string>
+    <string name="price_entry_hide">Hide price entry</string>
+    <string name="price_entry_search_this_code">Search prices for this item</string>
     <string name="price_entry_price_label">Price (%1$s)</string>
     <string name="price_entry_prices_label">Prices</string>
     <string name="price_entry_prices_hint">Price tags often show a regular price and a loyalty-card price side by side — enter both at once.</string>

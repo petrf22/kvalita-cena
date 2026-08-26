@@ -13,6 +13,7 @@ import cz.kvalitacena.network.ProductSearchItem
 import cz.kvalitacena.network.SearchFacets
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.settings.CountryStore
+import cz.kvalitacena.ui.settings.SearchFilterStore
 import kotlinx.coroutines.launch
 
 /**
@@ -34,14 +35,18 @@ class SearchViewModel(
   private val graphQlClient: GraphQlClient,
   private val authRepository: AuthRepository,
   private val countryStore: CountryStore,
+  private val filterStore: SearchFilterStore,
 ) : ViewModel() {
 
+  // Hledaný text se NEUKLÁDÁ — jen filtry, viz SearchFilterStore. Filtry přežívají přepnutí
+  // záložky (appka jinak maže celý navigační zásobník, MainActivity.AppBottomBar), proto se
+  // počáteční hodnota bere rovnou z uložené preference, ne z pevné výchozí.
   var query by mutableStateOf("")
-  var selectedStoreId by mutableStateOf<String?>(null)
+  var selectedStoreId by mutableStateOf(filterStore.storeId)
     private set
-  var selectedCity by mutableStateOf<String?>(null)
+  var selectedCity by mutableStateOf(filterStore.city)
     private set
-  var sort by mutableStateOf(SortOption.REPORT_COUNT)
+  var sort by mutableStateOf(SortOption.entries.firstOrNull { it.value == filterStore.sort } ?: SortOption.REPORT_COUNT)
     private set
 
   var items by mutableStateOf<List<ProductSearchItem>>(emptyList())
@@ -65,6 +70,14 @@ class SearchViewModel(
       // Filtry jsou volitelný doplněk hledání — chyba tady nesmí zablokovat samotné hledání.
       // country jde vždy explicitně z CountryStore (appka je autoritativní, docs/lokalizace.md).
       runCatching { facets = graphQlClient.searchFacets(country = countryStore.country) }
+        .onSuccess {
+          // Uložené město/obchod nemusí být v aktuálním číselníku (jiná země přes CountryStore,
+          // obchod mezitím bez cen) — jinak by filtr tiše omezoval výsledky, aniž by šel v UI vidět.
+          filterStore.dropCityIfMissing(facets.cities)
+          filterStore.dropStoreIfMissing(facets.stores.map { it.id })
+          if (selectedCity != filterStore.city) selectedCity = filterStore.city
+          if (selectedStoreId != filterStore.storeId) selectedStoreId = filterStore.storeId
+        }
     }
   }
 
@@ -132,16 +145,25 @@ class SearchViewModel(
 
   fun onStoreChange(storeId: String?) {
     selectedStoreId = storeId
+    filterStore.selectStoreId(storeId)
     search()
   }
 
   fun onCityChange(city: String?) {
     selectedCity = city
+    filterStore.selectCity(city)
     search()
   }
 
   fun onSortChange(newSort: SortOption) {
     sort = newSort
+    filterStore.selectSort(newSort.value)
+    search()
+  }
+
+  /** Vyzvednutí kódu/názvu z PriceEntryScreen ("Hledat ceny tohoto zboží") — viz NavigationResults.searchQuery. */
+  fun applyExternalQuery(newQuery: String) {
+    query = newQuery
     search()
   }
 }

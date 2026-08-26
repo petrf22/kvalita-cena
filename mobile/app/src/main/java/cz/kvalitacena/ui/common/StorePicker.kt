@@ -40,6 +40,9 @@ fun StorePicker(
   isLoggedIn: Boolean,
   homeCountry: String?,
   modifier: Modifier = Modifier,
+  // Otevře nabídku i bez psaní po "Najít v okolí" (viz SearchableDropdown.expandSignal) —
+  // hodnota, která se mění při každém úspěšném nálezu (PriceEntryViewModel.nearbyStoresSignal).
+  expandSignal: Any? = null,
 ) {
   Column(modifier = modifier) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -64,6 +67,7 @@ fun StorePicker(
         } else {
           null
         },
+        expandSignal = expandSignal,
       )
       Button(onClick = onFindNearby) {
         if (locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -81,6 +85,16 @@ fun StorePicker(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp),
+      )
+    }
+    // Mapa se sama schová, když v suggestions není obchod se souřadnicemi (StoreMap.stores.isEmpty()).
+    if (suggestions.isNotEmpty()) {
+      StoreMap(
+        stores = suggestions,
+        selectedStoreId = selectedStoreId,
+        onSelect = onSelect,
+        homeCountry = homeCountry,
+        modifier = Modifier.padding(top = 8.dp),
       )
     }
   }

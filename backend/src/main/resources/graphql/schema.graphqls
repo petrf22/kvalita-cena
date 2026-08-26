@@ -25,6 +25,11 @@ type Query {
   na obchod nebo město a řazením. storeId/city omezují i agregáty v ProductSearchItem — s
   filtrem na město ukazuje seznam cenu a počet hlášení jen za dané město, ne celostátně.
 
+  Dotaz tvořený jen číslicemi délky 8–14 se navíc zkusí i jako čárový kód (core.product_code,
+  code_type GTIN — nikdy STORE_INTERNAL, ten není globální identifikátor) vedle fulltextu podle
+  názvu (ProductSearchService.codeQuery) — appka tak umí najít zboží podle EANu, ne jen podle
+  jména.
+
   country omezuje na provozovny v jedné zemi/měně (docs/lokalizace.md) — bez toho by
   ProductSort.PRICE_ASC řadilo CZK vedle PLN v jednom sloupci a "nejlevnější obchod" by
   porovnával nesrovnatelné částky. Bez zadání se použije země přihlášeného uživatele, jinak

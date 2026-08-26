@@ -52,6 +52,15 @@ vytvoří až po explicitním kliknutí na „Zobrazit mapu", nikdy automaticky 
 obrazovky — na rozdíl od zbytku dokumentu tahle výjimka není beze zbytku vyřešená, jen vědomě
 přijatá a zapsaná, ať se na ni nezapomene při případné budoucí revizi.
 
+Tlačítko „Na mou polohu" (mobil, `ui/common/OsmMapView.kt` — `MyLocationButton`, jen
+v editovatelném `LocationMap`) tuhle výjimku o kousek zostřuje: appka mapu vycentruje přímo na
+uživatele, takže dlaždice, které si klient stáhne, prozradí OSM jeho okolí přesněji než dřív
+(kdy appka poslala jen tolik dlaždic, kolik uživatel sám odscrolloval/oddoomoval od výchozího
+středu ČR). Poloha samotná jde přes stejný jednorázový `getCurrentLocation` jako „Použít mou
+polohu"/„Najít v okolí" jinde v appce (žádný průběžný odběr, nikam se neukládá) — mapa se
+značkami obchodů (`StoreMap.kt`) souřadnice uživatele naopak vůbec nevidí, výřez je jen
+z bounding boxu obchodů.
+
 ### Lokální AI (plánováno) je opačný případ než mapové dlaždice
 
 U dlaždic výš appka vědomě připouští, že OSM uvidí IP uživatele. Plánovaná AI (`ai.md`) — čtení

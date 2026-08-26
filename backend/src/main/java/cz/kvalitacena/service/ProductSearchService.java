@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +38,11 @@ public class ProductSearchService {
   private static final int MAX_FIRST = 50;
   private static final int MAX_OFFSET = 500;
 
+  // EAN-8 až GTIN-14 — appka posílá číslice přesně tak, jak je přečetl skener (schema.graphqls,
+  // productByCode), kratší číselné dotazy (PSČ, číslo popisné v adrese obchodu) by naopak
+  // hledání podle kódu jen zbytečně zpomalovaly bez šance na shodu.
+  private static final Pattern CODE_QUERY_PATTERN = Pattern.compile("\\d{8,14}");
+
   private final ProductRepository productRepository;
   private final StoreRepository storeRepository;
   private final ProductOverlayService productOverlayService;
@@ -48,8 +54,8 @@ public class ProductSearchService {
     int limitedFirst = clamp(first == null ? 20 : first, 1, MAX_FIRST);
     int limitedOffset = clamp(offset == null ? 0 : offset, 0, MAX_OFFSET);
     ProductSearchCriteria criteria = new ProductSearchCriteria(
-        query, storeId, city, country, sort == null ? ProductSort.REPORT_COUNT : sort, limitedFirst, limitedOffset,
-        viewerId);
+        query, codeQuery(query), storeId, city, country, sort == null ? ProductSort.REPORT_COUNT : sort,
+        limitedFirst, limitedOffset, viewerId);
 
     List<ProductSearchRow> rows = productRepository.search(criteria);
     if (rows.isEmpty()) {
@@ -109,6 +115,12 @@ public class ProductSearchService {
         row.currency(),
         converted,
         convertedUnit);
+  }
+
+  /** GTIN-14 normalizace dotazu, když vypadá jako čárový kód — jinak NULL (viz CODE_QUERY_PATTERN). */
+  private String codeQuery(String query) {
+    String trimmed = query == null ? "" : query.trim();
+    return CODE_QUERY_PATTERN.matcher(trimmed).matches() ? GtinNormalization.toGtin14(trimmed) : null;
   }
 
   private int clamp(int value, int min, int max) {

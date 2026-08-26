@@ -28,6 +28,13 @@ import java.util.List;
  * Fulltextová podmínka je záměrně DVOUVĚTVÁ — {@code to_tsvector('simple', COALESCE(e.name,
  * p.name))} by obešel idx_product_name_fts a vynutil seq scan; takhle první větev pořád běží
  * přes index a druhá (přes patch) skenuje jen pár řádků z LEFT JOINu pro jednoho viewera.
+ *
+ * <p>Třetí, nezávislá větev hledá podle čárového kódu ({@code codeQuery}, GTIN-14 normalizace
+ * z {@link cz.kvalitacena.service.ProductSearchService}) — přes {@code core.product_code} s
+ * {@code code_type = 'GTIN'} JEN, přes existující {@code idx_product_code_code}. Nikdy
+ * {@code STORE_INTERNAL} — vnitroobchodní kódy váhového zboží mají povinný {@code chain_id}
+ * a nejsou globální identifikátor (kořenový CLAUDE.md), takže by přes ně hledání napříč obchody
+ * dávalo nesmyslné shody.
  */
 @Repository
 @RequiredArgsConstructor
@@ -42,7 +49,11 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
                OR (p.status = 'DRAFT' AND p.created_by_user_id = CAST(:viewerId AS BIGINT)))
           AND p.hidden_at IS NULL
           AND ( to_tsvector('simple', p.name) @@ plainto_tsquery('simple', :query)
-             OR to_tsvector('simple', e.name) @@ plainto_tsquery('simple', :query) )
+             OR to_tsvector('simple', e.name) @@ plainto_tsquery('simple', :query)
+             OR (CAST(:codeQuery AS TEXT) IS NOT NULL AND EXISTS (
+                   SELECT 1 FROM core.product_code pc2
+                   WHERE pc2.product_id = p.id AND pc2.code = CAST(:codeQuery AS TEXT)
+                     AND pc2.code_type = 'GTIN')) )
       ), scoped AS (
         -- country je NIKDY null v praxi (ProductGraphQlController.resolveCountry vždy dosadí
         -- konkrétní zemi) — díky tomu je scoped už jednoměnový a "best" níž smí bezpečně
@@ -111,6 +122,7 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
 
   private void bindCriteria(Query nativeQuery, ProductSearchCriteria criteria) {
     nativeQuery.setParameter("query", criteria.query());
+    nativeQuery.setParameter("codeQuery", criteria.codeQuery());
     nativeQuery.setParameter("storeId", criteria.storeId());
     nativeQuery.setParameter("city", criteria.city());
     nativeQuery.setParameter("country", criteria.country());

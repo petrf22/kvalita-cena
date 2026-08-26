@@ -29,6 +29,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import cz.kvalitacena.ui.about.AboutScreen
 import cz.kvalitacena.ui.account.AccountScreen
+import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.UpdateRequiredScreen
 import cz.kvalitacena.ui.common.UpdateRequiredState
 import cz.kvalitacena.ui.contributions.MyContributionsScreen
@@ -180,6 +181,14 @@ private fun AppScaffold() {
             onDone = { navController.popBackStack() },
             onAddStore = { navController.navigate(storeFormRouteForCreate()) },
             onAddProduct = { newBarcode -> navController.navigate(productFormRoute(newBarcode)) },
+            onSearchPrices = { query ->
+              NavigationResults.searchQuery = query
+              // Stejný vzor jako spodní lišta (AppBottomBar níž) — čistý zásobník na Hledání.
+              navController.navigate(TopLevelDestination.SEARCH.route) {
+                popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                launchSingleTop = true
+              }
+            },
           )
         }
       }

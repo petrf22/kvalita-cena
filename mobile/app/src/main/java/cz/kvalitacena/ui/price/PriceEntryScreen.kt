@@ -95,10 +95,18 @@ fun PriceEntryScreen(
   onDone: () -> Unit,
   onAddStore: () -> Unit,
   onAddProduct: (barcode: String?) -> Unit,
+  onSearchPrices: (query: String) -> Unit,
 ) {
   val viewModel: PriceEntryViewModel = viewModel(
     factory = viewModelFactory {
-      initializer { PriceEntryViewModel(AppContainer.graphQlClient, target, AppContainer.countryStore) }
+      initializer {
+        PriceEntryViewModel(
+          AppContainer.graphQlClient,
+          target,
+          AppContainer.countryStore,
+          AppContainer.priceEntryVisibilityStore,
+        )
+      }
     },
   )
   val context = LocalContext.current
@@ -164,177 +172,217 @@ fun PriceEntryScreen(
     }
   }
 
-  Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+  Column(modifier = Modifier.fillMaxSize()) {
     when {
       viewModel.loading -> {
         Column(
-          modifier = Modifier.fillMaxSize(),
+          modifier = Modifier.fillMaxSize().padding(16.dp),
           horizontalAlignment = Alignment.CenterHorizontally,
           verticalArrangement = Arrangement.Center,
         ) { CircularProgressIndicator() }
       }
 
       viewModel.notFound -> {
-        val message = when (target) {
-          is PriceEntryTarget.ByBarcode -> stringResource(R.string.price_entry_code_unknown, target.barcode)
-          is PriceEntryTarget.ById -> stringResource(R.string.product_not_found)
-        }
-        Text(message, style = MaterialTheme.typography.bodyLarge)
-        Gap()
-        // Dřív tu bylo jen "Zpět" — slepá ulička pro neznámý kód. Teď jde zboží rovnou založit,
-        // s předvyplněným EANem (docs/reputace.md, "Zboží bez čárového kódu" — tohle je ale
-        // varianta SE známým kódem, na rozdíl od bezkódové druhové položky z formuláře hledání).
-        // Založení vyžaduje přihlášení (backend ProductCatalogService) — anonymovi se nabídne
-        // jen "Zpět", ne formulář, který by na odeslání skončil UNAUTHORIZED.
-        if (isLoggedIn) {
-          Button(onClick = { onAddProduct(viewModel.barcodeForNewProduct()) }, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.price_entry_create_product))
+        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+          val message = when (target) {
+            is PriceEntryTarget.ByBarcode -> stringResource(R.string.price_entry_code_unknown, target.barcode)
+            is PriceEntryTarget.ById -> stringResource(R.string.product_not_found)
           }
-        } else {
-          Text(
-            stringResource(R.string.price_entry_create_product_requires_login),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-        }
-        Gap()
-        OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
-          Text(stringResource(R.string.common_back))
+          Text(message, style = MaterialTheme.typography.bodyLarge)
+          Gap()
+          // Dřív tu bylo jen "Zpět" — slepá ulička pro neznámý kód. Teď jde zboží rovnou založit,
+          // s předvyplněným EANem (docs/reputace.md, "Zboží bez čárového kódu" — tohle je ale
+          // varianta SE známým kódem, na rozdíl od bezkódové druhové položky z formuláře hledání).
+          // Založení vyžaduje přihlášení (backend ProductCatalogService) — anonymovi se nabídne
+          // jen "Zpět", ne formulář, který by na odeslání skončil UNAUTHORIZED.
+          if (isLoggedIn) {
+            Button(onClick = { onAddProduct(viewModel.barcodeForNewProduct()) }, modifier = Modifier.fillMaxWidth()) {
+              Text(stringResource(R.string.price_entry_create_product))
+            }
+          } else {
+            Text(
+              stringResource(R.string.price_entry_create_product_requires_login),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+          Gap()
+          OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.common_back))
+          }
         }
       }
 
       else -> {
         val product = viewModel.product!!
-        Text(product.name, style = MaterialTheme.typography.headlineSmall)
-        val subtitle = listOfNotNull(product.brand?.name, product.category.name).joinToString(" · ")
-        Text(subtitle, style = MaterialTheme.typography.bodyMedium)
-        Gap()
 
-        Text(stringResource(R.string.price_entry_current_prices), style = MaterialTheme.typography.titleMedium)
-        if (product.prices.isEmpty()) {
-          Text(stringResource(R.string.product_no_price_be_first), style = MaterialTheme.typography.bodyMedium)
-        } else {
-          Column(modifier = Modifier.padding(top = 8.dp)) {
-            product.prices.forEach { price ->
-              Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                Text("${price.store.name} — ${priceKindLabel(price.priceKind)}")
-                val moneyFormatter = rememberMoneyFormatter(price.currency)
-                Text(
-                  stringResource(
-                    R.string.price_entry_price_summary,
-                    price.priceAmount?.let { moneyFormatter.format(it) }.orEmpty(),
-                    price.unitPrice?.let { moneyFormatter.format(it) }.orEmpty(),
-                    price.nObs,
-                  ),
-                  style = MaterialTheme.typography.bodySmall,
-                )
-                price.promoValidTo?.let { validTo ->
+        // Sekce "Zadat cenu" je schovaná za tlačítkem, dokud si ji uživatel sám nerozbalí nebo
+        // dokud jednou úspěšně nezapíše cenu (PriceEntryViewModel.priceEntryExpanded) — appka
+        // slouží stejně dobře lidem, co jen hledají ceny poblíž.
+        Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)) {
+          Text(product.name, style = MaterialTheme.typography.headlineSmall)
+          val subtitle = listOfNotNull(product.brand?.name, product.category.name).joinToString(" · ")
+          Text(subtitle, style = MaterialTheme.typography.bodyMedium)
+          Gap()
+
+          Text(stringResource(R.string.price_entry_current_prices), style = MaterialTheme.typography.titleMedium)
+          if (product.prices.isEmpty()) {
+            Text(stringResource(R.string.product_no_price_be_first), style = MaterialTheme.typography.bodyMedium)
+          } else {
+            Column(modifier = Modifier.padding(top = 8.dp)) {
+              product.prices.forEach { price ->
+                Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                  Text("${price.store.name} — ${priceKindLabel(price.priceKind)}")
+                  val moneyFormatter = rememberMoneyFormatter(price.currency)
                   Text(
-                    stringResource(R.string.product_promo_valid_until, formatShortDate(validTo)),
+                    stringResource(
+                      R.string.price_entry_price_summary,
+                      price.priceAmount?.let { moneyFormatter.format(it) }.orEmpty(),
+                      price.unitPrice?.let { moneyFormatter.format(it) }.orEmpty(),
+                      price.nObs,
+                    ),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
+                  price.promoValidTo?.let { validTo ->
+                    Text(
+                      stringResource(R.string.product_promo_valid_until, formatShortDate(validTo)),
+                      style = MaterialTheme.typography.bodySmall,
+                      color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                  }
                 }
+                HorizontalDivider()
               }
-              HorizontalDivider()
+            }
+          }
+          Gap()
+
+          // Výpis výš není zeměpisně omezený (jen zemí) — tlačítko přehodí do záložky Hledat
+          // s naskenovaným kódem (nebo názvem, viz searchQueryForPrices), kde jde omezit na
+          // město (NavigationResults.searchQuery, viz MainActivity).
+          OutlinedButton(
+            onClick = { onSearchPrices(viewModel.searchQueryForPrices()) },
+            modifier = Modifier.fillMaxWidth(),
+          ) {
+            Text(stringResource(R.string.price_entry_search_this_code))
+          }
+
+          if (viewModel.priceEntryExpanded) {
+            Gap()
+            HorizontalDivider()
+            Gap()
+
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Text(stringResource(R.string.price_entry_write_price), style = MaterialTheme.typography.titleMedium)
+              TextButton(onClick = { viewModel.hidePriceEntry() }) {
+                Text(stringResource(R.string.price_entry_hide))
+              }
+            }
+            Gap()
+
+            viewModel.locationError?.let {
+              Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+              Gap()
+            }
+            viewModel.submitError?.let {
+              Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+              Gap()
+            }
+
+            StorePicker(
+              query = viewModel.storeQuery,
+              onQueryChange = viewModel::onStoreQueryChange,
+              suggestions = viewModel.storeSuggestions,
+              searching = viewModel.storeSearching,
+              selectedStoreId = viewModel.selectedStore?.id,
+              onSelect = viewModel::onStoreSelected,
+              onFindNearby = { findNearbyStores() },
+              locating = viewModel.locating,
+              onAddNew = onAddStore,
+              isLoggedIn = isLoggedIn,
+              homeCountry = AppContainer.countryStore.country,
+              modifier = Modifier.fillMaxWidth(),
+              expandSignal = viewModel.nearbyStoresSignal,
+            )
+            Gap()
+
+            if (product.isVariableWeight) {
+              QuantityBasisDropdown(
+                selected = viewModel.quantityBasis,
+                options = SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES,
+                onSelect = { viewModel.quantityBasis = it },
+              )
+              Gap()
+            }
+
+            // Symbol podle měny vybraného obchodu (docs/lokalizace.md) — než je obchod vybraný,
+            // appka měnu ještě nezná, CZK je tu jen nouzový výchozí popisek pole.
+            val currencySymbol = remember(viewModel.selectedStore?.country) {
+              Currency.getInstance(currencyForCountry(viewModel.selectedStore?.country)).symbol
+            }
+
+            Text(stringResource(R.string.price_entry_prices_label), style = MaterialTheme.typography.titleSmall)
+            Text(
+              stringResource(R.string.price_entry_prices_hint),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Gap()
+
+            viewModel.priceRows.forEach { row ->
+              PriceRowFields(
+                row = row,
+                availableKinds = availablePriceKinds(viewModel.priceRows, row.priceKind),
+                currencySymbol = currencySymbol,
+                removable = viewModel.priceRows.size > 1,
+                onChange = { transform -> viewModel.updatePriceRow(row.id, transform) },
+                onRemove = { viewModel.removePriceRow(row.id) },
+              )
+              Gap()
+            }
+
+            OutlinedButton(
+              onClick = { viewModel.addPriceRow() },
+              enabled = viewModel.priceRows.size < SELECTABLE_PRICE_KINDS.size,
+              modifier = Modifier.fillMaxWidth(),
+            ) {
+              Text(stringResource(R.string.price_entry_add_price))
+            }
+            Gap()
+
+            Button(
+              onClick = { viewModel.submit() },
+              enabled = viewModel.canSubmit,
+              modifier = Modifier.fillMaxWidth(),
+            ) {
+              if (viewModel.submitting) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+              else Text(stringResource(R.string.price_entry_submit))
+            }
+            Gap()
+
+            // Odchod bez zápisu — uživatel nesmí být nucený něco vyplnit jen proto, že sem
+            // omylem naskenoval kód nebo si to rozmyslel (žádný nesmyslný údaj "jen aby prošel").
+            OutlinedButton(
+              onClick = onDone,
+              enabled = !viewModel.submitting,
+              modifier = Modifier.fillMaxWidth(),
+            ) {
+              Text(stringResource(R.string.price_entry_back_without_price))
             }
           }
         }
 
-        Gap()
-        HorizontalDivider()
-        Gap()
-
-        Text(stringResource(R.string.price_entry_write_price), style = MaterialTheme.typography.titleMedium)
-        Gap()
-
-        viewModel.locationError?.let {
-          Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-          Gap()
-        }
-        viewModel.submitError?.let {
-          Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-          Gap()
-        }
-
-        StorePicker(
-          query = viewModel.storeQuery,
-          onQueryChange = viewModel::onStoreQueryChange,
-          suggestions = viewModel.storeSuggestions,
-          searching = viewModel.storeSearching,
-          selectedStoreId = viewModel.selectedStore?.id,
-          onSelect = viewModel::onStoreSelected,
-          onFindNearby = { findNearbyStores() },
-          locating = viewModel.locating,
-          onAddNew = onAddStore,
-          isLoggedIn = isLoggedIn,
-          homeCountry = AppContainer.countryStore.country,
-          modifier = Modifier.fillMaxWidth(),
-        )
-        Gap()
-
-        if (product.isVariableWeight) {
-          QuantityBasisDropdown(
-            selected = viewModel.quantityBasis,
-            options = SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES,
-            onSelect = { viewModel.quantityBasis = it },
-          )
-          Gap()
-        }
-
-        // Symbol podle měny vybraného obchodu (docs/lokalizace.md) — než je obchod vybraný,
-        // appka měnu ještě nezná, CZK je tu jen nouzový výchozí popisek pole.
-        val currencySymbol = remember(viewModel.selectedStore?.country) {
-          Currency.getInstance(currencyForCountry(viewModel.selectedStore?.country)).symbol
-        }
-
-        Text(stringResource(R.string.price_entry_prices_label), style = MaterialTheme.typography.titleSmall)
-        Text(
-          stringResource(R.string.price_entry_prices_hint),
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Gap()
-
-        viewModel.priceRows.forEach { row ->
-          PriceRowFields(
-            row = row,
-            availableKinds = availablePriceKinds(viewModel.priceRows, row.priceKind),
-            currencySymbol = currencySymbol,
-            removable = viewModel.priceRows.size > 1,
-            onChange = { transform -> viewModel.updatePriceRow(row.id, transform) },
-            onRemove = { viewModel.removePriceRow(row.id) },
-          )
-          Gap()
-        }
-
-        OutlinedButton(
-          onClick = { viewModel.addPriceRow() },
-          enabled = viewModel.priceRows.size < SELECTABLE_PRICE_KINDS.size,
-          modifier = Modifier.fillMaxWidth(),
-        ) {
-          Text(stringResource(R.string.price_entry_add_price))
-        }
-        Gap()
-
-        Button(
-          onClick = { viewModel.submit() },
-          enabled = viewModel.canSubmit,
-          modifier = Modifier.fillMaxWidth(),
-        ) {
-          if (viewModel.submitting) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-          else Text(stringResource(R.string.price_entry_submit))
-        }
-        Gap()
-
-        // Odchod bez zápisu — uživatel nesmí být nucený něco vyplnit jen proto, že sem
-        // omylem naskenoval kód nebo si to rozmyslel (žádný nesmyslný údaj "jen aby prošel").
-        OutlinedButton(
-          onClick = onDone,
-          enabled = !viewModel.submitting,
-          modifier = Modifier.fillMaxWidth(),
-        ) {
-          Text(stringResource(R.string.price_entry_back_without_price))
+        if (!viewModel.priceEntryExpanded) {
+          HorizontalDivider()
+          Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Button(onClick = { viewModel.expandPriceEntry() }, modifier = Modifier.fillMaxWidth()) {
+              Text(stringResource(R.string.price_entry_write_price))
+            }
+          }
         }
       }
     }

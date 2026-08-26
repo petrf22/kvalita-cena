@@ -14,6 +14,7 @@ import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.storeLabel
 import cz.kvalitacena.ui.common.toUiText
 import cz.kvalitacena.ui.settings.CountryStore
+import cz.kvalitacena.ui.settings.PriceEntryVisibilityStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -25,6 +26,7 @@ class PriceEntryViewModel(
   private val graphQlClient: GraphQlClient,
   private val target: PriceEntryTarget,
   private val countryStore: CountryStore,
+  private val visibilityStore: PriceEntryVisibilityStore,
 ) : ViewModel() {
 
   var loading by mutableStateOf(true)
@@ -32,6 +34,13 @@ class PriceEntryViewModel(
   var product by mutableStateOf<Product?>(null)
     private set
   var notFound by mutableStateOf(false)
+    private set
+
+  // Sekce "Zadat cenu" je schovaná za tlačítkem, dokud si uživatel jednou úspěšně nezapíše
+  // cenu (viz PriceEntryVisibilityStore) — appka tak slouží stejně dobře lidem, co jen hledají
+  // ceny poblíž. Rozbalení tlačítkem na TÉHLE obrazovce se nikam neukládá, jen sbalení/úspěšný
+  // zápis (viz expandPriceEntry/hidePriceEntry/submit).
+  var priceEntryExpanded by mutableStateOf(visibilityStore.expandedByDefault)
     private set
 
   // Obchod se dá vybrat třemi cestami — napsat název/město (storeQuery → searchStores),
@@ -49,6 +58,12 @@ class PriceEntryViewModel(
   var locating by mutableStateOf(false)
     private set
   var locationError by mutableStateOf<UiText?>(null)
+    private set
+
+  // Roste při každém úspěšném "Najít v okolí" — StorePicker/SearchableDropdown ho použije jako
+  // expandSignal, aby nabídku otevřel i bez psaní (dřív appka nabídku potichu naplnila a sama
+  // vybrala první obchod, viz onLocationResolved níž).
+  var nearbyStoresSignal by mutableStateOf(0)
     private set
 
   // Seznam řádků "(druh ceny, částka)" — u regálu bývá cena napsaná i dvakrát/třikrát (běžná,
@@ -110,6 +125,20 @@ class PriceEntryViewModel(
   /** Naskenovaný/zadaný kód pro předvyplnění formuláře nového zboží — null u vstupu z detailu. */
   fun barcodeForNewProduct(): String? = (target as? PriceEntryTarget.ByBarcode)?.barcode
 
+  /** Kód pro tlačítko "Hledat ceny tohoto zboží" — u vstupu z detailu appka kód nezná, hledá se podle názvu. */
+  fun searchQueryForPrices(): String = barcodeForNewProduct() ?: product?.name.orEmpty()
+
+  /** Klik na tlačítko "Zadat cenu" — rozbalí sekci jen pro tuhle obrazovku, bez zápisu preference. */
+  fun expandPriceEntry() {
+    priceEntryExpanded = true
+  }
+
+  /** Klik na "Skrýt zadání ceny" — na rozdíl od expandPriceEntry i ukládá, že příští sken má být rovnou sbalený. */
+  fun hidePriceEntry() {
+    priceEntryExpanded = false
+    visibilityStore.select(false)
+  }
+
   /** Návrat z formuláře nového zboží (ProductFormScreen) — obrazovka rovnou pokračuje se zápisem ceny. */
   fun onNewProductCreated(newProduct: Product) {
     product = newProduct
@@ -158,7 +187,11 @@ class PriceEntryViewModel(
         if (stores.isEmpty()) {
           locationError = UiText.Res(R.string.store_picker_no_nearby_stores)
         } else {
-          onStoreSelected(stores.first())
+          // Dřív appka potichu vybrala stores.first() — uživatel viděl výsledek "Najít v
+          // okolí" jen jako vybraný obchod, ostatní nálezy nešly vidět/zvolit (viz plán
+          // projektu, "nefunguje mi výběr obchodu z mapy"). Teď appka jen otevře nabídku
+          // (a mapu, StorePicker.StoreMap) a výběr nechá na uživateli.
+          nearbyStoresSignal++
         }
       } catch (e: Exception) {
         locationError = e.toUiText()
@@ -199,6 +232,8 @@ class PriceEntryViewModel(
         // Obrazovka po úspěchu mizí (návrat na sken), takže není potřeba dohánět stav
         // (obnova produktu, čištění pole) — ViewModel se zahodí spolu s ní.
         submitSuccess = true
+        // Uživatel právě zapsal cenu — příští sken ať sekci rovnou rozbalí (PriceEntryVisibilityStore).
+        visibilityStore.select(true)
       } catch (e: Exception) {
         submitError = e.toUiText()
       } finally {

@@ -188,6 +188,9 @@
 
     <string name="map_show">Zobraziť mapu</string>
     <string name="map_hint">Klepni do mapy alebo presuň značku na presné miesto.</string>
+    <string name="map_my_location">Na moju polohu</string>
+    <string name="map_location_unavailable">Polohu sa nepodarilo zistiť.</string>
+    <string name="store_map_show">Zobraziť obchody na mape</string>
 
     <string name="photo_alt">Fotka</string>
     <string name="photo_hidden_badge">Skryté</string>
@@ -274,6 +277,8 @@
     <string name="price_entry_current_prices">Aktuálne ceny po obchodoch</string>
     <string name="price_entry_price_summary">%1$s (%2$s/jednotka) · %3$d záznamov</string>
     <string name="price_entry_write_price">Zadať cenu</string>
+    <string name="price_entry_hide">Skryť zadanie ceny</string>
+    <string name="price_entry_search_this_code">Hľadať ceny tohto tovaru</string>
     <string name="price_entry_price_label">Cena (%1$s)</string>
     <string name="price_entry_prices_label">Ceny</string>
     <string name="price_entry_prices_hint">Na cenovke býva bežná cena aj cena s vernostnou kartou — zapíš obe naraz.</string>

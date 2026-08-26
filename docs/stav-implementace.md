@@ -35,12 +35,17 @@ klubová + množstevní/MULTIBUY se zadají jedním „+" formulářem a odešlo
 platnost „od–do" (`promo_valid_from`/`promo_valid_to`, `docs/datovy-model.md`) — `od` nesmí být
 v budoucnu, vypršelá akce zmizí z aktuálních cen (`ProductGraphQlController`, filtr při čtení),
 v grafu historie zůstává. Android: bottom navigation
-ze 4 záložek (Sken/Hledat/Nastavení/Účet — `ui/navigation/AppDestinations.kt`), hledání, detail
+ze 4 záložek (Sken/Hledat/Nastavení/Účet — `ui/navigation/AppDestinations.kt`), hledání s
+filtry obchod/město/řazení přežívajícími přepnutí záložky (`ui/settings/SearchFilterStore.kt` —
+appka jinak maže při přepnutí celý navigační zásobník i s `SearchViewModel`), detail
 s Canvas grafem (`PriceChartGeometry.kt`, testováno JUnitem), zápis ceny ze skenu i z detailu
 přes sdílený `ui/common/StorePicker.kt` (napovídání podle názvu/města, ne jen GPS) a
 `ui/price/PriceEntryScreen.kt`/`PriceEntryViewModel.kt` se stejným seznamem řádků „(druh ceny,
 částka)" jako web (`ui/price/PriceRowValidation.kt`, testováno JUnitem), založení obchodu
 (`ui/store/StoreFormScreen.kt`) i zboží (`ui/product/ProductFormScreen.kt`), mapa/OFF odkazy.
+Sekce „Zadat cenu" na `PriceEntryScreen` je schovaná za tlačítkem, dokud uživatel jednou
+úspěšně nezapíše cenu (`ui/settings/PriceEntryVisibilityStore.kt`) — appka tak stejně dobře
+slouží lidem, co jen hledají ceny poblíž.
 
 **Uživatelská vrstva nad globálními daty** (`docs/datovy-model.md`, „Uživatelská vrstva nad
 globálními daty"; práh důvěry a nahlašování v `docs/reputace.md`): úprava existujícího zboží/
@@ -137,7 +142,21 @@ serveru jako `geocodeAddress`) doplňuje adresu po „Použít mou polohu". Mapa
 (web `shared/location-map.ts` — Leaflet, lazy `import()`; mobil `ui/common/LocationMap.kt` —
 osmdroid) umožňuje náhled i výběr bodu klikem/přetažením značky — dlaždice se na rozdíl od
 geokódování stahují přímo z klienta, vědomá výjimka zapsaná v `docs/soukromi.md`, zmírněná
-tím, že se mapa nenačte, dokud si o to uživatel výslovně neřekne.
+tím, že se mapa nenačte, dokud si o to uživatel výslovně neřekne. Mobil navíc má tlačítko „Na
+mou polohu" přímo v mapě (jednorázový `getCurrentLocation`, `ui/common/OsmMapView.kt` —
+`MyLocationButton`, sdílené `LocationMap`/`StoreMap`) a mapu se značkami obchodů k výběru
+(`ui/common/StoreMap.kt`, zapojená do `StorePicker` vedle napovídání a „Najít v okolí") —
+souřadnice uživatele se do ní na rozdíl od `LocationMap` v editovatelném režimu vůbec
+nedostávají, appka jen ukáže obchody, které už zná.
+
+**Hledání podle čárového kódu**: `searchProducts` (backend `ProductSearchService.codeQuery`,
+`ProductSearchRepositoryImpl` — třetí větev `matched` CTE) rozpozná dotaz tvořený jen číslicemi
+délky 8–14 a zkusí ho i jako GTIN (`core.product_code`, jen `code_type = GTIN`, nikdy
+`STORE_INTERNAL`) vedle fulltextu podle názvu — funguje tak zadarmo na webu i mobilu, obojí
+volá stejný GraphQL dotaz. Mobil navíc na `PriceEntryScreen` nabízí tlačítko „Hledat ceny
+tohoto zboží", které naskenovaný kód (nebo název u vstupu z detailu) přehodí do záložky Hledat
+přes `ui/common/NavigationResults.searchQuery` — výpis „Aktuální ceny po obchodech" pod
+naskenovaným zbožím totiž není omezený na město, jen na zemi.
 
 **Lokalizace: cs/sk/en/pl, multi-měna, strojově čitelný kontrakt chyb** (`docs/lokalizace.md`
 je jeden zdroj pravdy — jazyky, mapa země→měna→locale, pravidla překladu, přehled testů):
