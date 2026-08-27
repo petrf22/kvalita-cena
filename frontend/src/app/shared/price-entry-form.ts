@@ -101,8 +101,27 @@ export class PriceEntryForm {
   /** observed_at i promoValidFrom nesmí být v budoucnosti — uživatel zapisuje, co už VIDĚL v regále. */
   protected readonly isFutureDate = (date: Date): boolean => date.getTime() > Date.now();
 
-  /** PriceRow drží datum jako ISO string (posílá se přímo v mutaci) — nz-date-picker chce Date. */
-  protected readonly fromIsoDate = fromIsoDate;
+  /**
+   * PriceRow drží datum jako ISO string (posílá se přímo v mutaci) — nz-date-picker chce Date.
+   * Cache podle ISO stringu drží STEJNOU referenci na Date napříč change-detection cykly —
+   * `fromIsoDate()` volaná přímo v šabloně (`[ngModel]="fromIsoDate(row.promoValidTo)"`) by
+   * jinak vracela pokaždé nový objekt, i když se ISO string nezměnil. Angular porovnává vstupy
+   * direktiv referenční rovností, takže by NgModel na date-pickeru viděl "změnu" při KAŽDÉM
+   * CD cyklu a volal `writeValue()` → `markForCheck()` → další CD cyklus → dokola, dokud je
+   * kalendářový panel otevřený (CDK overlay si díky pozicování/resize sám plánuje další tik) —
+   * v praxi zamrznutí záložky při výběru data platnosti akce.
+   */
+  private readonly dateCache = new Map<string, Date>();
+
+  protected toDate(iso: string | null): Date | null {
+    if (iso == null) return null;
+    let date = this.dateCache.get(iso);
+    if (!date) {
+      date = fromIsoDate(iso)!;
+      this.dateCache.set(iso, date);
+    }
+    return date;
+  }
 
   /** Nabídka druhu ceny pro konkrétní řádek — vyloučí druhy použité v ostatních řádcích. */
   protected kindsForRow(row: PriceRow): readonly PriceKind[] {

@@ -136,7 +136,7 @@
         @if (row.priceKind === 'PROMO') {
           <div class="promo-validity">
             <nz-date-picker
-              [ngModel]="fromIsoDate(row.promoValidFrom)"
+              [ngModel]="toDate(row.promoValidFrom)"
               (ngModelChange)="updateRowPromoValidFrom(row.key, $event)"
               [name]="'promoValidFrom' + row.key"
               [nzDisabledDate]="isFutureDate"
@@ -144,7 +144,7 @@
               [nzPlaceHolder]="t('price-form.promoValidFromLabel')"
             />
             <nz-date-picker
-              [ngModel]="fromIsoDate(row.promoValidTo)"
+              [ngModel]="toDate(row.promoValidTo)"
               (ngModelChange)="updateRowPromoValidTo(row.key, $event)"
               [name]="'promoValidTo' + row.key"
               [nzFormat]="format.dateInputFormat()"
