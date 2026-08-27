@@ -95,6 +95,7 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    systemProperty 'spring.profiles.active', 'test'
     systemProperty 'user.language', 'cs'
     systemProperty 'user.country', 'CZ'
     systemProperty 'file.encoding', 'UTF-8'
