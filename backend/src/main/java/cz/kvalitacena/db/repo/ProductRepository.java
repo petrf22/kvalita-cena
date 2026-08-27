@@ -20,9 +20,12 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
    * bezkódový zápis (existující druhové položky nahoru) i jako povinná kontrola duplicit
    * před založením nového zboží (docs/reputace.md, "Zboží bez čárového kódu").
    */
-  @Query(value = "SELECT * FROM core.product p WHERE p.status IN ('ACTIVE', 'DRAFT') "
-      + "AND similarity(core.norm_text(p.name), core.norm_text(:name)) > 0.2 "
-      + "ORDER BY p.is_generic DESC, similarity(core.norm_text(p.name), core.norm_text(:name)) DESC "
+  @Query(value = "SELECT p.* FROM core.product p "
+      + "LEFT JOIN core.product_code pc ON pc.product_id=p.id AND pc.code_type='GTIN' "
+      + "LEFT JOIN off.product op ON op.gtin=pc.code AND op.fetch_status='FOUND' "
+      + "WHERE p.status IN ('ACTIVE', 'DRAFT') "
+      + "AND similarity(core.norm_text(COALESCE(op.product_name,p.name)), core.norm_text(:name)) > 0.2 "
+      + "ORDER BY p.is_generic DESC, similarity(core.norm_text(COALESCE(op.product_name,p.name)), core.norm_text(:name)) DESC "
       + "LIMIT :limit", nativeQuery = true)
   List<Product> findSimilarByName(@Param("name") String name, @Param("limit") int limit);
 

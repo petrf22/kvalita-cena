@@ -1,68 +1,135 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.db.entity.Category;
+import cz.kvalitacena.db.entity.CodeType;
 import cz.kvalitacena.db.entity.NetContentUom;
+import cz.kvalitacena.db.entity.OffFetchStatus;
+import cz.kvalitacena.db.entity.OffProduct;
 import cz.kvalitacena.db.entity.Product;
+import cz.kvalitacena.db.entity.ProductCode;
 import cz.kvalitacena.db.entity.ProductUserEdit;
 import cz.kvalitacena.db.entity.UnitBase;
 import cz.kvalitacena.db.repo.BrandRepository;
 import cz.kvalitacena.db.repo.CategoryRepository;
+import cz.kvalitacena.db.repo.OffProductRepository;
+import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductUserEditRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Aplikuje uživatelův patch (core.product_user_edit) na DETACHED kopii produktu
- * ({@code Product.toBuilder()}) — entita se NIKDY nepřepisuje uvnitř transakce, protože by to
- * Hibernate propsal zpátky do globálního řádku (CLAUDE.md, "autorizace je predikát v dotazu,
- * ne filtr v resolveru"; docs/datovy-model.md, "Uživatelská vrstva nad globálními daty").
- * Kopie vzniklá {@code toBuilder()} nikdy neprošla {@code EntityManager.find()}, takže ji
- * Hibernate nesleduje a nemá jak zapsat zpátky, i kdyby se to zkusilo.
+ * Skládá efektivní produkt na DETACHED kopii v pořadí komunitní základ → OFF → osobní patch.
+ * Hodnoty z {@code off.*} se tím nikdy nepropíšou do spravované entity ani do {@code core.*}.
  */
 @Service
 @RequiredArgsConstructor
 public class ProductOverlayService {
 
   private final ProductUserEditRepository productUserEditRepository;
+  private final ProductCodeRepository productCodeRepository;
+  private final OffProductRepository offProductRepository;
   private final BrandRepository brandRepository;
   private final CategoryRepository categoryRepository;
+  private final OffNetContentConverter netContentConverter;
 
-  /** Jeden produkt — detail (product/productByCode). */
+  /** Jeden produkt — detail, editace a snapshot gramáže při zápisu ceny. */
   public Product applyOverlay(Product product, Long viewerId) {
-    if (product == null || viewerId == null) return product;
+    if (product == null) return null;
+    OffProduct off = offFor(product);
+    Map<String, Category> categories = categoryFor(off);
+    Product effective = applyOff(product, off, categories);
+    if (viewerId == null) return effective;
     return productUserEditRepository.findByProductIdAndUserId(product.getId(), viewerId)
-        .map(edit -> merge(product, edit))
-        .orElse(product);
+        .map(edit -> mergeUser(effective, edit)).orElse(effective);
   }
 
-  /** Dávka — hledání/seznamy, jeden dotaz na patche místo N+1. */
+  /** Dávka — hledání/seznamy, nejvýš jeden dotaz pro kódy, OFF snapshoty, kategorie a patche. */
   public List<Product> applyOverlay(List<Product> products, Long viewerId) {
-    if (viewerId == null || products.isEmpty()) return products;
+    if (products.isEmpty()) return products;
     List<Long> ids = products.stream().map(Product::getId).toList();
-    Map<Long, ProductUserEdit> edits = productUserEditRepository
+    Map<Long, String> gtins = gtinsByProductId(ids);
+    Map<String, OffProduct> offByGtin = offProductRepository.findByGtinIn(gtins.values()).stream()
+        .filter(p -> p.getFetchStatus() == OffFetchStatus.FOUND)
+        .collect(Collectors.toMap(OffProduct::getGtin, Function.identity()));
+    Map<String, Category> categories = categoriesBySlug(offByGtin.values());
+    Map<Long, ProductUserEdit> edits = viewerId == null ? Map.of() : productUserEditRepository
         .findByProductIdInAndUserId(ids, viewerId).stream()
         .collect(Collectors.toMap(ProductUserEdit::getProductId, Function.identity()));
-    if (edits.isEmpty()) return products;
-    return products.stream()
-        .map(p -> edits.containsKey(p.getId()) ? merge(p, edits.get(p.getId())) : p)
-        .toList();
+
+    return products.stream().map(product -> {
+      Product effective = applyOff(product, offByGtin.get(gtins.get(product.getId())), categories);
+      ProductUserEdit edit = edits.get(product.getId());
+      return edit == null ? effective : mergeUser(effective, edit);
+    }).toList();
   }
 
-  private Product merge(Product product, ProductUserEdit edit) {
+  private OffProduct offFor(Product product) {
+    return productCodeRepository.findByProductId(product.getId()).stream()
+        .filter(c -> c.getCodeType() == CodeType.GTIN)
+        .sorted(java.util.Comparator.comparing(ProductCode::isPrimary).reversed())
+        .map(ProductCode::getCode).map(offProductRepository::findById)
+        .flatMap(java.util.Optional::stream)
+        .filter(p -> p.getFetchStatus() == OffFetchStatus.FOUND).findFirst().orElse(null);
+  }
+
+  private Map<Long, String> gtinsByProductId(Collection<Long> productIds) {
+    Map<Long, List<ProductCode>> grouped = productCodeRepository.findByProductIdIn(productIds).stream()
+        .filter(c -> c.getCodeType() == CodeType.GTIN)
+        .collect(Collectors.groupingBy(c -> c.getProduct().getId()));
+    return grouped.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stream()
+        .sorted(java.util.Comparator.comparing(ProductCode::isPrimary).reversed())
+        .map(ProductCode::getCode).findFirst().orElseThrow()));
+  }
+
+  private Map<String, Category> categoryFor(OffProduct off) {
+    if (off == null || off.getMappedCategorySlug() == null) return Map.of();
+    return categoryRepository.findBySlug(off.getMappedCategorySlug())
+        .map(category -> Map.of(category.getSlug(), category)).orElseGet(Map::of);
+  }
+
+  private Map<String, Category> categoriesBySlug(Collection<OffProduct> products) {
+    List<String> slugs = products.stream().map(OffProduct::getMappedCategorySlug)
+        .filter(Objects::nonNull).distinct().toList();
+    if (slugs.isEmpty()) return Map.of();
+    return categoryRepository.findBySlugIn(slugs).stream()
+        .collect(Collectors.toMap(Category::getSlug, Function.identity()));
+  }
+
+  private Product applyOff(Product product, OffProduct off, Map<String, Category> categories) {
+    Product.ProductBuilder builder = product.toBuilder()
+        .offBacked(false).externalBrandName(null).offImageFrontUrl(null).offImageFrontSmallUrl(null);
+    if (off == null) return builder.build();
+
+    builder.offBacked(true).offImageFrontUrl(off.getImageFrontUrl())
+        .offImageFrontSmallUrl(off.getImageFrontSmallUrl());
+    if (off.getProductName() != null) builder.name(off.getProductName());
+    if (off.getBrandName() != null) builder.brand(null).externalBrandName(off.getBrandName());
+    Category category = categories.get(off.getMappedCategorySlug());
+    if (category != null) builder.category(category);
+    OffNetContent content = netContentConverter.convert(off);
+    if (content != null) {
+      builder.unitBase(content.unitBase()).netContentValue(content.value()).netContentUom(content.uom())
+          .netContentBase(content.base()).variableWeight(false);
+    }
+    return builder.build();
+  }
+
+  private Product mergeUser(Product product, ProductUserEdit edit) {
     Product.ProductBuilder builder = product.toBuilder();
     if (edit.getName() != null) builder.name(edit.getName());
     if (edit.getBrandId() != null) {
-      brandRepository.findById(edit.getBrandId()).ifPresent(builder::brand);
+      brandRepository.findById(edit.getBrandId()).ifPresent(brand -> builder.brand(brand).externalBrandName(null));
     } else if (edit.getClearedFields().contains("brand")) {
-      builder.brand(null);
+      builder.brand(null).externalBrandName(null);
     }
-    if (edit.getCategoryId() != null) {
-      categoryRepository.findById(edit.getCategoryId()).ifPresent(builder::category);
-    }
+    if (edit.getCategoryId() != null) categoryRepository.findById(edit.getCategoryId()).ifPresent(builder::category);
     if (edit.getUnitBase() != null) builder.unitBase(UnitBase.valueOf(edit.getUnitBase()));
     if (edit.getNetContentValue() != null) builder.netContentValue(edit.getNetContentValue());
     if (edit.getNetContentUom() != null) builder.netContentUom(NetContentUom.valueOf(edit.getNetContentUom()));

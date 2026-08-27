@@ -65,8 +65,10 @@ public class CatalogEditService {
   @Transactional
   public Product updateProduct(Long productId, UpdateProductInput input, UUID viewerPublicUid) {
     AppUser user = requireUser(viewerPublicUid, ErrorCode.PRODUCT_EDIT_REQUIRES_LOGIN);
-    Product product = productRepository.findById(productId)
+    Product storedProduct = productRepository.findById(productId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
+    Product overlaidProduct = productOverlayService.applyOverlay(storedProduct, null);
+    Product product = overlaidProduct == null ? storedProduct : overlaidProduct;
 
     Optional<ProductUserEdit> existing = productUserEditRepository.findByProductIdAndUserId(productId, user.getId());
     ProductUserEdit edit = existing.orElseGet(() ->
@@ -80,20 +82,28 @@ public class CatalogEditService {
     }
 
     if (input.brandName() != null) {
-      Brand brand = brandResolutionService.resolve(input.brandName());
-      Long globalBrandId = product.getBrand() == null ? null : product.getBrand().getId();
-      Long newBrandId = brand == null ? null : brand.getId();
-      edit.setBrandId(Objects.equals(newBrandId, globalBrandId) ? null : newBrandId);
+      String brandName = input.brandName().trim();
+      String effectiveBrandName = product.getExternalBrandName() != null
+          ? product.getExternalBrandName() : product.getBrand() == null ? null : product.getBrand().getName();
+      if (effectiveBrandName != null && effectiveBrandName.equalsIgnoreCase(brandName)) {
+        edit.setBrandId(null);
+      } else {
+        Brand brand = brandResolutionService.resolve(brandName);
+        Long globalBrandId = product.getBrand() == null ? null : product.getBrand().getId();
+        Long newBrandId = brand == null ? null : brand.getId();
+        edit.setBrandId(Objects.equals(newBrandId, globalBrandId) ? null : newBrandId);
+      }
       cleared.remove("brand");
     } else if (Boolean.TRUE.equals(input.clearBrand())) {
       edit.setBrandId(null);
-      setCleared(cleared, "brand", product.getBrand() != null);
+      setCleared(cleared, "brand", product.getBrand() != null || product.getExternalBrandName() != null);
     }
 
     if (input.categoryId() != null) {
       Category category = categoryRepository.findById(input.categoryId())
           .orElseThrow(() -> new NotFoundException(ErrorCode.CATEGORY_NOT_FOUND));
-      edit.setCategoryId(category.getId().equals(product.getCategory().getId()) ? null : category.getId());
+      Long effectiveCategoryId = product.getCategory() == null ? null : product.getCategory().getId();
+      edit.setCategoryId(category.getId().equals(effectiveCategoryId) ? null : category.getId());
     }
 
     // Gramáž/objem se přepočítávají společně (unitBase/netContentValue/netContentUom/
@@ -136,7 +146,7 @@ public class CatalogEditService {
       productUserEditRepository.save(edit);
     }
 
-    return productOverlayService.applyOverlay(product, user.getId());
+    return productOverlayService.applyOverlay(storedProduct, user.getId());
   }
 
   @Transactional

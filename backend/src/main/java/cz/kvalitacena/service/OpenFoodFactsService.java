@@ -25,6 +25,7 @@ public class OpenFoodFactsService {
   private final OffProductRepository repository;
   private final OpenFoodFactsApiClient apiClient;
   private final OpenFoodFactsProperties properties;
+  private final OffCategoryMapper categoryMapper;
   private final Clock clock = Clock.systemUTC();
 
   private final ConcurrentHashMap<String, Object> locks = new ConcurrentHashMap<>();
@@ -67,6 +68,7 @@ public class OpenFoodFactsService {
         .gtin(gtin).fetchStatus(OffFetchStatus.FOUND).productName(p.productName())
         .brandName(p.brandName()).productQuantity(p.productQuantity())
         .productQuantityUnit(p.productQuantityUnit()).categoryTags(p.categoryTags())
+        .mappedCategorySlug(categoryMapper.categorySlugFor(p.categoryTags()))
         .imageFrontUrl(p.imageFrontUrl()).imageFrontSmallUrl(p.imageFrontSmallUrl())
         .sourceRevision(p.revision()).sourceUpdatedAt(p.updatedAt()).fetchedAt(now()).build();
   }

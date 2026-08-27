@@ -54,6 +54,9 @@ public class OffProduct {
   @Builder.Default
   private List<String> categoryTags = new ArrayList<>();
 
+  @Column(name = "mapped_category_slug", length = 140)
+  private String mappedCategorySlug;
+
   @Column(name = "image_front_url", length = 1000)
   private String imageFrontUrl;
 

@@ -58,6 +58,8 @@ class PriceObservationServiceTest {
   @Mock
   private ProductCatalogService productCatalogService;
   @Mock
+  private ProductOverlayService productOverlayService;
+  @Mock
   private StoreService storeService;
   @Mock
   private CurrencyResolver currencyResolver;
@@ -75,7 +77,7 @@ class PriceObservationServiceTest {
   @BeforeEach
   void setUp() {
     service = new PriceObservationService(productRepository, storeRepository, appUserRepository,
-        priceObservationRepository, priceAggregationService, productCatalogService, storeService,
+        priceObservationRepository, priceAggregationService, productCatalogService, productOverlayService, storeService,
         currencyResolver, entityManager);
 
     product = Product.builder().id(PRODUCT_ID).status(ProductStatus.ACTIVE)
@@ -86,6 +88,7 @@ class PriceObservationServiceTest {
     lenient().when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
     lenient().when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(store));
     lenient().when(appUserRepository.findByPublicUid(PUBLIC_UID)).thenReturn(Optional.of(submitter));
+    lenient().when(productOverlayService.applyOverlay(any(Product.class), any())).thenReturn(product);
     lenient().when(currencyResolver.forStore(store)).thenReturn("CZK");
     lenient().when(priceObservationRepository.saveAllAndFlush(anyList()))
         .thenAnswer(invocation -> invocation.getArgument(0));

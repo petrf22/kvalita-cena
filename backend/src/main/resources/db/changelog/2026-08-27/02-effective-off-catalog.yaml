@@ -1,0 +1,42 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-27-02-effective-off-catalog
+      author: Petr F.
+      comment: >
+        OFF může dodat povinná katalogová pole bez jejich kopie do core.product. Komunitní
+        sloupce proto smějí být NULL; veřejná čtecí vrstva vždy vrací efektivní hodnotu.
+      changes:
+        - addColumn:
+            schemaName: "off"
+            tableName: product
+            columns:
+              - column:
+                  name: mapped_category_slug
+                  type: VARCHAR(140)
+        - dropNotNullConstraint:
+            schemaName: core
+            tableName: product
+            columnName: name
+            columnDataType: VARCHAR(200)
+        - dropNotNullConstraint:
+            schemaName: core
+            tableName: product
+            columnName: category_id
+            columnDataType: BIGINT
+        - dropNotNullConstraint:
+            schemaName: core
+            tableName: product
+            columnName: unit_base
+            columnDataType: VARCHAR(10)
+        - dropNotNullConstraint:
+            schemaName: core
+            tableName: product
+            columnName: net_content_base
+            columnDataType: NUMERIC(12,6)
+        - sql:
+            sql: |
+              CREATE INDEX idx_off_product_name_norm_fts ON off.product
+                USING gin (to_tsvector('simple', core.norm_text(product_name)))
+                WHERE fetch_status = 'FOUND' AND product_name IS NOT NULL;
+              CREATE INDEX idx_off_product_mapped_category
+                ON off.product (mapped_category_slug) WHERE fetch_status = 'FOUND';

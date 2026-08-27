@@ -54,6 +54,8 @@ class ProductSearchRepositoryIntegrationTest {
   @Autowired
   private ProductCodeRepository productCodeRepository;
   @Autowired
+  private OffProductRepository offProductRepository;
+  @Autowired
   private CategoryRepository categoryRepository;
   @Autowired
   private CategoryI18nRepository categoryI18nRepository;
@@ -178,6 +180,26 @@ class ProductSearchRepositoryIntegrationTest {
     List<ProductSearchRow> rows = productRepository.search(criteria(uniqueName));
 
     assertThat(rows).extracting(ProductSearchRow::productId).contains(product.getId());
+  }
+
+  @Test
+  void searchFindsOffNameAndUsesMappedCategoryForFilter() {
+    String suffix = UUID.randomUUID().toString().replace("-", "");
+    Category mapped = persistCategory("OFF mapped " + suffix, "off-mapped-" + suffix, null);
+    Category other = persistCategory();
+    Product product = productRepository.saveAndFlush(Product.builder().status(ProductStatus.ACTIVE).build());
+    String gtin = GtinNormalization.toGtin14(randomCode());
+    productCodeRepository.saveAndFlush(ProductCode.builder().product(product).code(gtin)
+        .codeType(CodeType.GTIN).primary(true).build());
+    offProductRepository.saveAndFlush(OffProduct.builder().gtin(gtin).fetchStatus(OffFetchStatus.FOUND)
+        .productName("offsearch" + suffix).mappedCategorySlug(mapped.getSlug())
+        .fetchedAt(OffsetDateTime.now()).build());
+
+    List<ProductSearchRow> found = productRepository.search(criteria("offsearch" + suffix, mapped.getId()));
+    List<ProductSearchRow> filteredOut = productRepository.search(criteria("offsearch" + suffix, other.getId()));
+
+    assertThat(found).extracting(ProductSearchRow::productId).contains(product.getId());
+    assertThat(filteredOut).extracting(ProductSearchRow::productId).doesNotContain(product.getId());
   }
 
   @Test

@@ -46,7 +46,7 @@ class OpenFoodFactsServiceTest {
         .productName("Máslo").fetchedAt(OffsetDateTime.now()).build();
     when(repository.findById(GTIN)).thenReturn(Optional.of(cached));
 
-    OffLookupResult result = new OpenFoodFactsService(repository, apiClient, properties()).lookup(RAW_EAN);
+    OffLookupResult result = service(properties()).lookup(RAW_EAN);
 
     assertThat(result.status()).isEqualTo(OffLookupStatus.FOUND);
     assertThat(result.product()).isSameAs(cached);
@@ -61,7 +61,7 @@ class OpenFoodFactsServiceTest {
         "https://images.openfoodfacts.org/front.jpg", null, 12L, OffsetDateTime.now())));
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-    OffLookupResult result = new OpenFoodFactsService(repository, apiClient, properties()).lookup(RAW_EAN);
+    OffLookupResult result = service(properties()).lookup(RAW_EAN);
 
     assertThat(result.status()).isEqualTo(OffLookupStatus.FOUND);
     assertThat(result.product().getGtin()).isEqualTo(GTIN);
@@ -76,7 +76,7 @@ class OpenFoodFactsServiceTest {
     when(apiClient.fetch(RAW_EAN)).thenReturn(Optional.empty());
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-    OffLookupResult result = new OpenFoodFactsService(repository, apiClient, properties()).lookup(RAW_EAN);
+    OffLookupResult result = service(properties()).lookup(RAW_EAN);
 
     assertThat(result.status()).isEqualTo(OffLookupStatus.NOT_FOUND);
     assertThat(result.product().getFetchStatus()).isEqualTo(OffFetchStatus.NOT_FOUND);
@@ -89,7 +89,7 @@ class OpenFoodFactsServiceTest {
     when(repository.findById(GTIN)).thenReturn(Optional.of(stale));
     when(apiClient.fetch(RAW_EAN)).thenThrow(new RestClientException("offline"));
 
-    OffLookupResult result = new OpenFoodFactsService(repository, apiClient, properties()).lookup(RAW_EAN);
+    OffLookupResult result = service(properties()).lookup(RAW_EAN);
 
     assertThat(result.status()).isEqualTo(OffLookupStatus.FOUND);
     assertThat(result.product()).isSameAs(stale);
@@ -101,9 +101,13 @@ class OpenFoodFactsServiceTest {
     properties.setEnabled(false);
     when(repository.findById(GTIN)).thenReturn(Optional.empty());
 
-    OffLookupResult result = new OpenFoodFactsService(repository, apiClient, properties).lookup(RAW_EAN);
+    OffLookupResult result = service(properties).lookup(RAW_EAN);
 
     assertThat(result.status()).isEqualTo(OffLookupStatus.UNAVAILABLE);
     verify(apiClient, never()).fetch(any());
+  }
+
+  private OpenFoodFactsService service(OpenFoodFactsProperties properties) {
+    return new OpenFoodFactsService(repository, apiClient, properties, new OffCategoryMapper());
   }
 }

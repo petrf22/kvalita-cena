@@ -44,6 +44,7 @@ public class PriceObservationService {
   private final PriceObservationRepository priceObservationRepository;
   private final PriceAggregationService priceAggregationService;
   private final ProductCatalogService productCatalogService;
+  private final ProductOverlayService productOverlayService;
   private final StoreService storeService;
   private final CurrencyResolver currencyResolver;
   private final EntityManager entityManager;
@@ -77,6 +78,7 @@ public class PriceObservationService {
     AppUser submitter = authenticatedPublicUid == null
         ? null
         : appUserRepository.findByPublicUid(authenticatedPublicUid).orElse(null);
+    Product effectiveProduct = productOverlayService.applyOverlay(product, submitter == null ? null : submitter.getId());
 
     // Hlavička dávky — vyhodnocená JEDNOU pro celou cenovku, ne per řádek (dvě ceny z jednoho
     // regálu by jinak mohly spadnout do různých dnů UTC).
@@ -93,7 +95,7 @@ public class PriceObservationService {
     // nesmí zpětně přepsat jednotkové ceny historie.
     BigDecimal baseNetContent = switch (basis) {
       case PER_KG, PER_L -> BigDecimal.ONE; // cena na cedulce je už za kg/l
-      case PACKAGE, PER_PIECE -> product.getNetContentBase();
+      case PACKAGE, PER_PIECE -> effectiveProduct.getNetContentBase();
     };
 
     // Pre-kontrola kolize s DB — jen pro registrované (index je parciální, WHERE submitter_id

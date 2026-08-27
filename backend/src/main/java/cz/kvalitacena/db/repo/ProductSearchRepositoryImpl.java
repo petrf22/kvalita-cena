@@ -96,21 +96,39 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
           WHERE e.user_id = CAST(:viewerId AS BIGINT)
             AND to_tsvector('simple', core.norm_text(e.name)) @@ (SELECT tsq FROM q)
         UNION
+          SELECT pc.product_id FROM off.product op
+          JOIN core.product_code pc ON pc.code = op.gtin AND pc.code_type = 'GTIN'
+          WHERE op.fetch_status = 'FOUND'
+            AND to_tsvector('simple', core.norm_text(op.product_name)) @@ (SELECT tsq FROM q)
+        UNION
           SELECT p.id FROM core.product p WHERE p.category_id IN (SELECT id FROM cat_scope)
+        UNION
+          SELECT pc.product_id FROM off.product op
+          JOIN core.category oc ON oc.slug = op.mapped_category_slug
+          JOIN core.product_code pc ON pc.code = op.gtin AND pc.code_type = 'GTIN'
+          WHERE op.fetch_status = 'FOUND' AND oc.id IN (SELECT id FROM cat_scope)
         UNION
           SELECT pc2.product_id FROM core.product_code pc2
           WHERE CAST(:codeQuery AS TEXT) IS NOT NULL
             AND pc2.code = CAST(:codeQuery AS TEXT) AND pc2.code_type = 'GTIN'
       ), matched AS (
-        SELECT p.id, COALESCE(e.name, p.name) AS name
+        SELECT p.id, COALESCE(e.name, op.product_name, p.name) AS name
         FROM core.product p
         JOIN candidate cnd ON cnd.id = p.id
         LEFT JOIN core.product_user_edit e
           ON e.product_id = p.id AND e.user_id = CAST(:viewerId AS BIGINT)
+        LEFT JOIN LATERAL (
+          SELECT pc.code FROM core.product_code pc
+          WHERE pc.product_id = p.id AND pc.code_type = 'GTIN'
+          ORDER BY pc.is_primary DESC, pc.id ASC LIMIT 1
+        ) gt ON TRUE
+        LEFT JOIN off.product op ON op.gtin = gt.code AND op.fetch_status = 'FOUND'
+        LEFT JOIN core.category oc ON oc.slug = op.mapped_category_slug
         WHERE (p.status = 'ACTIVE'
                OR (p.status = 'DRAFT' AND p.created_by_user_id = CAST(:viewerId AS BIGINT)))
           AND p.hidden_at IS NULL
-          AND (CAST(:categoryId AS BIGINT) IS NULL OR p.category_id IN (SELECT id FROM sel_scope))
+          AND (CAST(:categoryId AS BIGINT) IS NULL
+               OR COALESCE(e.category_id, oc.id, p.category_id) IN (SELECT id FROM sel_scope))
       ), scoped AS (
         -- country je NIKDY null v praxi (ProductGraphQlController.resolveCountry vždy dosadí
         -- konkrétní zemi) — díky tomu je scoped už jednoměnový a "best" níž smí bezpečně

@@ -20,19 +20,19 @@ public class Product implements Persistable<Long> {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name = "name", nullable = false, length = 200)
+  @Column(name = "name", length = 200)
   private String name;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "brand_id", foreignKey = @ForeignKey(name = "fk_product_brand"))
   private Brand brand;
 
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "category_id", nullable = false, foreignKey = @ForeignKey(name = "fk_product_category"))
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "category_id", foreignKey = @ForeignKey(name = "fk_product_category"))
   private Category category;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "unit_base", nullable = false, length = 10)
+  @Column(name = "unit_base", length = 10)
   private UnitBase unitBase;
 
   @Column(name = "net_content_value", precision = 12, scale = 3)
@@ -43,7 +43,7 @@ public class Product implements Persistable<Long> {
   private NetContentUom netContentUom;
 
   // Vždy v základní jednotce (kg / l / ks) — z ní se počítá jednotková cena (docs/datovy-model.md).
-  @Column(name = "net_content_base", nullable = false, precision = 12, scale = 6)
+  @Column(name = "net_content_base", precision = 12, scale = 6)
   private BigDecimal netContentBase;
 
   @Column(name = "pieces_in_pack")
@@ -101,6 +101,20 @@ public class Product implements Persistable<Long> {
   @Transient
   @Builder.Default
   private boolean editedByMe = false;
+
+  // Efektivní OFF vrstva — pouze na detached kopii z ProductOverlayService, nikdy v core.*.
+  @Transient
+  private String externalBrandName;
+
+  @Transient
+  @Builder.Default
+  private boolean offBacked = false;
+
+  @Transient
+  private String offImageFrontUrl;
+
+  @Transient
+  private String offImageFrontSmallUrl;
 
   @PrePersist
   protected void onCreate() {
