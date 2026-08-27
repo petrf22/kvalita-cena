@@ -16,6 +16,16 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
+# Stejná past, jiné místo: ChangelogScreen.kt (ui/about/) deserializuje assets/changelog.json
+# vlastními @Serializable třídami mimo network/, viz docs/vydani.md "Verzování a vydání".
+-keep,includedescriptorclasses class cz.kvalitacena.ui.about.**$$serializer { *; }
+-keepclassmembers class cz.kvalitacena.ui.about.** {
+    *** Companion;
+}
+-keepclasseswithmembers class cz.kvalitacena.ui.about.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
 # Coil 3 — načítání obrázků (PhotoGallery) přes reflexi/ServiceLoader hledá implementace
 # ImageLoaderFactory a network fetcherů; oficiální doporučená pravidla projektu.
 -keep,includedescriptorclasses class coil3.** { *; }

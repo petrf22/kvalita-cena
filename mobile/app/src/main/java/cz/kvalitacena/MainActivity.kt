@@ -28,6 +28,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import cz.kvalitacena.ui.about.AboutScreen
+import cz.kvalitacena.ui.about.ChangelogScreen
 import cz.kvalitacena.ui.account.AccountScreen
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.UpdateRequiredScreen
@@ -42,6 +43,7 @@ import cz.kvalitacena.ui.navigation.ARG_FEEDBACK_SOURCE
 import cz.kvalitacena.ui.navigation.ARG_PRODUCT_ID
 import cz.kvalitacena.ui.navigation.ARG_STORE_ID
 import cz.kvalitacena.ui.navigation.ROUTE_ABOUT
+import cz.kvalitacena.ui.navigation.ROUTE_CHANGELOG
 import cz.kvalitacena.ui.navigation.ROUTE_FEEDBACK
 import cz.kvalitacena.ui.navigation.ROUTE_PRICE_ENTRY
 import cz.kvalitacena.ui.navigation.ROUTE_PRODUCT_DETAIL
@@ -237,7 +239,11 @@ private fun AppScaffold() {
           onOpenFeedback = { navController.navigate(feedbackRoute("about")) },
           onOpenTerms = { navController.navigate(ROUTE_TERMS) },
           onOpenPrivacy = { navController.navigate(ROUTE_PRIVACY) },
+          onOpenChangelog = { navController.navigate(ROUTE_CHANGELOG) },
         )
+      }
+      composable(ROUTE_CHANGELOG) {
+        ChangelogScreen(onDone = { navController.popBackStack() })
       }
       composable(
         ROUTE_FEEDBACK,

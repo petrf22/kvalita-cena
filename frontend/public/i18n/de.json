@@ -29,7 +29,8 @@
     "about": "Über die App",
     "feedback": "Feedback",
     "terms": "Nutzungsbedingungen",
-    "privacy": "Datenschutzerklärung"
+    "privacy": "Datenschutzerklärung",
+    "version": "Version {{version}}"
   },
   "errors": {
     "generic": "Etwas ist schiefgelaufen, bitte versuch es erneut.",

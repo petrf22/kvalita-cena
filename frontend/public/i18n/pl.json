@@ -29,7 +29,8 @@
     "about": "O aplikacji",
     "feedback": "Opinie",
     "terms": "Warunki korzystania",
-    "privacy": "Polityka prywatności"
+    "privacy": "Polityka prywatności",
+    "version": "Wersja {{version}}"
   },
   "errors": {
     "generic": "Coś poszło nie tak, spróbuj ponownie.",

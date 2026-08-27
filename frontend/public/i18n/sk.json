@@ -29,7 +29,8 @@
     "about": "O aplikácii",
     "feedback": "Spätná väzba",
     "terms": "Podmienky užívania",
-    "privacy": "Zásady ochrany osobných údajov"
+    "privacy": "Zásady ochrany osobných údajov",
+    "version": "Verzia {{version}}"
   },
   "errors": {
     "generic": "Niečo sa pokazilo, skús to prosím znova.",

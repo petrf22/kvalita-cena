@@ -29,7 +29,7 @@ model, reputace, soukromí, AI, vydání — jeden zdroj pravdy pro vzorce a pra
 příkazy specifické pro jednu aplikaci jsou v jejím `CLAUDE.md` (`backend/CLAUDE.md`,
 `frontend/CLAUDE.md`, `mobile/CLAUDE.md`) — načtou se jen při práci v daném adresáři.
 
-Sdílený mezi aplikacemi je jen kontrakt API (GraphQL schéma
+Sdílený mezi aplikacemi je kontrakt API (GraphQL schéma
 `backend/src/main/resources/graphql/schema.graphqls`). Frontend z něj přes `graphql-codegen`
 (`frontend/codegen.ts`) generuje TypeScript typy a konstanty enumů do
 `frontend/src/app/models/generated/` — čte schéma přímo z backendu, žádná kopie. Mobil zatím
@@ -37,6 +37,13 @@ typy z GraphQL schématu negeneruje (`network/Dto.kt` mapuje enumy ručně na `S
 pořadí: `graphql(...)` volání ve frontendu matchují dotaz na přesný string zachycený při
 generování, takže Prettier musí proběhnout **před** posledním `npm run codegen`, jinak typová
 kontrola i běhový match spadnou.
+
+Druhá sdílená věc je **verze** — server, web i mobil mají jedno společné číslo. Zdroj pravdy
+jsou kořenové `VERSION` a `CHANGELOG.md`; `node tools/version/sync.mjs` z nich generuje
+`backend/build.gradle`, `frontend/package.json`, `mobile/app/build.gradle.kts` a seznamy změn
+pro web (`/changelog`) i mobil („O aplikaci" → Novinky) — needituj tyhle výstupy ručně, uprav
+zdroj a spusť skript znovu. Postup vydání (tag, z jaké větve/verze stavět server i mobil,
+hotfix už vydané verze) je v [`docs/vydani.md`](docs/vydani.md), „Verzování a vydání".
 
 ## Stav implementace
 

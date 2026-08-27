@@ -163,7 +163,10 @@
     <string name="about_contact_text">Otázky, pripomienky alebo žiadosti ohľadom osobných údajov:</string>
     <string name="about_contact_email" translatable="false">kontakt@kvalitacena.cz</string>
     <string name="about_feedback_link">Napísať spätnú väzbu appke</string>
-    <string name="about_version">Verzia appky %1$s</string>
+    <string name="about_version">Verzia appky %1$s (%2$d)</string>
+    <string name="about_changelog_link">Novinky v appke</string>
+    <string name="changelog_title">Novinky v appke</string>
+    <string name="changelog_czech_only_notice">Zoznam zmien je zatiaľ k dispozícii len v češtine.</string>
 
     <string name="feedback_title">Spätná väzba</string>
     <string name="feedback_intro">Narazil/a si na chybu, alebo máš nápad na zlepšenie? Napíš nám to sem — funguje to aj bez prihlásenia.</string>

@@ -52,7 +52,7 @@ describe('App', () => {
     expect(compiled.querySelector('.app-title')?.textContent).toContain('Kvalita a cena');
   });
 
-  it('should render footer links to about/feedback/terms/privacy on every page', async () => {
+  it('should render footer links to about/feedback/terms/privacy/changelog on every page', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
@@ -62,6 +62,7 @@ describe('App', () => {
       '/feedback',
       '/terms',
       '/privacy',
+      '/changelog',
     ]);
   });
 });

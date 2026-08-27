@@ -219,21 +219,84 @@ vizuálně na emulátoru s API 36 (viz Ověření v plánu migrace repa).
   v `src/debug/AndroidManifest.xml` (manifest merger ho přidá k `<application>` jen pro debug
   build). `android:usesCleartextTraffic="false"` v `src/main/AndroidManifest.xml` platí vždy.
 
-## Verze — kde se mění při vydání
+## Verzování a vydání
 
-Tři nezávislé zdroje, žádný sjednocující mechanismus (tag-based release neexistuje):
+Server, web i mobil sdílejí **jednu verzi** (SemVer). Zdroj pravdy jsou dva kořenové soubory:
 
-- **Backend** — `backend/build.gradle`, `version = '0.1.0'`.
-- **Web** — `frontend/package.json`, `"version": "0.1.0"`. Appka ji sama nikde nečte natvrdo:
-  `tools/version/write-version.mjs` z ní při `npm start`/`npm run build` (přes `pre*` npm
-  hooky) vygeneruje `src/app/version.ts`, odkud čte `features/about/about-page.ts` i
-  `services/feedback-service.ts` (`core.feedback.app_version` u webových hlášení).
-- **Mobil** — `mobile/app/build.gradle.kts`, `versionCode`/`versionName` — appka je čte přes
-  `BuildConfig.VERSION_NAME` (`ui/about/AboutScreen.kt`, `ui/feedback/FeedbackViewModel.kt`,
-  `crash/CrashReporter.kt`) i `BuildConfig.VERSION_CODE` (`ClientVersionInterceptor`, hlavička
-  `X-Client-Version` — `ClientVersionFilter` na serveru ji porovnává s
-  `app.client.min-android-version` a starý klient zablokuje srozumitelnou obrazovkou, ne
-  nesrozumitelnou chybou z každého jednotlivého volání).
+- **`VERSION`** — jeden řádek, aktuální verze (např. `0.2.0`).
+- **`CHANGELOG.md`** — seznam změn podle vydání, formát [Keep a Changelog](https://keepachangelog.com/cs/),
+  text česky (konvence repa). Každá položka na jednom řádku, nepovinně s dotčenými částmi na
+  konci — `- Text změny (server, web, mobil)`. Sekce `## [Nezveřejněno]` se do appek negeneruje.
+
+`node tools/version/sync.mjs` z obou přepíše pět commitovaných výstupů — needituj je ručně:
+
+| Výstup | Co obsahuje |
+|---|---|
+| `backend/build.gradle` | `version = '...'` |
+| `frontend/package.json` | `"version": "..."` |
+| `mobile/app/build.gradle.kts` | `versionCode`, `versionName` |
+| `frontend/src/app/changelog.generated.ts` | seznam změn pro `/changelog` na webu |
+| `mobile/app/src/main/assets/changelog.json` | totéž pro „Novinky" v appce (`ui/about/ChangelogScreen.kt`) |
+
+`versionCode` se odvozuje `major*10000 + minor*100 + patch` (0.2.0 → 200) — **druhý upload
+stejné verze do Play vyžaduje bump patche**, protože `versionCode` samostatně zvednout nejde.
+Skript končí chybou, pokud nejnovější vydání v `CHANGELOG.md` nesouhlasí s `VERSION`, nebo
+pokud narazí na víceřádkovou položku (parser umí jen jeden řádek na položku). CI to hlídá
+stejně jako `graphql-codegen` — job „Verze a changelog" spustí skript a `git diff --exit-code`.
+
+Appka verzi čte takto — beze změny, jen doplněno o odkaz na seznam změn:
+- **Web** — `frontend/tools/version/write-version.mjs` z `package.json` při `npm start`/`npm
+  run build` (přes `pre*` npm hooky) vygeneruje `src/app/version.ts`, odkud čte
+  `features/about/about-page.ts`, patička (`app.ts`, odkaz na `/changelog`) i
+  `services/feedback-service.ts` (`core.feedback.app_version`).
+- **Mobil** — appka čte `BuildConfig.VERSION_NAME` (`ui/about/AboutScreen.kt`,
+  `ui/feedback/FeedbackViewModel.kt`, `crash/CrashReporter.kt`) i `BuildConfig.VERSION_CODE`
+  (`ClientVersionInterceptor`, hlavička `X-Client-Version` — `ClientVersionFilter` na serveru
+  ji porovnává s `app.client.min-android-version` a starý klient zablokuje srozumitelnou
+  obrazovkou, ne nesrozumitelnou chybou z každého jednotlivého volání).
+- **Server** — `springBoot { buildInfo() }` (`backend/build.gradle`) vystaví verzi (a commit,
+  je-li build spuštěn s `GIT_SHA` v prostředí) na `/actuator/info` (`permitAll`).
+
+### Model větvení
+
+Trunk-based — `main` je vždy vydatelná, žádné dlouhé větve (dependabot PR se merguje rovnou do
+`main`). Vydání = anotovaný git tag `vX.Y.Z` na `main`.
+
+### Postup vydání
+
+1. Doplnit položky do `## [Nezveřejněno]` v `CHANGELOG.md`, přejmenovat na
+   `## [X.Y.Z] – <datum>`.
+2. Zapsat `X.Y.Z` do `VERSION`.
+3. `node tools/version/sync.mjs` — přepíše všech pět generovaných výstupů.
+4. Commit „Vydat X.Y.Z" + `git tag -a vX.Y.Z -m 'Verze X.Y.Z'` + `git push --follow-tags`.
+
+### Z čeho stavět
+
+- **Server**: `git checkout vX.Y.Z`, `export GIT_SHA=$(git rev-parse --short HEAD)`,
+  `docker compose -f compose.prod.yaml up -d --build` (viz `docs/nasazeni.md`). Ověření:
+  `curl -s https://api.kvalitacena.cz/actuator/info` ukazuje `version` i `commit`.
+- **Mobil**: `git checkout vX.Y.Z`, `./gradlew :app:bundleRelease` na lokálním PC (podpisový
+  klíč viz výš). Ověření: „O aplikaci" ukazuje `X.Y.Z (versionCode)`.
+
+### Hotfix už vydané verze
+
+Když `main` mezitím utekl dál a je potřeba opravit jen vydanou verzi:
+
+```bash
+git checkout -b release/X.Y.x vX.Y.Z
+# oprava, VERSION → X.Y.(Z+1), node tools/version/sync.mjs
+git tag -a vX.Y.(Z+1) -m 'Verze X.Y.(Z+1)'
+```
+
+Opravu pak cherry-pickovat zpět do `main`. Větve `release/X.Y.x` vznikají **jen v tomhle
+případě**, ne u každého běžného vydání.
+
+### Mobil smí zaostávat za serverem
+
+Kvůli Play review nebo uzavřenému testu může appka v obchodě běžet na starší verzi, než jaká je
+nasazená na serveru — to je žádoucí a je to hned vidět (appka i server ukazují svou verzi).
+Kompatibilitu hlídá `X-Client-Version` + `app.client.min-android-version` (`ClientVersionFilter`),
+což je teď čitelný `versionCode` (např. `200` = „aspoň 0.2.0").
 
 ## Co vydání pořád blokuje
 

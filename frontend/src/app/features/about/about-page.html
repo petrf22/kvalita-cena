@@ -41,7 +41,10 @@
       </p>
     </div>
 
-    <p class="legal-effective-date">{{ t('about.versionLabel', { version: appVersion }) }}</p>
+    <p class="legal-effective-date">
+      {{ t('about.versionLabel', { version: appVersion }) }}
+      — <a routerLink="/changelog">{{ t('about.changelogLink') }}</a>
+    </p>
 
     <a routerLink="/" class="legal-back">{{ t('about.backLabel') }}</a>
   </nz-card>

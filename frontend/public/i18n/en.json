@@ -29,7 +29,8 @@
     "about": "About the app",
     "feedback": "Feedback",
     "terms": "Terms of use",
-    "privacy": "Privacy policy"
+    "privacy": "Privacy policy",
+    "version": "Version {{version}}"
   },
   "errors": {
     "generic": "Something went wrong, please try again.",

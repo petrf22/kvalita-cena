@@ -16,6 +16,8 @@ uživatelů se neukládají — ukládá se jen to, co je nutné pro fungování
 - `mobile/` — nativní Android (Kotlin + Jetpack Compose), skenování čárových kódů
 - `docs/` — datový model, výpočet reputace, zásady soukromí, rozvojové požadavky
 - `compose.yaml` — PostgreSQL pro lokální vývoj
+- [`CHANGELOG.md`](CHANGELOG.md) — seznam změn appky, jedna verze společná pro server, web
+  i mobil (viz [`docs/vydani.md`](docs/vydani.md), „Verzování a vydání")
 
 ## Rychlý start
 

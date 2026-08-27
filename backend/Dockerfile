@@ -4,6 +4,13 @@
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
 
+# Commit, ze kterého se obraz staví (docs/vydani.md, "Verzování a vydání") — compose.prod.yaml
+# ho předává jako build arg, `springBoot { buildInfo() }` (build.gradle) ho čte přes
+# System.getenv('GIT_SHA') a promítne do /actuator/info. Prázdný default nerozbije build, když
+# se GIT_SHA nepředá (lokální `docker build` bez skriptu z docs/nasazeni.md).
+ARG GIT_SHA=""
+ENV GIT_SHA=${GIT_SHA}
+
 COPY gradlew build.gradle settings.gradle ./
 COPY gradle ./gradle
 RUN ./gradlew --no-daemon dependencies > /dev/null

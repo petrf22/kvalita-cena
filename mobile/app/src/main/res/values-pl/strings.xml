@@ -163,7 +163,10 @@
     <string name="about_contact_text">Pytania, uwagi lub wnioski dotyczące danych osobowych:</string>
     <string name="about_contact_email" translatable="false">kontakt@kvalitacena.cz</string>
     <string name="about_feedback_link">Wyślij opinię o aplikacji</string>
-    <string name="about_version">Wersja aplikacji %1$s</string>
+    <string name="about_version">Wersja aplikacji %1$s (%2$d)</string>
+    <string name="about_changelog_link">Co nowego</string>
+    <string name="changelog_title">Co nowego</string>
+    <string name="changelog_czech_only_notice">Lista zmian jest obecnie dostępna tylko w języku czeskim.</string>
 
     <string name="feedback_title">Opinie</string>
     <string name="feedback_intro">Znalazłeś/aś błąd albo masz pomysł na ulepszenie? Napisz do nas tutaj — działa to nawet bez logowania.</string>

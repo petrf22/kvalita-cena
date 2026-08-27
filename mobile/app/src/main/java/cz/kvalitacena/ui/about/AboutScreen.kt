@@ -37,6 +37,7 @@ fun AboutScreen(
   onOpenFeedback: () -> Unit = {},
   onOpenTerms: () -> Unit = {},
   onOpenPrivacy: () -> Unit = {},
+  onOpenChangelog: () -> Unit = {},
 ) {
   val context = LocalContext.current
   val githubUrl = stringResource(R.string.about_github_url)
@@ -147,7 +148,14 @@ fun AboutScreen(
     HorizontalDivider()
     Spacer()
     Text(
-      stringResource(R.string.about_version, BuildConfig.VERSION_NAME),
+      stringResource(R.string.about_changelog_link),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.primary,
+      modifier = Modifier.clickable(onClick = onOpenChangelog),
+    )
+    Spacer()
+    Text(
+      stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

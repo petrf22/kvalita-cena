@@ -93,8 +93,11 @@ domény na server (krok 4) — build appky na serveru je nejpravděpodobnější
    `env_file` (literálně) — tam base64 s `+`/`/`/`=` vadit nebude, `EMAIL_ENC_KEY` ale musí po
    dekódování vyjít na přesně 16/24/32 bajtů.
 3. [ ] **Sekvenční build** — ne jedno `up -d --build`, které staví backend (Gradle) i web
-   (`npm ci` + `ng build`) paralelně a na malé instanci může spolu s Postgresem vyčerpat RAM:
+   (`npm ci` + `ng build`) paralelně a na malé instanci může spolu s Postgresem vyčerpat RAM.
+   `GIT_SHA` je nepovinný, ale bez něj `/actuator/info` nese jen verzi bez commitu (`docs/
+   vydani.md`, „Verzování a vydání"):
    ```bash
+   export GIT_SHA=$(git rev-parse --short HEAD)
    docker compose -f compose.prod.yaml build backend
    docker compose -f compose.prod.yaml build web
    docker compose -f compose.prod.yaml up -d

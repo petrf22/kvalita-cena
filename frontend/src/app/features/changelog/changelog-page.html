@@ -1,0 +1,28 @@
+<ng-container *transloco="let t; scope: 'changelog'">
+  <nz-card [nzTitle]="t('changelog.title')" class="legal-card">
+    @if (language.lang() !== 'cs') {
+      <p class="legal-notice">{{ t('changelog.czechOnlyNotice') }}</p>
+    }
+
+    <div class="legal-body">
+      @for (release of releases; track release.version) {
+        <h2>{{ release.version }} – {{ release.date }}</h2>
+        @for (section of release.sections; track section.title) {
+          <h3>{{ section.title }}</h3>
+          <ul>
+            @for (item of section.items; track item.text) {
+              <li>
+                {{ item.text }}
+                @for (part of item.parts; track part) {
+                  <nz-tag>{{ part }}</nz-tag>
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
+    </div>
+
+    <a routerLink="/" class="legal-back">{{ t('changelog.backLabel') }}</a>
+  </nz-card>
+</ng-container>

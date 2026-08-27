@@ -52,6 +52,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/about/about-page').then((m) => m.AboutPage),
   },
   {
+    path: 'changelog',
+    loadComponent: () =>
+      import('./features/changelog/changelog-page').then((m) => m.ChangelogPage),
+  },
+  {
     path: 'feedback',
     loadComponent: () => import('./features/feedback/feedback-page').then((m) => m.FeedbackPage),
   },

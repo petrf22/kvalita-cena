@@ -169,7 +169,18 @@
     <string name="about_contact_text">Dotazy, připomínky nebo žádosti ohledně osobních údajů:</string>
     <string name="about_contact_email" translatable="false">kontakt@kvalitacena.cz</string>
     <string name="about_feedback_link">Napsat zpětnou vazbu appce</string>
-    <string name="about_version">Verze appky %1$s</string>
+    <!-- %2$d je BuildConfig.VERSION_CODE (docs/vydani.md, "Verzování a vydání") — pro appku
+         v Play Console je to čitelnější než jen versionName, protože i druhý upload stejné
+         verze má vyšší versionCode. -->
+    <string name="about_version">Verze appky %1$s (%2$d)</string>
+    <string name="about_changelog_link">Novinky v appce</string>
+
+    <!-- "Novinky" — seznam změn appky (ChangelogScreen.kt), data z assets/changelog.json
+         (generováno tools/version/sync.mjs z kořenového CHANGELOG.md). Text položek je
+         záměrně jen česky (CLAUDE.md, docs/lokalizace.md), jen nadpisy a UI okolo se
+         překládají. -->
+    <string name="changelog_title">Novinky v appce</string>
+    <string name="changelog_czech_only_notice">Seznam změn je zatím k dispozici jen v češtině.</string>
 
     <!-- Zpětná vazba (core.feedback, docs/nasazeni.md "Než pozvat první lidi") — z Nastavení
          i z "O aplikaci", funguje i bez přihlášení. Webový protějšek:

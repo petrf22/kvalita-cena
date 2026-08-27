@@ -5,12 +5,27 @@ plugins {
 }
 
 group = 'cz.kvalitacena'
-version = '0.1.0'
+// Generováno tools/version/sync.mjs z kořenového VERSION — needituj ručně.
+version = '0.2.0'
 description = 'Kvalita a cena — komunitní sledování cen zboží'
 
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+// Vystaví verzi (a commit, je-li build spuštěn s GIT_SHA v prostředí — viz backend/Dockerfile,
+// compose.prod.yaml) na dnes prázdném /actuator/info (permitAll, SecurityConfig), viz
+// docs/vydani.md, "Verzování a vydání". GIT_SHA chybí lokálnímu `./gradlew bootRun` i CI
+// buildu — pole je pak prázdné, ne chybějící.
+springBoot {
+    buildInfo {
+        properties {
+            additional = [
+                    'commit': (System.getenv('GIT_SHA') ?: '')
+            ]
+        }
     }
 }
 

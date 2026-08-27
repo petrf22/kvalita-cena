@@ -28,6 +28,11 @@ services:
   backend:
     build:
       context: ./backend
+      # Commit vidět v /actuator/info (docs/vydani.md, "Verzování a vydání") — nastavit
+      # `export GIT_SHA=$(git rev-parse --short HEAD)` před `docker compose ... up --build`,
+      # jinak zůstane prázdný (build.gradle má prázdný default, nic to nerozbije).
+      args:
+        GIT_SHA: ${GIT_SHA:-}
     restart: unless-stopped
     env_file:
       - .env

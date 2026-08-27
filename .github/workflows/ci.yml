@@ -11,6 +11,21 @@ permissions:
   contents: read
 
 jobs:
+  version:
+    name: Verze a changelog
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      # Ověří, že VERSION/CHANGELOG.md a pět generovaných výstupů (backend/build.gradle,
+      # frontend/package.json, mobile/app/build.gradle.kts, changelog.generated.ts,
+      # assets/changelog.json) souhlasí — stejný vzor jako `npm run codegen` +
+      # `git diff --exit-code` u frontendu níž (docs/vydani.md, "Verzování a vydání").
+      - run: node tools/version/sync.mjs
+      - run: git diff --exit-code
+
   backend:
     name: Backend (Spring Boot)
     runs-on: ubuntu-latest

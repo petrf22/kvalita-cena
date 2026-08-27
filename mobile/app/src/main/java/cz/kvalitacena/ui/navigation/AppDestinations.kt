@@ -70,6 +70,14 @@ const val ROUTE_PRIVACY = "privacy"
 const val ROUTE_ABOUT = "about"
 
 /**
+ * "Novinky" — seznam změn appky, z "O aplikaci". Data čte z `assets/changelog.json`
+ * (generováno `tools/version/sync.mjs` z kořenového `CHANGELOG.md`, needituj ručně), viz
+ * [cz.kvalitacena.ui.about.ChangelogScreen]. Webový protějšek:
+ * `frontend/src/app/features/changelog/changelog-page.ts`.
+ */
+const val ROUTE_CHANGELOG = "changelog"
+
+/**
  * Zpětná vazba (core.feedback, docs/nasazeni.md "Než pozvat první lidi") — z Nastavení i
  * z "O aplikaci", funguje i bez přihlášení. `source` v query je orientační popis obrazovky,
  * ze které se sem vstoupilo (core.feedback.page_ref), viz [cz.kvalitacena.ui.feedback.FeedbackScreen].
