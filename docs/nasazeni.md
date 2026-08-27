@@ -215,8 +215,8 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   sada 24 kategorií), následně `2026-08-20/01-category-tree.yaml` ji rozšířila na plný strom pro
   běžný supermarket (~106 kategorií, šest kořenů, přeložený do sk/en/pl/de —
   `docs/lokalizace.md`, „Kategorie"). Obě proběhnou automaticky s dalším nasazením, žádný ruční
-  krok navíc netřeba. Další rozšíření číselníku i filtr hledání podle kategorie zůstávají
-  budoucí práce (`docs/rozvoj.md`).
+  krok navíc netřeba. Další rozšíření číselníku zůstává budoucí práce (`docs/rozvoj.md`) —
+  hledání a filtr podle kategorie mezitím přibyly (tamtéž).
 - **Katalog obchodů se záměrně nepředvyplňuje** — zvažovalo se ruční přepsání poboček
   velkých řetězců (COOP, Penny) i hromadný import z OpenStreetMap, ale u objemu, o který by
   reálně šlo (tisíce poboček napříč velkými řetězci), obojí naráží na stejné riziko z druhé

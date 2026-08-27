@@ -239,6 +239,7 @@
     <string name="search_action">Search</string>
     <string name="search_store_filter">Store</string>
     <string name="search_city_filter">City</string>
+    <string name="search_category_filter">Category</string>
     <string name="search_sort_label">Sort</string>
     <string name="search_filter_all">All</string>
     <string name="search_hint">Type what you\'re looking for.</string>

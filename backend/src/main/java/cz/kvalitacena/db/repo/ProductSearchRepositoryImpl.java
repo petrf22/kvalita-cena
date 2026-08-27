@@ -13,24 +13,43 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 /**
- * Jeden nativní dotaz přes čtyři CTE: {@code matched} (dnešní fulltext přes
- * idx_product_name_fts, s uživatelskou vrstvou nad globálními daty) → {@code scoped}
- * (agg.price_current v rozsahu filtru obchod/město) → {@code totals}/{@code best} (agregáty)
- * → {@code quality} (známky). {@code storeId}/{@code city}/{@code viewerId} se posílají jako
+ * Jeden nativní dotaz přes sedm CTE: {@code q} (normalizace dotazu) → {@code sel_scope}/
+ * {@code cat_hit}/{@code cat_scope} (kategorie) → {@code candidate} (čtyřvětvý UNION kandidátů)
+ * → {@code matched} (viditelnost + explicitní filtr kategorie) → {@code scoped} (agg.price_current
+ * v rozsahu filtru obchod/město) → {@code totals}/{@code best} (agregáty) → {@code quality}
+ * (známky). {@code storeId}/{@code city}/{@code categoryId}/{@code viewerId} se posílají jako
  * parametry a porovnávají v SQL, ne konkatenují — jediné, co se skládá jako text, je JOIN typ
  * ({@code totals} musí být INNER, když je filtr aktivní, jinak by filtr "Brno" vracel i zboží,
  * které tam nikdo nezapsal) a ORDER BY, a obojí je whitelist z pevné množiny (boolean /
  * {@link ProductSort}), nikdy hodnota od uživatele.
  *
- * <p>{@code matched} nese i viditelnost podle viewera (docs/datovy-model.md, "Uživatelská
- * vrstva nad globálními daty"): globální ACTIVE zboží vidí každý, vlastní DRAFT jen autor,
- * skryté (nahlášené) zboží nevidí nikdo (autor má zvlášť {@code product(id)} s příznakem).
- * Fulltextová podmínka je záměrně DVOUVĚTVÁ — {@code to_tsvector('simple', COALESCE(e.name,
- * p.name))} by obešel idx_product_name_fts a vynutil seq scan; takhle první větev pořád běží
- * přes index a druhá (přes patch) skenuje jen pár řádků z LEFT JOINu pro jednoho viewera.
+ * <p>{@code candidate} je čtyřvětvý UNION (název zboží, uživatelský patch názvu, kategorie,
+ * čárový kód), NE jeden OR přes čtyři tabulky — OR, jehož některá strana sahá na LEFT JOINovanou
+ * nebo jinak spojenou tabulku, nejde poskládat do BitmapOr a planner spadne na seq scan celého
+ * katalogu. Takhle každá větev běží přes svůj vlastní index (idx_product_name_norm_fts,
+ * primární klíč product_user_edit, idx_product_category_status, idx_product_code_code). UNION
+ * (ne UNION ALL) sjednotí duplicity do JEDNOHO seznamu bez příznaku, kudy se položka našla.
  *
- * <p>Třetí, nezávislá větev hledá podle čárového kódu ({@code codeQuery}, GTIN-14 normalizace
- * z {@link cz.kvalitacena.service.ProductSearchService}) — přes {@code core.product_code} s
+ * <p>{@code matched} nese viditelnost podle viewera (docs/datovy-model.md, "Uživatelská vrstva
+ * nad globálními daty"): globální ACTIVE zboží vidí každý, vlastní DRAFT jen autor, skryté
+ * (nahlášené) zboží nevidí nikdo (autor má zvlášť {@code product(id)} s příznakem) — a k tomu
+ * explicitní filtr kategorie z UI ({@code categoryId}), který je AND nad nalezenými kandidáty,
+ * ne další OR větev v {@code candidate}: dotaz "mléko" s filtrem "Drogerie" musí vrátit nic, ne
+ * celou drogerii.
+ *
+ * <p>Hledání podle kategorie (druhá větev {@code candidate}, přes {@code cat_scope}) bere celý
+ * PODSTROM kategorie, jejíž lokalizovaný název nebo slug se shoduje s dotazem — "bio 3,5 % tuku"
+ * v kategorii "Mléko" se najde na "mléko", i když to slovo v názvu nemá. {@code cat_hit}
+ * matchuje přesně ten název, který uživatel v appce vidí ({@code COALESCE(i18n.name, c.name)}
+ * pro locale requestu — stejný výraz jako {@code ProductGraphQlController.categoryName}) plus
+ * jazykově neutrální {@code slug}, substringem po slovech (ne {@code plainto_tsquery} — číselník
+ * je plurálový a "simple" konfigurace nemá stemmer, takže by slovní shoda na "sýr" nesedla).
+ * {@code cat_scope} rozšiřuje na podstrom přes {@code path = X OR path LIKE X || '/%'} —
+ * NIKDY {@code LIKE X || '%'}, to by pod "potraviny/mlecne" schovalo i hypotetickou
+ * "potraviny/mlecne-nahrazky". Explicitní filtr ({@code sel_scope}) používá tutéž hranici.
+ *
+ * <p>Čtvrtá větev hledá podle čárového kódu ({@code codeQuery}, GTIN-14 normalizace z
+ * {@link cz.kvalitacena.service.ProductSearchService}) — přes {@code core.product_code} s
  * {@code code_type = 'GTIN'} JEN, přes existující {@code idx_product_code_code}. Nikdy
  * {@code STORE_INTERNAL} — vnitroobchodní kódy váhového zboží mají povinný {@code chain_id}
  * a nejsou globální identifikátor (kořenový CLAUDE.md), takže by přes ně hledání napříč obchody
@@ -41,19 +60,57 @@ import java.util.List;
 class ProductSearchRepositoryImpl implements ProductSearchRepository {
 
   private static final String CTE = """
-      WITH matched AS (
-        SELECT p.id, COALESCE(e.name, p.name) AS name FROM core.product p
+      WITH q AS (
+        -- Jediné místo, kde se dotaz normalizuje (core.norm_text: trim → jedna mezera →
+        -- unaccent → lower) — dál se pracuje výhradně s nq/tsq, nikdy se syrovým :query.
+        SELECT core.norm_text(CAST(:query AS TEXT)) AS nq,
+               plainto_tsquery('simple', core.norm_text(CAST(:query AS TEXT))) AS tsq
+      ), sel_scope AS (
+        -- Explicitní filtr kategorie z UI: vybraná kategorie VČETNĚ podstromu. Rozšíření běží
+        -- v SQL z :categoryId, ne z path poslané z Javy — path tím nikdy neopustí DB.
+        SELECT c.id FROM core.category c
+        WHERE CAST(:categoryId AS BIGINT) IS NOT NULL
+          AND EXISTS (SELECT 1 FROM core.category s
+                      WHERE s.id = CAST(:categoryId AS BIGINT)
+                        AND (c.path = s.path OR c.path LIKE s.path || '/%'))
+      ), cat_hit AS (
+        -- Substring po slovech nad zobrazovaným názvem kategorie (locale requestu) + slug.
+        -- Pojistka na délku: bez ní by "o" (a prázdný dotaz) vrátily celý katalog.
+        SELECT c.path FROM core.category c
+        LEFT JOIN core.category_i18n ci
+          ON ci.category_id = c.id AND ci.locale = CAST(:locale AS TEXT)
+        CROSS JOIN q
+        WHERE length(q.nq) >= 3
+          AND NOT EXISTS (
+            SELECT 1 FROM unnest(string_to_array(q.nq, ' ')) AS w(word)
+            WHERE strpos(core.norm_text(COALESCE(ci.name, c.name)), w.word) = 0
+              AND strpos(replace(c.slug, '-', ' '), w.word) = 0)
+      ), cat_scope AS (
+        SELECT c.id FROM core.category c
+        WHERE EXISTS (SELECT 1 FROM cat_hit h WHERE c.path = h.path OR c.path LIKE h.path || '/%')
+      ), candidate AS (
+          SELECT p.id FROM core.product p
+          WHERE to_tsvector('simple', core.norm_text(p.name)) @@ (SELECT tsq FROM q)
+        UNION
+          SELECT e.product_id FROM core.product_user_edit e
+          WHERE e.user_id = CAST(:viewerId AS BIGINT)
+            AND to_tsvector('simple', core.norm_text(e.name)) @@ (SELECT tsq FROM q)
+        UNION
+          SELECT p.id FROM core.product p WHERE p.category_id IN (SELECT id FROM cat_scope)
+        UNION
+          SELECT pc2.product_id FROM core.product_code pc2
+          WHERE CAST(:codeQuery AS TEXT) IS NOT NULL
+            AND pc2.code = CAST(:codeQuery AS TEXT) AND pc2.code_type = 'GTIN'
+      ), matched AS (
+        SELECT p.id, COALESCE(e.name, p.name) AS name
+        FROM core.product p
+        JOIN candidate cnd ON cnd.id = p.id
         LEFT JOIN core.product_user_edit e
           ON e.product_id = p.id AND e.user_id = CAST(:viewerId AS BIGINT)
         WHERE (p.status = 'ACTIVE'
                OR (p.status = 'DRAFT' AND p.created_by_user_id = CAST(:viewerId AS BIGINT)))
           AND p.hidden_at IS NULL
-          AND ( to_tsvector('simple', p.name) @@ plainto_tsquery('simple', :query)
-             OR to_tsvector('simple', e.name) @@ plainto_tsquery('simple', :query)
-             OR (CAST(:codeQuery AS TEXT) IS NOT NULL AND EXISTS (
-                   SELECT 1 FROM core.product_code pc2
-                   WHERE pc2.product_id = p.id AND pc2.code = CAST(:codeQuery AS TEXT)
-                     AND pc2.code_type = 'GTIN')) )
+          AND (CAST(:categoryId AS BIGINT) IS NULL OR p.category_id IN (SELECT id FROM sel_scope))
       ), scoped AS (
         -- country je NIKDY null v praxi (ProductGraphQlController.resolveCountry vždy dosadí
         -- konkrétní zemi) — díky tomu je scoped už jednoměnový a "best" níž smí bezpečně
@@ -125,8 +182,10 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
     nativeQuery.setParameter("codeQuery", criteria.codeQuery());
     nativeQuery.setParameter("storeId", criteria.storeId());
     nativeQuery.setParameter("city", criteria.city());
+    nativeQuery.setParameter("categoryId", criteria.categoryId());
     nativeQuery.setParameter("country", criteria.country());
     nativeQuery.setParameter("viewerId", criteria.viewerId());
+    nativeQuery.setParameter("locale", criteria.locale());
   }
 
   /** Whitelist fragmentů podle {@link ProductSort} — nikdy konkatenace uživatelského vstupu. */

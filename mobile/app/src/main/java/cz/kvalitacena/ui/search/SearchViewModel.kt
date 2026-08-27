@@ -8,10 +8,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.kvalitacena.R
 import cz.kvalitacena.auth.AuthRepository
+import cz.kvalitacena.network.Category
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.ProductSearchItem
 import cz.kvalitacena.network.SearchFacets
+import cz.kvalitacena.ui.common.CategoryChoice
 import cz.kvalitacena.ui.common.UiText
+import cz.kvalitacena.ui.common.categoryBreadcrumb
 import cz.kvalitacena.ui.settings.CountryStore
 import cz.kvalitacena.ui.settings.SearchFilterStore
 import kotlinx.coroutines.launch
@@ -46,8 +49,14 @@ class SearchViewModel(
     private set
   var selectedCity by mutableStateOf(filterStore.city)
     private set
+  var selectedCategoryId by mutableStateOf(filterStore.categoryId)
+    private set
   var sort by mutableStateOf(SortOption.entries.firstOrNull { it.value == filterStore.sort } ?: SortOption.REPORT_COUNT)
     private set
+
+  var categories by mutableStateOf<List<Category>>(emptyList())
+    private set
+  var categoryQuery by mutableStateOf("")
 
   var items by mutableStateOf<List<ProductSearchItem>>(emptyList())
     private set
@@ -79,6 +88,21 @@ class SearchViewModel(
           if (selectedStoreId != filterStore.storeId) selectedStoreId = filterStore.storeId
         }
     }
+    viewModelScope.launch {
+      // Číselník kategorií je fixní/kurátorský (docs/rozvoj.md), ale mezi vydáními se může
+      // přečíslovat — uložené id, které v aktuálním stromu není, by backend odmítl jako
+      // CATEGORY_NOT_FOUND a appka by přestala hledat, dokud by si uživatel filtr sám nesmazal.
+      runCatching { categories = graphQlClient.categories() }
+        .onSuccess {
+          filterStore.dropCategoryIfMissing(categories.map { it.id })
+          if (selectedCategoryId != filterStore.categoryId) selectedCategoryId = filterStore.categoryId
+          // Pole hledání kategorie ukazuje breadcrumb aktivního filtru i po obnovení appky
+          // (SearchFilterStore) — jinak by bylo prázdné, i když filtr v pozadí platí.
+          selectedCategoryId?.let { id ->
+            categories.find { it.id == id }?.let { categoryQuery = categoryBreadcrumb(it, categories) }
+          }
+        }
+    }
   }
 
   fun search() {
@@ -102,6 +126,7 @@ class SearchViewModel(
           query = query.trim(),
           storeId = selectedStoreId,
           city = selectedCity,
+          categoryId = selectedCategoryId,
           country = countryStore.country,
           sort = sort.value,
           first = PAGE_SIZE,
@@ -127,6 +152,7 @@ class SearchViewModel(
           query = query.trim(),
           storeId = selectedStoreId,
           city = selectedCity,
+          categoryId = selectedCategoryId,
           country = countryStore.country,
           sort = sort.value,
           first = PAGE_SIZE,
@@ -152,6 +178,27 @@ class SearchViewModel(
   fun onCityChange(city: String?) {
     selectedCity = city
     filterStore.selectCity(city)
+    search()
+  }
+
+  /** Výběr z nabídky `SearchableDropdown` — pole pak ukazuje breadcrumb ("Potraviny › Mléčné
+   *  výrobky › Máslo"), stejný vzor jako ProductFormViewModel.onCategorySelected. */
+  fun onCategorySelected(choice: CategoryChoice) {
+    selectedCategoryId = choice.category.id
+    categoryQuery = categoryBreadcrumb(choice.category, categories)
+    filterStore.selectCategoryId(choice.category.id)
+    search()
+  }
+
+  fun onCategoryQueryChange(value: String) {
+    categoryQuery = value
+  }
+
+  /** Zrušení filtru kategorie — `SearchableDropdown` sám "vymazat" neumí, proto samostatné tlačítko v UI. */
+  fun clearCategory() {
+    selectedCategoryId = null
+    categoryQuery = ""
+    filterStore.selectCategoryId(null)
     search()
   }
 

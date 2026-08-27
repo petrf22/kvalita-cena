@@ -131,12 +131,28 @@ pl/de). Klienti staví hierarchický výběr (`nz-tree-select` na webu, `Searcha
 „Kategorie". Zdroj taxonomie je vlastní strom tvarovaný jako supermarket, ne import CPV/CZ-CPA
 (úřednické názvy, jiné členění, atribuční povinnost — zvažováno a zamítnuto při návrhu).
 
-**Co zbývá:**
+**Co je hotové:** `searchProducts` od `2026-08-26/03-product-name-norm-fts.yaml` hledá ZÁROVEŇ
+v názvu zboží a v číselníku kategorií — dotaz „mléko" najde i zboží, které to slovo v názvu
+nemá, ale je zařazené v kategorii Mléko (nebo jejím podstromu, `core.category.path` prefix
+přes hranici `/`, viz `ProductSearchRepositoryImpl` CTE `cat_hit`/`cat_scope`). Kategorie se
+matchuje pod lokalizovaným názvem (`core.category_i18n`, fallback `core.category.name`, stejný
+zdroj jako `@BatchMapping Category.name`) plus jazykově neutrální `slug`. Vedle toho existuje
+i explicitní filtr `searchProducts(categoryId: ID)` — AND nad textovou shodou, bere taky celý
+podstrom, neplatné id vrací `CATEGORY_NOT_FOUND` (fixní číselník, ne tiché prázdno jako
+u `storeId`/`city`). UI na obou klientech znovupoužívá existující strom (web `nz-tree-select`
++ `buildCategoryTree`, mobil `SearchableDropdown` + `categoryChoicesFor`/`CategoryTree.kt`) —
+stejné komponenty jako ve formuláři zboží. Fulltext nad názvem zboží se při té příležitosti
+sjednotil s `core.norm_text` (nový `idx_product_name_norm_fts`, starý `idx_product_name_fts`
+zrušen), aby „mleko" bez diakritiky našlo „Mléko" stejně spolehlivě jako kategorii.
 
-- **Kategorie je dnes prakticky write-only** — dá se podle ní zadat zboží, ale `searchFacets`/
-  `searchProducts` podle ní nefiltrují (jen obchod/město/country). Přidat filtr znamená nový
-  argument `searchProducts`, větev podle `Category.path` (prefix match na řetězec slugů) a UI
-  na obou klientech (fasety vedle stávajícího filtru obchodu).
+**Co zůstává:**
+
+- Fasety (`SearchFacets`) se kategorií nerozšiřují — klienti berou číselník z existující
+  `Query.categories` (fixní kurátorský strom, ne datově odvozený seznam jako `stores`/`cities`,
+  a strom potřebuje i rodiče bez zboží, aby šel poskládat).
+- Bez zadaného textu filtr kategorie nic nevrátí (žádný „browse" režim) — chová se stejně jako
+  filtr obchod/město.
+- `searchFacets(query: String)` argument je pořád ignorovaný (fasety se nefiltrují dotazem).
 - **Zadní vrátka pro oficiální kódy** (CPV/CZ-CPA/UNSPSC) zůstávají otevřená, ne implementovaná
   — až bude skutečná potřeba interoperability, jde o samostatnou tabulku
   `core.category_external_code (category_id, scheme, code)` + entita/repozitář + volitelné pole

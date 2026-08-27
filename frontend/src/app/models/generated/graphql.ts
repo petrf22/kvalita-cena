@@ -449,6 +449,7 @@ export type SearchProductsQueryVariables = Exact<{
   query: string;
   storeId?: string | null | undefined;
   city?: string | null | undefined;
+  categoryId?: string | null | undefined;
   country?: string | null | undefined;
   sort?: ProductSort | null | undefined;
   first?: number | null | undefined;
@@ -1581,11 +1582,12 @@ fragment PublicationStatusFields on PublicationStatus {
   verified
 }`) as unknown as TypedDocumentString<MyEditsQuery, MyEditsQueryVariables>;
 export const SearchProductsDocument = new TypedDocumentString(`
-    query SearchProducts($query: String!, $storeId: ID, $city: String, $country: String, $sort: ProductSort, $first: Int, $offset: Int) {
+    query SearchProducts($query: String!, $storeId: ID, $city: String, $categoryId: ID, $country: String, $sort: ProductSort, $first: Int, $offset: Int) {
   searchProducts(
     query: $query
     storeId: $storeId
     city: $city
+    categoryId: $categoryId
     country: $country
     sort: $sort
     first: $first

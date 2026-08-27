@@ -268,10 +268,15 @@ zůstal jen jeden způsob, jak se country vůbec dá změnit.
 
 **Viditelnost pod prahem důvěry** (práh je popsaný v `reputace.md`) řeší stejný predikát
 všude, kde se vrací produkt/obchod: `status = 'ACTIVE' OR created_by_user_id = viewerId`.
-Fulltextové hledání (`ProductSearchRepositoryImpl`) má tuhle podmínku navíc DVOUVĚTVOU kvůli
-indexu — `to_tsvector('simple', COALESCE(e.name, p.name))` by obešel `idx_product_name_fts`
-a vynutil seq scan, takže se hledá zvlášť přes `p.name` (index) a zvlášť přes patch `e.name`
-(malý LEFT JOIN jen pro jednoho viewera). Skryté (`hidden_at`) záznamy z hledání zmizí úplně,
+Hledání (`ProductSearchRepositoryImpl`) skládá kandidáty ve čtyřvětvém CTE `candidate`
+(UNION, ne jeden OR přes čtyři tabulky) — název zboží (`idx_product_name_norm_fts`, nad
+`to_tsvector('simple', core.norm_text(name))`), uživatelský patch názvu (`core.product_user_edit
+.name`, malý LEFT JOIN jen pro jednoho viewera), kategorie (podstrom podle `core.category.path`,
+`idx_product_category_status`) a čárový kód (`core.product_code`, jen GTIN). Stejný důvod jako
+u původní dvouvětvé fulltextové podmínky: `to_tsvector('simple', COALESCE(e.name, p.name))` by
+obešel index a vynutil seq scan; víc nezávislých větví umožňuje planneru použít index každé
+zvlášť. Viditelnost i explicitní filtr `categoryId` se aplikují AŽ na sjednocené kandidáty
+(CTE `matched`), ne opakovaně v každé větvi. Skryté (`hidden_at`) záznamy z hledání zmizí úplně,
 i autorovi — přímý dotaz `product(id)`/`productByCode` je autorovi pořád ukáže, s příznakem.
 
 **Čtecí cesta k vlastní uživatelské vrstvě** — GraphQL `myProducts`/`myStores`/

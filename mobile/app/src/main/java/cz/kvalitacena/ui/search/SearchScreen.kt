@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -46,7 +47,9 @@ import cz.kvalitacena.R
 import cz.kvalitacena.network.ProductSearchItem
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.QualityBadge
+import cz.kvalitacena.ui.common.SearchableDropdown
 import cz.kvalitacena.ui.common.SingleLineTextField
+import cz.kvalitacena.ui.common.categoryChoicesFor
 import cz.kvalitacena.ui.common.formatRelativeDate
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 import cz.kvalitacena.ui.common.storeLabel
@@ -117,6 +120,30 @@ fun SearchScreen(onProductClick: (String) -> Unit) {
         modifier = Modifier.weight(1f),
       )
     }
+
+    // Vlastní řádek, ne ve Row s obchodem/městem — breadcrumb vybrané kategorie ("Potraviny ›
+    // Mléčné výrobky › Rostlinné alternativy mléka") potřebuje víc místa než dva sloupce.
+    val locale = LocalConfiguration.current.locales[0]
+    val categoryChoices = remember(viewModel.categories, viewModel.categoryQuery, locale) {
+      categoryChoicesFor(viewModel.categoryQuery, viewModel.categories, locale)
+    }
+    SearchableDropdown(
+      query = viewModel.categoryQuery,
+      onQueryChange = viewModel::onCategoryQueryChange,
+      suggestions = categoryChoices,
+      onSelect = viewModel::onCategorySelected,
+      itemLabel = { it.label },
+      label = stringResource(R.string.search_category_filter),
+      // SearchableDropdown sám "vymazat" neumí — položka "Vše" v patičce nabídky zruší filtr,
+      // stejný vzor jako ve FilterDropdown u obchodu/města níž.
+      footer = {
+        DropdownMenuItem(
+          text = { Text(stringResource(R.string.search_filter_all)) },
+          onClick = { viewModel.clearCategory() },
+        )
+      },
+      modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+    )
 
     SortDropdown(
       selected = viewModel.sort,

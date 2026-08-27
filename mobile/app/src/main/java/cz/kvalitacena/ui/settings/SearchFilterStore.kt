@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 private const val PREFS_NAME = "kvalita_a_cena_settings"
 private const val KEY_CITY = "search_city"
 private const val KEY_STORE_ID = "search_store_id"
+private const val KEY_CATEGORY_ID = "search_category_id"
 private const val KEY_SORT = "search_sort"
 
 /**
@@ -28,6 +29,8 @@ class SearchFilterStore(context: Context) {
     private set
   var storeId: String? by mutableStateOf(prefs.getString(KEY_STORE_ID, null))
     private set
+  var categoryId: String? by mutableStateOf(prefs.getString(KEY_CATEGORY_ID, null))
+    private set
   var sort: String by mutableStateOf(prefs.getString(KEY_SORT, null) ?: "REPORT_COUNT")
     private set
 
@@ -39,6 +42,11 @@ class SearchFilterStore(context: Context) {
   fun selectStoreId(value: String?) {
     storeId = value
     prefs.edit().apply { if (value == null) remove(KEY_STORE_ID) else putString(KEY_STORE_ID, value) }.apply()
+  }
+
+  fun selectCategoryId(value: String?) {
+    categoryId = value
+    prefs.edit().apply { if (value == null) remove(KEY_CATEGORY_ID) else putString(KEY_CATEGORY_ID, value) }.apply()
   }
 
   fun selectSort(value: String) {
@@ -53,5 +61,11 @@ class SearchFilterStore(context: Context) {
 
   fun dropStoreIfMissing(known: List<String>) {
     if (storeId != null && storeId !in known) selectStoreId(null)
+  }
+
+  /** Číselník kategorií se mezi vydáními může přečíslovat — uložené id, které v aktuálním
+   *  stromu není, by jinak backend odmítl (CATEGORY_NOT_FOUND) a appka by přestala hledat. */
+  fun dropCategoryIfMissing(known: List<String>) {
+    if (categoryId != null && categoryId !in known) selectCategoryId(null)
   }
 }

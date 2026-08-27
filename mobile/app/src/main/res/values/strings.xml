@@ -323,6 +323,7 @@
     <string name="search_action">Hledat</string>
     <string name="search_store_filter">Obchod</string>
     <string name="search_city_filter">Město</string>
+    <string name="search_category_filter">Kategorie</string>
     <string name="search_sort_label">Řazení</string>
     <string name="search_filter_all">Vše</string>
     <string name="search_hint">Zadej, co hledáš.</string>

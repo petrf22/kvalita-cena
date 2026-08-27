@@ -1,7 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TranslocoDirective, TranslocoPipe, provideTranslocoScope } from '@jsverse/transloco';
+import type { NzTreeNode } from 'ng-zorro-antd/core/tree';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzIconModule } from 'ng-zorro-antd/icon';
@@ -10,14 +11,20 @@ import { NzPaginationModule } from 'ng-zorro-antd/pagination';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzTreeSelectModule } from 'ng-zorro-antd/tree-select';
 import { ProductSearchItem, ProductSort, SearchFacets } from '../../models/catalog';
+import type { CategoriesQuery } from '../../models/generated/graphql';
 import { CountryService } from '../../services/country-service';
+import { INTL_TAGS, LanguageService } from '../../services/language-service';
 import { ProductService } from '../../services/product-service';
+import { buildCategoryTree, categoryBreadcrumb } from '../../shared/category-tree';
 import { PRODUCT_SORT_KEYS } from '../../shared/enum-labels';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { QualityBadge } from '../../shared/quality-badge';
 import { RelativeDatePipe } from '../../shared/relative-date.pipe';
 import { storeLabel } from '../../shared/store-label';
+
+type CategoryOption = CategoriesQuery['categories'][number];
 
 const PAGE_SIZE = 20;
 
@@ -42,6 +49,7 @@ const SORT_ORDER = ['REPORT_COUNT', 'PRICE_ASC', 'QUALITY', 'LAST_REPORTED', 'NA
     NzSelectModule,
     NzPaginationModule,
     NzTagModule,
+    NzTreeSelectModule,
     QualityBadge,
     RelativeDatePipe,
     MoneyPipe,
@@ -55,6 +63,7 @@ const SORT_ORDER = ['REPORT_COUNT', 'PRICE_ASC', 'QUALITY', 'LAST_REPORTED', 'NA
 export class SearchPage {
   private readonly productService = inject(ProductService);
   private readonly router = inject(Router);
+  private readonly language = inject(LanguageService);
   protected readonly countryService = inject(CountryService);
   protected readonly storeLabel = storeLabel;
 
@@ -64,6 +73,7 @@ export class SearchPage {
   protected readonly query = signal('');
   protected readonly storeId = signal<string | null>(null);
   protected readonly city = signal<string | null>(null);
+  protected readonly categoryId = signal<string | null>(null);
   protected readonly sort = signal<ProductSort>('REPORT_COUNT');
   protected readonly pageIndex = signal(1);
 
@@ -72,6 +82,14 @@ export class SearchPage {
   protected readonly loading = signal(false);
   protected readonly hasSearched = signal(false);
   protected readonly facets = signal<SearchFacets>({ stores: [], cities: [] });
+  protected readonly categories = signal<CategoryOption[]>([]);
+
+  /** Strom pro `nz-tree-select` (shared/category-tree.ts) — stejný vzor jako product-form. */
+  protected readonly categoryTree = computed(() =>
+    buildCategoryTree(this.categories(), INTL_TAGS[this.language.lang()]),
+  );
+  protected readonly categoryDisplayWith = (node: NzTreeNode): string =>
+    categoryBreadcrumb(node.key, this.categories());
 
   constructor() {
     // country jde vždy explicitně z CountryService (klient je autoritativní, docs/lokalizace.md)
@@ -80,6 +98,13 @@ export class SearchPage {
     this.productService.searchFacets(this.countryService.country()).subscribe({
       // Filtry jsou volitelný doplněk hledání — chyba tady nesmí zablokovat samotné hledání.
       next: (facets) => this.facets.set(facets),
+      error: () => {},
+    });
+    // Číselník kategorií jde přes Query.categories, ne přes SearchFacets — je to fixní
+    // kurátorský strom, ne datově odvozený seznam jako obchody/města (a strom potřebuje
+    // i rodiče bez zboží, aby šel poskládat).
+    this.productService.categories().subscribe({
+      next: (categories) => this.categories.set(categories),
       error: () => {},
     });
   }
@@ -118,6 +143,7 @@ export class SearchPage {
         query: q,
         storeId: this.storeId(),
         city: this.city(),
+        categoryId: this.categoryId(),
         country: this.countryService.country(),
         sort: this.sort(),
         first: PAGE_SIZE,

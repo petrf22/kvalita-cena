@@ -6,8 +6,9 @@ zdroj pravdy pro „co už appka umí a v jakém souboru to žije", odkazovaný 
 ## Etapa 1 — prochozí kostra
 
 Hotovo a ověřeno end-to-end (backend přes curl, web i mobil živě v prohlížeči/emulátoru):
-passwordless auth (OTP + refresh rotace), GraphQL `searchProducts` (filtr obchod/město, řazení,
-stránkování, agregáty v `ProductSearchItem`) / `searchFacets` / `product` / `productByCode` /
+passwordless auth (OTP + refresh rotace), GraphQL `searchProducts` (filtr obchod/město/kategorie,
+hledání i v číselníku kategorií, řazení, stránkování, agregáty v `ProductSearchItem`) /
+`searchFacets` / `product` / `productByCode` /
 `nearbyStores` / `priceHistory` / `me` / `submitObservations` / `rateProduct`, vážený medián
 i denní agregace v `PriceAggregationService` (`agg.price_current` + `agg.price_daily`),
 hodnocení kvality jako známka 1–5 (`core.product_quality_rating`, `QualityRatingService` —
@@ -150,13 +151,23 @@ souřadnice uživatele se do ní na rozdíl od `LocationMap` v editovatelném re
 nedostávají, appka jen ukáže obchody, které už zná.
 
 **Hledání podle čárového kódu**: `searchProducts` (backend `ProductSearchService.codeQuery`,
-`ProductSearchRepositoryImpl` — třetí větev `matched` CTE) rozpozná dotaz tvořený jen číslicemi
-délky 8–14 a zkusí ho i jako GTIN (`core.product_code`, jen `code_type = GTIN`, nikdy
+`ProductSearchRepositoryImpl` — jedna ze čtyř větví CTE `candidate`) rozpozná dotaz tvořený jen
+číslicemi délky 8–14 a zkusí ho i jako GTIN (`core.product_code`, jen `code_type = GTIN`, nikdy
 `STORE_INTERNAL`) vedle fulltextu podle názvu — funguje tak zadarmo na webu i mobilu, obojí
 volá stejný GraphQL dotaz. Mobil navíc na `PriceEntryScreen` nabízí tlačítko „Hledat ceny
 tohoto zboží", které naskenovaný kód (nebo název u vstupu z detailu) přehodí do záložky Hledat
 přes `ui/common/NavigationResults.searchQuery` — výpis „Aktuální ceny po obchodech" pod
 naskenovaným zbožím totiž není omezený na město, jen na zemi.
+
+**Hledání podle kategorie**: `searchProducts` matchuje dotaz zároveň v názvu zboží a v
+číselníku kategorií (celý podstrom, `core.category.path`) — zboží „bio 3,5 % tuku" v kategorii
+Mléko se najde na „mléko", i když to slovo v názvu nemá (`ProductSearchRepositoryImpl`, CTE
+`cat_hit`/`cat_scope`). Argument `categoryId` navíc filtr zúží explicitně (AND nad textovou
+shodou, taky bere podstrom); neplatné id vrací `CATEGORY_NOT_FOUND`. Diakritika je sjednocená
+přes `core.norm_text` na obou stranách (`idx_product_name_norm_fts` nahradil starý
+`idx_product_name_fts`). Klienti pro výběr kategorie znovupoužívají stejné komponenty jako ve
+formuláři zboží (web `nz-tree-select` + `shared/category-tree.ts`, mobil `SearchableDropdown` +
+`ui/common/CategoryTree.kt`), mobil navíc filtr přežívá přepnutí záložky (`SearchFilterStore`).
 
 **Lokalizace: cs/sk/en/pl, multi-měna, strojově čitelný kontrakt chyb** (`docs/lokalizace.md`
 je jeden zdroj pravdy — jazyky, mapa země→měna→locale, pravidla překladu, přehled testů):

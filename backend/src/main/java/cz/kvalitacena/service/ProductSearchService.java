@@ -6,11 +6,14 @@ import cz.kvalitacena.controller.ProductSearchResult;
 import cz.kvalitacena.controller.SearchFacets;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.Store;
+import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ProductSearchCriteria;
 import cz.kvalitacena.db.repo.ProductSearchRow;
 import cz.kvalitacena.db.repo.ProductSort;
 import cz.kvalitacena.db.repo.StoreRepository;
+import cz.kvalitacena.exception.ErrorCode;
+import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.service.fx.FxRateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -45,17 +48,31 @@ public class ProductSearchService {
 
   private final ProductRepository productRepository;
   private final StoreRepository storeRepository;
+  private final CategoryRepository categoryRepository;
   private final ProductOverlayService productOverlayService;
   private final FxRateService fxRateService;
 
   @Transactional(readOnly = true)
-  public ProductSearchResult search(String query, Long storeId, String city, String country, ProductSort sort,
-      Integer first, Integer offset, Long viewerId, String displayCurrency) {
+  public ProductSearchResult search(String query, Long storeId, String city, Long categoryId, String country,
+      ProductSort sort, Integer first, Integer offset, Long viewerId, String displayCurrency, String locale) {
+    // Dotaz se ořezává tady, ne až v SQL — dnes se netrimuje vůbec.
+    String trimmed = query == null ? "" : query.trim();
+    if (categoryId != null && !categoryRepository.existsById(categoryId)) {
+      // Fixní kurátorský číselník — na rozdíl od storeId/city (kde neexistující id dál jen
+      // vrátí prázdno) tiché prázdno by tu mátlo: uživatel zadal reálné slovo a nic nedostane.
+      throw new NotFoundException(ErrorCode.CATEGORY_NOT_FOUND);
+    }
+    // Blank dotaz = prázdný výsledek i s vybranou kategorií — žádný "browse" režim, filtr
+    // kategorie se chová jako obchod/město: bez textu neplatí.
+    if (trimmed.isEmpty()) {
+      return new ProductSearchResult(List.of(), 0, false);
+    }
+
     int limitedFirst = clamp(first == null ? 20 : first, 1, MAX_FIRST);
     int limitedOffset = clamp(offset == null ? 0 : offset, 0, MAX_OFFSET);
     ProductSearchCriteria criteria = new ProductSearchCriteria(
-        query, codeQuery(query), storeId, city, country, sort == null ? ProductSort.REPORT_COUNT : sort,
-        limitedFirst, limitedOffset, viewerId);
+        trimmed, codeQuery(trimmed), storeId, city, categoryId, country,
+        sort == null ? ProductSort.REPORT_COUNT : sort, limitedFirst, limitedOffset, viewerId, locale);
 
     List<ProductSearchRow> rows = productRepository.search(criteria);
     if (rows.isEmpty()) {

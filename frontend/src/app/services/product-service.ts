@@ -14,6 +14,8 @@ export interface SearchCriteria {
   query: string;
   storeId?: string | null;
   city?: string | null;
+  /** VČETNĚ podstromu — vybraná "Mléčné výrobky" vrátí i Máslo a Sýry (schema.graphqls). */
+  categoryId?: string | null;
   /** Nezadáno = server dosadí zemi přihlášeného uživatele, jinak app.i18n.default-country (docs/lokalizace.md). */
   country?: string | null;
   sort?: ProductSort;
@@ -32,6 +34,7 @@ export class ProductService {
         $query: String!
         $storeId: ID
         $city: String
+        $categoryId: ID
         $country: String
         $sort: ProductSort
         $first: Int
@@ -41,6 +44,7 @@ export class ProductService {
           query: $query
           storeId: $storeId
           city: $city
+          categoryId: $categoryId
           country: $country
           sort: $sort
           first: $first
@@ -59,6 +63,7 @@ export class ProductService {
         query: criteria.query,
         storeId: criteria.storeId ?? null,
         city: criteria.city ?? null,
+        categoryId: criteria.categoryId ?? null,
         country: criteria.country ?? null,
         sort: criteria.sort ?? 'REPORT_COUNT',
         first: criteria.first ?? 20,

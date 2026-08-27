@@ -87,12 +87,16 @@ public class ProductGraphQlController {
    */
   @QueryMapping
   public ProductSearchResult searchProducts(@Argument String query, @Argument Long storeId,
-      @Argument String city, @Argument String country, @Argument ProductSort sort,
+      @Argument String city, @Argument Long categoryId, @Argument String country, @Argument ProductSort sort,
       @Argument Integer first, @Argument Integer offset, Authentication authentication,
       @ContextValue(name = "displayCurrency", required = false) String displayCurrency) {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
-    return productSearchService.search(query, storeId, city, countryResolver.resolve(country, viewer.userId()),
-        sort, first, offset, viewer.userId(), displayCurrency);
+    // Týž zdroj jako @BatchMapping categoryName níže — jinak by se zboží mohlo najít pod
+    // názvem kategorie, který v odpovědi vůbec nesvítí.
+    String locale = LocaleContextHolder.getLocale().getLanguage();
+    return productSearchService.search(query, storeId, city, categoryId,
+        countryResolver.resolve(country, viewer.userId()), sort, first, offset, viewer.userId(), displayCurrency,
+        locale);
   }
 
   @QueryMapping

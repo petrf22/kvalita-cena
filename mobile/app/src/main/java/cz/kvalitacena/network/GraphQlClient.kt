@@ -145,14 +145,15 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     query: String,
     storeId: String? = null,
     city: String? = null,
+    categoryId: String? = null,
     country: String? = null,
     sort: String = "REPORT_COUNT",
     first: Int = 20,
     offset: Int = 0,
   ): ProductSearchResult {
     val gql = """
-      query(${'$'}query: String!, ${'$'}storeId: ID, ${'$'}city: String, ${'$'}country: String, ${'$'}sort: ProductSort, ${'$'}first: Int, ${'$'}offset: Int) {
-        searchProducts(query: ${'$'}query, storeId: ${'$'}storeId, city: ${'$'}city, country: ${'$'}country, sort: ${'$'}sort, first: ${'$'}first, offset: ${'$'}offset) {
+      query(${'$'}query: String!, ${'$'}storeId: ID, ${'$'}city: String, ${'$'}categoryId: ID, ${'$'}country: String, ${'$'}sort: ProductSort, ${'$'}first: Int, ${'$'}offset: Int) {
+        searchProducts(query: ${'$'}query, storeId: ${'$'}storeId, city: ${'$'}city, categoryId: ${'$'}categoryId, country: ${'$'}country, sort: ${'$'}sort, first: ${'$'}first, offset: ${'$'}offset) {
           totalCount hasMore
           items { $SEARCH_ITEM_FIELDS }
         }
@@ -162,6 +163,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
       put("query", query)
       put("storeId", storeId)
       put("city", city)
+      put("categoryId", categoryId)
       put("country", country)
       put("sort", sort)
       put("first", first)

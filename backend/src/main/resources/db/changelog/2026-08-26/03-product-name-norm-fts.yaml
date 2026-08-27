@@ -1,0 +1,39 @@
+# 03-product-name-norm-fts.yaml — fulltext nad názvem zboží se sjednocuje s ostatním hledáním
+# na core.norm_text (docs/lokalizace.md) — bez toho "mleko" nenajde "Mléko", zatímco kategorie
+# (core.category, hledaná přes stejnou funkci) shodu vrátí; nekonzistence, kterou uživatel vidí
+# jako náhodnost. Slovní sémantika plainto_tsquery (AND přes slova nezávisle na pořadí, "bio
+# mleko" najde "Mléko bio") se ZÁMĚRNĚ zachovává — LIKE/trigram nad core.norm_text by ji ztratil.
+# core.norm_text ve výrazovém indexu je vyzkoušená cesta (idx_product_name_trgm,
+# 2026-08-06/03-generic-product.yaml), past se STABLE unaccent je ošetřená v definici funkce
+# (2026-08-06/01-text-normalization.yaml).
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-26-03-product-name-norm-fts-index
+      author: Petr F.
+      comment: >
+        Nový index vedle starého — dokud existují oba, appka běží dál i kdyby CREATE INDEX
+        s core.norm_text z nějakého důvodu na jiné instalaci selhalo.
+      changes:
+        - sql:
+            sql: |
+              CREATE INDEX idx_product_name_norm_fts ON core.product
+                USING gin (to_tsvector('simple', core.norm_text(name)));
+      rollback:
+        - sql:
+            sql: DROP INDEX IF EXISTS core.idx_product_name_norm_fts;
+
+  - changeSet:
+      id: 2026-08-26-03-drop-product-name-fts-index
+      author: Petr F.
+      comment: >
+        idx_product_name_fts (to_tsvector('simple', name), bez normalizace) nemá po předchozím
+        changesetu jediného čtenáře — ProductSearchRepositoryImpl přešel na normalizovanou
+        variantu a ProductRepository.searchByName, jediný další volající, se ruší jako mrtvý
+        kód. Dva GIN indexy nad stejným sloupcem by jen zdražovaly každý zápis do katalogu.
+      changes:
+        - sql:
+            sql: DROP INDEX IF EXISTS core.idx_product_name_fts;
+      rollback:
+        - sql:
+            sql: |
+              CREATE INDEX idx_product_name_fts ON core.product USING gin (to_tsvector('simple', name));

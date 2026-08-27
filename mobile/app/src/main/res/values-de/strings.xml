@@ -241,6 +241,7 @@
     <string name="search_action">Suchen</string>
     <string name="search_store_filter">Geschäft</string>
     <string name="search_city_filter">Stadt</string>
+    <string name="search_category_filter">Kategorie</string>
     <string name="search_sort_label">Sortierung</string>
     <string name="search_filter_all">Alle</string>
     <string name="search_hint">Gib ein, wonach du suchst.</string>

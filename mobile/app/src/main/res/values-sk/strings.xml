@@ -239,6 +239,7 @@
     <string name="search_action">Hľadať</string>
     <string name="search_store_filter">Obchod</string>
     <string name="search_city_filter">Mesto</string>
+    <string name="search_category_filter">Kategória</string>
     <string name="search_sort_label">Radenie</string>
     <string name="search_filter_all">Všetky</string>
     <string name="search_hint">Zadaj, čo hľadáš.</string>

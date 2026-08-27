@@ -5,6 +5,7 @@
   "search": "Search",
   "storeFilter": "Store: all",
   "cityFilter": "City: all",
+  "categoryFilter": "Category: all",
   "notFound": "We didn't find anything — try a different word or filter.",
   "hint": "Type what you're looking for.",
   "colProduct": "Product",

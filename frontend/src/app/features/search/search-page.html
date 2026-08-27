@@ -42,6 +42,18 @@
       }
     </nz-select>
 
+    <nz-tree-select
+      class="filter-select"
+      [ngModel]="categoryId()"
+      (ngModelChange)="categoryId.set($event); onFilterChange()"
+      [nzNodes]="categoryTree()"
+      nzAllowClear
+      [nzPlaceHolder]="t('search.categoryFilter')"
+      [nzShowSearch]="true"
+      [nzDisplayWith]="categoryDisplayWith"
+      [nzDropdownStyle]="{ 'max-height': '400px', 'overflow-y': 'auto' }"
+    />
+
     <nz-select
       class="filter-select"
       [ngModel]="sort()"

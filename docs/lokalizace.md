@@ -254,6 +254,15 @@ seřadí sám přes `Intl.Collator`/`java.text.Collator` podle aktuálního jazy
 tak řadí správně nezávisle na tom, v jaké collation běží Postgres (web `shared/category-tree.ts`,
 mobil `ui/common/CategoryTree.kt`).
 
+**Hledání podle kategorie matchuje pod zobrazovaným názvem, ne pod syrovým `core.category.name`.**
+`ProductSearchRepositoryImpl` (CTE `cat_hit`) skládá `COALESCE(i18n.name, category.name)` pro
+`locale` requestu — týž výraz jako `@BatchMapping Category.name` výš — plus nepřekládaný `slug`,
+aby „mleko" našlo kategorii Mléko i v anglicky přepnuté appce. Bez tohohle by hledání mohlo
+trefit kategorii pod názvem, který uživatel v odpovědi vůbec nevidí. Diakritika je na obou
+stranách (název zboží i kategorie) sjednocená přes `core.norm_text` — fulltext nad
+`core.product.name` proto od `2026-08-26/03-product-name-norm-fts.yaml` běží nad
+`to_tsvector('simple', core.norm_text(name))`, ne nad syrovým `name` jako dřív.
+
 **Rozšíření číselníku** (další jazyk, další kategorie): oba CSV soubory pod
 `backend/.../db/changelog/2026-08-20/` (`category.csv` — `path,slug,parent_slug,name,sort_order`;
 `category-i18n.csv` — `slug,locale,name`, BEZ řádků pro `cs`) jsou čitelný zdroj pravdy celého
