@@ -1,0 +1,76 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-27-01-create-off-product
+      author: Petr F.
+      comment: >
+        Lokální snapshot Open Food Facts zůstává fyzicky v off schématu. Do core.product se
+        cizí katalogové hodnoty nekopírují; spojení vzniká podle normalizovaného GTIN-14 až
+        ve čtecí vrstvě.
+      changes:
+        - createTable:
+            schemaName: "off"
+            tableName: product
+            columns:
+              - column:
+                  name: gtin
+                  type: VARCHAR(14)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: fetch_status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_name
+                  type: VARCHAR(300)
+              - column:
+                  name: brand_name
+                  type: VARCHAR(200)
+              - column:
+                  name: product_quantity
+                  type: NUMERIC(12,3)
+              - column:
+                  name: product_quantity_unit
+                  type: VARCHAR(10)
+              - column:
+                  name: category_tags
+                  type: TEXT[]
+                  defaultValueComputed: "ARRAY[]::TEXT[]"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: image_front_url
+                  type: VARCHAR(1000)
+              - column:
+                  name: image_front_small_url
+                  type: VARCHAR(1000)
+              - column:
+                  name: source_revision
+                  type: BIGINT
+              - column:
+                  name: source_updated_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: fetched_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+        - createIndex:
+            schemaName: "off"
+            tableName: product
+            indexName: idx_off_product_fetched_at
+            columns:
+              - column:
+                  name: fetched_at
+        - sql:
+            sql: |
+              ALTER TABLE off.product
+                ADD CONSTRAINT chk_off_product_gtin CHECK (gtin ~ '^[0-9]{14}$'),
+                ADD CONSTRAINT chk_off_product_fetch_status
+                  CHECK (fetch_status IN ('FOUND', 'NOT_FOUND')),
+                ADD CONSTRAINT chk_off_product_quantity
+                  CHECK (product_quantity IS NULL OR product_quantity > 0),
+                ADD CONSTRAINT chk_off_product_quantity_unit
+                  CHECK (product_quantity_unit IS NULL OR product_quantity_unit IN ('G', 'KG', 'ML', 'L'));

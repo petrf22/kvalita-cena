@@ -32,3 +32,4 @@ databaseChangeLog:
   - include: { file: 2026-08-26/01-observation-promo-validity.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-26/02-store-url.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-26/03-product-name-norm-fts.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-27/01-off-product.yaml, relativeToChangelogFile: true }
