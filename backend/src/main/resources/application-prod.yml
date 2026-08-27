@@ -60,6 +60,8 @@ app:
   media:
     root: ${MEDIA_ROOT}
   external:
+    open-food-facts:
+      user-agent: ${OFF_USER_AGENT}
     nominatim:
       # Usage policy Nominatimu vyžaduje identifikovatelný kontakt (dev@example.com by appku
       # v produkci riskovalo zablokování IP, viz https://operations.osmfoundation.org/policies/nominatim/).

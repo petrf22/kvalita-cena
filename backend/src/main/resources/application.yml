@@ -167,7 +167,15 @@ app:
     # (lokalizovaná, docs/lokalizace.md) — viz Messages, MediaService.toPhoto.
   external:
     open-food-facts:
+      enabled: true
+      base-url: https://world.openfoodfacts.org
       product-url-template: "https://cz.openfoodfacts.org/product/{barcode}"
+      # OFF vyžaduje identifikovatelný User-Agent; v produkci se kontakt přebije env proměnnou.
+      user-agent: "KvalitaACena/0.2.0 (dev@example.com)"
+      timeout: PT5S
+      positive-cache-ttl: P7D
+      negative-cache-ttl: P1D
+      max-requests-per-minute: 15
     nominatim:
       # Usage policy Nominatimu vyžaduje identifikovatelný User-Agent — v produkci nahradit
       # reálným kontaktem (viz https://operations.osmfoundation.org/policies/nominatim/).
