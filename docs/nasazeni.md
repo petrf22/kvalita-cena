@@ -40,11 +40,12 @@ před první pozvánkou.
   `frontend/.../terms-page.html`, `frontend/.../privacy-page.html`,
   `mobile/.../values/strings.xml`) — týž den, kdy appka reálně jde do uzavřené bety.
 - [x] **Vygenerovat produkční tajemství** — ověřeno 2026-08-28: `JWT_SECRET`/`EMAIL_HASH_PEPPER`/
-  `EMAIL_ENC_KEY` v `.env` na serveru mají délku 44 znaků (odpovídá `openssl rand -base64 32`),
-  hodnoty samotné se z bezpečnostních důvodů nečetly. **Otevřené riziko:** podle uživatele
-  (2026-08-28) zatím NEJSOU uložené i mimo repo i mimo server (heslo manažer / šifrovaný trezor)
-  — jediná kopie žije jen v `.env` na produkčním stroji. Doplnit, jinak by výpadek/reinstalace
-  serveru bez zálohy tajemství = nikdo se nepřihlásí a e-maily nejdou rozšifrovat.
+  `EMAIL_ENC_KEY` v `.env` na serveru mají délku 44 znaků (odpovídá `openssl rand -base64 32`).
+  **Uloženo mimo server od 2026-08-29**: `backup/kvalitacena-prod.env` (lokální PC, odtud dál na
+  externí disk a NAS stejnou cestou jako zálohy databáze/médií výš). Vědomý kompromis oproti
+  původnímu doporučení (heslo manažer/šifrovaný trezor) — nešifrovaný soubor na třech místech
+  místo trezoru s přístupovou kontrolou, ale řeší hlavní riziko (výpadek/reinstalace serveru).
+  Přesun do skutečného heslo manažeru zůstává volitelné vylepšení, ne blokující krok.
 - [x] **SMTP pro OTP e-maily: Gigaserver, ne dedikovaný poskytovatel** — rozhodnuto 2026-08-22.
   Použije se schránka `kontakt@kvalitacena.cz` (sekce výš) jako SMTP účet, `mail.gigaserver.cz`
   port **587** (STARTTLS). Detaily a past s portem 465 viz sekce 3. Výměna za Resend/Postmark
