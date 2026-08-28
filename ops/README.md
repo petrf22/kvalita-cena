@@ -39,6 +39,25 @@ lokálního MTA se chybová pošta cronu jen tiše ztratí) — v produkci to ta
 jediné automatické zálohy, než si toho někdo všiml (2026-08-28). Log místo toho patří do
 `BACKUP_ROOT` výš, kam skript sám zapisuje zálohy, takže tam zapisovat může i cron.
 
+## `pull-backup.sh`
+
+Stáhne zálohy ze serveru (výš) na lokální stroj do `backup/` (gitignored) — mezikrok, dokud appka
+nemá vlastní offsite úložiště (`docs/nasazeni.md`, „Vybrat cíl pro offsite zálohu"). Odsud si
+uživatel zálohy dál kopíruje ručně na externí disk a NAS.
+
+Cron na LOKÁLNÍM stroji (ne na serveru):
+
+```bash
+crontab -e
+# 0 7 * * * SSH_AUTH_SOCK=/run/user/1000/keyring/ssh /home/<user>/kvalita-cena/ops/pull-backup.sh >> /home/<user>/kvalita-cena/backup/pull.log 2>&1
+```
+
+`SSH_AUTH_SOCK` je potřeba, pokud je klíč k serveru chráněný heslem a odemčený jen v ssh-agentu
+desktopové session (GNOME/KDE keyring) — cron by ho jinak nezdědil a `rsync` by tiše selhal na
+přihlášení. Funguje to jen dokud je uživatel přihlášený a klíčenka odemčená; když je PC vypnuté,
+den se přeskočí — další běh ho doplní, protože server má vlastní retenci 14 dní
+(`ops/backup.sh`, `RETENTION_DAYS`).
+
 ## Zkouška obnovy — udělat PŘED zapnutím cronu, ne až při skutečné nehodě
 
 `docs/nasazeni.md` to vyžaduje explicitně: „vyzkoušet obnovu na čistou instanci, ne jen že záloha
