@@ -4,11 +4,13 @@ Praktický návod pro lokální vývoj — jak appku rozběhat a ručně si vyzk
 vyhledání produktu a zápis ceny. Architektonické konvence jsou v [`CLAUDE.md`](../CLAUDE.md);
 tady jde jen o „jak na to spustit a co s tím dělat".
 
-Rychlý start pro ruční testování: `./start-dev.sh` v rootu udělá kroky 1–4 níž najednou (DB,
+Rychlý start pro ruční testování: `./start-dev.sh` v rootu udělá kroky 1–4 a 7 níž najednou (DB,
 backend s profilem `beta`, testovací data z `dev/seed.sql` — vypnutelné přes `--no-seed`,
-frontend) — každý v samostatném terminálovém okně s živými logy, otevře prohlížeč a po stisku
-klávesy všechny tři procesy zase ukončí. Postup níž zůstává jako referenční, pro ladění
-jednotlivých kroků zvlášť.
+frontend, a Android emulátor s nainstalovanou a spuštěnou appkou — vypnutelný přes `--no-mobile`)
+— každý v samostatném terminálovém okně s živými logy (mobil má navíc okno s logcatem), otevře
+prohlížeč a po stisku klávesy všechny procesy zase ukončí. Název AVD se detekuje automaticky
+(první z `emulator -list-avds`), lze přebít proměnnou prostředí `AVD_NAME`. Postup níž zůstává
+jako referenční, pro ladění jednotlivých kroků zvlášť.
 
 ## Předpoklady
 
@@ -235,12 +237,12 @@ cd mobile
 ./gradlew :app:assembleDebug        # sestaví app-debug.apk
 ```
 
-Emulátor (ověřený AVD `Medium_Phone`):
+Emulátor (ověřený AVD `Pixel_6_API_30`; `adb`/`emulator` nejsou v PATH, proto plná cesta):
 
 ```bash
-~/Android/Sdk/emulator/emulator -avd Medium_Phone -no-snapshot -no-boot-anim -gpu swiftshader_indirect
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n cz.kvalitacena/.MainActivity
+~/Android/Sdk/emulator/emulator -avd Pixel_6_API_30 -no-snapshot -no-boot-anim -gpu swiftshader_indirect
+~/Android/Sdk/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk
+~/Android/Sdk/platform-tools/adb shell am start -n cz.kvalitacena/.MainActivity
 ```
 
 `-gpu swiftshader_indirect` (softwarové renderování) je záměrně — Mesa/X11 GPU passthrough na

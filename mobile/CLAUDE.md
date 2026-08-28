@@ -27,7 +27,8 @@ v tomto stroji párkrát spadl s X errorem, `swiftshader_indirect` /software ren
 spolehlivější). Instalace/spuštění: `adb install -r app/build/outputs/apk/debug/app-debug.apk`
 + `adb shell am start -n cz.kvalitacena/.MainActivity`. Emulátor vidí hostitelský backend na
 `10.0.2.2:8080` (viz `network/ApiConfig.kt` a `network_security_config.xml`, který tam
-cleartext HTTP výslovně povoluje jen pro dev).
+cleartext HTTP výslovně povoluje jen pro dev). `../start-dev.sh` z kořenu repa udělá build,
+spuštění emulátoru, instalaci i logcat automaticky (autodetekuje AVD, `--no-mobile` to vypne).
 
 ## Konvence
 
