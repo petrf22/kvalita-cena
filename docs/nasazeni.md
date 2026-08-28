@@ -39,13 +39,12 @@ před první pozvánkou.
   místech (`docs/podminky-uziti.md`, `docs/zasady-ochrany-osobnich-udaju.md`,
   `frontend/.../terms-page.html`, `frontend/.../privacy-page.html`,
   `mobile/.../values/strings.xml`) — týž den, kdy appka reálně jde do uzavřené bety.
-- [ ] **Vygenerovat produkční tajemství** — nezávisle na hostingu, dá se udělat kdykoli:
-  ```
-  openssl rand -base64 32   # spustit 3× zvlášť pro JWT_SECRET / EMAIL_HASH_PEPPER / EMAIL_ENC_KEY
-  ```
-  Uložit **mimo repo i mimo tenhle stroj** (heslo manažer / šifrovaný trezor), stejný režim
-  jako podpisový klíč mobilní appky (`docs/vydani.md`). **`EMAIL_HASH_PEPPER` musí být finální
-  před prvním reálným účtem** — pozdější změna = nikdo se nepřihlásí (`docs/soukromi.md`).
+- [x] **Vygenerovat produkční tajemství** — ověřeno 2026-08-28: `JWT_SECRET`/`EMAIL_HASH_PEPPER`/
+  `EMAIL_ENC_KEY` v `.env` na serveru mají délku 44 znaků (odpovídá `openssl rand -base64 32`),
+  hodnoty samotné se z bezpečnostních důvodů nečetly. **Otevřené riziko:** podle uživatele
+  (2026-08-28) zatím NEJSOU uložené i mimo repo i mimo server (heslo manažer / šifrovaný trezor)
+  — jediná kopie žije jen v `.env` na produkčním stroji. Doplnit, jinak by výpadek/reinstalace
+  serveru bez zálohy tajemství = nikdo se nepřihlásí a e-maily nejdou rozšifrovat.
 - [x] **SMTP pro OTP e-maily: Gigaserver, ne dedikovaný poskytovatel** — rozhodnuto 2026-08-22.
   Použije se schránka `kontakt@kvalitacena.cz` (sekce výš) jako SMTP účet, `mail.gigaserver.cz`
   port **587** (STARTTLS). Detaily a past s portem 465 viz sekce 3. Výměna za Resend/Postmark
@@ -75,9 +74,15 @@ Doporučeno rozjet appku nejdřív **proti IP, bez DNS** (kroky 1–3 níže), a
 domény na server (krok 4) — build appky na serveru je nejpravděpodobnější místo prvního selhání
 (viz „Sekvenční build" níž) a není důvod to ladit ve chvíli, kdy doména už míří na prázdnou IP.
 
-1. [ ] Založit server, nainstalovat Docker + Docker Compose plugin, non-root uživatel se
-   SSH klíčem, `ufw` (22/80/443), `unattended-upgrades`, **2 GB swap** (viz sekce 1 výš).
-2. [ ] `git clone` repa na server, `cp .env.example .env`, doplnit:
+1. [x] Založit server, nainstalovat Docker + Docker Compose plugin, non-root uživatel se
+   SSH klíčem, `ufw` (22/80/443), `unattended-upgrades`, **2 GB swap** (viz sekce 1 výš) —
+   ověřeno 2026-08-28 (Hetzner IP `178.105.119.39`, uživatel `kvalitacena`, `free -h` ukazuje
+   2 GB swapu, Docker 29.7.2 + Compose v5.5.0 běží). `ufw`/`unattended-upgrades` samo se
+   nedalo ověřit bez roota, ale zvenku odpovídají jen porty 22/80/443.
+2. [x] `git clone` repa na server, `cp .env.example .env`, doplnit — ověřeno 2026-08-28
+   (`.env` existuje, `POSTGRES_PASSWORD` má 64 znaků = `openssl rand -hex 32`, `SITE_ADDRESS`/
+   `API_ADDRESS` jsou finální `https://` domény a `SPRING_PROFILES_ACTIVE=prod,beta` — tedy
+   rovnou cílový stav kroku 5 níž, ne mezikrok proti IP):
    - `POSTGRES_USER`/`POSTGRES_PASSWORD` — libovolné silné heslo (bez znaku `$`, viz níž), jen
      pro appku samotnou
    - `JWT_SECRET`/`EMAIL_HASH_PEPPER`/`EMAIL_ENC_KEY` — hodnoty vygenerované v kroku 1 výš
@@ -92,7 +97,7 @@ domény na server (krok 4) — build appky na serveru je nejpravděpodobnější
    Compose sám expanduje. `JWT_SECRET`/`EMAIL_HASH_PEPPER`/`EMAIL_ENC_KEY` naproti tomu jdou přes
    `env_file` (literálně) — tam base64 s `+`/`/`/`=` vadit nebude, `EMAIL_ENC_KEY` ale musí po
    dekódování vyjít na přesně 16/24/32 bajtů.
-3. [ ] **Sekvenční build** — ne jedno `up -d --build`, které staví backend (Gradle) i web
+3. [x] **Sekvenční build** — ne jedno `up -d --build`, které staví backend (Gradle) i web
    (`npm ci` + `ng build`) paralelně a na malé instanci může spolu s Postgresem vyčerpat RAM.
    `GIT_SHA` je nepovinný, ale bez něj `/actuator/info` nese jen verzi bez commitu (`docs/
    vydani.md`, „Verzování a vydání"). `ops/deploy.sh` (viz `ops/README.md`) tenhle postup
@@ -108,7 +113,11 @@ domény na server (krok 4) — build appky na serveru je nejpravděpodobnější
    backendu (`docker compose -f compose.prod.yaml logs backend`) dokončený Liquibase bez chyb.
    Přihlášení v téhle fázi ověřit nejde — `cookie-secure: true` v produkčním profilu znamená, že
    se refresh cookie po obyčejném HTTP nenastaví.
-4. [ ] **DNS záznamy** na doméně `kvalitacena.cz` (u registrátora domény, ne u VPS) — nejdřív
+
+   Ověřeno 2026-08-28: `/actuator/info` hlásí `version 0.3.0`,
+   `commit 8130606` — přesně odpovídá tagu `v0.3.0`, tři kontejnery (`web`/`backend`/`postgres`)
+   běží (`postgres` 5 dní, `backend`/`web` 3 hodiny od posledního nasazení).
+4. [x] **DNS záznamy** na doméně `kvalitacena.cz` (u registrátora domény, ne u VPS) — nejdřív
    snížit TTL na 300 s a počkat, až doběhne starý, pak přepsat:
    - `A`/`AAAA` `kvalitacena.cz` → IP serveru (web, Caddy)
    - `api.kvalitacena.cz` je dnes CNAME na `kvalitacena.cz` (ne vlastní `A` záznam) — propíše se
@@ -116,11 +125,18 @@ domény na server (krok 4) — build appky na serveru je nejpravděpodobnější
    - **MX ani SPF neměnit** — e-mail zůstává u dosavadního poskytovatele domény, viz sekce 3
    - Ověřit `dig +short kvalitacena.cz` a `dig +short api.kvalitacena.cz` z jiného stroje, než
      appka i doména budou skutečně souhlasit s IP serveru
-5. [ ] Přepsat v `.env` `SITE_ADDRESS=https://kvalitacena.cz` a
+
+   Ověřeno 2026-08-28: `dig +short kvalitacena.cz` i `dig +short api.kvalitacena.cz` odpovídají
+   `178.105.119.39`.
+5. [x] Přepsat v `.env` `SITE_ADDRESS=https://kvalitacena.cz` a
    `API_ADDRESS=https://api.kvalitacena.cz`, `docker compose -f compose.prod.yaml up -d`
    (recreatne jen `web`). Ověřit, že Caddy dostal TLS certifikát (Let's Encrypt, automaticky) pro
    OBĚ domény — `https://kvalitacena.cz` i `https://api.kvalitacena.cz` musí být bez varování
    prohlížeče, včetně `https://api.kvalitacena.cz/actuator/health` → `{"status":"UP"}`.
+
+   Ověřeno 2026-08-28: `curl https://kvalitacena.cz/` → 200 bez `-k`, `curl https://api.
+   kvalitacena.cz/actuator/health` → `{"groups":[...],"status":"UP"}`, obojí přes platný
+   certifikát (žádné varování/chyba TLS z curlu).
 
    **Nikdy `docker compose -f compose.prod.yaml down -v`** — v `compose.prod.yaml` nejsou žádné
    externí volumes, smazalo by to certifikáty i celou produkční databázi naráz. Opakované mazání
@@ -154,7 +170,8 @@ Cena za jednoduchost: horší doručitelnost ze sdílené IP webhostingu a žád
 u dedikovaného poskytovatele. Přijatelné pro desítky osobně pozvaných testerů, ne pro veřejný
 provoz — výměna je naplánovaná do „Před Fází 3" níž.
 
-- [ ] Doplnit do `.env` na serveru:
+- [x] Doplnit do `.env` na serveru — ověřeno 2026-08-28, `SMTP_HOST=mail.gigaserver.cz` v `.env`
+  na serveru (zbylé hodnoty jsou přihlašovací údaje, nekontrolovaly se z bezpečnostních důvodů):
   ```
   SMTP_HOST=mail.gigaserver.cz
   SMTP_PORT=587
@@ -162,11 +179,13 @@ provoz — výměna je naplánovaná do „Před Fází 3" níž.
   SMTP_PASSWORD=<heslo schránky, viz sekce 1>
   SMTP_FROM=KvalitaACena <kontakt@kvalitacena.cz>
   ```
-- [ ] Doplnit `NOMINATIM_USER_AGENT` do `.env` s reálným kontaktem (`kontakt@kvalitacena.cz`) —
-  vyžaduje to usage policy OpenStreetMap Nominatim, jinak riziko zablokování IP serveru.
-- [ ] Restartovat appku (`docker compose -f compose.prod.yaml up -d`), ověřit doručení testovacím
+- [x] Doplnit `NOMINATIM_USER_AGENT` do `.env` s reálným kontaktem (`kontakt@kvalitacena.cz`) —
+  vyžaduje to usage policy OpenStreetMap Nominatim, jinak riziko zablokování IP serveru. Ověřeno
+  2026-08-28: `.env` má `NOMINATIM_USER_AGENT="KvalitaACena/0.1 (kontakt@kvalitacena.cz)"`.
+- [x] Restartovat appku (`docker compose -f compose.prod.yaml up -d`), ověřit doručení testovacím
   přihlášením na **externí** schránku (Gmail apod., ne `@kvalitacena.cz` — zbytečná komplikace
-  při DMARC/loop detekci), a že zpráva skončí v doručené poště, ne ve spamu.
+  při DMARC/loop detekci), a že zpráva skončí v doručené poště, ne ve spamu. Potvrzeno uživatelem
+  2026-08-28: OTP e-mail došel, neskončil ve spamu.
 
 **Past pro budoucí výměnu poskytovatele (Před Fází 3, ne teď):** nový `include:` se musí přidat
 do STÁVAJÍCÍHO SPF TXT záznamu, ne vložit jako druhý. Dva SPF záznamy na jednom jménu = trvalá
@@ -185,13 +204,15 @@ uvidí kdokoli další**, jinak testeři nedostanou kód a budou ho čekat marn�
 `frontend/public/robots.txt` (zákaz indexace) a `backend/.../application-beta.yml` (prahy
 důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
 
-- [ ] V `.env` na serveru nastavit `SPRING_PROFILES_ACTIVE=prod,beta` (viz `.env.example`) a
+- [x] V `.env` na serveru nastavit `SPRING_PROFILES_ACTIVE=prod,beta` (viz `.env.example`) a
   restartovat (`docker compose -f compose.prod.yaml up -d`) — profil `beta` se dá kdykoli
-  vypnout zpět na `prod` bez editace kódu.
-- [ ] **Přihlásit se poprvé** (vlastním externím e-mailem, JIT registrace při první OTP
+  vypnout zpět na `prod` bez editace kódu. Ověřeno 2026-08-28: `.env` na serveru má
+  `SPRING_PROFILES_ACTIVE=prod,beta`.
+- [x] **Přihlásit se poprvé** (vlastním externím e-mailem, JIT registrace při první OTP
   verifikaci) a **označit sebe (a případně dalšího důvěryhodného člověka) jako moderátora** —
   nástroj pro přezkum nahlášených záznamů (`docs/reputace.md`, „Moderace", T4) je hotový, ale
-  appka nemá UI na jmenování, jen ruční SQL na serveru. **Past:** `public_handle` v DB je
+  appka nemá UI na jmenování, jen ruční SQL na serveru. Potvrzeno uživatelem 2026-08-28.
+  **Past:** `public_handle` v DB je
   jazykově neutrální kanonický klíč (`blue-stork-4271`), zatímco appka v `/moderation` i profilu
   zobrazuje lokalizovanou podobu („Modrý čáp #4271") — opsaný handle z obrazovky do `UPDATE`
   zaktualizuje 0 řádků. Nejdřív zjistit skutečnou hodnotu:
@@ -202,13 +223,15 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   Odhlašovat se po `UPDATE` není potřeba — appka čte `is_moderator` z DB přes minutovou cache,
   stačí počkat a stránku obnovit. Bez aspoň jednoho moderátora nemá nahlášený obsah (fotky,
   zboží, obchody) kdo přezkoumat — udělat PŘED pozváním prvních lidí, ne až po prvním nahlášení.
-- [ ] **Založit pár obchodů a zboží ve svém okolí** — katalog se záměrně nepředvyplňuje (viz
+- [x] **Založit pár obchodů a zboží ve svém okolí** — katalog se záměrně nepředvyplňuje (viz
   níž), ale úplně prázdná appka prvního testera spolehlivě odradí. S profilem `beta` (prahy
-  0/0/1) jsou vlastní záznamy vidět hned, bez čekání na potvrzení.
-- [ ] **Vyřešit, jak testeři dostanou instalační APK** — appka zatím nemá kde ho nabídnout ke
+  0/0/1) jsou vlastní záznamy vidět hned, bez čekání na potvrzení. Potvrzeno uživatelem
+  2026-08-28.
+- [x] **Vyřešit, jak testeři dostanou instalační APK** — appka zatím nemá kde ho nabídnout ke
   stažení (stránka „O aplikaci" na webu žádný odkaz nemá, Caddy servíruje jen statický Angular
   build). Do doby, než je hotové vydání na Play (`docs/vydani.md`), poslat APK přílohou/přes
-  úložiště, nebo použít Play internal testing s opt-in odkazem, pokud už existuje.
+  úložiště, nebo použít Play internal testing s opt-in odkazem, pokud už existuje. Potvrzeno
+  uživatelem 2026-08-28.
 - **Číselník kategorií zboží byl bez seedu úplně prázdný** — objevilo se to při prvním ručním
   testu 2026-08-19: `CreateProductInput.categoryId` je v GraphQL schématu povinné (`ID!`) a
   žádná `createCategory` mutace neexistuje (kategorie je fixní číselník, ne uživatelský obsah
