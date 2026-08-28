@@ -147,6 +147,27 @@ data class Product(
   val myPrices: List<MyPrice> = emptyList(),
   // Jen v detailu — fotky zboží (core.media), první (nejnižší sortOrder) je hlavní.
   val photos: List<Photo> = emptyList(),
+  val catalogSource: String = "COMMUNITY",
+  val catalogAttribution: String? = null,
+  val externalImage: ExternalProductImage? = null,
+)
+
+@Serializable
+data class ExternalProductImage(val url: String, val thumbnailUrl: String, val attribution: String)
+
+@Serializable
+data class ExternalProductCandidate(
+  val code: String, val name: String? = null, val brandName: String? = null,
+  val category: Category? = null, val unitBase: String? = null,
+  val netContentValue: Double? = null, val netContentUom: String? = null,
+  val image: ExternalProductImage? = null, val sourceUrl: String = "", val attribution: String = "",
+)
+
+@Serializable
+data class ProductLookupResult(
+  val status: String,
+  val product: Product? = null,
+  val candidate: ExternalProductCandidate? = null,
 )
 
 /** "Vaše cena" — poslední vlastní zápis přihlášeného uživatele, i dřív než ho zpracuje agregace. */
@@ -634,6 +655,9 @@ data class MyEditResult(
 
 @Serializable
 data class ProductByCodeData(val productByCode: Product? = null)
+
+@Serializable
+data class ProductLookupByCodeData(val productLookupByCode: ProductLookupResult)
 
 @Serializable
 data class ProductData(val product: Product? = null)

@@ -48,6 +48,8 @@ private val PRICE_CURRENT_FIELDS = """
 
 private val PRODUCT_FIELDS = """
   id name
+  catalogSource catalogAttribution
+  externalImage { url thumbnailUrl attribution }
   brand { id name slug }
   category { id name slug path }
   unitBase netContentValue netContentBase piecesInPack isVariableWeight status isGeneric
@@ -112,6 +114,12 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     val query = "query(${'$'}code: String!) { productByCode(code: ${'$'}code) { $PRODUCT_FIELDS } }"
     val variables = buildJsonObject { put("code", code) }
     return execute(query, variables, GraphQlResponse.serializer(ProductByCodeData.serializer())).productByCode
+  }
+
+  suspend fun productLookupByCode(code: String): ProductLookupResult {
+    val query = "query(${'$'}code: String!) { productLookupByCode(code: ${'$'}code) { status product { $PRODUCT_FIELDS } candidate { code name brandName category { id name slug path } unitBase netContentValue netContentUom image { url thumbnailUrl attribution } sourceUrl attribution } } }"
+    val variables = buildJsonObject { put("code", code) }
+    return execute(query, variables, GraphQlResponse.serializer(ProductLookupByCodeData.serializer())).productLookupByCode
   }
 
   /** Plný detail produktu (karta produktu) — na rozdíl od productByCode tahá i stats/quality/externalLinks. */
