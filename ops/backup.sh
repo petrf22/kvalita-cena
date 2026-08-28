@@ -6,7 +6,11 @@
 # níže), ať jeden neúspěšný upload nezastaví ani lokální zálohu.
 #
 # Spouštět z cronu jako uživatel, který smí `docker compose` (typicky ten, co appku nasadil):
-#   0 3 * * * /home/<user>/kvalita-cena/ops/backup.sh >> /var/log/kvalitacena-backup.log 2>&1
+#   0 3 * * * /home/<user>/kvalita-cena/ops/backup.sh >> /var/backups/kvalitacena/backup.log 2>&1
+# Log NIKDY do /var/log/ — ten patří root:syslog, běžný uživatel do něj nemůže zapisovat
+# (ověřeno v produkci 2026-08-28: cron s přesměrováním do /var/log/kvalitacena-backup.log
+# 5 dní tiše selhával hned na `>>`, appka byla bez automatické zálohy). BACKUP_ROOT výš je
+# naopak vlastněný tímhle uživatelem, takže tam log zapsat jde.
 #
 # Před prvním nasazením do cronu OVĚŘIT OBNOVU na čistou instanci (docs/nasazeni.md) — záloha,
 # která se nikdy nezkusila obnovit, není záloha.

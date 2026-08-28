@@ -152,6 +152,16 @@ domény na server (krok 4) — build appky na serveru je nejpravděpodobnější
    `docker compose -f compose.prod.yaml up -d --force-recreate backend`, prosté `up -d`
    běžící kontejner na novou volume nepřepojí.
 
+   **Druhý reálný bug, objevený 2026-08-28:** cron měl přesměrování do `/var/log/
+   kvalitacena-backup.log`, ale `/var/log/` patří `root:syslog` — uživatel appky do něj nemůže
+   zapisovat, takže `>>` selhalo dřív, než se skript vůbec spustil. Appka tak byla od nasazení
+   cronu (2026-08-24) **5 dní bez jediné automatické zálohy**, aniž by o tom cron dal vědět (bez
+   lokálního MTA se jeho chybová pošta jen tiše ztratí). Odhaleno až při ručním stahování zálohy
+   na lokální disk — `/var/backups/kvalitacena` mělo poslední soubor z 23. 8. Opraveno změnou
+   cesty logu na `/var/backups/kvalitacena/backup.log` (do adresáře, kam skript sám zapisuje
+   zálohy, tam zapisovat může), příklad v `ops/README.md`/`ops/backup.sh` aktualizovaný. Ověřeno
+   ručním spuštěním po opravě — log se zapsal, záloha proběhla.
+
 ## 3. SMTP pro OTP e-maily — Gigaserver (rozhodnuto 2026-08-22)
 
 Rozhodnutí: použít rovnou schránku `kontakt@kvalitacena.cz` (sekce 1) jako SMTP účet, ne

@@ -30,8 +30,14 @@ Cron (na serveru, jako uživatel s právem na `docker compose`):
 
 ```bash
 crontab -e
-# 0 3 * * * /home/<user>/kvalita-cena/ops/backup.sh >> /var/log/kvalitacena-backup.log 2>&1
+# 0 3 * * * /home/<user>/kvalita-cena/ops/backup.sh >> /var/backups/kvalitacena/backup.log 2>&1
 ```
+
+**Log nikdy do `/var/log/`** — ten patří `root:syslog`, běžný uživatel do něj nemůže zapisovat.
+Přesměrování tam pak selže dřív, než se skript vůbec spustí, a cron to nijak nenahlásí (bez
+lokálního MTA se chybová pošta cronu jen tiše ztratí) — v produkci to takhle 5 dní běželo bez
+jediné automatické zálohy, než si toho někdo všiml (2026-08-28). Log místo toho patří do
+`BACKUP_ROOT` výš, kam skript sám zapisuje zálohy, takže tam zapisovat může i cron.
 
 ## Zkouška obnovy — udělat PŘED zapnutím cronu, ne až při skutečné nehodě
 

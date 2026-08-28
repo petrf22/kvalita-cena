@@ -68,3 +68,7 @@ Thumbs.db
 
 # Pojistka proti náhodnému commitu tajemství omylem uloženého do kořene repa (docs/nasazeni.md)
 mail.txt
+
+# Offline zálohy produkčního .env a dalších tajemství (docs/nasazeni.md) — nikdy do repa,
+# odsud se dál zálohuje na externí disk a NAS.
+/backup/
