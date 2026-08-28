@@ -226,3 +226,34 @@ u prahů v `docs/reputace.md`).
 Nákupní seznam je záměr konkrétního uživatele, ne veřejný fakt o ceně — patří mezi soukromá data
 uživatele (výchozí neveřejné), nikdy do veřejné vrstvy nad katalogem; při návrhu ověřit proti
 `docs/soukromi.md`.
+
+## Nápověda k polím při zadání nového zboží (fáze 2)
+
+**Zadání:** popsat, co konkrétně patřit do jednotlivých políček formuláře zadání nového zboží —
+dnešní labely samy o sobě nemusí stačit (např. co přesně je „gramáž/objem" u kusového zboží,
+jaký formát čeká pole s vnitroobchodním kódem). Jde o UI text (nápověda pod polem, placeholder
+nebo tooltip), ne o změnu datového modelu ani validace, ta už existuje (`product-form-
+validation.ts` na webu, `ProductFormViewModel.kt` na mobilu). Rozsah: formulář založení/editace
+zboží na obou klientech, případně i lokalizační soubory (`docs/lokalizace.md`), pokud nápověda
+půjde přes překladové klíče.
+
+## Kalkulačka a porovnání cen při zadání zboží (fáze 2)
+
+**Zadání:** při zadávání nebo prohlížení zboží doplnit pomocné přepočty, aby šlo cenu z regálu
+hned posoudit, ne až zpětně v grafu:
+
+- balení víc kusů za jednu cenu (např. 6 limonád za 89,90) → dopočítat cenu za kus,
+- cena za nestandardní gramáž (např. 125 g za 45,-) → dopočítat cenu za kg,
+- porovnání dvou balení stejného druhu zboží s různou gramáží (0,5 kg za 300,- vs. 250 g za
+  180,-) → která varianta je ve skutečnosti levnější,
+- ikona „porovnat" — zapamatovat si prohlížené zboží a porovnat ho s příště naskenovaným.
+
+Cena za jednotku hmotnosti/objemu se dnes už počítá jako `GENERATED ALWAYS` sloupec nad
+`net_content_base` (`docs/datovy-model.md`, „`core.price_observation` — jádro celé aplikace"),
+takže přepočet na kg/l při zadání jedné položky je hlavně o tom, zobrazit existující hodnotu
+živě ve formuláři, ne o nové datové struktuře. Přepočet na **kus** je jiná jednotka než gramáž/
+objem (počet kusů v balení dnes nikde v datovém modelu není) — otevřená otázka, jestli jde o
+nové pole na observaci, nebo čistě klientský přepočet bez uložení. Porovnání dvou zboží
+(existující vs. právě skenované) může jít čistě přes existující data (`agg.price_current` pro
+obě položky) bez nové perzistence — „zapamatované" zboží pro porovnání stačí držet v paměti
+klienta, dokud se appka nezavře.
