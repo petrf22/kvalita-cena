@@ -20,6 +20,9 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.2.1", date: "2026-08-28", sections: [
+
+  ] },
   { version: "0.2.0", date: "2026-08-27", sections: [
       { title: "Přidáno", items: [
         { text: "Nepovinná platnost akční ceny od–do — po vypršení zmizí z aktuálních cen, historie v grafu zůstává beze změny", parts: ["server", "web", "mobil"] },
