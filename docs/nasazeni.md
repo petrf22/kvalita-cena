@@ -63,10 +63,13 @@ před první pozvánkou.
   **Past:** Hetzner blokuje odchozí porty **25 a 465** na všech cloud serverech (proti zneužití
   pro spam); odblokování jde žádat podporou až po měsíci provozu a první zaplacené faktuře.
   Port **587** blokovaný není — proto SMTP níž běží přes něj, ne přes 465 z údajů schránky.
-- [ ] **Vybrat cíl pro offsite zálohu** (jiný poskytovatel než Hetzner výš, ať jeden výpadek
-  nevezme obojí) — B2/S3-kompatibilní úložiště s levným cold storage stačí, appka zálohuje jen
-  `pg_dump` + adresář `app.media.root`. Hetzner má vlastní Storage Box, ale pro skutečnou
-  redundanci je lepší jiný poskytovatel (např. Backblaze B2) — nerozhodnuto.
+- [x] **Vybrat cíl pro offsite zálohu** (jiný poskytovatel než Hetzner výš, ať jeden výpadek
+  nevezme obojí) — **rozhodnuto 2026-08-29**: místo placeného cloudu (B2/S3) putují zálohy na
+  lokální PC uživatele (`ops/pull-backup.sh`, lokální cron denně ve 21:00 — viz `ops/README.md`)
+  a odtud uživatel ručně kopíruje na externí disk a domácí NAS. Jiný fyzický nosič i lokace než
+  Hetzner, splňuje účel (jeden výpadek nevezme zálohu s appkou) bez měsíčního poplatku navíc —
+  přijatelné pro projekt bez rozpočtu, `ops/backup.sh` na serveru drží zálohy jen 14 dní
+  (`RETENTION_DAYS`), takže tahle cesta musí běžet průběžně, ne jednorázově.
 
 ## 2. Po výběru VPS
 
