@@ -49,8 +49,11 @@ Cron na LOKÁLNÍM stroji (ne na serveru):
 
 ```bash
 crontab -e
-# 0 7 * * * SSH_AUTH_SOCK=/run/user/1000/keyring/ssh /home/<user>/kvalita-cena/ops/pull-backup.sh >> /home/<user>/kvalita-cena/backup/pull.log 2>&1
+# 0 21 * * * SSH_AUTH_SOCK=/run/user/1000/keyring/ssh /home/<user>/kvalita-cena/ops/pull-backup.sh >> /home/<user>/kvalita-cena/backup/pull.log 2>&1
 ```
+
+Čas voleno večer, ne ráno po serverové záloze (3:00 UTC) — u desktopu je běžnější, že bývá
+zapnutý večer, ne brzy ráno.
 
 `SSH_AUTH_SOCK` je potřeba, pokud je klíč k serveru chráněný heslem a odemčený jen v ssh-agentu
 desktopové session (GNOME/KDE keyring) — cron by ho jinak nezdědil a `rsync` by tiše selhal na
