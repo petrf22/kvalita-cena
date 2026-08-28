@@ -20,6 +20,20 @@
       [photos]="product()!.photos ?? []"
     />
 
+    @if (product()!.catalogAttribution) {
+      <!-- Atribuce zdroje/licence MUSÍ být vidět — ODbL (docs/datovy-model.md). -->
+      <p class="catalog-attribution">
+        @if (product()!.externalImage && (product()!.photos ?? []).length === 0) {
+          <img
+            [src]="product()!.externalImage!.thumbnailUrl"
+            [alt]="product()!.name"
+            class="catalog-external-image"
+          />
+        }
+        <span>{{ product()!.catalogAttribution }}</span>
+      </p>
+    }
+
     <p class="product-meta">
       @if (product()!.brand) {
         {{ product()!.brand!.name }} ·

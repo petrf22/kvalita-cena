@@ -9,6 +9,7 @@
  */
 import type {
   CompanyByIcoQuery,
+  CreateProductFromOffInput,
   CreateProductInput,
   CreateStoreInput,
   FeedbackItemsQuery,
@@ -25,6 +26,7 @@ import type {
   PriceCurrentFieldsFragment,
   PriceHistoryQuery,
   ProductDetailFieldsFragment,
+  ProductLookupByCodeQuery,
   ProductSummaryFieldsFragment,
   PublicationStatusFieldsFragment,
   ReverseGeocodeQuery,
@@ -57,6 +59,7 @@ export {
 } from './generated/enums';
 
 export type {
+  CreateProductFromOffInput,
   CreateProductInput,
   CreateStoreInput,
   SubmitObservationsInput,
@@ -95,6 +98,17 @@ export type ProductStats = ProductDetailFieldsFragment['stats'];
 export type ProductQuality = ProductDetailFieldsFragment['quality'];
 
 export type ExternalLink = ProductDetailFieldsFragment['externalLinks'][number];
+
+/**
+ * Kandidát ze skenu/zadání EANu, který v katalogu ještě není, ale zná ho Open Food Facts
+ * (`productLookupByCode`, status `OFF_CANDIDATE`) — client-preset generuje jen inline tvary
+ * dotazů, ne pojmenované typy schématu, proto je alias tady, stejně jako `GeocodeCandidate` níž.
+ */
+export type ExternalProductCandidate = NonNullable<
+  ProductLookupByCodeQuery['productLookupByCode']['candidate']
+>;
+
+export type ProductLookupResult = ProductLookupByCodeQuery['productLookupByCode'];
 
 /** Řádek seznamu hledání — agregáty spočítané spolu s hledáním, respektují filtr obchod/město. */
 export type ProductSearchItem = SearchItemFieldsFragment;

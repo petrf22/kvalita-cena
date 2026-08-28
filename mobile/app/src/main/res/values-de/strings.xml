@@ -278,6 +278,7 @@
     <string name="product_promo_valid_until">gültig bis %1$s</string>
 
     <string name="price_entry_code_unknown">Den Code %1$s kennen wir im Katalog noch nicht.</string>
+    <string name="price_entry_off_unavailable">Der Open-Food-Facts-Katalog ist gerade nicht erreichbar — trag die Angaben manuell ein.</string>
     <string name="price_entry_create_product">Ware anlegen</string>
     <string name="price_entry_create_product_requires_login">Das Anlegen einer neuen Ware erfordert eine Anmeldung — wechsle zum Tab Konto.</string>
     <string name="price_entry_current_prices">Aktuelle Preise nach Geschäften</string>
@@ -302,6 +303,7 @@
     <string name="price_entry_location_unavailable">Der Standort konnte nicht ermittelt werden — wähle ein Geschäft, sobald Daten verfügbar sind.</string>
 
     <string name="product_form_title">Neue Ware</string>
+    <string name="product_form_off_banner_title">Aus Open Food Facts geladen — prüfe und passe bei Bedarf an. Tippen zeigt die Quelle.</string>
     <string name="product_form_name_label">Name der Ware</string>
     <string name="product_form_generic_tag">generische Position</string>
     <string name="product_form_suggestions_hint">Ist es nicht schon eine dieser Positionen? Tippe darauf, um sie direkt zu verwenden.</string>

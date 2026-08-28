@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -25,12 +27,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import coil3.compose.AsyncImage
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.network.ExternalLink
@@ -91,6 +96,22 @@ fun ProductDetailScreen(
           )
         }
         Gap()
+
+        // Atribuce zdroje/licence MUSÍ být vidět — ODbL (docs/datovy-model.md).
+        product.catalogAttribution?.let { attribution ->
+          Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (product.externalImage != null && product.photos.isEmpty()) {
+              AsyncImage(
+                model = product.externalImage.thumbnailUrl,
+                contentDescription = product.name,
+                modifier = Modifier.size(32.dp).clip(RoundedCornerShape(4.dp)),
+                contentScale = ContentScale.Crop,
+              )
+            }
+            Text(attribution, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+          }
+          Gap()
+        }
 
         val subtitle = listOfNotNull(product.brand?.name, product.category.name).joinToString(" · ")
         if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodyMedium)

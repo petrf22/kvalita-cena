@@ -10,6 +10,8 @@
   "massLabel": "Hmotnosť balenia (kg)",
   "volumeLabel": "Objem balenia (l)",
   "piecesInPackLabel": "Kusov v balení (voliteľné)",
+  "offBannerTitle": "Načítané z Open Food Facts — skontroluj a uprav podľa potreby.",
+  "offSourceLink": "Zobraziť zdroj",
   "codeLabel": "Čiarový kód (voliteľné)",
   "codeHint": "Bez kódu vznikne druhová položka (napr. „pečivo za {{example}}“ z účtenky) — s nižšou dôveryhodnosťou dát, ale zapísať sa dá aj tak.",
   "submit": "Založiť tovar"

@@ -73,11 +73,18 @@ načtení celé účtenky, nákup podle receptu nebo seznamu.
 - `updateProduct` (mutace + `ProductService.updateProduct` na webu + `GraphQlClient
   .updateProduct` na mobilu) je hotová a otestovaná, ale **žádná obrazovka ji nevolá** — u
   obchodu (`updateStore`) je inline editace v UI už hotová, u zboží zatím ne.
-- Stejně tak sken → OFF katalog: `productLookupByCode`/`createProductFromOff` a
-  `Product.externalImage`/`catalogAttribution` jsou hotové a otestované (backend i klientský
-  `product-service.ts`/`Dto.kt`), ale **žádná obrazovka je zatím nevolá** — sken pořád vede jen
-  na `productByCode` a ruční `createProduct`, atribuce OFF (ODbL) se v UI nezobrazuje
-  (`docs/stav-implementace.md`, „Open Food Facts").
+- Sken/zadání EANu, který v katalogu není, ale zná ho Open Food Facts, se ukládá VÝHRADNĚ přes
+  `createProductFromOff`, nikdy přes `createProduct` — jinak by OFF hodnoty skončily zkopírované
+  do `core.product`, což ODbL share-alike zakazuje (`docs/datovy-model.md`, „Oddělení schémat
+  kvůli ODbL"). `OffProductCatalogService.create()` je nechává v `core.product` `NULL`; spojení
+  vzniká až čtením v `ProductOverlayService`.
+- `ExternalProductCandidate.netContentValue` chodí v jednotce z OFF (typicky `G`/`ML`,
+  `OffNetContentConverter`), formulář vždy v kg/l — klient MUSÍ gramáž pro zobrazení převést a
+  při submitu poslat `netContentValue`/`netContentUom` vždy jako dvojici (buď obojí `null`, ať
+  hodnotu dál dodává OFF, nebo obojí z formuláře). Poslání převedené hodnoty s jinou jednotkou,
+  než jakou má uložený OFF snapshot, by `CatalogEditService.updateProduct` spočítalo jako úplně
+  jiné číslo (250 g vs. 0,25 kg → 250× větší patch) — viz `netContentForOffSubmit`
+  v `product-form-validation.ts` / `ProductFormViewModel.kt`.
 - Klientský překlad chyb podle `code` na mobilu chybí — appka ukáže `serverMessage`, protože
   `network/Dto.kt` negeneruje typy ze schématu jako web (`docs/lokalizace.md`, „Co zbývá").
 - Geometrie ikon (favicon, PWA manifest, Android launcher) žije v `tools/icons/generate.py`,

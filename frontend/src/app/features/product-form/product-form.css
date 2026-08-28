@@ -28,3 +28,21 @@
   gap: 8px;
   margin-top: 8px;
 }
+
+.off-candidate {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.off-candidate-image {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.off-candidate-source p {
+  margin: 0;
+}

@@ -61,6 +61,8 @@ export class PriceEntryPage {
   protected readonly searchError = signal<string | null>(null);
   protected readonly results = signal<ProductSearchItem[]>([]);
   protected readonly codeNotFound = signal(false);
+  /** OFF katalog je teď nedostupný (výpadek/rate limit) — jiná hláška než "nemáme ho" pod codeNotFound. */
+  protected readonly offUnavailable = signal(false);
 
   protected readonly showProductForm = signal(false);
   protected readonly selectedProduct = signal<Product | null>(null);
@@ -91,12 +93,19 @@ export class PriceEntryPage {
     this.searching.set(true);
     this.searchError.set(null);
     this.codeNotFound.set(false);
+    this.offUnavailable.set(false);
     this.results.set([]);
-    this.productService.getByCode(code).subscribe({
-      next: (product) => {
+    this.productService.lookupByCode(code).subscribe({
+      next: (result) => {
         this.searching.set(false);
-        if (product) this.selectedProduct.set(product);
-        else this.codeNotFound.set(true);
+        if (result.status === 'EXISTING' && result.product) {
+          this.selectedProduct.set(result.product);
+          return;
+        }
+        // NOT_FOUND i OFF_CANDIDATE vedou na stejné tlačítko "Založit nové" — product-form si
+        // OFF kandidáta dotáhne (a předvyplní) sám ze stejné cache, druhé volání je zdarma.
+        this.codeNotFound.set(true);
+        if (result.status === 'OFF_UNAVAILABLE') this.offUnavailable.set(true);
       },
       error: () => {
         this.searching.set(false);
@@ -123,6 +132,7 @@ export class PriceEntryPage {
   onProductCreated(product: Product): void {
     this.showProductForm.set(false);
     this.codeNotFound.set(false);
+    this.offUnavailable.set(false);
     this.selectedProduct.set(product);
   }
 
@@ -130,6 +140,7 @@ export class PriceEntryPage {
     this.selectedProduct.set(null);
     this.results.set([]);
     this.codeNotFound.set(false);
+    this.offUnavailable.set(false);
   }
 
   /** Obnoví agregované ceny na vybraném produktu po úspěšném zápisu (`app-price-entry-form`). */

@@ -276,6 +276,7 @@
     <string name="product_promo_valid_until">platí do %1$s</string>
 
     <string name="price_entry_code_unknown">Kód %1$s zatiaľ v katalógu nepoznáme.</string>
+    <string name="price_entry_off_unavailable">Katalóg Open Food Facts je teraz nedostupný — údaje o tovare vyplň ručne.</string>
     <string name="price_entry_create_product">Založiť tovar</string>
     <string name="price_entry_create_product_requires_login">Založenie nového tovaru vyžaduje prihlásenie — prejdi do záložky Účet.</string>
     <string name="price_entry_current_prices">Aktuálne ceny po obchodoch</string>
@@ -300,6 +301,7 @@
     <string name="price_entry_location_unavailable">Polohu sa nepodarilo zistiť — vyber obchod, keď budú dáta.</string>
 
     <string name="product_form_title">Nový tovar</string>
+    <string name="product_form_off_banner_title">Načítané z Open Food Facts — skontroluj a uprav podľa potreby. Klepnutím zobrazíš zdroj.</string>
     <string name="product_form_name_label">Názov tovaru</string>
     <string name="product_form_generic_tag">druhová položka</string>
     <string name="product_form_suggestions_hint">Nie je to už niektorá z týchto položiek? Klepnutím ju rovno použiješ.</string>

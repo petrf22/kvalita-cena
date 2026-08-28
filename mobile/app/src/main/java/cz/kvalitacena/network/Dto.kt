@@ -472,6 +472,25 @@ data class CreateProductInput(
   val code: String? = null,
 )
 
+/**
+ * Založení identity nad potvrzeným OFF kandidátem (`ProductLookupResult.status == OFF_CANDIDATE`)
+ * — na rozdíl od CreateProductInput jsou name/categoryId/unitBase nepovinné (OFF je může dodat
+ * sám); `null` znamená "dál dodává OFF", appka ho posílá jen pro pole, která uživatel skutečně
+ * změnil (`ui/product/ProductFormViewModel.kt`, zrcadlo webu).
+ */
+@Serializable
+data class CreateProductFromOffInput(
+  val code: String,
+  val name: String? = null,
+  val brandName: String? = null,
+  val categoryId: String? = null,
+  val unitBase: String? = null,
+  val netContentValue: Double? = null,
+  val netContentUom: String? = null,
+  val piecesInPack: Int? = null,
+  val isVariableWeight: Boolean = false,
+)
+
 /** Patch nad core.product_user_edit — pole null = nezměněno (docs/datovy-model.md). */
 @Serializable
 data class UpdateProductInput(
@@ -709,6 +728,9 @@ data class CreateStoreData(val createStore: Store)
 
 @Serializable
 data class CreateProductData(val createProduct: Product)
+
+@Serializable
+data class CreateProductFromOffData(val createProductFromOff: Product)
 
 @Serializable
 data class UpdateProductData(val updateProduct: Product)

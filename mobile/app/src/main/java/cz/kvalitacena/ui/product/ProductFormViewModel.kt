@@ -6,12 +6,15 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.kvalitacena.network.Category
+import cz.kvalitacena.network.CreateProductFromOffInput
 import cz.kvalitacena.network.CreateProductInput
+import cz.kvalitacena.network.ExternalProductCandidate
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.ProductSummary
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.categoryBreadcrumb
+import cz.kvalitacena.ui.common.normalizeCode
 import cz.kvalitacena.ui.common.toUiText
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -79,14 +82,79 @@ class ProductFormViewModel(
   var usingExisting by mutableStateOf(false)
     private set
 
+  /** Nabídnutý OFF kandidát pro banner nad formulářem — null, dokud appka nic nenašla/nehledala. */
+  var offCandidate by mutableStateOf<ExternalProductCandidate?>(null)
+    private set
+  /** Snímek předvyplněných hodnot (gramáž převedená na kg/l) — jen appka sama, ne pro UI. */
+  private var offDefaults: OffDefaults? = null
+  /** OFF kandidát dorazil dřív než číselník kategorií — kategorie se dopočítá, až categories() doběhne. */
+  private var pendingCategoryId: String? = null
+
   init {
     viewModelScope.launch {
       try {
         categories = graphQlClient.categories()
+        pendingCategoryId?.let { id -> categories.find { it.id == id }?.let(::onCategorySelected) }
       } catch (e: Exception) {
         // Formulář jde vyplnit, i když se číselník kategorií nenačetl — jen se pak nedá
         // uložit (kategorie je povinná), chyba se ukáže při pokusu o odeslání.
       }
+    }
+    // Naskenovaný/zadaný kód, který se v katalogu nenašel — zkusí, jestli ho nezná Open Food
+    // Facts (productLookupByCode, cache v GraphQlClient — druhé volání po PriceEntryViewModel
+    // je zdarma). Výpadek/nedostupnost OFF je tichý no-op, formulář zůstane prázdný a ručně
+    // vyplnitelný.
+    if (barcode != null) {
+      viewModelScope.launch {
+        try {
+          val result = graphQlClient.productLookupByCode(barcode)
+          if (result.status == "OFF_CANDIDATE" && result.candidate != null) {
+            applyOffCandidate(result.candidate)
+          }
+        } catch (e: Exception) {
+          // Tichý no-op — viz komentář výš.
+        }
+      }
+    }
+  }
+
+  private data class OffDefaults(
+    val name: String?,
+    val brandName: String?,
+    val categoryId: String?,
+    val unitBase: String?,
+    val netContentValue: Double?,
+  )
+
+  /** Gramáž/objem OFF nese v G/ML (OffNetContentConverter na backendu), appka vždy v kg/l. */
+  private fun offDefaultsFrom(candidate: ExternalProductCandidate): OffDefaults {
+    val netContentValue = when (candidate.netContentUom) {
+      "G", "ML" -> candidate.netContentValue?.div(1000)
+      "KG", "L" -> candidate.netContentValue
+      else -> null
+    }
+    return OffDefaults(
+      name = candidate.name,
+      brandName = candidate.brandName,
+      categoryId = candidate.category?.id,
+      unitBase = candidate.unitBase,
+      netContentValue = netContentValue,
+    )
+  }
+
+  /** Předvyplní formulář z OFF kandidáta — nepřepisuje pole, která kandidát nemá (necháme
+   *  prázdné pro ruční vyplnění). Snímek pro submit() si uloží stranou do offDefaults. */
+  private fun applyOffCandidate(candidate: ExternalProductCandidate) {
+    offCandidate = candidate
+    val defaults = offDefaultsFrom(candidate)
+    offDefaults = defaults
+    defaults.name?.let { name = it }
+    defaults.brandName?.let { brandName = it }
+    defaults.unitBase?.let { unitBase = it }
+    defaults.netContentValue?.let { netContentValue = it.toString() }
+    defaults.categoryId?.let { id ->
+      val category = categories.find { it.id == id }
+      if (category != null) onCategorySelected(category) else pendingCategoryId = id
     }
   }
 
@@ -135,24 +203,82 @@ class ProductFormViewModel(
     saveError = null
     viewModelScope.launch {
       try {
-        val input = CreateProductInput(
-          name = name.trim(),
-          brandName = brandName.trim().ifBlank { null },
-          categoryId = categoryId,
-          unitBase = unitBase,
-          netContentValue = netContentValue.replace(',', '.').toDoubleOrNull(),
-          netContentUom = impliedUom(),
-          piecesInPack = piecesInPack.toIntOrNull(),
-          isVariableWeight = isVariableWeight,
-          code = code.trim().ifBlank { null },
-        )
-        created = graphQlClient.createProduct(input)
+        val candidate = offCandidate
+        val defaults = offDefaults
+        // Kód se od nabídky kandidáta pořád musí shodovat — jinak uživatel kód smazal/přepsal
+        // (bezkódová položka, jiné zboží) a appka musí uložit přes createProduct, ne
+        // createProductFromOff (OFF hodnoty se nesmí zapsat do core.product jako vlastní).
+        created = if (candidate != null && defaults != null && codeMatchesOffCandidate(code, candidate.code)) {
+          graphQlClient.createProductFromOff(buildOffInput(candidate, defaults, categoryId))
+        } else {
+          graphQlClient.createProduct(
+            CreateProductInput(
+              name = name.trim(),
+              brandName = brandName.trim().ifBlank { null },
+              categoryId = categoryId,
+              unitBase = unitBase,
+              netContentValue = netContentValue.replace(',', '.').toDoubleOrNull(),
+              netContentUom = impliedUom(),
+              piecesInPack = piecesInPack.toIntOrNull(),
+              isVariableWeight = isVariableWeight,
+              code = code.trim().ifBlank { null },
+            ),
+          )
+        }
       } catch (e: Exception) {
         saveError = e.toUiText()
       } finally {
         saving = false
       }
     }
+  }
+
+  /**
+   * Založení nad potvrzeným OFF kandidátem — pole, která uživatel nezměnil oproti offDefaults,
+   * se posílají jako null, ať je dál dodává OFF a nevznikne zbytečný core.product_user_edit
+   * patch. Gramáž/objem se posílá vždy spolu s jednotkou (viz netContentForOffSubmit).
+   */
+  private fun buildOffInput(
+    candidate: ExternalProductCandidate,
+    defaults: OffDefaults,
+    categoryId: String,
+  ): CreateProductFromOffInput {
+    val trimmedName = name.trim()
+    val trimmedBrand = brandName.trim().ifBlank { null }
+    val currentNetContentValue = if (isVariableWeight) null else netContentValue.replace(',', '.').toDoubleOrNull()
+    val (offNetContentValue, offNetContentUom) = netContentForOffSubmit(currentNetContentValue, defaults.netContentValue)
+    return CreateProductFromOffInput(
+      code = candidate.code,
+      name = if (trimmedName == defaults.name) null else trimmedName,
+      brandName = if (trimmedBrand == defaults.brandName) null else trimmedBrand,
+      categoryId = if (categoryId == defaults.categoryId) null else categoryId,
+      unitBase = unitBase,
+      netContentValue = offNetContentValue,
+      netContentUom = offNetContentUom,
+      piecesInPack = piecesInPack.toIntOrNull(),
+      isVariableWeight = isVariableWeight,
+    )
+  }
+
+  /**
+   * Gramáž/objem pro CreateProductFromOffInput — hodnota a jednotka se MUSÍ posílat vždy jako
+   * dvojice, nikdy jen jedna z nich: server by jinak spočítal netContentBase ze staré OFF
+   * hodnoty spárované s novou jednotkou z formuláře (u gramů vs. kg 1000× větší číslo). Shoda
+   * s převedeným OFF defaultem (nebo nic nezadáno) → obojí null, ať hodnotu dál dodává OFF;
+   * jinak (uživatel opravil, nebo OFF žádnou gramáž nedal) obojí z formuláře.
+   */
+  private fun netContentForOffSubmit(currentValue: Double?, defaultValue: Double?): Pair<Double?, String?> {
+    val changed = currentValue != null &&
+      (defaultValue == null || kotlin.math.abs(currentValue - defaultValue) >= 1e-9)
+    return if (!changed) null to null else currentValue to impliedUom()
+  }
+
+  /** Naskenovaný/zadaný kód pořád patří k nabídnutému OFF kandidátovi — jinak uživatel kód
+   *  smazal nebo přepsal (bezkódová položka, jiné zboží) a appka musí uložit přes createProduct,
+   *  ne createProductFromOff. */
+  private fun codeMatchesOffCandidate(code: String, candidateCode: String): Boolean {
+    val normalized = normalizeCode(code)
+    return normalized.isNotEmpty() && normalized == normalizeCode(candidateCode)
   }
 
   /** Server dopočítá netContentBase ze základní jednotky, appka jen pošle odpovídající UOM. */

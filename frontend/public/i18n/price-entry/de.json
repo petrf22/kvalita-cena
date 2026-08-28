@@ -6,6 +6,7 @@
   "codePlaceholder": "Strichcode",
   "search": "Suchen",
   "codeNotFound": "Diesen Code kennen wir im Katalog noch nicht.",
+  "offUnavailable": "Der Open-Food-Facts-Katalog ist gerade nicht erreichbar — trag die Angaben manuell ein.",
   "addNewHint": "Ware nicht gefunden?",
   "addNewButton": "Neu anlegen",
   "addNewRequiresLogin": "Ware nicht gefunden? Das Anlegen einer neuen Ware erfordert eine Anmeldung — wechsle zur Seite Konto.",

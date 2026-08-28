@@ -276,6 +276,7 @@
     <string name="product_promo_valid_until">valid until %1$s</string>
 
     <string name="price_entry_code_unknown">We don\'t yet know the code %1$s in the catalog.</string>
+    <string name="price_entry_off_unavailable">The Open Food Facts catalog is unavailable right now — fill in the details manually.</string>
     <string name="price_entry_create_product">Create product</string>
     <string name="price_entry_create_product_requires_login">Creating a new product requires signing in — go to the Account tab.</string>
     <string name="price_entry_current_prices">Current prices by store</string>
@@ -300,6 +301,7 @@
     <string name="price_entry_location_unavailable">We couldn\'t determine your location — pick a store once data is available.</string>
 
     <string name="product_form_title">New product</string>
+    <string name="product_form_off_banner_title">Loaded from Open Food Facts — check and adjust as needed. Tap to view the source.</string>
     <string name="product_form_name_label">Product name</string>
     <string name="product_form_generic_tag">generic item</string>
     <string name="product_form_suggestions_hint">Isn\'t it one of these existing items? Tap to use it directly.</string>

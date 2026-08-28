@@ -10,6 +10,8 @@
   "massLabel": "Waga opakowania (kg)",
   "volumeLabel": "Objętość opakowania (l)",
   "piecesInPackLabel": "Sztuk w opakowaniu (opcjonalnie)",
+  "offBannerTitle": "Wczytano z Open Food Facts — sprawdź i popraw, jeśli trzeba.",
+  "offSourceLink": "Zobacz źródło",
   "codeLabel": "Kod kreskowy (opcjonalnie)",
   "codeHint": "Bez kodu powstanie pozycja rodzajowa (np. „pieczywo za {{example}}” z paragonu) — z niższą wiarygodnością danych, ale zapisać i tak można.",
   "submit": "Dodaj produkt"

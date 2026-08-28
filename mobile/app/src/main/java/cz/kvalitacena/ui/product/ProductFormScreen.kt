@@ -1,5 +1,6 @@
 package cz.kvalitacena.ui.product
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -23,19 +25,24 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import coil3.compose.AsyncImage
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.SearchableDropdown
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.categoryChoicesFor
+import cz.kvalitacena.ui.common.openUrl
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 
 private val UNIT_BASE_LABEL_RES = mapOf(
@@ -65,6 +72,36 @@ fun ProductFormScreen(barcode: String?, onDone: () -> Unit) {
   Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
     Text(stringResource(R.string.product_form_title), style = MaterialTheme.typography.headlineSmall)
     Gap()
+
+    // ODbL vyžaduje, aby appka u převzatých dat vždy uvedla zdroj (docs/datovy-model.md) —
+    // celá karta je klikací na candidate.sourceUrl, stejný vzor jako ExternalLinkRow v detailu.
+    viewModel.offCandidate?.let { candidate ->
+      val context = LocalContext.current
+      OutlinedButton(
+        onClick = { openUrl(context, candidate.sourceUrl) },
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+      ) {
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          modifier = Modifier.fillMaxWidth(),
+        ) {
+          candidate.image?.let { image ->
+            AsyncImage(
+              model = image.thumbnailUrl,
+              contentDescription = candidate.name,
+              modifier = Modifier.size(40.dp).clip(RoundedCornerShape(4.dp)),
+              contentScale = ContentScale.Crop,
+            )
+          }
+          Column {
+            Text(stringResource(R.string.product_form_off_banner_title), style = MaterialTheme.typography.bodyMedium)
+            Text(candidate.attribution, style = MaterialTheme.typography.bodySmall)
+          }
+        }
+      }
+      Gap()
+    }
 
     val genericTag = stringResource(R.string.product_form_generic_tag)
     SearchableDropdown(

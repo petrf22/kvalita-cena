@@ -35,6 +35,9 @@ class PriceEntryViewModel(
     private set
   var notFound by mutableStateOf(false)
     private set
+  /** OFF katalog je teď nedostupný (výpadek/rate limit) — jiná hláška než "neznáme ho" pod notFound. */
+  var offUnavailable by mutableStateOf(false)
+    private set
 
   // Sekce "Zadat cenu" je schovaná za tlačítkem, dokud si uživatel jednou úspěšně nezapíše
   // cenu (viz PriceEntryVisibilityStore) — appka tak slouží stejně dobře lidem, co jen hledají
@@ -108,12 +111,30 @@ class PriceEntryViewModel(
     loading = true
     viewModelScope.launch {
       try {
-        val found = when (target) {
-          is PriceEntryTarget.ByBarcode -> graphQlClient.productByCode(target.barcode)
-          is PriceEntryTarget.ById -> graphQlClient.productById(target.productId)
+        when (target) {
+          is PriceEntryTarget.ByBarcode -> {
+            // productByCode (jen vlastní katalog) nahrazeno productLookupByCode, ať appka
+            // zkusí i Open Food Facts — ProductFormScreen si OFF kandidáta při "Založit zboží"
+            // dotáhne znovu ze stejné cache (GraphQlClient.productLookupByCode), druhé volání
+            // je zdarma.
+            val result = graphQlClient.productLookupByCode(target.barcode)
+            when (result.status) {
+              "EXISTING" -> {
+                product = result.product
+                notFound = result.product == null
+              }
+              "OFF_UNAVAILABLE" -> {
+                notFound = true
+                offUnavailable = true
+              }
+              else -> notFound = true // NOT_FOUND i OFF_CANDIDATE
+            }
+          }
+          is PriceEntryTarget.ById -> {
+            product = graphQlClient.productById(target.productId)
+            notFound = product == null
+          }
         }
-        product = found
-        notFound = found == null
       } catch (e: Exception) {
         notFound = true
       } finally {

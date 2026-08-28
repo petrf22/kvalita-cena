@@ -1,4 +1,32 @@
 <ng-container *transloco="let t; scope: 'product-form'">
+  @if (offCandidate(); as candidate) {
+    <!-- ODbL vyžaduje, aby appka u převzatých dat vždy uvedla zdroj (docs/datovy-model.md). -->
+    <nz-alert
+      nzType="info"
+      [nzMessage]="t('product-form.offBannerTitle')"
+      [nzDescription]="offCandidateTemplate"
+      nzShowIcon
+      class="form-alert"
+    />
+    <ng-template #offCandidateTemplate>
+      <div class="off-candidate">
+        @if (candidate.image) {
+          <img
+            [src]="candidate.image.thumbnailUrl"
+            [alt]="candidate.name ?? ''"
+            class="off-candidate-image"
+          />
+        }
+        <div class="off-candidate-source">
+          <p>{{ candidate.attribution }}</p>
+          <a [href]="candidate.sourceUrl" target="_blank" rel="noopener">{{
+            t('product-form.offSourceLink')
+          }}</a>
+        </div>
+      </div>
+    </ng-template>
+  }
+
   <form nz-form nzLayout="vertical" (ngSubmit)="submit()">
     <nz-form-item>
       <nz-form-label>{{ t('product-form.nameLabel') }}</nz-form-label>

@@ -1,6 +1,8 @@
 package cz.kvalitacena.network
 
 import cz.kvalitacena.auth.AuthRepository
+import cz.kvalitacena.ui.common.normalizeCode
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
@@ -116,10 +118,29 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     return execute(query, variables, GraphQlResponse.serializer(ProductByCodeData.serializer())).productByCode
   }
 
+  /**
+   * Session cache nad [productLookupByCode] — klíč je normalizovaný kód ([normalizeCode]), ať
+   * appka na stejný kód (sken i formulář nového zboží se ptají nezávisle) nejde na server
+   * dvakrát. `OFF_UNAVAILABLE` (přechodný výpadek/rate limit) appka necachuje, ať další pokus
+   * zkusí server znovu; evikce po založení zboží ([invalidateLookup]), jinak by další sken
+   * stejného kódu ukázal zastaralý `OFF_CANDIDATE` místo `EXISTING`. Backend má vlastní DB cache
+   * (7 dní), tahle šetří jen requesty klienta. Zrcadlo webu (`product-service.ts`).
+   */
+  private val lookupCache = ConcurrentHashMap<String, ProductLookupResult>()
+
   suspend fun productLookupByCode(code: String): ProductLookupResult {
+    val key = normalizeCode(code)
+    lookupCache[key]?.let { return it }
     val query = "query(${'$'}code: String!) { productLookupByCode(code: ${'$'}code) { status product { $PRODUCT_FIELDS } candidate { code name brandName category { id name slug path } unitBase netContentValue netContentUom image { url thumbnailUrl attribution } sourceUrl attribution } } }"
     val variables = buildJsonObject { put("code", code) }
-    return execute(query, variables, GraphQlResponse.serializer(ProductLookupByCodeData.serializer())).productLookupByCode
+    val result = execute(query, variables, GraphQlResponse.serializer(ProductLookupByCodeData.serializer())).productLookupByCode
+    if (result.status != "OFF_UNAVAILABLE") lookupCache[key] = result
+    return result
+  }
+
+  private fun invalidateLookup(code: String?) {
+    if (code.isNullOrBlank()) return
+    lookupCache.remove(normalizeCode(code))
   }
 
   /** Plný detail produktu (karta produktu) — na rozdíl od productByCode tahá i stats/quality/externalLinks. */
@@ -460,7 +481,30 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     val variables = buildJsonObject {
       put("input", json.encodeToJsonElement(CreateProductInput.serializer(), input))
     }
-    return execute(gql, variables, GraphQlResponse.serializer(CreateProductData.serializer())).createProduct
+    val product = execute(gql, variables, GraphQlResponse.serializer(CreateProductData.serializer())).createProduct
+    invalidateLookup(input.code)
+    return product
+  }
+
+  /**
+   * Založení identity zboží nad potvrzeným OFF kandidátem (`productLookupByCode`, status
+   * `OFF_CANDIDATE`) — na rozdíl od [createProduct] OFF hodnoty nekopíruje do `core.product`,
+   * jen je potvrzuje/patchuje (`OffProductCatalogService` na backendu). Vyžaduje přihlášení.
+   */
+  suspend fun createProductFromOff(input: CreateProductFromOffInput): Product {
+    val gql = """
+      mutation(${'$'}input: CreateProductFromOffInput!) {
+        createProductFromOff(input: ${'$'}input) { $PRODUCT_FIELDS }
+      }
+    """
+    val variables = buildJsonObject {
+      put("input", json.encodeToJsonElement(CreateProductFromOffInput.serializer(), input))
+    }
+    val product = execute(
+      gql, variables, GraphQlResponse.serializer(CreateProductFromOffData.serializer()),
+    ).createProductFromOff
+    invalidateLookup(input.code)
+    return product
   }
 
   /**

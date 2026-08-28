@@ -6,6 +6,7 @@
   "codePlaceholder": "Kod kreskowy",
   "search": "Szukaj",
   "codeNotFound": "Nie znamy jeszcze tego kodu w katalogu.",
+  "offUnavailable": "Katalog Open Food Facts jest teraz niedostępny — wpisz dane produktu ręcznie.",
   "addNewHint": "Nie znalazłeś/znalazłaś produktu?",
   "addNewButton": "Dodaj nowy",
   "addNewRequiresLogin": "Nie znalazłeś/znalazłaś produktu? Dodanie nowego produktu wymaga zalogowania — przejdź do strony Konto.",

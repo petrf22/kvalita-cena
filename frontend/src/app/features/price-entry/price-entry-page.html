@@ -52,7 +52,9 @@
     @if (codeNotFound()) {
       <nz-alert
         nzType="info"
-        [nzMessage]="t('price-entry.codeNotFound')"
+        [nzMessage]="
+          offUnavailable() ? t('price-entry.offUnavailable') : t('price-entry.codeNotFound')
+        "
         nzShowIcon
         class="form-alert"
       />

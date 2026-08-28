@@ -6,6 +6,7 @@
   "codePlaceholder": "Čárový kód",
   "search": "Hledat",
   "codeNotFound": "Tenhle kód zatím v katalogu neznáme.",
+  "offUnavailable": "Katalog Open Food Facts je teď nedostupný — údaje o zboží vyplň ručně.",
   "addNewHint": "Zboží nenašel(a)?",
   "addNewButton": "Založit nové",
   "addNewRequiresLogin": "Zboží nenašel(a)? Založení nového zboží vyžaduje přihlášení — přejdi na stránku Účet.",

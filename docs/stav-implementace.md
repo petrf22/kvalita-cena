@@ -237,10 +237,14 @@ betě.
 Implementováno: Open Food Facts EAN lookup s cache, odděleným `off.product` snapshotem,
 výchozími hodnotami při založení produktu (`createProductFromOff`, `OffProductCatalogService`)
 a možností uživatelského přepsání. GraphQL API (`productLookupByCode`, `Product.externalImage`/
-`catalogAttribution`) i mobilní/webový `Dto.kt`/`product-service.ts` jsou hotové a otestované,
-ale **žádná obrazovka je zatím nevolá** (past níže) — sken tedy pořád vede jen na `productByCode`
-a ruční `createProduct`, atribuce OFF (ODbL) se v UI zatím nezobrazuje. Zpětné publikování oprav
-do OFF zůstává mimo etapu 1.
+`catalogAttribution`) i mobilní/webový `Dto.kt`/`product-service.ts` jsou hotové a otestované;
+`price-entry-page`/`PriceEntryScreen` na sken/zadání neznámého EANu volají `productLookupByCode`
+a formulář nového zboží (`product-form.ts`/`ProductFormViewModel.kt`) OFF kandidáta předvyplní
+(gramáž převedenou z G/ML na kg/l) a odešle přes `createProductFromOff` — jen pole, která
+uživatel skutečně změnil oproti OFF defaultu, aby nevznikl zbytečný `core.product_user_edit`
+patch. Detail zboží na obou klientech zobrazuje `catalogAttribution`/`externalImage`. Klientská
+session cache nad `productLookupByCode` (`ProductService`/`GraphQlClient`) šetří opakované
+dotazy na stejný kód. Zpětné publikování oprav do OFF zůstává mimo etapu 1.
 
 Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
 `PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec

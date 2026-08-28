@@ -10,6 +10,8 @@
   "massLabel": "Package weight (kg)",
   "volumeLabel": "Package volume (l)",
   "piecesInPackLabel": "Pieces per pack (optional)",
+  "offBannerTitle": "Loaded from Open Food Facts — check and adjust as needed.",
+  "offSourceLink": "View source",
   "codeLabel": "Barcode (optional)",
   "codeHint": "Without a code, a generic item is created (e.g. \"bread for {{example}}\" from a receipt) — with lower data confidence, but it can still be recorded.",
   "submit": "Create product"

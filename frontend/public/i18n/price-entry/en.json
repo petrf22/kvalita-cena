@@ -6,6 +6,7 @@
   "codePlaceholder": "Barcode",
   "search": "Search",
   "codeNotFound": "We don't know this code in the catalog yet.",
+  "offUnavailable": "The Open Food Facts catalog is unavailable right now — fill in the details manually.",
   "addNewHint": "Couldn't find the product?",
   "addNewButton": "Add new",
   "addNewRequiresLogin": "Couldn't find the product? Adding a new product requires signing in — go to the Account page.",

@@ -1,14 +1,17 @@
 import { Injectable, inject } from '@angular/core';
-import { map } from 'rxjs';
+import { Observable, catchError, map, shareReplay, tap, throwError } from 'rxjs';
 import { GraphQlService } from './graphql-service';
 import { graphql } from '../models/generated';
 import type {
+  CreateProductFromOffInput,
   CreateProductInput,
   PriceKind,
+  ProductLookupByCodeQuery,
   ProductSort,
   SubmitObservationsInput,
   UpdateProductInput,
 } from '../models/generated/graphql';
+import { normalizeCode } from '../shared/gtin';
 
 export interface SearchCriteria {
   query: string;
@@ -101,20 +104,25 @@ export class ProductService {
     return this.graphQl.execute(document, { id }).pipe(map((data) => data.product));
   }
 
-  /** Dohledání podle naskenovaného/opsaného čárového kódu — backend normalizuje na GTIN-14. */
-  getByCode(code: string) {
-    const document = graphql(`
-      query ProductByCode($code: String!) {
-        productByCode(code: $code) {
-          ...ProductDetailFields
-        }
-      }
-    `);
-    return this.graphQl.execute(document, { code }).pipe(map((data) => data.productByCode));
-  }
+  /**
+   * Session cache nad `lookupByCode` — klíč je normalizovaný kód (`shared/gtin.ts`), hodnota
+   * `shareReplay` observable, ať souběžné volání (price-entry i product-form se ptají nezávisle
+   * na stejný kód) skončí jedním HTTP requestem. `OFF_UNAVAILABLE` (přechodný výpadek/rate limit)
+   * a chybu appka necachuje, ať další pokus zkusí server znovu; evikce po založení zboží
+   * (`invalidateLookup`), jinak by další sken stejného kódu ukázal zastaralý `OFF_CANDIDATE`
+   * místo `EXISTING`. Backend má vlastní DB cache (7 dní), tahle šetří jen round-tripy klienta.
+   */
+  private readonly lookupCache = new Map<
+    string,
+    Observable<ProductLookupByCodeQuery['productLookupByCode']>
+  >();
 
   /** Vyhledání ke skenu čárového kódu: nejdřív vlastní katalog, jinak editovatelný OFF kandidát. */
   lookupByCode(code: string) {
+    const key = normalizeCode(code);
+    const cached = this.lookupCache.get(key);
+    if (cached) return cached;
+
     const document = graphql(`
       query ProductLookupByCode($code: String!) {
         productLookupByCode(code: $code) {
@@ -146,7 +154,25 @@ export class ProductService {
         }
       }
     `);
-    return this.graphQl.execute(document, { code }).pipe(map((data) => data.productLookupByCode));
+    const result$ = this.graphQl.execute(document, { code }).pipe(
+      map((data) => data.productLookupByCode),
+      tap((result) => {
+        if (result.status === 'OFF_UNAVAILABLE') this.lookupCache.delete(key);
+      }),
+      catchError((err: unknown) => {
+        this.lookupCache.delete(key);
+        return throwError(() => err);
+      }),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.lookupCache.set(key, result$);
+    return result$;
+  }
+
+  /** Zahodí cachovaný lookup po založení zboží, ať další sken/zadání stejného kódu vrátí `EXISTING`. */
+  private invalidateLookup(code: string | null | undefined): void {
+    if (!code) return;
+    this.lookupCache.delete(normalizeCode(code));
   }
 
   /**
@@ -194,7 +220,29 @@ export class ProductService {
         }
       }
     `);
-    return this.graphQl.execute(document, { input }).pipe(map((data) => data.createProduct));
+    return this.graphQl.execute(document, { input }).pipe(
+      map((data) => data.createProduct),
+      tap(() => this.invalidateLookup(input.code)),
+    );
+  }
+
+  /**
+   * Založení identity zboží nad potvrzeným OFF kandidátem (`productLookupByCode`, status
+   * `OFF_CANDIDATE`) — na rozdíl od `createProduct` OFF hodnoty nekopíruje do `core.product`,
+   * jen je potvrzuje/patchuje (`OffProductCatalogService` na backendu). Vyžaduje přihlášení.
+   */
+  createProductFromOff(input: CreateProductFromOffInput) {
+    const document = graphql(`
+      mutation CreateProductFromOff($input: CreateProductFromOffInput!) {
+        createProductFromOff(input: $input) {
+          ...ProductDetailFields
+        }
+      }
+    `);
+    return this.graphQl.execute(document, { input }).pipe(
+      map((data) => data.createProductFromOff),
+      tap(() => this.invalidateLookup(input.code)),
+    );
   }
 
   /**

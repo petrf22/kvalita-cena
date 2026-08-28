@@ -15,7 +15,7 @@ import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTreeSelectModule } from 'ng-zorro-antd/tree-select';
-import { Product, ProductSummary, UnitBase } from '../../models/catalog';
+import { ExternalProductCandidate, Product, ProductSummary, UnitBase } from '../../models/catalog';
 import type { CategoriesQuery } from '../../models/generated/graphql';
 import { FormatService } from '../../services/format-service';
 import { INTL_TAGS, LanguageService } from '../../services/language-service';
@@ -23,7 +23,15 @@ import { ProductService } from '../../services/product-service';
 import { buildCategoryTree, categoryBreadcrumb } from '../../shared/category-tree';
 import { translateError } from '../../shared/error-message';
 import { UNIT_BASE_KEYS } from '../../shared/enum-labels';
-import { impliedNetContentUom, isProductFormValid } from './product-form-validation';
+import {
+  OffCandidateDefaults,
+  changedFromOff,
+  codeMatchesOffCandidate,
+  impliedNetContentUom,
+  isProductFormValid,
+  netContentForOffSubmit,
+  offCandidateDefaults,
+} from './product-form-validation';
 
 type CategoryOption = CategoriesQuery['categories'][number];
 
@@ -64,9 +72,23 @@ export class ProductForm {
   private readonly transloco = inject(TranslocoService);
   private readonly language = inject(LanguageService);
 
-  /** Naskenovaný/zadaný kód, který se v katalogu nenašel — předvyplní pole kódu. */
+  /**
+   * Naskenovaný/zadaný kód, který se v katalogu nenašel — předvyplní pole kódu a zkusí, jestli
+   * ho nezná Open Food Facts (`productLookupByCode`, cache v `ProductService` — druhé volání po
+   * `price-entry-page` je zdarma). Výpadek/nedostupnost OFF je tichý no-op, formulář zůstane
+   * prázdný a ručně vyplnitelný.
+   */
   @Input() set barcode(value: string | null | undefined) {
-    if (value) this.code.set(value);
+    if (!value) return;
+    this.code.set(value);
+    this.productService.lookupByCode(value).subscribe({
+      next: (result) => {
+        if (result.status === 'OFF_CANDIDATE' && result.candidate) {
+          this.applyOffCandidate(result.candidate);
+        }
+      },
+      error: () => {},
+    });
   }
 
   @Output() readonly created = new EventEmitter<Product>();
@@ -104,6 +126,11 @@ export class ProductForm {
   protected readonly saving = signal(false);
   protected readonly saveError = signal<string | null>(null);
 
+  /** Nabídnutý OFF kandidát pro banner nad formulářem — null, dokud appka nic nenašla/nehledala. */
+  protected readonly offCandidate = signal<ExternalProductCandidate | null>(null);
+  /** Snímek předvyplněných hodnot (gramáž převedená na kg/l) — jen appka sama, ne pro šablonu. */
+  private offDefaults: OffCandidateDefaults | null = null;
+
   constructor() {
     this.productService.categories().subscribe({
       next: (categories) => this.categories.set(categories),
@@ -129,6 +156,20 @@ export class ProductForm {
         error: () => this.suggestionsLoading.set(false),
       });
     }, SUGGESTIONS_DEBOUNCE_MS);
+  }
+
+  /** Předvyplní formulář z OFF kandidáta — gramáž převede na kg/l (`offCandidateDefaults`,
+   *  past OFF kandidáta) a snímek pro submit() si uloží stranou do `offDefaults`. Nepřepisuje
+   *  pole, která kandidát nemá (necháme prázdné pro ruční vyplnění). */
+  private applyOffCandidate(candidate: ExternalProductCandidate): void {
+    this.offCandidate.set(candidate);
+    const defaults = offCandidateDefaults(candidate);
+    this.offDefaults = defaults;
+    if (defaults.name) this.name.set(defaults.name);
+    if (defaults.brandName) this.brandName.set(defaults.brandName);
+    if (defaults.categoryId) this.selectedCategoryId.set(defaults.categoryId);
+    if (defaults.unitBase) this.unitBase.set(defaults.unitBase);
+    if (defaults.netContentValue != null) this.netContentValue.set(defaults.netContentValue);
   }
 
   /** Uživatel si vybral existující nabídnutou položku místo založení nové (docs/reputace.md). */
@@ -166,27 +207,70 @@ export class ProductForm {
 
     this.saving.set(true);
     this.saveError.set(null);
-    this.productService
-      .createProduct({
-        name: this.name().trim(),
-        brandName: this.brandName().trim() || null,
-        categoryId,
-        unitBase: this.unitBase(),
-        netContentValue: this.isVariableWeight() ? null : this.netContentValue(),
-        netContentUom: impliedNetContentUom(this.unitBase()),
-        piecesInPack: this.piecesInPack(),
-        isVariableWeight: this.isVariableWeight(),
-        code: this.code().trim() || null,
-      })
-      .subscribe({
-        next: (product) => {
-          this.saving.set(false);
-          this.created.emit(product);
-        },
-        error: (err) => {
-          this.saving.set(false);
-          this.saveError.set(translateError(err, this.transloco));
-        },
-      });
+
+    const candidate = this.offCandidate();
+    const defaults = this.offDefaults;
+    // Kód se od nabídky kandidáta pořád musí shodovat — jinak uživatel kód smazal/přepsal
+    // (bezkódová položka, jiné zboží) a appka musí uložit přes createProduct, ne
+    // createProductFromOff (CLAUDE.md, past OFF kandidáta — OFF hodnoty se nesmí zapsat do
+    // core.product jako vlastní).
+    const request$ =
+      candidate != null && defaults != null && codeMatchesOffCandidate(this.code(), candidate.code)
+        ? this.createFromOff(candidate, defaults, categoryId)
+        : this.productService.createProduct({
+            name: this.name().trim(),
+            brandName: this.brandName().trim() || null,
+            categoryId,
+            unitBase: this.unitBase(),
+            netContentValue: this.isVariableWeight() ? null : this.netContentValue(),
+            netContentUom: impliedNetContentUom(this.unitBase()),
+            piecesInPack: this.piecesInPack(),
+            isVariableWeight: this.isVariableWeight(),
+            code: this.code().trim() || null,
+          });
+
+    request$.subscribe({
+      next: (product) => {
+        this.saving.set(false);
+        this.created.emit(product);
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.saveError.set(translateError(err, this.transloco));
+      },
+    });
+  }
+
+  /**
+   * Založení nad potvrzeným OFF kandidátem — pole, která uživatel nezměnil oproti
+   * `offCandidateDefaults`, se posílají jako `null`, ať je dál dodává OFF a nevznikne zbytečný
+   * `core.product_user_edit` patch (CLAUDE.md, past OFF kandidáta; gramáž/objem se posílá vždy
+   * spolu s jednotkou, viz `netContentForOffSubmit`).
+   */
+  private createFromOff(
+    candidate: ExternalProductCandidate,
+    defaults: OffCandidateDefaults,
+    categoryId: string,
+  ) {
+    const text = changedFromOff(
+      { name: this.name(), brandName: this.brandName(), categoryId },
+      defaults,
+    );
+    const netContent = netContentForOffSubmit(
+      this.isVariableWeight() ? null : this.netContentValue(),
+      this.unitBase(),
+      defaults.netContentValue,
+    );
+    return this.productService.createProductFromOff({
+      code: candidate.code,
+      name: text.name,
+      brandName: text.brandName,
+      categoryId: text.categoryId,
+      unitBase: this.unitBase(),
+      netContentValue: netContent.netContentValue,
+      netContentUom: netContent.netContentUom,
+      piecesInPack: this.piecesInPack(),
+      isVariableWeight: this.isVariableWeight(),
+    });
   }
 }

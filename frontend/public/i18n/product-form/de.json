@@ -10,6 +10,8 @@
   "massLabel": "Packungsgewicht (kg)",
   "volumeLabel": "Packungsvolumen (l)",
   "piecesInPackLabel": "Stück pro Packung (optional)",
+  "offBannerTitle": "Aus Open Food Facts geladen — prüfe und passe bei Bedarf an.",
+  "offSourceLink": "Quelle anzeigen",
   "codeLabel": "Strichcode (optional)",
   "codeHint": "Ohne Code entsteht eine generische Position (z. B. „Gebäck für {{example}}“ vom Kassenbon) — mit geringerer Datenzuverlässigkeit, kann aber trotzdem gespeichert werden.",
   "submit": "Ware anlegen"

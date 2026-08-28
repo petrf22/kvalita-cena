@@ -184,9 +184,11 @@ fun PriceEntryScreen(
 
       viewModel.notFound -> {
         Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-          val message = when (target) {
-            is PriceEntryTarget.ByBarcode -> stringResource(R.string.price_entry_code_unknown, target.barcode)
-            is PriceEntryTarget.ById -> stringResource(R.string.product_not_found)
+          val message = when {
+            viewModel.offUnavailable -> stringResource(R.string.price_entry_off_unavailable)
+            target is PriceEntryTarget.ByBarcode ->
+              stringResource(R.string.price_entry_code_unknown, target.barcode)
+            else -> stringResource(R.string.product_not_found)
           }
           Text(message, style = MaterialTheme.typography.bodyLarge)
           Gap()
