@@ -25,6 +25,12 @@ import cz.kvalitacena.service.CountryResolver;
 import cz.kvalitacena.service.GtinNormalization;
 import cz.kvalitacena.service.MediaService;
 import cz.kvalitacena.service.MyPriceService;
+import cz.kvalitacena.service.OffLookupResult;
+import cz.kvalitacena.service.OffLookupStatus;
+import cz.kvalitacena.service.OffNetContent;
+import cz.kvalitacena.service.OffNetContentConverter;
+import cz.kvalitacena.service.OffProductCatalogService;
+import cz.kvalitacena.service.OpenFoodFactsService;
 import cz.kvalitacena.service.ProductCatalogService;
 import cz.kvalitacena.service.Messages;
 import cz.kvalitacena.service.ProductOverlayService;
@@ -38,6 +44,7 @@ import org.springframework.graphql.data.method.annotation.ContextValue;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 
@@ -53,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.text.Normalizer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -71,6 +79,9 @@ public class ProductGraphQlController {
   private final ProductSearchService productSearchService;
   private final QualityRatingService qualityRatingService;
   private final ProductCatalogService productCatalogService;
+  private final OffProductCatalogService offProductCatalogService;
+  private final OpenFoodFactsService openFoodFactsService;
+  private final OffNetContentConverter offNetContentConverter;
   private final ProductOverlayService productOverlayService;
   private final CatalogEditService catalogEditService;
   private final MyPriceService myPriceService;
@@ -124,6 +135,45 @@ public class ProductGraphQlController {
         .orElse(null);
   }
 
+  @QueryMapping
+  public ProductLookupResult productLookupByCode(@Argument String code, Authentication authentication) {
+    ViewerContext viewer = viewerContextResolver.resolve(authentication);
+    String gtin;
+    try {
+      if (code == null || !code.trim().matches("[0-9]{8,14}")) {
+        return new ProductLookupResult(ProductLookupStatus.NOT_FOUND, null, null);
+      }
+      gtin = GtinNormalization.toGtin14(code);
+    } catch (RuntimeException e) {
+      return new ProductLookupResult(ProductLookupStatus.NOT_FOUND, null, null);
+    }
+    Product existing = productCodeRepository.findFirstByCodeAndCodeType(gtin, CodeType.GTIN)
+        .map(ProductCode::getProduct).filter(p -> isVisible(p, viewer))
+        .map(p -> productOverlayService.applyOverlay(p, viewer.userId())).orElse(null);
+    if (existing != null) return new ProductLookupResult(ProductLookupStatus.EXISTING, existing, null);
+
+    OffLookupResult lookup = openFoodFactsService.lookup(code);
+    if (lookup.status() == OffLookupStatus.NOT_FOUND) {
+      return new ProductLookupResult(ProductLookupStatus.NOT_FOUND, null, null);
+    }
+    if (lookup.status() == OffLookupStatus.UNAVAILABLE) {
+      return new ProductLookupResult(ProductLookupStatus.OFF_UNAVAILABLE, null, null);
+    }
+    var off = lookup.product();
+    Category category = off.getMappedCategorySlug() == null ? null
+        : categoryRepository.findBySlug(off.getMappedCategorySlug()).orElse(null);
+    OffNetContent content = offNetContentConverter.convert(off);
+    String attribution = messages.get("attribution.off");
+    ExternalProductImage image = externalImage(off.getImageFrontUrl(), off.getImageFrontSmallUrl(), attribution);
+    ExternalProductCandidate candidate = new ExternalProductCandidate(
+        stripLeadingZeros(off.getGtin()), off.getProductName(), off.getBrandName(), category,
+        content == null ? null : content.unitBase(), content == null ? null : content.value(),
+        content == null ? null : content.uom(), image,
+        externalLinkProperties.getOpenFoodFacts().getProductUrlTemplate()
+            .replace("{barcode}", stripLeadingZeros(off.getGtin())), attribution);
+    return new ProductLookupResult(ProductLookupStatus.OFF_CANDIDATE, null, candidate);
+  }
+
   /**
    * Viditelnost pod prahem důvěry (docs/reputace.md) — ACTIVE i DRAFT vidí každý (stejné
    * pravidlo jako {@code productSuggestions} níže), MERGED/REJECTED nikdo. DRAFT musí být
@@ -148,6 +198,36 @@ public class ProductGraphQlController {
   @MutationMapping
   public Product createProduct(@Argument CreateProductInput input, Authentication authentication) {
     return productCatalogService.create(input, viewerContextResolver.resolve(authentication).publicUid());
+  }
+
+  @MutationMapping
+  public Product createProductFromOff(@Argument CreateProductFromOffInput input, Authentication authentication) {
+    return offProductCatalogService.create(input, viewerContextResolver.resolve(authentication).publicUid());
+  }
+
+  @SchemaMapping(typeName = "Product", field = "catalogSource")
+  public CatalogDataSource catalogSource(Product product) {
+    return product.isOffBacked() ? CatalogDataSource.OPEN_FOOD_FACTS : CatalogDataSource.COMMUNITY;
+  }
+
+  @SchemaMapping(typeName = "Product", field = "catalogAttribution")
+  public String catalogAttribution(Product product) {
+    return product.isOffBacked() ? messages.get("attribution.off") : null;
+  }
+
+  @SchemaMapping(typeName = "Product", field = "externalImage")
+  public ExternalProductImage externalImage(Product product) {
+    return externalImage(product.getOffImageFrontUrl(), product.getOffImageFrontSmallUrl(), messages.get("attribution.off"));
+  }
+
+  @SchemaMapping(typeName = "Product", field = "brand")
+  public ProductBrand brand(Product product) {
+    if (product.getExternalBrandName() != null) {
+      String name = product.getExternalBrandName();
+      return new ProductBrand("off:" + Integer.toUnsignedString(name.toLowerCase().hashCode()), name, slugify(name));
+    }
+    return product.getBrand() == null ? null : new ProductBrand(
+        product.getBrand().getId().toString(), product.getBrand().getName(), product.getBrand().getSlug());
   }
 
   @MutationMapping
@@ -378,6 +458,18 @@ public class ProductGraphQlController {
         .or(() -> codes.stream().filter(c -> c.getCodeType() == CodeType.GTIN).findFirst())
         .map(ProductCode::getCode)
         .orElse(null);
+  }
+
+  private ExternalProductImage externalImage(String url, String thumbnailUrl, String attribution) {
+    String effectiveUrl = url != null ? url : thumbnailUrl;
+    if (effectiveUrl == null) return null;
+    return new ExternalProductImage(effectiveUrl, thumbnailUrl != null ? thumbnailUrl : effectiveUrl, attribution);
+  }
+
+  private String slugify(String value) {
+    String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+        .replaceAll("\\p{M}", "").toLowerCase();
+    return normalized.replaceAll("[^a-z0-9]+", "-").replaceAll("^-+|-+$", "");
   }
 
   private List<Long> productIds(List<Product> products) {

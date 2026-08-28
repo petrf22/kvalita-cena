@@ -113,6 +113,25 @@ export class ProductService {
     return this.graphQl.execute(document, { code }).pipe(map((data) => data.productByCode));
   }
 
+  /** Lookup used by barcode entry: local product first, otherwise an editable OFF candidate. */
+  lookupByCode(code: string) {
+    const document = graphql(`
+      query ProductLookupByCode($code: String!) {
+        productLookupByCode(code: $code) {
+          status
+          product { ...ProductDetailFields }
+          candidate {
+            code name brandName category { id name slug path }
+            unitBase netContentValue netContentUom
+            image { url thumbnailUrl attribution }
+            sourceUrl attribution
+          }
+        }
+      }
+    `);
+    return this.graphQl.execute(document, { code }).pipe(map((data) => data.productLookupByCode));
+  }
+
   /**
    * Podobné zboží podle názvu — nabídne existující druhové položky před založením nového
    * (docs/reputace.md, "Zboží bez čárového kódu") i jako "našli jsme podobné" krok obecně.

@@ -119,6 +119,13 @@ export const productFieldsFragment = graphql(`
   fragment ProductFields on Product {
     id
     name
+    catalogSource
+    catalogAttribution
+    externalImage {
+      url
+      thumbnailUrl
+      attribution
+    }
     brand {
       id
       name

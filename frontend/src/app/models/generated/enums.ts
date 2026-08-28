@@ -5,6 +5,12 @@ export const Audience = {
 } as const;
 
 export type Audience = typeof Audience[keyof typeof Audience];
+export const CatalogDataSource = {
+  Community: 'COMMUNITY',
+  OpenFoodFacts: 'OPEN_FOOD_FACTS'
+} as const;
+
+export type CatalogDataSource = typeof CatalogDataSource[keyof typeof CatalogDataSource];
 export const ChainType = {
   Chain: 'CHAIN',
   FarmShop: 'FARM_SHOP',
@@ -81,6 +87,8 @@ export const ErrorCode = {
   ObservationPromoValidityNotAllowed: 'OBSERVATION_PROMO_VALIDITY_NOT_ALLOWED',
   ObservationPromoValidityRangeInvalid: 'OBSERVATION_PROMO_VALIDITY_RANGE_INVALID',
   ObservationPromoValidFromInFuture: 'OBSERVATION_PROMO_VALID_FROM_IN_FUTURE',
+  OffProductNotFound: 'OFF_PRODUCT_NOT_FOUND',
+  OffUnavailable: 'OFF_UNAVAILABLE',
   PhotoActionRequiresLogin: 'PHOTO_ACTION_REQUIRES_LOGIN',
   PhotoCannotAttachToPhoto: 'PHOTO_CANNOT_ATTACH_TO_PHOTO',
   PhotoCannotAttachToUser: 'PHOTO_CANNOT_ATTACH_TO_USER',
@@ -184,6 +192,14 @@ export const PriceKind = {
 } as const;
 
 export type PriceKind = typeof PriceKind[keyof typeof PriceKind];
+export const ProductLookupStatus = {
+  Existing: 'EXISTING',
+  NotFound: 'NOT_FOUND',
+  OffCandidate: 'OFF_CANDIDATE',
+  OffUnavailable: 'OFF_UNAVAILABLE'
+} as const;
+
+export type ProductLookupStatus = typeof ProductLookupStatus[keyof typeof ProductLookupStatus];
 export const ProductSort = {
   LastReported: 'LAST_REPORTED',
   Name: 'NAME',

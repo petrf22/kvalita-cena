@@ -26,6 +26,8 @@ public enum ErrorCode {
   PRODUCT_NAME_EMPTY("error.product.nameEmpty"),
   PRODUCT_CATEGORY_REQUIRED("error.product.categoryRequired"),
   PRODUCT_UNIT_BASE_REQUIRED("error.product.unitBaseRequired"),
+  OFF_PRODUCT_NOT_FOUND("error.off.productNotFound"),
+  OFF_UNAVAILABLE("error.off.unavailable"),
 
   // --- katalog: validace založení/úpravy obchodu
   STORE_NAME_REQUIRED("error.store.nameRequired"),

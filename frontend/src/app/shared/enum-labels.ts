@@ -95,6 +95,8 @@ export const CLIENT_KIND_KEYS: Record<ClientKind, string> = {
 
 /** Díky `enum ErrorCode` ve `schema.graphqls` (docs/lokalizace.md) generuje codegen i tohle zadarmo. */
 export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
+  [ErrorCode.OffUnavailable]: 'errors.OFF_UNAVAILABLE',
+  [ErrorCode.OffProductNotFound]: 'errors.OFF_PRODUCT_NOT_FOUND',
   [ErrorCode.ProductNotFound]: 'errors.PRODUCT_NOT_FOUND',
   [ErrorCode.StoreNotFound]: 'errors.STORE_NOT_FOUND',
   [ErrorCode.CategoryNotFound]: 'errors.CATEGORY_NOT_FOUND',

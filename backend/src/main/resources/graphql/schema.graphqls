@@ -131,6 +131,12 @@ type Query {
   productByCode(code: String!): Product
 
   """
+  Jediný vstupní bod pro sken: nejdřív vlastní katalog, potom lokální snapshot / API Open
+  Food Facts. NOT_FOUND a OFF_UNAVAILABLE jsou běžné stavy, ne GraphQL chyby.
+  """
+  productLookupByCode(code: String!): ProductLookupResult!
+
+  """
   Provozovny v okolí zadaného bodu. Souřadnice se používají JEN jako parametry dotazu
   a nikam se neukládají — viz docs/soukromi.md.
   """
@@ -232,6 +238,8 @@ type Mutation {
   existující druhové položky.
   """
   createProduct(input: CreateProductInput!): Product!
+  "Založí identitu produktu nad potvrzeným OFF kandidátem; odchylky uloží jako product_user_edit."
+  createProductFromOff(input: CreateProductFromOffInput!): Product!
 
   """
   Úprava existujícího zboží jako patch nad core.product_user_edit — globální řádek se nemění,
@@ -535,6 +543,50 @@ input CreateProductInput {
   code: String
 }
 
+input CreateProductFromOffInput {
+  code: String!
+  name: String
+  brandName: String
+  categoryId: ID
+  unitBase: UnitBase
+  netContentValue: BigDecimal
+  netContentUom: NetContentUom
+  piecesInPack: Int
+  isVariableWeight: Boolean = false
+}
+
+enum ProductLookupStatus {
+  EXISTING
+  OFF_CANDIDATE
+  NOT_FOUND
+  OFF_UNAVAILABLE
+}
+
+type ProductLookupResult {
+  status: ProductLookupStatus!
+  product: Product
+  candidate: ExternalProductCandidate
+}
+
+type ExternalProductCandidate {
+  code: String!
+  name: String
+  brandName: String
+  category: Category
+  unitBase: UnitBase
+  netContentValue: BigDecimal
+  netContentUom: NetContentUom
+  image: ExternalProductImage
+  sourceUrl: String!
+  attribution: String!
+}
+
+type ExternalProductImage {
+  url: String!
+  thumbnailUrl: String!
+  attribution: String!
+}
+
 type Brand {
   id: ID!
   name: String!
@@ -612,6 +664,12 @@ type Product {
   verified: Boolean!
   "True, pokud pro tenhle produkt existuje uživatelův patch (core.product_user_edit)."
   editedByMe: Boolean!
+  "Globální výchozí vrstva katalogu; osobní product_user_edit ji může překrýt."
+  catalogSource: CatalogDataSource!
+  "Povinná atribuce, jen když catalogSource=OPEN_FOOD_FACTS."
+  catalogAttribution: String
+  "Externí OFF obrázek; nikdy nejde o core.media Photo."
+  externalImage: ExternalProductImage
   """
   Poslední vlastní zápisy přihlášeného uživatele (na obchod a druh ceny) — zobrazí se jako
   "Vaše cena" vedle komunitního agregátu (prices), i dřív než je zpracuje agregace. Prázdné
@@ -620,6 +678,11 @@ type Product {
   myPrices: [MyPrice!]!
   "Fotky zboží (core.media) — první (nejnižší sortOrder) je hlavní. Prázdné, dokud je nikdo nenahraje."
   photos: [Photo!]!
+}
+
+enum CatalogDataSource {
+  COMMUNITY
+  OPEN_FOOD_FACTS
 }
 
 """
@@ -1203,6 +1266,8 @@ enum ErrorCode {
   PRODUCT_NAME_EMPTY
   PRODUCT_CATEGORY_REQUIRED
   PRODUCT_UNIT_BASE_REQUIRED
+  OFF_PRODUCT_NOT_FOUND
+  OFF_UNAVAILABLE
   STORE_NAME_REQUIRED
   STORE_NAME_EMPTY
   STORE_CITY_REQUIRED
