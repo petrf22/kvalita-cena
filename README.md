@@ -21,6 +21,10 @@ uživatelů se neukládají — ukládá se jen to, co je nutné pro fungování
 
 ## Rychlý start
 
+Pro ruční testování stačí `./start-dev.sh` — otevře DB, backend, nahraje ukázková data
+a frontend, každý ve vlastním terminálovém okně, otevře prohlížeč a po stisku klávesy vše zase
+ukončí (`--no-seed` vynechá ukázková data). Ruční postup krok za krokem:
+
 ```bash
 docker compose up -d                              # PostgreSQL na 127.0.0.1:5437
 cd backend && ./gradlew bootRun                   # backend na :8080

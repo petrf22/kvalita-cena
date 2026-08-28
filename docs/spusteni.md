@@ -4,6 +4,12 @@ Praktický návod pro lokální vývoj — jak appku rozběhat a ručně si vyzk
 vyhledání produktu a zápis ceny. Architektonické konvence jsou v [`CLAUDE.md`](../CLAUDE.md);
 tady jde jen o „jak na to spustit a co s tím dělat".
 
+Rychlý start pro ruční testování: `./start-dev.sh` v rootu udělá kroky 1–4 níž najednou (DB,
+backend s profilem `beta`, testovací data z `dev/seed.sql` — vypnutelné přes `--no-seed`,
+frontend) — každý v samostatném terminálovém okně s živými logy, otevře prohlížeč a po stisku
+klávesy všechny tři procesy zase ukončí. Postup níž zůstává jako referenční, pro ladění
+jednotlivých kroků zvlášť.
+
 ## Předpoklady
 
 - **Docker** — pro PostgreSQL.
