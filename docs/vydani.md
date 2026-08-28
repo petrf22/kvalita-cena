@@ -184,12 +184,42 @@ i bez přihlášení.
 Osobní vývojářský účet (na rozdíl od organizačního) potřebuje před přístupem k produkčnímu
 vydání **uzavřený test (Closed testing) s aspoň 12 testery, kteří jsou opt-in přihlášení
 14 dní v kuse**. Interní testování (viz výš) se do téhle kvóty nepočítá — je to jen ověřovací
-krok před uzavřeným testem, ne jeho náhrada. Lhůta začíná běžet, až je 12. tester skutečně
-opt-in, ne dnem založení tracku — čím dřív se track založí a testeři pozvou, tím dřív jde
-žádat o produkci.
+krok před uzavřeným testem, ne jeho náhrada.
 
 **Stav k 2026-08-26:** appka je jen v Internal testing (1 tester, sám provozovatel), uzavřený
 test zatím založený není — čeká se, až bude k dispozici 12 lidí ochotných appku 14 dní testovat.
+
+**Nastavení tracku (Play Console):**
+
+1. **Test and release → Testing → Closed testing → Manage track → Create track.**
+2. **Testers** — buď e-mailový seznam (min. 12 adres, ručně nebo CSV), nebo Google Group.
+3. **Feedback URL/e-mail** na opt-in stránce testerů — `kontakt@kvalitacena.cz`.
+4. **Countries/Regions** — stačí ČR.
+5. Nahrát AAB a rollout na track. Google track typicky schválí do pár hodin, max 24 h.
+6. Po schválení se na kartě **Testers** objeví **opt-in URL** — ten se posílá testerům.
+   **Testeři appku musí instalovat přes tenhle odkaz z Play Storu, ne jako sideloadovaný APK**
+   (přímá distribuce popsaná v „Vyřešit, jak testeři dostanou instalační APK" v
+   `docs/nasazeni.md`) — jinak se jejich používání do kvóty 12/14 nezapočítá.
+
+**Past: „14 dní" je per tester, ne per track.** Pokud tester opt-in odklikne, appku pár dní
+testuje a pak se odhlásí (nebo appku smaže), jeho dny se nepočítají — při novém opt-inu začíná
+počítat znovu od nuly, musí to být 14 dní v kuse. Potřeba je tedy, aby všech 12 lidí zůstalo
+opt-in nepřetržitě celých 14 dní, ne že se za tu dobu prostřídá víc než 12 lidí a dohromady to
+dá 12×14 tester-dní. **Zvát víc než 12 lidí (14–15) jako polštář** pro toho, kdo se odhlásí nebo
+appku po pár dnech smaže.
+
+**Past: Google kontroluje genuinní zapojení, ne jen opt-in stav.** Při žádosti o produkci
+(„Apply for production", dostupné na Dashboardu, jakmile podmínka běží) se ptá na tři okruhy
+otázek (průběh testu, detaily appky, připravenost na produkci) a chce popsané, jak zapojení
+testerů odpovídalo očekávanému chování produkčních uživatelů — sedí to přesně na „Protokol
+bety" v `docs/nasazeni.md` (stejný scénář pro každého testera: OTP přihlášení, hledání, zápis
+ceny z mobilu i webu, založení obchodu, fotka, `/feedback`) — mít tenhle scénář zdokumentovaný
+a doložitelný pro žádost, ne jen proběhlý. Review žádosti pak trvá **do 7 dní**, občas déle.
+
+Track a e-mailový seznam jde založit, ještě než je všech 12+ lidí potvrzených — čím dřív je
+track schválený a lidé dostanou opt-in odkaz, tím dřív jim začne běžet 14denní okno. Souběh
+s backend betou (`docs/nasazeni.md`, „Protokol bety") dává smysl — stejní lidé přes stejný
+scénář vyřeší obě podmínky najednou, jen musí appku instalovat přes Play opt-in odkaz.
 
 ### F-Droid — otevřené riziko, ne hotový postup
 
