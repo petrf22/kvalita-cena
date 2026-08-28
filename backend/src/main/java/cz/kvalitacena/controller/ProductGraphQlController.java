@@ -138,15 +138,10 @@ public class ProductGraphQlController {
   @QueryMapping
   public ProductLookupResult productLookupByCode(@Argument String code, Authentication authentication) {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
-    String gtin;
-    try {
-      if (code == null || !code.trim().matches("[0-9]{8,14}")) {
-        return new ProductLookupResult(ProductLookupStatus.NOT_FOUND, null, null);
-      }
-      gtin = GtinNormalization.toGtin14(code);
-    } catch (RuntimeException e) {
+    if (!GtinNormalization.isValidCode(code)) {
       return new ProductLookupResult(ProductLookupStatus.NOT_FOUND, null, null);
     }
+    String gtin = GtinNormalization.toGtin14(code);
     Product existing = productCodeRepository.findFirstByCodeAndCodeType(gtin, CodeType.GTIN)
         .map(ProductCode::getProduct).filter(p -> isVisible(p, viewer))
         .map(p -> productOverlayService.applyOverlay(p, viewer.userId())).orElse(null);
@@ -224,7 +219,8 @@ public class ProductGraphQlController {
   public ProductBrand brand(Product product) {
     if (product.getExternalBrandName() != null) {
       String name = product.getExternalBrandName();
-      return new ProductBrand("off:" + Integer.toUnsignedString(name.toLowerCase().hashCode()), name, slugify(name));
+      String slug = slugify(name);
+      return new ProductBrand("off:" + slug, name, slug);
     }
     return product.getBrand() == null ? null : new ProductBrand(
         product.getBrand().getId().toString(), product.getBrand().getName(), product.getBrand().getSlug());

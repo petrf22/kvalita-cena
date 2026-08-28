@@ -104,7 +104,7 @@ public class OpenFoodFactsService {
   }
 
   private String normalize(String rawCode) {
-    if (rawCode == null || !rawCode.trim().matches("[0-9]{8,14}")) {
+    if (!GtinNormalization.isValidCode(rawCode)) {
       throw new IllegalArgumentException("Barcode must contain 8 to 14 digits");
     }
     return GtinNormalization.toGtin14(rawCode);

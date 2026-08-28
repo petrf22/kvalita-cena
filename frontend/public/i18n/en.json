@@ -42,6 +42,8 @@
     "PRODUCT_NAME_EMPTY": "Product name must not be empty",
     "PRODUCT_CATEGORY_REQUIRED": "Category is required",
     "PRODUCT_UNIT_BASE_REQUIRED": "Base unit (kg/l/pcs) is required",
+    "OFF_PRODUCT_NOT_FOUND": "The product is no longer available in Open Food Facts; continue with manual entry",
+    "OFF_UNAVAILABLE": "Open Food Facts is currently unavailable; continue with manual entry",
     "STORE_NAME_REQUIRED": "Store name is required",
     "STORE_NAME_EMPTY": "Store name must not be empty",
     "STORE_CITY_REQUIRED": "City is required",

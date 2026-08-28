@@ -43,7 +43,7 @@ public class OffProductCatalogService {
   private final OpenFoodFactsService offService;
   private final OffNetContentConverter netContentConverter;
   private final CatalogEditService catalogEditService;
-  private final ProductOverlayService overlayService;
+  private final TrustLevelService trustLevelService;
 
   @Transactional
   public Product create(CreateProductFromOffInput input, UUID viewerPublicUid) {
@@ -83,7 +83,10 @@ public class OffProductCatalogService {
         .piecesInPack(input.piecesInPack())
         .variableWeight(fallbackVariableWeight)
         .generic(false)
-        .status(ProductStatus.ACTIVE)
+        // Kód sám je dost silná identifikace (ProductCatalogService.create), ale autor od
+        // OFF ověřený není — stejný práh důvěry jako u ručně zadaného zboží s kódem
+        // (docs/reputace.md, práh T2), jinak by nedůvěryhodný účet OFF cestou obešel DRAFT.
+        .status(trustLevelService.isTrusted(user) ? ProductStatus.ACTIVE : ProductStatus.DRAFT)
         .createdByUserId(user.getId())
         .build();
     try {
@@ -94,12 +97,13 @@ public class OffProductCatalogService {
       throw new DuplicateException(ErrorCode.DUPLICATE_PRODUCT_CODE, null);
     }
 
+    // updateProduct vrací vždy overlay nad uloženým produktem (nikdy null) — patch, kde se
+    // potvrzená hodnota shoduje s OFF/komunitním základem, CatalogEditService sám zahodí.
     UpdateProductInput confirmedValues = new UpdateProductInput(
         input.name(), input.brandName(), false, input.categoryId(), input.unitBase(),
         input.netContentValue(), input.netContentUom(), input.piecesInPack(), false,
         input.isVariableWeight());
-    Product result = catalogEditService.updateProduct(product.getId(), confirmedValues, viewerPublicUid);
-    return result == null ? overlayService.applyOverlay(product, user.getId()) : result;
+    return catalogEditService.updateProduct(product.getId(), confirmedValues, viewerPublicUid);
   }
 
   private String requiredName(String value) {

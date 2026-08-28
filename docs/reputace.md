@@ -191,6 +191,11 @@ Výchozí `min-account-age-days = 7`, `min-observations = 5` — schválně stej
 je to jeho etapa-1 aproximace, ne nezávisle vymyšlený práh. Až přibude plný vzorec `S`
 (etapa 2/3), tahle funkce se nahradí `S ≥ práh_T2`, ne zdvojí vedle sebe.
 
+Stejný práh platí i pro založení zboží nad OFF snapshotem (`createProductFromOff`,
+`OffProductCatalogService`) — vlastní EAN je dost silná identifikace zboží (na rozdíl od
+druhové položky níže), ale autor OFF ověřený není, takže i tady nedůvěryhodný účet dostane
+`DRAFT`, ne rovnou `ACTIVE`.
+
 **`observationCount` je čítač na účtu (`auth.app_user.observation_count`), ne `COUNT(*)` nad
 `core.price_observation`** — ze stejného důvodu jako čítače s útlumem v úvodu dokumentu:
 `submitter_id` se po 180 dnech nuluje (`soukromi.md`), takže počítání přes historii by

@@ -73,6 +73,11 @@ načtení celé účtenky, nákup podle receptu nebo seznamu.
 - `updateProduct` (mutace + `ProductService.updateProduct` na webu + `GraphQlClient
   .updateProduct` na mobilu) je hotová a otestovaná, ale **žádná obrazovka ji nevolá** — u
   obchodu (`updateStore`) je inline editace v UI už hotová, u zboží zatím ne.
+- Stejně tak sken → OFF katalog: `productLookupByCode`/`createProductFromOff` a
+  `Product.externalImage`/`catalogAttribution` jsou hotové a otestované (backend i klientský
+  `product-service.ts`/`Dto.kt`), ale **žádná obrazovka je zatím nevolá** — sken pořád vede jen
+  na `productByCode` a ruční `createProduct`, atribuce OFF (ODbL) se v UI nezobrazuje
+  (`docs/stav-implementace.md`, „Open Food Facts").
 - Klientský překlad chyb podle `code` na mobilu chybí — appka ukáže `serverMessage`, protože
   `network/Dto.kt` negeneruje typy ze schématu jako web (`docs/lokalizace.md`, „Co zbývá").
 - Geometrie ikon (favicon, PWA manifest, Android launcher) žije v `tools/icons/generate.py`,

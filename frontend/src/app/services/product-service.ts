@@ -113,18 +113,35 @@ export class ProductService {
     return this.graphQl.execute(document, { code }).pipe(map((data) => data.productByCode));
   }
 
-  /** Lookup used by barcode entry: local product first, otherwise an editable OFF candidate. */
+  /** Vyhledání ke skenu čárového kódu: nejdřív vlastní katalog, jinak editovatelný OFF kandidát. */
   lookupByCode(code: string) {
     const document = graphql(`
       query ProductLookupByCode($code: String!) {
         productLookupByCode(code: $code) {
           status
-          product { ...ProductDetailFields }
+          product {
+            ...ProductDetailFields
+          }
           candidate {
-            code name brandName category { id name slug path }
-            unitBase netContentValue netContentUom
-            image { url thumbnailUrl attribution }
-            sourceUrl attribution
+            code
+            name
+            brandName
+            category {
+              id
+              name
+              slug
+              path
+            }
+            unitBase
+            netContentValue
+            netContentUom
+            image {
+              url
+              thumbnailUrl
+              attribution
+            }
+            sourceUrl
+            attribution
           }
         }
       }
