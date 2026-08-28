@@ -4,10 +4,12 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -15,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -106,11 +109,26 @@ private fun AppScaffold() {
   }
 
   val navController = rememberNavController()
+  val currentRoute by navController.currentBackStackEntryAsState()
 
   Scaffold(
     topBar = {
       CenterAlignedTopAppBar(
-        title = { Text(stringResource(R.string.app_name)) },
+        title = {
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(stringResource(R.string.app_name))
+            // Verze appky jen na záložce Nastavení — appbar je sdílený přes celou appku,
+            // jinde by šlo o neužitečný šum (uživatel chtěl vidět, jestli appka odpovídá
+            // vydané verzi backendu/webu, ne verzi na každé obrazovce).
+            if (currentRoute?.destination?.route == TopLevelDestination.SETTINGS.route) {
+              Text(
+                stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
+          }
+        },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(),
       )
     },
