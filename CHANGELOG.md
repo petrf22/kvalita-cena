@@ -9,6 +9,12 @@ za jednoduchost skriptu.
 
 ## [Nezveřejněno]
 
+## [0.3.0] – 2026-08-28
+
+### Přidáno
+- Předvyplnění zboží z Open Food Facts při skenu/zadání čárového kódu, který appka ještě nezná, s atribucí zdroje na detailu zboží (server, web, mobil)
+- Verze appky viditelná pod titulkem na záložce Nastavení (mobil)
+
 ## [0.2.1] – 2026-08-28
 
 ## [0.2.0] – 2026-08-27

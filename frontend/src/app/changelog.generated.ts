@@ -20,6 +20,12 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.3.0", date: "2026-08-28", sections: [
+      { title: "Přidáno", items: [
+        { text: "Předvyplnění zboží z Open Food Facts při skenu/zadání čárového kódu, který appka ještě nezná, s atribucí zdroje na detailu zboží", parts: ["server", "web", "mobil"] },
+        { text: "Verze appky viditelná pod titulkem na záložce Nastavení", parts: ["mobil"] },
+      ] },
+  ] },
   { version: "0.2.1", date: "2026-08-28", sections: [
 
   ] },
