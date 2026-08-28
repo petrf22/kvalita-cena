@@ -234,6 +234,10 @@ prestart`/`prebuild`) místo dřívější natvrdo zapsané konstanty; mobil odj
 (kolik lidí zapsalo cenu, kolik čeká na potvrzení/moderaci) pro ruční kontrolu při běžící
 betě.
 
+Implementováno: Open Food Facts EAN lookup s cache, odděleným `off.product` snapshotem,
+výchozími hodnotami při založení produktu, možností uživatelského přepsání a zobrazováním
+externího obrázku s atribucí. Zpětné publikování oprav do OFF zůstává mimo etapu 1.
+
 Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
 `PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec
 (jen složka `L`), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo jednorázové
@@ -252,5 +256,4 @@ provozu, ne až za etapu 2) — viz `docs/reputace.md` pro poznámku o hodnocen�
 dodavatelích. Další rozvojové nápady mimo etapu 1 (nezávazné, k realizaci až přijde řada) jsou
 v `docs/rozvoj.md`: pojmenování slevové karty podle obchodu, ceny předem z akčního letáku,
 načtení celé účtenky, nákup podle receptu nebo seznamu.
-
 

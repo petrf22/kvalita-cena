@@ -379,6 +379,14 @@ vedle existující fronty nahlášení, ne jako samostatný gatovaný kontroler 
 
 ## Co ještě není v etapě 1
 
+### Open Food Facts
+
+EAN lookup nejprve hledá lokální `core.product`, jinak načte a cachuje snapshot v `off.product`.
+OFF hodnoty zůstávají oddělené od `core.*`; při založení lokálního produktu jsou použity jako
+výchozí hodnoty a uživatelská vrstva (`core.product_user_edit`) je může přepsat. Obrázek se
+nestahuje do `core.media`, klient jej zobrazuje přímo z HTTPS URL OFF a vždy uvádí atribuci.
+Budoucí odesílání komunitních oprav zpět do OFF není součástí této etapy.
+
 `agg.price_weekly_national` (týdenní řady pro delší grafy), plné textové recenze
 (`core.product_review`, viditelnost `PUBLIC`/`GROUPS`/`PRIVATE`), skupiny důvěry
 (`core.trust_group`, `core.trust_edge`), `core.user_flag`, `core.watch_subscription`,
