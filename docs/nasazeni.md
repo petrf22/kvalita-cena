@@ -95,7 +95,9 @@ domény na server (krok 4) — build appky na serveru je nejpravděpodobnější
 3. [ ] **Sekvenční build** — ne jedno `up -d --build`, které staví backend (Gradle) i web
    (`npm ci` + `ng build`) paralelně a na malé instanci může spolu s Postgresem vyčerpat RAM.
    `GIT_SHA` je nepovinný, ale bez něj `/actuator/info` nese jen verzi bez commitu (`docs/
-   vydani.md`, „Verzování a vydání"):
+   vydani.md`, „Verzování a vydání"). `ops/deploy.sh` (viz `ops/README.md`) tenhle postup
+   i ověření dělá automaticky pro vydané tagy; v týhle první fázi (repo ještě jen naklonované,
+   žádný tag zatím nemusí sedět) je ruční varianta:
    ```bash
    export GIT_SHA=$(git rev-parse --short HEAD)
    docker compose -f compose.prod.yaml build backend

@@ -1,8 +1,23 @@
 # Provozní skripty
 
 Praktický protějšek k `docs/nasazeni.md` (checklist) — tady je to, co se má skutečně spustit.
-Zatím jen záloha; nasazovací kroky samotné (`docker compose -f compose.prod.yaml up -d --build`)
-jsou přímo v `docs/nasazeni.md`, protože se spouští jen občas ručně, ne z cronu.
+
+## `deploy.sh`
+
+Nasazení vydané verze na server: `./ops/deploy.sh <verze>` (např. `./ops/deploy.sh 0.3.0`).
+Aktualizuje repo na tag `vX.Y.Z` (musí už existovat — vzniká při vydání, `docs/vydani.md`,
+„Postup vydání"), sekvenčně sestaví backend a web (`docs/nasazeni.md`, „Sekvenční build" — ne
+najednou, na malé instanci riziko OOM), appku spustí a ověří: kontejnery běží, backend nastartoval
+bez chyby v logu, a pokud je v `.env` už nastavená skutečná doména (ne výchozí `*.localhost`),
+i zvenčí — `/actuator/health` je `UP` a `/actuator/info` hlásí přesně tuhle verzi a commit.
+Zastaví se (bez checkoutu) na necommitnutých změnách v repu na serveru — tam se ručně needituje,
+takže by to byla rozdělaná práce, ne úmyslný stav.
+
+Spustit z checkoutu repa na serveru:
+
+```bash
+./ops/deploy.sh 0.3.0
+```
 
 ## `backup.sh`
 

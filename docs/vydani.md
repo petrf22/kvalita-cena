@@ -272,9 +272,12 @@ Trunk-based — `main` je vždy vydatelná, žádné dlouhé větve (dependabot 
 
 ### Z čeho stavět
 
-- **Server**: `git checkout vX.Y.Z`, `export GIT_SHA=$(git rev-parse --short HEAD)`,
-  `docker compose -f compose.prod.yaml up -d --build` (viz `docs/nasazeni.md`). Ověření:
-  `curl -s https://api.kvalitacena.cz/actuator/info` ukazuje `version` i `commit`.
+- **Server**: `./ops/deploy.sh X.Y.Z` (viz `ops/README.md`) — aktualizuje repo na tag, sekvenčně
+  sestaví backend a web (`docs/nasazeni.md`, „Sekvenční build"), spustí a ověří
+  `/actuator/health`/`/actuator/info` proti `version`/`commit`. Ruční ekvivalent, když je potřeba
+  krok po kroku: `git checkout vX.Y.Z`, `export GIT_SHA=$(git rev-parse --short HEAD)`,
+  `docker compose -f compose.prod.yaml build backend && docker compose -f compose.prod.yaml build
+  web && docker compose -f compose.prod.yaml up -d`.
 - **Mobil**: `git checkout vX.Y.Z`, `./gradlew :app:bundleRelease` na lokálním PC (podpisový
   klíč viz výš). Ověření: „O aplikaci" ukazuje `X.Y.Z (versionCode)`.
 
