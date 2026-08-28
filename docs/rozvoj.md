@@ -104,6 +104,22 @@ verdikty do vlastního schématu `ai` mimo `core`/`agg`. Hardware (RTX 4060 Ti, 
 licenční pravidlo pro modely (jen svobodné licence — Apache-2.0/MIT, tedy řada Qwen nebo
 Mistral 7B, ne Gemma/Llama) platí beze změny, viz `docs/ai.md`, „Hardware a volba modelu".
 
+**Sběr snímků na klientovi (capture pipeline) — jak se vyhnout obřím souborům.** Naivní panorama
+(jeden dlouhý sešitý obrázek celé účtenky) by frontu zatěžoval zbytečně velkými soubory. Cílový
+přístup: z kamery (CameraX) se v reálném čase vybírají jen ostré snímky (Laplacianova variance
+rozostření — snímek pod prahovou hodnotou se zahodí), každý se detekcí hran a kontur (Canny +
+`approxPolyDP` na čtyřúhelník) perspektivně narovná (`warpPerspective`) na přímý pohled, a nový
+snímek se uloží jen tehdy, když se jeho spodní okraj posune o víc než ~60 % výšky proti poslednímu
+uloženému (coverage tracking, ~40% překryv mezi snímky). Výsledkem je nejvýš pár desítek malých
+ostrých výřezů (řádově stovky kB celkem), ne jeden obří soubor ani syrové video. UI dostane živou
+zpětnou vazbu (rámeček na účtence, progress bar podle pokrytí), dokud sken sám neskončí. OpenCV
+(BSD licence, `CLAUDE.md` — „Pouze svobodné licence") pro tohle stačí — **žádný OCR engine na
+klientovi není potřeba**, rozpoznání textu dál dělá vision model na workeru podle topologie výš;
+appka jen posílá malé narovnané výřezy místo syrového videa nebo panoramatu. Tím padá i dřívější
+úvaha o ML Kitu (Google, vyžaduje GMS) vs. Tesseract pro on-device OCR pro dvě distribuce
+appky (F-Droid/Play) — na klientovi žádné rozpoznávání textu neběží, takže se appka kvůli téhle
+funkci nemusí ohýbat kvůli druhé licenci ani druhé závislosti jen pro jednu z variant.
+
 Platí i „**AI nikdy nerozhoduje**" (`docs/ai.md`): vytěžení účtenky vytvoří **návrh k potvrzení
 uživatelem**, model sám nezakládá `core.price_observation` ani nic jiného rovnou.
 
@@ -119,6 +135,16 @@ navíc dnes strhává EXIF (`docs/soukromi.md`). Uložení účtenky jako „mé
 kategorie osobních dat a bude si žádat vlastní oddíl v `docs/soukromi.md` (výchozí viditelnost,
 retence, vztah k pseudonymizaci po 180 dnech) — psát ho zároveň s návrhem téhle funkce, ne
 dodatečně.
+
+**Otevřená otázka: záměrně částečný sken.** Hlavička a patička účtenky nesou údaje, které jde
+spojit s konkrétním člověkem a jeho nákupem — adresa/IČO provozovny + přesný čas nákupu
+prakticky identifikují zákazníka, k tomu často poslední čtyřčíslí platební karty nebo číslo
+věrnostní karty. Appka pro cenová data potřebuje jen blok s řádky položek (název, cena,
+množství). Záměr do budoucna: capture pipeline výše by měla cíleně sbírat jen tenhle blok, ne
+hlavičku/patičku, takže nejcitlivější údaje se na server v ideálním případě vůbec nedostanou.
+Konkrétní mechanismus (oříznutí podle pozice v obraze, ruční vymezení oblasti uživatelem, nebo
+worker, který citlivé řádky rozpozná a zahodí ještě před uložením) není rozhodnutý — k dořešení
+spolu s oddílem v `docs/soukromi.md` zmíněným výš.
 
 ## Rozšíření číselníku kategorií zboží (fáze 2)
 
