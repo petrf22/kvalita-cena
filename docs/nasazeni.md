@@ -70,7 +70,10 @@ před první pozvánkou.
   a odtud uživatel ručně kopíruje na externí disk a domácí NAS. Jiný fyzický nosič i lokace než
   Hetzner, splňuje účel (jeden výpadek nevezme zálohu s appkou) bez měsíčního poplatku navíc —
   přijatelné pro projekt bez rozpočtu, `ops/backup.sh` na serveru drží zálohy jen 14 dní
-  (`RETENTION_DAYS`), takže tahle cesta musí běžet průběžně, ne jednorázově.
+  (`RETENTION_DAYS`), takže tahle cesta musí běžet průběžně, ne jednorázově. Lokální kopie ale
+  taky není „všechno navždy" — `ops/pull-backup.sh` má GFS retenci (denní 30 dní → týdenní do
+  6 měsíců → měsíční do 2 let, pak smazáno, `ops/README.md`, „Retence a úklid"), takže obnova
+  starého stavu jde jen do 2 let zpět, ne do libovolně staré historie.
 
 ## 2. Po výběru VPS
 
