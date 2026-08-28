@@ -33,6 +33,13 @@ command -v docker >/dev/null || { echo "Chybí docker." >&2; exit 1; }
 
 cd "$REPO_DIR"
 
+# Načíst .env hned na začátku, ne až před vnějším ověřením — POSTGRES_USER se používá už ve
+# wait_for "databázi" krátce po startu, dřívější pozdní source ho tam nechávalo prázdné.
+# shellcheck disable=SC1090
+set -a && source "$ENV_FILE" && set +a
+SITE_ADDRESS="${SITE_ADDRESS:-http://localhost}"
+API_ADDRESS="${API_ADDRESS:-http://api.localhost}"
+
 # Bezpečnostní pojistka: server checkout nemá mít rozpracované změny (na rozdíl od vývojového
 # stroje se sem nic needituje ručně) — necommitnutá úprava by šla checkoutem tagu tiše ztratit.
 if [ -n "$(git status --porcelain)" ]; then
@@ -97,14 +104,9 @@ fi
 echo "Stav kontejnerů:"
 docker compose -f "$COMPOSE_FILE" ps
 
-# Načíst SITE_ADDRESS/API_ADDRESS z .env, ať jde ověřit i zvenčí — než je DNS/doména nastavená
-# (docs/nasazeni.md, "Doporučené pořadí prací"), zůstávají na výchozích *.localhost hodnotách
-# a appka je zvenčí nedostupná; v tom případě vnější kontroly jen přeskočíme s poznámkou.
-# shellcheck disable=SC1090
-set -a && source "$ENV_FILE" && set +a
-SITE_ADDRESS="${SITE_ADDRESS:-http://localhost}"
-API_ADDRESS="${API_ADDRESS:-http://api.localhost}"
-
+# SITE_ADDRESS/API_ADDRESS už jsou načtené z .env výš — než je DNS/doména nastavená (docs/
+# nasazeni.md, "Doporučené pořadí prací"), zůstávají na výchozích *.localhost hodnotách a appka
+# je zvenčí nedostupná; v tom případě vnější kontroly jen přeskočíme s poznámkou.
 if [[ "$SITE_ADDRESS" == *localhost* ]]; then
   echo "SITE_ADDRESS ($SITE_ADDRESS) je pořád na výchozí hodnotě — vnější ověření webu přeskakuji" \
        "(docs/nasazeni.md, dřív než se přepne DNS ověřuj proti IP ručně: curl http://<IP>/)."
