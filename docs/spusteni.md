@@ -231,6 +231,9 @@ si nejdřív krok 4 níže.
 
 ## 7. Mobil (Android)
 
+`./start-dev.sh` (bez `--no-mobile`) udělá celý tenhle krok sám — build, emulátor, instalaci
+i spuštění appky, navíc okno s `adb logcat` filtrovaným na proces appky. Ruční postup:
+
 ```bash
 cd mobile
 ./gradlew :app:compileDebugKotlin   # rychlá kontrola bez balení APK

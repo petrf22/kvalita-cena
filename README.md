@@ -23,9 +23,9 @@ uživatelů se neukládají — ukládá se jen to, co je nutné pro fungování
 ## Rychlý start
 
 Pro ruční testování stačí `./start-dev.sh` — otevře DB, backend, nahraje ukázková data,
-frontend a Android emulátor s nainstalovanou appkou, každý ve vlastním terminálovém okně, otevře
-prohlížeč a po stisku klávesy vše zase ukončí (`--no-seed` vynechá ukázková data, `--no-mobile`
-vynechá emulátor). Ruční postup krok za krokem:
+frontend a Android emulátor s nainstalovanou appkou (i s oknem logcatu), každý ve vlastním
+terminálovém okně, otevře prohlížeč a po stisku klávesy vše zase ukončí (`--no-seed` vynechá
+ukázková data, `--no-mobile` vynechá emulátor). Ruční postup krok za krokem:
 
 ```bash
 docker compose up -d                              # PostgreSQL na 127.0.0.1:5437
@@ -35,7 +35,7 @@ source ~/.nvm/nvm.sh && nvm use 24                # Angular 22 potřebuje Node �
 cd frontend && npm install && npm start           # web na :4200
 ```
 
-Mobilní appka (Android) se staví přes `cd mobile && ./gradlew :app:assembleDebug`.
+Ruční build mobilní appky (Android): `cd mobile && ./gradlew :app:assembleDebug`.
 
 Podrobný návod — přihlášení (OTP kód se v etapě 1 čte z logu backendu), GraphiQL dotazy, spuštění
 mobilu v emulátoru a řešení běžných potíží — je v [`docs/spusteni.md`](docs/spusteni.md).

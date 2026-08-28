@@ -22,8 +22,8 @@ build-tools) při buildu sám dostáhne.
 ./gradlew :app:publishableBundle      # podepsaný a ověřený AAB pro Play — na rozdíl od bundleRelease bez klíče selže (docs/vydani.md)
 ```
 
-Emulátor (AVD `Pixel_6_API_30`) je vyzkoušený a funkční — `~/Android/Sdk/emulator/emulator -avd
-Pixel_6_API_30 -no-snapshot -no-boot-anim -gpu swiftshader_indirect` (Mesa/X11 GPU passthrough
+Emulátor (AVD `Medium_Phone`) je vyzkoušený a funkční — `~/Android/Sdk/emulator/emulator -avd
+Medium_Phone -no-snapshot -no-boot-anim -gpu swiftshader_indirect` (Mesa/X11 GPU passthrough
 v tomto stroji párkrát spadl s X errorem, `swiftshader_indirect` /software renderování/ je
 spolehlivější). Instalace/spuštění: `adb install -r app/build/outputs/apk/debug/app-debug.apk`
 + `adb shell am start -n cz.kvalitacena/.MainActivity`. Emulátor vidí hostitelský backend na
