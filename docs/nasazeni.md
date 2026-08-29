@@ -169,6 +169,19 @@ domény na server (krok 4) — build appky na serveru je nejpravděpodobnější
    zálohy, tam zapisovat může), příklad v `ops/README.md`/`ops/backup.sh` aktualizovaný. Ověřeno
    ručním spuštěním po opravě — log se zapsal, záloha proběhla.
 
+   **Třetí reálný bug, objevený 2026-08-29:** stejná rodina jako druhý bug výš, jen o patro níž
+   — první automatický běh lokálního `ops/pull-backup.sh` (cron ve 21:00) selhal na přihlášení:
+   klíč `~/.ssh/id_ed25519` je chráněný heslem a odemčený jen v ssh-agentu desktopové klíčenky
+   (GNOME keyring), která ho v okamžiku běhu cronu neodemkla (`sign_and_send_pubkey: signing
+   failed ... agent refused operation` → `Permission denied (publickey)`). `rsync` pod `set -e`
+   spadl dřív, než stihla proběhnout kontrola čerstvosti, takže ani ta se nevypsala — zůstal jen
+   řádek chyby v `pull.log`, který nikdo nečte. Odhaleno až ručním dotazem, ne automatickým
+   hlášením. Opraveno: `ops/pull-backup.sh` používá vyhrazený klíč bez hesla, na serveru
+   omezený přes `rrsync` jen na čtení `/var/backups/kvalitacena`; kontrola čerstvosti přesunuta
+   do `trap ... EXIT`, ať doběhne i při selhání dřívějšího kroku, a doplněna o desktopovou
+   notifikaci (`notify-send`) při selhání nebo zálohy starší 2 dnů — viz `ops/README.md`,
+   „Vyhrazený klíč pro pull-backup.sh" a „Hlášení selhání a zastaralé zálohy".
+
 ## 3. SMTP pro OTP e-maily — Gigaserver (rozhodnuto 2026-08-22)
 
 Rozhodnutí: použít rovnou schránku `kontakt@kvalitacena.cz` (sekce 1) jako SMTP účet, ne

@@ -90,18 +90,62 @@ Cron na LOKÁLNÍM stroji (ne na serveru):
 
 ```bash
 crontab -e
-# 0 21 * * * SSH_AUTH_SOCK=/run/user/1000/keyring/ssh /home/<user>/kvalita-cena/ops/pull-backup.sh >> /home/<user>/kvalita-cena/backup/pull.log 2>&1
+# 0 21 * * * /home/<user>/kvalita-cena/ops/pull-backup.sh >> /home/<user>/kvalita-cena/backup/pull.log 2>&1
 ```
 
 Čas voleno večer, ne ráno po serverové záloze (3:00 UTC) — u desktopu je běžnější, že bývá
 zapnutý večer, ne brzy ráno.
 
-`SSH_AUTH_SOCK` je potřeba, pokud je klíč k serveru chráněný heslem a odemčený jen v ssh-agentu
-desktopové session (GNOME/KDE keyring) — cron by ho jinak nezdědil a `rsync` by tiše selhal na
-přihlášení. Funguje to jen dokud je uživatel přihlášený a klíčenka odemčená; když je PC vypnuté,
-den se přeskočí — další běh ho doplní, protože server má vlastní retenci 14 dní
-(`ops/backup.sh`, `RETENTION_DAYS`). Retence na lokálu (GFS) a na serveru (dny + strop na počet)
-je popsaná výš v „Retence a úklid".
+### Vyhrazený klíč pro `pull-backup.sh`
+
+Skript používá vlastní SSH klíč **bez hesla** (`~/.ssh/id_ed25519_kvalitacena_backup`,
+přepisitelné `BACKUP_SSH_KEY`) — cron ho nemusí odemykat přes ssh-agent ani desktopovou
+klíčenku. Dřívější varianta (sdílený klíč z `~/.ssh/config`, chráněný heslem v GNOME/KDE
+keyringu) selhala hned při prvním automatickém běhu (2026-08-29): klíčenka klíč neodemkla
+(`sign_and_send_pubkey: ... agent refused operation` → `Permission denied`), takže celý den
+zůstal bez lokální zálohy a nikdo si toho nevšiml — viz `docs/nasazeni.md`, sekce 2, a
+„Hlášení selhání a zastaralé zálohy" níž.
+
+Aby ztráta klíče bez hesla neznamenala ztrátu kontroly nad serverem, je na serveru omezený
+přes `rrsync` (server má `/usr/bin/rrsync` i `/usr/bin/rsync` 3.2.7) — v
+`~kvalitacena/.ssh/authorized_keys` má vlastní řádek:
+
+```
+command="/usr/bin/rrsync -ro /var/backups/kvalitacena",restrict ssh-ed25519 AAAA... pull-backup kvalita-cena
+```
+
+`-ro` = jen čtení, `restrict` navíc zakazuje port/agent forwarding, pty i user-rc. Přes tenhle
+klíč nejde spustit nic jiného než čtení obsahu `/var/backups/kvalitacena` — `ssh -F /dev/null -i
+~/.ssh/id_ed25519_kvalitacena_backup -o IdentitiesOnly=yes kvalitacena@<host> 'id'` musí být
+vždy odmítnuto. **`-F /dev/null` je nutné** — `~/.ssh/config` má pro produkční server vlastní
+`IdentityFile ~/.ssh/id_ed25519` (neomezený klíč) a ssh identity z configu a z `-i` se sčítají
+i s `IdentitiesOnly=yes`; bez obejití configu se serveru nabídne ten silnější klíč a restrikce
+se neuplatní vůbec (ověřeno 2026-08-29 přímo tady při zavádění).
+
+Zřízení (jednorázově):
+
+```bash
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519_kvalitacena_backup -C "pull-backup kvalita-cena"
+# obsah ~/.ssh/id_ed25519_kvalitacena_backup.pub vlož na server jako JEDEN řádek do
+# ~kvalitacena/.ssh/authorized_keys ve tvaru výš (command=...,restrict PŘED veřejným klíčem).
+```
+
+Bez `BACKUP_SSH_KEY` (soubor neexistuje) skript spadne zpátky na starší chování — klíč podle
+`~/.ssh/config`, typicky chráněný heslem — funguje jen dokud je uživatel přihlášený a klíčenka
+odemčená.
+
+Funguje to jen dokud je PC zapnuté; když je vypnuté, den se přeskočí — další běh ho doplní,
+protože server má vlastní retenci 14 dní (`ops/backup.sh`, `RETENTION_DAYS`). Retence na lokálu
+(GFS) a na serveru (dny + strop na počet) je popsaná výš v „Retence a úklid".
+
+### Hlášení selhání a zastaralé zálohy
+
+Kontrola čerstvosti (viz „Retence a úklid" výš) běží v `trap ... EXIT`, takže se spustí i když
+`rsync`/přihlášení selže pod `set -e` — dřív by selhání před koncem skriptu kontrolu úplně
+přeskočilo a v `pull.log` by zůstal jen tichý řádek chyby. Při selhání běhu (nenulový exit kód)
+nebo zálohy starší než 2 dny navíc přijde desktopová notifikace (`notify-send`, jen na tomhle
+stroji, nikdy při úspěchu) — bez lokálního MTA je to jediný kanál, kterého si uživatel na
+desktopu skutečně všimne.
 
 ## Zkouška obnovy — udělat PŘED zapnutím cronu, ne až při skutečné nehodě
 
