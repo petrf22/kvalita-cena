@@ -113,6 +113,17 @@ Appka je zdarma a bez reklam.
 Kontaktní e-mail pro listing (Play vyžaduje veřejný kontakt, ne jen v `docs/podminky-uziti.md`):
 `kontakt@kvalitacena.cz`.
 
+### Past: v Play Storu svítí `cz.kvalitacena` místo názvu appky
+
+`android:label` z manifestu platí jen pro zařízení (launcher, Nastavení → Aplikace, dialog
+instalátoru). **Play Store bere název výhradně ze store listingu** a ten se začne používat, až
+listing projde review — tedy s prvním rolloutem na track, který review vyžaduje (uzavřený test,
+produkce). Dokud je aplikace v konzoli jako **Koncept** a běží jen v **Internal testingu**,
+ukazuje Play na stránce appky i v „Spravovat aplikace a zařízení → Dostupné aktualizace" název
+balíčku `cz.kvalitacena`. Není to chyba buildu — ověřit jde `aapt2 dump badging
+app/build/outputs/apk/release/app-release.apk | grep application-label`, musí vrátit
+`Kvalita a cena`. Vyřeší se samo s uzavřeným testem (viz „Cesta do produkce" níž).
+
 ### Nahrávaný formát a App access
 
 Play přijímá k publikaci jen **AAB** (`./gradlew :app:bundleRelease`), ne APK — `apksigner
@@ -186,8 +197,10 @@ vydání **uzavřený test (Closed testing) s aspoň 12 testery, kteří jsou op
 14 dní v kuse**. Interní testování (viz výš) se do téhle kvóty nepočítá — je to jen ověřovací
 krok před uzavřeným testem, ne jeho náhrada.
 
-**Stav k 2026-08-26:** appka je jen v Internal testing (1 tester, sám provozovatel), uzavřený
+**Stav k 2026-08-29:** appka je jen v Internal testing (1 tester, sám provozovatel), uzavřený
 test zatím založený není — čeká se, až bude k dispozici 12 lidí ochotných appku 14 dní testovat.
+Do té doby Play Store zobrazuje místo názvu appky `cz.kvalitacena` — viz past výš, „Texty pro
+store listing".
 
 **Nastavení tracku (Play Console):**
 
