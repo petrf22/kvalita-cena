@@ -344,6 +344,7 @@
 
     <string name="store_form_create_title">New store</string>
     <string name="store_form_edit_title">Edit store</string>
+    <string name="store_form_chain_label">Chain (optional)</string>
     <string name="store_form_name_label">Store name</string>
     <string name="store_form_street_label">Street and number (optional)</string>
     <string name="store_form_city_label">City</string>

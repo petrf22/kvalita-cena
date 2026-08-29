@@ -355,6 +355,25 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     return execute(gql, variables, GraphQlResponse.serializer(SearchStoresData.serializer())).searchStores
   }
 
+  /**
+   * Číselník řetězců pro našeptávání při zakládání obchodu (docs/stav-implementace.md) —
+   * fixní kurátorský číselník naplněný migrací, mobilní protějšek frontend store-service.ts.
+   * Bez country server dosadí zemi vieweru.
+   */
+  suspend fun chains(query: String? = null, country: String? = null, first: Int = 20): List<RetailChain> {
+    val gql = """
+      query(${'$'}query: String, ${'$'}country: String, ${'$'}first: Int) {
+        chains(query: ${'$'}query, country: ${'$'}country, first: ${'$'}first) { id name chainType }
+      }
+    """
+    val variables = buildJsonObject {
+      put("query", query)
+      put("country", country)
+      put("first", first)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(ChainsData.serializer())).chains
+  }
+
   /** Podobné zboží podle názvu — nabídne existující druhové položky před založením nového (docs/reputace.md). */
   suspend fun productSuggestions(name: String, first: Int = 10): List<ProductSummary> {
     val gql = """

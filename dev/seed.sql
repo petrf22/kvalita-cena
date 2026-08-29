@@ -13,13 +13,15 @@
 
 BEGIN;
 
--- Řetězce: dva klasické řetězce + jeden lokální dodavatel (chain_type FARM_SHOP), ať je vidět,
--- že appka nesleduje jen sítě, ale i kvalitu/lokálnost (viz CLAUDE.md).
+-- Řetězce: Albert a Lidl přijdou i z produkčního číselníku
+-- (2026-08-29/03-retail-chain-seed.yaml), tady zůstávají pro provozovny níž. Farma Sedlák je
+-- lokální dodavatel (chain_type FARM_SHOP) mimo číselník, ať je vidět, že appka nesleduje jen
+-- sítě, ale i kvalitu/lokálnost (viz CLAUDE.md).
 INSERT INTO core.retail_chain (name, slug, chain_type, country, website) VALUES
   ('Albert', 'albert', 'CHAIN', 'CZ', 'https://www.albert.cz'),
   ('Lidl', 'lidl', 'CHAIN', 'CZ', 'https://www.lidl.cz'),
   ('Farma Sedlák', 'farma-sedlak', 'FARM_SHOP', 'CZ', NULL)
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (country, slug) DO NOTHING;
 
 -- Provozovny se skutečnými souřadnicemi (Brno + Praha), aby fungoval geo dotaz nearbyStores
 -- (core.store používá GiST index nad ll_to_earth(lat, lon) — viz 02-stores.yaml).

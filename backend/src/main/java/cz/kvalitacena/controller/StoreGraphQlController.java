@@ -1,12 +1,14 @@
 package cz.kvalitacena.controller;
 
 import cz.kvalitacena.db.entity.RecordType;
+import cz.kvalitacena.db.entity.RetailChain;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.entity.StoreStatus;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.security.ViewerContext;
 import cz.kvalitacena.security.ViewerContextResolver;
 import cz.kvalitacena.service.CatalogEditService;
+import cz.kvalitacena.service.ChainCatalogService;
 import cz.kvalitacena.service.CompanyRegistries;
 import cz.kvalitacena.service.CountryResolver;
 import cz.kvalitacena.service.GeocodingService;
@@ -42,6 +44,7 @@ public class StoreGraphQlController {
   private final GeocodingService geocodingService;
   private final CompanyRegistries companyRegistries;
   private final CountryResolver countryResolver;
+  private final ChainCatalogService chainCatalogService;
 
   @QueryMapping
   public List<Store> nearbyStores(@Argument double lat, @Argument double lon, @Argument Double radiusKm,
@@ -56,6 +59,13 @@ public class StoreGraphQlController {
       @Argument Integer first, @Argument Integer offset, Authentication authentication) {
     Long viewerId = viewerContextResolver.resolve(authentication).userId();
     return storeSearchService.search(query, city, first, offset, viewerId);
+  }
+
+  @QueryMapping
+  public List<RetailChain> chains(@Argument String query, @Argument String country, @Argument Integer first,
+      Authentication authentication) {
+    Long viewerId = viewerContextResolver.resolve(authentication).userId();
+    return chainCatalogService.search(query, country, first, viewerId);
   }
 
   @QueryMapping

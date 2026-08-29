@@ -259,18 +259,28 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   `docs/lokalizace.md`, „Kategorie"). Obě proběhnou automaticky s dalším nasazením, žádný ruční
   krok navíc netřeba. Další rozšíření číselníku zůstává budoucí práce (`docs/rozvoj.md`) —
   hledání a filtr podle kategorie mezitím přibyly (tamtéž).
-- **Katalog obchodů se záměrně nepředvyplňuje** — zvažovalo se ruční přepsání poboček
-  velkých řetězců (COOP, Penny) i hromadný import z OpenStreetMap, ale u objemu, o který by
-  reálně šlo (tisíce poboček napříč velkými řetězci), obojí naráží na stejné riziko z druhé
-  strany: scraping webů řetězců je právně nejistý kvůli sui generis právu k databázi
-  (směrnice 96/9/ES) a hromadný import z OSM/Overpass do `core.store` by byl „substantial
-  part" cizí ODbL databáze zkopírované do appčiných vlastních, uzavřených dat — přesně to,
-  čemu měl rozestup `core`/`osm` v `docs/datovy-model.md` zabránit, jen z opačné strany než
-  scraping. Katalog roste organicky s uživateli, jak appka byla navržená; studený start řeší
-  dočasně snížené prahy důvěry (`application-beta.yml`), ne předpřipravená data. Jediná cesta
-  ke skutečně velkému pokrytí by bylo naostro postavit `osm.*` schéma se sync jobem (čtení
-  spojené s `core.*` až za běhu, stejný princip jako appka má pro Open Food Facts) —
-  samostatná vícedenní architektonická práce, ne krok téhle bety.
+- **Katalog obchodů (konkrétní provozovny) se záměrně nepředvyplňuje** — zvažovalo se ruční
+  přepsání poboček velkých řetězců (COOP, Penny) i hromadný import z OpenStreetMap, ale u
+  objemu, o který by reálně šlo (tisíce poboček napříč velkými řetězci), obojí naráží na
+  stejné riziko z druhé strany: scraping webů řetězců je právně nejistý kvůli sui generis
+  právu k databázi (směrnice 96/9/ES) a hromadný import z OSM/Overpass do `core.store` by byl
+  „substantial part" cizí ODbL databáze zkopírované do appčiných vlastních, uzavřených dat —
+  přesně to, čemu měl rozestup `core`/`osm` v `docs/datovy-model.md` zabránit, jen z opačné
+  strany než scraping. Katalog provozoven roste organicky s uživateli, jak appka byla
+  navržená; studený start řeší dočasně snížené prahy důvěry (`application-beta.yml`), ne
+  předpřipravená data. Jediná cesta ke skutečně velkému pokrytí konkrétních poboček by bylo
+  naostro postavit `osm.*` schéma se sync jobem (čtení spojené s `core.*` až za běhu, stejný
+  princip jako appka má pro Open Food Facts) — samostatná vícedenní architektonická práce, ne
+  krok téhle bety.
+
+  Tohle se **netýká** číselníku samotných **řetězců** (`core.retail_chain`) pro našeptávání
+  při zakládání obchodu — ruční seznam ~30 značek (`2026-08-29/03-retail-chain-seed.yaml`) není
+  import poboček ani databáze ve smyslu směrnice 96/9/ES: jednotlivý název značky není chráněný
+  (chráněná je databáze, ne fakt), pár desítek řádků není podstatná část ničí databáze a užití
+  názvu k označení reálné provozovny je nominativní užití (čl. 14 nařízení o OZ EU). Ověřeno
+  proti [Name Suggestion Index](https://github.com/osmlab/name-suggestion-index) (kanonické
+  názvy značek pro OSM, licence BSD-3-Clause, ne ODbL) — loga se nepřebírají, jen textové
+  názvy.
 - [x] **Kanál zpětné vazby** — appka dřív neměla žádný způsob, jak od testerů dostat hlášení,
   jen `mailto:kontakt@kvalitacena.cz` na „O aplikaci" (schránka je od 2026-08-22 zřízená,
   sekce 1 výš — pořád nutná jako záložní kanál pro GDPR žádosti, in-app formulář ji nenahrazuje).

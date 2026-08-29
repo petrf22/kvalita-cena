@@ -346,6 +346,7 @@
 
     <string name="store_form_create_title">Neues Geschäft</string>
     <string name="store_form_edit_title">Geschäft bearbeiten</string>
+    <string name="store_form_chain_label">Handelskette (optional)</string>
     <string name="store_form_name_label">Name des Geschäfts</string>
     <string name="store_form_street_label">Straße und Hausnummer (optional)</string>
     <string name="store_form_city_label">Stadt</string>

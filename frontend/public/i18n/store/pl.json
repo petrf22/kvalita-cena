@@ -1,5 +1,7 @@
 {
   "form": {
+    "chainLabel": "Sieć (opcjonalnie)",
+    "chainPlaceholder": "Wpisz nazwę sieci…",
     "nameLabel": "Nazwa sklepu",
     "streetLabel": "Ulica i numer (opcjonalnie)",
     "cityLabel": "Miasto",

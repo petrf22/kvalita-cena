@@ -1,6 +1,27 @@
 <ng-container *transloco="let t; scope: 'store'">
   <form nz-form nzLayout="vertical" (ngSubmit)="submit()">
     <nz-form-item>
+      <nz-form-label>{{ t('store.form.chainLabel') }}</nz-form-label>
+      <nz-form-control>
+        <nz-select
+          nzShowSearch
+          nzServerSearch
+          nzAllowClear
+          [nzPlaceHolder]="t('store.form.chainPlaceholder')"
+          [nzLoading]="chainSearching()"
+          [ngModel]="chainId()"
+          name="chainId"
+          (nzOnSearch)="onChainSearch($event)"
+          (ngModelChange)="onChainSelect($event)"
+        >
+          @for (chain of displayChainOptions(); track chain.id) {
+            <nz-option [nzValue]="chain.id" [nzLabel]="chain.name" />
+          }
+        </nz-select>
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
       <nz-form-label>{{ t('store.form.nameLabel') }}</nz-form-label>
       <nz-form-control>
         <input

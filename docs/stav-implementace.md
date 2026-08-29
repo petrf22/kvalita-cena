@@ -68,7 +68,14 @@ mobil `ui/common/StorePicker.kt`/`ui/price/PriceEntryScreen.kt`) — **inline ú
 obchodu v UI je teď hotová** (web `features/store-detail`, mobil `ui/store/StoreDetailScreen.kt`
 + `StoreFormScreen.kt` v režimu editace, oba volají `updateStore`) — obchod má i nepovinné pole
 `url` (odkaz na jeho stránku u řetězce), stejnou cestou přes `core.store_user_edit` jako
-street/postalCode; **inline úprava zboží
+street/postalCode. **Výběr řetězce při zakládání/editaci obchodu je od 2026-08-29 hotový** —
+fixní kurátorský číselník `core.retail_chain` naplněný migrací
+(`2026-08-29/03-retail-chain-seed.yaml`, zatím jen CZ), našeptávač `Query.chains`
+(`ChainCatalogService`/`RetailChainRepository.searchByText`, `core.norm_text` jako u
+`searchStores`) a pole na obou klientech (web `shared/store-form.ts`, mobil
+`ui/store/StoreFormViewModel.kt` + `SearchableDropdown.kt`) — výběr předvyplní název obchodu jen
+když je pole ještě prázdné, `chainId`/`clearChain` v `CreateStoreInput`/`UpdateStoreInput` se
+teď skutečně posílají; **inline úprava zboží
 (`updateProduct` z formuláře) zatím na žádném z klientů nechybí implementačně, ale UI ji pořád
 nevolá** — `GraphQlClient.updateProduct` (mobil) a `ProductService.updateProduct` (web)
 i backend mutace jsou hotové a otestované, jen na ně nemíří žádná obrazovka.
@@ -258,9 +265,8 @@ tabulka, složení, alergeny, vlastní zadání) je rozvojový nápad v `docs/ro
 Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
 `PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec
 (jen složka `L`), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo jednorázové
-geokódování adresy, `agg.price_weekly_national`, offline fronta v mobilu, výběr řetězce při
-zakládání obchodu (`chainId` v `CreateStoreInput` existuje, ale klienti zatím nenabízí číselník
-řetězců k výběru), konsolidační job nad uživatelskou vrstvou (jen datový model a fronta,
+geokódování adresy, `agg.price_weekly_national`, offline fronta v mobilu, konsolidační job nad
+uživatelskou vrstvou (jen datový model a fronta,
 vyhodnocovací pravidlo zatím není známé — viz výš), inline edit UI pro ZBOŽÍ na obou klientech
 (mutace jsou hotové, jen je zatím nevolá žádná obrazovka — u OBCHODU už hotové je, viz výš),
 fotka jako důkaz ceny (`core.price_observation`, `f_evid` v `docs/reputace.md` — fotky zatím

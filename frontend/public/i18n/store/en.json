@@ -1,5 +1,7 @@
 {
   "form": {
+    "chainLabel": "Chain (optional)",
+    "chainPlaceholder": "Type the chain name…",
     "nameLabel": "Store name",
     "streetLabel": "Street and number (optional)",
     "cityLabel": "City",

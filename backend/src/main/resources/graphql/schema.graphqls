@@ -71,6 +71,13 @@ type Query {
   searchStores(query: String, city: String, first: Int = 20, offset: Int = 0): StoreSearchResult!
 
   """
+  Číselník řetězců pro našeptávání při zakládání obchodu. Fixní kurátorský číselník naplněný
+  migrací — createChain mutace záměrně neexistuje, stejně jako u kategorií (docs/rozvoj.md).
+  Bez country server dosadí zemi vieweru (CountryResolver, docs/lokalizace.md).
+  """
+  chains(query: String, country: String, first: Int = 20): [RetailChain!]!
+
+  """
   Detail jedné provozovny (stránka obchodu — adresa, mapa, fotky). Stejná viditelnost pod
   prahem důvěry jako product(id): ACTIVE vidí každý, vlastní PENDING (docs/reputace.md) jen
   autor. Null, když provozovna neexistuje nebo není vidět.

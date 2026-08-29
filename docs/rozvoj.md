@@ -37,11 +37,13 @@ API a UI: nové pole na GraphQL typu `Store`/`RetailChain`
 
 Kdo název vyplní: jde o úpravu existujícího obchodu/řetězce, takže přirozeně sedí do uživatelské
 vrstvy (`core.store_user_edit`, `CatalogEditService.updateStore`, `docs/datovy-model.md` —
-„Uživatelská vrstva nad globálními daty"). **Otevřená otázka:** u řetězce dnes žádná uživatelská
-editace neexistuje a klienti ani nenabízejí číselník řetězců k výběru (`CLAUDE.md`,
-„Neimplementováno") — než se tohle udělá, je potřeba nejdřív editaci `core.retail_chain` vůbec
-zavést, nebo název dát jen na `core.store` a smířit se s tím, že se zadává opakovaně za každou
-provozovnu jednoho řetězce.
+„Uživatelská vrstva nad globálními daty"). Klienti od 2026-08-29 nabízejí číselník řetězců
+k výběru při zakládání/editaci obchodu (`Query.chains`, `docs/stav-implementace.md`) — vazba
+`Store.chain` už tedy jde nastavit z UI. **Otevřená otázka zůstává jen u samotného řetězce:**
+`core.retail_chain` je pořád fixní kurátorský číselník naplněný migrací (žádná `createChain`/
+`updateChain` mutace), takže než půjde zapsat „Billa klub" na `RetailChain`, je potřeba nejdřív
+uživatelskou editaci řetězce vůbec zavést, nebo název dát jen na `core.store` a smířit se s tím,
+že se zadává opakovaně za každou provozovnu jednoho řetězce.
 
 Agregace se nemění — jde čistě o zobrazovací text, klíč agregátu zůstává `price_kind`.
 

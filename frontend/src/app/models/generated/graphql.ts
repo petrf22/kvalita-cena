@@ -648,6 +648,15 @@ export type ReverseGeocodeQueryVariables = Exact<{
 
 export type ReverseGeocodeQuery = { reverseGeocode: { street: string | null, city: string | null, postalCode: string | null, country: string | null, osmRef: string | null, attribution: string } };
 
+export type ChainsQueryVariables = Exact<{
+  query?: string | null | undefined;
+  country?: string | null | undefined;
+  first?: number | null | undefined;
+}>;
+
+
+export type ChainsQuery = { chains: Array<{ id: string, name: string, chainType: ChainType }> };
+
 export type CompanyByIcoQueryVariables = Exact<{
   ico: string;
 }>;
@@ -2798,6 +2807,15 @@ export const ReverseGeocodeDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<ReverseGeocodeQuery, ReverseGeocodeQueryVariables>;
+export const ChainsDocument = new TypedDocumentString(`
+    query Chains($query: String, $country: String, $first: Int) {
+  chains(query: $query, country: $country, first: $first) {
+    id
+    name
+    chainType
+  }
+}
+    `) as unknown as TypedDocumentString<ChainsQuery, ChainsQueryVariables>;
 export const CompanyByIcoDocument = new TypedDocumentString(`
     query CompanyByIco($ico: String!) {
   companyByIco(ico: $ico) {

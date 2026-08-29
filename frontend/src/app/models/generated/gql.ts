@@ -64,6 +64,7 @@ type Documents = {
     "\n      mutation FlagStore($recordId: ID!, $reason: String) {\n        flagRecord(recordType: STORE, recordId: $recordId, reason: $reason) {\n          flagCount\n          hidden\n        }\n      }\n    ": typeof types.FlagStoreDocument,
     "\n      query GeocodeAddress($street: String, $city: String!, $postalCode: String) {\n        geocodeAddress(street: $street, city: $city, postalCode: $postalCode) {\n          attribution\n          candidates {\n            lat\n            lon\n            displayName\n            osmRef\n          }\n        }\n      }\n    ": typeof types.GeocodeAddressDocument,
     "\n      query ReverseGeocode($lat: Float!, $lon: Float!) {\n        reverseGeocode(lat: $lat, lon: $lon) {\n          street\n          city\n          postalCode\n          country\n          osmRef\n          attribution\n        }\n      }\n    ": typeof types.ReverseGeocodeDocument,
+    "\n      query Chains($query: String, $country: String, $first: Int) {\n        chains(query: $query, country: $country, first: $first) {\n          id\n          name\n          chainType\n        }\n      }\n    ": typeof types.ChainsDocument,
     "\n      query CompanyByIco($ico: String!) {\n        companyByIco(ico: $ico) {\n          ico\n          name\n          street\n          city\n          postalCode\n        }\n      }\n    ": typeof types.CompanyByIcoDocument,
     "\n      query Me {\n        me {\n          publicHandle\n          displayName\n          createdAt\n          trusted\n          moderator\n          locale\n          country\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    ": typeof types.MeDocument,
     "\n      mutation SetLocale($locale: String!, $country: String) {\n        setLocale(locale: $locale, country: $country) {\n          locale\n          country\n        }\n      }\n    ": typeof types.SetLocaleDocument,
@@ -120,6 +121,7 @@ const documents: Documents = {
     "\n      mutation FlagStore($recordId: ID!, $reason: String) {\n        flagRecord(recordType: STORE, recordId: $recordId, reason: $reason) {\n          flagCount\n          hidden\n        }\n      }\n    ": types.FlagStoreDocument,
     "\n      query GeocodeAddress($street: String, $city: String!, $postalCode: String) {\n        geocodeAddress(street: $street, city: $city, postalCode: $postalCode) {\n          attribution\n          candidates {\n            lat\n            lon\n            displayName\n            osmRef\n          }\n        }\n      }\n    ": types.GeocodeAddressDocument,
     "\n      query ReverseGeocode($lat: Float!, $lon: Float!) {\n        reverseGeocode(lat: $lat, lon: $lon) {\n          street\n          city\n          postalCode\n          country\n          osmRef\n          attribution\n        }\n      }\n    ": types.ReverseGeocodeDocument,
+    "\n      query Chains($query: String, $country: String, $first: Int) {\n        chains(query: $query, country: $country, first: $first) {\n          id\n          name\n          chainType\n        }\n      }\n    ": types.ChainsDocument,
     "\n      query CompanyByIco($ico: String!) {\n        companyByIco(ico: $ico) {\n          ico\n          name\n          street\n          city\n          postalCode\n        }\n      }\n    ": types.CompanyByIcoDocument,
     "\n      query Me {\n        me {\n          publicHandle\n          displayName\n          createdAt\n          trusted\n          moderator\n          locale\n          country\n          profile {\n            ...ProfileFields\n          }\n        }\n      }\n    ": types.MeDocument,
     "\n      mutation SetLocale($locale: String!, $country: String) {\n        setLocale(locale: $locale, country: $country) {\n          locale\n          country\n        }\n      }\n    ": types.SetLocaleDocument,
@@ -323,6 +325,10 @@ export function graphql(source: "\n      query GeocodeAddress($street: String, $
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n      query ReverseGeocode($lat: Float!, $lon: Float!) {\n        reverseGeocode(lat: $lat, lon: $lon) {\n          street\n          city\n          postalCode\n          country\n          osmRef\n          attribution\n        }\n      }\n    "): typeof import('./graphql').ReverseGeocodeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n      query Chains($query: String, $country: String, $first: Int) {\n        chains(query: $query, country: $country, first: $first) {\n          id\n          name\n          chainType\n        }\n      }\n    "): typeof import('./graphql').ChainsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

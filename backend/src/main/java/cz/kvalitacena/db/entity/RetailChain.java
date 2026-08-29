@@ -7,7 +7,8 @@ import org.springframework.data.domain.Persistable;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "retail_chain", schema = "core")
+@Table(name = "retail_chain", schema = "core",
+    uniqueConstraints = @UniqueConstraint(name = "uq_retail_chain_country_slug", columnNames = {"country", "slug"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,7 +23,7 @@ public class RetailChain implements Persistable<Long> {
   @Column(name = "name", nullable = false, length = 120)
   private String name;
 
-  @Column(name = "slug", nullable = false, unique = true, length = 140)
+  @Column(name = "slug", nullable = false, length = 140)
   private String slug;
 
   @Enumerated(EnumType.STRING)

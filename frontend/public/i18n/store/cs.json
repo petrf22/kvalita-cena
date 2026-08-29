@@ -1,5 +1,7 @@
 {
   "form": {
+    "chainLabel": "Řetězec (volitelné)",
+    "chainPlaceholder": "Napiš název řetězce…",
     "nameLabel": "Název obchodu",
     "streetLabel": "Ulice a číslo (volitelné)",
     "cityLabel": "Město",

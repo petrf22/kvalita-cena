@@ -20,6 +20,13 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.4.0", date: "2026-08-29", sections: [
+      { title: "Přidáno", items: [
+        { text: "Fotka zboží a fotka etikety rovnou při zakládání nového zboží, obě nepovinné", parts: ["server", "web", "mobil"] },
+        { text: "Odkazy na aditiva (E-čka) konkrétního zboží z Open Food Facts na detailu zboží", parts: ["server"] },
+        { text: "Našeptávání řetězce podle názvu při zakládání/úpravě obchodu, výběr předvyplní název obchodu", parts: ["server", "web", "mobil"] },
+      ] },
+  ] },
   { version: "0.3.0", date: "2026-08-28", sections: [
       { title: "Přidáno", items: [
         { text: "Předvyplnění zboží z Open Food Facts při skenu/zadání čárového kódu, který appka ještě nezná, s atribucí zdroje na detailu zboží", parts: ["server", "web", "mobil"] },

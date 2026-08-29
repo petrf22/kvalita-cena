@@ -344,6 +344,7 @@
 
     <string name="store_form_create_title">Nový obchod</string>
     <string name="store_form_edit_title">Upraviť obchod</string>
+    <string name="store_form_chain_label">Reťazec (voliteľné)</string>
     <string name="store_form_name_label">Názov obchodu</string>
     <string name="store_form_street_label">Ulica a číslo (voliteľné)</string>
     <string name="store_form_city_label">Mesto</string>

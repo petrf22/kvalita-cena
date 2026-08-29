@@ -9,6 +9,7 @@ import cz.kvalitacena.R
 import cz.kvalitacena.network.CreateStoreInput
 import cz.kvalitacena.network.GeocodeCandidate
 import cz.kvalitacena.network.GraphQlClient
+import cz.kvalitacena.network.RetailChain
 import cz.kvalitacena.network.Store
 import cz.kvalitacena.network.UpdateStoreInput
 import cz.kvalitacena.ui.common.KNOWN_COUNTRIES
@@ -22,6 +23,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val SIMILAR_CHECK_DEBOUNCE_MS = 400L
+private const val CHAIN_SEARCH_DEBOUNCE_MS = 300L
 
 /**
  * Založení provozovny mimo skenování/GPS — pro zápis ceny bez sdílení polohy nebo zpětně
@@ -44,6 +46,21 @@ class StoreFormViewModel(
   val isEditing: Boolean get() = editingStoreId != null
 
   var name by mutableStateOf("")
+
+  /**
+   * Číselník řetězců pro našeptávání (docs/stav-implementace.md). Výběr předvyplní [name], ale
+   * JEN pokud je pole názvu ještě prázdné — rozepsaný název se nikdy nepřepíše.
+   */
+  var chainQuery by mutableStateOf("")
+    private set
+  var chainId by mutableStateOf<String?>(null)
+    private set
+  var chainSuggestions by mutableStateOf<List<RetailChain>>(emptyList())
+    private set
+  var chainSearching by mutableStateOf(false)
+    private set
+  private var chainSearchJob: Job? = null
+
   var street by mutableStateOf("")
   var city by mutableStateOf("")
   var postalCode by mutableStateOf("")
@@ -106,6 +123,8 @@ class StoreFormViewModel(
       try {
         graphQlClient.storeById(id)?.let { store ->
           name = store.name
+          chainId = store.chain?.id
+          chainQuery = store.chain?.name.orEmpty()
           street = store.street.orEmpty()
           city = store.city
           postalCode = store.postalCode.orEmpty()
@@ -130,6 +149,34 @@ class StoreFormViewModel(
   fun onNameChange(value: String) {
     name = value
     scheduleSimilarCheck()
+  }
+
+  fun onChainQueryChange(value: String) {
+    chainQuery = value
+    // Smazání textu zruší i vazbu na řetězec — dokud uživatel nevybere jinou položku z nabídky,
+    // psaní nad vybraným řetězcem ho jen přepisuje, ne mění (stejný princip jako web nzAllowClear).
+    if (value.isBlank()) chainId = null
+    chainSearchJob?.cancel()
+    chainSearchJob = viewModelScope.launch {
+      delay(CHAIN_SEARCH_DEBOUNCE_MS)
+      chainSearching = true
+      try {
+        chainSuggestions = graphQlClient.chains(query = value.trim().ifBlank { null }, country = country)
+      } catch (e: Exception) {
+        // Našeptávač je jen doporučující — chyba dotazu nesmí blokovat založení obchodu.
+      } finally {
+        chainSearching = false
+      }
+    }
+  }
+
+  fun onChainSelect(chain: RetailChain) {
+    chainId = chain.id
+    chainQuery = chain.name
+    // Předvyplní název JEN pokud je pole ještě prázdné — rozepsaný název výběr nikdy nepřepíše.
+    if (name.isBlank()) {
+      onNameChange(chain.name)
+    }
   }
 
   fun onCityChange(value: String) {
@@ -256,6 +303,8 @@ class StoreFormViewModel(
         created = if (isEditing) {
           val input = UpdateStoreInput(
             name = name.trim(),
+            chainId = chainId,
+            clearChain = chainId == null,
             street = street.trim().ifBlank { null },
             clearStreet = street.trim().isEmpty(),
             city = city.trim(),
@@ -278,6 +327,7 @@ class StoreFormViewModel(
         } else {
           val input = CreateStoreInput(
             name = name.trim(),
+            chainId = chainId,
             street = street.trim().ifBlank { null },
             city = city.trim(),
             postalCode = postalCode.trim().ifBlank { null },

@@ -52,6 +52,7 @@ import cz.kvalitacena.network.GeocodeCandidate
 import cz.kvalitacena.ui.common.KNOWN_COUNTRIES
 import cz.kvalitacena.ui.common.LocationMap
 import cz.kvalitacena.ui.common.NavigationResults
+import cz.kvalitacena.ui.common.SearchableDropdown
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.companyIdLabelRes
 import cz.kvalitacena.ui.common.countryNameRes
@@ -118,6 +119,18 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     Text(
       stringResource(if (viewModel.isEditing) R.string.store_form_edit_title else R.string.store_form_create_title),
       style = MaterialTheme.typography.headlineSmall,
+    )
+    Gap()
+
+    SearchableDropdown(
+      query = viewModel.chainQuery,
+      onQueryChange = viewModel::onChainQueryChange,
+      suggestions = viewModel.chainSuggestions,
+      onSelect = viewModel::onChainSelect,
+      itemLabel = { it.name },
+      label = stringResource(R.string.store_form_chain_label),
+      loading = viewModel.chainSearching,
+      modifier = Modifier.fillMaxWidth(),
     )
     Gap()
 

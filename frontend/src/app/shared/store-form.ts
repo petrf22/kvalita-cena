@@ -22,7 +22,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSelectModule } from 'ng-zorro-antd/select';
-import { GeocodeCandidate, Store, UpdateStoreInput } from '../models/catalog';
+import { GeocodeCandidate, RetailChain, Store, UpdateStoreInput } from '../models/catalog';
 import { CountryService } from '../services/country-service';
 import { StoreService } from '../services/store-service';
 import { translateError } from './error-message';
@@ -30,6 +30,7 @@ import { KNOWN_COUNTRIES } from './known-countries';
 import { LocationMap } from './location-map';
 
 const SIMILAR_CHECK_DEBOUNCE_MS = 400;
+const CHAIN_SEARCH_DEBOUNCE_MS = 300;
 
 /**
  * Tvar identifikačního čísla firmy per zemi (docs/lokalizace.md) — zrcadlí
@@ -89,6 +90,21 @@ export class StoreForm {
   @Output() readonly cancelled = new EventEmitter<void>();
 
   protected readonly name = signal('');
+  /**
+   * Číselník řetězců pro našeptávání (docs/stav-implementace.md). Výběr předvyplní `name`, ale
+   * JEN pokud je pole názvu prázdné — rozepsaný název ("Kaufland Rokycany") se nikdy nepřepíše.
+   */
+  protected readonly chainId = signal<string | null>(null);
+  protected readonly chainOptions = signal<RetailChain[]>([]);
+  protected readonly selectedChain = signal<RetailChain | null>(null);
+  protected readonly chainSearching = signal(false);
+  protected readonly displayChainOptions = computed(() => {
+    const list = [...this.chainOptions()];
+    const selected = this.selectedChain();
+    if (selected && !list.some((c) => c.id === selected.id)) list.unshift(selected);
+    return list;
+  });
+  private chainSearchTimer?: ReturnType<typeof setTimeout>;
   protected readonly street = signal('');
   protected readonly city = signal('');
   protected readonly postalCode = signal('');
@@ -143,6 +159,8 @@ export class StoreForm {
       const store = this.store();
       if (!store) return;
       this.name.set(store.name);
+      this.chainId.set(store.chain?.id ?? null);
+      this.selectedChain.set(store.chain ?? null);
       this.street.set(store.street ?? '');
       this.city.set(store.city);
       this.postalCode.set(store.postalCode ?? '');
@@ -200,6 +218,31 @@ export class StoreForm {
         error: () => {},
       });
     }, SIMILAR_CHECK_DEBOUNCE_MS);
+  }
+
+  onChainSearch(query: string): void {
+    clearTimeout(this.chainSearchTimer);
+    this.chainSearchTimer = setTimeout(() => {
+      this.chainSearching.set(true);
+      this.storeService.chains(query.trim() || null, this.country()).subscribe({
+        next: (chains) => {
+          this.chainOptions.set(chains);
+          this.chainSearching.set(false);
+        },
+        error: () => this.chainSearching.set(false),
+      });
+    }, CHAIN_SEARCH_DEBOUNCE_MS);
+  }
+
+  onChainSelect(id: string | null): void {
+    this.chainId.set(id);
+    const chain = this.displayChainOptions().find((c) => c.id === id) ?? null;
+    this.selectedChain.set(chain);
+    // Předvyplní název JEN pokud je pole ještě prázdné — rozepsaný název výběr nikdy nepřepíše.
+    if (chain && !this.name().trim()) {
+      this.name.set(chain.name);
+      this.onNameOrCityChange();
+    }
   }
 
   lookupIco(): void {
@@ -345,6 +388,7 @@ export class StoreForm {
         )
       : this.storeService.create({
           name: this.name().trim(),
+          chainId: this.chainId(),
           street: this.street().trim() || null,
           city: this.city().trim(),
           postalCode: this.postalCode().trim() || null,
@@ -383,6 +427,8 @@ export class StoreForm {
   ): UpdateStoreInput {
     return {
       name: this.name().trim(),
+      chainId: this.chainId(),
+      clearChain: this.chainId() == null,
       street: this.street().trim() || null,
       clearStreet: this.street().trim() === '',
       city: this.city().trim(),

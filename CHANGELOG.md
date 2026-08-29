@@ -7,11 +7,12 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
-## [Nezveřejněno]
+## [0.4.0] – 2026-08-29
 
 ### Přidáno
 - Fotka zboží a fotka etikety rovnou při zakládání nového zboží, obě nepovinné (server, web, mobil)
 - Odkazy na aditiva (E-čka) konkrétního zboží z Open Food Facts na detailu zboží (server)
+- Našeptávání řetězce podle názvu při zakládání/úpravě obchodu, výběr předvyplní název obchodu (server, web, mobil)
 
 ## [0.3.0] – 2026-08-28
 

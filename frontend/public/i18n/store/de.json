@@ -1,5 +1,7 @@
 {
   "form": {
+    "chainLabel": "Handelskette (optional)",
+    "chainPlaceholder": "Namen der Kette eingeben…",
     "nameLabel": "Name des Geschäfts",
     "streetLabel": "Straße und Hausnummer (optional)",
     "cityLabel": "Stadt",

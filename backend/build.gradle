@@ -6,7 +6,7 @@ plugins {
 
 group = 'cz.kvalitacena'
 // Generováno tools/version/sync.mjs z kořenového VERSION — needituj ručně.
-version = '0.3.0'
+version = '0.4.0'
 description = 'Kvalita a cena — komunitní sledování cen zboží'
 
 java {

@@ -766,6 +766,9 @@ data class FxInfoData(val fxInfo: FxInfo)
 data class CountriesData(val countries: List<CountryInfo> = emptyList())
 
 @Serializable
+data class ChainsData(val chains: List<RetailChain> = emptyList())
+
+@Serializable
 data class SetLocaleData(val setLocale: SetLocaleResult)
 
 @Serializable

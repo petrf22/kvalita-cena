@@ -344,6 +344,7 @@
 
     <string name="store_form_create_title">Nowy sklep</string>
     <string name="store_form_edit_title">Edytuj sklep</string>
+    <string name="store_form_chain_label">Sieć (opcjonalnie)</string>
     <string name="store_form_name_label">Nazwa sklepu</string>
     <string name="store_form_street_label">Ulica i numer (opcjonalnie)</string>
     <string name="store_form_city_label">Miasto</string>

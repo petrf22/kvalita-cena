@@ -52,9 +52,8 @@ Co je hotové a v jakém souboru to žije: [`docs/stav-implementace.md`](docs/st
 Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
 `PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec
 (jen složka `L`), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo jednorázové
-geokódování adresy, `agg.price_weekly_national`, offline fronta v mobilu, výběr řetězce při
-zakládání obchodu (`chainId` v `CreateStoreInput` existuje, ale klienti zatím nenabízí číselník
-řetězců k výběru), konsolidační job nad uživatelskou vrstvou (jen datový model a fronta,
+geokódování adresy, `agg.price_weekly_national`, offline fronta v mobilu, konsolidační job nad
+uživatelskou vrstvou (jen datový model a fronta,
 vyhodnocovací pravidlo zatím není známé — `docs/stav-implementace.md`, „Uživatelská vrstva
 nad globálními daty"), inline edit UI pro ZBOŽÍ na obou klientech (mutace jsou hotové, jen je
 zatím nevolá žádná obrazovka — u OBCHODU už hotové je, tamtéž),

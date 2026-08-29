@@ -1,0 +1,81 @@
+# 03-retail-chain-seed.yaml — číselník řetězců pro našeptávání při zakládání obchodu
+# (docs/stav-implementace.md, "výběr řetězce při zakládání obchodu"). Dvě samostatné změny:
+#
+# 1) core.retail_chain.slug měl unikát jen přes slug samotný (2026-07-26/02-stores.yaml) — u
+#    cíle 16 zemí (docs/lokalizace.md) by to znamenalo buď zemi zakódovanou ve slugu
+#    ("lidl-cz", "lidl-sk"), nebo kolizi při zakládání stejné značky ve druhé zemi. Přechod na
+#    unikát (country, slug), stejný vzor jako u uq_store_identity v
+#    2026-08-16/01-store-country.yaml — DROP starého, CREATE nového, ne editace historického
+#    changesetu (tabulka byla v produkci prázdná, ale checksum už proběhlého changesetu se
+#    stejně nemá měnit).
+#
+# 2) Ruční seed značek působících v ČR. Vzor 2026-08-19/01-category-seed.yaml (prostý INSERT,
+#    ne staging tabulka + CSV z 2026-08-20/01-category-tree.yaml — na ~35 řádků je to
+#    zbytečné, ten vzor si nech pro rozšíření na další země). Jde o kurátorský číselník
+#    značek, ne o import poboček — viz docs/nasazeni.md, "Katalog obchodů se záměrně
+#    nepředvyplňuje" a odůvodnění tamtéž, proč se to na tenhle seed nevztahuje. Ověřeno proti
+#    https://github.com/osmlab/name-suggestion-index (BSD-3-Clause, ne ODbL).
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-29-03-retail-chain-country-slug-unique
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.retail_chain DROP CONSTRAINT retail_chain_slug_key;
+              ALTER TABLE core.retail_chain ADD CONSTRAINT uq_retail_chain_country_slug UNIQUE (country, slug);
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE core.retail_chain DROP CONSTRAINT uq_retail_chain_country_slug;
+              ALTER TABLE core.retail_chain ADD CONSTRAINT retail_chain_slug_key UNIQUE (slug);
+
+  - changeSet:
+      id: 2026-08-29-03-retail-chain-seed-cz
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO core.retail_chain (name, slug, chain_type, country, website) VALUES
+                ('Kaufland', 'kaufland', 'CHAIN', 'CZ', 'https://www.kaufland.cz'),
+                ('Lidl', 'lidl', 'CHAIN', 'CZ', 'https://www.lidl.cz'),
+                ('Albert', 'albert', 'CHAIN', 'CZ', 'https://www.albert.cz'),
+                ('Billa', 'billa', 'CHAIN', 'CZ', 'https://www.billa.cz'),
+                ('Penny Market', 'penny-market', 'CHAIN', 'CZ', 'https://www.penny.cz'),
+                ('Tesco', 'tesco', 'CHAIN', 'CZ', 'https://itesco.cz'),
+                ('Globus', 'globus', 'CHAIN', 'CZ', 'https://www.globus.cz'),
+                ('Makro', 'makro', 'CHAIN', 'CZ', 'https://www.makro.cz'),
+                ('Norma', 'norma', 'CHAIN', 'CZ', 'https://www.norma-online.cz'),
+                ('Žabka', 'zabka', 'CHAIN', 'CZ', 'https://www.zabka.cz'),
+                ('Hruška', 'hruska', 'CHAIN', 'CZ', 'https://www.hruska.info'),
+                ('Flop', 'flop', 'CHAIN', 'CZ', NULL),
+                ('Enapo', 'enapo', 'CHAIN', 'CZ', 'https://www.enapo.cz'),
+                ('Travel Free', 'travel-free', 'CHAIN', 'CZ', NULL),
+                ('COOP Tuty', 'coop-tuty', 'CHAIN', 'CZ', 'https://www.coop.cz'),
+                ('COOP TIP', 'coop-tip', 'CHAIN', 'CZ', 'https://www.coop.cz'),
+                ('COOP Terno', 'coop-terno', 'CHAIN', 'CZ', 'https://www.coop.cz'),
+                ('COOP Diskont', 'coop-diskont', 'CHAIN', 'CZ', 'https://www.coop.cz'),
+                ('COOP Jednota', 'coop-jednota', 'CHAIN', 'CZ', 'https://www.coop.cz'),
+                ('Konzum', 'konzum', 'CHAIN', 'CZ', 'https://www.konzum.cz'),
+                ('dm drogerie markt', 'dm-drogerie-markt', 'CHAIN', 'CZ', 'https://www.dm.cz'),
+                ('Rossmann', 'rossmann', 'CHAIN', 'CZ', 'https://www.rossmann.cz'),
+                ('Teta drogerie', 'teta-drogerie', 'CHAIN', 'CZ', 'https://www.teta.cz'),
+                ('Action', 'action', 'CHAIN', 'CZ', 'https://www.action.com'),
+                ('Pepco', 'pepco', 'CHAIN', 'CZ', 'https://www.pepco.cz'),
+                ('KiK', 'kik', 'CHAIN', 'CZ', 'https://www.kik.cz'),
+                ('TEDi', 'tedi', 'CHAIN', 'CZ', 'https://www.tedi.com'),
+                ('Sklizeno', 'sklizeno', 'CHAIN', 'CZ', 'https://www.sklizeno.cz'),
+                ('Country Life', 'country-life', 'CHAIN', 'CZ', 'https://www.countrylife.cz'),
+                ('Rohlík.cz', 'rohlik-cz', 'ONLINE', 'CZ', 'https://www.rohlik.cz'),
+                ('Košík.cz', 'kosik-cz', 'ONLINE', 'CZ', 'https://www.kosik.cz')
+              ON CONFLICT (country, slug) DO NOTHING;
+      rollback:
+        - sql:
+            sql: |
+              DELETE FROM core.retail_chain WHERE country = 'CZ' AND slug IN (
+                'kaufland', 'lidl', 'albert', 'billa', 'penny-market', 'tesco', 'globus',
+                'makro', 'norma', 'zabka', 'hruska', 'flop', 'enapo', 'travel-free',
+                'coop-tuty', 'coop-tip', 'coop-terno', 'coop-diskont', 'coop-jednota', 'konzum',
+                'dm-drogerie-markt', 'rossmann', 'teta-drogerie', 'action', 'pepco', 'kik',
+                'tedi', 'sklizeno', 'country-life', 'rohlik-cz', 'kosik-cz'
+              );

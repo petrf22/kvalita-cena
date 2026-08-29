@@ -428,6 +428,7 @@
 
     <string name="store_form_create_title">Nový obchod</string>
     <string name="store_form_edit_title">Upravit obchod</string>
+    <string name="store_form_chain_label">Řetězec (volitelné)</string>
     <string name="store_form_name_label">Název obchodu</string>
     <string name="store_form_street_label">Ulice a číslo (volitelné)</string>
     <string name="store_form_city_label">Město</string>

@@ -142,6 +142,25 @@ export class StoreService {
     return this.graphQl.execute(document, { lat, lon }).pipe(map((data) => data.reverseGeocode));
   }
 
+  /**
+   * Číselník řetězců pro našeptávání při zakládání obchodu — fixní kurátorský číselník
+   * (docs/stav-implementace.md), bez country server dosadí zemi vieweru.
+   */
+  chains(query: string | null, country: string | null = null, first = 20) {
+    const document = graphql(`
+      query Chains($query: String, $country: String, $first: Int) {
+        chains(query: $query, country: $country, first: $first) {
+          id
+          name
+          chainType
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { query, country, first })
+      .pipe(map((data) => data.chains));
+  }
+
   /** Předvyplnění formuláře obchodu z veřejného rejstříku ARES — null, když IČO neexistuje nebo je ARES nedostupný. */
   companyByIco(ico: string) {
     const document = graphql(`
