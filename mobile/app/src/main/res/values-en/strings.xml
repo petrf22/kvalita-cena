@@ -206,6 +206,7 @@
     <string name="photo_too_large">The photo is too large (max. 8 MB).</string>
     <string name="photo_take_picture">Take photo</string>
     <string name="photo_pick_from_gallery">Pick from gallery</string>
+    <string name="photo_remove">Remove</string>
 
     <string name="quality_not_rated">Quality: not rated yet</string>
     <string name="quality_rated">Quality %1$.1f/5</string>
@@ -317,6 +318,11 @@
     <string name="product_form_code_hint">Without a code, a generic item is created (e.g. \"bread for %1$s\" from a receipt) — with lower data confidence, but it can still be recorded.</string>
     <string name="product_form_submit">Create product</string>
     <string name="product_form_back_without_creating">Back without creating</string>
+    <string name="product_form_item_photo_label">Photo of the product (optional)</string>
+    <string name="product_form_label_photo_label">Photo of the label (optional)</string>
+    <string name="product_form_photo_login_hint">Adding photos requires signing in — go to the Account tab.</string>
+    <string name="product_form_uploading_photos">Uploading photos…</string>
+    <string name="product_form_photo_upload_failed_warning">The product was created, but the photo failed to upload. Try again from its detail page.</string>
 
     <string name="store_not_found">We couldn\'t find this store.</string>
     <string name="store_edited_by_me">Your edit</string>

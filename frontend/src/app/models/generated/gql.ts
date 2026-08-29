@@ -19,7 +19,7 @@ type Documents = {
     "\n      mutation SubmitFeedback($input: FeedbackInput!) {\n        submitFeedback(input: $input) {\n          id\n        }\n      }\n    ": typeof types.SubmitFeedbackDocument,
     "\n      query FxInfo {\n        fxInfo {\n          displayCurrencies\n          latestRateDate\n          attribution\n        }\n      }\n    ": typeof types.FxInfoDocument,
     "\n  fragment StoreFields on Store {\n    id\n    name\n    street\n    city\n    postalCode\n    country\n    lat\n    lon\n    geoSource\n    ico\n    url\n    chain {\n      id\n      name\n      chainType\n    }\n    verified\n    editedByMe\n    pendingConfirmation\n  }\n": typeof types.StoreFieldsFragmentDoc,
-    "\n  fragment PhotoFields on Photo {\n    id\n    url\n    thumbnailUrl\n    width\n    height\n    caption\n    mine\n    hidden\n    attribution\n  }\n": typeof types.PhotoFieldsFragmentDoc,
+    "\n  fragment PhotoFields on Photo {\n    id\n    url\n    thumbnailUrl\n    width\n    height\n    caption\n    mine\n    hidden\n    attribution\n    kind\n  }\n": typeof types.PhotoFieldsFragmentDoc,
     "\n  fragment ProfileFields on Profile {\n    firstName\n    lastName\n    phone\n    contactEmail\n    loginEmail\n    visibility\n    visibleFields {\n      field\n      audience\n    }\n    avatar {\n      ...PhotoFields\n    }\n  }\n": typeof types.ProfileFieldsFragmentDoc,
     "\n  fragment StoreDetailFields on Store {\n    ...StoreFields\n    photos {\n      ...PhotoFields\n    }\n  }\n": typeof types.StoreDetailFieldsFragmentDoc,
     "\n  fragment ConvertedPriceFields on ConvertedPrice {\n    amount\n    currency\n    rateDate\n  }\n": typeof types.ConvertedPriceFieldsFragmentDoc,
@@ -29,7 +29,7 @@ type Documents = {
     "\n  fragment ProductSummaryFields on Product {\n    id\n    name\n    brand {\n      id\n      name\n      slug\n    }\n    category {\n      id\n      name\n      slug\n      path\n    }\n    isGeneric\n    verified\n    editedByMe\n  }\n": typeof types.ProductSummaryFieldsFragmentDoc,
     "\n  fragment PublicationStatusFields on PublicationStatus {\n    state\n    confirmationsReceived\n    confirmationsRequired\n    verified\n  }\n": typeof types.PublicationStatusFieldsFragmentDoc,
     "\n  fragment SearchItemFields on ProductSearchItem {\n    product {\n      ...ProductSummaryFields\n    }\n    observationCount\n    bestPrice\n    bestUnitPrice\n    currency\n    bestPriceObservations\n    lastObservedAt\n    qualityAverage\n    qualityCount\n    converted {\n      ...ConvertedPriceFields\n    }\n    convertedUnit {\n      ...ConvertedPriceFields\n    }\n    cheapestStore {\n      ...StoreFields\n    }\n  }\n": typeof types.SearchItemFieldsFragmentDoc,
-    "\n      mutation UpdatePhoto($id: ID!, $caption: String, $sortOrder: Int) {\n        updatePhoto(id: $id, caption: $caption, sortOrder: $sortOrder) {\n          ...PhotoFields\n        }\n      }\n    ": typeof types.UpdatePhotoDocument,
+    "\n      mutation UpdatePhoto($id: ID!, $caption: String, $sortOrder: Int, $kind: PhotoKind) {\n        updatePhoto(id: $id, caption: $caption, sortOrder: $sortOrder, kind: $kind) {\n          ...PhotoFields\n        }\n      }\n    ": typeof types.UpdatePhotoDocument,
     "\n      mutation DeletePhoto($id: ID!) {\n        deletePhoto(id: $id)\n      }\n    ": typeof types.DeletePhotoDocument,
     "\n      mutation FlagPhoto($recordId: ID!, $reason: String) {\n        flagRecord(recordType: PHOTO, recordId: $recordId, reason: $reason) {\n          flagCount\n          hidden\n        }\n      }\n    ": typeof types.FlagPhotoDocument,
     "\n      query FlaggedRecords($recordType: RecordType, $first: Int, $offset: Int) {\n        flaggedRecords(recordType: $recordType, first: $first, offset: $offset) {\n          totalCount\n          items {\n            recordType\n            recordId\n            flagCount\n            firstFlaggedAt\n            lastFlaggedAt\n            reasons\n            hidden\n            authorPublicUid\n            authorHandle\n            product {\n              ...ProductSummaryFields\n            }\n            store {\n              ...StoreFields\n            }\n            photo {\n              ...PhotoFields\n            }\n          }\n        }\n      }\n    ": typeof types.FlaggedRecordsDocument,
@@ -75,7 +75,7 @@ const documents: Documents = {
     "\n      mutation SubmitFeedback($input: FeedbackInput!) {\n        submitFeedback(input: $input) {\n          id\n        }\n      }\n    ": types.SubmitFeedbackDocument,
     "\n      query FxInfo {\n        fxInfo {\n          displayCurrencies\n          latestRateDate\n          attribution\n        }\n      }\n    ": types.FxInfoDocument,
     "\n  fragment StoreFields on Store {\n    id\n    name\n    street\n    city\n    postalCode\n    country\n    lat\n    lon\n    geoSource\n    ico\n    url\n    chain {\n      id\n      name\n      chainType\n    }\n    verified\n    editedByMe\n    pendingConfirmation\n  }\n": types.StoreFieldsFragmentDoc,
-    "\n  fragment PhotoFields on Photo {\n    id\n    url\n    thumbnailUrl\n    width\n    height\n    caption\n    mine\n    hidden\n    attribution\n  }\n": types.PhotoFieldsFragmentDoc,
+    "\n  fragment PhotoFields on Photo {\n    id\n    url\n    thumbnailUrl\n    width\n    height\n    caption\n    mine\n    hidden\n    attribution\n    kind\n  }\n": types.PhotoFieldsFragmentDoc,
     "\n  fragment ProfileFields on Profile {\n    firstName\n    lastName\n    phone\n    contactEmail\n    loginEmail\n    visibility\n    visibleFields {\n      field\n      audience\n    }\n    avatar {\n      ...PhotoFields\n    }\n  }\n": types.ProfileFieldsFragmentDoc,
     "\n  fragment StoreDetailFields on Store {\n    ...StoreFields\n    photos {\n      ...PhotoFields\n    }\n  }\n": types.StoreDetailFieldsFragmentDoc,
     "\n  fragment ConvertedPriceFields on ConvertedPrice {\n    amount\n    currency\n    rateDate\n  }\n": types.ConvertedPriceFieldsFragmentDoc,
@@ -85,7 +85,7 @@ const documents: Documents = {
     "\n  fragment ProductSummaryFields on Product {\n    id\n    name\n    brand {\n      id\n      name\n      slug\n    }\n    category {\n      id\n      name\n      slug\n      path\n    }\n    isGeneric\n    verified\n    editedByMe\n  }\n": types.ProductSummaryFieldsFragmentDoc,
     "\n  fragment PublicationStatusFields on PublicationStatus {\n    state\n    confirmationsReceived\n    confirmationsRequired\n    verified\n  }\n": types.PublicationStatusFieldsFragmentDoc,
     "\n  fragment SearchItemFields on ProductSearchItem {\n    product {\n      ...ProductSummaryFields\n    }\n    observationCount\n    bestPrice\n    bestUnitPrice\n    currency\n    bestPriceObservations\n    lastObservedAt\n    qualityAverage\n    qualityCount\n    converted {\n      ...ConvertedPriceFields\n    }\n    convertedUnit {\n      ...ConvertedPriceFields\n    }\n    cheapestStore {\n      ...StoreFields\n    }\n  }\n": types.SearchItemFieldsFragmentDoc,
-    "\n      mutation UpdatePhoto($id: ID!, $caption: String, $sortOrder: Int) {\n        updatePhoto(id: $id, caption: $caption, sortOrder: $sortOrder) {\n          ...PhotoFields\n        }\n      }\n    ": types.UpdatePhotoDocument,
+    "\n      mutation UpdatePhoto($id: ID!, $caption: String, $sortOrder: Int, $kind: PhotoKind) {\n        updatePhoto(id: $id, caption: $caption, sortOrder: $sortOrder, kind: $kind) {\n          ...PhotoFields\n        }\n      }\n    ": types.UpdatePhotoDocument,
     "\n      mutation DeletePhoto($id: ID!) {\n        deletePhoto(id: $id)\n      }\n    ": types.DeletePhotoDocument,
     "\n      mutation FlagPhoto($recordId: ID!, $reason: String) {\n        flagRecord(recordType: PHOTO, recordId: $recordId, reason: $reason) {\n          flagCount\n          hidden\n        }\n      }\n    ": types.FlagPhotoDocument,
     "\n      query FlaggedRecords($recordType: RecordType, $first: Int, $offset: Int) {\n        flaggedRecords(recordType: $recordType, first: $first, offset: $offset) {\n          totalCount\n          items {\n            recordType\n            recordId\n            flagCount\n            firstFlaggedAt\n            lastFlaggedAt\n            reasons\n            hidden\n            authorPublicUid\n            authorHandle\n            product {\n              ...ProductSummaryFields\n            }\n            store {\n              ...StoreFields\n            }\n            photo {\n              ...PhotoFields\n            }\n          }\n        }\n      }\n    ": types.FlaggedRecordsDocument,
@@ -146,7 +146,7 @@ export function graphql(source: "\n  fragment StoreFields on Store {\n    id\n  
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment PhotoFields on Photo {\n    id\n    url\n    thumbnailUrl\n    width\n    height\n    caption\n    mine\n    hidden\n    attribution\n  }\n"): typeof import('./graphql').PhotoFieldsFragmentDoc;
+export function graphql(source: "\n  fragment PhotoFields on Photo {\n    id\n    url\n    thumbnailUrl\n    width\n    height\n    caption\n    mine\n    hidden\n    attribution\n    kind\n  }\n"): typeof import('./graphql').PhotoFieldsFragmentDoc;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -186,7 +186,7 @@ export function graphql(source: "\n  fragment SearchItemFields on ProductSearchI
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n      mutation UpdatePhoto($id: ID!, $caption: String, $sortOrder: Int) {\n        updatePhoto(id: $id, caption: $caption, sortOrder: $sortOrder) {\n          ...PhotoFields\n        }\n      }\n    "): typeof import('./graphql').UpdatePhotoDocument;
+export function graphql(source: "\n      mutation UpdatePhoto($id: ID!, $caption: String, $sortOrder: Int, $kind: PhotoKind) {\n        updatePhoto(id: $id, caption: $caption, sortOrder: $sortOrder, kind: $kind) {\n          ...PhotoFields\n        }\n      }\n    "): typeof import('./graphql').UpdatePhotoDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

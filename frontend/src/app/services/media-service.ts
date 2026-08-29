@@ -4,7 +4,7 @@ import { map } from 'rxjs';
 import { GraphQlService } from './graphql-service';
 import { graphql } from '../models/generated';
 import type { PhotoFieldsFragment } from '../models/generated/graphql';
-import type { RecordType } from '../models/generated/enums';
+import type { PhotoKind, RecordType } from '../models/generated/enums';
 
 /**
  * Fotky zboží a provozoven (core.media). Upload jde přes REST multipart (backend
@@ -18,11 +18,20 @@ export class MediaService {
   private readonly http = inject(HttpClient);
   private readonly graphQl = inject(GraphQlService);
 
-  upload(recordType: RecordType, recordId: string, file: File, caption?: string | null) {
+  upload(
+    recordType: RecordType,
+    recordId: string,
+    file: File,
+    caption?: string | null,
+    kind?: PhotoKind | null,
+  ) {
     const formData = new FormData();
     formData.append('file', file);
     if (caption) {
       formData.append('caption', caption);
+    }
+    if (kind) {
+      formData.append('kind', kind);
     }
     return this.http.post<PhotoFieldsFragment>(`/api/media/${recordType}/${recordId}`, formData);
   }
@@ -37,17 +46,17 @@ export class MediaService {
     return this.http.post<PhotoFieldsFragment>('/api/media/user/avatar', formData);
   }
 
-  /** Popisek a pořadí (nejnižší sortOrder = hlavní fotka záznamu). Jen autor fotky. */
-  update(id: string, caption: string | null, sortOrder: number | null) {
+  /** Popisek, pořadí (nejnižší sortOrder = hlavní fotka záznamu) a druh. Jen autor fotky. */
+  update(id: string, caption: string | null, sortOrder: number | null, kind?: PhotoKind | null) {
     const document = graphql(`
-      mutation UpdatePhoto($id: ID!, $caption: String, $sortOrder: Int) {
-        updatePhoto(id: $id, caption: $caption, sortOrder: $sortOrder) {
+      mutation UpdatePhoto($id: ID!, $caption: String, $sortOrder: Int, $kind: PhotoKind) {
+        updatePhoto(id: $id, caption: $caption, sortOrder: $sortOrder, kind: $kind) {
           ...PhotoFields
         }
       }
     `);
     return this.graphQl
-      .execute(document, { id, caption, sortOrder })
+      .execute(document, { id, caption, sortOrder, kind: kind ?? null })
       .pipe(map((data) => data.updatePhoto));
   }
 

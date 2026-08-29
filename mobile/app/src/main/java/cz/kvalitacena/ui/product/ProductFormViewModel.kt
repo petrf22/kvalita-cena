@@ -1,10 +1,13 @@
 package cz.kvalitacena.ui.product
 
+import android.content.Context
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cz.kvalitacena.AppContainer
 import cz.kvalitacena.network.Category
 import cz.kvalitacena.network.CreateProductFromOffInput
 import cz.kvalitacena.network.CreateProductInput
@@ -73,7 +76,15 @@ class ProductFormViewModel(
   var isVariableWeight by mutableStateOf(false)
   var code by mutableStateOf(barcode.orEmpty())
 
+  var itemPhotoUri by mutableStateOf<Uri?>(null)
+  var labelPhotoUri by mutableStateOf<Uri?>(null)
+
   var saving by mutableStateOf(false)
+    private set
+  /** Zboží se založilo, ale aspoň jednu vybranou fotku se nepodařilo nahrát — produkt v tu
+   *  chvíli už existuje (docs/datovy-model.md, "fotky se nahrávají výhradně na existující
+   *  záznam"), appka jen upozorní, ne zablokuje pokračování. */
+  var photoUploadFailed by mutableStateOf(false)
     private set
   var saveError by mutableStateOf<UiText?>(null)
     private set
@@ -195,12 +206,13 @@ class ProductFormViewModel(
     }
   }
 
-  fun submit() {
+  fun submit(context: Context) {
     val categoryId = selectedCategoryId ?: return
     if (name.isBlank()) return
 
     saving = true
     saveError = null
+    photoUploadFailed = false
     viewModelScope.launch {
       try {
         val candidate = offCandidate
@@ -208,7 +220,7 @@ class ProductFormViewModel(
         // Kód se od nabídky kandidáta pořád musí shodovat — jinak uživatel kód smazal/přepsal
         // (bezkódová položka, jiné zboží) a appka musí uložit přes createProduct, ne
         // createProductFromOff (OFF hodnoty se nesmí zapsat do core.product jako vlastní).
-        created = if (candidate != null && defaults != null && codeMatchesOffCandidate(code, candidate.code)) {
+        val product = if (candidate != null && defaults != null && codeMatchesOffCandidate(code, candidate.code)) {
           graphQlClient.createProductFromOff(buildOffInput(candidate, defaults, categoryId))
         } else {
           graphQlClient.createProduct(
@@ -225,10 +237,32 @@ class ProductFormViewModel(
             ),
           )
         }
+        // Zboží už existuje — fotky se nahrávají VÝHRADNĚ na existující záznam
+        // (docs/datovy-model.md), teprve teď má appka kam je poslat. `created` se nastaví AŽ
+        // po uploadu — ProductFormScreen na něj reaguje okamžitou navigací pryč
+        // (LaunchedEffect(viewModel.created)), dřívější nastavení by upload utnulo.
+        uploadPendingPhotos(context, product.id)
+        created = product
       } catch (e: Exception) {
         saveError = e.toUiText()
       } finally {
         saving = false
+      }
+    }
+  }
+
+  /**
+   * Nahraje vybrané fotky (fotka zboží první, pak etiketa) na právě založený produkt —
+   * sekvenčně, ne najednou. Selhání jedné fotky nezastaví druhou ani neshodí založení zboží
+   * (`photoUploadFailed`); produkt v tu chvíli už existuje, fotku jde doplnit později z jeho
+   * detailu.
+   */
+  private suspend fun uploadPendingPhotos(context: Context, productId: String) {
+    for (upload in pendingPhotoUploads(itemPhotoUri, labelPhotoUri)) {
+      try {
+        AppContainer.mediaClient.upload(context, "PRODUCT", productId, upload.value, kind = upload.kind)
+      } catch (e: Exception) {
+        photoUploadFailed = true
       }
     }
   }

@@ -8,5 +8,8 @@
   "setAsMain": "Nastaviť ako hlavnú",
   "flag": "Nahlásiť",
   "flagHidden": "Ďakujeme za nahlásenie — fotka je teraz skrytá a čaká na preskúmanie.",
-  "flagAcknowledged": "Ďakujeme za nahlásenie, zaznamenali sme ho."
+  "flagAcknowledged": "Ďakujeme za nahlásenie, zaznamenali sme ho.",
+  "takePicture": "Odfotiť",
+  "chooseFile": "Vybrať súbor",
+  "remove": "Odobrať"
 }

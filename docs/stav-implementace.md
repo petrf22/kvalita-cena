@@ -119,7 +119,10 @@ přes GraphQL (`Photo` typ, `Product.photos`/`Store.photos` přes `@BatchMapping
 `updatePhoto`/`deletePhoto`). Nahlášení fotky (`RecordType.PHOTO`) má mnohem nižší práh než
 katalog (`app.moderation.photo-flags-to-hide = 1`, `docs/reputace.md`). Web (`shared/
 photo-gallery.ts`) i Android (`ui/common/PhotoGallery.kt`/`PhotoPicker.kt`, Coil) mají galerii
-s náhledem, smazáním vlastní fotky a nahlášením cizí, na detailu zboží i obchodu.
+s náhledem, smazáním vlastní fotky a nahlášením cizí, na detailu zboží i obchodu. Fotka nese i
+druh (`photo_kind`: `ITEM`/`LABEL`/`OTHER`, `docs/datovy-model.md`) a formulář nového zboží nabízí
+dva nepovinné sloty (fotka zboží, fotka etikety) — appka nahraje soubor až po založení produktu
+(`shared/photo-slot.ts` na webu, `ui/common/PhotoSlot.kt` na mobilu).
 
 **Profil uživatele a viditelnost** (`docs/soukromi.md`, „Profil uživatele a viditelnost";
 datový tvar v `docs/datovy-model.md` pod stejným názvem): jméno, příjmení, přezdívka, telefon,

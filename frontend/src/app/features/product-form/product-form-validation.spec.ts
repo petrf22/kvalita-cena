@@ -6,6 +6,7 @@ import {
   isProductFormValid,
   netContentForOffSubmit,
   offCandidateDefaults,
+  pendingPhotoUploads,
   previewUnitPrice,
 } from './product-form-validation';
 
@@ -145,5 +146,29 @@ describe('codeMatchesOffCandidate', () => {
   it('does not match a different or cleared code', () => {
     expect(codeMatchesOffCandidate('1234567890128', '3017620422003')).toBe(false);
     expect(codeMatchesOffCandidate('', '3017620422003')).toBe(false);
+  });
+});
+
+describe('pendingPhotoUploads', () => {
+  const itemFile = new File(['x'], 'zbozi.jpg', { type: 'image/jpeg' });
+  const labelFile = new File(['y'], 'etiketa.jpg', { type: 'image/jpeg' });
+
+  it('is empty when neither photo was picked', () => {
+    expect(pendingPhotoUploads(null, null)).toEqual([]);
+  });
+
+  it('sends only the item photo when the label was not picked', () => {
+    expect(pendingPhotoUploads(itemFile, null)).toEqual([{ file: itemFile, kind: 'ITEM' }]);
+  });
+
+  it('sends only the label photo when the item was not picked', () => {
+    expect(pendingPhotoUploads(null, labelFile)).toEqual([{ file: labelFile, kind: 'LABEL' }]);
+  });
+
+  it('puts the item photo first so it becomes the main photo (sortOrder 0)', () => {
+    expect(pendingPhotoUploads(itemFile, labelFile)).toEqual([
+      { file: itemFile, kind: 'ITEM' },
+      { file: labelFile, kind: 'LABEL' },
+    ]);
   });
 });

@@ -84,6 +84,9 @@ data class Photo(
   // Skrytá po nahlášení (docs/reputace.md) — vidí ji dál už jen autor.
   val hidden: Boolean = false,
   val attribution: String = "",
+  // ITEM/LABEL/OTHER (docs/datovy-model.md) — enumy se tu mapují ručně na String, appka
+  // z GraphQL schématu typy negeneruje (kořenový CLAUDE.md).
+  val kind: String = "OTHER",
 ) {
   fun fullUrl(): String = ApiConfig.BASE_URL + url
   fun thumbUrl(): String = ApiConfig.BASE_URL + thumbnailUrl

@@ -9,6 +9,9 @@ za jednoduchost skriptu.
 
 ## [Nezveřejněno]
 
+### Přidáno
+- Fotka zboží a fotka etikety rovnou při zakládání nového zboží, obě nepovinné (server, web, mobil)
+
 ## [0.3.0] – 2026-08-28
 
 ### Přidáno

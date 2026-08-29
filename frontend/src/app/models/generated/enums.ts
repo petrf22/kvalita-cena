@@ -183,6 +183,21 @@ export const ObservationStatus = {
 } as const;
 
 export type ObservationStatus = typeof ObservationStatus[keyof typeof ObservationStatus];
+/**
+ * Druh fotky (core.media.photo_kind) — nezávislá osa od RecordType (ten říká čí je fotka, tohle
+ * co na ní je). ITEM, ne PRODUCT — RecordType.PRODUCT už znamená totéž na jiné ose. Posílá se při
+ * uploadu jako parametr kind REST endpointu POST /api/media/{recordType}/{recordId}.
+ */
+export const PhotoKind = {
+  /** Fotka samotného zboží/obalu. */
+  Item: 'ITEM',
+  /** Fotka etikety — zamýšlený budoucí vstup pro čtení složení/textu z etikety (docs/ai.md). */
+  Label: 'LABEL',
+  /** Cokoli jiného, včetně fotek provozoven a avatarů (druh nerozlišují, zůstávají na OTHER). */
+  Other: 'OTHER'
+} as const;
+
+export type PhotoKind = typeof PhotoKind[keyof typeof PhotoKind];
 export const PriceKind = {
   Clearance: 'CLEARANCE',
   ClubCard: 'CLUB_CARD',

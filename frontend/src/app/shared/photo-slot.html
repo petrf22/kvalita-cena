@@ -1,0 +1,45 @@
+<div class="photo-slot" *transloco="let t; scope: 'photos'">
+  <div class="photo-slot-label">{{ label() }}</div>
+
+  @if (!auth.isLoggedIn()) {
+    <p class="login-hint">{{ t('photos.loginHint') }}</p>
+  } @else if (previewUrl(); as url) {
+    <div class="photo-slot-preview">
+      <img [src]="url" [alt]="label()" />
+      <button nz-button nzDanger type="button" (click)="remove()">
+        <span nz-icon nzType="delete"></span>
+        {{ t('photos.remove') }}
+      </button>
+    </div>
+  } @else {
+    <div class="photo-slot-actions">
+      <button nz-button type="button" (click)="cameraInput.click()">
+        <span nz-icon nzType="camera"></span>
+        {{ t('photos.takePicture') }}
+      </button>
+      <button nz-button type="button" (click)="fileInput.click()">
+        <span nz-icon nzType="upload"></span>
+        {{ t('photos.chooseFile') }}
+      </button>
+    </div>
+    <input
+      #cameraInput
+      type="file"
+      accept="image/jpeg,image/png"
+      capture="environment"
+      hidden
+      (change)="onFileSelected($event)"
+    />
+    <input
+      #fileInput
+      type="file"
+      accept="image/jpeg,image/png"
+      hidden
+      (change)="onFileSelected($event)"
+    />
+  }
+
+  @if (error()) {
+    <nz-alert nzType="error" [nzMessage]="error()" nzShowIcon class="slot-alert" />
+  }
+</div>

@@ -43,6 +43,7 @@ export const photoFieldsFragment = graphql(`
     mine
     hidden
     attribution
+    kind
   }
 `);
 

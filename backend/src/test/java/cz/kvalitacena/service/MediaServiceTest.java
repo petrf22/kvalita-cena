@@ -4,6 +4,7 @@ import cz.kvalitacena.config.MediaProperties;
 import cz.kvalitacena.controller.Photo;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.Media;
+import cz.kvalitacena.db.entity.PhotoKind;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.entity.UserProfile;
 import cz.kvalitacena.db.repo.AppUserRepository;
@@ -84,7 +85,7 @@ class MediaServiceTest {
 
   @Test
   void anonymousCannotUpload() {
-    assertThatThrownBy(() -> service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, null, null))
+    assertThatThrownBy(() -> service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, null, null, null))
         .isInstanceOf(UnauthorizedException.class);
   }
 
@@ -93,7 +94,7 @@ class MediaServiceTest {
     givenLoggedInUser();
     when(productRepository.existsById(PRODUCT_ID)).thenReturn(false);
 
-    assertThatThrownBy(() -> service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, null, PUBLIC_UID))
+    assertThatThrownBy(() -> service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, null, null, PUBLIC_UID))
         .isInstanceOf(NotFoundException.class);
   }
 
@@ -103,7 +104,7 @@ class MediaServiceTest {
     when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
     when(catalogRateLimiter.tryAcquireMediaUpload(PUBLIC_UID)).thenReturn(false);
 
-    assertThatThrownBy(() -> service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, null, PUBLIC_UID))
+    assertThatThrownBy(() -> service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, null, null, PUBLIC_UID))
         .isInstanceOf(TooManyRequestsException.class);
   }
 
@@ -114,13 +115,13 @@ class MediaServiceTest {
     when(catalogRateLimiter.tryAcquireMediaUpload(PUBLIC_UID)).thenReturn(true);
     when(mediaRepository.countByRecordTypeAndRecordId(RecordType.PRODUCT, PRODUCT_ID)).thenReturn(5L);
 
-    assertThatThrownBy(() -> service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, null, PUBLIC_UID))
+    assertThatThrownBy(() -> service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, null, null, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
     verify(imageProcessingService, never()).process(any());
   }
 
   @Test
-  void duplicateUploadReturnsExistingMediaInsteadOfCreatingNew() {
+  void duplicateUploadReturnsExistingMediaWithoutChangingItsKind() {
     givenLoggedInUser();
     when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
     when(catalogRateLimiter.tryAcquireMediaUpload(PUBLIC_UID)).thenReturn(true);
@@ -130,13 +131,15 @@ class MediaServiceTest {
     ImageProcessingService.ProcessedImage processed =
         new ImageProcessingService.ProcessedImage(new byte[]{9}, new byte[]{8}, 100, 100, sha);
     when(imageProcessingService.process(any())).thenReturn(processed);
-    Media existing = Media.builder().id(1L).sha256(sha).build();
+    Media existing = Media.builder().id(1L).sha256(sha).photoKind(PhotoKind.OTHER).build();
     when(mediaRepository.findByRecordTypeAndRecordIdAndSha256(RecordType.PRODUCT, PRODUCT_ID, sha))
         .thenReturn(Optional.of(existing));
 
-    Media result = service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, null, PUBLIC_UID);
+    // Druhé nahrání téhož obsahu, tentokrát s jiným druhem — vrátí PŮVODNÍ řádek beze změny.
+    Media result = service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, null, PhotoKind.LABEL, PUBLIC_UID);
 
     assertThat(result).isSameAs(existing);
+    assertThat(result.getPhotoKind()).isEqualTo(PhotoKind.OTHER);
     verify(mediaStorage, never()).store(any(), any());
     verify(mediaRepository, never()).save(any());
   }
@@ -157,7 +160,7 @@ class MediaServiceTest {
     when(mediaStorage.store(processed.full(), processed.thumbnail())).thenReturn("2026/08/novy-klic.jpg");
     when(mediaRepository.save(any(Media.class))).thenAnswer(inv -> inv.getArgument(0));
 
-    Media result = service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, "  multipack  ", PUBLIC_UID);
+    Media result = service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, "  multipack  ", null, PUBLIC_UID);
 
     ArgumentCaptor<Media> captor = ArgumentCaptor.forClass(Media.class);
     verify(mediaRepository).save(captor.capture());
@@ -167,7 +170,52 @@ class MediaServiceTest {
     assertThat(saved.getSortOrder()).isEqualTo(2);
     assertThat(saved.getCaption()).isEqualTo("multipack"); // ořezané mezery
     assertThat(saved.getWidth()).isEqualTo(100);
+    // Bez kind v inputu appka uloží OTHER, ne null — sloupec je NOT NULL (docs/datovy-model.md).
+    assertThat(saved.getPhotoKind()).isEqualTo(PhotoKind.OTHER);
     assertThat(result).isEqualTo(saved);
+  }
+
+  @Test
+  void successfulUploadStoresGivenPhotoKind() {
+    givenLoggedInUser();
+    when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
+    when(catalogRateLimiter.tryAcquireMediaUpload(PUBLIC_UID)).thenReturn(true);
+    when(mediaRepository.countByRecordTypeAndRecordId(RecordType.PRODUCT, PRODUCT_ID)).thenReturn(0L);
+
+    byte[] sha = {7, 7, 7};
+    ImageProcessingService.ProcessedImage processed =
+        new ImageProcessingService.ProcessedImage(new byte[]{9}, new byte[]{8}, 100, 100, sha);
+    when(imageProcessingService.process(any())).thenReturn(processed);
+    when(mediaRepository.findByRecordTypeAndRecordIdAndSha256(RecordType.PRODUCT, PRODUCT_ID, sha))
+        .thenReturn(Optional.empty());
+    when(mediaStorage.store(any(), any())).thenReturn("2026/08/etiketa.jpg");
+    when(mediaRepository.save(any(Media.class))).thenAnswer(inv -> inv.getArgument(0));
+
+    Media result = service.upload(RecordType.PRODUCT, PRODUCT_ID, new byte[]{1}, null, PhotoKind.LABEL, PUBLIC_UID);
+
+    assertThat(result.getPhotoKind()).isEqualTo(PhotoKind.LABEL);
+  }
+
+  @Test
+  void updateWithNullKindLeavesItUnchanged() {
+    givenLoggedInUser();
+    Media media = Media.builder().id(1L).uploadedByUserId(USER_ID).photoKind(PhotoKind.ITEM).build();
+    when(mediaRepository.findById(1L)).thenReturn(Optional.of(media));
+
+    service.update(1L, null, null, null, PUBLIC_UID);
+
+    assertThat(media.getPhotoKind()).isEqualTo(PhotoKind.ITEM);
+  }
+
+  @Test
+  void updateWithKindChangesIt() {
+    givenLoggedInUser();
+    Media media = Media.builder().id(1L).uploadedByUserId(USER_ID).photoKind(PhotoKind.OTHER).build();
+    when(mediaRepository.findById(1L)).thenReturn(Optional.of(media));
+
+    service.update(1L, null, null, PhotoKind.LABEL, PUBLIC_UID);
+
+    assertThat(media.getPhotoKind()).isEqualTo(PhotoKind.LABEL);
   }
 
   @Test
@@ -226,7 +274,7 @@ class MediaServiceTest {
   void genericUploadRejectsUserRecordType() {
     // Kontrola recordType == USER je v upload() PŘED načtením uživatele — findByPublicUid se
     // tak vůbec nevolá, žádný stub navíc není potřeba.
-    assertThatThrownBy(() -> service.upload(RecordType.USER, USER_ID, new byte[]{1}, null, PUBLIC_UID))
+    assertThatThrownBy(() -> service.upload(RecordType.USER, USER_ID, new byte[]{1}, null, null, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
     verify(imageProcessingService, never()).process(any());
   }

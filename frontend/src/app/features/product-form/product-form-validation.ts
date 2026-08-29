@@ -1,3 +1,4 @@
+import type { PhotoKind } from '../../models/generated/enums';
 import { NetContentUom, UnitBase } from '../../models/catalog';
 import { normalizeCode } from '../../shared/gtin';
 
@@ -154,4 +155,26 @@ export function netContentForOffSubmit(
 export function codeMatchesOffCandidate(code: string, candidateCode: string): boolean {
   const normalized = normalizeCode(code);
   return normalized !== '' && normalized === normalizeCode(candidateCode);
+}
+
+export interface PendingPhotoUpload {
+  file: File;
+  kind: PhotoKind;
+}
+
+/**
+ * Které vybrané fotky nahrát po založení zboží a v jakém pořadí — obě volitelné. Fotka zboží
+ * jde první, ať dostane sortOrder 0 (hlavní fotka záznamu, MediaService.upload), etiketa až
+ * po ní. Nahrání samotné zajišťuje volající komponenta až PO úspěšném createProduct/
+ * createProductFromOff (docs/datovy-model.md, "fotky se nahrávají výhradně na existující
+ * záznam") — tahle funkce jen určuje pořadí a druh, samotný upload nespouští.
+ */
+export function pendingPhotoUploads(
+  itemFile: File | null,
+  labelFile: File | null,
+): PendingPhotoUpload[] {
+  const uploads: PendingPhotoUpload[] = [];
+  if (itemFile) uploads.push({ file: itemFile, kind: 'ITEM' });
+  if (labelFile) uploads.push({ file: labelFile, kind: 'LABEL' });
+  return uploads;
 }

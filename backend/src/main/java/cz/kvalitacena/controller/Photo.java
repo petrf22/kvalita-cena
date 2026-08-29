@@ -1,6 +1,7 @@
 package cz.kvalitacena.controller;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import cz.kvalitacena.db.entity.PhotoKind;
 
 /**
  * Fotka zboží nebo provozovny (core.media) v GraphQL — {@code url}/{@code thumbnailUrl} vedou
@@ -18,5 +19,6 @@ import com.fasterxml.jackson.annotation.JsonFormat;
  * byla nahraná).
  */
 public record Photo(@JsonFormat(shape = JsonFormat.Shape.STRING) Long id, String url, String thumbnailUrl,
-                     int width, int height, String caption, boolean mine, boolean hidden, String attribution) {
+                     int width, int height, String caption, boolean mine, boolean hidden, String attribution,
+                     PhotoKind kind) {
 }

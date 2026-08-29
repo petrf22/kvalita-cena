@@ -61,6 +61,12 @@ public class Media implements Persistable<Long> {
   @Column(name = "caption", length = 200)
   private String caption;
 
+  // Nezávislá osa od recordType (ten říká čí je fotka, tohle co na ní je) — docs/datovy-model.md.
+  @Enumerated(EnumType.STRING)
+  @Column(name = "photo_kind", nullable = false, length = 10)
+  @Builder.Default
+  private PhotoKind photoKind = PhotoKind.OTHER;
+
   @Column(name = "sort_order", nullable = false)
   @Builder.Default
   private int sortOrder = 0;

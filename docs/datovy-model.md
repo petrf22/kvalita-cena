@@ -310,6 +310,23 @@ multipart upload (`graphql-multipart-request-spec`) Spring for GraphQL nepodporu
 čtou přes `GET /api/media/{id}`/`{id}/thumb`, veřejně, s dlouhým `Cache-Control` (obsah pod
 daným id se nikdy nemění, jen jeho existence).
 
+**`core.media.photo_kind` (`2026-08-29/01-media-photo-kind.yaml`) je nezávislá osa od
+`record_type`** — ten říká čí je fotka (`PRODUCT`/`STORE`), `photo_kind` co na ní je
+(`ITEM`/`LABEL`/`OTHER`, default `OTHER`). Přidáno rovnou při zavedení slotů na fotky ve
+formuláři nového zboží, ne až dodatečně — `docs/ai.md` u `f_evid` varuje přesně před opačným
+postupem: druh musí schéma nést od začátku, jinak se pozdější rozlišení dopisuje migrací navíc.
+`ITEM`, ne `PRODUCT` — to už znamená totéž na ose `record_type`, dvojice `record_type='STORE',
+photo_kind='PRODUCT'` by byla matoucí. `LABEL` je zamýšlený budoucí vstup pro čtení
+složení/textu z etikety (`docs/ai.md`); fotky provozoven a avatar druh nerozlišují, zůstávají na
+`OTHER`.
+
+**Formulář nového zboží nabízí dva sloty na fotku (zboží/etiketa), oba nepovinné** — appka
+soubor jen podrží v paměti (`File`/`Uri`) a nahraje ho AŽ po úspěšném `createProduct`/
+`createProductFromOff`, přes stejný `POST /api/media/PRODUCT/{id}` s parametrem `kind`. Pravidlo
+„výhradně na existující záznam" výš tím není porušené — sloty nejsou samostatný upload cíl,
+jen odloží existující tok o jeden krok. Selhání uploadu nezruší založené zboží (produkt v tu
+chvíli už existuje); appka jen upozorní, fotku jde doplnit později z detailu.
+
 **Skrytí po nahlášení má stejnou sémantiku jako `core.product.hidden_at`/`core.store.hidden_at`**
 — vidí ji dál jen autor. Práh je ale jiný a mnohem nižší (`app.moderation.photo-flags-to-hide`,
 výchozí 1) — zdůvodnění patří do `reputace.md`.

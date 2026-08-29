@@ -64,6 +64,13 @@ Až se bude psát fotka jako důkaz ceny, schéma musí od začátku nést **dru
 „účtenka+OCR" (1,30) od „foto cedulky" (1,15) dopisuje pozdější migrací místo jednoho sloupce
 navíc hned na začátku.
 
+Jiná osa, stejná zásada: `core.media.photo_kind` (`ITEM`/`LABEL`/`OTHER`, docs/datovy-model.md)
+už dnes rozlišuje fotku zboží od fotky etikety u formuláře nového zboží — `LABEL` je zamýšlený
+budoucí vstup pro čtení textu/složení z etikety, obdoba dnešní „OCR ceny z fotky" výš, jen nad
+jiným polem fotky. Nemá nic společného s `f_evid` (ten je na `core.price_observation`, ne na
+`core.media`), ale stejná lekce platí obráceně: druh fotky je v datech od chvíle, kdy funkce
+vznikla, ne dopisovaný později.
+
 ## Hardware a volba modelu
 
 Zjištěný stroj (srpen 2026): **NVIDIA RTX 4060 Ti, 8 GB VRAM**, AMD Ryzen 9 7900 (24 vláken),

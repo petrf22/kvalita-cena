@@ -206,6 +206,7 @@
     <string name="photo_too_large">Fotka je príliš veľká (max. 8 MB).</string>
     <string name="photo_take_picture">Odfotiť</string>
     <string name="photo_pick_from_gallery">Vybrať z galérie</string>
+    <string name="photo_remove">Odobrať</string>
 
     <string name="quality_not_rated">Kvalita: zatiaľ nehodnotená</string>
     <string name="quality_rated">Kvalita %1$.1f/5</string>
@@ -317,6 +318,11 @@
     <string name="product_form_code_hint">Bez kódu vznikne druhová položka (napr. „pečivo za %1$s“ z účtenky) — s nižšou dôveryhodnosťou dát, ale zapísať sa dá aj tak.</string>
     <string name="product_form_submit">Založiť tovar</string>
     <string name="product_form_back_without_creating">Späť bez založenia</string>
+    <string name="product_form_item_photo_label">Fotka tovaru (voliteľné)</string>
+    <string name="product_form_label_photo_label">Fotka etikety (voliteľné)</string>
+    <string name="product_form_photo_login_hint">Pridávanie fotiek vyžaduje prihlásenie — prejdi do záložky Účet.</string>
+    <string name="product_form_uploading_photos">Nahrávam fotky…</string>
+    <string name="product_form_photo_upload_failed_warning">Tovar je založený, ale fotku sa nepodarilo nahrať. Skús to znova na jeho detaile.</string>
 
     <string name="store_not_found">Túto prevádzku sa nepodarilo nájsť.</string>
     <string name="store_edited_by_me">Tvoja úprava</string>

@@ -6,6 +6,7 @@ import {
   TranslocoService,
   provideTranslocoScope,
 } from '@jsverse/transloco';
+import { Observable, catchError, concatMap, finalize, from, map, of, toArray } from 'rxjs';
 import type { NzTreeNode } from 'ng-zorro-antd/core/tree';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -19,10 +20,12 @@ import { ExternalProductCandidate, Product, ProductSummary, UnitBase } from '../
 import type { CategoriesQuery } from '../../models/generated/graphql';
 import { FormatService } from '../../services/format-service';
 import { INTL_TAGS, LanguageService } from '../../services/language-service';
+import { MediaService } from '../../services/media-service';
 import { ProductService } from '../../services/product-service';
 import { buildCategoryTree, categoryBreadcrumb } from '../../shared/category-tree';
 import { translateError } from '../../shared/error-message';
 import { UNIT_BASE_KEYS } from '../../shared/enum-labels';
+import { PhotoSlot } from '../../shared/photo-slot';
 import {
   OffCandidateDefaults,
   changedFromOff,
@@ -31,6 +34,7 @@ import {
   isProductFormValid,
   netContentForOffSubmit,
   offCandidateDefaults,
+  pendingPhotoUploads,
 } from './product-form-validation';
 
 type CategoryOption = CategoriesQuery['categories'][number];
@@ -61,6 +65,7 @@ const UNIT_BASE_ORDER: readonly UnitBase[] = ['COUNT', 'MASS', 'VOLUME'];
     NzAlertModule,
     TranslocoDirective,
     TranslocoPipe,
+    PhotoSlot,
   ],
   providers: [provideTranslocoScope('product-form')],
   templateUrl: './product-form.html',
@@ -68,6 +73,7 @@ const UNIT_BASE_ORDER: readonly UnitBase[] = ['COUNT', 'MASS', 'VOLUME'];
 })
 export class ProductForm {
   private readonly productService = inject(ProductService);
+  private readonly mediaService = inject(MediaService);
   protected readonly format = inject(FormatService);
   private readonly transloco = inject(TranslocoService);
   private readonly language = inject(LanguageService);
@@ -123,7 +129,12 @@ export class ProductForm {
   protected readonly isVariableWeight = signal(false);
   protected readonly code = signal('');
 
+  protected readonly itemPhotoFile = signal<File | null>(null);
+  protected readonly labelPhotoFile = signal<File | null>(null);
+
   protected readonly saving = signal(false);
+  protected readonly uploadingPhotos = signal(false);
+  protected readonly photoUploadWarning = signal(false);
   protected readonly saveError = signal<string | null>(null);
 
   /** Nabídnutý OFF kandidát pro banner nad formulářem — null, dokud appka nic nenašla/nehledala. */
@@ -231,14 +242,45 @@ export class ProductForm {
 
     request$.subscribe({
       next: (product) => {
-        this.saving.set(false);
-        this.created.emit(product);
+        // Zboží už existuje — fotky se nahrávají VÝHRADNĚ na existující záznam
+        // (docs/datovy-model.md), teprve teď má appka kam je poslat.
+        this.uploadPendingPhotos(product.id).subscribe(() => {
+          this.saving.set(false);
+          this.created.emit(product);
+        });
       },
       error: (err) => {
         this.saving.set(false);
         this.saveError.set(translateError(err, this.transloco));
       },
     });
+  }
+
+  /**
+   * Nahraje vybrané fotky (fotka zboží první, pak etiketa) na právě založený produkt —
+   * sekvenčně, ne najednou, ať appka nezahltí server dvěma souběžnými requesty za jeden submit.
+   * Selhání jedné fotky nezastaví druhou ani neshodí založení zboží (`photoUploadWarning`);
+   * produkt v tu chvíli už existuje, fotku jde doplnit později z jeho detailu.
+   */
+  private uploadPendingPhotos(productId: string): Observable<null> {
+    const uploads = pendingPhotoUploads(this.itemPhotoFile(), this.labelPhotoFile());
+    if (uploads.length === 0) return of(null);
+
+    this.uploadingPhotos.set(true);
+    return from(uploads).pipe(
+      concatMap((upload) =>
+        this.mediaService.upload('PRODUCT', productId, upload.file, null, upload.kind).pipe(
+          map(() => true),
+          catchError(() => {
+            this.photoUploadWarning.set(true);
+            return of(false);
+          }),
+        ),
+      ),
+      toArray(),
+      map(() => null),
+      finalize(() => this.uploadingPhotos.set(false)),
+    );
   }
 
   /**

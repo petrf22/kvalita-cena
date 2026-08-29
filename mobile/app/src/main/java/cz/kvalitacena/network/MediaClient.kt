@@ -32,7 +32,14 @@ class MediaClient(private val authRepository: AuthRepository, private val client
    * [uri] je typicky výsledek `TakePicture`/`PickVisualMedia` — čte se přes ContentResolver,
    * appka si sama neřídí dočasné soubory na disku (kromě `FileProvider` cesty pro kameru).
    */
-  suspend fun upload(context: Context, recordType: String, recordId: String, uri: Uri, caption: String? = null): Photo =
+  suspend fun upload(
+    context: Context,
+    recordType: String,
+    recordId: String,
+    uri: Uri,
+    caption: String? = null,
+    kind: String? = null,
+  ): Photo =
     withContext(Dispatchers.IO) {
       val resolver = context.contentResolver
       val mimeType = resolver.getType(uri) ?: "image/jpeg"
@@ -44,6 +51,7 @@ class MediaClient(private val authRepository: AuthRepository, private val client
         .setType(MultipartBody.FORM)
         .addFormDataPart("file", "upload.$extension", bytes.toRequestBody(mimeType.toMediaTypeOrNull()))
         .apply { if (!caption.isNullOrBlank()) addFormDataPart("caption", caption) }
+        .apply { if (!kind.isNullOrBlank()) addFormDataPart("kind", kind) }
         .build()
 
       uploadAttempt(

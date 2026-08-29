@@ -8,5 +8,8 @@
   "setAsMain": "Als Hauptfoto festlegen",
   "flag": "Melden",
   "flagHidden": "Danke für die Meldung — das Foto ist jetzt ausgeblendet und wird überprüft.",
-  "flagAcknowledged": "Danke für die Meldung, wir haben sie erfasst."
+  "flagAcknowledged": "Danke für die Meldung, wir haben sie erfasst.",
+  "takePicture": "Foto aufnehmen",
+  "chooseFile": "Datei auswählen",
+  "remove": "Entfernen"
 }

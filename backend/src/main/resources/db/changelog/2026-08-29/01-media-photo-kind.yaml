@@ -1,0 +1,31 @@
+# 01-media-photo-kind.yaml — druh fotky (core.media.photo_kind). Přidáno rovnou při zavedení
+# slotů na fotky ve formuláři nového zboží (docs/rozvoj.md), ne až dodatečně — docs/ai.md u
+# f_evid varuje přesně před opačným postupem: druh důkazu musí schéma nést od začátku, jinak
+# se pozdější rozlišení dopisuje migrací navíc. ITEM/LABEL/OTHER, ne PRODUCT/LABEL/OTHER —
+# core.media.record_type už nese hodnotu PRODUCT (čí je fotka), dvojice
+# record_type='STORE', photo_kind='PRODUCT' by byla matoucí.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-29-01-media-photo-kind
+      author: Petr F.
+      comment: >
+        Default OTHER pokrývá všechny existující řádky beze změny — dosavadní fotky nenesly
+        žádný záměr, ani zboží ani etiketa. ITEM = fotka samotného zboží/obalu, LABEL = fotka
+        etikety (budoucí vstup pro čtení složení/textu z etikety, docs/ai.md), OTHER = zbytek
+        (fotky provozoven přes RecordType.STORE mají photo_kind vždy OTHER, formulář obchodu
+        druh nerozlišuje).
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: media
+            columns:
+              - column:
+                  name: photo_kind
+                  type: VARCHAR(10)
+                  defaultValue: "OTHER"
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: |
+              ALTER TABLE core.media
+                ADD CONSTRAINT chk_media_photo_kind CHECK (photo_kind IN ('ITEM', 'LABEL', 'OTHER'));

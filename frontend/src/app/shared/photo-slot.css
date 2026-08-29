@@ -1,0 +1,38 @@
+.photo-slot {
+  margin-bottom: 16px;
+}
+
+.photo-slot-label {
+  margin-bottom: 4px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.photo-slot-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.photo-slot-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.photo-slot-preview img {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+}
+
+.login-hint {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.slot-alert {
+  margin-top: 8px;
+}

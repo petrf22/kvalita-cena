@@ -14,5 +14,9 @@
   "offSourceLink": "Zobraziť zdroj",
   "codeLabel": "Čiarový kód (voliteľné)",
   "codeHint": "Bez kódu vznikne druhová položka (napr. „pečivo za {{example}}“ z účtenky) — s nižšou dôveryhodnosťou dát, ale zapísať sa dá aj tak.",
+  "itemPhotoLabel": "Fotka tovaru (voliteľné)",
+  "labelPhotoLabel": "Fotka etikety (voliteľné)",
+  "uploadingPhotos": "Nahrávam fotky…",
+  "photoUploadFailedWarning": "Tovar je založený, ale fotku sa nepodarilo nahrať. Skús to znova na jeho detaile.",
   "submit": "Založiť tovar"
 }

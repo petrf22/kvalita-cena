@@ -208,6 +208,7 @@
     <string name="photo_too_large">Das Foto ist zu groß (max. 8 MB).</string>
     <string name="photo_take_picture">Foto aufnehmen</string>
     <string name="photo_pick_from_gallery">Aus der Galerie wählen</string>
+    <string name="photo_remove">Entfernen</string>
 
     <string name="quality_not_rated">Qualität: noch nicht bewertet</string>
     <string name="quality_rated">Qualität %1$.1f/5</string>
@@ -319,6 +320,11 @@
     <string name="product_form_code_hint">Ohne Code entsteht eine generische Position (z. B. „Gebäck für %1$s“ vom Kassenbon) — mit geringerer Datenzuverlässigkeit, kann aber trotzdem gespeichert werden.</string>
     <string name="product_form_submit">Ware anlegen</string>
     <string name="product_form_back_without_creating">Zurück ohne Anlegen</string>
+    <string name="product_form_item_photo_label">Foto der Ware (optional)</string>
+    <string name="product_form_label_photo_label">Foto des Etiketts (optional)</string>
+    <string name="product_form_photo_login_hint">Das Hinzufügen von Fotos erfordert eine Anmeldung — wechsle zum Tab Konto.</string>
+    <string name="product_form_uploading_photos">Fotos werden hochgeladen…</string>
+    <string name="product_form_photo_upload_failed_warning">Die Ware wurde angelegt, aber das Foto konnte nicht hochgeladen werden. Versuch es auf ihrer Detailseite noch einmal.</string>
 
     <string name="store_not_found">Dieses Geschäft konnte nicht gefunden werden.</string>
     <string name="store_edited_by_me">Deine Bearbeitung</string>

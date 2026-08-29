@@ -23,7 +23,7 @@ private val STORE_FIELDS = """
 """
 
 private val PHOTO_FIELDS = """
-  id url thumbnailUrl width height caption mine hidden attribution
+  id url thumbnailUrl width height caption mine hidden attribution kind
 """
 
 /** Profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") — vždy plný pohled vlastníka. */

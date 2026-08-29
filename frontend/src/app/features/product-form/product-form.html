@@ -165,8 +165,28 @@
       </nz-form-control>
     </nz-form-item>
 
+    <app-photo-slot
+      [label]="t('product-form.itemPhotoLabel')"
+      (fileChange)="itemPhotoFile.set($event)"
+    />
+    <app-photo-slot
+      [label]="t('product-form.labelPhotoLabel')"
+      (fileChange)="labelPhotoFile.set($event)"
+    />
+
     @if (saveError()) {
       <nz-alert nzType="error" [nzMessage]="saveError()" nzShowIcon class="form-alert" />
+    }
+    @if (uploadingPhotos()) {
+      <p class="field-hint">{{ t('product-form.uploadingPhotos') }}</p>
+    }
+    @if (photoUploadWarning()) {
+      <nz-alert
+        nzType="warning"
+        [nzMessage]="t('product-form.photoUploadFailedWarning')"
+        nzShowIcon
+        class="form-alert"
+      />
     }
 
     <div class="form-actions">

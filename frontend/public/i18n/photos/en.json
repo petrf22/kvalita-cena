@@ -8,5 +8,8 @@
   "setAsMain": "Set as main photo",
   "flag": "Report",
   "flagHidden": "Thanks for reporting — the photo is now hidden and awaiting review.",
-  "flagAcknowledged": "Thanks for reporting, we've noted it."
+  "flagAcknowledged": "Thanks for reporting, we've noted it.",
+  "takePicture": "Take photo",
+  "chooseFile": "Choose file",
+  "remove": "Remove"
 }

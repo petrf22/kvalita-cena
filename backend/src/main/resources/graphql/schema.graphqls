@@ -263,10 +263,10 @@ type Mutation {
   flagRecord(recordType: RecordType!, recordId: ID!, reason: String): FlagResult!
 
   """
-  Popisek a pořadí fotky (nejnižší sortOrder = hlavní fotka záznamu). Jen autor fotky, jinak
-  UnauthorizedException.
+  Popisek, pořadí a druh fotky (nejnižší sortOrder = hlavní fotka záznamu). Jen autor fotky,
+  jinak UnauthorizedException.
   """
-  updatePhoto(id: ID!, caption: String, sortOrder: Int): Photo!
+  updatePhoto(id: ID!, caption: String, sortOrder: Int, kind: PhotoKind): Photo!
 
   "Smazání vlastní fotky (core.media i soubor v MediaStorage). Jen autor."
   deletePhoto(id: ID!): Boolean!
@@ -333,6 +333,20 @@ enum RecordType {
 }
 
 """
+Druh fotky (core.media.photo_kind) — nezávislá osa od RecordType (ten říká čí je fotka, tohle
+co na ní je). ITEM, ne PRODUCT — RecordType.PRODUCT už znamená totéž na jiné ose. Posílá se při
+uploadu jako parametr kind REST endpointu POST /api/media/{recordType}/{recordId}.
+"""
+enum PhotoKind {
+  "Fotka samotného zboží/obalu."
+  ITEM
+  "Fotka etikety — zamýšlený budoucí vstup pro čtení složení/textu z etikety (docs/ai.md)."
+  LABEL
+  "Cokoli jiného, včetně fotek provozoven a avatarů (druh nerozlišují, zůstávají na OTHER)."
+  OTHER
+}
+
+"""
 Fotka zboží nebo provozovny (core.media) — nahrává se přes REST POST /api/media/{recordType}/
 {recordId}, protože multipart upload GraphQL v tomhle projektu nepodporuje (viz backend
 MediaController). url/thumbnailUrl vedou na stejný REST endpoint (GET).
@@ -350,6 +364,7 @@ type Photo {
   hidden: Boolean!
   "Povinný text licence, klient ho MUSÍ zobrazit u galerie."
   attribution: String!
+  kind: PhotoKind!
 }
 
 input UpdateProductInput {

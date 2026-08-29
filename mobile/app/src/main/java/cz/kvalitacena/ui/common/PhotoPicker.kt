@@ -121,15 +121,19 @@ fun PhotoPicker(
   }
 }
 
-/** Dočasný soubor pod cache adresářem appky, sdílený systémové kameře přes FileProvider (viz AndroidManifest.xml). */
-private fun createCameraOutputUri(context: Context): Uri {
+/**
+ * Dočasný soubor pod cache adresářem appky, sdílený systémové kameře přes FileProvider (viz
+ * AndroidManifest.xml). `internal`, ne `private` — sdílí ho i PhotoSlot.kt (fotka PŘED uložením
+ * záznamu), Kotlin `private` na top-level funkci platí jen v rámci souboru, ne balíčku.
+ */
+internal fun createCameraOutputUri(context: Context): Uri {
   val dir = File(context.cacheDir, "captured_photos").apply { mkdirs() }
   val file = File(dir, "photo_${System.currentTimeMillis()}.jpg")
   return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
 }
 
 /** OpenableColumns.SIZE přes Cursor — spolehlivější než InputStream.available(), které u content:// URI nic nezaručuje. */
-private fun sizeOf(context: Context, uri: Uri): Long {
+internal fun sizeOf(context: Context, uri: Uri): Long {
   context.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { cursor ->
     val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
     if (sizeIndex >= 0 && cursor.moveToFirst() && !cursor.isNull(sizeIndex)) {

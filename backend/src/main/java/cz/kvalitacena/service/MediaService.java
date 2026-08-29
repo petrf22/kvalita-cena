@@ -4,6 +4,7 @@ import cz.kvalitacena.config.MediaProperties;
 import cz.kvalitacena.controller.Photo;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.Media;
+import cz.kvalitacena.db.entity.PhotoKind;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.entity.UserProfile;
 import cz.kvalitacena.db.repo.AppUserRepository;
@@ -54,7 +55,8 @@ public class MediaService {
   private final Messages messages;
 
   @Transactional
-  public Media upload(RecordType recordType, Long recordId, byte[] raw, String caption, UUID viewerPublicUid) {
+  public Media upload(RecordType recordType, Long recordId, byte[] raw, String caption, PhotoKind kind,
+      UUID viewerPublicUid) {
     if (viewerPublicUid == null) {
       throw new UnauthorizedException(ErrorCode.PHOTO_UPLOAD_REQUIRES_LOGIN);
     }
@@ -81,7 +83,8 @@ public class MediaService {
     ImageProcessingService.ProcessedImage processed = imageProcessingService.process(raw);
 
     // Idempotence — druhé nahrání téhož obsahu ke stejnému záznamu (např. zopakovaný request
-    // z mobilu) vrátí existující řádek místo duplikátu.
+    // z mobilu) vrátí existující řádek místo duplikátu. Druh se u něj NEpřepisuje — je to pořád
+    // ta samá fotka, ne nová verze s jiným záměrem.
     Optional<Media> existing =
         mediaRepository.findByRecordTypeAndRecordIdAndSha256(recordType, recordId, processed.sha256());
     if (existing.isPresent()) {
@@ -93,6 +96,7 @@ public class MediaService {
         .recordType(recordType)
         .recordId(recordId)
         .storageKey(storageKey)
+        .photoKind(kind == null ? PhotoKind.OTHER : kind)
         .uploadedByUserId(user.getId())
         .contentType("image/jpeg")
         .width(processed.width())
@@ -113,13 +117,16 @@ public class MediaService {
   }
 
   @Transactional
-  public Media update(Long mediaId, String caption, Integer sortOrder, UUID viewerPublicUid) {
+  public Media update(Long mediaId, String caption, Integer sortOrder, PhotoKind kind, UUID viewerPublicUid) {
     Media media = requireOwnMedia(mediaId, viewerPublicUid, ErrorCode.PHOTO_UPDATE_NOT_OWNER);
     if (caption != null) {
       media.setCaption(blankToNull(caption));
     }
     if (sortOrder != null) {
       media.setSortOrder(sortOrder);
+    }
+    if (kind != null) {
+      media.setPhotoKind(kind);
     }
     return mediaRepository.save(media);
   }
@@ -145,7 +152,7 @@ public class MediaService {
     boolean mine = viewer.userId() != null && media.getUploadedByUserId().equals(viewer.userId());
     return new Photo(media.getId(), "/api/media/" + media.getId(), "/api/media/" + media.getId() + "/thumb",
         media.getWidth(), media.getHeight(), media.getCaption(), mine, media.isHidden(),
-        messages.get("attribution.media"));
+        messages.get("attribution.media"), media.getPhotoKind());
   }
 
   private Media requireOwnMedia(Long mediaId, UUID viewerPublicUid, ErrorCode notOwnerCode) {

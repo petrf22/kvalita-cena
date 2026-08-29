@@ -39,6 +39,7 @@ import coil3.compose.AsyncImage
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.ui.common.NavigationResults
+import cz.kvalitacena.ui.common.PhotoSlot
 import cz.kvalitacena.ui.common.SearchableDropdown
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.categoryChoicesFor
@@ -69,6 +70,8 @@ fun ProductFormScreen(barcode: String?, onDone: () -> Unit) {
     }
   }
 
+  val context = LocalContext.current
+
   Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
     Text(stringResource(R.string.product_form_title), style = MaterialTheme.typography.headlineSmall)
     Gap()
@@ -76,7 +79,6 @@ fun ProductFormScreen(barcode: String?, onDone: () -> Unit) {
     // ODbL vyžaduje, aby appka u převzatých dat vždy uvedla zdroj (docs/datovy-model.md) —
     // celá karta je klikací na candidate.sourceUrl, stejný vzor jako ExternalLinkRow v detailu.
     viewModel.offCandidate?.let { candidate ->
-      val context = LocalContext.current
       OutlinedButton(
         onClick = { openUrl(context, candidate.sourceUrl) },
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -216,13 +218,42 @@ fun ProductFormScreen(barcode: String?, onDone: () -> Unit) {
     )
     Gap()
 
+    PhotoSlot(
+      label = stringResource(R.string.product_form_item_photo_label),
+      onUriChange = { viewModel.itemPhotoUri = it },
+      modifier = Modifier.fillMaxWidth(),
+    )
+    Gap()
+    PhotoSlot(
+      label = stringResource(R.string.product_form_label_photo_label),
+      onUriChange = { viewModel.labelPhotoUri = it },
+      modifier = Modifier.fillMaxWidth(),
+    )
+    Gap()
+
     viewModel.saveError?.let {
       Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
       Gap()
     }
+    if (viewModel.saving && (viewModel.itemPhotoUri != null || viewModel.labelPhotoUri != null)) {
+      Text(
+        stringResource(R.string.product_form_uploading_photos),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      Gap()
+    }
+    if (viewModel.photoUploadFailed) {
+      Text(
+        stringResource(R.string.product_form_photo_upload_failed_warning),
+        color = MaterialTheme.colorScheme.error,
+        style = MaterialTheme.typography.bodySmall,
+      )
+      Gap()
+    }
 
     Button(
-      onClick = { viewModel.submit() },
+      onClick = { viewModel.submit(context) },
       enabled = viewModel.name.isNotBlank() && viewModel.selectedCategoryId != null && !viewModel.saving,
       modifier = Modifier.fillMaxWidth(),
     ) {

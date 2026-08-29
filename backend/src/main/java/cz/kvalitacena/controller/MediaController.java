@@ -1,6 +1,7 @@
 package cz.kvalitacena.controller;
 
 import cz.kvalitacena.db.entity.Media;
+import cz.kvalitacena.db.entity.PhotoKind;
 import cz.kvalitacena.db.entity.ProfileField;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.repo.MediaRepository;
@@ -48,9 +49,10 @@ public class MediaController {
   public Photo upload(@PathVariable RecordType recordType, @PathVariable Long recordId,
       @RequestParam("file") MultipartFile file,
       @RequestParam(value = "caption", required = false) String caption,
+      @RequestParam(value = "kind", required = false) PhotoKind kind,
       Authentication authentication) {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
-    Media media = mediaService.upload(recordType, recordId, readBytes(file), caption, viewer.publicUid());
+    Media media = mediaService.upload(recordType, recordId, readBytes(file), caption, kind, viewer.publicUid());
     return mediaService.toPhoto(media, viewer);
   }
 

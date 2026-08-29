@@ -8,5 +8,8 @@
   "setAsMain": "Ustaw jako główne",
   "flag": "Zgłoś",
   "flagHidden": "Dziękujemy za zgłoszenie — zdjęcie jest teraz ukryte i czeka na weryfikację.",
-  "flagAcknowledged": "Dziękujemy za zgłoszenie, odnotowaliśmy je."
+  "flagAcknowledged": "Dziękujemy za zgłoszenie, odnotowaliśmy je.",
+  "takePicture": "Zrób zdjęcie",
+  "chooseFile": "Wybierz plik",
+  "remove": "Usuń"
 }

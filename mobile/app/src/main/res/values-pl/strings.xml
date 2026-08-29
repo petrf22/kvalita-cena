@@ -206,6 +206,7 @@
     <string name="photo_too_large">Zdjęcie jest zbyt duże (maks. 8 MB).</string>
     <string name="photo_take_picture">Zrób zdjęcie</string>
     <string name="photo_pick_from_gallery">Wybierz z galerii</string>
+    <string name="photo_remove">Usuń</string>
 
     <string name="quality_not_rated">Jakość: brak ocen</string>
     <string name="quality_rated">Jakość %1$.1f/5</string>
@@ -317,6 +318,11 @@
     <string name="product_form_code_hint">Bez kodu powstanie pozycja rodzajowa (np. „pieczywo za %1$s” z paragonu) — z niższą wiarygodnością danych, ale zapisać i tak można.</string>
     <string name="product_form_submit">Dodaj produkt</string>
     <string name="product_form_back_without_creating">Wstecz bez dodawania</string>
+    <string name="product_form_item_photo_label">Zdjęcie produktu (opcjonalnie)</string>
+    <string name="product_form_label_photo_label">Zdjęcie etykiety (opcjonalnie)</string>
+    <string name="product_form_photo_login_hint">Dodawanie zdjęć wymaga zalogowania — przejdź do zakładki Konto.</string>
+    <string name="product_form_uploading_photos">Przesyłanie zdjęć…</string>
+    <string name="product_form_photo_upload_failed_warning">Produkt został dodany, ale przesłanie zdjęcia się nie powiodło. Spróbuj ponownie na jego stronie szczegółów.</string>
 
     <string name="store_not_found">Nie udało się znaleźć tego sklepu.</string>
     <string name="store_edited_by_me">Twoja edycja</string>
