@@ -35,6 +35,7 @@ class OpenFoodFactsApiClientTest {
           "categories_tags":["en:dairies","en:butters","neplatný tag"],\
           "image_front_url":"https://images.openfoodfacts.org/front.jpg",\
           "image_front_small_url":"http://example.org/wrong.jpg",\
+          "additives_tags":["en:e330","en:e150c","neplatný tag"],\
           "rev":42,"last_modified_t":1700000000}}
           """).getBytes(StandardCharsets.UTF_8);
       exchange.getResponseHeaders().set("Content-Type", "application/json");
@@ -59,5 +60,6 @@ class OpenFoodFactsApiClientTest {
     assertThat(product.categoryTags()).containsExactly("en:dairies", "en:butters");
     assertThat(product.imageFrontUrl()).startsWith("https://images.openfoodfacts.org/");
     assertThat(product.imageFrontSmallUrl()).isNull();
+    assertThat(product.additivesTags()).containsExactly("en:e330", "en:e150c");
   }
 }

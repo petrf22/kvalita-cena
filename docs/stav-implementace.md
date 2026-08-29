@@ -249,6 +249,12 @@ patch. Detail zboží na obou klientech zobrazuje `catalogAttribution`/`external
 session cache nad `productLookupByCode` (`ProductService`/`GraphQlClient`) šetří opakované
 dotazy na stejný kód. Zpětné publikování oprav do OFF zůstává mimo etapu 1.
 
+`off.product.additives_tags` (OFF pole `additives_tags`, `off-additives.yaml`) doplňuje ke kartě
+„Další informace" odkaz `ExternalLinkKind.E_NUMBERS` na konkrétní aditivum produktu (kód velkými
+písmeny jako label, max 5, `ProductGraphQlController.externalLinksFor`) — čistě čtecí rozšíření
+beze změny klientů, karta odkazy renderuje generickým cyklem. Zbytek údajů z etikety (nutriční
+tabulka, složení, alergeny, vlastní zadání) je rozvojový nápad v `docs/rozvoj.md`.
+
 Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
 `PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec
 (jen složka `L`), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo jednorázové

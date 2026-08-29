@@ -69,7 +69,8 @@ už dnes rozlišuje fotku zboží od fotky etikety u formuláře nového zboží
 budoucí vstup pro čtení textu/složení z etikety, obdoba dnešní „OCR ceny z fotky" výš, jen nad
 jiným polem fotky. Nemá nic společného s `f_evid` (ten je na `core.price_observation`, ne na
 `core.media`), ale stejná lekce platí obráceně: druh fotky je v datech od chvíle, kdy funkce
-vznikla, ne dopisovaný později.
+vznikla, ne dopisovaný později. Cílový stav čtení etikety (nutriční tabulka, složení, alergeny)
+je zapsaný v `docs/rozvoj.md`, „Údaje z etikety" — LABEL je jeho pátá úloha v pořadí výš.
 
 ## Hardware a volba modelu
 

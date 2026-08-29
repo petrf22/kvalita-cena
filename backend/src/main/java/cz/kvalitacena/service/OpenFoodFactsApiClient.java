@@ -27,7 +27,7 @@ public class OpenFoodFactsApiClient {
 
   private static final String FIELDS = String.join(",",
       "product_name", "brands", "product_quantity", "product_quantity_unit", "categories_tags",
-      "image_front_url", "image_front_small_url", "rev", "last_modified_t");
+      "image_front_url", "image_front_small_url", "additives_tags", "rev", "last_modified_t");
 
   private final OpenFoodFactsProperties properties;
   private volatile RestClient restClient;
@@ -63,6 +63,7 @@ public class OpenFoodFactsApiClient {
           clean(product.productName(), 300), firstBrand(product.brands()), product.productQuantity(),
           supportedUnit(product.productQuantityUnit()), safeTags(product.categoryTags()),
           safeImageUrl(product.imageFrontUrl()), safeImageUrl(product.imageFrontSmallUrl()),
+          safeTags(product.additivesTags()),
           product.revision(), epoch(product.lastModifiedEpoch())));
     } catch (HttpClientErrorException.NotFound e) {
       return Optional.empty();
@@ -126,6 +127,7 @@ public class OpenFoodFactsApiClient {
       @JsonProperty("categories_tags") List<String> categoryTags,
       @JsonProperty("image_front_url") String imageFrontUrl,
       @JsonProperty("image_front_small_url") String imageFrontSmallUrl,
+      @JsonProperty("additives_tags") List<String> additivesTags,
       @JsonProperty("rev") Long revision,
       @JsonProperty("last_modified_t") Long lastModifiedEpoch) {
   }

@@ -70,6 +70,7 @@ public class OpenFoodFactsService {
         .productQuantityUnit(p.productQuantityUnit()).categoryTags(p.categoryTags())
         .mappedCategorySlug(categoryMapper.categorySlugFor(p.categoryTags()))
         .imageFrontUrl(p.imageFrontUrl()).imageFrontSmallUrl(p.imageFrontSmallUrl())
+        .additivesTags(p.additivesTags())
         .sourceRevision(p.revision()).sourceUpdatedAt(p.updatedAt()).fetchedAt(now()).build();
   }
 

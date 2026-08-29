@@ -11,6 +11,7 @@ za jednoduchost skriptu.
 
 ### Přidáno
 - Fotka zboží a fotka etikety rovnou při zakládání nového zboží, obě nepovinné (server, web, mobil)
+- Odkazy na aditiva (E-čka) konkrétního zboží z Open Food Facts na detailu zboží (server)
 
 ## [0.3.0] – 2026-08-28
 

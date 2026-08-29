@@ -58,7 +58,7 @@ class OpenFoodFactsServiceTest {
     when(repository.findById(GTIN)).thenReturn(Optional.empty());
     when(apiClient.fetch(RAW_EAN)).thenReturn(Optional.of(new OffRemoteProduct(
         "Máslo", "Mlékárna", new BigDecimal("250"), "G", List.of("en:butters"),
-        "https://images.openfoodfacts.org/front.jpg", null, 12L, OffsetDateTime.now())));
+        "https://images.openfoodfacts.org/front.jpg", null, List.of("en:e330"), 12L, OffsetDateTime.now())));
     when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
     OffLookupResult result = service(properties()).lookup(RAW_EAN);
@@ -67,6 +67,7 @@ class OpenFoodFactsServiceTest {
     assertThat(result.product().getGtin()).isEqualTo(GTIN);
     assertThat(result.product().getProductQuantity()).isEqualByComparingTo("250");
     assertThat(result.product().getCategoryTags()).containsExactly("en:butters");
+    assertThat(result.product().getAdditivesTags()).containsExactly("en:e330");
     verify(apiClient).fetch(RAW_EAN);
   }
 

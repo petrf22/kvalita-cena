@@ -35,3 +35,4 @@ databaseChangeLog:
   - include: { file: 2026-08-27/01-off-product.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-27/02-effective-off-catalog.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-29/01-media-photo-kind.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-08-29/02-off-additives.yaml, relativeToChangelogFile: true }

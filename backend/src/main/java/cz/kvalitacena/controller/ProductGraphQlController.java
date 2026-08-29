@@ -4,6 +4,8 @@ import cz.kvalitacena.config.ExternalLinkProperties;
 import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.CategoryI18n;
 import cz.kvalitacena.db.entity.CodeType;
+import cz.kvalitacena.db.entity.OffFetchStatus;
+import cz.kvalitacena.db.entity.OffProduct;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.PriceCurrent;
 import cz.kvalitacena.db.entity.PriceKind;
@@ -14,6 +16,7 @@ import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.CategoryI18nRepository;
 import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
+import cz.kvalitacena.db.repo.OffProductRepository;
 import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ProductSort;
@@ -57,6 +60,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -73,6 +77,7 @@ public class ProductGraphQlController {
   private final ProductRepository productRepository;
   private final PriceCurrentRepository priceCurrentRepository;
   private final ProductCodeRepository productCodeRepository;
+  private final OffProductRepository offProductRepository;
   private final StoreRepository storeRepository;
   private final CategoryRepository categoryRepository;
   private final CategoryI18nRepository categoryI18nRepository;
@@ -425,25 +430,58 @@ public class ProductGraphQlController {
   @BatchMapping(typeName = "Product", field = "externalLinks")
   public Map<Product, List<ExternalLink>> externalLinks(List<Product> products) {
     Map<Long, List<ProductCode>> byProduct = codesByProductId(products);
+    Map<Long, String> gtinByProductId = new LinkedHashMap<>();
+    for (Product p : products) {
+      gtinByProductId.put(p.getId(), primaryGtin(byProduct.getOrDefault(p.getId(), List.of())));
+    }
+    // Dávkově, jedním dotazem pro všechny produkty na stránce — stejný vzor jako
+    // ProductOverlayService.applyOverlay(List, ...), ne per-produkt dotaz do off.product.
+    List<String> gtins = gtinByProductId.values().stream().filter(Objects::nonNull).toList();
+    Map<String, OffProduct> offByGtin = gtins.isEmpty() ? Map.of() : offProductRepository.findByGtinIn(gtins).stream()
+        .filter(off -> off.getFetchStatus() == OffFetchStatus.FOUND)
+        .collect(Collectors.toMap(OffProduct::getGtin, Function.identity()));
+
     Map<Product, List<ExternalLink>> result = new LinkedHashMap<>();
     for (Product p : products) {
-      String gtin = primaryGtin(byProduct.getOrDefault(p.getId(), List.of()));
-      result.put(p, externalLinksFor(gtin));
+      String gtin = gtinByProductId.get(p.getId());
+      result.put(p, externalLinksFor(gtin, gtin == null ? null : offByGtin.get(gtin)));
     }
     return result;
   }
 
-  private List<ExternalLink> externalLinksFor(String gtin) {
+  private static final int MAX_ADDITIVE_LINKS = 5;
+
+  private List<ExternalLink> externalLinksFor(String gtin, OffProduct off) {
     if (gtin == null) return List.of();
     List<ExternalLink> links = new ArrayList<>();
     String ean = stripLeadingZeros(gtin);
-    ExternalLinkProperties.OpenFoodFacts off = externalLinkProperties.getOpenFoodFacts();
+    ExternalLinkProperties.OpenFoodFacts offProperties = externalLinkProperties.getOpenFoodFacts();
     links.add(new ExternalLink(
         ExternalLinkKind.OPEN_FOOD_FACTS,
         "Open Food Facts",
-        off.getProductUrlTemplate().replace("{barcode}", ean),
+        offProperties.getProductUrlTemplate().replace("{barcode}", ean),
         messages.get("attribution.off")));
+    if (off != null) {
+      String attribution = messages.get("attribution.off");
+      off.getAdditivesTags().stream().limit(MAX_ADDITIVE_LINKS).forEach(tag -> {
+        String code = additiveCode(tag);
+        if (code == null) return;
+        links.add(new ExternalLink(
+            ExternalLinkKind.E_NUMBERS,
+            code,
+            offProperties.getAdditiveUrlTemplate().replace("{tag}", code.toLowerCase(Locale.ROOT)),
+            attribution));
+      });
+    }
     return links;
+  }
+
+  /** "en:e330" -> "E330"; OFF tag bez jazykového prefixu, nebo bez tvaru E-čísla, se přeskočí. */
+  private String additiveCode(String tag) {
+    if (tag == null) return null;
+    int colon = tag.indexOf(':');
+    String code = (colon >= 0 ? tag.substring(colon + 1) : tag).toUpperCase(Locale.ROOT);
+    return code.matches("E\\d{3,4}[A-Z]?") ? code : null;
   }
 
   private String primaryGtin(List<ProductCode> codes) {

@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-29-02-off-additives
+      author: Petr F.
+      comment: >
+        Aditiva (E-čka) konkrétního produktu z OFF additives_tags — zobrazí se jako odkazy
+        ExternalLinkKind.E_NUMBERS vedle existujícího odkazu na Open Food Facts
+        (ProductGraphQlController.externalLinksFor). Sloupec zůstává v off schématu, ne v
+        core.* — stejné pravidlo jako u category_tags (docs/datovy-model.md, "Oddělení schémat
+        kvůli ODbL").
+      changes:
+        - addColumn:
+            schemaName: "off"
+            tableName: product
+            columns:
+              - column:
+                  name: additives_tags
+                  type: TEXT[]
+                  defaultValueComputed: "ARRAY[]::TEXT[]"
+                  constraints:
+                    nullable: false

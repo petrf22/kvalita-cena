@@ -196,6 +196,83 @@ zrušen), aby „mleko" bez diakritiky našlo „Mléko" stejně spolehlivě jak
   (`ModerationService`, `docs/reputace.md` — „Moderace"), nebo zůstane čistě ruční
   CSV/migrace jako dnes.
 
+## Údaje z etikety: nutriční hodnoty, složení, alergeny (fáze 2 a 3)
+
+**Zadání:** appka dnes o zboží ví jen to, co potřebuje k ceně — název, značka, kategorie,
+gramáž/objem, kusů v balení, čárový kód. Nic z etikety (nutriční tabulka, složení, alergeny)
+v datovém modelu není. Cíl je posunout appku od „kolik to stojí" k „co v tom je", v duchu mise
+(`CLAUDE.md`, „Přehled projektu" — „kvalita a lokálnost, ne jen cena").
+
+**Co je hotové:** aditiva (E-čka) jako odkazy z OFF `additives_tags` (`off.product`,
+`ProductGraphQlController.externalLinksFor`, `docs/stav-implementace.md`) — čistě čtecí, beze
+změny klientů, karta „Další informace" odkazy renderuje generickým cyklem. Zbytek níž je cílový
+stav, ne implementace — žádná migrace, žádné API pole, žádný kód.
+
+Rozděleno na dvě fáze, protože každá řeší jiný problém:
+
+- **fáze 2 — čtení z OFF.** Pokrývá drtivou většinu balených potravin, nulové riziko ODbL, žádná
+  nová editační obrazovka.
+- **fáze 3 — vlastní vrstva.** Pro zboží, které OFF nezná (lokální pekárna, řeznictví) a pro
+  opravy chyb v OFF.
+
+**Kam data patří (fáze 2, vrstva OFF):** rozšíření `off.product` o ploché whitelistované
+sloupce — `energy_kcal_100g`, `fat_100g`, `saturated_fat_100g`, `carbohydrates_100g`,
+`sugars_100g`, `proteins_100g`, `salt_100g`, `fiber_100g` (NUMERIC), `ingredients_text` (TEXT),
+`allergens_tags` (TEXT[]), stejným vzorem jako `additives_tags` výš. OFF `nutriments` je vnořený
+objekt s desítkami klíčů — ukládat ho jako JSONB by porušilo dnešní vzor „plochá whitelistovaná
+podmnožina, ne syrová kopie odpovědi" (`docs/datovy-model.md`, „Oddělení schémat kvůli ODbL");
+`OpenFoodFactsApiClient.ApiProduct` proto dostane vnořený record a vybere z něj jen tyhle klíče.
+Čtení skládá `ProductOverlayService` stejným pořadím jako dnes gramáž — komunitní základ → OFF →
+osobní patch, vždy na detached kopii. Žádná hodnota z `off.*` se nekopíruje do `core.*`.
+
+**Kam data patří (fáze 3, vlastní vrstva):** `core.product_nutrition` (PK `product_id`, tytéž
+sloupce). Vlastní tabulka, ne sloupce na `core.product` — je jich ~10, vyplněné je bude mít
+zlomek zboží, a `core.product` je horká tabulka čtená při každém hledání. Vlastní `data_origin`
+na `core.product_nutrition`, ne spoléhat na ten na `core.product` — zboží může mít vlastní název
+(`OWN`) a přitom nutrienty opsané z OFF (`OFF_DERIVED`).
+
+**Otevřená otázka — seznamy v patch tabulce:** nutrienty a `ingredients_text` jsou skaláry, do
+`core.product_nutrition_user_edit` sednou přesně dnešním vzorem uživatelské vrstvy
+(`docs/datovy-model.md`, „Uživatelská vrstva nad globálními daty" — nullable zrcadla +
+`cleared_fields`). **Alergeny jsou seznam** a do skalárního patche se nevejdou. Návrh k
+ověření: uložit je jako `TEXT[]` a patchovat celý seznam najednou (nahradit, ne slučovat) —
+`NULL` znamená nezměněno, zápis do `cleared_fields` znamená „uživatel tvrdí, že tam žádné
+nejsou". Bez `cleared_fields` by nešlo odlišit „žádný alergen" (informace) od „nikdo nezadal"
+(prázdno) — přesně ten problém, kvůli kterému `cleared_fields` vzniklo.
+
+**Číselník alergenů:** `core.allergen` + `core.allergen_i18n`, stejný vzor jako
+`core.category_i18n` (`docs/lokalizace.md`, „Kategorie: `core.category_i18n`, ne klíče v
+bundlech") — 14 zákonných alergenů EU je sice fixní seznam, kde by klíče v bundlech obstály, ale
+konzistence s aditivy (`core.additive`/`core.additive_i18n`, otevřené jako zadní vrátka v
+podobném duchu jako „Zadní vrátka pro oficiální kódy" u kategorií výš) mluví pro stejný
+mechanismus.
+
+**Dopad na klienty:** editace zboží dnes na žádném klientovi neexistuje — `updateProduct` je
+hotová a otestovaná, ale nevolá ji žádná obrazovka (`CLAUDE.md`, „Pasti, které z kódu nejsou
+vidět"). Fáze 3 (ruční zadání) tedy nejdřív potřebuje editační formulář zboží v duálním režimu
+založení/úprava — vzor je hotová inline editace obchodu (`frontend/src/app/shared/store-form.ts`
+`store = input<Store | null>(null)` + `effect()`; `mobile/.../ui/store/StoreFormScreen.kt` s
+volitelným `storeId`). Fáze 2 (jen čtení z OFF) klienty nutí míň — nová karta na detailu
+(`productDetailFieldsFragment`/`PRODUCT_DETAIL_FIELDS`) a i18n × 5 jazyků, žádná editace.
+
+**Odpovědnost za alergeny — rozhodnout před spuštěním, ne až se to stane.** Alergeny jsou
+zdravotní údaj, ne cena. Chybná cena mrzí; chybné „neobsahuje lepek" je jiná třída rizika než
+cokoli, co appka dnes nese, a `docs/podminky-uziti.md` §9 (bez záruky) na to samo nestačí.
+Otevřené otázky k rozhodnutí: zobrazovat alergeny jen z OFF, nebo i z uživatelského zadání (a
+pokud ano, vždy viditelně označené „zadal uživatel, ověř na obalu")? A hlavně — nikdy nezobrazovat
+negativní tvrzení („neobsahuje lepek") na základě prázdného seznamu, jen „neuvedeno": prázdno
+není důkaz nepřítomnosti. Patří sem i odstavec do `docs/podminky-uziti.md` §8/§9.
+
+**Vazba na fotku etikety a lokální AI:** `core.media.photo_kind = LABEL` (formulář nového zboží,
+`docs/ai.md`) je zamýšlený budoucí vstup pro čtení složení/textu z etikety — pro zboží, které OFF
+nezná, pravděpodobně jediná praktická cesta k nutričním datům bez ODbL zátěže (fotka etikety je
+vlastní data, ne cizí). Navazuje na `docs/ai.md`, „Čtyři úlohy a jejich pořadí" jako pátá úloha,
+stejnou infrastrukturou (fronta vzorem `agg.recompute_queue`, verdikty do schématu `ai`, AI nikdy
+nerozhoduje sama — jen předvyplní formulář, potvrzuje člověk).
+
+Agregace, ceny ani reputace se tímhle nedotknou vůbec — údaje z etikety jsou atribut katalogu, ne
+vstup do váženého mediánu.
+
 ## Nákup podle receptu nebo seznamu (fáze 3)
 
 **Zadání:** uživatel vybere recept (způsob zadávání receptů zatím nevymyšlen) nebo vlastní

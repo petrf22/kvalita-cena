@@ -63,6 +63,12 @@ public class OffProduct {
   @Column(name = "image_front_small_url", length = 1000)
   private String imageFrontSmallUrl;
 
+  // Aditiva (E-čka) konkrétního produktu, tagy jako "en:e330" — zobrazí se jako odkazy na
+  // ExternalLinkKind.E_NUMBERS (ProductGraphQlController.externalLinksFor).
+  @Column(name = "additives_tags", nullable = false)
+  @Builder.Default
+  private List<String> additivesTags = new ArrayList<>();
+
   @Column(name = "source_revision")
   private Long sourceRevision;
 

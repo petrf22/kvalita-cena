@@ -18,5 +18,7 @@ public class ExternalLinkProperties {
   @Data
   public static class OpenFoodFacts {
     private String productUrlTemplate;
+    // {tag} je additives_tags hodnota z OFF, např. "e330" — viz ProductGraphQlController.
+    private String additiveUrlTemplate;
   }
 }

@@ -4,6 +4,7 @@ import cz.kvalitacena.config.ExternalLinkProperties;
 import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.CodeType;
 import cz.kvalitacena.db.entity.NetContentUom;
+import cz.kvalitacena.db.entity.OffFetchStatus;
 import cz.kvalitacena.db.entity.OffProduct;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.ProductCode;
@@ -11,6 +12,7 @@ import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.UnitBase;
 import cz.kvalitacena.db.repo.CategoryI18nRepository;
 import cz.kvalitacena.db.repo.CategoryRepository;
+import cz.kvalitacena.db.repo.OffProductRepository;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
 import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
@@ -37,6 +39,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,6 +67,7 @@ class ProductGraphQlControllerLookupByCodeTest {
   @Mock private ProductRepository productRepository;
   @Mock private PriceCurrentRepository priceCurrentRepository;
   @Mock private ProductCodeRepository productCodeRepository;
+  @Mock private OffProductRepository offProductRepository;
   @Mock private StoreRepository storeRepository;
   @Mock private CategoryRepository categoryRepository;
   @Mock private CategoryI18nRepository categoryI18nRepository;
@@ -84,14 +89,16 @@ class ProductGraphQlControllerLookupByCodeTest {
 
   {
     externalLinkProperties.getOpenFoodFacts().setProductUrlTemplate("https://world.openfoodfacts.org/product/{barcode}");
+    externalLinkProperties.getOpenFoodFacts()
+        .setAdditiveUrlTemplate("https://world.openfoodfacts.org/additive/{tag}");
   }
 
   private ProductGraphQlController controller() {
     return new ProductGraphQlController(productRepository, priceCurrentRepository, productCodeRepository,
-        storeRepository, categoryRepository, categoryI18nRepository, productSearchService, qualityRatingService,
-        productCatalogService, offProductCatalogService, openFoodFactsService, offNetContentConverter,
-        productOverlayService, catalogEditService, myPriceService, mediaService, viewerContextResolver,
-        externalLinkProperties, TestMessages.instance(), countryResolver, fxRateService);
+        offProductRepository, storeRepository, categoryRepository, categoryI18nRepository, productSearchService,
+        qualityRatingService, productCatalogService, offProductCatalogService, openFoodFactsService,
+        offNetContentConverter, productOverlayService, catalogEditService, myPriceService, mediaService,
+        viewerContextResolver, externalLinkProperties, TestMessages.instance(), countryResolver, fxRateService);
   }
 
   private void givenAnonymousViewer() {
@@ -187,5 +194,79 @@ class ProductGraphQlControllerLookupByCodeTest {
     assertThat(candidate.sourceUrl()).isEqualTo("https://world.openfoodfacts.org/product/" + RAW_CODE);
     assertThat(candidate.attribution()).contains("Open Food Facts");
     verify(productRepository, never()).saveAndFlush(any());
+  }
+
+  private ProductCode gtinCode(Product product) {
+    return ProductCode.builder().product(product).code(GTIN).codeType(CodeType.GTIN).primary(true).build();
+  }
+
+  @Test
+  void externalLinksHasNoOffLinkForProductWithoutGtin() {
+    Product product = Product.builder().id(1L).build();
+    when(productCodeRepository.findByProductIdIn(List.of(1L))).thenReturn(List.of());
+
+    Map<Product, List<ExternalLink>> result = controller().externalLinks(List.of(product));
+
+    assertThat(result.get(product)).isEmpty();
+    verify(offProductRepository, never()).findByGtinIn(any());
+  }
+
+  @Test
+  void externalLinksHasOnlyOffLinkWhenNoOffSnapshotExists() {
+    Product product = Product.builder().id(1L).build();
+    when(productCodeRepository.findByProductIdIn(List.of(1L))).thenReturn(List.of(gtinCode(product)));
+    when(offProductRepository.findByGtinIn(List.of(GTIN))).thenReturn(List.of());
+
+    Map<Product, List<ExternalLink>> result = controller().externalLinks(List.of(product));
+
+    List<ExternalLink> links = result.get(product);
+    assertThat(links).hasSize(1);
+    assertThat(links.get(0).kind()).isEqualTo(ExternalLinkKind.OPEN_FOOD_FACTS);
+  }
+
+  @Test
+  void externalLinksAddsAdditiveLinksFromOffSnapshot() {
+    Product product = Product.builder().id(1L).build();
+    when(productCodeRepository.findByProductIdIn(List.of(1L))).thenReturn(List.of(gtinCode(product)));
+    OffProduct off = OffProduct.builder().gtin(GTIN).fetchStatus(OffFetchStatus.FOUND)
+        .additivesTags(List.of("en:e330", "en:e150c")).build();
+    when(offProductRepository.findByGtinIn(List.of(GTIN))).thenReturn(List.of(off));
+
+    Map<Product, List<ExternalLink>> result = controller().externalLinks(List.of(product));
+
+    List<ExternalLink> links = result.get(product);
+    assertThat(links).hasSize(3);
+    assertThat(links.get(0).kind()).isEqualTo(ExternalLinkKind.OPEN_FOOD_FACTS);
+    ExternalLink first = links.get(1);
+    assertThat(first.kind()).isEqualTo(ExternalLinkKind.E_NUMBERS);
+    assertThat(first.label()).isEqualTo("E330");
+    assertThat(first.url()).isEqualTo("https://world.openfoodfacts.org/additive/e330");
+    assertThat(first.attribution()).contains("Open Food Facts");
+    assertThat(links.get(2).label()).isEqualTo("E150C");
+  }
+
+  @Test
+  void externalLinksLimitsAdditiveLinksToFive() {
+    Product product = Product.builder().id(1L).build();
+    when(productCodeRepository.findByProductIdIn(List.of(1L))).thenReturn(List.of(gtinCode(product)));
+    OffProduct off = OffProduct.builder().gtin(GTIN).fetchStatus(OffFetchStatus.FOUND)
+        .additivesTags(List.of("en:e100", "en:e101", "en:e102", "en:e103", "en:e104", "en:e105", "en:e106")).build();
+    when(offProductRepository.findByGtinIn(List.of(GTIN))).thenReturn(List.of(off));
+
+    Map<Product, List<ExternalLink>> result = controller().externalLinks(List.of(product));
+
+    assertThat(result.get(product)).hasSize(1 + 5);
+  }
+
+  @Test
+  void externalLinksSkipsOffSnapshotWithoutFoundStatus() {
+    Product product = Product.builder().id(1L).build();
+    when(productCodeRepository.findByProductIdIn(List.of(1L))).thenReturn(List.of(gtinCode(product)));
+    OffProduct notFound = OffProduct.builder().gtin(GTIN).fetchStatus(OffFetchStatus.NOT_FOUND).build();
+    when(offProductRepository.findByGtinIn(List.of(GTIN))).thenReturn(List.of(notFound));
+
+    Map<Product, List<ExternalLink>> result = controller().externalLinks(List.of(product));
+
+    assertThat(result.get(product)).hasSize(1);
   }
 }

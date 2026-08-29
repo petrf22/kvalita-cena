@@ -67,7 +67,9 @@ je předfiltr fotek pro moderaci, který podle `docs/ai.md` patří před spušt
 provozu, ne až za etapu 2) — viz `docs/reputace.md` pro poznámku o hodnocení kvality vs.
 dodavatelích. Další rozvojové nápady mimo etapu 1 (nezávazné, k realizaci až přijde řada) jsou
 v `docs/rozvoj.md`: pojmenování slevové karty podle obchodu, ceny předem z akčního letáku,
-načtení celé účtenky, nákup podle receptu nebo seznamu.
+načtení celé účtenky, nákup podle receptu nebo seznamu, údaje z etikety (nutriční hodnoty,
+složení, alergeny — aditiva/E-čka jako odkazy z OFF už hotová jsou, viz
+`docs/stav-implementace.md`).
 
 **Pasti, které z kódu nejsou vidět:**
 - `updateProduct` (mutace + `ProductService.updateProduct` na webu + `GraphQlClient

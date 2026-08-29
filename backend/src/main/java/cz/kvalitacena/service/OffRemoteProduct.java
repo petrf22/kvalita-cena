@@ -13,6 +13,7 @@ public record OffRemoteProduct(
     List<String> categoryTags,
     String imageFrontUrl,
     String imageFrontSmallUrl,
+    List<String> additivesTags,
     Long revision,
     OffsetDateTime updatedAt) {
 }

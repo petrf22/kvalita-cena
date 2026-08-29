@@ -170,6 +170,14 @@ app:
       enabled: true
       base-url: https://world.openfoodfacts.org
       product-url-template: "https://cz.openfoodfacts.org/product/{barcode}"
+      # {tag} je additives_tags bez jazykového prefixu, malými písmeny (např. "e330"). OFF
+      # tenhle veřejný krátký tvar interně přesměrovává na /facets/additives/{tag} (ověřeno
+      # živě) — appka jde záměrně na krátký tvar, ne na interní cíl přesměrování, stejně jako
+      # product-url-template výš jde na /product/, ne na jeho interní ekvivalent. Interní
+      # facets stránky byly navíc při ověřování (2026-08-29) na OFF dočasně nedostupné (503),
+      # zatímco /product/ i tenhle krátký tvar (301 → facets) fungovaly — další důvod nespojovat
+      # appku s cílem přesměrování, který se může sám o sobě měnit nezávisle na veřejném URL.
+      additive-url-template: "https://cz.openfoodfacts.org/additive/{tag}"
       # OFF vyžaduje identifikovatelný User-Agent; v produkci se kontakt přebije env proměnnou.
       user-agent: "KvalitaACena/0.2.0 (dev@example.com)"
       timeout: PT5S
