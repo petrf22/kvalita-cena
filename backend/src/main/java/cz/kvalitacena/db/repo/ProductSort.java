@@ -5,7 +5,7 @@ public enum ProductSort {
   /** Výchozí — nejvíc potvrzené zboží nahoře (součet agg.price_current.n_obs). */
   REPORT_COUNT,
   PRICE_ASC,
-  /** 1 = nejlepší, tedy vzestupně. */
+  /** 5 = nejlepší, tedy sestupně. */
   QUALITY,
   LAST_REPORTED,
   NAME

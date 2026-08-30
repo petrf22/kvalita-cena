@@ -164,14 +164,14 @@ WHERE po.source = 'IMPORT'
 
 -- Pár hodnocení kvality — jen pokud už existuje aspoň jeden uživatel (seed běží typicky i před
 -- prvním přihlášením, kdy je auth.app_user prázdná; anonymní hodnocení kvality API nedovolí,
--- vyžaduje přihlášení stejně jako submitObservation ho nevyžaduje).
-INSERT INTO core.product_quality_rating (product_id, user_id, grade)
-SELECT p.id, u.id, g.grade
+-- vyžaduje přihlášení stejně jako submitObservation ho nevyžaduje). Hvězdičky, 5 nejlepší.
+INSERT INTO core.product_quality_rating (product_id, user_id, stars)
+SELECT p.id, u.id, g.stars
 FROM (VALUES
-  ('Máslo čerstvé', 1),
-  ('Mléko polotučné', 2),
+  ('Máslo čerstvé', 5),
+  ('Mléko polotučné', 4),
   ('Chléb konzumní kmínový', 3)
-) AS g(product_name, grade)
+) AS g(product_name, stars)
 JOIN core.product p ON p.name = g.product_name
 CROSS JOIN (SELECT id FROM auth.app_user ORDER BY id LIMIT 1) u
 ON CONFLICT (product_id, user_id) DO NOTHING;

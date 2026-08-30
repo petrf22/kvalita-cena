@@ -11,7 +11,7 @@ hledání i v číselníku kategorií, řazení, stránkování, agregáty v `Pr
 `searchFacets` / `product` / `productByCode` /
 `nearbyStores` / `priceHistory` / `me` / `submitObservations` / `rateProduct`, vážený medián
 i denní agregace v `PriceAggregationService` (`agg.price_current` + `agg.price_daily`),
-hodnocení kvality jako známka 1–5 (`core.product_quality_rating`, `QualityRatingService` —
+hodnocení kvality jako hvězdičky 1–5 (`core.product_quality_rating`, `QualityRatingService` —
 jen průměr a počet, žádné texty, žádná viditelnost).
 
 Zakládání katalogu bez skenování/GPS (`docs/datovy-model.md`, „Identita provozovny"):

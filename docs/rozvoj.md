@@ -284,7 +284,7 @@ cenu), nebo vypíše **obchody v okolí**, kde je které zboží ze seznamu nejl
 
 Data pro obě optimalizace ve velké míře už existují: `agg.price_current` (aktuální cena na
 provozovnu, měna součástí primárního klíče), `nearbyStores` (`cube`/`earthdistance`,
-`docs/datovy-model.md`) a známka kvality 1–5 (`core.product_quality_rating`,
+`docs/datovy-model.md`) a hodnocení kvality hvězdičkami 1–5 (`core.product_quality_rating`,
 `QualityRatingService`). Nová je hlavně doména receptů/seznamů a **párování ingredience na
 konkrétní zboží** (recept říká „500 g mouky", ne EAN nebo konkrétní produkt) — tohle je jádro
 práce, výpočet nejlevnější kombinace je až druhý krok.

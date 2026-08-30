@@ -7,7 +7,7 @@ import org.springframework.data.domain.Persistable;
 import java.time.OffsetDateTime;
 
 /**
- * Hodnocení kvality zboží — jen známka 1–5 (jako ve škole, 1 nejlepší), bez textů. core.product
+ * Hodnocení kvality zboží — jen hvězdičky 1–5 (5 nejlepší), bez textů. core.product
  * NENÍ core.product_review (etapa 2, viz docs/datovy-model.md) — žádná viditelnost, žádný
  * ViewerContext.
  *
@@ -38,8 +38,8 @@ public class ProductQualityRating implements Persistable<Long> {
   @Column(name = "user_id", nullable = false)
   private Long userId;
 
-  @Column(name = "grade", nullable = false)
-  private short grade;
+  @Column(name = "stars", nullable = false)
+  private short stars;
 
   @Column(name = "created_at", nullable = false, columnDefinition = "TIMESTAMPTZ")
   private OffsetDateTime createdAt;

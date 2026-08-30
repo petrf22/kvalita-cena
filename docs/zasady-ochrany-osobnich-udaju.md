@@ -52,7 +52,7 @@ vzorce chování nebo vyřešit spor o cenu.
 Z tohoto pravidla existují dvě záměrné výjimky, protože bez trvalé vazby by appka ztratila
 funkci, kterou od nich uživatelé očekávají:
 
-- **Hodnocení kvality zboží** (známka 1–5) zůstává navázané na tvůj účet po celou dobu
+- **Hodnocení kvality zboží** (hvězdičky 1–5) zůstává navázané na tvůj účet po celou dobu
   trvání účtu — jinak by šlo systém obejít opakovaným hodnocením stejné věci. Navenek appka
   vždy zobrazuje jen průměr a počet hodnocení, nikdy seznam „kdo jak ohodnotil".
 - **Tvoje vlastní úpravy existujícího zboží/obchodu** (např. oprava názvu nebo adresy)

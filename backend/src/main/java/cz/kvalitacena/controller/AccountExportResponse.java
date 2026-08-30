@@ -37,7 +37,7 @@ public record AccountExportResponse(
       String currency, String priceKind, OffsetDateTime observedAt) {
   }
 
-  public record QualityRatingExport(String productName, short grade) {
+  public record QualityRatingExport(String productName, short stars) {
   }
 
   /** {@code null} pole = appka je při úpravě nezměnila; {@code clearedFields} = uživatel je vymazal. */

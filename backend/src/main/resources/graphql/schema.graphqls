@@ -1,6 +1,6 @@
 """
 Etapa 1 (MVP) — hledání zboží s filtry a řazením, ceny po obchodech, hodnocení kvality
-(jen známka 1–5, bez textů), denní historie ceny pro graf, dohledání nejbližších provozoven
+(jen hvězdičky 1–5, bez textů), denní historie ceny pro graf, dohledání nejbližších provozoven
 a zápis ceny. Textové recenze, skupiny důvěry, notifikace a dodavatelé přijdou v etapě 2/3
 (viz plán založení projektu).
 """
@@ -13,7 +13,7 @@ enum ProductSort {
   "Výchozí — nejvíc potvrzené zboží nahoře (součet agg.price_current.n_obs)."
   REPORT_COUNT
   PRICE_ASC
-  "1 = nejlepší, tedy vzestupně."
+  "5 = nejlepší, tedy sestupně."
   QUALITY
   LAST_REPORTED
   NAME
@@ -225,10 +225,10 @@ type Mutation {
   submitObservations(input: SubmitObservationsInput!): [PriceObservation!]!
 
   """
-  Známka kvality jako ve škole: 1 nejlepší … 5 nejhorší. Jeden záznam na uživatele a produkt
-  — opakované volání předchozí známku přepíše. Vyžaduje přihlášení.
+  Hodnocení kvality hvězdičkami: 1 nejhorší … 5 nejlepší. Jeden záznam na uživatele a produkt
+  — opakované volání předchozí hodnocení přepíše. Vyžaduje přihlášení.
   """
-  rateProduct(productId: ID!, grade: Int!): ProductQuality!
+  rateProduct(productId: ID!, stars: Int!): ProductQuality!
 
   """
   Založení provozovny — pro zápis ceny bez sdílení polohy nebo zpětně z domova. Vyžaduje
@@ -676,7 +676,7 @@ type Product {
   gtin: String
   stats: ProductStats!
   quality: ProductQuality!
-  "Známka přihlášeného uživatele, null pro anonyma i pro nehodnocený produkt."
+  "Hvězdičky přihlášeného uživatele, null pro anonyma i pro nehodnocený produkt."
   myQualityRating: Int
   externalLinks: [ExternalLink!]!
   """
@@ -869,7 +869,7 @@ type ProductStats {
   bestPriceConverted: ConvertedPrice
 }
 
-"Průměrná známka 1,00–5,00 (1 nejlepší). Null, dokud nikdo nehodnotil."
+"Průměr hvězdiček 1,00–5,00 (5 nejlepší). Null, dokud nikdo nehodnotil."
 type ProductQuality {
   average: BigDecimal
   count: Int!
@@ -1327,7 +1327,7 @@ enum ErrorCode {
   OBSERVATION_PROMO_VALIDITY_RANGE_INVALID
   OBSERVATION_PROMO_VALID_FROM_IN_FUTURE
   QUALITY_REQUIRES_LOGIN
-  QUALITY_GRADE_OUT_OF_RANGE
+  QUALITY_STARS_OUT_OF_RANGE
   FLAG_REQUIRES_LOGIN
   FLAG_RECORD_NOT_FOUND
   MODERATION_REQUIRES_ROLE

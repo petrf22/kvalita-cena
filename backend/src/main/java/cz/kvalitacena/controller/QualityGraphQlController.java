@@ -21,8 +21,8 @@ public class QualityGraphQlController {
   private final QualityRatingService qualityRatingService;
 
   @MutationMapping
-  public ProductQuality rateProduct(@Argument Long productId, @Argument Integer grade, Authentication authentication) {
-    return qualityRatingService.rate(productId, grade, publicUidOf(authentication));
+  public ProductQuality rateProduct(@Argument Long productId, @Argument Integer stars, Authentication authentication) {
+    return qualityRatingService.rate(productId, stars, publicUidOf(authentication));
   }
 
   /**
@@ -35,10 +35,10 @@ public class QualityGraphQlController {
   @BatchMapping(typeName = "Product", field = "myQualityRating")
   public Map<Product, Integer> myQualityRating(List<Product> products, Authentication authentication) {
     UUID publicUid = publicUidOf(authentication);
-    Map<Long, Integer> grades = qualityRatingService.gradesOf(publicUid, products.stream().map(Product::getId).toList());
+    Map<Long, Integer> stars = qualityRatingService.starsOf(publicUid, products.stream().map(Product::getId).toList());
     Map<Product, Integer> result = new LinkedHashMap<>();
     for (Product p : products) {
-      result.put(p, grades.get(p.getId()));
+      result.put(p, stars.get(p.getId()));
     }
     return result;
   }

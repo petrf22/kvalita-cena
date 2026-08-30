@@ -195,16 +195,18 @@ Nominatimova usage policy vyžaduje identifikovatelný `User-Agent` a nejvýš 1
 žádná surová kopie odpovědi. Výpadek/timeout Nominatimu se projeví jako prázdný seznam
 kandidátů, nikdy jako chyba: založení obchodu bez souřadnic musí projít i tak.
 
-## Hodnocení kvality — jen známka, ne recenze
+## Hodnocení kvality — jen hvězdičky, ne recenze
 
-`core.product_quality_rating` (`2026-08-05/01-product-quality-rating.yaml`) je vědomě
-minimální předstupeň k `core.product_review` z etapy 2: jen `grade SMALLINT CHECK (1–5)`
-na dvojici `(product_id, user_id)`, žádný text, žádná viditelnost `PUBLIC`/`GROUPS`/`PRIVATE`,
-žádný `ViewerContext`. Jedna známka na uživatele a produkt vynucuje `UNIQUE (product_id,
+`core.product_quality_rating` (`2026-08-05/01-product-quality-rating.yaml`,
+`2026-08-30/01-quality-stars.yaml`) je vědomě minimální předstupeň k `core.product_review`
+z etapy 2: jen `stars SMALLINT CHECK (1–5)` (5 nejlepší; sloupec se dřív jmenoval `grade` a
+škála byla obrácená jako školní známka, viz `docs/reputace.md`) na dvojici
+`(product_id, user_id)`, žádný text, žádná viditelnost `PUBLIC`/`GROUPS`/`PRIVATE`,
+žádný `ViewerContext`. Jedno hodnocení na uživatele a produkt vynucuje `UNIQUE (product_id,
 user_id)` a backendový upsert (`ON CONFLICT ... DO UPDATE`), ne aplikační logika.
 
 Cena za tuhle jednoduchost: vazba `user_id` **se nepseudonymizuje** po 180 dnech jako
-`price_observation.submitter_id` — bez trvalé vazby by nešlo vynutit „jedna známka na
+`price_observation.submitter_id` — bez trvalé vazby by nešlo vynutit „jedno hodnocení na
 uživatele". Je to vědomé zhoršení proti běžnému pravidlu projektu, podrobně v
 `soukromi.md` (`ON DELETE CASCADE` při smazání účtu, `user_id` nikdy ven přes API, pozor
 na `pg_dump` export výše).

@@ -1,0 +1,40 @@
+# 01-quality-stars.yaml — hodnocení kvality zboží se z "1 = nejlepší, 5 = nejhorší" (známka
+# jako ve škole, 2026-08-05/01-product-quality-rating.yaml) mění na hvězdičky, kde víc = líp.
+# Testování ukázalo, že školní známkování je matoucí — různí lidé ho čtou různě, hvězdičky
+# umí přečíst každý. Sloupec se přejmenovává grade → stars, aby v datovém modelu nezůstal
+# název s obráceným významem.
+#
+# `6 - stars` je involuce (překlopí 1↔5, 2↔4, 3 zůstává), takže stejný UPDATE funguje
+# napříč forward migrací i rollbackem — jen v jiném pořadí vůči rename/constraint krokům.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-08-30-01-quality-grade-to-stars
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.product_quality_rating
+                DROP CONSTRAINT chk_product_quality_rating_grade;
+
+              ALTER TABLE core.product_quality_rating
+                RENAME COLUMN grade TO stars;
+
+              UPDATE core.product_quality_rating SET stars = 6 - stars;
+
+              ALTER TABLE core.product_quality_rating
+                ADD CONSTRAINT chk_product_quality_rating_stars
+                CHECK (stars BETWEEN 1 AND 5);
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE core.product_quality_rating
+                DROP CONSTRAINT chk_product_quality_rating_stars;
+
+              UPDATE core.product_quality_rating SET stars = 6 - stars;
+
+              ALTER TABLE core.product_quality_rating
+                RENAME COLUMN stars TO grade;
+
+              ALTER TABLE core.product_quality_rating
+                ADD CONSTRAINT chk_product_quality_rating_grade
+                CHECK (grade BETWEEN 1 AND 5);

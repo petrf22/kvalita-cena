@@ -91,7 +91,7 @@ public enum ErrorCode {
 
   // --- kvalita
   QUALITY_REQUIRES_LOGIN("error.quality.requiresLogin"),
-  QUALITY_GRADE_OUT_OF_RANGE("error.quality.gradeOutOfRange"),   // {0} = min, {1} = max
+  QUALITY_STARS_OUT_OF_RANGE("error.quality.starsOutOfRange"),   // {0} = min, {1} = max
 
   // --- nahlašování
   FLAG_REQUIRES_LOGIN("error.flag.requiresLogin"),

@@ -150,7 +150,7 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
         FROM scoped WHERE price_kind = 'REGULAR' AND unit_price IS NOT NULL
         ORDER BY product_id, unit_price ASC, store_id ASC
       ), quality AS (
-        SELECT product_id, ROUND(AVG(grade)::numeric, 2) AS avg_grade, COUNT(*) AS rating_count
+        SELECT product_id, ROUND(AVG(stars)::numeric, 2) AS avg_stars, COUNT(*) AS rating_count
         FROM core.product_quality_rating
         WHERE product_id IN (SELECT id FROM matched) GROUP BY product_id
       )
@@ -165,7 +165,7 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
 
     String sql = CTE + """
         SELECT m.id, COALESCE(t.n_obs_total, 0), b.price_amount, b.unit_price, b.store_id, b.n_obs,
-               t.last_observed_at, q.avg_grade, COALESCE(q.rating_count, 0), b.currency
+               t.last_observed_at, q.avg_stars, COALESCE(q.rating_count, 0), b.currency
         FROM matched m
         """ + totalsJoin + """
          totals t  ON t.product_id = m.id
@@ -211,7 +211,7 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
     return switch (sort == null ? ProductSort.REPORT_COUNT : sort) {
       case REPORT_COUNT -> "COALESCE(t.n_obs_total, 0) DESC, t.last_observed_at DESC NULLS LAST";
       case PRICE_ASC -> "b.unit_price ASC NULLS LAST";
-      case QUALITY -> "q.avg_grade ASC NULLS LAST"; // 1 = nejlepší
+      case QUALITY -> "q.avg_stars DESC NULLS LAST"; // 5 = nejlepší
       case LAST_REPORTED -> "t.last_observed_at DESC NULLS LAST";
       case NAME -> "m.name ASC";
     };

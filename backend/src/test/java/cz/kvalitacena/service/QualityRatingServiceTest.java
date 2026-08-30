@@ -27,9 +27,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Hodnocení kvality je v etapě 1 jen známka 1–5 (jako ve škole), bez textů a bez viditelnosti
- * (docs/datovy-model.md). Anonym nesmí hodnotit, jedna známka na uživatele a produkt (vynucuje
- * DB unique index + native upsert — tady se ověřuje jen že service volá upsert správně).
+ * Hodnocení kvality je v etapě 1 jen hvězdičky 1–5 (5 nejlepší), bez textů a bez viditelnosti
+ * (docs/datovy-model.md). Anonym nesmí hodnotit, jedno hodnocení na uživatele a produkt
+ * (vynucuje DB unique index + native upsert — tady se ověřuje jen že service volá upsert
+ * správně).
  */
 @ExtendWith(MockitoExtension.class)
 class QualityRatingServiceTest {
@@ -56,7 +57,7 @@ class QualityRatingServiceTest {
   }
 
   @Test
-  void gradeMustBeBetweenOneAndFive() {
+  void starsMustBeBetweenOneAndFive() {
     QualityRatingService service = service();
     assertThatThrownBy(() -> service.rate(PRODUCT_ID, 0, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
