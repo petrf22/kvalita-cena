@@ -114,8 +114,8 @@ export const ErrorCode = {
   ProfileNameTooLong: 'PROFILE_NAME_TOO_LONG',
   ProfilePhoneInvalid: 'PROFILE_PHONE_INVALID',
   ProfileRequiresLogin: 'PROFILE_REQUIRES_LOGIN',
-  QualityGradeOutOfRange: 'QUALITY_GRADE_OUT_OF_RANGE',
   QualityRequiresLogin: 'QUALITY_REQUIRES_LOGIN',
+  QualityStarsOutOfRange: 'QUALITY_STARS_OUT_OF_RANGE',
   SessionExpired: 'SESSION_EXPIRED',
   StoreCityEmpty: 'STORE_CITY_EMPTY',
   StoreCityRequired: 'STORE_CITY_REQUIRED',
@@ -219,7 +219,7 @@ export const ProductSort = {
   LastReported: 'LAST_REPORTED',
   Name: 'NAME',
   PriceAsc: 'PRICE_ASC',
-  /** 1 = nejlepší, tedy vzestupně. */
+  /** 5 = nejlepší, tedy sestupně. */
   Quality: 'QUALITY',
   /** Výchozí — nejvíc potvrzené zboží nahoře (součet agg.price_current.n_obs). */
   ReportCount: 'REPORT_COUNT'

@@ -134,7 +134,7 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.PhotoUnreadable]: 'errors.PHOTO_UNREADABLE',
   [ErrorCode.PhotoResolutionTooHigh]: 'errors.PHOTO_RESOLUTION_TOO_HIGH',
   [ErrorCode.QualityRequiresLogin]: 'errors.QUALITY_REQUIRES_LOGIN',
-  [ErrorCode.QualityGradeOutOfRange]: 'errors.QUALITY_GRADE_OUT_OF_RANGE',
+  [ErrorCode.QualityStarsOutOfRange]: 'errors.QUALITY_STARS_OUT_OF_RANGE',
   [ErrorCode.FlagRequiresLogin]: 'errors.FLAG_REQUIRES_LOGIN',
   [ErrorCode.FlagRecordNotFound]: 'errors.FLAG_RECORD_NOT_FOUND',
   [ErrorCode.ModerationRequiresRole]: 'errors.MODERATION_REQUIRES_ROLE',

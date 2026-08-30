@@ -172,7 +172,7 @@ export type ProductSort =
   | 'LAST_REPORTED'
   | 'NAME'
   | 'PRICE_ASC'
-  /** 1 = nejlepší, tedy vzestupně. */
+  /** 5 = nejlepší, tedy sestupně. */
   | 'QUALITY'
   /** Výchozí — nejvíc potvrzené zboží nahoře (součet agg.price_current.n_obs). */
   | 'REPORT_COUNT';
@@ -570,7 +570,7 @@ export type PriceHistoryQuery = { priceHistory: { priceKind: PriceKind, days: nu
 
 export type RateProductMutationVariables = Exact<{
   productId: string;
-  grade: number;
+  stars: number;
 }>;
 
 
@@ -2594,8 +2594,8 @@ export const PriceHistoryDocument = new TypedDocumentString(`
   pendingConfirmation
 }`) as unknown as TypedDocumentString<PriceHistoryQuery, PriceHistoryQueryVariables>;
 export const RateProductDocument = new TypedDocumentString(`
-    mutation RateProduct($productId: ID!, $grade: Int!) {
-  rateProduct(productId: $productId, grade: $grade) {
+    mutation RateProduct($productId: ID!, $stars: Int!) {
+  rateProduct(productId: $productId, stars: $stars) {
     average
     count
   }

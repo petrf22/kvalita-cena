@@ -78,16 +78,13 @@
         [count]="product()!.quality?.count ?? 0"
       />
       <div class="quality-buttons">
-        @for (grade of [1, 2, 3, 4, 5]; track grade) {
-          <button
-            nz-button
-            [nzType]="product()!.myQualityRating === grade ? 'primary' : 'default'"
-            nzShape="circle"
-            (click)="rate(grade)"
-          >
-            {{ grade }}
-          </button>
-        }
+        <nz-rate
+          [ngModel]="product()!.myQualityRating"
+          name="myQualityRating"
+          [nzAllowClear]="false"
+          [nzTooltips]="qualityRateTooltips()"
+          (ngModelChange)="rate($event)"
+        />
       </div>
     </div>
     @if (!auth.isLoggedIn()) {

@@ -73,7 +73,7 @@
     "PHOTO_UNREADABLE": "Nie udało się odczytać zdjęcia",
     "PHOTO_RESOLUTION_TOO_HIGH": "Zdjęcie ma zbyt dużą rozdzielczość",
     "QUALITY_REQUIRES_LOGIN": "Ocena jakości wymaga zalogowania",
-    "QUALITY_GRADE_OUT_OF_RANGE": "Ocena musi być w zakresie od {{p0}} do {{p1}}",
+    "QUALITY_STARS_OUT_OF_RANGE": "Ocena musi być w zakresie od {{p0}} do {{p1}} gwiazdek",
     "FLAG_REQUIRES_LOGIN": "Zgłoszenie wymaga zalogowania",
     "FLAG_RECORD_NOT_FOUND": "Zgłaszany wpis nie istnieje",
     "INVALID_CHALLENGE": "Kod jest nieprawidłowy lub wygasł",

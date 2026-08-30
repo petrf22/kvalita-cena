@@ -73,7 +73,7 @@
     "PHOTO_UNREADABLE": "Fotku sa nepodarilo prečítať",
     "PHOTO_RESOLUTION_TOO_HIGH": "Fotka má príliš veľké rozlíšenie",
     "QUALITY_REQUIRES_LOGIN": "Hodnotenie kvality vyžaduje prihlásenie",
-    "QUALITY_GRADE_OUT_OF_RANGE": "Známka musí byť {{p0}} až {{p1}}",
+    "QUALITY_STARS_OUT_OF_RANGE": "Hodnotenie musí byť {{p0}} až {{p1}} hviezdičiek",
     "FLAG_REQUIRES_LOGIN": "Nahlásenie vyžaduje prihlásenie",
     "FLAG_RECORD_NOT_FOUND": "Nahlasovaný záznam neexistuje",
     "INVALID_CHALLENGE": "Kód je neplatný alebo vypršal",

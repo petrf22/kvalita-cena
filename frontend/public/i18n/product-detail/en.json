@@ -7,6 +7,7 @@
   "draftPending": "Awaiting confirmation — only you can see this for now",
   "report": "Report",
   "qualityLoginHint": "Rating quality requires signing in — go to the Account page.",
+  "qualityRateStars": "{count, plural, one {# star} other {# stars}}",
   "priceChartTitle": "Price history",
   "chartConverted": "Converted using the ČNB exchange rate for each day, not today's rate.",
   "days": "{count, plural, one {# day} other {# days}}",

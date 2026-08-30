@@ -7,6 +7,7 @@
   "draftPending": "Oczekuje na potwierdzenie — na razie widzisz to tylko ty",
   "report": "Zgłoś",
   "qualityLoginHint": "Ocena jakości wymaga zalogowania — przejdź do strony Konto.",
+  "qualityRateStars": "{count, plural, one {# gwiazdka} few {# gwiazdki} many {# gwiazdek} other {# gwiazdek}}",
   "priceChartTitle": "Historia ceny",
   "chartConverted": "Przeliczono kursem Czeskiego Banku Narodowego z danego dnia, nie kursem dzisiejszym.",
   "days": "{count, plural, one {# dzień} few {# dni} many {# dni} other {# dni}}",

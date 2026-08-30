@@ -306,18 +306,18 @@ export class ProductService {
       .pipe(map((data) => data.priceHistory));
   }
 
-  /** Známka kvality 1–5 (1 nejlepší, jako ve škole) — vyžaduje přihlášení, jinak GraphQL UNAUTHORIZED. */
-  rateProduct(productId: string, grade: number) {
+  /** Hvězdičky 1–5 (5 nejlepší) — vyžaduje přihlášení, jinak GraphQL UNAUTHORIZED. */
+  rateProduct(productId: string, stars: number) {
     const document = graphql(`
-      mutation RateProduct($productId: ID!, $grade: Int!) {
-        rateProduct(productId: $productId, grade: $grade) {
+      mutation RateProduct($productId: ID!, $stars: Int!) {
+        rateProduct(productId: $productId, stars: $stars) {
           average
           count
         }
       }
     `);
     return this.graphQl
-      .execute(document, { productId, grade })
+      .execute(document, { productId, stars })
       .pipe(map((data) => data.rateProduct));
   }
 

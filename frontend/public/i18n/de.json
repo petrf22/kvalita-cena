@@ -73,7 +73,7 @@
     "PHOTO_UNREADABLE": "Das Foto konnte nicht gelesen werden",
     "PHOTO_RESOLUTION_TOO_HIGH": "Das Foto hat eine zu hohe Auflösung",
     "QUALITY_REQUIRES_LOGIN": "Die Qualitätsbewertung erfordert eine Anmeldung",
-    "QUALITY_GRADE_OUT_OF_RANGE": "Die Note muss zwischen {{p0}} und {{p1}} liegen",
+    "QUALITY_STARS_OUT_OF_RANGE": "Die Bewertung muss zwischen {{p0}} und {{p1}} Sternen liegen",
     "FLAG_REQUIRES_LOGIN": "Das Melden erfordert eine Anmeldung",
     "FLAG_RECORD_NOT_FOUND": "Der gemeldete Eintrag existiert nicht",
     "INVALID_CHALLENGE": "Der Code ist ungültig oder abgelaufen",

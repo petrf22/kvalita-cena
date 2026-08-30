@@ -12,6 +12,7 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzRateModule } from 'ng-zorro-antd/rate';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -41,6 +42,7 @@ const CHART_RANGES = [7, 30, 90, 365];
     NzButtonModule,
     NzIconModule,
     NzSelectModule,
+    NzRateModule,
     NzAlertModule,
     QualityBadge,
     PriceEntryForm,
@@ -156,14 +158,24 @@ export class ProductDetailPage {
     this.loadHistory();
   }
 
-  rate(grade: number): void {
+  // Metoda, ne computed() — translate() není signálově reaktivní, na změnu jazyka reaguje
+  // appka přes reRenderOnLangChange (app.config.ts), stejný vzor jako shared/quality-badge.ts.
+  protected qualityRateTooltips(): string[] {
+    return [1, 2, 3, 4, 5].map((count) =>
+      this.transloco.translate('product-detail.qualityRateStars', { count }),
+    );
+  }
+
+  rate(stars: number): void {
     const product = this.product();
-    if (!product) return;
+    // nz-rate posílá i 0 při kliku na už vybranou hvězdu s nzAllowClear (tady vypnuté), ale
+    // hlídáme to i tady — mazání hodnocení API nepodporuje.
+    if (!product || stars < 1) return;
 
     this.ratingError.set(null);
-    this.productService.rateProduct(product.id, grade).subscribe({
+    this.productService.rateProduct(product.id, stars).subscribe({
       next: (quality) => {
-        this.product.set({ ...product, quality, myQualityRating: grade });
+        this.product.set({ ...product, quality, myQualityRating: stars });
       },
       error: () => {
         this.ratingError.set(this.transloco.translate('product-detail.qualityLoginHint'));

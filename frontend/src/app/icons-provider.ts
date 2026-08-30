@@ -19,6 +19,7 @@ import {
   SettingOutline,
   ShopOutline,
   SortAscendingOutline,
+  StarFill,
   StarOutline,
   UnorderedListOutline,
   UserOutline,
@@ -35,6 +36,9 @@ export const icons = [
   UserOutline,
   LinkOutline,
   StarOutline,
+  // nz-rate (hodnocení kvality hvězdičkami) renderuje <nz-icon nzType="star" nzTheme="fill">
+  // pro vyplněnou hvězdu — bez tohohle by hvězdy zůstaly prázdné.
+  StarFill,
   LogoutOutline,
   MinusCircleOutline,
   FilterOutline,

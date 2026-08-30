@@ -7,6 +7,7 @@
   "draftPending": "Wartet auf Bestätigung — bisher nur für dich sichtbar",
   "report": "Melden",
   "qualityLoginHint": "Die Qualitätsbewertung erfordert eine Anmeldung — wechsle zur Seite Konto.",
+  "qualityRateStars": "{count, plural, one {# Stern} other {# Sterne}}",
   "priceChartTitle": "Preisverlauf",
   "chartConverted": "Umgerechnet mit dem ČNB-Kurs zum jeweiligen Tag, nicht mit dem heutigen Kurs.",
   "days": "{count, plural, one {# Tag} other {# Tage}}",
