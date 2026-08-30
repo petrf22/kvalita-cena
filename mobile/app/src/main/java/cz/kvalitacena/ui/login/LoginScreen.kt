@@ -83,10 +83,10 @@ fun LoginScreen(onLoggedIn: () -> Unit, onOpenTerms: () -> Unit = {}, onOpenPriv
         Spacer(Modifier.height(8.dp))
         Button(
           onClick = { viewModel.requestCode() },
-          enabled = viewModel.consentAccepted,
+          enabled = viewModel.consentAccepted && !viewModel.sendingCode,
           modifier = Modifier.fillMaxWidth(),
         ) {
-          if (viewModel.loading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+          if (viewModel.sendingCode) CircularProgressIndicator(modifier = Modifier.size(20.dp))
           else Text(stringResource(R.string.login_send_code))
         }
       }
@@ -95,6 +95,12 @@ fun LoginScreen(onLoggedIn: () -> Unit, onOpenTerms: () -> Unit = {}, onOpenPriv
         Text(
           stringResource(R.string.login_code_hint, viewModel.email),
           style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+          stringResource(R.string.login_code_delay_hint),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(16.dp))
         SingleLineTextField(
@@ -108,10 +114,24 @@ fun LoginScreen(onLoggedIn: () -> Unit, onOpenTerms: () -> Unit = {}, onOpenPriv
         Spacer(Modifier.height(16.dp))
         Button(
           onClick = { viewModel.verifyCode(onSuccess = onLoggedIn) },
+          enabled = !viewModel.verifying,
           modifier = Modifier.fillMaxWidth(),
         ) {
-          if (viewModel.loading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+          if (viewModel.verifying) CircularProgressIndicator(modifier = Modifier.size(20.dp))
           else Text(stringResource(R.string.login_sign_in))
+        }
+        TextButton(
+          onClick = { viewModel.requestCode() },
+          enabled = viewModel.resendCooldown == 0 && !viewModel.sendingCode,
+          modifier = Modifier.fillMaxWidth(),
+        ) {
+          if (viewModel.sendingCode) {
+            CircularProgressIndicator(modifier = Modifier.size(16.dp))
+          } else if (viewModel.resendCooldown > 0) {
+            Text(stringResource(R.string.login_resend_code_in, viewModel.resendCooldown))
+          } else {
+            Text(stringResource(R.string.login_resend_code))
+          }
         }
         TextButton(onClick = { viewModel.backToEmail() }, modifier = Modifier.fillMaxWidth()) {
           Text(stringResource(R.string.login_change_email))

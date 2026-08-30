@@ -58,7 +58,11 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
       .build()
 
     client.newCall(request).execute().use { response ->
-      if (!response.isSuccessful) throw TransportException("Odeslání kódu selhalo (${response.code})")
+      // errorFor rozbalí ProblemDetail tělo (rate limit, pozastavený účet, …) do skutečné
+      // lokalizované hlášky — bez něj appka ukazovala jen "Odeslání kódu selhalo (429)" místo
+      // toho, co server ve skutečnosti řekl (stejná mezera, kterou errorFor už řeší jinde
+      // v tomhle souboru, jen requestOtp/verifyOtp na ni zapomněly).
+      if (!response.isSuccessful) throw errorFor(response, "Odeslání kódu selhalo")
       json.decodeFromString<OtpRequestResponse>(response.body!!.string())
     }
   }
@@ -73,7 +77,7 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
         .build()
 
       client.newCall(request).execute().use { response ->
-        if (!response.isSuccessful) throw TransportException("Ověření kódu selhalo (${response.code})")
+        if (!response.isSuccessful) throw errorFor(response, "Ověření kódu selhalo")
         val token = json.decodeFromString<TokenResponse>(response.body!!.string())
         applyToken(token)
         token

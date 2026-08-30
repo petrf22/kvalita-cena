@@ -48,11 +48,12 @@
     <string name="login_consent_privacy_link">privacy policy</string>
     <string name="login_send_code">Send code</string>
     <string name="login_code_hint">We sent a code to %1$s.</string>
+    <string name="login_code_delay_hint">Sending it can take a moment — the app hasn\'t frozen.</string>
     <string name="login_code_label">Code from email</string>
     <string name="login_sign_in">Sign in</string>
+    <string name="login_resend_code">Resend code</string>
+    <string name="login_resend_code_in">Resend (in %1$d s)</string>
     <string name="login_change_email">Use a different email</string>
-    <string name="login_request_failed">We couldn\'t send the code. Please try again shortly.</string>
-    <string name="login_verify_failed">The code is invalid or has expired. Please try again.</string>
 
     <!-- Profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") -->
     <string name="profile_title">Profile</string>

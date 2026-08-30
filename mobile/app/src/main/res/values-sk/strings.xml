@@ -48,11 +48,12 @@
     <string name="login_consent_privacy_link">zásadami ochrany osobných údajov</string>
     <string name="login_send_code">Poslať kód</string>
     <string name="login_code_hint">Kód sme poslali na %1$s.</string>
+    <string name="login_code_delay_hint">Odoslanie môže chvíľu trvať — pokojne počkaj, appka sa nezasekla.</string>
     <string name="login_code_label">Kód z e-mailu</string>
     <string name="login_sign_in">Prihlásiť sa</string>
+    <string name="login_resend_code">Poslať kód znova</string>
+    <string name="login_resend_code_in">Poslať znova (o %1$d s)</string>
     <string name="login_change_email">Zadať iný e-mail</string>
-    <string name="login_request_failed">Nepodarilo sa odoslať kód. Skús to prosím znova o chvíľu.</string>
-    <string name="login_verify_failed">Kód je neplatný alebo vypršal. Skús to prosím znova.</string>
 
     <!-- Profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") -->
     <string name="profile_title">Profil</string>

@@ -48,11 +48,12 @@
     <string name="login_consent_privacy_link">polityką prywatności</string>
     <string name="login_send_code">Wyślij kod</string>
     <string name="login_code_hint">Wysłaliśmy kod na %1$s.</string>
+    <string name="login_code_delay_hint">Wysyłka może chwilę potrwać — appka się nie zawiesiła.</string>
     <string name="login_code_label">Kod z e-maila</string>
     <string name="login_sign_in">Zaloguj się</string>
+    <string name="login_resend_code">Wyślij kod ponownie</string>
+    <string name="login_resend_code_in">Wyślij ponownie (za %1$d s)</string>
     <string name="login_change_email">Podaj inny e-mail</string>
-    <string name="login_request_failed">Nie udało się wysłać kodu. Spróbuj ponownie za chwilę.</string>
-    <string name="login_verify_failed">Kod jest nieprawidłowy lub wygasł. Spróbuj ponownie.</string>
 
     <!-- Profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") -->
     <string name="profile_title">Profil</string>

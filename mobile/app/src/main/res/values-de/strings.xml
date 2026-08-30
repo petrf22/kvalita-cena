@@ -48,11 +48,12 @@
     <string name="login_consent_privacy_link">Datenschutzerklärung</string>
     <string name="login_send_code">Code senden</string>
     <string name="login_code_hint">Wir haben den Code an %1$s gesendet.</string>
+    <string name="login_code_delay_hint">Der Versand kann einen Moment dauern — die App hängt nicht.</string>
     <string name="login_code_label">Code aus der E-Mail</string>
     <string name="login_sign_in">Anmelden</string>
+    <string name="login_resend_code">Code erneut senden</string>
+    <string name="login_resend_code_in">Erneut senden (in %1$d s)</string>
     <string name="login_change_email">Andere E-Mail eingeben</string>
-    <string name="login_request_failed">Der Code konnte nicht gesendet werden. Bitte versuch es in Kürze erneut.</string>
-    <string name="login_verify_failed">Der Code ist ungültig oder abgelaufen. Bitte versuch es erneut.</string>
 
     <!-- Profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") -->
     <string name="profile_title">Profil</string>

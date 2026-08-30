@@ -13,6 +13,7 @@ import cz.kvalitacena.ui.settings.DisplayCurrencyStore
 import cz.kvalitacena.ui.settings.PriceEntryVisibilityStore
 import cz.kvalitacena.ui.settings.SearchFilterStore
 import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
 /** Ruční DI bez Hiltu/Daggeru — appka je malá, jeden container stačí. */
 object AppContainer {
@@ -54,6 +55,11 @@ object AppContainer {
       .addInterceptor(DisplayCurrencyInterceptor(displayCurrencyStore))
       .addInterceptor(ClientVersionInterceptor())
       .addInterceptor(ClientKindInterceptor())
+      // Explicitně, ne spoléhat na OkHttp výchozích 10 s — stejná pojistka jako SMTP timeouty
+      // na backendu (application-prod.yml), ať appka na pomalé/nedostupné síti nevisí neurčito.
+      .connectTimeout(5, TimeUnit.SECONDS)
+      .readTimeout(10, TimeUnit.SECONDS)
+      .writeTimeout(10, TimeUnit.SECONDS)
       .build()
     authRepository = AuthRepository(context.applicationContext, httpClient)
     graphQlClient = GraphQlClient(authRepository, httpClient)
