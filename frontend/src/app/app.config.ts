@@ -55,8 +55,15 @@ export const appConfig: ApplicationConfig = {
     provideNzI18n(cs_CZ),
     provideNzIcons(icons),
     // Vyžaduje ng-zorro-antd v22+ pro nz-date-picker (price-entry-page, observed_at) — appka
-    // nepoužívá date-fns, nativní adaptér nad vestavěným Date stačí.
-    provideNzNativeDateAdapter(),
+    // nepoužívá date-fns, nativní adaptér nad vestavěným Date stačí. BEZ locale by
+    // NativeDateAdapter spadl natvrdo na 'en-US' (viz jeho konstruktor) — kalendář by měl
+    // anglické dny/měsíce a týden od neděle bez ohledu na zvolený jazyk appky. Runtime
+    // přepnutí jazyka řeší LanguageService (NzDateAdapter.setLocale), tohle jen nastaví
+    // hodnotu pro první vykreslení, stejný vzor jako provideNzI18n(cs_CZ) o řádek výš.
+    // firstDayOfWeek natvrdo na pondělí — všech pět jazyků appky (cs/sk/pl/de/en-GB) ho má
+    // stejné, a bez explicitní hodnoty by se muselo odvozovat z Intl.Locale().weekInfo, což
+    // není podporované všude.
+    provideNzNativeDateAdapter({ locale: INTL_TAGS[readInitialLang()], firstDayOfWeek: 1 }),
     provideTransloco({
       config: {
         availableLangs: AVAILABLE_LANGS as unknown as string[],

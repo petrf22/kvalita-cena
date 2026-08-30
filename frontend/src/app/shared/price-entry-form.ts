@@ -26,23 +26,14 @@ import {
 import {
   arePriceRowsValid,
   availablePriceKinds,
+  fromIsoDate,
   newPriceRow,
+  toIsoDate,
   toObservationPriceInputs,
+  toObservedAtIso,
   type PriceRow,
 } from './price-rows';
 import { StorePicker } from './store-picker';
-
-/** Datum → ISO (YYYY-MM-DD) v místním čase, ne UTC — Date.toISOString() by u večerních zápisů posunulo den. */
-function toIsoDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function fromIsoDate(iso: string | null): Date | null {
-  return iso ? new Date(`${iso}T00:00:00`) : null;
-}
 
 /**
  * Celá zápisová cesta ceny — obchod, seznam řádků "(druh ceny, částka)" s "+"/"−" a odeslání
@@ -209,7 +200,7 @@ export class PriceEntryForm {
         productId: product.id,
         storeId,
         quantityBasis: product.isVariableWeight ? this.quantityBasis() : 'PACKAGE',
-        observedAt: observedAt ? observedAt.toISOString() : undefined,
+        observedAt: observedAt ? toObservedAtIso(observedAt) : undefined,
         prices: toObservationPriceInputs(rows),
       })
       .subscribe({

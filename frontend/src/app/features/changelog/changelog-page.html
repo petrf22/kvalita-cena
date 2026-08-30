@@ -6,7 +6,7 @@
 
     <div class="legal-body">
       @for (release of releases; track release.version) {
-        <h2>{{ release.version }} – {{ release.date }}</h2>
+        <h2>{{ release.version }} – {{ format.date(release.date) }}</h2>
         @for (section of release.sections; track section.title) {
           <h3>{{ section.title }}</h3>
           <ul>

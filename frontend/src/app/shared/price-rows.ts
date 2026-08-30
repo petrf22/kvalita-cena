@@ -20,9 +20,38 @@ export interface PriceRow {
   promoValidTo: string | null;
 }
 
+/** Datum → ISO (YYYY-MM-DD) v místním čase, ne UTC — `Date.toISOString()` by u večerních
+ *  zápisů posunulo den (`price-entry-form.ts` observedAt/promo picker, tahle funkce i
+ *  `todayIso()` níže). */
+export function toIsoDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function fromIsoDate(iso: string | null): Date | null {
+  return iso ? new Date(`${iso}T00:00:00`) : null;
+}
+
 /** Dnešní datum jako ISO řetězec (YYYY-MM-DD) — pro porovnání s promoValidFrom bez časové složky. */
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  return toIsoDate(new Date());
+}
+
+/**
+ * `observedAt` z `nz-date-picker` je jen den (bez volby času) — konstruuje se na LOKÁLNÍ
+ * půlnoc vybraného dne. Prosté `.toISOString()` by tak v CEST poslalo předchozí den 22:00 UTC,
+ * a den se přitom odvozuje v UTC (`core.day_utc`, `PriceAggregationService.utcDay()` na
+ * backendu) — cena vybraná na 30. 8. by se zapsala jako 29. 8. Posílá se proto poledne
+ * místního času (bezpečná rezerva proti dennímu posunu napříč reálnými pásmy appky), a když
+ * je vybraný den DNEŠEK, nechá se pole prázdné, ať server dosadí přesné `now()` — jinak by
+ * dopolední zápis "dneška" mohl vyjít na čas v budoucnu (poledne ještě nenastalo).
+ */
+export function toObservedAtIso(date: Date): string | undefined {
+  const iso = toIsoDate(date);
+  if (iso === todayIso()) return undefined;
+  return new Date(`${iso}T12:00:00`).toISOString();
 }
 
 /**

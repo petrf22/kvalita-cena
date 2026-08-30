@@ -4,6 +4,7 @@ import { TranslocoDirective, provideTranslocoScope } from '@jsverse/transloco';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { CHANGELOG } from '../../changelog.generated';
+import { FormatService } from '../../services/format-service';
 import { LanguageService } from '../../services/language-service';
 
 /**
@@ -22,5 +23,6 @@ import { LanguageService } from '../../services/language-service';
 })
 export class ChangelogPage {
   protected readonly language = inject(LanguageService);
+  protected readonly format = inject(FormatService);
   protected readonly releases = CHANGELOG;
 }

@@ -22,7 +22,7 @@ const GRID_LINES = 4;
 })
 export class PriceChart {
   private readonly transloco = inject(TranslocoService);
-  private readonly format = inject(FormatService);
+  protected readonly format = inject(FormatService);
 
   readonly points = input.required<PricePoint[]>();
   /** Vždy vyplněná na volající straně (docs/lokalizace.md) — graf jednu řadu nikdy nemíchá napříč měnami. */

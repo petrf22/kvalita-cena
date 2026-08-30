@@ -63,20 +63,20 @@
        tabulka cen pod grafem zůstává hlavním zdrojem čísel (tooltip není jediná cesta k hodnotě). -->
   <p class="chart-label">
     {{ 'product-detail.chartLast' | transloco }}: {{ formatUnitPrice(lastPoint()) }} ({{
-      lastPoint()?.day
+      format.date(lastPoint()?.day)
     }})
   </p>
   <p class="chart-label">
     {{ 'product-detail.chartLowest' | transloco }}: {{ formatUnitPrice(minPoint()) }} ({{
-      minPoint()?.day
+      format.date(minPoint()?.day)
     }}) · {{ 'product-detail.chartHighest' | transloco }}: {{ formatUnitPrice(maxPoint()) }} ({{
-      maxPoint()?.day
+      format.date(maxPoint()?.day)
     }})
   </p>
   @if (hoveredPoint(); as point) {
     <p class="chart-label chart-label-selected">
       {{ 'product-detail.chartSelected' | transloco }}: {{ formatUnitPrice(point) }} ·
-      {{ point.day }} ·
+      {{ format.date(point.day) }} ·
       {{ timesConfirmed(point) }}
     </p>
   }

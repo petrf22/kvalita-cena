@@ -6,7 +6,9 @@ import {
   duplicatePriceKind,
   isPriceRowValid,
   newPriceRow,
+  toIsoDate,
   toObservationPriceInputs,
+  toObservedAtIso,
   type PriceRow,
 } from './price-rows';
 
@@ -45,10 +47,12 @@ describe('isPriceRowValid', () => {
   });
 });
 
+// Stejný lokální den jako toIsoDate/todayIso v price-rows.ts (ne UTC) — jinak by test se svým
+// vlastním dnešním dnem a produkční kód s tím svým mohly kolem půlnoci UTC vyjít o den jinak.
 function isoDateOffset(days: number): string {
   const date = new Date();
   date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return toIsoDate(date);
 }
 
 describe('isPriceRowValid — promo validity', () => {
@@ -218,5 +222,26 @@ describe('newPriceRow', () => {
     expect(created.priceKind).not.toBe(PriceKind.Regular);
     expect(created.key).toBe(2);
     expect(created.priceAmount).toBeNull();
+  });
+});
+
+describe('toObservedAtIso', () => {
+  it('sends the local calendar day unchanged, not the UTC one', () => {
+    // Půlnoc místního času včerejška — přesně to, co appce pošle nz-date-picker po výběru dne
+    // (žádný nzShowTime, appka datum nezadává s časem). Včerejšek, ne pevné datum — dnešek má
+    // jiné chování (viz test níž) a "dnes" se v testovacím prostředí může kdykoli změnit.
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+    const expectedIso = toIsoDate(yesterday);
+
+    const iso = toObservedAtIso(yesterday);
+
+    expect(iso).toBeDefined();
+    expect(iso).toMatch(new RegExp(`^${expectedIso}T`));
+  });
+
+  it('leaves today unset so the server can use the exact current time', () => {
+    expect(toObservedAtIso(new Date())).toBeUndefined();
   });
 });

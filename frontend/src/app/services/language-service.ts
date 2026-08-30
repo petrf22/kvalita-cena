@@ -1,5 +1,6 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
+import { NzDateAdapter } from 'ng-zorro-antd/core/time';
 import {
   NzI18nInterface,
   NzI18nService,
@@ -77,6 +78,10 @@ export function readInitialLang(): AppLang {
 export class LanguageService {
   private readonly transloco = inject(TranslocoService);
   private readonly nzI18n = inject(NzI18nService);
+  // NativeDateAdapter — čte NZ_DATE_LOCALE jen jednou v konstruktoru (app.config.ts), runtime
+  // přepnutí jazyka ho jinak nechá viset na hodnotě z bootstrapu (na rozdíl od NzI18nService,
+  // které se přepnout DÁ). Bez tohohle by kalendář po přepnutí jazyka dál mluvil starým.
+  private readonly nzDateAdapter = inject(NzDateAdapter);
   private readonly auth = inject(AuthService);
   private readonly viewerService = inject(ViewerService);
 
@@ -87,6 +92,7 @@ export class LanguageService {
       const lang = this.lang();
       this.transloco.setActiveLang(lang);
       this.nzI18n.setLocale(NZ_LOCALES[lang]);
+      this.nzDateAdapter.setLocale(INTL_TAGS[lang]);
       document.documentElement.lang = lang;
       localStorage.setItem(STORAGE_KEY, lang);
     });
