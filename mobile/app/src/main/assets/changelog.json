@@ -1,5 +1,80 @@
 [
   {
+    "version": "0.5.0",
+    "date": "2026-08-30",
+    "sections": [
+      {
+        "title": "Přidáno",
+        "items": [
+          {
+            "text": "Miniatura zboží (vlastní fotka, jinak Open Food Facts) ve výsledcích hledání a při zápisu ceny",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Zpětné datum ceny („Kdy jsi cenu viděl(a)\") při zápisu ceny",
+            "parts": [
+              "mobil"
+            ]
+          },
+          {
+            "text": "Založení zboží bez čárového kódu a rovnou zápis ceny ze záložky Hledat",
+            "parts": [
+              "mobil"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Změněno",
+        "items": [
+          {
+            "text": "Hodnocení kvality zboží je hvězdičky 1–5 (5 nejlepší) místo školní známky 1–5",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Opraveno",
+        "items": [
+          {
+            "text": "Přihlášení přepíná na zadání kódu hned po odeslání, ne až po odpovědi serveru, a odeslání e-mailu už neblokuje request",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Kalendář při zápisu ceny respektuje zvolený jazyk appky (dny, měsíce, první den týdne) místo pevné angličtiny",
+            "parts": [
+              "web"
+            ]
+          },
+          {
+            "text": "Zpětně zapsaná cena a platnost akční ceny se už neposouvají o den kvůli časovému pásmu",
+            "parts": [
+              "web"
+            ]
+          },
+          {
+            "text": "Datum platnosti akční ceny a relativní datum („před 3 dny\") na mobilu respektují zvolený jazyk appky",
+            "parts": [
+              "mobil"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "0.4.0",
     "date": "2026-08-29",
     "sections": [

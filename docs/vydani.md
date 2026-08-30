@@ -344,6 +344,14 @@ nasazená na serveru — to je žádoucí a je to hned vidět (appka i server uk
 Kompatibilitu hlídá `X-Client-Version` + `app.client.min-android-version` (`ClientVersionFilter`),
 což je teď čitelný `versionCode` (např. `200` = „aspoň 0.2.0").
 
+**První skutečné použití gate: 0.5.0.** Do vydání 0.5.0 byl `app.client.min-android-version`
+natvrdo `0` (kontrola vypnutá) — appka byla jen v Internal testing (1 tester, sám
+provozovatel), žádné APK se starším kontraktem nebylo skutečně v terénu. `rateProduct(grade:)`
+se v 0.5.0 přejmenovalo na `rateProduct(stars:)` a zároveň otočilo význam škály (1 = nejlepší →
+5 = nejlepší, docs/reputace.md) — starší appka by proti novému serveru tiše zapisovala obrácené
+hodnocení, ne zjevnou chybu, takže `min-android-version` je od 0.5.0 poprvé nastavené na
+skutečný `versionCode` (`500`), ne na `0`.
+
 ## Co vydání pořád blokuje
 
 Produkční backend běží od 2026-08-24, appka je nahraná a funkčně ověřená v Internal testing

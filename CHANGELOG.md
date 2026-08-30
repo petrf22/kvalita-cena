@@ -7,6 +7,22 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [0.5.0] – 2026-08-30
+
+### Přidáno
+- Miniatura zboží (vlastní fotka, jinak Open Food Facts) ve výsledcích hledání a při zápisu ceny (server, web, mobil)
+- Zpětné datum ceny („Kdy jsi cenu viděl(a)") při zápisu ceny (mobil)
+- Založení zboží bez čárového kódu a rovnou zápis ceny ze záložky Hledat (mobil)
+
+### Změněno
+- Hodnocení kvality zboží je hvězdičky 1–5 (5 nejlepší) místo školní známky 1–5 (server, web, mobil)
+
+### Opraveno
+- Přihlášení přepíná na zadání kódu hned po odeslání, ne až po odpovědi serveru, a odeslání e-mailu už neblokuje request (server, web, mobil)
+- Kalendář při zápisu ceny respektuje zvolený jazyk appky (dny, měsíce, první den týdne) místo pevné angličtiny (web)
+- Zpětně zapsaná cena a platnost akční ceny se už neposouvají o den kvůli časovému pásmu (web)
+- Datum platnosti akční ceny a relativní datum („před 3 dny") na mobilu respektují zvolený jazyk appky (mobil)
+
 ## [0.4.0] – 2026-08-29
 
 ### Přidáno

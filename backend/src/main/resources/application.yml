@@ -115,9 +115,12 @@ app:
   client:
     # Nejnižší versionCode mobilní appky, který backend ještě obsluhuje (ClientVersionFilter,
     # docs/vydani.md) — vydáním APK zamrzne GraphQL kontrakt, starším klientům v terénu by
-    # pozdější breaking změna schématu jinak spadla na nesrozumitelnou chybu. 0 = kontrola
-    # vypnutá (etapa 1, žádné APK ještě není v terénu).
-    min-android-version: 0
+    # pozdější breaking změna schématu jinak spadla na nesrozumitelnou chybu. Zvednuto na 500
+    # (0.5.0) — rateProduct(grade:) se přejmenoval na rateProduct(stars:) a zároveň otočil
+    # význam škály (1 = nejlepší → 5 = nejlepší); starší appka (dnes jen interní test, ale
+    # ClientVersionFilter existuje přesně pro tenhle případ) by jinak tiše zapisovala obrácené
+    # hodnocení místo hlasité chyby "aktualizuj appku".
+    min-android-version: 500
   privacy:
     # docs/soukromi.md, "Retence vazby observace → uživatel: 180 dní" (PseudonymizationService).
     pseudonymization-days: 180
