@@ -32,6 +32,14 @@ spring:
           auth: true
           starttls:
             enable: true
+          # Bez timeoutů čeká JavaMail na pomalý/nedostupný SMTP neomezeně — na rozdíl od OFF/
+          # Nominatim/ČNB (timeout: PT5S/PT10S výš) tu chyběly úplně, takže zaseklý SMTP mohl
+          # zablokovat i DB transakci kolem requestOtp. Odeslání teď navíc běží přes @Async
+          # (SmtpOtpMailSender), takže tenhle timeout už neblokuje HTTP request, jen uvolňuje
+          # vlákno z fondu, kdyby SMTP spadlo do limbo.
+          connectiontimeout: 5000
+          timeout: 10000
+          writetimeout: 10000
 
 management:
   health:
