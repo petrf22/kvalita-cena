@@ -17,17 +17,17 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
-private val STORE_FIELDS = """
+internal val STORE_FIELDS = """
   id name street city postalCode country lat lon geoSource ico url chain { id name chainType }
   verified editedByMe pendingConfirmation
 """
 
-private val PHOTO_FIELDS = """
+internal val PHOTO_FIELDS = """
   id url thumbnailUrl width height caption mine hidden attribution kind
 """
 
 /** Profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") — vždy plný pohled vlastníka. */
-private val PROFILE_FIELDS = """
+internal val PROFILE_FIELDS = """
   firstName lastName phone contactEmail loginEmail visibility
   visibleFields { field audience }
   avatar { $PHOTO_FIELDS }
@@ -35,20 +35,20 @@ private val PROFILE_FIELDS = """
 
 /** Navíc oproti STORE_FIELDS — jen pro detail obchodu, ať se fotky netahají všude, kde se
  * Store objeví (řádky cen, výsledky hledání, ...), stejný vzor jako u produktu. */
-private val STORE_DETAIL_FIELDS = """
+internal val STORE_DETAIL_FIELDS = """
   $STORE_FIELDS
   photos { $PHOTO_FIELDS }
 """
 
-private val CONVERTED_PRICE_FIELDS = "amount currency rateDate"
+internal val CONVERTED_PRICE_FIELDS = "amount currency rateDate"
 
-private val PRICE_CURRENT_FIELDS = """
+internal val PRICE_CURRENT_FIELDS = """
   store { $STORE_FIELDS }
   priceKind unitPrice priceAmount nObs nEff lastObservedAt confidence currency promoValidTo
   converted { $CONVERTED_PRICE_FIELDS }
 """
 
-private val PRODUCT_FIELDS = """
+internal val PRODUCT_FIELDS = """
   id name
   catalogSource catalogAttribution
   externalImage { url thumbnailUrl attribution }
@@ -60,7 +60,7 @@ private val PRODUCT_FIELDS = """
 """
 
 /** Navíc oproti PRODUCT_FIELDS — jen pro obrazovku detailu, aby seznam hledání netahal zbytečně moc. */
-private val PRODUCT_DETAIL_FIELDS = """
+internal val PRODUCT_DETAIL_FIELDS = """
   $PRODUCT_FIELDS
   stats {
     observationCount storeCount lastObservedAt bestPrice bestUnitPrice bestPriceCurrency
@@ -78,17 +78,26 @@ private val PRODUCT_DETAIL_FIELDS = """
   photos { $PHOTO_FIELDS }
 """
 
-private val PRODUCT_SUMMARY_FIELDS = """
+internal val PRODUCT_SUMMARY_FIELDS = """
   id name
   brand { id name slug }
   category { id name slug path }
   isGeneric
   verified editedByMe
-  photos { id thumbnailUrl }
-  externalImage { thumbnailUrl attribution }
+  // Photo/ExternalProductImage mají url/width/height bez defaultu (Dto.kt) — musí se žádat
+  // celé, i když je řádek seznamu nepoužije, jinak kotlinx.serialization spadne na
+  // MissingFieldException (viz GraphQlFragmentContractTest).
+  photos { id url thumbnailUrl width height }
+  externalImage { url thumbnailUrl attribution }
 """
 
-private val SEARCH_ITEM_FIELDS = """
+/** Veřejná identita přihlášeného uživatele — společné pro me/updateProfile/deleteAvatar. */
+internal val VIEWER_FIELDS = """
+  publicHandle displayName createdAt trusted
+  profile { $PROFILE_FIELDS }
+"""
+
+internal val SEARCH_ITEM_FIELDS = """
   product { $PRODUCT_SUMMARY_FIELDS }
   observationCount bestPrice bestUnitPrice bestPriceObservations lastObservedAt
   qualityAverage qualityCount currency
@@ -101,7 +110,7 @@ private val SEARCH_ITEM_FIELDS = """
  * Kdy se vlastní záznam propaguje globálně — jeden fragment pro všechny čtyři sekce "Moje
  * příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty").
  */
-private val PUBLICATION_STATUS_FIELDS = """
+internal val PUBLICATION_STATUS_FIELDS = """
   state confirmationsReceived confirmationsRequired verified
 """
 
@@ -279,7 +288,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
 
   /** Veřejná identita přihlášeného uživatele — null pro anonyma. */
   suspend fun me(): Viewer? {
-    val gql = "{ me { publicHandle displayName createdAt trusted profile { $PROFILE_FIELDS } } }"
+    val gql = "{ me { $VIEWER_FIELDS } }"
     return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(MeData.serializer())).me
   }
 
@@ -291,10 +300,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
   suspend fun updateProfile(input: UpdateProfileInput): Viewer {
     val gql = """
       mutation(${'$'}input: UpdateProfileInput!) {
-        updateProfile(input: ${'$'}input) {
-          publicHandle displayName
-          profile { $PROFILE_FIELDS }
-        }
+        updateProfile(input: ${'$'}input) { $VIEWER_FIELDS }
       }
     """
     val variables = buildJsonObject {
@@ -307,10 +313,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
   suspend fun deleteAvatar(): Viewer {
     val gql = """
       mutation {
-        deleteAvatar {
-          publicHandle displayName
-          profile { $PROFILE_FIELDS }
-        }
+        deleteAvatar { $VIEWER_FIELDS }
       }
     """
     return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(DeleteAvatarData.serializer())).deleteAvatar

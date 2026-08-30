@@ -1,0 +1,139 @@
+package cz.kvalitacena.network
+
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.StructureKind
+import org.junit.Assert.fail
+import org.junit.Test
+
+/**
+ * Pojistka proti pádu z GraphQlClient.kt:114 (`Json { ignoreUnknownKeys = true }`) —
+ * `ignoreUnknownKeys` řeší jen PŘEBÝVAJÍCÍ klíče v odpovědi, ne CHYBĚJÍCÍ povinné. Když
+ * fragment žádá u vnořeného typu jen podmnožinu polí, ale odpovídající DTO má pole bez
+ * defaultu, kotlinx.serialization při parsování odpovědi vyhodí `MissingFieldException` —
+ * a ta se ve ViewModelech schová za obecné „Něco se pokazilo"/„Hledání se nepovedlo"
+ * (ui/common/ErrorMessages.kt, ui/search/SearchViewModel.kt).
+ *
+ * Přesně tohle se stalo v 0.5.0: `PRODUCT_SUMMARY_FIELDS` si u fotek řeklo jen
+ * `photos { id thumbnailUrl }`, ale `Photo` (Dto.kt) má `url`/`width`/`height` bez defaultu
+ * — hledání i "Moje příspěvky" pak spadly na jakémkoli produktu, který fotku měl.
+ *
+ * Test pro každý sdílený fragment ověří, že žádá všechna povinná pole cílového DTO —
+ * rekurzivně i ve vnořených blocích, bez ohledu na to, jestli je obalující pole samo
+ * nepovinné (relevantní je, jestli appka pole vůbec žádá, ne jestli chybí vadí i rodiči).
+ */
+class GraphQlFragmentContractTest {
+
+  private data class Field(val name: String, val children: List<Field>?)
+
+  /** Řádkové `//` komentáře uvnitř fragmentu (viz PRODUCT_SUMMARY_FIELDS) se před parsováním odstraní. */
+  private fun tokenize(fragment: String): List<String> {
+    val withoutComments = fragment.lineSequence().joinToString("\n") { line ->
+      val idx = line.indexOf("//")
+      if (idx >= 0) line.substring(0, idx) else line
+    }
+    return Regex("[{}]|[A-Za-z_][A-Za-z0-9_]*").findAll(withoutComments).map { it.value }.toList()
+  }
+
+  private fun parseFields(tokens: List<String>, pos: IntArray): List<Field> {
+    val fields = mutableListOf<Field>()
+    while (pos[0] < tokens.size && tokens[pos[0]] != "}") {
+      val name = tokens[pos[0]]
+      pos[0]++
+      var children: List<Field>? = null
+      if (pos[0] < tokens.size && tokens[pos[0]] == "{") {
+        pos[0]++ // otevírací {
+        children = parseFields(tokens, pos)
+        pos[0]++ // uzavírací }
+      }
+      fields += Field(name, children)
+    }
+    return fields
+  }
+
+  private fun parseFragment(fragment: String): List<Field> = parseFields(tokenize(fragment), intArrayOf(0))
+
+  /** Sestoupí přes List<T> na descriptor prvku T — vnořený objekt v poli má stejný požadavek na povinná pole. */
+  private fun unwrapList(descriptor: SerialDescriptor): SerialDescriptor {
+    var d = descriptor
+    while (d.kind == StructureKind.LIST) {
+      d = d.getElementDescriptor(0)
+    }
+    return d
+  }
+
+  private fun checkContract(fields: List<Field>, descriptor: SerialDescriptor, context: String) {
+    val byName = fields.associateBy { it.name }
+    for (i in 0 until descriptor.elementsCount) {
+      val name = descriptor.getElementName(i)
+      if (!descriptor.isElementOptional(i) && byName[name] == null) {
+        fail(
+          "$context: povinné pole '$name' (bez defaultu v DTO) chybí ve fragmentu — " +
+            "server ho smí neposlat, appka by na tom spadla na MissingFieldException",
+        )
+      }
+    }
+    // Rekurze do KAŽDÉHO požadovaného pole s vnořenou selekcí, i nepovinného na téhle úrovni —
+    // pokud ho appka žádá, cílový typ musí dostat všechna svá povinná pole.
+    for (field in fields) {
+      val children = field.children ?: continue
+      val index = descriptor.getElementIndex(field.name)
+      if (index < 0) continue
+      val nested = unwrapList(descriptor.getElementDescriptor(index))
+      if (nested.kind == StructureKind.CLASS) {
+        checkContract(children, nested, "$context.${field.name}")
+      }
+    }
+  }
+
+  private fun assertContract(name: String, fragment: String, descriptor: SerialDescriptor) {
+    checkContract(parseFragment(fragment), descriptor, name)
+  }
+
+  @Test
+  fun productFieldsCoverRequiredDtoFields() =
+    assertContract("PRODUCT_FIELDS", PRODUCT_FIELDS, Product.serializer().descriptor)
+
+  @Test
+  fun productDetailFieldsCoverRequiredDtoFields() =
+    assertContract("PRODUCT_DETAIL_FIELDS", PRODUCT_DETAIL_FIELDS, Product.serializer().descriptor)
+
+  @Test
+  fun productSummaryFieldsCoverRequiredDtoFields() =
+    assertContract("PRODUCT_SUMMARY_FIELDS", PRODUCT_SUMMARY_FIELDS, ProductSummary.serializer().descriptor)
+
+  @Test
+  fun searchItemFieldsCoverRequiredDtoFields() =
+    assertContract("SEARCH_ITEM_FIELDS", SEARCH_ITEM_FIELDS, ProductSearchItem.serializer().descriptor)
+
+  @Test
+  fun storeFieldsCoverRequiredDtoFields() =
+    assertContract("STORE_FIELDS", STORE_FIELDS, Store.serializer().descriptor)
+
+  @Test
+  fun storeDetailFieldsCoverRequiredDtoFields() =
+    assertContract("STORE_DETAIL_FIELDS", STORE_DETAIL_FIELDS, Store.serializer().descriptor)
+
+  @Test
+  fun photoFieldsCoverRequiredDtoFields() =
+    assertContract("PHOTO_FIELDS", PHOTO_FIELDS, Photo.serializer().descriptor)
+
+  @Test
+  fun profileFieldsCoverRequiredDtoFields() =
+    assertContract("PROFILE_FIELDS", PROFILE_FIELDS, Profile.serializer().descriptor)
+
+  @Test
+  fun priceCurrentFieldsCoverRequiredDtoFields() =
+    assertContract("PRICE_CURRENT_FIELDS", PRICE_CURRENT_FIELDS, PriceCurrent.serializer().descriptor)
+
+  @Test
+  fun convertedPriceFieldsCoverRequiredDtoFields() =
+    assertContract("CONVERTED_PRICE_FIELDS", CONVERTED_PRICE_FIELDS, ConvertedPrice.serializer().descriptor)
+
+  @Test
+  fun publicationStatusFieldsCoverRequiredDtoFields() =
+    assertContract("PUBLICATION_STATUS_FIELDS", PUBLICATION_STATUS_FIELDS, PublicationStatus.serializer().descriptor)
+
+  @Test
+  fun viewerFieldsCoverRequiredDtoFields() =
+    assertContract("VIEWER_FIELDS", VIEWER_FIELDS, Viewer.serializer().descriptor)
+}
