@@ -125,11 +125,21 @@ if [[ "$API_ADDRESS" == *localhost* ]]; then
        "přeskakuji."
 else
   echo "Ověřuji backend na $API_ADDRESS..."
-  HEALTH="$(curl -sf "$API_ADDRESS/actuator/health" || true)"
+  # management.health.mail.enabled testuje SMTP spojení při každém volání /actuator/health —
+  # těsně po restartu kontejneru umí být tenhle test na první pokus DOWN (503, curl -f tělo
+  # zahodí), i když appka i SMTP jsou v pořádku. Pár opakování s prodlevou tomu dá šanci se
+  # ustálit, než to nahlásíme jako selhané nasazení.
+  HEALTH_TRIES=5
+  HEALTH_DELAY=5
+  for ((i = 1; i <= HEALTH_TRIES; i++)); do
+    HEALTH="$(curl -sf "$API_ADDRESS/actuator/health" || true)"
+    [[ "$HEALTH" == *'"status":"UP"'* ]] && break
+    [ "$i" -lt "$HEALTH_TRIES" ] && sleep "$HEALTH_DELAY"
+  done
   if [[ "$HEALTH" == *'"status":"UP"'* ]]; then
     echo "  health OK ($HEALTH)"
   else
-    echo "  health CHYBA: '$HEALTH'" >&2
+    echo "  health CHYBA po $HEALTH_TRIES pokusech: '$HEALTH'" >&2
     FAILED=1
   fi
 
