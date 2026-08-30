@@ -197,6 +197,9 @@ data class ProductSummary(
   val isGeneric: Boolean = false,
   val verified: Boolean = false,
   val editedByMe: Boolean = false,
+  // Miniatura v řádku — priorita zdroje: vlastní fotka > OFF > zástupná ikona (ui/common/ProductThumb.kt).
+  val photos: List<Photo> = emptyList(),
+  val externalImage: ExternalProductImage? = null,
 )
 
 @Serializable

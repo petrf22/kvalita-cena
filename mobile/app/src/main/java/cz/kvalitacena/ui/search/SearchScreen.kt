@@ -46,6 +46,7 @@ import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.network.ProductSearchItem
 import cz.kvalitacena.ui.common.NavigationResults
+import cz.kvalitacena.ui.common.ProductThumb
 import cz.kvalitacena.ui.common.QualityBadge
 import cz.kvalitacena.ui.common.SearchableDropdown
 import cz.kvalitacena.ui.common.SingleLineTextField
@@ -209,48 +210,57 @@ fun SearchScreen(onProductClick: (String) -> Unit) {
 
 @Composable
 private fun SearchResultRow(item: ProductSearchItem, onClick: () -> Unit) {
-  Column(
+  Row(
     modifier = Modifier
       .fillMaxWidth()
       .clickable(onClick = onClick)
       .padding(horizontal = 16.dp, vertical = 12.dp),
+    verticalAlignment = Alignment.Top,
   ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Text(item.product.name, style = MaterialTheme.typography.titleMedium)
-      if (!item.product.verified) {
-        Text(
-          stringResource(R.string.common_unverified),
-          style = MaterialTheme.typography.labelSmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-          modifier = Modifier.padding(start = 6.dp),
-        )
+    ProductThumb(
+      name = item.product.name,
+      photos = item.product.photos,
+      externalImage = item.product.externalImage,
+      modifier = Modifier.padding(end = 12.dp, top = 2.dp),
+    )
+    Column(modifier = Modifier.weight(1f)) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(item.product.name, style = MaterialTheme.typography.titleMedium)
+        if (!item.product.verified) {
+          Text(
+            stringResource(R.string.common_unverified),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 6.dp),
+          )
+        }
       }
-    }
-    val subtitle = listOfNotNull(item.product.brand?.name, item.product.category.name).joinToString(" · ")
-    if (subtitle.isNotBlank()) {
-      Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-    Row(
-      modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-      horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-      Column {
-        // Přepočtená hodnota (X-Display-Currency), když je — jinak originál v měně obchodu
-        // (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna").
-        val displayAmount = item.converted?.amount ?: item.bestPrice
-        val moneyFormatter = rememberMoneyFormatter(item.converted?.currency ?: item.currency)
-        val priceText = displayAmount?.let { moneyFormatter.format(it) } ?: stringResource(R.string.search_unknown_price)
-        val confirmations = item.bestPriceObservations?.let {
-          " · " + stringResource(R.string.search_confirmations, it)
-        } ?: ""
-        Text("$priceText$confirmations", style = MaterialTheme.typography.bodyMedium)
-        Text(
-          stringResource(R.string.search_report_summary, item.observationCount, formatRelativeDate(item.lastObservedAt)),
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+      val subtitle = listOfNotNull(item.product.brand?.name, item.product.category.name).joinToString(" · ")
+      if (subtitle.isNotBlank()) {
+        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
       }
-      QualityBadge(average = item.qualityAverage, count = item.qualityCount)
+      Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+      ) {
+        Column {
+          // Přepočtená hodnota (X-Display-Currency), když je — jinak originál v měně obchodu
+          // (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna").
+          val displayAmount = item.converted?.amount ?: item.bestPrice
+          val moneyFormatter = rememberMoneyFormatter(item.converted?.currency ?: item.currency)
+          val priceText = displayAmount?.let { moneyFormatter.format(it) } ?: stringResource(R.string.search_unknown_price)
+          val confirmations = item.bestPriceObservations?.let {
+            " · " + stringResource(R.string.search_confirmations, it)
+          } ?: ""
+          Text("$priceText$confirmations", style = MaterialTheme.typography.bodyMedium)
+          Text(
+            stringResource(R.string.search_report_summary, item.observationCount, formatRelativeDate(item.lastObservedAt)),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
+        QualityBadge(average = item.qualityAverage, count = item.qualityCount)
+      }
     }
   }
 }

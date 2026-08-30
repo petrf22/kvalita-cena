@@ -84,6 +84,8 @@ private val PRODUCT_SUMMARY_FIELDS = """
   category { id name slug path }
   isGeneric
   verified editedByMe
+  photos { id thumbnailUrl }
+  externalImage { thumbnailUrl attribution }
 """
 
 private val SEARCH_ITEM_FIELDS = """
