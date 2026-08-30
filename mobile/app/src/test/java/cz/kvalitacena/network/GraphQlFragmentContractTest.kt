@@ -25,14 +25,14 @@ class GraphQlFragmentContractTest {
 
   private data class Field(val name: String, val children: List<Field>?)
 
-  /** Řádkové `//` komentáře uvnitř fragmentu (viz PRODUCT_SUMMARY_FIELDS) se před parsováním odstraní. */
-  private fun tokenize(fragment: String): List<String> {
-    val withoutComments = fragment.lineSequence().joinToString("\n") { line ->
-      val idx = line.indexOf("//")
-      if (idx >= 0) line.substring(0, idx) else line
-    }
-    return Regex("[{}]|[A-Za-z_][A-Za-z0-9_]*").findAll(withoutComments).map { it.value }.toList()
-  }
+  /**
+   * Fragmenty jsou syrový text, který jde beze změny do GraphQL dotazu (`GraphQlClient.execute`)
+   * — na rozdíl od dřívější verze tokenizer žádné `//` komentáře neodstraňuje. Takový komentář
+   * (server umí jen `#`) by appka odeslala doslova a server by celý dotaz odmítl jako syntax
+   * chybu, viz [fragmentyNeobsahujiZnakyMimoGraphQl].
+   */
+  private fun tokenize(fragment: String): List<String> =
+    Regex("[{}]|[A-Za-z_][A-Za-z0-9_]*").findAll(fragment).map { it.value }.toList()
 
   private fun parseFields(tokens: List<String>, pos: IntArray): List<Field> {
     val fields = mutableListOf<Field>()
@@ -87,6 +87,39 @@ class GraphQlFragmentContractTest {
 
   private fun assertContract(name: String, fragment: String, descriptor: SerialDescriptor) {
     checkContract(parseFragment(fragment), descriptor, name)
+  }
+
+  /** Všechny sdílené fragmenty — jeden seznam, ať se na nově přidaný nezapomene ani tady. */
+  private val fragments = listOf(
+    "PRODUCT_FIELDS" to PRODUCT_FIELDS,
+    "PRODUCT_DETAIL_FIELDS" to PRODUCT_DETAIL_FIELDS,
+    "PRODUCT_SUMMARY_FIELDS" to PRODUCT_SUMMARY_FIELDS,
+    "SEARCH_ITEM_FIELDS" to SEARCH_ITEM_FIELDS,
+    "STORE_FIELDS" to STORE_FIELDS,
+    "STORE_DETAIL_FIELDS" to STORE_DETAIL_FIELDS,
+    "PHOTO_FIELDS" to PHOTO_FIELDS,
+    "PROFILE_FIELDS" to PROFILE_FIELDS,
+    "PRICE_CURRENT_FIELDS" to PRICE_CURRENT_FIELDS,
+    "CONVERTED_PRICE_FIELDS" to CONVERTED_PRICE_FIELDS,
+    "PUBLICATION_STATUS_FIELDS" to PUBLICATION_STATUS_FIELDS,
+    "VIEWER_FIELDS" to VIEWER_FIELDS,
+  )
+
+  /**
+   * Fragment je jen výčet jmen polí a složených závorek — cokoli jiné (typicky `//` komentář,
+   * viz historie `PRODUCT_SUMMARY_FIELDS`) appka pošle na server doslova. GraphQL nezná `//`
+   * (jen řádkové `#`, a to appka do fragmentů vůbec nepoužívá), takže server celý dotaz odmítne
+   * syntax chybou — na uživatelské obrazovce k nerozeznání od pádu na `MissingFieldException`,
+   * který hlídají ostatní testy v týhle třídě.
+   */
+  @Test
+  fun fragmentyNeobsahujiZnakyMimoGraphQl() {
+    val allowed = Regex("^[A-Za-z0-9_{}\\s]*$")
+    for ((name, fragment) in fragments) {
+      if (!allowed.matches(fragment)) {
+        fail("$name obsahuje znak mimo pole/složené závorky — appka ho pošle na server doslova")
+      }
+    }
   }
 
   @Test

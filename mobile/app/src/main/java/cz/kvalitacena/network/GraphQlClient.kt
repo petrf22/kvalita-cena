@@ -80,15 +80,17 @@ internal val PRODUCT_DETAIL_FIELDS = """
   photos { $PHOTO_FIELDS }
 """
 
+/**
+ * Photo/ExternalProductImage mají `url`/`width`/`height` bez defaultu (Dto.kt) — musí se žádat
+ * celé, i když je řádek seznamu nepoužije, jinak kotlinx.serialization spadne na
+ * `MissingFieldException` (viz `GraphQlFragmentContractTest`).
+ */
 internal val PRODUCT_SUMMARY_FIELDS = """
   id name
   brand { id name slug }
   category { id name slug path }
   isGeneric
   verified editedByMe
-  // Photo/ExternalProductImage mají url/width/height bez defaultu (Dto.kt) — musí se žádat
-  // celé, i když je řádek seznamu nepoužije, jinak kotlinx.serialization spadne na
-  // MissingFieldException (viz GraphQlFragmentContractTest).
   photos { id url thumbnailUrl width height }
   externalImage { url thumbnailUrl attribution }
 """
