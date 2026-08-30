@@ -336,3 +336,26 @@ nové pole na observaci, nebo čistě klientský přepočet bez uložení. Porov
 (existující vs. právě skenované) může jít čistě přes existující data (`agg.price_current` pro
 obě položky) bez nové perzistence — „zapamatované" zboží pro porovnání stačí držet v paměti
 klienta, dokud se appka nezavře.
+
+## Drobné zbytky z kontroly lokalizace data a čísel (fáze 2)
+
+Při opravě lokalizace kalendáře a posunu dne (2026-08) vyšly najevo dvě menší nesrovnalosti,
+které nesouvisely s opravovaným problémem a nebyly opraveny — zapsáno sem, ať nezapadnou.
+
+**Čas dne se nikde nezobrazuje ani nezadává.** `core.price_observation.observed_at` je
+`TIMESTAMPTZ` (celý okamžik, ne jen den), ale žádný klient čas dne neukazuje (web
+`FormatService.date()` používá jen `dateStyle`, nikdy `timeStyle`; mobilní `formatShortDate`
+podobně jen `FormatStyle.MEDIUM` pro datum) ani nezadává (web `nz-date-picker` bez
+`nzShowTime`, mobilní `DatePickerDialog`, ne `DateTimePickerDialog`). Zápis ceny tak vždy nese
+buď přesné „teď" (mikrosekundová přesnost), nebo poledne vybraného dne (`toObservedAtIso`
+na webu i na mobilu) — nikdy čas, který si uživatel sám zvolil. Otevřená otázka: stálo by za to
+umožnit zadat i čas (typicky nepodstatné pro cenu v regálu), nebo je „jen den" záměr, který
+patří zdokumentovat jako vědomé rozhodnutí, ne mezeru.
+
+**Příklad ceny v nápovědě je natvrdo v CZK.** `frontend/src/app/features/product-form/
+product-form.ts` (`codeHintExample()`, `format.money(45, 'CZK')`) a mobilní
+`ui/product/ProductFormScreen.kt` (`rememberMoneyFormatter("CZK").format(45)`) ukazují ukázkovou
+cenu vždy v korunách bez ohledu na zvolenou zemi/zobrazovací měnu (`docs/lokalizace.md`) —
+jediná drobnost, kde appka měnu nedomýšlí z kontextu jako všude jinde. Oprava je triviální
+(`currencyForCountry`/`CountryService.country()` už existují a používají se vedle), jen to
+nesouviselo s kalendářem/posunem dne, který se právě opravoval, proto zůstalo stranou.
