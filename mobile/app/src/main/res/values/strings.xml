@@ -332,6 +332,9 @@
     <string name="search_filter_all">Vše</string>
     <string name="search_hint">Zadej, co hledáš.</string>
     <string name="search_not_found">Nic jsme nenašli.</string>
+    <string name="search_add_new_hint">Zboží nenašel(a)?</string>
+    <string name="search_add_new_button">Založit nové</string>
+    <string name="search_add_new_requires_login">Založení nového zboží vyžaduje přihlášení — přejdi do záložky Účet.</string>
     <string name="search_failed">Hledání se nepovedlo, zkus to prosím znovu.</string>
     <string name="search_unknown_price">cena neznámá</string>
     <string name="search_confirmations">×%1$d potvrzení</string>

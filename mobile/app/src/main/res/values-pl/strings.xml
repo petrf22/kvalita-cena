@@ -247,6 +247,9 @@
     <string name="search_filter_all">Wszystkie</string>
     <string name="search_hint">Wpisz, czego szukasz.</string>
     <string name="search_not_found">Nic nie znaleźliśmy.</string>
+    <string name="search_add_new_hint">Nie znalazłeś/znalazłaś produktu?</string>
+    <string name="search_add_new_button">Dodaj nowy</string>
+    <string name="search_add_new_requires_login">Dodanie nowego produktu wymaga zalogowania — przejdź do zakładki Konto.</string>
     <string name="search_failed">Wyszukiwanie się nie powiodło, spróbuj ponownie.</string>
     <string name="search_unknown_price">cena nieznana</string>
     <string name="search_confirmations">×%1$d potwierdzeń</string>

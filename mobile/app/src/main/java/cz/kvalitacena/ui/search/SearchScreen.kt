@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,9 +26,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +42,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -62,7 +67,7 @@ import cz.kvalitacena.ui.common.storeLabel
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchScreen(onProductClick: (String) -> Unit) {
+fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}) {
   val viewModel: SearchViewModel = viewModel(
     factory = viewModelFactory {
       initializer {
@@ -84,6 +89,9 @@ fun SearchScreen(onProductClick: (String) -> Unit) {
       NavigationResults.searchQuery = null
     }
   }
+
+  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
+  val isLoggedIn = accessToken != null
 
   Column(modifier = Modifier.fillMaxSize()) {
     Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -173,8 +181,39 @@ fun SearchScreen(onProductClick: (String) -> Unit) {
       }
 
       viewModel.items.isEmpty() -> {
-        Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-          Text(stringResource(R.string.search_not_found), style = MaterialTheme.typography.bodyMedium)
+        Column(
+          modifier = Modifier.fillMaxSize().padding(24.dp),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.Center,
+        ) {
+          Text(
+            stringResource(R.string.search_not_found),
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+          )
+          Spacer(Modifier.height(16.dp))
+          // Bezkódová druhová položka (docs/reputace.md, "Zboží bez čárového kódu") — appka po
+          // založení rovnou nabídne zápis ceny, viz MainActivity (writePrice=true), stejná
+          // parita jako web price-entry-page.html (searchMode 'name', addNewButton).
+          if (isLoggedIn) {
+            Text(
+              stringResource(R.string.search_add_new_hint),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = onAddProduct) {
+              Text(stringResource(R.string.search_add_new_button))
+            }
+          } else {
+            Text(
+              stringResource(R.string.search_add_new_requires_login),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              textAlign = TextAlign.Center,
+            )
+          }
         }
       }
 

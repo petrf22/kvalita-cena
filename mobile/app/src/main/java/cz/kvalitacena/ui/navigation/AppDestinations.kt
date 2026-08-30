@@ -46,11 +46,22 @@ const val ROUTE_STORE_FORM = "store_form?$ARG_STORE_ID={$ARG_STORE_ID}"
 fun storeFormRouteForCreate() = "store_form"
 fun storeFormRouteForEdit(storeId: String) = "store_form?$ARG_STORE_ID=$storeId"
 
-/** Založení zboží — s EANem i bez (bezkódová druhová položka, docs/reputace.md). */
-const val ROUTE_PRODUCT_FORM = "product_form?$ARG_BARCODE={$ARG_BARCODE}"
+/**
+ * Založení zboží — s EANem i bez (bezkódová druhová položka, docs/reputace.md). `writePrice`
+ * odlišuje vstup ze SearchScreen (bez EANu, appka po založení chce rovnou zápis ceny) od vstupu
+ * ze skenu neznámého EANu (PriceEntryScreen "kód nenalezen" už na obrazovce zápisu ceny je,
+ * po založení se prostě vrátí zpátky) — jedna sdílená obrazovka, dvě různá "co dál" po úspěchu.
+ */
+const val ARG_WRITE_PRICE = "writePrice"
+const val ROUTE_PRODUCT_FORM = "product_form?$ARG_BARCODE={$ARG_BARCODE}&$ARG_WRITE_PRICE={$ARG_WRITE_PRICE}"
 
-fun productFormRoute(barcode: String? = null) =
-  if (barcode.isNullOrBlank()) "product_form" else "product_form?barcode=$barcode"
+fun productFormRoute(barcode: String? = null, writePrice: Boolean = false): String {
+  val params = buildList {
+    if (!barcode.isNullOrBlank()) add("$ARG_BARCODE=$barcode")
+    if (writePrice) add("$ARG_WRITE_PRICE=true")
+  }
+  return if (params.isEmpty()) "product_form" else "product_form?" + params.joinToString("&")
+}
 
 /** Editace profilu (docs/soukromi.md, "Profil uživatele a viditelnost") — ze záložky Účet. */
 const val ROUTE_PROFILE = "profile"

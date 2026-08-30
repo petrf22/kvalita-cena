@@ -55,10 +55,19 @@ private val UNIT_BASE_LABEL_RES = mapOf(
 /**
  * Založení zboží — nejdřív nabídne podobné existující položky (i bezkódové druhové, viz
  * ProductFormViewModel), teprve když se mezi nimi nic nehodí, jde založit nové. `barcode` je
- * naskenovaný kód, který se v katalogu nenašel (viz PriceEntryScreen), předvyplní pole kódu.
+ * naskenovaný kód, který se v katalogu nenašel (viz PriceEntryScreen), předvyplní pole kódu;
+ * `null` zakládá bezkódovou druhovou položku (ze záložky Hledat, viz SearchScreen).
+ *
+ * `onCreated` (výchozí = zavolá `onDone`) odlišuje úspěch od zrušení — SearchScreen ho
+ * přepisuje, ať po založení naskočí rovnou na zápis ceny nového zboží, místo aby se appka jen
+ * vrátila zpět (`onDone` zůstává čisté "zrušit"/zavřít, stejné jako dřív).
  */
 @Composable
-fun ProductFormScreen(barcode: String?, onDone: () -> Unit) {
+fun ProductFormScreen(
+  barcode: String?,
+  onDone: () -> Unit,
+  onCreated: (productId: String) -> Unit = { onDone() },
+) {
   val viewModel: ProductFormViewModel = viewModel(
     factory = viewModelFactory { initializer { ProductFormViewModel(AppContainer.graphQlClient, barcode) } },
   )
@@ -66,7 +75,7 @@ fun ProductFormScreen(barcode: String?, onDone: () -> Unit) {
   LaunchedEffect(viewModel.created) {
     viewModel.created?.let {
       NavigationResults.newProduct = it
-      onDone()
+      onCreated(it.id)
     }
   }
 

@@ -45,6 +45,7 @@ import cz.kvalitacena.ui.navigation.ARG_BARCODE
 import cz.kvalitacena.ui.navigation.ARG_FEEDBACK_SOURCE
 import cz.kvalitacena.ui.navigation.ARG_PRODUCT_ID
 import cz.kvalitacena.ui.navigation.ARG_STORE_ID
+import cz.kvalitacena.ui.navigation.ARG_WRITE_PRICE
 import cz.kvalitacena.ui.navigation.ROUTE_ABOUT
 import cz.kvalitacena.ui.navigation.ROUTE_CHANGELOG
 import cz.kvalitacena.ui.navigation.ROUTE_FEEDBACK
@@ -149,6 +150,7 @@ private fun AppScaffold() {
       composable(TopLevelDestination.SEARCH.route) {
         SearchScreen(
           onProductClick = { productId -> navController.navigate(productDetailRoute(productId)) },
+          onAddProduct = { navController.navigate(productFormRoute(writePrice = true)) },
         )
       }
       composable(TopLevelDestination.SETTINGS.route) {
@@ -231,10 +233,29 @@ private fun AppScaffold() {
       }
       composable(
         ROUTE_PRODUCT_FORM,
-        arguments = listOf(navArgument(ARG_BARCODE) { type = NavType.StringType; nullable = true; defaultValue = null }),
+        arguments = listOf(
+          navArgument(ARG_BARCODE) { type = NavType.StringType; nullable = true; defaultValue = null },
+          navArgument(ARG_WRITE_PRICE) { type = NavType.BoolType; defaultValue = false },
+        ),
       ) { backStackEntry ->
         val barcode = backStackEntry.arguments?.getString(ARG_BARCODE)
-        ProductFormScreen(barcode = barcode, onDone = { navController.popBackStack() })
+        val writePrice = backStackEntry.arguments?.getBoolean(ARG_WRITE_PRICE) ?: false
+        ProductFormScreen(
+          barcode = barcode,
+          onDone = { navController.popBackStack() },
+          onCreated = if (writePrice) {
+            { productId ->
+              // Rovnou na zápis ceny nově založeného zboží (bez EANu, ze SearchScreen) — ať
+              // uživatel po založení nemusí nic hledat znovu. Nahradit product_form v zásobníku,
+              // ne na něj přidávat další patro (Zpět z ceny by jinak vedlo na prázdný formulář).
+              navController.navigate(priceEntryRouteByProductId(productId)) {
+                popUpTo(ROUTE_PRODUCT_FORM) { inclusive = true }
+              }
+            }
+          } else {
+            { navController.popBackStack() }
+          },
+        )
       }
       composable(ROUTE_PROFILE) {
         ProfileScreen(onDone = { navController.popBackStack() })

@@ -249,6 +249,9 @@
     <string name="search_filter_all">Alle</string>
     <string name="search_hint">Gib ein, wonach du suchst.</string>
     <string name="search_not_found">Wir haben nichts gefunden.</string>
+    <string name="search_add_new_hint">Ware nicht gefunden?</string>
+    <string name="search_add_new_button">Neu anlegen</string>
+    <string name="search_add_new_requires_login">Das Anlegen einer neuen Ware erfordert eine Anmeldung — wechsle zum Tab Konto.</string>
     <string name="search_failed">Die Suche ist fehlgeschlagen, bitte versuch es erneut.</string>
     <string name="search_unknown_price">Preis unbekannt</string>
     <string name="search_confirmations">×%1$d Bestätigungen</string>

@@ -247,6 +247,9 @@
     <string name="search_filter_all">Všetky</string>
     <string name="search_hint">Zadaj, čo hľadáš.</string>
     <string name="search_not_found">Nič sme nenašli.</string>
+    <string name="search_add_new_hint">Tovar si nenašiel/nenašla?</string>
+    <string name="search_add_new_button">Založiť nový</string>
+    <string name="search_add_new_requires_login">Založenie nového tovaru vyžaduje prihlásenie — prejdi do záložky Účet.</string>
     <string name="search_failed">Hľadanie sa nepodarilo, skús to prosím znova.</string>
     <string name="search_unknown_price">cena neznáma</string>
     <string name="search_confirmations">×%1$d potvrdení</string>
