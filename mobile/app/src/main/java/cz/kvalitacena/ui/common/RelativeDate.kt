@@ -10,6 +10,7 @@ import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.util.Locale
 
 /**
  * "před 3 dny" místo syrového ISO data — pro seznam hledání a detail produktu. `@Composable`
@@ -18,14 +19,27 @@ import java.time.format.FormatStyle
  * `stringResource` z Compose kontextu, oba volající místa (SearchScreen/ProductDetailScreen)
  * ho už mají. `DateUtils.getRelativeTimeSpanString` řeší plurály i "včera" v jazyce appky
  * (cs/sk/en/pl) sama — appka je nemusí ručně skládat jako dřív.
+ *
+ * `DateUtils` ale nemá přetížení s explicitním `Locale` — čte proces-wide `Locale.getDefault()`,
+ * ne appce vlastní `LocalConfiguration.current.locales[0]` jako [formatShortDate] hned pod
+ * tímhle (stejný důvod jako `Money.kt`). Krátké přepnutí procesního výchozího locale jen na
+ * dobu jednoho volání je jediný způsob, jak `DateUtils` donutit mluvit jazykem appky, ne
+ * systémovým — volá se na hlavním vlákně během kompozice, okno je tedy zanedbatelné.
  */
 @Composable
 fun formatRelativeDate(iso: String?): String {
   if (iso == null) return stringResource(R.string.common_never)
+  val locale = LocalConfiguration.current.locales[0]
   return try {
     val time = OffsetDateTime.parse(iso).toInstant().toEpochMilli()
-    DateUtils.getRelativeTimeSpanString(time, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)
-      .toString()
+    val previousDefault = Locale.getDefault()
+    Locale.setDefault(locale)
+    try {
+      DateUtils.getRelativeTimeSpanString(time, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)
+        .toString()
+    } finally {
+      Locale.setDefault(previousDefault)
+    }
   } catch (e: Exception) {
     iso
   }

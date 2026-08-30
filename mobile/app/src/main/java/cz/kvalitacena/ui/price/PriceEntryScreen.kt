@@ -550,7 +550,9 @@ private fun PromoDateField(
   val context = LocalContext.current
   androidx.compose.foundation.layout.Box(modifier = modifier) {
     SingleLineTextField(
-      value = value,
+      // Zobrazit lokalizovaně ("30. 8. 2026"), ne syrové ISO — stavová hodnota (onChange) dál
+      // zůstává ISO yyyy-MM-dd, mění se jen to, co appka ukáže v poli.
+      value = if (value.isNotBlank()) formatShortDate(value) else value,
       onValueChange = {},
       readOnly = true,
       label = label,
