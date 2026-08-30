@@ -43,6 +43,7 @@ import cz.kvalitacena.network.PriceCurrent
 import cz.kvalitacena.ui.common.PhotoGallery
 import cz.kvalitacena.ui.common.PhotoPicker
 import cz.kvalitacena.ui.common.QualityBadge
+import cz.kvalitacena.ui.common.StarRatingInput
 import cz.kvalitacena.ui.common.formatRelativeDate
 import cz.kvalitacena.ui.common.openUrl
 import cz.kvalitacena.ui.common.priceKindLabel
@@ -52,7 +53,7 @@ import cz.kvalitacena.ui.common.rememberMoneyFormatter
  * Detail produktu: název, fotky, graf vývoje ceny (rozklikávací rozsah), nejlevnější obchod,
  * odkazy do otevřených databází (Open Food Facts), počet hlášení/cena/datum/obchod po řádcích
  * — klik na obchod vede na jeho detail (adresa, mapa, fotky), viz StoreDetailScreen.
- * Hodnocení kvality (1 nejlepší, jako ve škole) vyžaduje přihlášení.
+ * Hodnocení kvality hvězdičkami (5 nejlepší) vyžaduje přihlášení.
  */
 @Composable
 fun ProductDetailScreen(
@@ -140,18 +141,11 @@ fun ProductDetailScreen(
 
         // --- Kvalita ---
         QualityBadge(average = product.quality?.average, count = product.quality?.count ?: 0)
-        Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          for (grade in 1..5) {
-            val selected = product.myQualityRating == grade
-            FilterChip(
-              selected = selected,
-              onClick = {
-                if (isLoggedIn) viewModel.rate(grade) else onNavigateToAccount()
-              },
-              label = { Text(grade.toString()) },
-            )
-          }
-        }
+        StarRatingInput(
+          value = product.myQualityRating,
+          onRate = { stars -> if (isLoggedIn) viewModel.rate(stars) else onNavigateToAccount() },
+          modifier = Modifier.padding(top = 4.dp),
+        )
         if (!isLoggedIn) {
           Text(
             stringResource(R.string.product_quality_requires_login),

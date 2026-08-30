@@ -213,6 +213,7 @@
     <string name="quality_not_rated">Qualität: noch nicht bewertet</string>
     <string name="quality_rated">Qualität %1$.1f/5</string>
     <string name="quality_rated_approximate">Qualität %1$.1f/5 (ungefähr)</string>
+    <string name="quality_rate_stars">Bewertung %1$d/5</string>
 
     <string name="price_kind_regular">Regulärer Preis</string>
     <string name="price_kind_promo">Aktion</string>

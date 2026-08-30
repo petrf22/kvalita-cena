@@ -1,14 +1,18 @@
 package cz.kvalitacena.ui.common
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import cz.kvalitacena.R
 
 /**
- * Známka kvality jako ve škole — 1 nejlepší, 5 nejhorší (viz zadání). Pod
+ * Hvězdičky 1–5 (5 nejlepší) — web protějšek shared/quality-badge.ts. Pod
  * [MIN_RATINGS_FOR_BADGE] hodnoceními se ukazuje jako "orientační", obdoba pravidla
  * n_eff < 2 u cen (docs/reputace.md) — práh drží i backend v app.quality.min-ratings-for-badge.
  */
@@ -23,10 +27,16 @@ fun QualityBadge(average: Double?, count: Int, modifier: Modifier = Modifier) {
   } else {
     stringResource(R.string.quality_rated, average)
   }
-  Text(
-    text = text,
-    style = MaterialTheme.typography.bodySmall,
-    color = if (average == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+  Row(
     modifier = modifier,
-  )
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(4.dp),
+  ) {
+    StarRatingDisplay(average = average)
+    Text(
+      text = text,
+      style = MaterialTheme.typography.bodySmall,
+      color = if (average == null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+    )
+  }
 }

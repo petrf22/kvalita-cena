@@ -211,6 +211,7 @@
     <string name="quality_not_rated">Quality: not rated yet</string>
     <string name="quality_rated">Quality %1$.1f/5</string>
     <string name="quality_rated_approximate">Quality %1$.1f/5 (approximate)</string>
+    <string name="quality_rate_stars">Rating %1$d/5</string>
 
     <string name="price_kind_regular">Regular price</string>
     <string name="price_kind_promo">Promotion</string>

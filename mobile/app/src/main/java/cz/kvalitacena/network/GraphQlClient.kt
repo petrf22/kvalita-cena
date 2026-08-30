@@ -261,16 +261,16 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     return execute(gql, variables, GraphQlResponse.serializer(PriceHistoryData.serializer())).priceHistory
   }
 
-  /** Známka kvality 1–5 (1 nejlepší, jako ve škole) — vyžaduje přihlášení, jinak GraphQL UNAUTHORIZED. */
-  suspend fun rateProduct(productId: String, grade: Int): ProductQuality {
+  /** Hvězdičky 1–5 (5 nejlepší) — vyžaduje přihlášení, jinak GraphQL UNAUTHORIZED. */
+  suspend fun rateProduct(productId: String, stars: Int): ProductQuality {
     val gql = """
-      mutation(${'$'}productId: ID!, ${'$'}grade: Int!) {
-        rateProduct(productId: ${'$'}productId, grade: ${'$'}grade) { average count }
+      mutation(${'$'}productId: ID!, ${'$'}stars: Int!) {
+        rateProduct(productId: ${'$'}productId, stars: ${'$'}stars) { average count }
       }
     """
     val variables = buildJsonObject {
       put("productId", productId)
-      put("grade", grade)
+      put("stars", stars)
     }
     return execute(gql, variables, GraphQlResponse.serializer(RateProductData.serializer())).rateProduct
   }

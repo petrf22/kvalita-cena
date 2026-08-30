@@ -295,6 +295,8 @@
     <string name="quality_not_rated">Kvalita: zatím nehodnoceno</string>
     <string name="quality_rated">Kvalita %1$.1f/5</string>
     <string name="quality_rated_approximate">Kvalita %1$.1f/5 (orientační)</string>
+    <!-- contentDescription tlačítka jedné hvězdy v interaktivním hodnocení — %1$d = pozice 1..5. -->
+    <string name="quality_rate_stars">Hodnocení %1$d/5</string>
 
     <string name="price_kind_regular">Běžná cena</string>
     <string name="price_kind_promo">Akce</string>

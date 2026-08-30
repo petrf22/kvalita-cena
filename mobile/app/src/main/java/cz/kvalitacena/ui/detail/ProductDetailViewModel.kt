@@ -94,12 +94,12 @@ class ProductDetailViewModel(
     loadHistory()
   }
 
-  fun rate(grade: Int) {
+  fun rate(stars: Int) {
     ratingError = null
     viewModelScope.launch {
       try {
-        val quality = graphQlClient.rateProduct(productId, grade)
-        product = product?.copy(quality = quality, myQualityRating = grade)
+        val quality = graphQlClient.rateProduct(productId, stars)
+        product = product?.copy(quality = quality, myQualityRating = stars)
       } catch (e: Exception) {
         ratingError = e.toUiText()
       }

@@ -211,6 +211,7 @@
     <string name="quality_not_rated">Kvalita: zatiaľ nehodnotená</string>
     <string name="quality_rated">Kvalita %1$.1f/5</string>
     <string name="quality_rated_approximate">Kvalita %1$.1f/5 (orientačná)</string>
+    <string name="quality_rate_stars">Hodnotenie %1$d/5</string>
 
     <string name="price_kind_regular">Bežná cena</string>
     <string name="price_kind_promo">Akcia</string>

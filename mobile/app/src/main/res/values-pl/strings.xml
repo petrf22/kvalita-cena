@@ -211,6 +211,7 @@
     <string name="quality_not_rated">Jakość: brak ocen</string>
     <string name="quality_rated">Jakość %1$.1f/5</string>
     <string name="quality_rated_approximate">Jakość %1$.1f/5 (orientacyjna)</string>
+    <string name="quality_rate_stars">Ocena %1$d/5</string>
 
     <string name="price_kind_regular">Cena regularna</string>
     <string name="price_kind_promo">Promocja</string>
