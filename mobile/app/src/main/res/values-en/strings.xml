@@ -288,6 +288,7 @@
     <string name="price_entry_hide">Hide price entry</string>
     <string name="price_entry_search_this_code">Search prices for this item</string>
     <string name="price_entry_price_label">Price (%1$s)</string>
+    <string name="price_entry_observed_at_label">When did you see the price (optional — otherwise now)</string>
     <string name="price_entry_prices_label">Prices</string>
     <string name="price_entry_prices_hint">Price tags often show a regular price and a loyalty-card price side by side — enter both at once.</string>
     <string name="price_entry_add_price">Add another price</string>

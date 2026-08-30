@@ -79,6 +79,10 @@ class PriceEntryViewModel(
   // PriceObservationService (PER_KG/PER_L znamená "cena na cedulce je už za kg/l").
   var quantityBasis by mutableStateOf("PACKAGE")
 
+  // Kdy uživatel cenu viděl — volitelné, ISO den (yyyy-MM-dd) jako promoValidFrom/To, prázdné =
+  // "teď" (server dosadí now()). Web protějšek: price-entry-form.ts observedAt.
+  var observedAt by mutableStateOf("")
+
   var submitting by mutableStateOf(false)
     private set
   var submitSuccess by mutableStateOf(false)
@@ -247,6 +251,7 @@ class PriceEntryViewModel(
             productId = currentProduct.id,
             storeId = storeId,
             quantityBasis = if (currentProduct.isVariableWeight) quantityBasis else "PACKAGE",
+            observedAt = toObservedAtIso(observedAt),
             prices = toObservationPriceInputs(priceRows),
           ),
         )

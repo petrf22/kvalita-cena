@@ -288,6 +288,7 @@
     <string name="price_entry_hide">Skryť zadanie ceny</string>
     <string name="price_entry_search_this_code">Hľadať ceny tohto tovaru</string>
     <string name="price_entry_price_label">Cena (%1$s)</string>
+    <string name="price_entry_observed_at_label">Kedy si cenu videl(a) (voliteľné — inak teraz)</string>
     <string name="price_entry_prices_label">Ceny</string>
     <string name="price_entry_prices_hint">Na cenovke býva bežná cena aj cena s vernostnou kartou — zapíš obe naraz.</string>
     <string name="price_entry_add_price">Pridať ďalšiu cenu</string>

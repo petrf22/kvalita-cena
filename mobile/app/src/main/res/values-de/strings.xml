@@ -290,6 +290,7 @@
     <string name="price_entry_hide">Preiseingabe ausblenden</string>
     <string name="price_entry_search_this_code">Preise für diesen Artikel suchen</string>
     <string name="price_entry_price_label">Preis (%1$s)</string>
+    <string name="price_entry_observed_at_label">Wann du den Preis gesehen hast (optional — sonst jetzt)</string>
     <string name="price_entry_prices_label">Preise</string>
     <string name="price_entry_prices_hint">Am Preisschild stehen oft ein regulärer Preis und ein Preis mit Kundenkarte nebeneinander — trag beide auf einmal ein.</string>
     <string name="price_entry_add_price">Weiteren Preis hinzufügen</string>

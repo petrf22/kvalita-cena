@@ -321,6 +321,17 @@ fun PriceEntryScreen(
               Gap()
             }
 
+            // Volitelné, prázdné = "teď" (docs/datovy-model.md, observed_at ≠ created_at) — web
+            // protějšek: price-entry-form.ts observedAt/price-form.observedAtLabel.
+            PromoDateField(
+              value = viewModel.observedAt,
+              label = stringResource(R.string.price_entry_observed_at_label),
+              maxDate = LocalDate.now(),
+              onChange = { date -> viewModel.observedAt = date },
+              modifier = Modifier.fillMaxWidth(),
+            )
+            Gap()
+
             // Symbol podle měny vybraného obchodu (docs/lokalizace.md) — než je obchod vybraný,
             // appka měnu ještě nezná, CZK je tu jen nouzový výchozí popisek pole.
             val currencySymbol = remember(viewModel.selectedStore?.country) {

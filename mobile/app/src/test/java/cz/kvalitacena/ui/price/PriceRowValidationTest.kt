@@ -155,4 +155,22 @@ class PriceRowValidationTest {
     assertNull(regularInputs[0].promoValidFrom)
     assertNull(regularInputs[0].promoValidTo)
   }
+
+  @Test
+  fun observedAtBlankMeansServerDefaultsToNow() {
+    assertNull(toObservedAtIso(""))
+  }
+
+  @Test
+  fun observedAtTodayAlsoMeansServerDefaultsToNow() {
+    // Dopolední zápis "dneška" by jinak s pevným polednem mohl vyjít na čas v budoucnu.
+    assertNull(toObservedAtIso(LocalDate.now().toString()))
+  }
+
+  @Test
+  fun observedAtPastDateKeepsTheSameCalendarDay() {
+    val yesterday = LocalDate.now().minusDays(1)
+    val iso = toObservedAtIso(yesterday.toString())
+    assertTrue(iso != null && iso.startsWith("${yesterday}T12:00"))
+  }
 }

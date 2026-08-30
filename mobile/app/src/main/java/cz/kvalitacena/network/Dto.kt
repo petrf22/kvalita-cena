@@ -388,6 +388,10 @@ data class SubmitObservationsInput(
   val productId: String,
   val storeId: String,
   val quantityBasis: String = "PACKAGE",
+  // Kdy uživatel cenu viděl — chybí-li, backend dosadí now() (docs/datovy-model.md,
+  // observed_at ≠ created_at). ISO-8601 DateTime, ne jen den — web protějšek:
+  // price-rows.ts toObservedAtIso().
+  val observedAt: String? = null,
   val prices: List<ObservationPriceInput>,
 )
 

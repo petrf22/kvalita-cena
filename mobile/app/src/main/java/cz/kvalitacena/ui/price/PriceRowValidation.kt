@@ -3,6 +3,7 @@ package cz.kvalitacena.ui.price
 import cz.kvalitacena.network.ObservationPriceInput
 import cz.kvalitacena.ui.common.SELECTABLE_PRICE_KINDS
 import java.time.LocalDate
+import java.time.ZoneId
 
 /**
  * Čistá validace/dopočty pro víc cen z jedné cenovky — mimo Compose, ať jde otestovat JUnitem
@@ -70,6 +71,20 @@ fun availablePriceKinds(rows: List<PriceRow>, current: String): List<String> {
 fun firstAvailablePriceKind(rows: List<PriceRow>): String {
   val used = rows.map { it.priceKind }.toSet()
   return SELECTABLE_PRICE_KINDS.firstOrNull { it !in used } ?: SELECTABLE_PRICE_KINDS.first()
+}
+
+/**
+ * ISO den (yyyy-MM-dd, jak ho appka drží v `PriceEntryViewModel.observedAt`) → `DateTime` pro
+ * `SubmitObservationsInput.observedAt`. Prázdné pole i "dnešek" vrací `null` — server pak
+ * dosadí přesné `now()`, ať dopolední zápis "dneška" nevyjde na čas v budoucnu. Jinak se posílá
+ * MÍSTNÍ POLEDNE vybraného dne, ne půlnoc — půlnoc by se v UTC (`core.day_utc` na backendu)
+ * mohla posunout na předchozí den. Web protějšek: `price-rows.ts` `toObservedAtIso()`.
+ */
+fun toObservedAtIso(day: String): String? {
+  if (day.isBlank()) return null
+  val date = runCatching { LocalDate.parse(day) }.getOrNull() ?: return null
+  if (date == LocalDate.now()) return null
+  return date.atTime(12, 0).atZone(ZoneId.systemDefault()).toOffsetDateTime().toString()
 }
 
 /**
