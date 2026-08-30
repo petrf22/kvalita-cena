@@ -20,6 +20,11 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.5.1", date: "2026-08-30", sections: [
+      { title: "Opraveno", items: [
+        { text: "Hledání zboží a záložky Zboží/Ceny v Mých příspěvcích už nekončí chybou u položek s fotkou nebo obrázkem z Open Food Facts", parts: ["mobil"] },
+      ] },
+  ] },
   { version: "0.5.0", date: "2026-08-30", sections: [
       { title: "Přidáno", items: [
         { text: "Miniatura zboží (vlastní fotka, jinak Open Food Facts) ve výsledcích hledání a při zápisu ceny", parts: ["server", "web", "mobil"] },

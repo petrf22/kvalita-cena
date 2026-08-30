@@ -7,6 +7,11 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [0.5.1] – 2026-08-30
+
+### Opraveno
+- Hledání zboží a záložky Zboží/Ceny v Mých příspěvcích už nekončí chybou u položek s fotkou nebo obrázkem z Open Food Facts (mobil)
+
 ## [0.5.0] – 2026-08-30
 
 ### Přidáno
