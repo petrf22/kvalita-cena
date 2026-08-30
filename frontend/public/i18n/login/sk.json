@@ -16,9 +16,10 @@
   "consentPrivacyLink": "zásadami ochrany osobných údajov",
   "sendCode": "Poslať kód",
   "codeHint": "Kód sme poslali na {{email}}.",
+  "codeDelayHint": "Odoslanie môže chvíľu trvať — pokojne počkaj, formulár sa nezasekol.",
   "codeLabel": "Kód z e-mailu",
   "signIn": "Prihlásiť sa",
-  "changeEmail": "Zadať iný e-mail",
-  "requestFailed": "Nepodarilo sa odoslať kód. Skús to prosím znova o chvíľu.",
-  "verifyFailed": "Kód je neplatný alebo vypršal. Skús to prosím znova."
+  "resendCode": "Poslať kód znova",
+  "resendCodeIn": "Poslať znova (o {{seconds}} s)",
+  "changeEmail": "Zadať iný e-mail"
 }

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoService, provideTranslocoScope } from '@jsverse/transloco';
@@ -9,15 +9,24 @@ import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
-import { Viewer } from '../../models/auth';
+import { Observable, first, shareReplay, switchMap } from 'rxjs';
+import { OtpRequestResponse, Viewer } from '../../models/auth';
 import { AuthService } from '../../services/auth-service';
 import { ViewerService } from '../../services/viewer-service';
+import { translateError } from '../../shared/error-message';
 
 /**
  * Stránka "Účet"/"Přihlášení" (menu je má sloučené do jedné položky, jako mobile
  * ui/account/AccountScreen.kt) — passwordless přihlášení (e-mail → OTP kód) pro nepřihlášené,
  * veřejná identita a odhlášení pro přihlášené. V etapě 1 backend kód loguje do konzole místo
  * posílání mailem (app.auth.otp.mail-enabled=false), viz backend/docs/soukromi.md.
+ *
+ * Krok se na "zadání kódu" přepíná HNED po odeslání requestu, ne až po odpovědi serveru —
+ * odeslání e-mailu umí trvat (SMTP, viz backend OtpService/SmtpOtpMailSender), a čekání na
+ * formuláři vypadalo appce jako zaseknuté, takže uživatel odesílal znovu a narazil na cooldown
+ * (OtpRateLimiter, 1 request/60s). Request na kód se drží jako sdílený Observable
+ * ({@link otpRequest$}) — verifyCode na něj počká, i kdyby uživatel opsal kód dřív, než
+ * odpověď dorazí. Při chybě se appka vrátí zpět na zadání e-mailu.
  */
 @Component({
   selector: 'app-login-page',
@@ -37,7 +46,7 @@ import { ViewerService } from '../../services/viewer-service';
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })
-export class LoginPage {
+export class LoginPage implements OnDestroy {
   protected readonly auth = inject(AuthService);
   private readonly viewerService = inject(ViewerService);
   private readonly transloco = inject(TranslocoService);
@@ -50,15 +59,25 @@ export class LoginPage {
   // i requestOtp zpracovává e-mail (docs/soukromi.md, "Passwordless auth"), i když účet vzniká
   // JIT až při úspěšném ověření kódu.
   protected readonly consentGiven = signal(false);
-  protected readonly challengeUid = signal<string | null>(null);
-  protected readonly loading = signal(false);
+  protected readonly sendingCode = signal(false);
+  protected readonly verifying = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+  /** Sekundy do dalšího možného odeslání — server ho vrací v resendAfterSec (OtpRateLimiter,
+   *  1 request/60s na e-mail); 0 = tlačítko "Poslat znovu" je aktivní. */
+  protected readonly resendCooldown = signal(0);
 
   protected readonly viewer = signal<Viewer | null>(null);
   protected readonly viewerLoading = signal(false);
 
+  private otpRequest$: Observable<OtpRequestResponse> | null = null;
+  private resendTimerId: ReturnType<typeof setInterval> | null = null;
+
   constructor() {
     if (this.auth.isLoggedIn()) this.loadViewer();
+  }
+
+  ngOnDestroy(): void {
+    this.clearResendTimer();
   }
 
   private loadViewer(): void {
@@ -77,41 +96,61 @@ export class LoginPage {
   }
 
   requestCode(): void {
-    if (!this.email().trim() || !this.consentGiven()) return;
+    if (!this.email().trim() || !this.consentGiven() || this.sendingCode()) return;
 
-    this.loading.set(true);
+    this.sendingCode.set(true);
     this.errorMessage.set(null);
-    this.auth.requestOtp(this.email().trim()).subscribe({
+    // Přepnutí kroku NEČEKÁ na odpověď — viz komentář u třídy.
+    this.step.set('code');
+
+    const request$ = this.auth.requestOtp(this.email().trim()).pipe(shareReplay(1));
+    this.otpRequest$ = request$;
+    request$.subscribe({
       next: (response) => {
-        this.challengeUid.set(response.challengeUid);
-        this.step.set('code');
-        this.loading.set(false);
+        this.sendingCode.set(false);
+        this.startResendCooldown(response.resendAfterSec);
       },
-      error: () => {
-        this.errorMessage.set(this.transloco.translate('login.requestFailed'));
-        this.loading.set(false);
+      error: (err) => {
+        this.sendingCode.set(false);
+        this.otpRequest$ = null;
+        this.clearResendTimer();
+        this.resendCooldown.set(0);
+        // Zpět na zadání e-mailu — server odeslání odmítl (rate limit, pozastavený účet, …),
+        // krok "zadej kód" by tu neměl co dělat.
+        this.step.set('email');
+        this.errorMessage.set(translateError(err, this.transloco));
       },
     });
   }
 
   verifyCode(): void {
-    const challengeUid = this.challengeUid();
-    if (!challengeUid || !this.code().trim()) return;
+    const request$ = this.otpRequest$;
+    if (!request$ || !this.code().trim() || this.verifying()) return;
 
-    this.loading.set(true);
+    this.verifying.set(true);
     this.errorMessage.set(null);
-    this.auth
-      .verifyOtp(challengeUid, this.code().trim(), this.email().trim(), this.consentGiven())
+    request$
+      .pipe(
+        first(),
+        switchMap((response) =>
+          this.auth.verifyOtp(
+            response.challengeUid,
+            this.code().trim(),
+            this.email().trim(),
+            this.consentGiven(),
+          ),
+        ),
+      )
       .subscribe({
         next: () => {
-          this.loading.set(false);
+          this.verifying.set(false);
           // Žádná navigace pryč — stránka se sama překreslí na účet (auth.isLoggedIn() se
           // změní), stejný princip jako mobile AccountScreen po přihlášení.
           this.loadViewer();
         },
-        error: () => {
-          this.errorMessage.set(this.transloco.translate('login.verifyFailed'));
-          this.loading.set(false);
+        error: (err) => {
+          this.verifying.set(false);
+          this.errorMessage.set(translateError(err, this.transloco));
         },
       });
   }
@@ -120,5 +159,27 @@ export class LoginPage {
     this.step.set('email');
     this.code.set('');
     this.errorMessage.set(null);
+    this.otpRequest$ = null;
+    this.clearResendTimer();
+    this.resendCooldown.set(0);
+  }
+
+  private startResendCooldown(seconds: number): void {
+    this.clearResendTimer();
+    this.resendCooldown.set(seconds);
+    this.resendTimerId = setInterval(() => {
+      const next = this.resendCooldown() - 1;
+      if (next <= 0) {
+        this.resendCooldown.set(0);
+        this.clearResendTimer();
+      } else {
+        this.resendCooldown.set(next);
+      }
+    }, 1000);
+  }
+
+  private clearResendTimer(): void {
+    if (this.resendTimerId != null) clearInterval(this.resendTimerId);
+    this.resendTimerId = null;
   }
 }

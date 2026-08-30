@@ -16,9 +16,10 @@
   "consentPrivacyLink": "Datenschutzerklärung",
   "sendCode": "Code senden",
   "codeHint": "Wir haben den Code an {{email}} gesendet.",
+  "codeDelayHint": "Der Versand kann einen Moment dauern — das Formular hängt nicht.",
   "codeLabel": "Code aus der E-Mail",
   "signIn": "Anmelden",
-  "changeEmail": "Andere E-Mail eingeben",
-  "requestFailed": "Der Code konnte nicht gesendet werden. Bitte versuch es in Kürze erneut.",
-  "verifyFailed": "Der Code ist ungültig oder abgelaufen. Bitte versuch es erneut."
+  "resendCode": "Code erneut senden",
+  "resendCodeIn": "Erneut senden (in {{seconds}}s)",
+  "changeEmail": "Andere E-Mail eingeben"
 }

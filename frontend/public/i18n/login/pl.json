@@ -16,9 +16,10 @@
   "consentPrivacyLink": "polityką prywatności",
   "sendCode": "Wyślij kod",
   "codeHint": "Wysłaliśmy kod na {{email}}.",
+  "codeDelayHint": "Wysyłka może chwilę potrwać — formularz się nie zawiesił.",
   "codeLabel": "Kod z e-maila",
   "signIn": "Zaloguj się",
-  "changeEmail": "Podaj inny e-mail",
-  "requestFailed": "Nie udało się wysłać kodu. Spróbuj ponownie za chwilę.",
-  "verifyFailed": "Kod jest nieprawidłowy lub wygasł. Spróbuj ponownie."
+  "resendCode": "Wyślij kod ponownie",
+  "resendCodeIn": "Wyślij ponownie (za {{seconds}} s)",
+  "changeEmail": "Podaj inny e-mail"
 }

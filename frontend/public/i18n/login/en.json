@@ -16,9 +16,10 @@
   "consentPrivacyLink": "privacy policy",
   "sendCode": "Send code",
   "codeHint": "We've sent a code to {{email}}.",
+  "codeDelayHint": "Sending it can take a moment — the form isn't stuck.",
   "codeLabel": "Code from email",
   "signIn": "Sign in",
-  "changeEmail": "Use a different email",
-  "requestFailed": "Couldn't send the code. Please try again shortly.",
-  "verifyFailed": "The code is invalid or has expired. Please try again."
+  "resendCode": "Resend code",
+  "resendCodeIn": "Resend (in {{seconds}}s)",
+  "changeEmail": "Use a different email"
 }

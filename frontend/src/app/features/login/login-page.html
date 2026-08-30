@@ -72,7 +72,7 @@
             nz-button
             nzType="primary"
             nzBlock
-            [nzLoading]="loading()"
+            [nzLoading]="sendingCode()"
             [disabled]="!consentGiven()"
             type="submit"
           >
@@ -82,6 +82,7 @@
       } @else {
         <form nz-form nzLayout="vertical" (ngSubmit)="verifyCode()">
           <p class="login-hint">{{ t('login.codeHint', { email: email() }) }}</p>
+          <p class="login-hint">{{ t('login.codeDelayHint') }}</p>
           <nz-form-item>
             <nz-form-label>{{ t('login.codeLabel') }}</nz-form-label>
             <nz-form-control>
@@ -96,8 +97,23 @@
               />
             </nz-form-control>
           </nz-form-item>
-          <button nz-button nzType="primary" nzBlock [nzLoading]="loading()" type="submit">
+          <button nz-button nzType="primary" nzBlock [nzLoading]="verifying()" type="submit">
             {{ t('login.signIn') }}
+          </button>
+          <button
+            nz-button
+            nzType="link"
+            nzBlock
+            type="button"
+            [nzLoading]="sendingCode()"
+            [disabled]="resendCooldown() > 0"
+            (click)="requestCode()"
+          >
+            {{
+              resendCooldown() > 0
+                ? t('login.resendCodeIn', { seconds: resendCooldown() })
+                : t('login.resendCode')
+            }}
           </button>
           <button nz-button nzType="link" nzBlock type="button" (click)="backToEmail()">
             {{ t('login.changeEmail') }}
