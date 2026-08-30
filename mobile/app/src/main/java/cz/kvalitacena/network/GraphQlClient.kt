@@ -1,6 +1,8 @@
 package cz.kvalitacena.network
 
+import cz.kvalitacena.BuildConfig
 import cz.kvalitacena.auth.AuthRepository
+import cz.kvalitacena.crash.AppLog
 import cz.kvalitacena.ui.common.normalizeCode
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
@@ -686,7 +688,17 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     variables: JsonObject,
     responseSerializer: KSerializer<GraphQlResponse<T>>,
   ): T = withContext(Dispatchers.IO) {
-    executeAttempt(query, variables, responseSerializer, allowRecovery = true)
+    try {
+      executeAttempt(query, variables, responseSerializer, allowRecovery = true)
+    } catch (e: Exception) {
+      // Jediné hrdlo pro všechny GraphQL dotazy — appka do teď chybu jen zabalila do UiText
+      // a zahodila (ui/common/ErrorMessages.kt), takže v logcatu po ní nezůstala žádná stopa.
+      // Text dotazu (bez proměnných, ty mohou nést e-mail/OTP) jen v debug buildu — pomůže
+      // odlišit syntax chybu GraphQL od výpadku sítě, aniž by v produkci přibyl citlivý údaj.
+      val queryForLog = if (BuildConfig.DEBUG) "\n$query" else ""
+      AppLog.e("GraphQL dotaz selhal: ${e::class.simpleName}: ${e.message}$queryForLog", e)
+      throw e
+    }
   }
 
   /**

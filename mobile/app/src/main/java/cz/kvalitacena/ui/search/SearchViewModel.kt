@@ -15,6 +15,7 @@ import cz.kvalitacena.network.SearchFacets
 import cz.kvalitacena.ui.common.CategoryChoice
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.categoryBreadcrumb
+import cz.kvalitacena.ui.common.toUiText
 import cz.kvalitacena.ui.settings.CountryStore
 import cz.kvalitacena.ui.settings.SearchFilterStore
 import kotlinx.coroutines.launch
@@ -136,7 +137,10 @@ class SearchViewModel(
         totalCount = result.totalCount
         hasMore = result.hasMore
       } catch (e: Exception) {
-        errorMessage = UiText.Res(R.string.search_failed)
+        // Serverovou chybu (GraphQlAppException/HttpAppException) ukázat s jejím lokalizovaným
+        // textem, ne s obecnou hláškou — ta zůstává jen fallback pro síťový výpadek/parse chybu
+        // (GraphQlClient.execute() zároveň zaloguje detail do logcatu).
+        errorMessage = e.toUiText(fallback = R.string.search_failed)
       } finally {
         loading = false
       }
