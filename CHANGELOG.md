@@ -7,6 +7,11 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [0.5.2] – 2026-08-31
+
+### Opraveno
+- Hledání zboží a Moje příspěvky (Zboží, Ceny, Úpravy) u položek s fotkou opravdu fungují — oprava ve verzi 0.5.1 chybu ještě neodstranila (mobil)
+
 ## [0.5.1] – 2026-08-30
 
 ### Opraveno
