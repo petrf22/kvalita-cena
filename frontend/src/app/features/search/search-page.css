@@ -37,6 +37,12 @@
   background: #fafafa;
 }
 
+.product-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .product-name {
   font-weight: 600;
 }
@@ -44,6 +50,12 @@
 .product-subtitle {
   color: rgba(0, 0, 0, 0.45);
   font-size: 12px;
+}
+
+.external-image-note {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .unverified-tag {

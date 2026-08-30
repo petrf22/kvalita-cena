@@ -95,14 +95,23 @@
         @for (item of resultsTable.data; track item.product.id) {
           <tr (click)="openProduct(item)" class="search-result-row">
             <td>
-              <div class="product-name">
-                {{ item.product.name }}
-                @if (!item.product.verified) {
-                  <nz-tag class="unverified-tag">{{ t('search.unverified') }}</nz-tag>
-                }
-              </div>
-              <div class="product-subtitle">
-                {{ item.product.brand?.name ?? item.product.category.name }}
+              <div class="product-name-cell">
+                <app-product-thumb
+                  [name]="item.product.name"
+                  [photos]="item.product.photos"
+                  [externalImage]="item.product.externalImage"
+                />
+                <div>
+                  <div class="product-name">
+                    {{ item.product.name }}
+                    @if (!item.product.verified) {
+                      <nz-tag class="unverified-tag">{{ t('search.unverified') }}</nz-tag>
+                    }
+                  </div>
+                  <div class="product-subtitle">
+                    {{ item.product.brand?.name ?? item.product.category.name }}
+                  </div>
+                </div>
               </div>
             </td>
             <td>
@@ -137,6 +146,9 @@
         }
       </tbody>
     </nz-table>
+    @if (showExternalImageNote()) {
+      <p class="external-image-note">{{ t('search.externalImageNote') }}</p>
+    }
 
     <nz-pagination
       class="results-pagination"

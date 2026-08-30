@@ -16,5 +16,6 @@
   "colQuality": "Quality",
   "unverified": "Unverified",
   "confirmations": "×{{count}} confirmations",
-  "unknownPrice": "price unknown"
+  "unknownPrice": "price unknown",
+  "externalImageNote": "Some thumbnails come from Open Food Facts (hover for the source)."
 }

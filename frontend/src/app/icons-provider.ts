@@ -11,6 +11,7 @@ import {
   LoadingOutline,
   LogoutOutline,
   MinusCircleOutline,
+  PictureOutline,
   PlusCircleOutline,
   PlusOutline,
   RightOutline,
@@ -52,4 +53,6 @@ export const icons = [
   EditOutline,
   UnorderedListOutline,
   SafetyCertificateOutline,
+  // Zástupná ikona miniatury zboží, když nemá vlastní fotku ani OFF obrázek (shared/product-thumb.ts).
+  PictureOutline,
 ];

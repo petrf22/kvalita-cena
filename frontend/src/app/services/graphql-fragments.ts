@@ -223,6 +223,17 @@ export const productSummaryFieldsFragment = graphql(`
     isGeneric
     verified
     editedByMe
+    # Jen thumbnailUrl (ne celý PhotoFields fragment) — tenhle fragment se tahá pro každý řádek
+    # výsledků hledání/zápisu ceny, kde stačí miniatura (shared/product-thumb.ts). Priorita
+    # zdroje: vlastní fotka > OFF > zástupná ikona, stejné pravidlo jako na detailu zboží.
+    photos {
+      id
+      thumbnailUrl
+    }
+    externalImage {
+      thumbnailUrl
+      attribution
+    }
   }
 `);
 

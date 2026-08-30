@@ -16,5 +16,6 @@
   "colQuality": "Jakość",
   "unverified": "Niezweryfikowane",
   "confirmations": "×{{count}} potwierdzeń",
-  "unknownPrice": "cena nieznana"
+  "unknownPrice": "cena nieznana",
+  "externalImageNote": "Niektóre miniatury pochodzą z Open Food Facts (najedź myszką, aby zobaczyć źródło)."
 }

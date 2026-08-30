@@ -16,5 +16,6 @@
   "colQuality": "Kvalita",
   "unverified": "Neoverené",
   "confirmations": "×{{count}} potvrdení",
-  "unknownPrice": "cena neznáma"
+  "unknownPrice": "cena neznáma",
+  "externalImageNote": "Niektoré miniatúry pochádzajú z Open Food Facts (zdroj nájdeš pri prejdení myšou)."
 }

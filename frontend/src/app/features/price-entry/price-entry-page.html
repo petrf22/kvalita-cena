@@ -64,16 +64,32 @@
       <ul class="result-list">
         @for (item of results(); track item.product.id) {
           <li>
-            <button nz-button nzType="link" type="button" (click)="selectFromResults(item)">
-              {{ item.product.name }}
-              @if (item.product.brand) {
-                — {{ item.product.brand!.name }}
-              }
-              · {{ item.product.category.name }}
+            <button
+              nz-button
+              nzType="link"
+              type="button"
+              class="result-button"
+              (click)="selectFromResults(item)"
+            >
+              <app-product-thumb
+                [name]="item.product.name"
+                [photos]="item.product.photos"
+                [externalImage]="item.product.externalImage"
+              />
+              <span>
+                {{ item.product.name }}
+                @if (item.product.brand) {
+                  — {{ item.product.brand!.name }}
+                }
+                · {{ item.product.category.name }}
+              </span>
             </button>
           </li>
         }
       </ul>
+      @if (showExternalImageNote()) {
+        <p class="external-image-note">{{ t('price-entry.externalImageNote') }}</p>
+      }
     }
 
     <p class="add-new-hint">

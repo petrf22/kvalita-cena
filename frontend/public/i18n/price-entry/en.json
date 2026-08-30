@@ -13,5 +13,6 @@
   "newProductTitle": "New product",
   "genericTag": "(generic item)",
   "changeProduct": "Change product",
-  "searchFailed": "Search failed, please try again."
+  "searchFailed": "Search failed, please try again.",
+  "externalImageNote": "Some thumbnails come from Open Food Facts (hover for the source)."
 }

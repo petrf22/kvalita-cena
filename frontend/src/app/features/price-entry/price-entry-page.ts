@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   TranslocoDirective,
@@ -18,6 +18,7 @@ import { ProductService } from '../../services/product-service';
 import { PRICE_KIND_KEYS } from '../../shared/enum-labels';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { PriceEntryForm } from '../../shared/price-entry-form';
+import { ProductThumb, usesExternalImageFallback } from '../../shared/product-thumb';
 import { ProductForm } from '../product-form/product-form';
 
 /**
@@ -39,6 +40,7 @@ import { ProductForm } from '../product-form/product-form';
     NzSpinModule,
     PriceEntryForm,
     ProductForm,
+    ProductThumb,
     TranslocoDirective,
     TranslocoPipe,
     MoneyPipe,
@@ -60,6 +62,11 @@ export class PriceEntryPage {
   protected readonly searching = signal(false);
   protected readonly searchError = signal<string | null>(null);
   protected readonly results = signal<ProductSearchItem[]>([]);
+  /** Aspoň jeden výsledek ukazuje obrázek z Open Food Facts místo vlastní fotky — atribuce
+   *  zdroje se do řádku nevejde, appka ji shrne jednou pod celý seznam (ODbL). */
+  protected readonly showExternalImageNote = computed(() =>
+    this.results().some((item) => usesExternalImageFallback(item.product)),
+  );
   protected readonly codeNotFound = signal(false);
   /** OFF katalog je teď nedostupný (výpadek/rate limit) — jiná hláška než "nemáme ho" pod codeNotFound. */
   protected readonly offUnavailable = signal(false);

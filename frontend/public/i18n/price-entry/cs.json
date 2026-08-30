@@ -13,5 +13,6 @@
   "newProductTitle": "Nové zboží",
   "genericTag": "(druhová položka)",
   "changeProduct": "Změnit zboží",
-  "searchFailed": "Hledání se nepovedlo, zkus to prosím znovu."
+  "searchFailed": "Hledání se nepovedlo, zkus to prosím znovu.",
+  "externalImageNote": "Některé miniatury pocházejí z Open Food Facts (najeď myší pro zdroj)."
 }

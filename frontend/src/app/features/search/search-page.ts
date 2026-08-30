@@ -20,6 +20,7 @@ import { ProductService } from '../../services/product-service';
 import { buildCategoryTree, categoryBreadcrumb } from '../../shared/category-tree';
 import { PRODUCT_SORT_KEYS } from '../../shared/enum-labels';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { ProductThumb, usesExternalImageFallback } from '../../shared/product-thumb';
 import { QualityBadge } from '../../shared/quality-badge';
 import { RelativeDatePipe } from '../../shared/relative-date.pipe';
 import { storeLabel } from '../../shared/store-label';
@@ -50,6 +51,7 @@ const SORT_ORDER = ['REPORT_COUNT', 'PRICE_ASC', 'QUALITY', 'LAST_REPORTED', 'NA
     NzPaginationModule,
     NzTagModule,
     NzTreeSelectModule,
+    ProductThumb,
     QualityBadge,
     RelativeDatePipe,
     MoneyPipe,
@@ -78,6 +80,11 @@ export class SearchPage {
   protected readonly pageIndex = signal(1);
 
   protected readonly items = signal<ProductSearchItem[]>([]);
+  /** Aspoň jeden řádek ukazuje obrázek z Open Food Facts místo vlastní fotky — atribuce zdroje
+   *  se do řádku tabulky nevejde, appka ji proto shrne jednou pod celý seznam (ODbL). */
+  protected readonly showExternalImageNote = computed(() =>
+    this.items().some((item) => usesExternalImageFallback(item.product)),
+  );
   protected readonly totalCount = signal(0);
   protected readonly loading = signal(false);
   protected readonly hasSearched = signal(false);

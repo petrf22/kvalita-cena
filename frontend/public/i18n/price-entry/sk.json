@@ -13,5 +13,6 @@
   "newProductTitle": "Nový tovar",
   "genericTag": "(druhová položka)",
   "changeProduct": "Zmeniť tovar",
-  "searchFailed": "Hľadanie sa nepodarilo, skús to prosím znova."
+  "searchFailed": "Hľadanie sa nepodarilo, skús to prosím znova.",
+  "externalImageNote": "Niektoré miniatúry pochádzajú z Open Food Facts (zdroj nájdeš pri prejdení myšou)."
 }

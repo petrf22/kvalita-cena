@@ -13,5 +13,6 @@
   "newProductTitle": "Nowy produkt",
   "genericTag": "(pozycja rodzajowa)",
   "changeProduct": "Zmień produkt",
-  "searchFailed": "Wyszukiwanie nie powiodło się, spróbuj ponownie."
+  "searchFailed": "Wyszukiwanie nie powiodło się, spróbuj ponownie.",
+  "externalImageNote": "Niektóre miniatury pochodzą z Open Food Facts (najedź myszką, aby zobaczyć źródło)."
 }
