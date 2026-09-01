@@ -3,7 +3,7 @@
 Dvě zadání, která šla proti nejjednoduššímu řešení a určila architekturu: appka nemá jen jiný
 jazyk, ale i jinou **zemi a měnu** (SK/EUR, PL/PLN vedle CZ/CZK), a lokalizace se dělala **hned
 celá**, ne jako dokumentovaný záměr bez kódu. Tenhle dokument je jeden zdroj pravdy pro seznam
-jazyků, mapu země→měna→locale a pravidla překladu — obdoba toho, čím je `reputace.md` pro prahy.
+jazyků, mapu země→měna→locale a pravidla překladu — obdoba toho, čím je `docs/reputace.md` pro prahy.
 
 ## Jazyky a měny
 
@@ -21,7 +21,7 @@ odlehčenou kopii pro NÁPOVĚDU v UI (popisek pole ceny dřív, než zná serve
 
 **Země je nezávislá osa od jazyka** (plán expanze, 2026-08) — appka od srpna 2026 zná i dalších
 13 zemí (Německo, Rakousko, Francie, Španělsko, Itálie, Chorvatsko, Slovinsko, Bulharsko,
-Maďarsko, Rumunsko, Británie, Švýcarsko, Srbsko). Etapa 1 je přidala BEZE ZMĚNY jazyků — nové
+Maďarsko, Rumunsko, Británie, Švýcarsko, Srbsko). Vlna expanze 1 je přidala BEZE ZMĚNY jazyků — nové
 země bez vlastního jazyka míří na `en` v `country-locale` (`application.yml`). Rozšíření o zemi
 je tak jen konfigurace + CHECK constraint na `currency`
 (`db/changelog/2026-08-17/01-countries.yaml`), ne zásah do žádného klienta; rozšíření o JAZYK je
@@ -32,7 +32,7 @@ samostatně, podle poptávky. 9 z 13 nových zemí je EUR (nulová práce ve `fx
 `app.external.nbs`) jako druhý `ExchangeRateSource` vedle ČNB, viz „Kurzovní lístek a
 zobrazovací měna" níže.
 
-**Etapa 2 (2026-08) přidala `de` jako první skutečně nový JAZYK** — referenční postup pro
+**Vlna expanze 2 (2026-08) přidala `de` jako první skutečně nový JAZYK** — referenční postup pro
 další jazyky. DE/AT/CH v `country-locale` teď míří na `de` (dřív na `en` jako každá nová země
 bez vlastního jazyka). Objem překladu na jeden jazyk: backend `messages/*_de.properties`
 (errors 67 + handles 49 + mail 8 + attribution 4 + countries 16 = 144 klíčů), web
@@ -411,7 +411,7 @@ frontend přes `npm test`, mobil přes `:app:testDebugUnitTest :app:lintDebug :a
   ruční `Map<String, Int>` udržovanou v synchronizaci s `ErrorCode` enumem.
 - **Skutečné lidské revize strojových překladů** sk/en/pl/de — psané s péčí a gramaticky, ale
   bez rodilého mluvčího na kontrolu.
-- **Etapa 3+ plánu expanze** — další jazyky nad `de` podle poptávky, stejným postupem. Pozor na
+- **Vlna expanze 3+** — další jazyky nad `de` podle poptávky, stejným postupem. Pozor na
   slovinštinu (jediná ze 13 nových zemí, jejíž případný budoucí jazyk `sl` má v ICU pluralech
   4 tvary včetně duálu — MessageFormat/`@jsverse/transloco-messageformat` to zvládnou, ale žádný
   dosavadní jazyk appky tenhle tvar nevyžadoval, takže by šlo o první ověření naživo) a na

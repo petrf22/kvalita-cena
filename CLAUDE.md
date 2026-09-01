@@ -18,9 +18,10 @@ Dvě zadání, která jdou proti samozřejmým řešením a určují celou archi
 2. **Komunita má být pozitivní** — proto žádné veřejné negativní hodnocení uživatelů, i když by
    bylo technicky nejjednodušší. Detaily: `docs/reputace.md`.
 
-Plán založení a odůvodnění klíčových rozhodnutí: `docs/` (jednotlivé dokumenty datový model,
-reputace, soukromí, AI, vydání, rozvoj — odkaz na samostatný plánovací soubor mimo repo tu dřív
-byl, ale ten soubor už neexistuje).
+Odůvodnění klíčových rozhodnutí a přehled dokumentace: [`docs/README.md`](docs/README.md) —
+rozcestník s tabulkou účel/charakter/zdroj pravdy pro každý dokument a jedna terminologie fází
+napříč projektem (nahrazuje dřívější odkaz na samostatný plánovací soubor mimo repo, který
+přestal existovat).
 
 ## Monorepo — tři samostatné aplikace
 
@@ -47,28 +48,10 @@ hotfix už vydané verze) je v [`docs/vydani.md`](docs/vydani.md), „Verzován�
 
 ## Stav implementace
 
-Co je hotové a v jakém souboru to žije: [`docs/stav-implementace.md`](docs/stav-implementace.md).
-
-Neimplementováno (etapa 2/3): textové recenze (`core.product_review`, viditelnost
-`PUBLIC`/`GROUPS`/`PRIVATE`, `ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec
-(jen složka `L`), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo jednorázové
-geokódování adresy, `agg.price_weekly_national`, offline fronta v mobilu, konsolidační job nad
-uživatelskou vrstvou (jen datový model a fronta,
-vyhodnocovací pravidlo zatím není známé — `docs/stav-implementace.md`, „Uživatelská vrstva
-nad globálními daty"), inline edit UI pro ZBOŽÍ na obou klientech (mutace jsou hotové, jen je
-zatím nevolá žádná obrazovka — u OBCHODU už hotové je, tamtéž),
-fotka jako důkaz ceny (`core.price_observation`, `f_evid` v `docs/reputace.md` — fotky zatím
-váží jen na katalogový záznam, ne na cenový zápis), další jazyky appky nad `de` (fr/es/it/hu/
-ro/hr/si/bg/sr — plán expanze rozšířil na 16 ZEMÍ, ale jazyků je zatím jen pět, viz
-`docs/lokalizace.md`, „Co zbývá"), lokální AI (`docs/ai.md` — čtení čísel
-z fotek, kontrola textů, předfiltr moderace; zatím jen rozhodnutí v docs, žádný kód — výjimkou
-je předfiltr fotek pro moderaci, který podle `docs/ai.md` patří před spuštění veřejného
-provozu, ne až za etapu 2) — viz `docs/reputace.md` pro poznámku o hodnocení kvality vs.
-dodavatelích. Další rozvojové nápady mimo etapu 1 (nezávazné, k realizaci až přijde řada) jsou
-v `docs/rozvoj.md`: pojmenování slevové karty podle obchodu, ceny předem z akčního letáku,
-načtení celé účtenky, nákup podle receptu nebo seznamu, údaje z etikety (nutriční hodnoty,
-složení, alergeny — aditiva/E-čka jako odkazy z OFF už hotová jsou, viz
-`docs/stav-implementace.md`).
+Co je hotové a v jakém souboru to žije, včetně co (zatím) NE:
+[`docs/stav-implementace.md`](docs/stav-implementace.md) — přehledová matice na začátku,
+sekce „Neimplementováno" na konci. Rozvojové nápady mimo MVP (nezávazné, k realizaci až
+přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `docs/rozvoj.md`.
 
 **Pasti, které z kódu nejsou vidět:**
 - `updateProduct` (mutace + `ProductService.updateProduct` na webu + `GraphQlClient
@@ -112,13 +95,18 @@ změnou v daných oblastech.
 ### Oddělení schémat kvůli ODbL
 
 PostgreSQL schémata: **`core`** (vlastní data), **`auth`**, **`agg`** (agregáty pro grafy),
-**`off`** (Open Food Facts), **`osm`** (souřadnice provozoven z OpenStreetMap), **`fx`**
-(kurzovní lístek ČNB, `docs/lokalizace.md` — na rozdíl od `off`/`osm` sem appka sama píše).
+**`off`** (Open Food Facts), **`osm`** (souřadnice provozoven z OpenStreetMap — schéma zatím
+nemá jedinou tabulku, je to rezervace pro budoucí synchronizaci), **`fx`** (kurzovní lístek ČNB,
+`docs/lokalizace.md` — na rozdíl od `off`/`osm` sem appka sama píše, hotovo).
 
-Open Food Facts **i OpenStreetMap** jsou pod ODbL se share-alike podmínkou. Žádná hodnota z
-`off.*`/`osm.*` se **nikdy nekopíruje** do `core.*` — spojení vzniká až při čtení v service vrstvě
-a UI vždy uvede zdroj. Čistý export vlastních dat je `pg_dump --schema=core --schema=agg`.
-Aplikační DB uživatel má na `off`/`osm` jen `SELECT`, zapisuje jen synchronizační job.
+Open Food Facts **i OpenStreetMap** jsou pod ODbL se share-alike podmínkou. Oddělení schémat je
+**projektová bezpečnostní politika zvolená vědomě přísněji, než ODbL vyžaduje** (ta rozlišuje
+odvozenou a kolektivní databázi; podrobné odůvodnění a odkazy na ODbL 1.0/OSMF guideline jsou
+v `docs/datovy-model.md`, „Oddělení schémat kvůli ODbL") — žádný hromadný ani podstatný výřez
+`off.*`/`osm.*` se nekopíruje do `core.*`; jednotlivě zvolený geokódovaný výsledek (lat/lon +
+`osm_ref`) se do `core.store` uložit smí, s `geo_source` jako značkou původu. UI vždy uvede
+zdroj. Čistý export vlastních dat je `pg_dump --schema=core --schema=agg`. Aplikační DB
+uživatel má na `off`/`osm` jen `SELECT`, zapisuje jen synchronizační job.
 
 ### `core.price_observation` je jádro aplikace
 
@@ -142,7 +130,7 @@ při milionech observací přepisovalo zbytečně celou view. Graf se čte vždy
 nikdy ze syrových observací. Národní cena je **medián mediánů** (nejdřív uvnitř provozovny, pak
 přes provozovny).
 
-### Recenze (etapa 2, zatím neimplementováno): autorizace je predikát v dotazu, ne filtr v resolveru
+### Recenze (další rozvoj, zatím neimplementováno): autorizace je predikát v dotazu, ne filtr v resolveru
 
 Recenze, skupiny důvěry a `ViewerContext` v etapě 1 vůbec neexistují (žádné entity, žádné
 tabulky) — až budou, platí tohle:

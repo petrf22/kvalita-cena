@@ -15,6 +15,7 @@ uživatelů se neukládají — ukládá se jen to, co je nutné pro fungování
 - `frontend/` — Angular 22 + ng-zorro-antd, webové rozhraní
 - `mobile/` — nativní Android (Kotlin + Jetpack Compose), skenování čárových kódů
 - `docs/` — datový model, výpočet reputace, zásady soukromí, rozvojové požadavky
+  ([`docs/README.md`](docs/README.md) je rozcestník)
 - `compose.yaml` — PostgreSQL pro lokální vývoj
 - [`CHANGELOG.md`](CHANGELOG.md) — seznam změn appky, jedna verze společná pro server, web
   i mobil (viz [`docs/vydani.md`](docs/vydani.md), „Verzování a vydání")

@@ -1,15 +1,22 @@
 # Rozvojové požadavky
 
 Tenhle dokument popisuje **cílový stav, ne implementaci** — stejně jako `docs/ai.md` v částech
-za etapu 1. Nic z tohohle ještě není napsané: žádná migrace, žádné API pole, žádný kód. Účel je
-mít jedno místo pro nápady, které nemají zapadnout, než na ně dojde řada — ať se neroztroušou po
-kódu nebo po hlavě jako poznámky bez kontextu. Nahrazuje dřívější odkaz na samostatný plánovací
-soubor mimo repo, který přestal existovat (viz `CLAUDE.md`, „Přehled projektu").
+za MVP (`docs/README.md`, „Terminologie fází" — jedna osa zralosti produktu napříč docs).
+Účel je mít jedno místo pro nápady, které nemají zapadnout, než na ně dojde řada — ať se
+neroztroušou po kódu nebo po hlavě jako poznámky bez kontextu. Nahrazuje dřívější odkaz na
+samostatný plánovací soubor mimo repo, který přestal existovat (viz `CLAUDE.md`, „Přehled
+projektu"). Všechno tady patří do stadia „další rozvoj" (po veřejné betě) — položky se
+netřídí do vlastních podfází, jen podle toho, jak daleko má která rozmyšlený návrh:
 
-Fáze: **fáze 1** je zprovoznění a zveřejnění (probíhá teď), **fáze 2** rozvoj hned po zveřejnění,
-**fáze 3** pozdější rozvoj. Zařazení níž je odhad k datu zápisu, ne závazný harmonogram.
+- **NÁPAD** — zadání je jasné, návrh řešení ještě ne.
+- **ROZHODNOUT** — návrh existuje, ale visí na něm otevřená otázka, kterou je potřeba zodpovědět
+  před psaním kódu.
+- **PLÁNOVÁNO** — návrh je hotový a implementovatelný, jen na něj ještě nedošla řada.
+- **ČÁSTEČNĚ** — část už je v kódu, zbytek je v jednom z stavů výš.
 
-## Název věrnostního programu u typu ceny (fáze 2)
+Zařazení u jednotlivých položek je odhad k datu zápisu, ne závazný harmonogram.
+
+## Název věrnostního programu u typu ceny (PLÁNOVÁNO)
 
 **Zadání:** `PriceKind.CLUB_CARD` má dnes jeden obecný překlad („Klubová cena"). Každý řetězec
 ale svůj věrnostní program pojmenovává jinak — Billa „Billa klub", Lidl „S aplikací", podobně
@@ -47,7 +54,7 @@ uživatelskou editaci řetězce vůbec zavést, nebo název dát jen na `core.st
 
 Agregace se nemění — jde čistě o zobrazovací text, klíč agregátu zůstává `price_kind`.
 
-## Ceny předem z akčního letáku a časově omezená nabídka (fáze 3)
+## Ceny předem z akčního letáku a časově omezená nabídka (ROZHODNOUT)
 
 **Zadání:** umožnit zadat akční ceny z letáku dopředu — leták obvykle platí týden (např. úterý
 až pondělí) a obsahuje ceny, které ještě nezačaly platit. Uživatelé by je viděli předem, s
@@ -86,7 +93,7 @@ Souvislost s lokálními dodavateli (`core.supplier`/`core.supplier_offer`,
 tenhle případ. Až se bude navrhovat jedno nebo druhé, řešit oba nápady společně, ať nevznikají
 dvě podobné datové struktury vedle sebe.
 
-## Načtení celé účtenky (rozvoj po zprovoznění, ne fáze 2 ani 3)
+## Načtení celé účtenky (ROZHODNOUT)
 
 **Zadání:** naskenovat celou účtenku z obchodu a vytěžit z ní názvy zboží, ceny, slevy,
 vnitroobchodní kódy, počty kusů, případně obchod a datum. Dvojí přínos: hromadné zadání/
@@ -148,7 +155,7 @@ Konkrétní mechanismus (oříznutí podle pozice v obraze, ruční vymezení ob
 worker, který citlivé řádky rozpozná a zahodí ještě před uložením) není rozhodnutý — k dořešení
 spolu s oddílem v `docs/soukromi.md` zmíněným výš.
 
-## Rozšíření číselníku kategorií zboží (fáze 2)
+## Rozšíření číselníku kategorií zboží (ČÁSTEČNĚ)
 
 **Stav:** startovní sada 24 kategorií (`2026-08-19/01-category-seed.yaml`) byla nahrazena
 plným stromem pro běžný supermarket — `2026-08-20/01-category-tree.yaml`, ~106 položek, šest
@@ -198,7 +205,7 @@ zrušen), aby „mleko" bez diakritiky našlo „Mléko" stejně spolehlivě jak
   (`ModerationService`, `docs/reputace.md` — „Moderace"), nebo zůstane čistě ruční
   CSV/migrace jako dnes.
 
-## Údaje z etikety: nutriční hodnoty, složení, alergeny (fáze 2 a 3)
+## Údaje z etikety: nutriční hodnoty, složení, alergeny (ČÁSTEČNĚ — aditiva hotová, zbytek ROZHODNOUT)
 
 **Zadání:** appka dnes o zboží ví jen to, co potřebuje k ceně — název, značka, kategorie,
 gramáž/objem, kusů v balení, čárový kód. Nic z etikety (nutriční tabulka, složení, alergeny)
@@ -210,14 +217,15 @@ v datovém modelu není. Cíl je posunout appku od „kolik to stojí" k „co v
 změny klientů, karta „Další informace" odkazy renderuje generickým cyklem. Zbytek níž je cílový
 stav, ne implementace — žádná migrace, žádné API pole, žádný kód.
 
-Rozděleno na dvě fáze, protože každá řeší jiný problém:
+Rozděleno na dva kroky, protože každý řeší jiný problém — nejde o obecnou osu fází výš, jen o
+pořadí uvnitř týhle jedné položky:
 
-- **fáze 2 — čtení z OFF.** Pokrývá drtivou většinu balených potravin, nulové riziko ODbL, žádná
+- **Krok A — čtení z OFF.** Pokrývá drtivou většinu balených potravin, nulové riziko ODbL, žádná
   nová editační obrazovka.
-- **fáze 3 — vlastní vrstva.** Pro zboží, které OFF nezná (lokální pekárna, řeznictví) a pro
+- **Krok B — vlastní vrstva.** Pro zboží, které OFF nezná (lokální pekárna, řeznictví) a pro
   opravy chyb v OFF.
 
-**Kam data patří (fáze 2, vrstva OFF):** rozšíření `off.product` o ploché whitelistované
+**Kam data patří (krok A, vrstva OFF):** rozšíření `off.product` o ploché whitelistované
 sloupce — `energy_kcal_100g`, `fat_100g`, `saturated_fat_100g`, `carbohydrates_100g`,
 `sugars_100g`, `proteins_100g`, `salt_100g`, `fiber_100g` (NUMERIC), `ingredients_text` (TEXT),
 `allergens_tags` (TEXT[]), stejným vzorem jako `additives_tags` výš. OFF `nutriments` je vnořený
@@ -227,7 +235,7 @@ podmnožina, ne syrová kopie odpovědi" (`docs/datovy-model.md`, „Oddělení 
 Čtení skládá `ProductOverlayService` stejným pořadím jako dnes gramáž — komunitní základ → OFF →
 osobní patch, vždy na detached kopii. Žádná hodnota z `off.*` se nekopíruje do `core.*`.
 
-**Kam data patří (fáze 3, vlastní vrstva):** `core.product_nutrition` (PK `product_id`, tytéž
+**Kam data patří (krok B, vlastní vrstva):** `core.product_nutrition` (PK `product_id`, tytéž
 sloupce). Vlastní tabulka, ne sloupce na `core.product` — je jich ~10, vyplněné je bude mít
 zlomek zboží, a `core.product` je horká tabulka čtená při každém hledání. Vlastní `data_origin`
 na `core.product_nutrition`, ne spoléhat na ten na `core.product` — zboží může mít vlastní název
@@ -251,10 +259,10 @@ mechanismus.
 
 **Dopad na klienty:** editace zboží dnes na žádném klientovi neexistuje — `updateProduct` je
 hotová a otestovaná, ale nevolá ji žádná obrazovka (`CLAUDE.md`, „Pasti, které z kódu nejsou
-vidět"). Fáze 3 (ruční zadání) tedy nejdřív potřebuje editační formulář zboží v duálním režimu
+vidět"). Krok B (ruční zadání) tedy nejdřív potřebuje editační formulář zboží v duálním režimu
 založení/úprava — vzor je hotová inline editace obchodu (`frontend/src/app/shared/store-form.ts`
 `store = input<Store | null>(null)` + `effect()`; `mobile/.../ui/store/StoreFormScreen.kt` s
-volitelným `storeId`). Fáze 2 (jen čtení z OFF) klienty nutí míň — nová karta na detailu
+volitelným `storeId`). Krok A (jen čtení z OFF) klienty nutí míň — nová karta na detailu
 (`productDetailFieldsFragment`/`PRODUCT_DETAIL_FIELDS`) a i18n × 5 jazyků, žádná editace.
 
 **Odpovědnost za alergeny — rozhodnout před spuštěním, ne až se to stane.** Alergeny jsou
@@ -275,7 +283,7 @@ nerozhoduje sama — jen předvyplní formulář, potvrzuje člověk).
 Agregace, ceny ani reputace se tímhle nedotknou vůbec — údaje z etikety jsou atribut katalogu, ne
 vstup do váženého mediánu.
 
-## Nákup podle receptu nebo seznamu (fáze 3)
+## Nákup podle receptu nebo seznamu (NÁPAD)
 
 **Zadání:** uživatel vybere recept (způsob zadávání receptů zatím nevymyšlen) nebo vlastní
 seznam a appka z něj sestaví nákupní seznam zboží. Nad seznamem dvě možné optimalizace:
@@ -306,7 +314,7 @@ Nákupní seznam je záměr konkrétního uživatele, ne veřejný fakt o ceně 
 uživatele (výchozí neveřejné), nikdy do veřejné vrstvy nad katalogem; při návrhu ověřit proti
 `docs/soukromi.md`.
 
-## Nápověda k polím při zadání nového zboží (fáze 2)
+## Nápověda k polím při zadání nového zboží (PLÁNOVÁNO)
 
 **Zadání:** popsat, co konkrétně patřit do jednotlivých políček formuláře zadání nového zboží —
 dnešní labely samy o sobě nemusí stačit (např. co přesně je „gramáž/objem" u kusového zboží,
@@ -316,7 +324,7 @@ validation.ts` na webu, `ProductFormViewModel.kt` na mobilu). Rozsah: formulář
 zboží na obou klientech, případně i lokalizační soubory (`docs/lokalizace.md`), pokud nápověda
 půjde přes překladové klíče.
 
-## Kalkulačka a porovnání cen při zadání zboží (fáze 2)
+## Kalkulačka a porovnání cen při zadání zboží (PLÁNOVÁNO)
 
 **Zadání:** při zadávání nebo prohlížení zboží doplnit pomocné přepočty, aby šlo cenu z regálu
 hned posoudit, ne až zpětně v grafu:
@@ -331,13 +339,15 @@ Cena za jednotku hmotnosti/objemu se dnes už počítá jako `GENERATED ALWAYS` 
 `net_content_base` (`docs/datovy-model.md`, „`core.price_observation` — jádro celé aplikace"),
 takže přepočet na kg/l při zadání jedné položky je hlavně o tom, zobrazit existující hodnotu
 živě ve formuláři, ne o nové datové struktuře. Přepočet na **kus** je jiná jednotka než gramáž/
-objem (počet kusů v balení dnes nikde v datovém modelu není) — otevřená otázka, jestli jde o
-nové pole na observaci, nebo čistě klientský přepočet bez uložení. Porovnání dvou zboží
+objem — na rozdíl od dřívějšího stavu už je `pieces_in_pack` v modelu (`Product.piecesInPack`,
+`docs/stav-implementace.md`), otevřená otázka je jen, jestli se z něj má počítat jednotková
+cena za kus (analogicky ke `GENERATED` sloupci výš), nebo je to čistě klientský přepočet.
+Porovnání dvou zboží
 (existující vs. právě skenované) může jít čistě přes existující data (`agg.price_current` pro
 obě položky) bez nové perzistence — „zapamatované" zboží pro porovnání stačí držet v paměti
 klienta, dokud se appka nezavře.
 
-## Drobné zbytky z kontroly lokalizace data a čísel (fáze 2)
+## Drobné zbytky z kontroly lokalizace data a čísel (ROZHODNOUT + PLÁNOVÁNO)
 
 Při opravě lokalizace kalendáře a posunu dne (2026-08) vyšly najevo dvě menší nesrovnalosti,
 které nesouvisely s opravovaným problémem a nebyly opraveny — zapsáno sem, ať nezapadnou.

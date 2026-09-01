@@ -6,10 +6,11 @@
 #   core  — vlastní komunitní data (katalog, obchody, ceny, recenze, ...)
 #   auth  — účty, přihlašovací výzvy, tokeny
 #   agg   — předpočítané agregáty pro grafy (viz docs/reputace.md, §agregace)
-#   off   — data z Open Food Facts (ODbL), nikdy se nekopírují do core.*
-#   osm   — souřadnice provozoven z OpenStreetMap (ODbL)
+#   off   — data z Open Food Facts (ODbL), hromadně/podstatně se nekopírují do core.*
+#   osm   — souřadnice provozoven z OpenStreetMap (ODbL) — schéma zatím nemá jedinou tabulku,
+#           je to rezervace pro budoucí synchronizaci
 #   fx    — kurzovní lístek ČNB (přidáno 2026-08-11, viz 2026-08-11/01-fx-rates.yaml) — na
-#           rozdíl od off/osm sem appka sama PÍŠE (plánovaná úloha), ne read-only sync cizích dat
+#           rozdíl od off/osm sem appka sama PÍŠE, denně (ExchangeRateSyncService, hotovo)
 databaseChangeLog:
   - changeSet:
       id: 2026-07-26-00-create-schemas

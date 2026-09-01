@@ -1,13 +1,26 @@
-# Nasazení do produkce — co zbývá udělat ručně
+# Nasazení do produkce
 
 Checklist věcí, které nejde (nebo nemá smysl) udělat v kódu předem — buď proto, že závisí na
 konkrétním poskytovateli, který ještě není vybraný, nebo proto, že jde o skutečný krok mimo
-repozitář (platba, DNS záznam, e-mailová schránka). Fáze 0 a Dockerfily/`compose.prod.yaml`
-jsou hotové (`docs/vydani.md` řeší mobilní release/podpis, tenhle dokument produkční hosting
-backendu a webu).
+repozitář (platba, DNS záznam, e-mailová schránka). Základní příprava serveru a
+Dockerfily/`compose.prod.yaml` jsou hotové (`docs/vydani.md` řeší mobilní release/podpis,
+tenhle dokument produkční hosting backendu a webu).
 
-Odškrtávej rovnou v tomhle souboru a commituj — až bude všechno hotové, dá se to smazat nebo
-přesunout do `docs/vydani.md` jako historickou poznámku.
+Odškrtávej rovnou v tomhle souboru a commituj. Naprostá většina souboru je dnes hotová a
+ověřená (odškrtnuté položky se schválně nemažou — jsou to i záznamy CO a KDY bylo rozhodnuto/
+ověřeno) — **aktivně nehotové jsou jen čtyři položky ze sekcí níž, shrnuté tady:**
+
+## Zbývá
+
+- [ ] Před veřejnou betou vrátit `SPRING_PROFILES_ACTIVE` na `prod` a povolit indexaci
+  (sekce 4).
+- [ ] Před veřejnou betou vyměnit SMTP Gigaserveru za dedikovaného poskytovatele (sekce 4).
+- [ ] Před veřejnou betou posílit obranu formuláře zpětné vazby proti spamu (sekce 4).
+- [ ] Po spuštění bety sledovat, kolik bezkódového zboží uvízne v DRAFTu (sekce 4) —
+  anonymní zápisy se od teď do prahu potvrzení nepočítají (`docs/reputace.md`).
+
+Zbytek dokumentu jsou dokončené kroky s datem rozhodnutí/ověření — hodí se jako runbook, kdyby
+se stejný postup dělal znovu (nový server, obnova po havárii), ne jako aktuální TODO list.
 
 **Pořadí sekcí 1–4 je tematické, ne sekvenční — tři závislosti mezi nimi jsou tvrdé a nevratné:**
 
@@ -229,7 +242,7 @@ e-mailu vypíše do logu backendu. Neposílá se klientovi, takže to není bezp
 provozní berlička — **vrátit zpátky na `true` (smazat/zakomentovat proměnnou) dřív, než appku
 uvidí kdokoli další**, jinak testeři nedostanou kód a budou ho čekat marně.
 
-## 4. Než pozvat první lidi (uzavřená beta, Fáze 2 plánu) — kód hotový, zbývá jen zapnout
+## 4. Než pozvat první lidi (uzavřená beta) — kód hotový, zbývá jen zapnout
 
 `frontend/public/robots.txt` (zákaz indexace) a `backend/.../application-beta.yml` (prahy
 důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
@@ -300,16 +313,16 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   In-app formulář (`core.feedback`, funguje i bez přihlášení, `docs/datovy-model.md`, „Zpětná
   vazba") na webu i Androidu je hotový, fronta pro provozovatele je čtvrtá záložka na
   `/moderation`. Nic dalšího tu nezbývá zapnout.
-- [ ] **Před Fází 3** (veřejné spuštění): vrátit `SPRING_PROFILES_ACTIVE` zpět na jen `prod`
-  a `frontend/public/robots.txt` buď smazat, nebo povolit indexaci (`Disallow:` prázdné) —
-  jinak appka po zveřejnění zůstane neviditelná pro vyhledávače a prahy důvěry 0/0/1 by
-  fungovaly i pro veřejnost, ne jen pozvané lidi.
-- [ ] **Před Fází 3: vyměnit SMTP Gigaserveru za dedikovaného poskytovatele** (Resend/Postmark/
-  SES/Mailgun, sekce 3) — sdílená IP webhostingu stačí na desítky osobně pozvaných testerů, ne
-  na veřejný provoz s neznámým objemem a bez kontroly nad doručitelností. Tehdy teprve přijde
-  na řadu ověření odesílací domény u nového poskytovatele a sloučení jeho `include:` do
-  stávajícího SPF záznamu (past popsaná v sekci 3 výš).
-- [ ] **Před Fází 3: posílit obranu formuláře zpětné vazby proti spamu.** Dnešní obrana
+- [ ] **Před veřejnou betou** (veřejné spuštění): vrátit `SPRING_PROFILES_ACTIVE` zpět na jen
+  `prod` a `frontend/public/robots.txt` buď smazat, nebo povolit indexaci (`Disallow:`
+  prázdné) — jinak appka po zveřejnění zůstane neviditelná pro vyhledávače a prahy důvěry
+  0/0/1 by fungovaly i pro veřejnost, ne jen pozvané lidi.
+- [ ] **Před veřejnou betou: vyměnit SMTP Gigaserveru za dedikovaného poskytovatele**
+  (Resend/Postmark/SES/Mailgun, sekce 3) — sdílená IP webhostingu stačí na desítky osobně
+  pozvaných testerů, ne na veřejný provoz s neznámým objemem a bez kontroly nad doručitelností.
+  Tehdy teprve přijde na řadu ověření odesílací domény u nového poskytovatele a sloučení jeho
+  `include:` do stávajícího SPF záznamu (past popsaná v sekci 3 výš).
+- [ ] **Před veřejnou betou: posílit obranu formuláře zpětné vazby proti spamu.** Dnešní obrana
   (`FeedbackRateLimiter`, `app.feedback.max-per-day-per-ip: 20`) stačí na uzavřenou betu
   s osobně pozvanými lidmi, ale ne na veřejný formulář dostupný komukoli:
   - 20 odeslání/den na IP je velkorysé pro anonymní útočníka z jedné IP; proti
@@ -319,6 +332,11 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
     žádné automatické skrytí/prioritizaci — při náporu by fronta na `/moderation` rychle
     zavalila jediného moderátora (`docs/soukromi.md`, „kapacita moderace jednoho člověka").
   Řešit až tady, ne dřív — do té doby appku nikdo zvenčí nenajde (`robots.txt` výš).
+- [ ] **Sledovat po spuštění bety, kolik bezkódového zboží uvízne v DRAFTu.** Anonymní zápisy
+  se od teď do prahu potvrzení (`app.catalog.draft-confirmations`, výchozí 3) nepočítají vůbec
+  (`docs/reputace.md`, „Reputační skóre — čítače s exponenciálním útlumem") — DRAFT odemyká
+  jen shoda tří registrovaných lidí. Pokud u studeného startu zůstane bezkódové zboží v DRAFTu
+  (a tedy v otevřeném hledání neviditelné ostatním) příliš dlouho, zvážit snížení prahu na 2.
 
 ### Protokol bety — koho pozvat a co s nálezy
 
@@ -337,8 +355,8 @@ jen s hůř diagnostikovatelnými nálezy. Doporučený postup:
    „jak to jde" druhý — appka první beta test (19. 8. 2026, prázdný číselník kategorií, viz
    výš) našla ručním klikáním, ne čekáním na formulář, který tou dobou ještě neexistoval.
 4. Nálezy, které nejsou jen jednotlivé hlášení k vyřízení, ale mění, co appka ještě
-   potřebuje (jako prázdný číselník kategorií), zapisovat rovnou sem do `docs/nasazeni.md`
-   stejným stylem jako existující položky — ne nechat je zapadnout v chatu/paměti.
+   potřebuje (jako prázdný číselník kategorií), zapisovat rovnou sem, do sekce „Zbývá" nebo
+   jako novou položku stejným stylem jako existující — ne nechat je zapadnout v chatu/paměti.
 
 ### Provozní přehled bez analytiky
 

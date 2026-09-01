@@ -10,31 +10,40 @@ ne úplný výpis sloupců (ten je v changelogu, tam by z něj snadno rozjel nes
 core   vlastní komunitní data (katalog, obchody, ceny, recenze, ...)
 auth   účty, přihlašovací výzvy, tokeny
 agg    předpočítané agregáty pro grafy
-off    data z Open Food Facts — NIKDY se nekopírují do core.*
-osm    souřadnice provozoven z OpenStreetMap — NIKDY se nekopírují do core.*
+off    data z Open Food Facts — hromadně/podstatně se nekopírují do core.*
+osm    souřadnice provozoven z OpenStreetMap — schéma zatím nemá jedinou tabulku, je to
+       rezervace pro budoucí synchronizaci; dnešní jediný dotek s OSM je jednotlivě
+       zvolený geokódovaný výsledek uložený do core.store, viz níž
 fx     kurzovní lístek ČNB (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna") —
-       na rozdíl od off/osm sem appka sama PÍŠE (plánovaná úloha), ne read-only sync cizích dat
+       na rozdíl od off/osm sem appka sama PÍŠE, denně (ExchangeRateSyncService, hotovo)
 ```
 
-Open Food Facts **i OpenStreetMap** jsou pod licencí ODbL se share-alike podmínkou — kdyby
-se jejich data smíchala do vlastních tabulek, share-alike by se vztáhl na celou databázi.
+Open Food Facts **i OpenStreetMap** jsou pod licencí ODbL se share-alike podmínkou. ODbL
+rozlišuje **odvozenou** databázi (share-alike se vztáhne na celek) a **kolektivní** databázi
+(nezávislá data u sebe mohou zůstat pod vlastní licencí, viz ODbL 1.0 a OSMF Collective
+Database Guideline) — smíchání dat proto automaticky nerozšiřuje share-alike na celou appku
+tak jednoznačně, jak by se čekalo. Oddělení schémat níž je proto **projektová bezpečnostní
+politika, zvolená vědomě přísněji, než licence vyžaduje** — konzervativní, ne právně nutná.
 Na OSM se přitom snadno zapomíná, protože souřadnice nevypadají jako "databáze" — jsou to
 jen dvě čísla u obchodu.
 
 Pravidla, která to drží čisté:
 
-1. Žádná hodnota z `off.*`/`osm.*` se **nikdy nekopíruje** do `core.*`. Spojení vzniká až
-   při čtení v service vrstvě; UI vždy uvede zdroj a licenci.
+1. Žádný **hromadný ani podstatný výřez** `off.*`/`osm.*` se nekopíruje do `core.*`. Spojení
+   vzniká až při čtení v service vrstvě; UI vždy uvede zdroj a licenci. Výjimka: jednotlivě
+   zvolený geokódovaný výsledek (lat/lon + `osm_ref` konkrétního kandidáta) se uložit smí,
+   s `geo_source` jako značkou původu — viz `core.store.geo_source` níž.
 2. Pokud uživatel ručně opíše údaj z OFF do `core.product`, nastaví se
    `data_origin = 'OFF_DERIVED'` a tenhle produkt se vyloučí z "čistého" exportu.
 3. Čistý export vlastních dat: `pg_dump --schema=core --schema=agg`. **Pozor:**
    `core.product_quality_rating.user_id` (hodnocení kvality, viz níže) se do „čistého"
    exportu nesmí dostat beze změny — je to jediné místo v `core.*`, kde vazba na uživatele
    nepodléhá pseudonymizaci po 180 dnech (na rozdíl od `price_observation.submitter_id`,
-   viz `soukromi.md`). Export musí sloupec vynechat nebo hashovat, jinak GDPR záruka
+   viz `docs/soukromi.md`). Export musí sloupec vynechat nebo hashovat, jinak GDPR záruka
    „starší příspěvky už o mně nikdo nedohledá" pro `pg_dump` ticho neplatí.
 4. Aplikační DB uživatel má na `off`/`osm` jen `SELECT` mimo dedikovaný synchronizační job —
-   technická pojistka, ne jen dohoda v hlavě.
+   technická pojistka, ne jen dohoda v hlavě. (U `osm` je to dnes bezpředmětné — schéma je
+   prázdné.)
 
 `core.store.geo_source` rozlišuje `COMMUNITY` (zadal uživatel) od `OSM` (převzato) —
 i tak souřadnice zůstávají v `core.store`, protože jsou to fakta o konkrétní provozovně
@@ -208,7 +217,7 @@ user_id)` a backendový upsert (`ON CONFLICT ... DO UPDATE`), ne aplikační log
 Cena za tuhle jednoduchost: vazba `user_id` **se nepseudonymizuje** po 180 dnech jako
 `price_observation.submitter_id` — bez trvalé vazby by nešlo vynutit „jedno hodnocení na
 uživatele". Je to vědomé zhoršení proti běžnému pravidlu projektu, podrobně v
-`soukromi.md` (`ON DELETE CASCADE` při smazání účtu, `user_id` nikdy ven přes API, pozor
+`docs/soukromi.md` (`ON DELETE CASCADE` při smazání účtu, `user_id` nikdy ven přes API, pozor
 na `pg_dump` export výše).
 
 ## Uživatelská vrstva nad globálními daty
@@ -239,7 +248,7 @@ vyhodnocovací pravidlo zatím není známé, proto se zatím nepíše, jen dato
 |---|---|
 | `verified_at` | Job uznal záznam za globální/ověřený. `NULL` ⇒ klient zobrazí štítek "neověřeno" — v etapě 1 tedy úplně všechno kromě seedu, to je očekávaný stav, ne chyba. |
 | `processed_at` | Job se na patch/záznam podíval. Zpracováno ≠ uznáno za globální — odlišné od `verified_at`. Každá další úprava patche `processed_at` vynuluje (`CatalogEditService`), protože dřívější zpracování se týkalo starého obsahu. |
-| `hidden_at` | Skryto po nahlášení (`core.record_flag`, viz `reputace.md`), čeká na přezkum. Vidí ho jen autor. |
+| `hidden_at` | Skryto po nahlášení (`core.record_flag`, viz `docs/reputace.md`), čeká na přezkum. Vidí ho jen autor. |
 
 Index `(processed_at) WHERE processed_at IS NULL` na obou patch tabulkách je fronta, kterou
 bude konsolidační job odebírat — existuje už teď, i když job ještě neběží.
@@ -268,7 +277,7 @@ isTrusted` — jediné pole v `updateStore`, které mutuje spravovanou entitu uv
 `store_user_edit.country` byl zrušen (`docs/lokalizace.md`, „Country selector v UI"), aby
 zůstal jen jeden způsob, jak se country vůbec dá změnit.
 
-**Viditelnost pod prahem důvěry** (práh je popsaný v `reputace.md`) řeší stejný predikát
+**Viditelnost pod prahem důvěry** (práh je popsaný v `docs/reputace.md`) řeší stejný predikát
 všude, kde se vrací produkt/obchod: `status = 'ACTIVE' OR created_by_user_id = viewerId`.
 Hledání (`ProductSearchRepositoryImpl`) skládá kandidáty ve čtyřvětvém CTE `candidate`
 (UNION, ne jeden OR přes čtyři tabulky) — název zboží (`idx_product_name_norm_fts`, nad
@@ -287,7 +296,7 @@ vyžadují přihlášení) vrátí přihlášenému vlastní založené zboží/
 a vlastní patche (`core.product_user_edit`/`core.store_user_edit`) nad cizími záznamy —
 poslední jmenované se ve výpisu vždy označí `PublicationState.PENDING_MERGE`, protože
 konsolidační job (viz výš) zatím neběží. `myProducts`/`myStores` k tomu dopočítají i konkrétní
-`confirmationsReceived`/`confirmationsRequired` (viz `reputace.md`, "Práh důvěry pro
+`confirmationsReceived`/`confirmationsRequired` (viz `docs/reputace.md`, "Práh důvěry pro
 zveřejnění nového záznamu") — bez toho by uživatel viděl jen "čeká na potvrzení" bez čísel.
 
 ## Fotky zboží a provozoven
@@ -331,7 +340,7 @@ chvíli už existuje); appka jen upozorní, fotku jde doplnit později z detailu
 
 **Skrytí po nahlášení má stejnou sémantiku jako `core.product.hidden_at`/`core.store.hidden_at`**
 — vidí ji dál jen autor. Práh je ale jiný a mnohem nižší (`app.moderation.photo-flags-to-hide`,
-výchozí 1) — zdůvodnění patří do `reputace.md`.
+výchozí 1) — zdůvodnění patří do `docs/reputace.md`.
 
 **Obrázky z Open Food Facts (`off.*`) se do `core.media` nikdy nekopírují** — jsou pod CC-BY-SA
 stejně jako zbytek OFF dat, platí pro ně přesně to pravidlo oddělení schémat, které je popsané

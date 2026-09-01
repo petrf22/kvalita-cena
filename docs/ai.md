@@ -1,14 +1,14 @@
 # Lokální AI
 
-Tento dokument popisuje **cílový stav**, ne implementaci — stejně jako `reputace.md` v částech
+Tento dokument popisuje **cílový stav**, ne implementaci — stejně jako `docs/reputace.md` v částech
 za etapu 1. Nic z tohohle ještě není napsané: žádná migrace, žádné schéma, žádný worker. Účel
 dokumentu je mít jedno místo, kam patří rozhodnutí o roli AI v appce, než se první úloha vůbec
 začne psát — ať se neroztroušou po kódu jako vlastní konstanty na víc místech (stejný důvod,
-proč jsou vzorce reputace jen v `reputace.md`).
+proč jsou vzorce reputace jen v `docs/reputace.md`).
 
 ## Proč lokálně
 
-Appka neposílá uživatelský obsah třetím stranám — `soukromi.md` to shrnuje větou „Žádná
+Appka neposílá uživatelský obsah třetím stranám — `docs/soukromi.md` to shrnuje větou „Žádná
 analytika třetích stran, žádné externí fonty ani CDN". Hostované AI API (OpenAI, Anthropic
 apod.) by tenhle slib porušilo tím nejcitlivějším způsobem, jaký appka má: fotkami provozoven
 a zboží a texty uživatelů. Lokální model běžící u provozovatele proto není úspora navíc, kterou
@@ -24,10 +24,10 @@ moderaci, dobré výsledky modelu v testu) přimějí ohnout:
 - **Verdikt je poradní údaj vedle záznamu, ne stav záznamu.** Model nesahá na `hidden_at`,
   nemaže nic, nezakládá `core.price_observation`.
 - **Verdikt není složka reputační váhy.** Nevstupuje do `S` ani do žádného z faktorů
-  `f_conf`/`f_evid`/`f_recency`/`f_group` z `reputace.md` — o vahách rozhoduje chování lidí,
+  `f_conf`/`f_evid`/`f_recency`/`f_group` z `docs/reputace.md` — o vahách rozhoduje chování lidí,
   ne odhad modelu.
 - **U fotek verdikt jen řadí frontu k přezkumu.** Rozhoduje pořád člověk, stejně jako
-  u `core.record_flag` (`reputace.md`, „Nahlášení záznamu — hlasuje se o faktu, ne o člověku").
+  u `core.record_flag` (`docs/reputace.md`, „Nahlášení záznamu — hlasuje se o faktu, ne o člověku").
 - **Když worker neběží, appka funguje beze změny.** Degradace, ne výpadek — a zároveň test
   správnosti návrhu: pokud by vypnutý domácí PC něco rozbil, je AI zapojená špatně.
 
@@ -44,7 +44,7 @@ značka hotova). Rozdíl je jen v tom, kdo úlohy z fronty bere — tam schedule
 tady vzdálený worker přes HTTPS pull.
 
 Verdikty patří do vlastního schématu **`ai`**, mimo `core` — ze stejného důvodu, proč jsou
-oddělené schémata `off`/`osm` (`datovy-model.md`, „Oddělení schémat kvůli ODbL"): čistý export
+oddělené schémata `off`/`osm` (`docs/datovy-model.md`, „Oddělení schémat kvůli ODbL"): čistý export
 vlastních dat (`pg_dump --schema=core --schema=agg`) nemá obsahovat strojové odhady, které se
 můžou přepočítat jindy jinak.
 
@@ -52,10 +52,10 @@ můžou přepočítat jindy jinak.
 
 | Úloha | Kdy | Poznámka |
 |---|---|---|
-| Předfiltr fotek pro moderaci | **před spuštěním veřejného provozu** | `core.media` existuje už dnes. Míří přímo na to, co `soukromi.md` („Otevřená rizika") označuje za reálný limit projektu — kapacitu moderace jednoho člověka. Práh `app.moderation.photo-flags-to-hide = 1` funguje jen tehdy, když závadnou fotku někdo uvidí — model ji jen posune ve frontě k přezkumu výš, neskryje ji sám (viz „AI nikdy nerozhoduje" výš). |
-| OCR ceny z fotky | s dodělaným `f_evid` (zbytek etapy 1 — fotka jako důkaz ceny) | `reputace.md` s tím už počítá (`f_evid = 1,30 účtenka+OCR / 1,15 foto cedulky`), ale schéma dnes neukládá druh důkazu, jen že fotka existuje — viz níže. Rozšíření na vytěžení celé účtenky (víc položek najednou, uložení jako přehled nákupu) je rozvojový nápad zapsaný v `docs/rozvoj.md`. |
-| Kontrola textů recenzí | etapa 2 | Až vznikne `core.product_review`. Dnes nemá co kontrolovat — volný text je jen `Media.caption` (200 zn.) a `RecordFlag.reason` (500 zn.), ani jedno není recenze. |
-| Detekce anomálií u cen | etapa 2/3, jako doplněk | **Statistická pravidla zůstávají primární** — `BIASED`/`IMPOSSIBLE`/`TELEPORT`/`BURST`/`CLUSTER`/`COMMERCIAL` (`reputace.md`, „Detekce zneužití") jsou deterministická a laditelná, což je u reputační váhy přednost, ne nedostatek. LLM tu má smysl jen na případy, které pravidla nezachytí, a jeho výstup je vždy poradní stejně jako u ostatních úloh výš — nikdy nový vstup do `w`. |
+| Předfiltr fotek pro moderaci | **před spuštěním veřejného provozu** | `core.media` existuje už dnes. Míří přímo na to, co `docs/soukromi.md` („Otevřená rizika") označuje za reálný limit projektu — kapacitu moderace jednoho člověka. Práh `app.moderation.photo-flags-to-hide = 1` funguje jen tehdy, když závadnou fotku někdo uvidí — model ji jen posune ve frontě k přezkumu výš, neskryje ji sám (viz „AI nikdy nerozhoduje" výš). |
+| OCR ceny z fotky | s dodělaným `f_evid` (zbytek MVP — fotka jako důkaz ceny) | `docs/reputace.md` s tím už počítá (`f_evid = 1,30 účtenka+OCR / 1,15 foto cedulky`), ale schéma dnes neukládá druh důkazu, jen že fotka existuje — viz níže. Rozšíření na vytěžení celé účtenky (víc položek najednou, uložení jako přehled nákupu) je rozvojový nápad zapsaný v `docs/rozvoj.md`. |
+| Kontrola textů recenzí | další rozvoj | Až vznikne `core.product_review`. Dnes nemá co kontrolovat — volný text je jen `Media.caption` (200 zn.) a `RecordFlag.reason` (500 zn.), ani jedno není recenze. |
+| Detekce anomálií u cen | další rozvoj, jako doplněk | **Statistická pravidla zůstávají primární** — `BIASED`/`IMPOSSIBLE`/`TELEPORT`/`BURST`/`CLUSTER`/`COMMERCIAL` (`docs/reputace.md`, „Detekce zneužití") jsou deterministická a laditelná, což je u reputační váhy přednost, ne nedostatek. LLM tu má smysl jen na případy, které pravidla nezachytí, a jeho výstup je vždy poradní stejně jako u ostatních úloh výš — nikdy nový vstup do `w`. |
 
 ### Vazba na `f_evid`
 
