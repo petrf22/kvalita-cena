@@ -19,12 +19,21 @@
 
 	# Stejný origin jako web (viz komentář v Dockerfile) — /api a /graphql jdou na backend
 	# kontejner podle jména služby z compose.prod.yaml, ne přes veřejnou adresu.
+	#
+	# header_up X-Forwarded-For PŘEPÍŠE hlavičku hodnotou skutečné spojovací IP, ne k ní jen
+	# připojí (výchozí chování Caddy) — bez tohohle by si klient mohl poslat vlastní
+	# "X-Forwarded-For: 1.2.3.4" a obejít tak rate limity počítané podle IP (ClientIpResolver
+	# v backendu je druhá, nezávislá pojistka proti stejné díře).
 	handle /api/* {
-		reverse_proxy backend:8080
+		reverse_proxy backend:8080 {
+			header_up X-Forwarded-For {remote_host}
+		}
 	}
 
 	handle /graphql {
-		reverse_proxy backend:8080
+		reverse_proxy backend:8080 {
+			header_up X-Forwarded-For {remote_host}
+		}
 	}
 
 	# Angular SPA — neznámá cesta padá na index.html, o zbytek routingu se postará klient.
@@ -42,7 +51,9 @@
 {$API_ADDRESS:http://api.localhost} {
 	encode gzip
 
-	reverse_proxy backend:8080
+	reverse_proxy backend:8080 {
+		header_up X-Forwarded-For {remote_host}
+	}
 }
 
 # WWW_ADDRESS = www.kvalitacena.cz, nepovinné — appka na `www.` nikdy nemířila, tenhle blok

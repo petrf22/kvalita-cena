@@ -7,6 +7,7 @@ import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.UnauthorizedException;
 import cz.kvalitacena.security.AccountDeleteConfirmRequest;
 import cz.kvalitacena.security.AccountDeleteRequestResponse;
+import cz.kvalitacena.security.ClientIpResolver;
 import cz.kvalitacena.service.AccountService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -35,6 +36,7 @@ public class AccountController {
 
   private final AccountService accountService;
   private final AppUserRepository appUserRepository;
+  private final ClientIpResolver clientIpResolver;
 
   @GetMapping("/export")
   public AccountExportResponse export(Authentication authentication) {
@@ -46,7 +48,8 @@ public class AccountController {
   public AccountDeleteRequestResponse requestDelete(Authentication authentication, HttpServletRequest servletRequest) {
     AppUser user = requireCurrentUser(authentication);
     ClientKind clientKind = resolveClientKind(servletRequest);
-    AccountService.RequestResult result = accountService.requestDelete(user, clientKind, resolveIp(servletRequest));
+    AccountService.RequestResult result =
+        accountService.requestDelete(user, clientKind, clientIpResolver.resolve(servletRequest));
     return new AccountDeleteRequestResponse(result.challengeUid(), result.expiresInSec(), result.resendAfterSec());
   }
 
@@ -70,13 +73,5 @@ public class AccountController {
     String header = request.getHeader("X-Client-Kind");
     if ("ANDROID".equalsIgnoreCase(header)) return ClientKind.ANDROID;
     return ClientKind.WEB;
-  }
-
-  private String resolveIp(HttpServletRequest request) {
-    String forwardedFor = request.getHeader("X-Forwarded-For");
-    if (forwardedFor != null && !forwardedFor.isBlank()) {
-      return forwardedFor.split(",")[0].trim();
-    }
-    return request.getRemoteAddr();
   }
 }

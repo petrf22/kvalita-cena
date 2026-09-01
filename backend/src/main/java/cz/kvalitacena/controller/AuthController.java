@@ -34,6 +34,7 @@ public class AuthController {
   private final RefreshTokenService refreshTokenService;
   private final RefreshTokenProperties refreshTokenProperties;
   private final JwtService jwtService;
+  private final ClientIpResolver clientIpResolver;
 
   // V produkci nastavit na true (přes proměnnou prostředí) — lokální dev běží přes HTTP.
   @Value("${app.security.cookie-secure:false}")
@@ -44,7 +45,7 @@ public class AuthController {
       HttpServletRequest servletRequest) {
     ClientKind clientKind = resolveClientKind(servletRequest);
     OtpService.OtpRequestResult result = otpService.requestOtp(
-        request.email(), clientKind, resolveIp(servletRequest));
+        request.email(), clientKind, clientIpResolver.resolve(servletRequest));
     return new OtpRequestResponse(result.challengeUid(), result.expiresInSec(), result.resendAfterSec());
   }
 
@@ -133,14 +134,6 @@ public class AuthController {
     String header = request.getHeader("X-Client-Kind");
     if ("ANDROID".equalsIgnoreCase(header)) return ClientKind.ANDROID;
     return ClientKind.WEB;
-  }
-
-  private String resolveIp(HttpServletRequest request) {
-    String forwardedFor = request.getHeader("X-Forwarded-For");
-    if (forwardedFor != null && !forwardedFor.isBlank()) {
-      return forwardedFor.split(",")[0].trim();
-    }
-    return request.getRemoteAddr();
   }
 
   private String resolveDevice(HttpServletRequest request) {

@@ -5,6 +5,7 @@ import cz.kvalitacena.db.entity.ClientKind;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.UnauthorizedException;
+import cz.kvalitacena.security.ClientIpResolver;
 import cz.kvalitacena.security.EmailChangeConfirmRequest;
 import cz.kvalitacena.security.EmailChangeRequestRequest;
 import cz.kvalitacena.security.EmailChangeRequestResponse;
@@ -35,14 +36,15 @@ public class EmailChangeController {
 
   private final EmailChangeService emailChangeService;
   private final AppUserRepository appUserRepository;
+  private final ClientIpResolver clientIpResolver;
 
   @PostMapping("/change/request")
   public EmailChangeRequestResponse requestChange(@Valid @RequestBody EmailChangeRequestRequest request,
       Authentication authentication, HttpServletRequest servletRequest) {
     AppUser user = requireCurrentUser(authentication);
     ClientKind clientKind = resolveClientKind(servletRequest);
-    EmailChangeService.RequestResult result =
-        emailChangeService.requestChange(user, request.email(), clientKind, resolveIp(servletRequest));
+    EmailChangeService.RequestResult result = emailChangeService.requestChange(user, request.email(), clientKind,
+        clientIpResolver.resolve(servletRequest));
     return new EmailChangeRequestResponse(result.challengeUid(), result.expiresInSec(), result.resendAfterSec());
   }
 
@@ -66,13 +68,5 @@ public class EmailChangeController {
     String header = request.getHeader("X-Client-Kind");
     if ("ANDROID".equalsIgnoreCase(header)) return ClientKind.ANDROID;
     return ClientKind.WEB;
-  }
-
-  private String resolveIp(HttpServletRequest request) {
-    String forwardedFor = request.getHeader("X-Forwarded-For");
-    if (forwardedFor != null && !forwardedFor.isBlank()) {
-      return forwardedFor.split(",")[0].trim();
-    }
-    return request.getRemoteAddr();
   }
 }
