@@ -77,6 +77,7 @@ export const RECORD_TYPE_KEYS: Record<RecordType, string> = {
   [RecordType.Product]: 'enum.recordType.PRODUCT',
   [RecordType.Store]: 'enum.recordType.STORE',
   [RecordType.Photo]: 'enum.recordType.PHOTO',
+  [RecordType.Review]: 'enum.recordType.REVIEW',
 };
 
 /** Kategorie zpětné vazby (core.feedback) — nabídka ve formuláři i popisek ve frontě moderace. */
@@ -135,6 +136,10 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.PhotoResolutionTooHigh]: 'errors.PHOTO_RESOLUTION_TOO_HIGH',
   [ErrorCode.QualityRequiresLogin]: 'errors.QUALITY_REQUIRES_LOGIN',
   [ErrorCode.QualityStarsOutOfRange]: 'errors.QUALITY_STARS_OUT_OF_RANGE',
+  [ErrorCode.ReviewRequiresLogin]: 'errors.REVIEW_REQUIRES_LOGIN',
+  [ErrorCode.ReviewRequiresRating]: 'errors.REVIEW_REQUIRES_RATING',
+  [ErrorCode.ReviewTextEmpty]: 'errors.REVIEW_TEXT_EMPTY',
+  [ErrorCode.ReviewTextTooLong]: 'errors.REVIEW_TEXT_TOO_LONG',
   [ErrorCode.FlagRequiresLogin]: 'errors.FLAG_REQUIRES_LOGIN',
   [ErrorCode.FlagRecordNotFound]: 'errors.FLAG_RECORD_NOT_FOUND',
   [ErrorCode.ModerationRequiresRole]: 'errors.MODERATION_REQUIRES_ROLE',

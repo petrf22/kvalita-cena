@@ -178,6 +178,8 @@ export const productDetailFieldsFragment = graphql(`
       count
     }
     myQualityRating
+    reviewCount
+    myReviewText
     externalLinks {
       kind
       label
@@ -248,6 +250,20 @@ export const publicationStatusFieldsFragment = graphql(`
     confirmationsReceived
     confirmationsRequired
     verified
+  }
+`);
+
+/** Jedna recenze pod zbožím (docs/soukromi.md, "Podepsaná recenze") — text je tu vždy vyplněný. */
+export const productReviewFieldsFragment = graphql(`
+  fragment ProductReviewFields on ProductReview {
+    id
+    stars
+    text
+    authorPublicUid
+    authorName
+    createdAt
+    updatedAt
+    mine
   }
 `);
 

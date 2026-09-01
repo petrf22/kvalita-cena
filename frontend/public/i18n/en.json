@@ -74,6 +74,10 @@
     "PHOTO_RESOLUTION_TOO_HIGH": "The photo's resolution is too high",
     "QUALITY_REQUIRES_LOGIN": "Rating quality requires signing in",
     "QUALITY_STARS_OUT_OF_RANGE": "The rating must be between {{p0}} and {{p1}} stars",
+    "REVIEW_REQUIRES_LOGIN": "Writing a review requires signing in",
+    "REVIEW_REQUIRES_RATING": "You need to rate with stars before adding review text",
+    "REVIEW_TEXT_EMPTY": "Review text must not be empty",
+    "REVIEW_TEXT_TOO_LONG": "Review text can be at most {{p0}} characters long",
     "FLAG_REQUIRES_LOGIN": "Reporting requires signing in",
     "FLAG_RECORD_NOT_FOUND": "The reported record does not exist",
     "INVALID_CHALLENGE": "The code is invalid or has expired",
@@ -168,7 +172,8 @@
     "recordType": {
       "PRODUCT": "Product",
       "STORE": "Store",
-      "PHOTO": "Photo"
+      "PHOTO": "Photo",
+      "REVIEW": "Review"
     },
     "feedbackCategory": {
       "BUG": "Bug",

@@ -276,6 +276,21 @@ export class ProductService {
       .pipe(map((data) => data.flagRecord));
   }
 
+  /** Nahlášení TEXTU recenze jako podezřelého/urážlivého — hlasuje se o textu, ne o autorovi (docs/reputace.md). */
+  flagReview(reviewId: string, reason?: string) {
+    const document = graphql(`
+      mutation FlagReview($recordId: ID!, $reason: String) {
+        flagRecord(recordType: REVIEW, recordId: $recordId, reason: $reason) {
+          flagCount
+          hidden
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { recordId: reviewId, reason: reason ?? null })
+      .pipe(map((data) => data.flagRecord));
+  }
+
   /** Denní řada z agg.price_daily pro graf vývoje ceny — NIKDY ze syrových observací. */
   priceHistory(productId: string, priceKind: PriceKind = 'REGULAR', days = 90) {
     const document = graphql(`
@@ -319,6 +334,60 @@ export class ProductService {
     return this.graphQl
       .execute(document, { productId, stars })
       .pipe(map((data) => data.rateProduct));
+  }
+
+  /**
+   * Recenze pod zbožím — anonym dostane `loginRequired: true` a prázdné `items`, ale skutečný
+   * `totalCount` (docs/reputace.md, T1: texty recenzí vidí jen přihlášený).
+   */
+  productReviews(productId: string, first = 20, offset = 0) {
+    const document = graphql(`
+      query ProductReviews($productId: ID!, $first: Int, $offset: Int) {
+        productReviews(productId: $productId, first: $first, offset: $offset) {
+          totalCount
+          hasMore
+          loginRequired
+          items {
+            ...ProductReviewFields
+          }
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { productId, first, offset })
+      .pipe(map((data) => data.productReviews));
+  }
+
+  /** Text vyžaduje existující hvězdičkové hodnocení (REVIEW_REQUIRES_RATING) — zapsat je nejdřív rateProduct. */
+  saveProductReviewText(productId: string, text: string) {
+    const document = graphql(`
+      mutation SaveProductReviewText($productId: ID!, $text: String!) {
+        saveProductReviewText(productId: $productId, text: $text) {
+          stars
+          text
+          updatedAt
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { productId, text })
+      .pipe(map((data) => data.saveProductReviewText));
+  }
+
+  /** Smazání textu — hvězdičky zůstávají beze změny. */
+  deleteProductReviewText(productId: string) {
+    const document = graphql(`
+      mutation DeleteProductReviewText($productId: ID!) {
+        deleteProductReviewText(productId: $productId) {
+          stars
+          text
+          updatedAt
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { productId })
+      .pipe(map((data) => data.deleteProductReviewText));
   }
 
   /** Víc cen z jedné cenovky (běžná + klubová + …) jedním voláním — kolize jediného druhu shodí celou dávku. */

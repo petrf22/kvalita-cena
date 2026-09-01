@@ -68,8 +68,78 @@ app-photo-gallery {
 .prices-card,
 .my-prices-card,
 .links-card,
-.submit-card {
+.submit-card,
+.reviews-card {
   margin-bottom: 24px;
+}
+
+.no-reviews {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.reviews-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.review-item {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.review-item:last-child {
+  border-bottom: none;
+}
+
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.review-header nz-rate {
+  font-size: 14px;
+}
+
+.review-author {
+  font-weight: 500;
+}
+
+.review-date,
+.review-edited {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+}
+
+.review-text {
+  margin: 0 0 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.review-char-count {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  text-align: right;
+  margin: 4px 0 0;
+}
+
+.review-char-count-over {
+  color: #f5222d;
+}
+
+.review-error {
+  margin-top: 12px;
+}
+
+.review-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
 }
 
 .chart-fx-note {

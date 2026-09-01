@@ -74,6 +74,10 @@
     "PHOTO_RESOLUTION_TOO_HIGH": "Fotka má příliš velké rozlišení",
     "QUALITY_REQUIRES_LOGIN": "Hodnocení kvality vyžaduje přihlášení",
     "QUALITY_STARS_OUT_OF_RANGE": "Hodnocení musí být {{p0}} až {{p1}} hvězdiček",
+    "REVIEW_REQUIRES_LOGIN": "Recenze vyžaduje přihlášení",
+    "REVIEW_REQUIRES_RATING": "Text recenze lze zapsat až po ohodnocení hvězdičkami",
+    "REVIEW_TEXT_EMPTY": "Text recenze nesmí být prázdný",
+    "REVIEW_TEXT_TOO_LONG": "Text recenze smí mít nejvýše {{p0}} znaků",
     "FLAG_REQUIRES_LOGIN": "Nahlášení vyžaduje přihlášení",
     "FLAG_RECORD_NOT_FOUND": "Nahlašovaný záznam neexistuje",
     "INVALID_CHALLENGE": "Kód je neplatný nebo vypršel",
@@ -168,7 +172,8 @@
     "recordType": {
       "PRODUCT": "Zboží",
       "STORE": "Obchod",
-      "PHOTO": "Fotka"
+      "PHOTO": "Fotka",
+      "REVIEW": "Recenze"
     },
     "feedbackCategory": {
       "BUG": "Chyba",

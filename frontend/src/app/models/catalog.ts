@@ -27,6 +27,8 @@ import type {
   PriceHistoryQuery,
   ProductDetailFieldsFragment,
   ProductLookupByCodeQuery,
+  ProductReviewFieldsFragment,
+  ProductReviewsQuery,
   ProductSummaryFieldsFragment,
   PublicationStatusFieldsFragment,
   ReverseGeocodeQuery,
@@ -94,10 +96,14 @@ export type ProductSummary = ProductSummaryFieldsFragment;
 
 export type ProductStats = ProductDetailFieldsFragment['stats'];
 
-/** Průměrná známka 1,00–5,00 (1 nejlepší, jako ve škole). average je null, dokud nikdo nehodnotil. */
+/** Průměr hvězdiček 1,00–5,00 (5 nejlepší). average je null, dokud nikdo nehodnotil. */
 export type ProductQuality = ProductDetailFieldsFragment['quality'];
 
 export type ExternalLink = ProductDetailFieldsFragment['externalLinks'][number];
+
+/** Jedna recenze pod zbožím — autor je tu vždy vidět (docs/soukromi.md, "Podepsaná recenze"). */
+export type ProductReview = ProductReviewFieldsFragment;
+export type ProductReviewResult = ProductReviewsQuery['productReviews'];
 
 /**
  * Kandidát ze skenu/zadání EANu, který v katalogu ještě není, ale zná ho Open Food Facts

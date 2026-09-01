@@ -118,6 +118,10 @@ export const ErrorCode = {
   ProfileRequiresLogin: 'PROFILE_REQUIRES_LOGIN',
   QualityRequiresLogin: 'QUALITY_REQUIRES_LOGIN',
   QualityStarsOutOfRange: 'QUALITY_STARS_OUT_OF_RANGE',
+  ReviewRequiresLogin: 'REVIEW_REQUIRES_LOGIN',
+  ReviewRequiresRating: 'REVIEW_REQUIRES_RATING',
+  ReviewTextEmpty: 'REVIEW_TEXT_EMPTY',
+  ReviewTextTooLong: 'REVIEW_TEXT_TOO_LONG',
   SessionExpired: 'SESSION_EXPIRED',
   StoreCityEmpty: 'STORE_CITY_EMPTY',
   StoreCityRequired: 'STORE_CITY_REQUIRED',
@@ -288,6 +292,8 @@ export const RecordType = {
   /** Nahlašovaný typ pro flagRecord — core.media samo nese jen PRODUCT/STORE (čí je fotka). */
   Photo: 'PHOTO',
   Product: 'PRODUCT',
+  /** Nahlašovaný typ pro TEXT recenze (core.product_review.text), ne pro hodnocení samotné ani autora. */
+  Review: 'REVIEW',
   Store: 'STORE'
 } as const;
 

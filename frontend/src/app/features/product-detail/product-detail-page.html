@@ -89,6 +89,16 @@
           [nzTooltips]="qualityRateTooltips()"
           (ngModelChange)="rate($event)"
         />
+        @if (product()!.myQualityRating != null) {
+          <button nz-button nzType="text" nzSize="small" (click)="openReviewModal()">
+            <span nz-icon nzType="edit"></span>
+            {{
+              product()!.myReviewText
+                ? t('product-detail.editReview')
+                : t('product-detail.writeReview')
+            }}
+          </button>
+        }
       </div>
     </div>
     @if (!auth.isLoggedIn()) {
@@ -97,6 +107,59 @@
     @if (ratingError()) {
       <nz-alert nzType="warning" [nzMessage]="ratingError()" nzShowIcon class="rating-alert" />
     }
+
+    <nz-card
+      [nzTitle]="t('product-detail.reviewsTitle', { count: reviewsTotalCount() })"
+      class="reviews-card"
+    >
+      @if (reviewFlagMessage()) {
+        <nz-alert nzType="info" [nzMessage]="reviewFlagMessage()" nzShowIcon class="flag-alert" />
+      }
+      @if (reviewsLoading()) {
+        <p>{{ t('product-detail.reviewsLoading') }}</p>
+      } @else if (reviewsLoginRequired()) {
+        <p class="login-hint">{{ t('product-detail.reviewsLoginRequired') }}</p>
+      } @else if (reviews().length === 0) {
+        <p class="no-reviews">{{ t('product-detail.noReviews') }}</p>
+      } @else {
+        <ul class="reviews-list">
+          @for (review of reviews(); track review.id) {
+            <li class="review-item">
+              <div class="review-header">
+                <nz-rate [ngModel]="review.stars" nzDisabled name="reviewStars{{ review.id }}" />
+                <span class="review-author">{{ review.authorName }}</span>
+                <span class="review-date">{{ review.createdAt | relativeDate }}</span>
+                @if (review.updatedAt) {
+                  <span class="review-edited">{{ t('product-detail.reviewEdited') }}</span>
+                }
+              </div>
+              <p class="review-text">{{ review.text }}</p>
+              @if (!review.mine && auth.isLoggedIn()) {
+                <button
+                  nz-button
+                  nzType="text"
+                  nzSize="small"
+                  [nzLoading]="reviewFlaggingId() === review.id"
+                  (click)="flagReview(review)"
+                >
+                  <span nz-icon nzType="flag"></span>
+                  {{ t('product-detail.report') }}
+                </button>
+              }
+            </li>
+          }
+        </ul>
+        @if (reviewsTotalCount() > reviewsPageSize) {
+          <nz-pagination
+            [nzPageIndex]="reviewsPageIndex()"
+            [nzPageSize]="reviewsPageSize"
+            [nzTotal]="reviewsTotalCount()"
+            [nzSimple]="true"
+            (nzPageIndexChange)="onReviewsPageChange($event)"
+          />
+        }
+      }
+    </nz-card>
 
     <nz-card [nzTitle]="t('product-detail.priceChartTitle')" class="chart-card">
       <div class="chart-controls">
@@ -279,6 +342,56 @@
           (created)="onProductSaved($event)"
           (cancelled)="editing.set(false)"
         />
+      </ng-container>
+    </nz-modal>
+
+    <nz-modal
+      [nzVisible]="reviewModalOpen()"
+      [nzTitle]="t('product-detail.reviewModalTitle')"
+      [nzFooter]="null"
+      (nzOnCancel)="closeReviewModal()"
+    >
+      <ng-container *nzModalContent>
+        <textarea
+          nz-input
+          name="reviewText"
+          rows="6"
+          [maxlength]="maxReviewTextLength + 200"
+          [placeholder]="t('product-detail.reviewTextPlaceholder')"
+          [ngModel]="reviewText()"
+          (ngModelChange)="reviewText.set($event)"
+        ></textarea>
+        <p class="review-char-count" [class.review-char-count-over]="reviewRemainingChars() < 0">
+          {{ t('product-detail.reviewCharsRemaining', { count: reviewRemainingChars() }) }}
+        </p>
+        @if (reviewError()) {
+          <nz-alert nzType="error" [nzMessage]="reviewError()" nzShowIcon class="review-error" />
+        }
+        <div class="review-modal-actions">
+          @if (product()?.myReviewText) {
+            <button
+              nz-button
+              nzType="default"
+              nzDanger
+              [nzLoading]="reviewSaving()"
+              (click)="deleteReviewText()"
+            >
+              {{ t('product-detail.reviewDelete') }}
+            </button>
+          }
+          <button nz-button nzType="default" (click)="closeReviewModal()">
+            {{ 'common.cancel' | transloco }}
+          </button>
+          <button
+            nz-button
+            nzType="primary"
+            [nzLoading]="reviewSaving()"
+            [disabled]="!reviewText().trim()"
+            (click)="saveReviewText()"
+          >
+            {{ t('product-detail.reviewSave') }}
+          </button>
+        </div>
       </ng-container>
     </nz-modal>
   }

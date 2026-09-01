@@ -12,26 +12,35 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzModalModule } from 'ng-zorro-antd/modal';
+import { NzPaginationModule } from 'ng-zorro-antd/pagination';
 import { NzRateModule } from 'ng-zorro-antd/rate';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { PriceKind, PricePoint, Product } from '../../models/catalog';
+import { PriceKind, PricePoint, Product, ProductReview } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
 import { FormatService } from '../../services/format-service';
 import { NavigationHistoryService } from '../../services/navigation-history-service';
 import { ProductService } from '../../services/product-service';
+import { translateError } from '../../shared/error-message';
 import { NET_CONTENT_UOM_KEYS, PRICE_KIND_KEYS } from '../../shared/enum-labels';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { PhotoGallery } from '../../shared/photo-gallery';
 import { PriceEntryForm } from '../../shared/price-entry-form';
 import { QualityBadge } from '../../shared/quality-badge';
 import { RelativeDatePipe } from '../../shared/relative-date.pipe';
+import {
+  MAX_REVIEW_TEXT_LENGTH,
+  remainingReviewCharacters,
+  reviewTextValidationError,
+} from '../../shared/review-validation';
 import { ProductForm } from '../product-form/product-form';
 import { PriceChart } from './price-chart';
 
 const CHART_RANGES = [7, 30, 90, 365];
+const REVIEWS_PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-product-detail-page',
@@ -47,6 +56,8 @@ const CHART_RANGES = [7, 30, 90, 365];
     NzRateModule,
     NzAlertModule,
     NzModalModule,
+    NzInputModule,
+    NzPaginationModule,
     QualityBadge,
     PriceEntryForm,
     PriceChart,
@@ -111,6 +122,27 @@ export class ProductDetailPage {
   protected readonly flagging = signal(false);
   protected readonly flagMessage = signal<string | null>(null);
 
+  // --- recenze (text k hodnocení) ---
+  protected readonly reviews = signal<ProductReview[]>([]);
+  protected readonly reviewsTotalCount = signal(0);
+  protected readonly reviewsLoginRequired = signal(false);
+  protected readonly reviewsLoading = signal(false);
+  protected readonly reviewsPageIndex = signal(1); // nz-pagination je 1-based
+  protected readonly reviewsPageSize = REVIEWS_PAGE_SIZE;
+
+  protected readonly reviewModalOpen = signal(false);
+  protected readonly reviewText = signal('');
+  protected readonly reviewSaving = signal(false);
+  protected readonly reviewError = signal<string | null>(null);
+  protected readonly reviewRemainingChars = computed(() =>
+    remainingReviewCharacters(this.reviewText()),
+  );
+
+  protected readonly reviewFlaggingId = signal<string | null>(null);
+  protected readonly reviewFlagMessage = signal<string | null>(null);
+
+  protected readonly maxReviewTextLength = MAX_REVIEW_TEXT_LENGTH;
+
   constructor() {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) this.loadProduct(id);
@@ -128,7 +160,10 @@ export class ProductDetailPage {
       next: (product) => {
         this.product.set(product);
         this.loading.set(false);
-        if (product) this.loadHistory();
+        if (product) {
+          this.loadHistory();
+          this.loadReviews();
+        }
       },
       error: () => this.loading.set(false),
     });
@@ -214,6 +249,110 @@ export class ProductDetailPage {
       error: () => {
         this.flagging.set(false);
         this.flagMessage.set(this.transloco.translate('product-detail.flagFailed'));
+      },
+    });
+  }
+
+  // --- recenze (text k hodnocení) ---
+
+  protected loadReviews(): void {
+    const product = this.product();
+    if (!product) return;
+
+    this.reviewsLoading.set(true);
+    const offset = (this.reviewsPageIndex() - 1) * this.reviewsPageSize;
+    this.productService.productReviews(product.id, this.reviewsPageSize, offset).subscribe({
+      next: (result) => {
+        this.reviews.set(result.items);
+        this.reviewsTotalCount.set(result.totalCount);
+        this.reviewsLoginRequired.set(result.loginRequired);
+        this.reviewsLoading.set(false);
+      },
+      error: () => this.reviewsLoading.set(false),
+    });
+  }
+
+  protected onReviewsPageChange(pageIndex: number): void {
+    this.reviewsPageIndex.set(pageIndex);
+    this.loadReviews();
+  }
+
+  /** Předvyplní vlastní text, je-li nějaký — tlačítko je viditelné jen po vybrání hvězdiček. */
+  protected openReviewModal(): void {
+    this.reviewText.set(this.product()?.myReviewText ?? '');
+    this.reviewError.set(null);
+    this.reviewModalOpen.set(true);
+  }
+
+  protected closeReviewModal(): void {
+    this.reviewModalOpen.set(false);
+  }
+
+  protected saveReviewText(): void {
+    const product = this.product();
+    if (!product) return;
+
+    const text = this.reviewText();
+    const validationError = reviewTextValidationError(text);
+    if (validationError) {
+      this.reviewError.set(this.transloco.translate(`errors.${validationError}`));
+      return;
+    }
+
+    this.reviewSaving.set(true);
+    this.reviewError.set(null);
+    this.productService.saveProductReviewText(product.id, text.trim()).subscribe({
+      next: (result) => {
+        this.reviewSaving.set(false);
+        this.product.set({ ...product, myReviewText: result.text ?? null });
+        this.reviewModalOpen.set(false);
+        this.reviewsPageIndex.set(1);
+        this.loadReviews();
+      },
+      error: (err: unknown) => {
+        this.reviewSaving.set(false);
+        this.reviewError.set(translateError(err, this.transloco));
+      },
+    });
+  }
+
+  protected deleteReviewText(): void {
+    const product = this.product();
+    if (!product) return;
+
+    this.reviewSaving.set(true);
+    this.reviewError.set(null);
+    this.productService.deleteProductReviewText(product.id).subscribe({
+      next: () => {
+        this.reviewSaving.set(false);
+        this.product.set({ ...product, myReviewText: null });
+        this.reviewModalOpen.set(false);
+        this.reviewsPageIndex.set(1);
+        this.loadReviews();
+      },
+      error: (err: unknown) => {
+        this.reviewSaving.set(false);
+        this.reviewError.set(translateError(err, this.transloco));
+      },
+    });
+  }
+
+  protected flagReview(review: ProductReview): void {
+    this.reviewFlaggingId.set(review.id);
+    this.reviewFlagMessage.set(null);
+    this.productService.flagReview(review.id).subscribe({
+      next: (result) => {
+        this.reviewFlaggingId.set(null);
+        this.reviewFlagMessage.set(
+          this.transloco.translate(
+            result.hidden ? 'product-detail.flagSuccessHidden' : 'product-detail.flagSuccess',
+          ),
+        );
+        if (result.hidden) this.loadReviews();
+      },
+      error: (err: unknown) => {
+        this.reviewFlaggingId.set(null);
+        this.reviewFlagMessage.set(translateError(err, this.transloco));
       },
     });
   }

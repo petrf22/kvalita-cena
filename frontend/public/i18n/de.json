@@ -74,6 +74,10 @@
     "PHOTO_RESOLUTION_TOO_HIGH": "Das Foto hat eine zu hohe Auflösung",
     "QUALITY_REQUIRES_LOGIN": "Die Qualitätsbewertung erfordert eine Anmeldung",
     "QUALITY_STARS_OUT_OF_RANGE": "Die Bewertung muss zwischen {{p0}} und {{p1}} Sternen liegen",
+    "REVIEW_REQUIRES_LOGIN": "Eine Rezension erfordert eine Anmeldung",
+    "REVIEW_REQUIRES_RATING": "Der Rezensionstext kann erst nach einer Sternebewertung hinzugefügt werden",
+    "REVIEW_TEXT_EMPTY": "Der Rezensionstext darf nicht leer sein",
+    "REVIEW_TEXT_TOO_LONG": "Der Rezensionstext darf höchstens {{p0}} Zeichen lang sein",
     "FLAG_REQUIRES_LOGIN": "Das Melden erfordert eine Anmeldung",
     "FLAG_RECORD_NOT_FOUND": "Der gemeldete Eintrag existiert nicht",
     "INVALID_CHALLENGE": "Der Code ist ungültig oder abgelaufen",
@@ -168,7 +172,8 @@
     "recordType": {
       "PRODUCT": "Ware",
       "STORE": "Geschäft",
-      "PHOTO": "Foto"
+      "PHOTO": "Foto",
+      "REVIEW": "Rezension"
     },
     "feedbackCategory": {
       "BUG": "Fehler",
