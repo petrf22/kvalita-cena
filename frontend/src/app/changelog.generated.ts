@@ -82,7 +82,7 @@ export const CHANGELOG: ChangelogRelease[] = [
   ] },
   { version: "0.1.0", date: "2026-08-24", sections: [
       { title: "Přidáno", items: [
-        { text: "První veřejné vydání — hledání zboží a obchodů, zápis a přehled cen, vývoj v čase a srovnání napříč obchody, OTP přihlášení, samoobslužné smazání účtu", parts: ["server", "web", "mobil"] },
+        { text: "První testovací nasazení (interní testování, ne veřejné spuštění) — hledání zboží a obchodů, zápis a přehled cen, vývoj v čase a srovnání napříč obchody, OTP přihlášení, samoobslužné smazání účtu", parts: ["server", "web", "mobil"] },
       ] },
   ] },
 ];

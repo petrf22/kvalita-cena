@@ -7,6 +7,17 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [Nezveřejněno]
+
+### Změněno
+- Anonymní zápisy se do prahu potvrzení bezkódového zboží/nového obchodu už nepočítají vůbec, dřív se všechny anonymní zápisy jednoho dne počítaly jako jedno potvrzení (server)
+- Poloha uživatele se před odesláním na OpenStreetMap Nominatim (reverzní geokódování) a do vyhledání obchodů v okolí zaokrouhlí na méně přesných desetinných míst, ať appka třetí straně neposílá falešně přesnou polohu (server)
+- Poskytovatel mapových dlaždic je konfigurovatelný, ne natvrdo v kódu (web, mobil)
+
+### Přidáno
+- Atribuce poskytovatele mapových dlaždic přímo v mapě (dřív jen ve „O aplikaci") (mobil)
+- Publikační sestavení mobilní appky teď bez podpisového klíče rovnou selže a po sestavení ověří podpis, místo aby tiše vyrobilo nepodepsaný soubor (mobil)
+
 ## [0.5.2] – 2026-08-31
 
 ### Opraveno
@@ -69,4 +80,4 @@ za jednoduchost skriptu.
 ## [0.1.0] – 2026-08-24
 
 ### Přidáno
-- První veřejné vydání — hledání zboží a obchodů, zápis a přehled cen, vývoj v čase a srovnání napříč obchody, OTP přihlášení, samoobslužné smazání účtu (server, web, mobil)
+- První testovací nasazení (interní testování, ne veřejné spuštění) — hledání zboží a obchodů, zápis a přehled cen, vývoj v čase a srovnání napříč obchody, OTP přihlášení, samoobslužné smazání účtu (server, web, mobil)

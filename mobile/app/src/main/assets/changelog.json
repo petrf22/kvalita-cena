@@ -267,7 +267,7 @@
         "title": "Přidáno",
         "items": [
           {
-            "text": "První veřejné vydání — hledání zboží a obchodů, zápis a přehled cen, vývoj v čase a srovnání napříč obchody, OTP přihlášení, samoobslužné smazání účtu",
+            "text": "První testovací nasazení (interní testování, ne veřejné spuštění) — hledání zboží a obchodů, zápis a přehled cen, vývoj v čase a srovnání napříč obchody, OTP přihlášení, samoobslužné smazání účtu",
             "parts": [
               "server",
               "web",
