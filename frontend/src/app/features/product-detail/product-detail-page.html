@@ -56,6 +56,10 @@
         <nz-tag nzColor="orange">{{ t('product-detail.draftPending') }}</nz-tag>
       }
       @if (auth.isLoggedIn()) {
+        <button nz-button nzType="text" nzSize="small" (click)="editing.set(true)">
+          <span nz-icon nzType="edit"></span>
+          {{ 'common.edit' | transloco }}
+        </button>
         <button
           nz-button
           nzType="text"
@@ -262,5 +266,20 @@
     <nz-card [nzTitle]="t('product-detail.submitTitle')" class="submit-card">
       <app-price-entry-form [product]="product()!" (submitted)="loadProduct(product()!.id)" />
     </nz-card>
+
+    <nz-modal
+      [nzVisible]="editing()"
+      [nzTitle]="t('product-detail.editModalTitle')"
+      [nzFooter]="null"
+      (nzOnCancel)="editing.set(false)"
+    >
+      <ng-container *nzModalContent>
+        <app-product-form
+          [product]="product()"
+          (created)="onProductSaved($event)"
+          (cancelled)="editing.set(false)"
+        />
+      </ng-container>
+    </nz-modal>
   }
 </ng-container>

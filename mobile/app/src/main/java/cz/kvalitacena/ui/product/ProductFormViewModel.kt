@@ -33,11 +33,22 @@ private const val SUGGESTIONS_DEBOUNCE_MS = 300L
  *
  * `barcode` z konstruktoru je naskenovaný/zadaný kód, který uživatel nenašel (viz
  * PriceEntryScreen "Založit zboží") — předvyplní pole kódu, ale jde ho smazat pro bezkódový zápis.
+ *
+ * Se zadaným [editingProductId] přejde do režimu editace existujícího zboží (patch nad
+ * core.product_user_edit, `updateProduct`) — používá ji ProductDetailScreen. V editaci appka
+ * nenabízí návrhy podobných položek (zboží už existuje) ani upload fotek (galerie je na
+ * detailu), čárový kód je jen ke čtení. Webový protějšek: frontend features/product-form.
  */
 class ProductFormViewModel(
   private val graphQlClient: GraphQlClient,
   barcode: String?,
+  private val editingProductId: String? = null,
 ) : ViewModel() {
+
+  val isEditing: Boolean get() = editingProductId != null
+
+  var loadingExisting by mutableStateOf(editingProductId != null)
+    private set
 
   var name by mutableStateOf("")
   var suggestions by mutableStateOf<List<ProductSummary>>(emptyList())
@@ -98,8 +109,11 @@ class ProductFormViewModel(
     private set
   /** Snímek předvyplněných hodnot (gramáž převedená na kg/l) — jen appka sama, ne pro UI. */
   private var offDefaults: OffDefaults? = null
-  /** OFF kandidát dorazil dřív než číselník kategorií — kategorie se dopočítá, až categories() doběhne. */
+  /** OFF kandidát/editované zboží dorazily dřív než číselník kategorií — kategorie se dopočítá,
+   *  až categories() doběhne. */
   private var pendingCategoryId: String? = null
+  /** Snímek prefillu z editovaného zboží — obdoba [offDefaults], jiný zdroj (ProductFormValidation.kt). */
+  private var editDefaults: ProductFormDefaults? = null
 
   init {
     viewModelScope.launch {
@@ -111,11 +125,13 @@ class ProductFormViewModel(
         // uložit (kategorie je povinná), chyba se ukáže při pokusu o odeslání.
       }
     }
-    // Naskenovaný/zadaný kód, který se v katalogu nenašel — zkusí, jestli ho nezná Open Food
-    // Facts (productLookupByCode, cache v GraphQlClient — druhé volání po PriceEntryViewModel
-    // je zdarma). Výpadek/nedostupnost OFF je tichý no-op, formulář zůstane prázdný a ručně
-    // vyplnitelný.
-    if (barcode != null) {
+    if (editingProductId != null) {
+      loadExisting(editingProductId)
+    } else if (barcode != null) {
+      // Naskenovaný/zadaný kód, který se v katalogu nenašel — zkusí, jestli ho nezná Open Food
+      // Facts (productLookupByCode, cache v GraphQlClient — druhé volání po PriceEntryViewModel
+      // je zdarma). Výpadek/nedostupnost OFF je tichý no-op, formulář zůstane prázdný a ručně
+      // vyplnitelný.
       viewModelScope.launch {
         try {
           val result = graphQlClient.productLookupByCode(barcode)
@@ -125,6 +141,31 @@ class ProductFormViewModel(
         } catch (e: Exception) {
           // Tichý no-op — viz komentář výš.
         }
+      }
+    }
+  }
+
+  private fun loadExisting(id: String) {
+    viewModelScope.launch {
+      try {
+        graphQlClient.productById(id)?.let { product ->
+          val defaults = productFormDefaultsFrom(product)
+          editDefaults = defaults
+          name = defaults.name
+          brandName = defaults.brandName
+          unitBase = defaults.unitBase
+          netContentValue = defaults.netContentValue?.toString().orEmpty()
+          piecesInPack = defaults.piecesInPack?.toString().orEmpty()
+          isVariableWeight = defaults.isVariableWeight
+          code = product.gtin.orEmpty()
+          val categoryId = defaults.categoryId
+          val category = categoryId?.let { id2 -> categories.find { it.id == id2 } }
+          if (category != null) onCategorySelected(category) else pendingCategoryId = categoryId
+        }
+      } catch (e: Exception) {
+        saveError = e.toUiText()
+      } finally {
+        loadingExisting = false
       }
     }
   }
@@ -172,7 +213,8 @@ class ProductFormViewModel(
   fun onNameChange(value: String) {
     name = value
     suggestionsJob?.cancel()
-    if (value.isBlank()) {
+    // V režimu editace nedává nabídka podobných položek smysl — zboží už existuje.
+    if (isEditing || value.isBlank()) {
       suggestions = emptyList()
       return
     }
@@ -213,6 +255,12 @@ class ProductFormViewModel(
     saving = true
     saveError = null
     photoUploadFailed = false
+
+    if (isEditing) {
+      updateExisting(categoryId)
+      return
+    }
+
     viewModelScope.launch {
       try {
         val candidate = offCandidate
@@ -243,6 +291,35 @@ class ProductFormViewModel(
         // (LaunchedEffect(viewModel.created)), dřívější nastavení by upload utnulo.
         uploadPendingPhotos(context, product.id)
         created = product
+      } catch (e: Exception) {
+        saveError = e.toUiText()
+      } finally {
+        saving = false
+      }
+    }
+  }
+
+  /**
+   * Patch nad core.product_user_edit — pole beze změny oproti [editDefaults] se posílají jako
+   * null ([buildUpdateProductInput], zrcadlo webového `buildUpdateProductInput`). Fotky se
+   * v editaci nenahrávají, ty se spravují v galerii na detailu.
+   */
+  private fun updateExisting(categoryId: String) {
+    val defaults = editDefaults ?: return
+    val id = editingProductId ?: return
+    viewModelScope.launch {
+      try {
+        val input = buildUpdateProductInput(
+          name = name,
+          brandName = brandName,
+          categoryId = categoryId,
+          unitBase = unitBase,
+          netContentValue = if (isVariableWeight) null else netContentValue.replace(',', '.').toDoubleOrNull(),
+          piecesInPack = piecesInPack.toIntOrNull(),
+          isVariableWeight = isVariableWeight,
+          defaults = defaults,
+        )
+        created = graphQlClient.updateProduct(id, input)
       } catch (e: Exception) {
         saveError = e.toUiText()
       } finally {

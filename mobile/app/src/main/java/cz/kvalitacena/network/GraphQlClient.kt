@@ -56,7 +56,7 @@ internal val PRODUCT_FIELDS = """
   externalImage { url thumbnailUrl attribution }
   brand { id name slug }
   category { id name slug path }
-  unitBase netContentValue netContentBase piecesInPack isVariableWeight status isGeneric
+  unitBase netContentValue netContentUom netContentBase piecesInPack isVariableWeight status isGeneric
   verified editedByMe
   prices { $PRICE_CURRENT_FIELDS }
 """
@@ -64,6 +64,7 @@ internal val PRODUCT_FIELDS = """
 /** Navíc oproti PRODUCT_FIELDS — jen pro obrazovku detailu, aby seznam hledání netahal zbytečně moc. */
 internal val PRODUCT_DETAIL_FIELDS = """
   $PRODUCT_FIELDS
+  gtin
   stats {
     observationCount storeCount lastObservedAt bestPrice bestUnitPrice bestPriceCurrency
     bestPriceConverted { $CONVERTED_PRICE_FIELDS }

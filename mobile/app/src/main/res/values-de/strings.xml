@@ -310,6 +310,7 @@
     <string name="price_entry_location_unavailable">Der Standort konnte nicht ermittelt werden — wähle ein Geschäft, sobald Daten verfügbar sind.</string>
 
     <string name="product_form_title">Neue Ware</string>
+    <string name="product_form_edit_title">Ware bearbeiten</string>
     <string name="product_form_off_banner_title">Aus Open Food Facts geladen — prüfe und passe bei Bedarf an. Tippen zeigt die Quelle.</string>
     <string name="product_form_name_label">Name der Ware</string>
     <string name="product_form_generic_tag">generische Position</string>
@@ -324,7 +325,9 @@
     <string name="product_form_pieces_in_pack_label">Stück pro Packung (optional)</string>
     <string name="product_form_code_label">Strichcode (optional)</string>
     <string name="product_form_code_hint">Ohne Code entsteht eine generische Position (z. B. „Gebäck für %1$s“ vom Kassenbon) — mit geringerer Datenzuverlässigkeit, kann aber trotzdem gespeichert werden.</string>
+    <string name="product_form_code_read_only_hint">Der Strichcode lässt sich in der Bearbeitung nicht ändern.</string>
     <string name="product_form_submit">Ware anlegen</string>
+    <string name="product_form_submit_edit">Änderungen speichern</string>
     <string name="product_form_back_without_creating">Zurück ohne Anlegen</string>
     <string name="product_form_item_photo_label">Foto der Ware (optional)</string>
     <string name="product_form_label_photo_label">Foto des Etiketts (optional)</string>

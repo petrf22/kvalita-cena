@@ -257,13 +257,15 @@ konzistence s aditivy (`core.additive`/`core.additive_i18n`, otevřené jako zad
 podobném duchu jako „Zadní vrátka pro oficiální kódy" u kategorií výš) mluví pro stejný
 mechanismus.
 
-**Dopad na klienty:** editace zboží dnes na žádném klientovi neexistuje — `updateProduct` je
-hotová a otestovaná, ale nevolá ji žádná obrazovka (`CLAUDE.md`, „Pasti, které z kódu nejsou
-vidět"). Krok B (ruční zadání) tedy nejdřív potřebuje editační formulář zboží v duálním režimu
-založení/úprava — vzor je hotová inline editace obchodu (`frontend/src/app/shared/store-form.ts`
-`store = input<Store | null>(null)` + `effect()`; `mobile/.../ui/store/StoreFormScreen.kt` s
-volitelným `storeId`). Krok A (jen čtení z OFF) klienty nutí míň — nová karta na detailu
-(`productDetailFieldsFragment`/`PRODUCT_DETAIL_FIELDS`) a i18n × 5 jazyků, žádná editace.
+**Dopad na klienty:** editační formulář zboží v duálním režimu založení/úprava už existuje
+(`frontend/src/app/features/product-form/product-form.ts` `product = input<Product | null>(null)`
++ `effect()`, otevřený z detailu; `mobile/.../ui/product/ProductFormScreen.kt` s volitelným
+`productId`, otevřený z `ui/detail/ProductDetailScreen.kt`) — stejný vzor jako dřívější inline
+editace obchodu (`shared/store-form.ts`/`StoreFormScreen.kt`). Dnes edituje jen pole, která
+`UpdateProductInput` umí (název, značka, kategorie, gramáž/objem, kusů v balení, váhové zboží);
+Krok B na něj nutrienty/alergeny/etiketu jen doplní — nejde o novou obrazovku. Krok A (jen čtení
+z OFF) klienty nutí míň — nová karta na detailu (`productDetailFieldsFragment`/
+`PRODUCT_DETAIL_FIELDS`) a i18n × 5 jazyků, žádná editace.
 
 **Odpovědnost za alergeny — rozhodnout před spuštěním, ne až se to stane.** Alergeny jsou
 zdravotní údaj, ne cena. Chybná cena mrzí; chybné „neobsahuje lepek" je jiná třída rizika než

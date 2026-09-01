@@ -1,6 +1,7 @@
 package cz.kvalitacena.ui.product
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -61,28 +62,48 @@ private val UNIT_BASE_LABEL_RES = mapOf(
  * `onCreated` (výchozí = zavolá `onDone`) odlišuje úspěch od zrušení — SearchScreen ho
  * přepisuje, ať po založení naskočí rovnou na zápis ceny nového zboží, místo aby se appka jen
  * vrátila zpět (`onDone` zůstává čisté "zrušit"/zavřít, stejné jako dřív).
+ *
+ * Se zadaným [productId] přejde do režimu editace existujícího zboží — používá ji
+ * ProductDetailScreen (`onDone` po uložení). V editaci appka skryje návrhy podobných položek
+ * a fotoslots (fotky se spravují v galerii na detailu) a čárový kód je jen ke čtení.
  */
 @Composable
 fun ProductFormScreen(
   barcode: String?,
+  productId: String? = null,
   onDone: () -> Unit,
   onCreated: (productId: String) -> Unit = { onDone() },
 ) {
   val viewModel: ProductFormViewModel = viewModel(
-    factory = viewModelFactory { initializer { ProductFormViewModel(AppContainer.graphQlClient, barcode) } },
+    factory = viewModelFactory {
+      initializer { ProductFormViewModel(AppContainer.graphQlClient, barcode, productId) }
+    },
   )
 
   LaunchedEffect(viewModel.created) {
     viewModel.created?.let {
-      NavigationResults.newProduct = it
-      onCreated(it.id)
+      if (viewModel.isEditing) {
+        NavigationResults.updatedProduct = it
+        onDone()
+      } else {
+        NavigationResults.newProduct = it
+        onCreated(it.id)
+      }
     }
   }
 
   val context = LocalContext.current
 
+  if (viewModel.loadingExisting) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+    return
+  }
+
   Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-    Text(stringResource(R.string.product_form_title), style = MaterialTheme.typography.headlineSmall)
+    Text(
+      stringResource(if (viewModel.isEditing) R.string.product_form_edit_title else R.string.product_form_title),
+      style = MaterialTheme.typography.headlineSmall,
+    )
     Gap()
 
     // ODbL vyžaduje, aby appka u převzatých dat vždy uvedla zdroj (docs/datovy-model.md) —
@@ -217,28 +238,35 @@ fun ProductFormScreen(
       value = viewModel.code,
       onValueChange = { viewModel.code = it },
       label = stringResource(R.string.product_form_code_label),
+      readOnly = viewModel.isEditing,
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
       modifier = Modifier.fillMaxWidth(),
     )
     Text(
-      stringResource(R.string.product_form_code_hint, rememberMoneyFormatter("CZK").format(45)),
+      if (viewModel.isEditing) {
+        stringResource(R.string.product_form_code_read_only_hint)
+      } else {
+        stringResource(R.string.product_form_code_hint, rememberMoneyFormatter("CZK").format(45))
+      },
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Gap()
 
-    PhotoSlot(
-      label = stringResource(R.string.product_form_item_photo_label),
-      onUriChange = { viewModel.itemPhotoUri = it },
-      modifier = Modifier.fillMaxWidth(),
-    )
-    Gap()
-    PhotoSlot(
-      label = stringResource(R.string.product_form_label_photo_label),
-      onUriChange = { viewModel.labelPhotoUri = it },
-      modifier = Modifier.fillMaxWidth(),
-    )
-    Gap()
+    if (!viewModel.isEditing) {
+      PhotoSlot(
+        label = stringResource(R.string.product_form_item_photo_label),
+        onUriChange = { viewModel.itemPhotoUri = it },
+        modifier = Modifier.fillMaxWidth(),
+      )
+      Gap()
+      PhotoSlot(
+        label = stringResource(R.string.product_form_label_photo_label),
+        onUriChange = { viewModel.labelPhotoUri = it },
+        modifier = Modifier.fillMaxWidth(),
+      )
+      Gap()
+    }
 
     viewModel.saveError?.let {
       Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -266,12 +294,19 @@ fun ProductFormScreen(
       enabled = viewModel.name.isNotBlank() && viewModel.selectedCategoryId != null && !viewModel.saving,
       modifier = Modifier.fillMaxWidth(),
     ) {
-      if (viewModel.saving) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-      else Text(stringResource(R.string.product_form_submit))
+      if (viewModel.saving) {
+        CircularProgressIndicator(modifier = Modifier.size(20.dp))
+      } else {
+        Text(stringResource(if (viewModel.isEditing) R.string.product_form_submit_edit else R.string.product_form_submit))
+      }
     }
     Gap()
     OutlinedButton(onClick = onDone, enabled = !viewModel.saving, modifier = Modifier.fillMaxWidth()) {
-      Text(stringResource(R.string.product_form_back_without_creating))
+      Text(
+        stringResource(
+          if (viewModel.isEditing) R.string.common_cancel else R.string.product_form_back_without_creating,
+        ),
+      )
     }
   }
 }

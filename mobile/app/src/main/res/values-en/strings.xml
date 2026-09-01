@@ -308,6 +308,7 @@
     <string name="price_entry_location_unavailable">We couldn\'t determine your location — pick a store once data is available.</string>
 
     <string name="product_form_title">New product</string>
+    <string name="product_form_edit_title">Edit product</string>
     <string name="product_form_off_banner_title">Loaded from Open Food Facts — check and adjust as needed. Tap to view the source.</string>
     <string name="product_form_name_label">Product name</string>
     <string name="product_form_generic_tag">generic item</string>
@@ -322,7 +323,9 @@
     <string name="product_form_pieces_in_pack_label">Pieces per pack (optional)</string>
     <string name="product_form_code_label">Barcode (optional)</string>
     <string name="product_form_code_hint">Without a code, a generic item is created (e.g. \"bread for %1$s\" from a receipt) — with lower data confidence, but it can still be recorded.</string>
+    <string name="product_form_code_read_only_hint">The barcode can\'t be changed while editing.</string>
     <string name="product_form_submit">Create product</string>
+    <string name="product_form_submit_edit">Save changes</string>
     <string name="product_form_back_without_creating">Back without creating</string>
     <string name="product_form_item_photo_label">Photo of the product (optional)</string>
     <string name="product_form_label_photo_label">Photo of the label (optional)</string>

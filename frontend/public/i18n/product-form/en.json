@@ -14,9 +14,11 @@
   "offSourceLink": "View source",
   "codeLabel": "Barcode (optional)",
   "codeHint": "Without a code, a generic item is created (e.g. \"bread for {{example}}\" from a receipt) — with lower data confidence, but it can still be recorded.",
+  "codeReadOnlyHint": "The barcode can't be changed while editing.",
   "itemPhotoLabel": "Photo of the product (optional)",
   "labelPhotoLabel": "Photo of the label (optional)",
   "uploadingPhotos": "Uploading photos…",
   "photoUploadFailedWarning": "The product was created, but the photo failed to upload. Try again from its detail page.",
-  "submit": "Create product"
+  "submit": "Create product",
+  "submitEdit": "Save changes"
 }

@@ -19,6 +19,9 @@ object NavigationResults {
   /** Stejný vzor, ale pro editaci existující provozovny (StoreFormScreen storeId != null) — StoreDetailScreen ho vyzvedne. */
   var updatedStore: Store? = null
 
+  /** Stejný vzor, ale pro editaci existujícího zboží (ProductFormScreen productId != null) — ProductDetailScreen ho vyzvedne. */
+  var updatedProduct: Product? = null
+
   /**
    * Tlačítko "Hledat ceny tohoto zboží" na PriceEntryScreen (naskenovaný kód, nebo název u
    * vstupu z detailu) — záložka Hledat nemá vlastní route argument, protože by ji rozbila

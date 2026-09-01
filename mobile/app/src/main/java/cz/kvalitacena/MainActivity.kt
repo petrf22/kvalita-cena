@@ -64,6 +64,7 @@ import cz.kvalitacena.ui.navigation.priceEntryRouteByBarcode
 import cz.kvalitacena.ui.navigation.priceEntryRouteByProductId
 import cz.kvalitacena.ui.navigation.productDetailRoute
 import cz.kvalitacena.ui.navigation.productFormRoute
+import cz.kvalitacena.ui.navigation.productFormRouteForEdit
 import cz.kvalitacena.ui.navigation.storeDetailRoute
 import cz.kvalitacena.ui.navigation.storeFormRouteForCreate
 import cz.kvalitacena.ui.navigation.storeFormRouteForEdit
@@ -181,6 +182,7 @@ private fun AppScaffold() {
             navController.navigate(TopLevelDestination.ACCOUNT.route) { launchSingleTop = true }
           },
           onStoreClick = { storeId -> navController.navigate(storeDetailRoute(storeId)) },
+          onEditProduct = { id -> navController.navigate(productFormRouteForEdit(id)) },
         )
       }
       composable(
@@ -236,12 +238,15 @@ private fun AppScaffold() {
         arguments = listOf(
           navArgument(ARG_BARCODE) { type = NavType.StringType; nullable = true; defaultValue = null },
           navArgument(ARG_WRITE_PRICE) { type = NavType.BoolType; defaultValue = false },
+          navArgument(ARG_PRODUCT_ID) { type = NavType.StringType; nullable = true; defaultValue = null },
         ),
       ) { backStackEntry ->
         val barcode = backStackEntry.arguments?.getString(ARG_BARCODE)
         val writePrice = backStackEntry.arguments?.getBoolean(ARG_WRITE_PRICE) ?: false
+        val productId = backStackEntry.arguments?.getString(ARG_PRODUCT_ID)
         ProductFormScreen(
           barcode = barcode,
+          productId = productId,
           onDone = { navController.popBackStack() },
           onCreated = if (writePrice) {
             { productId ->

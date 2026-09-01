@@ -1,4 +1,14 @@
-import { Component, EventEmitter, Input, Output, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   TranslocoDirective,
@@ -28,6 +38,8 @@ import { UNIT_BASE_KEYS } from '../../shared/enum-labels';
 import { PhotoSlot } from '../../shared/photo-slot';
 import {
   OffCandidateDefaults,
+  ProductFormDefaults,
+  buildUpdateProductInput,
   changedFromOff,
   codeMatchesOffCandidate,
   impliedNetContentUom,
@@ -35,6 +47,7 @@ import {
   netContentForOffSubmit,
   offCandidateDefaults,
   pendingPhotoUploads,
+  productFormDefaults,
 } from './product-form-validation';
 
 type CategoryOption = CategoriesQuery['categories'][number];
@@ -50,6 +63,12 @@ const UNIT_BASE_ORDER: readonly UnitBase[] = ['COUNT', 'MASS', 'VOLUME'];
  * jako druhová položka (docs/reputace.md, "Zboží bez čárového kódu") — server ji založí jako
  * DRAFT/isGeneric a confidence zastropuje na MEDIUM, appka tu nic z toho neřeší. Mobilní
  * protějšek: mobile ui/product/ProductFormScreen.kt.
+ *
+ * Se vstupem `product` přejde do režimu editace existujícího zboží (patch nad
+ * core.product_user_edit, `updateProduct`) — používá ji `features/product-detail`, stejný
+ * princip jako `shared/store-form.ts`. V editaci appka nenabízí návrhy podobných položek (zboží
+ * už existuje) ani fotoslots (fotky se spravují v galerii na detailu) a čárový kód je jen ke
+ * čtení — `UpdateProductInput` ho neumí měnit.
  */
 @Component({
   selector: 'app-product-form',
@@ -97,6 +116,9 @@ export class ProductForm {
     });
   }
 
+  /** Nastavený vstup přepne formulář do režimu editace tohohle zboží. */
+  readonly product = input<Product | null>(null);
+
   @Output() readonly created = new EventEmitter<Product>();
   @Output() readonly cancelled = new EventEmitter<void>();
 
@@ -142,18 +164,37 @@ export class ProductForm {
   /** Snímek předvyplněných hodnot (gramáž převedená na kg/l) — jen appka sama, ne pro šablonu. */
   private offDefaults: OffCandidateDefaults | null = null;
 
+  /** Snímek prefillu z `product()` pro editaci — obdoba `offDefaults`, jiný zdroj. */
+  private editDefaults: ProductFormDefaults | null = null;
+
   constructor() {
     this.productService.categories().subscribe({
       next: (categories) => this.categories.set(categories),
       // Formulář jde vyplnit i bez číselníku — jen se pak nedá uložit (kategorie je povinná).
       error: () => {},
     });
+
+    effect(() => {
+      const product = this.product();
+      if (!product) return;
+      const defaults = productFormDefaults(product);
+      this.editDefaults = defaults;
+      this.name.set(defaults.name);
+      this.brandName.set(defaults.brandName);
+      this.selectedCategoryId.set(defaults.categoryId);
+      this.unitBase.set(defaults.unitBase);
+      this.netContentValue.set(defaults.netContentValue);
+      this.piecesInPack.set(defaults.piecesInPack);
+      this.isVariableWeight.set(defaults.isVariableWeight);
+      this.code.set(product.gtin ?? '');
+    });
   }
 
   onNameChange(value: string): void {
     this.name.set(value);
     clearTimeout(this.suggestionsTimer);
-    if (!value.trim()) {
+    // V režimu editace nedává nabídka podobných položek smysl — zboží už existuje.
+    if (this.product() || !value.trim()) {
       this.suggestions.set([]);
       return;
     }
@@ -219,6 +260,12 @@ export class ProductForm {
     this.saving.set(true);
     this.saveError.set(null);
 
+    const editingProduct = this.product();
+    if (editingProduct) {
+      this.updateExisting(editingProduct, categoryId);
+      return;
+    }
+
     const candidate = this.offCandidate();
     const defaults = this.offDefaults;
     // Kód se od nabídky kandidáta pořád musí shodovat — jinak uživatel kód smazal/přepsal
@@ -248,6 +295,38 @@ export class ProductForm {
           this.saving.set(false);
           this.created.emit(product);
         });
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.saveError.set(translateError(err, this.transloco));
+      },
+    });
+  }
+
+  /**
+   * Patch nad core.product_user_edit — pole, která uživatel nezměnil oproti `editDefaults`, se
+   * posílají jako `null` (`buildUpdateProductInput`, zrcadlo `buildUpdateInput()` ve
+   * `shared/store-form.ts`). Fotky se v editaci nenahrávají, ty se spravují v galerii na detailu.
+   */
+  private updateExisting(product: Product, categoryId: string): void {
+    const defaults = this.editDefaults;
+    if (!defaults) return;
+    const input = buildUpdateProductInput(
+      {
+        name: this.name(),
+        brandName: this.brandName(),
+        categoryId,
+        unitBase: this.unitBase(),
+        netContentValue: this.isVariableWeight() ? null : this.netContentValue(),
+        piecesInPack: this.piecesInPack(),
+        isVariableWeight: this.isVariableWeight(),
+      },
+      defaults,
+    );
+    this.productService.updateProduct(product.id, input).subscribe({
+      next: (updated) => {
+        this.saving.set(false);
+        this.created.emit(updated);
       },
       error: (err) => {
         this.saving.set(false);

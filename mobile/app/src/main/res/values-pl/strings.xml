@@ -308,6 +308,7 @@
     <string name="price_entry_location_unavailable">Nie udało się ustalić lokalizacji — wybierz sklep, gdy dane będą dostępne.</string>
 
     <string name="product_form_title">Nowy produkt</string>
+    <string name="product_form_edit_title">Edytuj produkt</string>
     <string name="product_form_off_banner_title">Wczytano z Open Food Facts — sprawdź i popraw, jeśli trzeba. Dotknij, aby zobaczyć źródło.</string>
     <string name="product_form_name_label">Nazwa produktu</string>
     <string name="product_form_generic_tag">pozycja rodzajowa</string>
@@ -322,7 +323,9 @@
     <string name="product_form_pieces_in_pack_label">Sztuk w opakowaniu (opcjonalnie)</string>
     <string name="product_form_code_label">Kod kreskowy (opcjonalnie)</string>
     <string name="product_form_code_hint">Bez kodu powstanie pozycja rodzajowa (np. „pieczywo za %1$s” z paragonu) — z niższą wiarygodnością danych, ale zapisać i tak można.</string>
+    <string name="product_form_code_read_only_hint">Kodu kreskowego nie da się zmienić w edycji.</string>
     <string name="product_form_submit">Dodaj produkt</string>
+    <string name="product_form_submit_edit">Zapisz zmiany</string>
     <string name="product_form_back_without_creating">Wstecz bez dodawania</string>
     <string name="product_form_item_photo_label">Zdjęcie produktu (opcjonalnie)</string>
     <string name="product_form_label_photo_label">Zdjęcie etykiety (opcjonalnie)</string>

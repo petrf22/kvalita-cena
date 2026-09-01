@@ -54,9 +54,6 @@ sekce „Neimplementováno" na konci. Rozvojové nápady mimo MVP (nezávazné, 
 přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `docs/rozvoj.md`.
 
 **Pasti, které z kódu nejsou vidět:**
-- `updateProduct` (mutace + `ProductService.updateProduct` na webu + `GraphQlClient
-  .updateProduct` na mobilu) je hotová a otestovaná, ale **žádná obrazovka ji nevolá** — u
-  obchodu (`updateStore`) je inline editace v UI už hotová, u zboží zatím ne.
 - Sken/zadání EANu, který v katalogu není, ale zná ho Open Food Facts, se ukládá VÝHRADNĚ přes
   `createProductFromOff`, nikdy přes `createProduct` — jinak by OFF hodnoty skončily zkopírované
   do `core.product`, což ODbL share-alike zakazuje (`docs/datovy-model.md`, „Oddělení schémat
@@ -68,7 +65,10 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   hodnotu dál dodává OFF, nebo obojí z formuláře). Poslání převedené hodnoty s jinou jednotkou,
   než jakou má uložený OFF snapshot, by `CatalogEditService.updateProduct` spočítalo jako úplně
   jiné číslo (250 g vs. 0,25 kg → 250× větší patch) — viz `netContentForOffSubmit`
-  v `product-form-validation.ts` / `ProductFormViewModel.kt`.
+  v `product-form-validation.ts` / `ProductFormViewModel.kt`. Stejné pravidlo platí i pro inline
+  editaci existujícího zboží (`updateProduct`) — tam dvojice musí dorazit i tehdy, když se
+  změnila jen základní jednotka nebo přepínač váhového zboží, ne jen samotné číslo
+  (`netContentForUpdateSubmit`/`buildUpdateProductInput`).
 - Klientský překlad chyb podle `code` na mobilu chybí — appka ukáže `serverMessage`, protože
   `network/Dto.kt` negeneruje typy ze schématu jako web (`docs/lokalizace.md`, „Co zbývá").
 - Geometrie ikon (favicon, PWA manifest, Android launcher) žije v `tools/icons/generate.py`,

@@ -14,9 +14,11 @@
   "offSourceLink": "Zobacz źródło",
   "codeLabel": "Kod kreskowy (opcjonalnie)",
   "codeHint": "Bez kodu powstanie pozycja rodzajowa (np. „pieczywo za {{example}}” z paragonu) — z niższą wiarygodnością danych, ale zapisać i tak można.",
+  "codeReadOnlyHint": "Kodu kreskowego nie da się zmienić w edycji.",
   "itemPhotoLabel": "Zdjęcie produktu (opcjonalnie)",
   "labelPhotoLabel": "Zdjęcie etykiety (opcjonalnie)",
   "uploadingPhotos": "Przesyłanie zdjęć…",
   "photoUploadFailedWarning": "Produkt został dodany, ale przesłanie zdjęcia się nie powiodło. Spróbuj ponownie na jego stronie szczegółów.",
-  "submit": "Dodaj produkt"
+  "submit": "Dodaj produkt",
+  "submitEdit": "Zapisz zmiany"
 }

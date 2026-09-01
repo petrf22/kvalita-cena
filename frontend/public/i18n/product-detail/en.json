@@ -6,6 +6,7 @@
   "yourEdit": "Your edit",
   "draftPending": "Awaiting confirmation — only you can see this for now",
   "report": "Report",
+  "editModalTitle": "Edit product",
   "qualityLoginHint": "Rating quality requires signing in — go to the Account page.",
   "qualityRateStars": "{count, plural, one {# star} other {# stars}}",
   "priceChartTitle": "Price history",

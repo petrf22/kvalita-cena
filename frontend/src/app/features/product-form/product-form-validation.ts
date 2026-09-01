@@ -1,5 +1,5 @@
 import type { PhotoKind } from '../../models/generated/enums';
-import { NetContentUom, UnitBase } from '../../models/catalog';
+import { NetContentUom, Product, UnitBase, UpdateProductInput } from '../../models/catalog';
 import { normalizeCode } from '../../shared/gtin';
 
 /**
@@ -80,7 +80,9 @@ export function offCandidateDefaults(candidate: OffCandidateShape): OffCandidate
   };
 }
 
-function toFormNetContentValue(
+/** Server nese gramáž/objem v G/ML (OffNetContentConverter), formulář vždy v kg/l — sdílí ji
+ *  prefill z OFF kandidáta i prefill z existujícího zboží (editace). */
+export function toFormNetContentValue(
   value: number | null | undefined,
   uom: NetContentUom | null | undefined,
 ): number | null {
@@ -155,6 +157,101 @@ export function netContentForOffSubmit(
 export function codeMatchesOffCandidate(code: string, candidateCode: string): boolean {
   const normalized = normalizeCode(code);
   return normalized !== '' && normalized === normalizeCode(candidateCode);
+}
+
+export interface ProductFormDefaults {
+  name: string;
+  brandName: string;
+  categoryId: string | null;
+  unitBase: UnitBase;
+  netContentValue: number | null;
+  piecesInPack: number | null;
+  isVariableWeight: boolean;
+}
+
+/**
+ * Prefill formuláře v režimu editace existujícího zboží — zrcadlo `offCandidateDefaults`, jen
+ * zdroj je `Product` (z detailu), ne OFF kandidát. Gramáž/objem produkt nese v `netContentUom`
+ * (KG/L/PCS), přesto se pro jistotu žene přes stejný převod jako OFF (past OFF kandidáta platí
+ * i tady, kdyby server někdy vrátil G/ML).
+ */
+export function productFormDefaults(product: Product): ProductFormDefaults {
+  return {
+    name: product.name,
+    brandName: product.brand?.name ?? '',
+    categoryId: product.category?.id ?? null,
+    unitBase: product.unitBase,
+    netContentValue: toFormNetContentValue(product.netContentValue, product.netContentUom),
+    piecesInPack: product.piecesInPack ?? null,
+    isVariableWeight: product.isVariableWeight,
+  };
+}
+
+export interface NetContentUpdateSubmit {
+  netContentValue: number | null;
+  netContentUom: 'KG' | 'L' | 'PCS' | null;
+}
+
+/**
+ * Gramáž/objem pro UpdateProductInput — MUSÍ se posílat vždy jako dvojice, i když se změnil jen
+ * `unitBase`/`isVariableWeight` (CatalogEditService.updateProduct přepočítává netContentBase
+ * v jediném bloku podmíněném tím, že aspoň jedno z trojice netContentValue/netContentUom/
+ * isVariableWeight přišlo nenulové — samotný unitBase by netContentBase pro novou jednotku
+ * nedopočítal). Shoda s prefillem (nebo nic nezadáno) → obojí `null`, ať server nevytvoří
+ * zbytečný patch; jinak (cokoli z trojice se změnilo) obojí z formuláře.
+ */
+export function netContentForUpdateSubmit(
+  current: { netContentValue: number | null; unitBase: UnitBase; isVariableWeight: boolean },
+  defaults: ProductFormDefaults,
+): NetContentUpdateSubmit {
+  const changed =
+    current.unitBase !== defaults.unitBase ||
+    current.isVariableWeight !== defaults.isVariableWeight ||
+    (current.netContentValue == null) !== (defaults.netContentValue == null) ||
+    (current.netContentValue != null &&
+      defaults.netContentValue != null &&
+      Math.abs(current.netContentValue - defaults.netContentValue) >= 1e-9);
+  if (!changed) return { netContentValue: null, netContentUom: null };
+  return {
+    netContentValue: current.isVariableWeight ? null : current.netContentValue,
+    netContentUom: impliedNetContentUom(current.unitBase),
+  };
+}
+
+export interface ProductFormState {
+  name: string;
+  brandName: string;
+  categoryId: string | null;
+  unitBase: UnitBase;
+  netContentValue: number | null;
+  piecesInPack: number | null;
+  isVariableWeight: boolean;
+}
+
+/**
+ * `UpdateProductInput` z aktuálního stavu formuláře proti prefillu — zrcadlo
+ * `buildUpdateInput()` ve `shared/store-form.ts`. Pole beze změny se posílají jako `null`
+ * (patch nad core.product_user_edit je jinak zbytečně široký), vyprázdnění pošle `clear*`.
+ */
+export function buildUpdateProductInput(
+  form: ProductFormState,
+  defaults: ProductFormDefaults,
+): UpdateProductInput {
+  const netContent = netContentForUpdateSubmit(form, defaults);
+  const trimmedBrand = form.brandName.trim();
+  return {
+    name: form.name.trim() === defaults.name ? null : form.name.trim(),
+    brandName: trimmedBrand === '' || trimmedBrand === defaults.brandName ? null : trimmedBrand,
+    clearBrand: trimmedBrand === '' && defaults.brandName !== '',
+    categoryId: form.categoryId === defaults.categoryId ? null : form.categoryId,
+    unitBase: form.unitBase === defaults.unitBase ? null : form.unitBase,
+    netContentValue: netContent.netContentValue,
+    netContentUom: netContent.netContentUom,
+    piecesInPack: form.piecesInPack === defaults.piecesInPack ? null : form.piecesInPack,
+    clearPiecesInPack: form.piecesInPack == null && defaults.piecesInPack != null,
+    isVariableWeight:
+      form.isVariableWeight === defaults.isVariableWeight ? null : form.isVariableWeight,
+  };
 }
 
 export interface PendingPhotoUpload {

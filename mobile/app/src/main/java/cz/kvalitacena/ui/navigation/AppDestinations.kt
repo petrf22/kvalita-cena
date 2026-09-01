@@ -51,9 +51,12 @@ fun storeFormRouteForEdit(storeId: String) = "store_form?$ARG_STORE_ID=$storeId"
  * odlišuje vstup ze SearchScreen (bez EANu, appka po založení chce rovnou zápis ceny) od vstupu
  * ze skenu neznámého EANu (PriceEntryScreen "kód nenalezen" už na obrazovce zápisu ceny je,
  * po založení se prostě vrátí zpátky) — jedna sdílená obrazovka, dvě různá "co dál" po úspěchu.
+ * Volitelný `productId` v query přepne obrazovku do režimu editace (ProductDetailScreen
+ * "Upravit"), stejný vzor jako ROUTE_STORE_FORM.
  */
 const val ARG_WRITE_PRICE = "writePrice"
-const val ROUTE_PRODUCT_FORM = "product_form?$ARG_BARCODE={$ARG_BARCODE}&$ARG_WRITE_PRICE={$ARG_WRITE_PRICE}"
+const val ROUTE_PRODUCT_FORM =
+  "product_form?$ARG_BARCODE={$ARG_BARCODE}&$ARG_WRITE_PRICE={$ARG_WRITE_PRICE}&$ARG_PRODUCT_ID={$ARG_PRODUCT_ID}"
 
 fun productFormRoute(barcode: String? = null, writePrice: Boolean = false): String {
   val params = buildList {
@@ -62,6 +65,8 @@ fun productFormRoute(barcode: String? = null, writePrice: Boolean = false): Stri
   }
   return if (params.isEmpty()) "product_form" else "product_form?" + params.joinToString("&")
 }
+
+fun productFormRouteForEdit(productId: String) = "product_form?$ARG_PRODUCT_ID=$productId"
 
 /** Editace profilu (docs/soukromi.md, "Profil uživatele a viditelnost") — ze záložky Účet. */
 const val ROUTE_PROFILE = "profile"

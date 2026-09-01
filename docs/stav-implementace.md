@@ -11,7 +11,7 @@ v příslušné sekci pod ní.
 |---|---|---|---|---|
 | [Auth, hledání, agregace](#passwordless-auth-a-graphql-základ) | hotovo | hotovo | hotovo | HOTOVO |
 | [Zakládání katalogu bez skenování/GPS](#zakládání-katalogu-bez-skenovánígps) | hotovo | hotovo | hotovo | HOTOVO |
-| [Uživatelská vrstva nad globálními daty](#uživatelská-vrstva-nad-globálními-daty) | hotovo | inline edit OBCHOD hotová, ZBOŽÍ ne | inline edit OBCHOD hotová, ZBOŽÍ ne | ČÁSTEČNĚ |
+| [Uživatelská vrstva nad globálními daty](#uživatelská-vrstva-nad-globálními-daty) | hotovo | hotovo | hotovo | HOTOVO |
 | [Výpis „Moje příspěvky"](#výpis-moje-příspěvky) | hotovo | hotovo | hotovo | HOTOVO |
 | [Moderace](#moderace) | hotovo | hotovo | — (záměr) | HOTOVO |
 | [Fotky zboží a provozoven](#fotky-zboží-a-provozoven) | hotovo | hotovo | hotovo | HOTOVO |
@@ -110,12 +110,15 @@ našeptávač `Query.chains` (`ChainCatalogService`/`RetailChainRepository.searc
 `core.norm_text` jako u `searchStores`) a pole na obou klientech (web `shared/store-form.ts`,
 mobil `ui/store/StoreFormViewModel.kt` + `SearchableDropdown.kt`) — výběr předvyplní název
 obchodu jen když je pole ještě prázdné, `chainId`/`clearChain` v `CreateStoreInput`/
-`UpdateStoreInput` se teď skutečně posílají.
-
-**Past:** inline úprava ZBOŽÍ (`updateProduct` z formuláře) zatím na žádném z klientů
-neexistuje v UI — `GraphQlClient.updateProduct` (mobil) a `ProductService.updateProduct` (web)
-i backend mutace jsou hotové a otestované, jen na ně nemíří žádná obrazovka (`CLAUDE.md`,
-„Pasti, které z kódu nejsou vidět").
+`UpdateStoreInput` se teď skutečně posílají. **Inline úprava zboží je teď taky hotová** — vstup
+jen z detailu zboží (web `features/product-detail` + `app-product-form` v modalu, mobil
+`ui/detail/ProductDetailScreen.kt` + `ui/product/ProductFormScreen.kt` v režimu editace), oba
+volají `updateProduct`. Čárový kód je v editaci jen ke čtení (`UpdateProductInput` ho neumí
+změnit) a fotky/návrhy podobných položek se v editaci skryjí (fotky se spravují v galerii na
+detailu). Gramáž/objem se posílá vždy jako dvojice `netContentValue`/`netContentUom`, i když se
+změnila jen základní jednotka nebo přepínač váhového zboží (`netContentForUpdateSubmit`/
+`buildUpdateProductInput` na webu, `ProductFormValidation.kt` na mobilu) — stejná past jako
+u `createProductFromOff` (`CLAUDE.md`, „Pasti, které z kódu nejsou vidět").
 
 ## Výpis „Moje příspěvky"
 
@@ -335,8 +338,7 @@ Textové recenze (`core.product_review`, viditelnost `PUBLIC`/`GROUPS`/`PRIVATE`
 notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo jednorázové geokódování adresy,
 `agg.price_weekly_national`, offline fronta v mobilu, konsolidační job nad uživatelskou vrstvou
 (jen datový model a fronta, vyhodnocovací pravidlo zatím není známé — viz „Uživatelská vrstva
-nad globálními daty" výš), inline edit UI pro ZBOŽÍ na obou klientech (mutace jsou hotové, jen
-je zatím nevolá žádná obrazovka — u OBCHODU už hotové je, viz výš), fotka jako důkaz ceny
+nad globálními daty" výš), fotka jako důkaz ceny
 (`core.price_observation`, `f_evid` v `docs/reputace.md` — fotky zatím váží jen na katalogový
 záznam, ne na cenový zápis), další jazyky appky nad `de` (viz „Lokalizace" výš), lokální AI
 (`docs/ai.md` — čtení čísel z fotek, kontrola textů, předfiltr moderace; zatím jen rozhodnutí

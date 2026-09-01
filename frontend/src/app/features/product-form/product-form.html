@@ -41,7 +41,7 @@
       </nz-form-control>
     </nz-form-item>
 
-    @if (suggestions().length > 0) {
+    @if (!product() && suggestions().length > 0) {
       <nz-alert
         nzType="info"
         [nzMessage]="t('product-form.suggestionsWarning')"
@@ -158,29 +158,41 @@
     <nz-form-item>
       <nz-form-label>{{ t('product-form.codeLabel') }}</nz-form-label>
       <nz-form-control>
-        <input nz-input name="code" [ngModel]="code()" (ngModelChange)="code.set($event)" />
+        <input
+          nz-input
+          name="code"
+          [ngModel]="code()"
+          (ngModelChange)="code.set($event)"
+          [disabled]="!!product()"
+        />
         <div class="field-hint">
-          {{ t('product-form.codeHint', { example: codeHintExample() }) }}
+          {{
+            product()
+              ? t('product-form.codeReadOnlyHint')
+              : t('product-form.codeHint', { example: codeHintExample() })
+          }}
         </div>
       </nz-form-control>
     </nz-form-item>
 
-    <app-photo-slot
-      [label]="t('product-form.itemPhotoLabel')"
-      (fileChange)="itemPhotoFile.set($event)"
-    />
-    <app-photo-slot
-      [label]="t('product-form.labelPhotoLabel')"
-      (fileChange)="labelPhotoFile.set($event)"
-    />
+    @if (!product()) {
+      <app-photo-slot
+        [label]="t('product-form.itemPhotoLabel')"
+        (fileChange)="itemPhotoFile.set($event)"
+      />
+      <app-photo-slot
+        [label]="t('product-form.labelPhotoLabel')"
+        (fileChange)="labelPhotoFile.set($event)"
+      />
+    }
 
     @if (saveError()) {
       <nz-alert nzType="error" [nzMessage]="saveError()" nzShowIcon class="form-alert" />
     }
-    @if (uploadingPhotos()) {
+    @if (!product() && uploadingPhotos()) {
       <p class="field-hint">{{ t('product-form.uploadingPhotos') }}</p>
     }
-    @if (photoUploadWarning()) {
+    @if (!product() && photoUploadWarning()) {
       <nz-alert
         nzType="warning"
         [nzMessage]="t('product-form.photoUploadFailedWarning')"
@@ -197,7 +209,7 @@
         [nzLoading]="saving()"
         [disabled]="!isValid()"
       >
-        {{ t('product-form.submit') }}
+        {{ product() ? t('product-form.submitEdit') : t('product-form.submit') }}
       </button>
       <button nz-button type="button" (click)="cancelled.emit()" [disabled]="saving()">
         {{ 'common.cancel' | transloco }}

@@ -12,6 +12,7 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzRateModule } from 'ng-zorro-antd/rate';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -27,6 +28,7 @@ import { PhotoGallery } from '../../shared/photo-gallery';
 import { PriceEntryForm } from '../../shared/price-entry-form';
 import { QualityBadge } from '../../shared/quality-badge';
 import { RelativeDatePipe } from '../../shared/relative-date.pipe';
+import { ProductForm } from '../product-form/product-form';
 import { PriceChart } from './price-chart';
 
 const CHART_RANGES = [7, 30, 90, 365];
@@ -44,10 +46,12 @@ const CHART_RANGES = [7, 30, 90, 365];
     NzSelectModule,
     NzRateModule,
     NzAlertModule,
+    NzModalModule,
     QualityBadge,
     PriceEntryForm,
     PriceChart,
     PhotoGallery,
+    ProductForm,
     TranslocoDirective,
     TranslocoPipe,
     MoneyPipe,
@@ -101,6 +105,8 @@ export class ProductDetailPage {
   protected readonly selectedPriceKind = signal<PriceKind>('REGULAR');
 
   protected readonly ratingError = signal<string | null>(null);
+
+  protected readonly editing = signal(false);
 
   protected readonly flagging = signal(false);
   protected readonly flagMessage = signal<string | null>(null);
@@ -181,6 +187,13 @@ export class ProductDetailPage {
         this.ratingError.set(this.transloco.translate('product-detail.qualityLoginHint'));
       },
     });
+  }
+
+  /** Po uložení editace (`app-product-form` v `product()` režimu) — `updateProduct` vrací celý
+   *  ProductDetailFields (na rozdíl od updateStore), takže stačí prosté nahrazení stavu. */
+  onProductSaved(updated: Product): void {
+    this.product.set(updated);
+    this.editing.set(false);
   }
 
   flagProduct(): void {

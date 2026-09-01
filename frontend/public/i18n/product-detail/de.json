@@ -6,6 +6,7 @@
   "yourEdit": "Deine Bearbeitung",
   "draftPending": "Wartet auf Bestätigung — bisher nur für dich sichtbar",
   "report": "Melden",
+  "editModalTitle": "Ware bearbeiten",
   "qualityLoginHint": "Die Qualitätsbewertung erfordert eine Anmeldung — wechsle zur Seite Konto.",
   "qualityRateStars": "{count, plural, one {# Stern} other {# Sterne}}",
   "priceChartTitle": "Preisverlauf",

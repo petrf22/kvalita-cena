@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest';
+import type { Product } from '../../models/catalog';
 import {
+  buildUpdateProductInput,
   changedFromOff,
   codeMatchesOffCandidate,
   impliedNetContentUom,
   isProductFormValid,
   netContentForOffSubmit,
+  netContentForUpdateSubmit,
   offCandidateDefaults,
   pendingPhotoUploads,
   previewUnitPrice,
+  productFormDefaults,
 } from './product-form-validation';
 
 describe('isProductFormValid', () => {
@@ -146,6 +150,132 @@ describe('codeMatchesOffCandidate', () => {
   it('does not match a different or cleared code', () => {
     expect(codeMatchesOffCandidate('1234567890128', '3017620422003')).toBe(false);
     expect(codeMatchesOffCandidate('', '3017620422003')).toBe(false);
+  });
+});
+
+describe('productFormDefaults', () => {
+  it('converts grams/millilitres to form units (kg/l), same as OFF candidates', () => {
+    const product = {
+      name: 'Rama Klasik',
+      brand: { name: 'Rama' },
+      category: { id: '4' },
+      unitBase: 'MASS',
+      netContentValue: 250,
+      netContentUom: 'G',
+      piecesInPack: null,
+      isVariableWeight: false,
+    } as unknown as Product;
+    expect(productFormDefaults(product)).toMatchObject({
+      name: 'Rama Klasik',
+      brandName: 'Rama',
+      categoryId: '4',
+      netContentValue: 0.25,
+    });
+  });
+
+  it('falls back to an empty brand name when the product has none', () => {
+    const product = {
+      name: 'Bezznačkový chléb',
+      brand: null,
+      category: { id: '1' },
+      unitBase: 'MASS',
+      netContentValue: 1,
+      netContentUom: 'KG',
+      piecesInPack: null,
+      isVariableWeight: false,
+    } as unknown as Product;
+    expect(productFormDefaults(product).brandName).toBe('');
+  });
+});
+
+describe('netContentForUpdateSubmit', () => {
+  const defaults = {
+    name: 'Rama Klasik',
+    brandName: 'Rama',
+    categoryId: '4',
+    unitBase: 'MASS' as const,
+    netContentValue: 0.25,
+    piecesInPack: null,
+    isVariableWeight: false,
+  };
+
+  it('nulls both when nothing about the quantity changed', () => {
+    expect(
+      netContentForUpdateSubmit(
+        { netContentValue: 0.25, unitBase: 'MASS', isVariableWeight: false },
+        defaults,
+      ),
+    ).toEqual({ netContentValue: null, netContentUom: null });
+  });
+
+  it('sends both when only the unit base changed, not the number', () => {
+    expect(
+      netContentForUpdateSubmit(
+        { netContentValue: 0.25, unitBase: 'VOLUME', isVariableWeight: false },
+        defaults,
+      ),
+    ).toEqual({ netContentValue: 0.25, netContentUom: 'L' });
+  });
+
+  it('sends both when the value itself changed', () => {
+    expect(
+      netContentForUpdateSubmit(
+        { netContentValue: 0.3, unitBase: 'MASS', isVariableWeight: false },
+        defaults,
+      ),
+    ).toEqual({ netContentValue: 0.3, netContentUom: 'KG' });
+  });
+
+  it('sends null value when switching to variable weight', () => {
+    expect(
+      netContentForUpdateSubmit(
+        { netContentValue: null, unitBase: 'MASS', isVariableWeight: true },
+        defaults,
+      ),
+    ).toEqual({ netContentValue: null, netContentUom: 'KG' });
+  });
+});
+
+describe('buildUpdateProductInput', () => {
+  const defaults = {
+    name: 'Rama Klasik',
+    brandName: 'Rama',
+    categoryId: '4',
+    unitBase: 'MASS' as const,
+    netContentValue: 0.25,
+    piecesInPack: 1,
+    isVariableWeight: false,
+  };
+
+  it('sends null for every field left unchanged', () => {
+    expect(buildUpdateProductInput(defaults, defaults)).toEqual({
+      name: null,
+      brandName: null,
+      clearBrand: false,
+      categoryId: null,
+      unitBase: null,
+      netContentValue: null,
+      netContentUom: null,
+      piecesInPack: null,
+      clearPiecesInPack: false,
+      isVariableWeight: null,
+    });
+  });
+
+  it('clears brand and pieces when emptied', () => {
+    const form = { ...defaults, brandName: '', piecesInPack: null };
+    const input = buildUpdateProductInput(form, defaults);
+    expect(input.clearBrand).toBe(true);
+    expect(input.brandName).toBeNull();
+    expect(input.clearPiecesInPack).toBe(true);
+    expect(input.piecesInPack).toBeNull();
+  });
+
+  it('sends the changed name and category', () => {
+    const form = { ...defaults, name: 'Rama Light', categoryId: '7' };
+    const input = buildUpdateProductInput(form, defaults);
+    expect(input.name).toBe('Rama Light');
+    expect(input.categoryId).toBe('7');
   });
 });
 

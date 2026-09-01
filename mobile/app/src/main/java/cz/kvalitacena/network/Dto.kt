@@ -130,6 +130,9 @@ data class Product(
   val category: Category,
   val unitBase: String,
   val netContentValue: Double? = null,
+  // Server nese gramáž/objem z OFF v G/ML (OffNetContentConverter) — bez téhle jednotky by šla
+  // editace zboží (ProductFormViewModel) předvyplnit špatně (past OFF kandidáta, CLAUDE.md).
+  val netContentUom: String? = null,
   val netContentBase: Double,
   val piecesInPack: Int? = null,
   val isVariableWeight: Boolean,
@@ -138,6 +141,7 @@ data class Product(
   val isGeneric: Boolean = false,
   val prices: List<PriceCurrent> = emptyList(),
   // Jen v detailu (PRODUCT_DETAIL_FIELDS) — productByCode je nežádá, viz GraphQlClient.
+  val gtin: String? = null,
   val stats: ProductStats? = null,
   val quality: ProductQuality? = null,
   val myQualityRating: Int? = null,

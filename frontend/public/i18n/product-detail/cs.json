@@ -6,6 +6,7 @@
   "yourEdit": "Vaše úprava",
   "draftPending": "Čeká na potvrzení — zatím vidíte jen vy",
   "report": "Nahlásit",
+  "editModalTitle": "Upravit zboží",
   "qualityLoginHint": "Hodnocení kvality vyžaduje přihlášení — přejdi na stránku Účet.",
   "qualityRateStars": "{count, plural, one {# hvězda} few {# hvězdy} other {# hvězd}}",
   "priceChartTitle": "Vývoj ceny",

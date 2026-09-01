@@ -308,6 +308,7 @@
     <string name="price_entry_location_unavailable">Polohu sa nepodarilo zistiť — vyber obchod, keď budú dáta.</string>
 
     <string name="product_form_title">Nový tovar</string>
+    <string name="product_form_edit_title">Upraviť tovar</string>
     <string name="product_form_off_banner_title">Načítané z Open Food Facts — skontroluj a uprav podľa potreby. Klepnutím zobrazíš zdroj.</string>
     <string name="product_form_name_label">Názov tovaru</string>
     <string name="product_form_generic_tag">druhová položka</string>
@@ -322,7 +323,9 @@
     <string name="product_form_pieces_in_pack_label">Kusov v balení (voliteľné)</string>
     <string name="product_form_code_label">Čiarový kód (voliteľné)</string>
     <string name="product_form_code_hint">Bez kódu vznikne druhová položka (napr. „pečivo za %1$s“ z účtenky) — s nižšou dôveryhodnosťou dát, ale zapísať sa dá aj tak.</string>
+    <string name="product_form_code_read_only_hint">Čiarový kód sa v editácii nedá zmeniť.</string>
     <string name="product_form_submit">Založiť tovar</string>
+    <string name="product_form_submit_edit">Uložiť zmeny</string>
     <string name="product_form_back_without_creating">Späť bez založenia</string>
     <string name="product_form_item_photo_label">Fotka tovaru (voliteľné)</string>
     <string name="product_form_label_photo_label">Fotka etikety (voliteľné)</string>

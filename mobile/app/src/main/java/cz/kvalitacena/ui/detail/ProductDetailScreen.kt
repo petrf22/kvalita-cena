@@ -23,6 +23,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -40,6 +41,7 @@ import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.network.ExternalLink
 import cz.kvalitacena.network.PriceCurrent
+import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.PhotoGallery
 import cz.kvalitacena.ui.common.PhotoPicker
 import cz.kvalitacena.ui.common.QualityBadge
@@ -61,6 +63,7 @@ fun ProductDetailScreen(
   onWriteObservation: () -> Unit,
   onNavigateToAccount: () -> Unit,
   onStoreClick: (String) -> Unit,
+  onEditProduct: (String) -> Unit,
 ) {
   val viewModel: ProductDetailViewModel = viewModel(
     factory = viewModelFactory { initializer { ProductDetailViewModel(AppContainer.graphQlClient, productId) } },
@@ -68,6 +71,15 @@ fun ProductDetailScreen(
   val context = LocalContext.current
   val accessToken by AppContainer.authRepository.accessToken.collectAsState()
   val isLoggedIn = accessToken != null
+
+  // Po návratu z editace (ProductFormScreen productId != null) vyzvedne výsledek stejným vzorem
+  // jako StoreDetailScreen NavigationResults.updatedStore.
+  LaunchedEffect(Unit) {
+    NavigationResults.updatedProduct?.let {
+      viewModel.onProductUpdated(it)
+      NavigationResults.updatedProduct = null
+    }
+  }
 
   when {
     viewModel.loading -> {
@@ -129,6 +141,9 @@ fun ProductDetailScreen(
             AssistChip(onClick = {}, label = { Text(stringResource(R.string.product_draft_pending)) })
           }
           if (isLoggedIn) {
+            TextButton(onClick = { onEditProduct(productId) }) {
+              Text(stringResource(R.string.common_edit))
+            }
             TextButton(onClick = { viewModel.flagProduct() }, enabled = !viewModel.flagging) {
               Text(stringResource(R.string.common_report))
             }

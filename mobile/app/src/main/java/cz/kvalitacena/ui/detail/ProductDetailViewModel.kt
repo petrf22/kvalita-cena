@@ -111,6 +111,12 @@ class ProductDetailViewModel(
     product = product?.copy(photos = photos)
   }
 
+  /** Po návratu z editace (ProductFormScreen productId != null) — updateProduct vrací celý
+   *  PRODUCT_DETAIL_FIELDS (na rozdíl od updateStore), takže stačí prosté nahrazení stavu. */
+  fun onProductUpdated(updated: Product) {
+    product = updated
+  }
+
   /** Hlasuje se o FAKTU, nikdy o ČLOVĚKU (docs/reputace.md, "Nesouhlas se vyjadřuje k faktu"). */
   fun flagProduct() {
     flagging = true
