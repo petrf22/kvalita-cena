@@ -247,6 +247,14 @@ nikam mimo appku neodesílá bez tohohle kroku. Samotné zachytávání pádu je
 níž) — soubor zůstává jen v `filesDir` appky, dokud ho uživatel sám nepřiloží ke zprávě nebo
 appku neodinstaluje.
 
+**Obrana proti spamu (`docs/nasazeni.md`, „Zbývá") ukládá hash ZPRÁVY, nikdy IP.**
+`FeedbackSpamDetector` potřebuje poznat opakovanou spamovou zprávu, ale appka nesmí trvale
+ukládat IP odesílatele k obsahu — `core.feedback.message_hash` je SHA-256 normalizované zprávy
+(dedup za 24 h), IP zůstává jen v paměti `FeedbackRateLimiter` (Caffeine, mizí restartem, stejně
+jako u `OtpRateLimiter`). Proof-of-work výzva (`FeedbackChallengeService`, náhrada CAPTCHY,
+kterou appka nesmí použít — žádné externí skripty třetí strany) appka vůbec nepersistuje, jen
+krátkodobě pamatuje `salt` už vyřešené výzvy, aby nešlo jedno řešení přehrát tisíckrát.
+
 ## Passwordless auth (e-mail → OTP kód → token)
 
 Implementace: `security/OtpService.java`, `security/RefreshTokenService.java`,

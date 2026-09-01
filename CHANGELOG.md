@@ -9,6 +9,10 @@ za jednoduchost skriptu.
 
 ## [Nezveřejněno]
 
+### Zabezpečeno
+- Formulář zpětné vazby má proof-of-work výzvu místo CAPTCHY, vrstvené limity na IP/podsíť/celkový denní počet anonymních odeslání a odkládá podezřelé zprávy do karantény místo skrytí (server, web, mobil)
+- Klientská IP se čte odolně proti podvržení hlavičky `X-Forwarded-For` (server), oprava se týká i limitu na přihlašovací kódy
+
 ### Změněno
 - Anonymní zápisy se do prahu potvrzení bezkódového zboží/nového obchodu už nepočítají vůbec, dřív se všechny anonymní zápisy jednoho dne počítaly jako jedno potvrzení (server)
 - Poloha uživatele se před odesláním na OpenStreetMap Nominatim (reverzní geokódování) a do vyhledání obchodů v okolí zaokrouhlí na méně přesných desetinných míst, ať appka třetí straně neposílá falešně přesnou polohu (server)
@@ -17,6 +21,7 @@ za jednoduchost skriptu.
 ### Přidáno
 - Atribuce poskytovatele mapových dlaždic přímo v mapě (dřív jen ve „O aplikaci") (mobil)
 - Publikační sestavení mobilní appky teď bez podpisového klíče rovnou selže a po sestavení ověří podpis, místo aby tiše vyrobilo nepodepsaný soubor (mobil)
+- Záložka „Podezřelé" v moderaci pro zprávy zpětné vazby odložené kvůli podezření na spam, s možností vrátit falešný poplach zpět do fronty (web)
 
 ## [0.5.2] – 2026-08-31
 

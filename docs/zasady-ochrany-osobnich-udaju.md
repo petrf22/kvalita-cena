@@ -94,9 +94,10 @@ nenačte, dokud si o ni výslovně neřekneš (není součástí běžného zobr
 
 ### 3.7 Technická data
 
-Appka krátkodobě loguje technická data (např. IP adresu u přihlašovacích pokusů) kvůli
-ochraně proti zneužití (např. hromadnému zkoušení přihlašovacích kódů) — tahle data neslouží
-k profilování ani analytice a appka je neuchovává dlouhodobě.
+Appka krátkodobě loguje technická data (např. IP adresu u přihlašovacích pokusů a u odesílání
+formuláře zpětné vazby) kvůli ochraně proti zneužití (např. hromadnému zkoušení přihlašovacích
+kódů nebo hromadnému odesílání spamu) — tahle data neslouží k profilování ani analytice a appka
+je neuchovává dlouhodobě, jen v paměti serveru do restartu.
 
 ### 3.8 Zpětná vazba appce
 
@@ -126,7 +127,7 @@ slouží výhradně ke zlepšování appky.
 | Hodnocení kvality zboží, vlastní úpravy zboží/obchodu | po dobu trvání účtu, smazáno s účtem |
 | Volitelný profil (jméno, telefon, kontaktní e-mail, avatar) | po dobu trvání účtu, smazáno s účtem |
 | Přihlašovací e-mail (hash a šifrovaná podoba) | po dobu trvání účtu |
-| Technická data (IP u přihlašovacích pokusů) | krátkodobě, jen pro ochranu proti zneužití |
+| Technická data (IP u přihlašovacích pokusů a odesílání zpětné vazby) | krátkodobě, jen pro ochranu proti zneužití |
 | Zpětná vazba appce | po dobu, než ji provozovatel vyřídí a přestane být potřebná |
 
 ## 6. Komu údaje předáváme

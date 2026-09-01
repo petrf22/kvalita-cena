@@ -8,14 +8,47 @@ tenhle dokument produkční hosting backendu a webu).
 
 Odškrtávej rovnou v tomhle souboru a commituj. Naprostá většina souboru je dnes hotová a
 ověřená (odškrtnuté položky se schválně nemažou — jsou to i záznamy CO a KDY bylo rozhodnuto/
-ověřeno) — **aktivně nehotové jsou jen čtyři položky ze sekcí níž, shrnuté tady:**
+ověřeno) — **aktivně nehotové jsou jen tři položky ze sekcí níž, shrnuté tady:**
 
 ## Zbývá
 
 - [ ] Před veřejnou betou vrátit `SPRING_PROFILES_ACTIVE` na `prod` a povolit indexaci
-  (sekce 4).
+  (sekce 4) — tím se zároveň zapne `app.feedback.challenge.required` (viz níž), appka jinak
+  drží prod hodnotu `true` implicitně, jen `beta` profil ji dočasně vrací na `false`.
 - [ ] Před veřejnou betou vyměnit SMTP Gigaserveru za dedikovaného poskytovatele (sekce 4).
-- [ ] Před veřejnou betou posílit obranu formuláře zpětné vazby proti spamu (sekce 4).
+- [x] **Posílit obranu formuláře zpětné vazby proti spamu** — hotovo 2026-09-01. Čtyři vrstvy:
+  1. **Oprava obejitelného `X-Forwarded-For`** — `FeedbackRateLimiter`/`OtpRateLimiter` a
+     spol. braly první položku hlavičky, kterou si klient mohl sám dopsat, protože Caddy
+     (`frontend/Caddyfile`) k ní ve výchozím nastavení jen připojuje. Opraveno na dvou
+     místech: Caddy teď hlavičku PŘEPISUJE (`header_up X-Forwarded-For {remote_host}` u
+     obou `reverse_proxy` bloků) a sdílený `ClientIpResolver`
+     (`app.security.trusted-proxy-count`, výchozí 1) čte hodnotu zprava, ne první zleva —
+     druhá pojistka, kdyby se Caddy oprava někdy omylem odstranila. Nasazeno ve
+     `FeedbackGraphQlController`, `AuthController`, `EmailChangeController`,
+     `AccountController` — díra se netýkala jen feedbacku, ale i OTP limiteru 20/hod/IP.
+  2. **Vrstvené rate limity** (`FeedbackRateLimiter`, `app.feedback.*`) — IP/den (5), podsíť/den
+     (IPv4 /24, IPv6 /48, 10), globálně/hod a globálně/den přes VŠECHNA anonymní odeslání
+     (60/300, netýká se přihlášených), uživatel/den beze změny (20).
+  3. **Proof-of-work výzva** (`FeedbackChallengeService`, GraphQL `feedbackChallenge`) místo
+     CAPTCHY, kterou appka nesmí použít (`docs/soukromi.md`, žádné externí skripty třetí
+     strany) — klient hledá `nonce`, pro které má `SHA-256(salt + ":" + nonce)`
+     `app.feedback.challenge.difficulty` (výchozí 18) vedoucích nulových bitů. Token nese
+     výzvu podepsanou HMAC odvozeným z `JWT_SECRET` (žádná nová env proměnná), replay brání
+     krátkodobá cache použitých saltů. Implementováno na webu (`shared/proof-of-work.ts` +
+     Web Worker) i mobilu (`ui/feedback/ProofOfWork.kt`) — obě definice musí zůstat bit-přesně
+     stejné jako backend, ověřeno pevným testovacím vektorem na všech třech místech.
+     `app.feedback.challenge.required` je `true` v `application-prod.yml`, `false` v
+     `application-beta.yml` (starší testerské APK bez PoW appka dál přijme, jen ho skóruje
+     jako podezřelé — viz níž) a `false` v dev `application.yml`.
+  4. **Skórování a karanténa** (`FeedbackSpamDetector`, `core.feedback.spam_score`/
+     `spam_reasons`/`quarantined_at`) — honeypot pole `website` (jen web,
+     `feedback-page.html`, schované CSS ne `hidden` atributem), chybějící/neplatná/podezřele
+     rychlá výzva, duplicitní zpráva za 24 h (`message_hash` — SHA-256 ZPRÁVY, nikdy IP), moc
+     odkazů nebo zpráva tvořená jen odkazem. Skóre nad práh (`app.feedback.spam.quarantine-
+     threshold`, výchozí 50) jde do karantény, NE se tiše zahodí — moderátor má na
+     `/moderation` novou záložku „Podezřelé" s viditelným důvodem a cestou zpět
+     (`setFeedbackQuarantined`), stejný princip jako `resolveFlags DISMISSED` u nahlášení.
+     Přihlášený odesílatel má vždy skóre 0 (prošel OTP, má vlastní limit).
 - [ ] Po spuštění bety sledovat, kolik bezkódového zboží uvízne v DRAFTu (sekce 4) —
   anonymní zápisy se od teď do prahu potvrzení nepočítají (`docs/reputace.md`).
 
@@ -322,16 +355,9 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   pozvaných testerů, ne na veřejný provoz s neznámým objemem a bez kontroly nad doručitelností.
   Tehdy teprve přijde na řadu ověření odesílací domény u nového poskytovatele a sloučení jeho
   `include:` do stávajícího SPF záznamu (past popsaná v sekci 3 výš).
-- [ ] **Před veřejnou betou: posílit obranu formuláře zpětné vazby proti spamu.** Dnešní obrana
-  (`FeedbackRateLimiter`, `app.feedback.max-per-day-per-ip: 20`) stačí na uzavřenou betu
-  s osobně pozvanými lidmi, ale ne na veřejný formulář dostupný komukoli:
-  - 20 odeslání/den na IP je velkorysé pro anonymní útočníka z jedné IP; proti
-    distribuovanému spamu (víc IP) appka nemá vůbec nic.
-  - žádný CAPTCHA/honeypot — appka nerozezná bota od člověka.
-  - na rozdíl od `core.record_flag` (`app.moderation.flags-to-hide`) nemá `core.feedback`
-    žádné automatické skrytí/prioritizaci — při náporu by fronta na `/moderation` rychle
-    zavalila jediného moderátora (`docs/soukromi.md`, „kapacita moderace jednoho člověka").
-  Řešit až tady, ne dřív — do té doby appku nikdo zvenčí nenajde (`robots.txt` výš).
+- [x] **Posílit obranu formuláře zpětné vazby proti spamu** — hotovo 2026-09-01, viz shrnutí
+  v sekci „Zbývá" výš (oprava obejitelného `X-Forwarded-For`, vrstvené limity, proof-of-work,
+  skórování + karanténa s novou záložkou „Podezřelé" na `/moderation`).
 - [ ] **Sledovat po spuštění bety, kolik bezkódového zboží uvízne v DRAFTu.** Anonymní zápisy
   se od teď do prahu potvrzení (`app.catalog.draft-confirmations`, výchozí 3) nepočítají vůbec
   (`docs/reputace.md`, „Reputační skóre — čítače s exponenciálním útlumem") — DRAFT odemyká

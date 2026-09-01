@@ -405,6 +405,25 @@ vedle existující fronty nahlášení, ne jako samostatný gatovaný kontroler 
 `FeedbackService`, jen autorizace (`requireModerator`) se sdílí. Jen web (`/moderation`, záložka
 „Zpětná vazba"), stejně jako zbytek moderace není appce, je nástroj provozovatele.
 
+### Obrana proti spamu (`2026-09-01/01-feedback-spam.yaml`)
+
+Před veřejnou betou (`docs/nasazeni.md`, „Zbývá") přibyly čtyři sloupce, které `FeedbackSpamDetector`
+používá k odložení podezřelé zprávy stranou, aniž by ji zahodil nebo poslal moderátorovi do
+běžné fronty — vzor `hidden_at`/`resolved_at` u `core.record_flag`:
+
+- `spam_score`/`spam_reasons` — součet skóre za jednotlivé signály (honeypot, chybějící/
+  neplatná proof-of-work výzva, duplicitní zpráva, moc odkazů) a čárkou oddělené kódy PROČ,
+  ať moderátor v záložce „Podezřelé" vidí důvod, ne jen číslo.
+- `quarantined_at` — NULL = normální fronta, vyplněné = karanténa. `setFeedbackQuarantined` je
+  cesta zpět pro falešný poplach, stejný princip jako `resolveFlags DISMISSED`.
+- `message_hash` — SHA-256 NORMALIZOVANÉ zprávy (trim + lowercase) pro dedup opakovaného spamu
+  za posledních 24 h. **Nikdy IP** — ta zůstává jen v paměti `FeedbackRateLimiter`
+  (`docs/soukromi.md`, „Zpětná vazba").
+
+Proof-of-work výzvu (`FeedbackChallengeService`, GraphQL `feedbackChallenge`) appka nepersistuje
+vůbec — token nese celou výzvu podepsanou HMAC odvozeným z `JWT_SECRET`, jen krátkodobá
+in-memory cache brání přehrání jednou vyřešeného saltu.
+
 ## Co ještě není v etapě 1
 
 ### Open Food Facts

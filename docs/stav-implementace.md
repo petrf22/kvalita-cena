@@ -307,7 +307,12 @@ sám od sebe. Verze appky na webu se generuje z `package.json` (`tools/version/w
 → `src/app/version.ts`, `npm run prestart`/`prebuild`) místo dřívější natvrdo zapsané
 konstanty; mobil odjakživa četl `BuildConfig.VERSION_NAME`. `dev/beta-report.sql` je provozní
 přehled bez analytiky (kolik lidí zapsalo cenu, kolik čeká na potvrzení/moderaci) pro ruční
-kontrolu při běžící betě.
+kontrolu při běžící betě. **Obrana proti spamu je hotová** (`docs/nasazeni.md`, „Zbývá",
+2026-09-01): oprava obejitelného `X-Forwarded-For` (sdílený `ClientIpResolver`, Caddy
+`header_up`), vrstvené limity (`FeedbackRateLimiter` — IP/podsíť/globální anonymní/uživatel),
+proof-of-work výzva místo CAPTCHY (`FeedbackChallengeService`, web `shared/proof-of-work.ts` +
+Web Worker, mobil `ui/feedback/ProofOfWork.kt`) a skórování s karanténou
+(`FeedbackSpamDetector`, nová záložka „Podezřelé" na `/moderation`).
 
 ## Open Food Facts
 
