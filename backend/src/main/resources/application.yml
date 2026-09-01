@@ -150,11 +150,27 @@ app:
     photo-flags-to-hide: 1
   feedback:
     # Zpětná vazba od uživatele appky (docs/nasazeni.md, "Než pozvat první lidi") — funguje i
-    # anonymně, prahy proto velkoryse jako zbytek MVP limitů.
+    # anonymně. Vrstvené limity + proof-of-work + spam skóre jsou obrana proti veřejnému
+    # spuštění (docs/nasazeni.md, "Zbývá"), doplněná před veřejnou betou — v dev/beta profilu
+    # zůstávají velkorysé jako zbytek MVP limitů.
     max-message-length: 2000
     max-diagnostics-length: 8000
-    max-per-day-per-ip: 20
+    max-per-day-per-ip: 5
+    max-per-day-per-subnet: 10
     max-per-day-per-user: 20
+    max-anonymous-per-hour: 60
+    max-anonymous-per-day: 300
+    challenge:
+      # V dev appka běží proti localhostu bez připraveného PoW klienta na každém testu —
+      # required se natvrdo zapíná v application-prod.yml, dev tedy jen kontroluje detektor
+      # (chybějící výzva = spam signál, ne tvrdé odmítnutí).
+      required: false
+      difficulty: 18
+      ttl: PT5M
+      min-age: PT0.3S
+    spam:
+      quarantine-threshold: 50
+      max-links: 2
   media:
     # Adresář na disku mimo pg_dump (docs/datovy-model.md) — v produkci mimo repozitář,
     # zálohuje se nezávisle na databázi.

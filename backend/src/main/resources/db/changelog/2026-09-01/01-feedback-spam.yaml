@@ -1,0 +1,74 @@
+# 01-feedback-spam.yaml — obrana core.feedback proti spamu před veřejnou betou
+# (docs/nasazeni.md, "Zbývá"). Dřívější obrana byla jen denní strop na IP/uživatele
+# (FeedbackRateLimiter) — appka nerozeznala bota od člověka a neměla kam podezřelou zprávu
+# odložit, na rozdíl od core.record_flag s hidden_at.
+#
+# quarantined_at je vzor hidden_at/resolved_at z 2026-08-18/02-moderation.yaml: NULL = normální
+# fronta, vyplněné = "Podezřelé" záložka na /moderation, cesta zpět (setFeedbackQuarantined)
+# existuje stejně jako resolveFlags DISMISSED — falešný poplach nesmí být trvalý.
+#
+# message_hash ukládá hash ZPRÁVY (dedup opakovaného spamu), NIKDY IP — IP zůstává jen
+# in-memory ve FeedbackRateLimiter (docs/soukromi.md, "Zpětná vazba").
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-01-01-feedback-add-spam-columns
+      author: Petr F.
+      comment: >
+        FeedbackSpamDetector potřebuje kam uložit skóre/důvod a kam odložit podezřelou zprávu,
+        aniž by ji smazal nebo poslal rovnou moderátorovi do běžné fronty.
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: feedback
+            columns:
+              - column:
+                  name: spam_score
+                  type: SMALLINT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: spam_reasons
+                  type: VARCHAR(200)
+              - column:
+                  name: quarantined_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: message_hash
+                  type: BYTEA
+        - sql:
+            sql: |
+              -- Dedup opakovaného spamu (FeedbackSpamDetector) — hledá se vždy "shoda za
+              -- posledních 24 hodin", index proto nese i created_at.
+              CREATE INDEX idx_feedback_message_hash ON core.feedback (message_hash, created_at);
+
+              -- Nahrazuje idx_feedback_unhandled z 2026-08-20/02-feedback.yaml — výchozí fronta
+              -- (feedbackItems s quarantined: false) se teď ptá i na karanténu, ne jen na
+              -- handled_at, jinak by se podezřelé zprávy ukazovaly moderátorovi v běžné frontě.
+              DROP INDEX IF EXISTS core.idx_feedback_unhandled;
+              CREATE INDEX idx_feedback_unhandled
+                ON core.feedback (created_at)
+                WHERE handled_at IS NULL AND quarantined_at IS NULL;
+              CREATE INDEX idx_feedback_quarantined
+                ON core.feedback (created_at)
+                WHERE quarantined_at IS NOT NULL AND handled_at IS NULL;
+      rollback:
+        - sql:
+            sql: |
+              DROP INDEX IF EXISTS core.idx_feedback_quarantined;
+              DROP INDEX IF EXISTS core.idx_feedback_unhandled;
+              CREATE INDEX idx_feedback_unhandled ON core.feedback (created_at)
+                WHERE handled_at IS NULL;
+              DROP INDEX IF EXISTS core.idx_feedback_message_hash;
+        - dropColumn:
+            schemaName: core
+            tableName: feedback
+            columns:
+              - column:
+                  name: spam_score
+              - column:
+                  name: spam_reasons
+              - column:
+                  name: quarantined_at
+              - column:
+                  name: message_hash

@@ -15,13 +15,19 @@ import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.TooManyRequestsException;
 import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.security.EmailCipher;
+import cz.kvalitacena.security.FeedbackChallengeService;
 import cz.kvalitacena.security.FeedbackRateLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
@@ -45,6 +51,8 @@ public class FeedbackService {
   private final AppUserRepository appUserRepository;
   private final FeedbackProperties feedbackProperties;
   private final FeedbackRateLimiter feedbackRateLimiter;
+  private final FeedbackChallengeService feedbackChallengeService;
+  private final FeedbackSpamDetector feedbackSpamDetector;
   private final EmailCipher emailCipher;
   private final HandleRenderer handleRenderer;
 
@@ -58,6 +66,27 @@ public class FeedbackService {
     String message = validateMessage(input.message());
     String contactEmail = validateContactEmail(input.contactEmail());
 
+    boolean challengeProvided = input.challenge() != null && input.nonce() != null;
+    FeedbackChallengeService.Outcome challengeOutcome = challengeProvided
+        ? feedbackChallengeService.verify(input.challenge(), input.nonce())
+        : FeedbackChallengeService.Outcome.INVALID;
+
+    // "required" gatuje appku natvrdo (prod) — v beta profilu appka starším klientům bez PoW
+    // vůbec neblokuje odeslání, jen ho nechá projít detektorem výš (viz FeedbackSpamDetector).
+    if (feedbackProperties.getChallenge().isRequired()) {
+      if (!challengeProvided) {
+        throw new ValidationException(ErrorCode.FEEDBACK_CHALLENGE_REQUIRED);
+      }
+      if (challengeOutcome == FeedbackChallengeService.Outcome.INVALID) {
+        throw new ValidationException(ErrorCode.FEEDBACK_CHALLENGE_INVALID);
+      }
+    }
+
+    byte[] messageHash = hashMessage(message);
+    boolean honeypotFilled = input.website() != null && !input.website().isBlank();
+    FeedbackSpamDetector.Result spamResult = feedbackSpamDetector.evaluate(
+        message, honeypotFilled, challengeOutcome, challengeProvided, messageHash, viewerUserId);
+
     Feedback feedback = Feedback.builder()
         .userId(viewerUserId)
         .category(input.category())
@@ -70,6 +99,10 @@ public class FeedbackService {
         .country(trimToLength(country, 2))
         .pageRef(trimToLength(input.pageRef(), 200))
         .diagnostics(trimToLength(input.diagnostics(), feedbackProperties.getMaxDiagnosticsLength()))
+        .spamScore((short) spamResult.score())
+        .spamReasons(spamResult.reasons().isEmpty() ? null : String.join(",", spamResult.reasons()))
+        .quarantinedAt(spamResult.quarantine() ? OffsetDateTime.now() : null)
+        .messageHash(messageHash)
         .build();
 
     feedback = feedbackRepository.save(feedback);
@@ -77,12 +110,12 @@ public class FeedbackService {
   }
 
   @Transactional(readOnly = true)
-  public FeedbackItemResult list(Boolean handled, Integer first, Integer offset) {
+  public FeedbackItemResult list(Boolean handled, boolean quarantined, Integer first, Integer offset) {
     int limit = clamp(first == null ? 20 : first, 1, MAX_FIRST);
     int off = clamp(offset == null ? 0 : offset, 0, MAX_OFFSET);
 
-    List<Feedback> page = feedbackRepository.findPage(handled, limit, off);
-    long total = feedbackRepository.countPage(handled);
+    List<Feedback> page = feedbackRepository.findPage(handled, quarantined, limit, off);
+    long total = feedbackRepository.countPage(handled, quarantined);
 
     List<FeedbackItem> items = page.stream().map(this::toItem).toList();
     return new FeedbackItemResult(items, (int) total, off + items.size() < total);
@@ -98,6 +131,15 @@ public class FeedbackService {
     feedbackRepository.save(feedback);
   }
 
+  /** Cesta zpět z karantény (falešný poplach) i tam, stejný princip jako {@code resolveFlags DISMISSED}. */
+  @Transactional
+  public void setQuarantined(Long id, boolean quarantined) {
+    Feedback feedback = feedbackRepository.findById(id)
+        .orElseThrow(() -> new NotFoundException(ErrorCode.FEEDBACK_NOT_FOUND));
+    feedback.setQuarantinedAt(quarantined ? OffsetDateTime.now() : null);
+    feedbackRepository.save(feedback);
+  }
+
   private FeedbackItem toItem(Feedback feedback) {
     AppUser author = feedback.getUserId() == null
         ? null
@@ -105,11 +147,26 @@ public class FeedbackService {
     String contactEmail = feedback.getContactEmailEnc() == null
         ? null
         : emailCipher.decryptValue(feedback.getContactEmailEnc());
+    List<String> spamReasons = feedback.getSpamReasons() == null
+        ? List.of()
+        : Arrays.stream(feedback.getSpamReasons().split(",")).toList();
     return new FeedbackItem(feedback.getId(), feedback.getCategory(), feedback.getMessage(), contactEmail,
         feedback.getClientKind(), feedback.getAppVersion(), feedback.getPlatformInfo(), feedback.getLocale(),
         feedback.getCountry(), feedback.getPageRef(), feedback.getDiagnostics(), feedback.getCreatedAt(),
         feedback.getHandledAt() != null, feedback.getHandledNote(),
-        author == null ? null : author.getPublicUid(), author == null ? null : handleRenderer.render(author));
+        author == null ? null : author.getPublicUid(), author == null ? null : handleRenderer.render(author),
+        feedback.getSpamScore(), spamReasons, feedback.getQuarantinedAt() != null);
+  }
+
+  /** Hash NORMALIZOVANÉ zprávy (trim + lowercase) pro dedup opakovaného spamu — nikdy IP, viz
+   *  docs/soukromi.md, "Zpětná vazba". */
+  private byte[] hashMessage(String message) {
+    try {
+      String normalized = message.trim().toLowerCase(Locale.ROOT);
+      return MessageDigest.getInstance("SHA-256").digest(normalized.getBytes(StandardCharsets.UTF_8));
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   private String validateMessage(String rawMessage) {

@@ -4,6 +4,7 @@ import cz.kvalitacena.db.entity.ClientKind;
 import cz.kvalitacena.db.entity.FeedbackCategory;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -15,5 +16,5 @@ import java.util.UUID;
 public record FeedbackItem(long id, FeedbackCategory category, String message, String contactEmail,
     ClientKind clientKind, String appVersion, String platformInfo, String locale, String country,
     String pageRef, String diagnostics, OffsetDateTime createdAt, boolean handled, String handledNote,
-    UUID authorPublicUid, String authorHandle) {
+    UUID authorPublicUid, String authorHandle, int spamScore, List<String> spamReasons, boolean quarantined) {
 }

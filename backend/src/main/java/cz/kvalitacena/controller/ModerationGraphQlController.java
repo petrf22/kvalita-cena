@@ -38,10 +38,10 @@ public class ModerationGraphQlController {
   private final ViewerContextResolver viewerContextResolver;
 
   @QueryMapping
-  public FeedbackItemResult feedbackItems(@Argument Boolean handled, @Argument Integer first,
-      @Argument Integer offset, Authentication authentication) {
+  public FeedbackItemResult feedbackItems(@Argument Boolean handled, @Argument boolean quarantined,
+      @Argument Integer first, @Argument Integer offset, Authentication authentication) {
     requireModerator(authentication);
-    return feedbackService.list(handled, first, offset);
+    return feedbackService.list(handled, quarantined, first, offset);
   }
 
   @MutationMapping
@@ -49,6 +49,14 @@ public class ModerationGraphQlController {
       Authentication authentication) {
     Long moderatorUserId = requireModerator(authentication);
     feedbackService.setHandled(id, handled, note, moderatorUserId);
+    return true;
+  }
+
+  @MutationMapping
+  public Boolean setFeedbackQuarantined(@Argument Long id, @Argument boolean quarantined,
+      Authentication authentication) {
+    requireModerator(authentication);
+    feedbackService.setQuarantined(id, quarantined);
     return true;
   }
 

@@ -84,6 +84,27 @@ public class Feedback implements Persistable<Long> {
   @Column(name = "handled_note", length = 500)
   private String handledNote;
 
+  // FeedbackSpamDetector — viz docs/nasazeni.md, "Zbývá". 0 = nic nápadného, vyšší = víc
+  // shodujících se signálů (honeypot, chybějící/opakovaný proof-of-work, duplicita zprávy...).
+  @Column(name = "spam_score", nullable = false)
+  @Builder.Default
+  private short spamScore = 0;
+
+  // Čárkou oddělené kódy signálů (docs/reputace.md styl "proč", ne jen "kolik") — ať moderátor
+  // v "Podezřelé" vidí DŮVOD karantény, ne jen holé číslo.
+  @Column(name = "spam_reasons", length = 200)
+  private String spamReasons;
+
+  // NULL = normální fronta, vyplněné = "Podezřelé" na /moderation — vzor handled_at/hidden_at
+  // jinde v appce. setFeedbackQuarantined je cesta zpět, stejně jako resolveFlags DISMISSED.
+  @Column(name = "quarantined_at", columnDefinition = "TIMESTAMPTZ")
+  private OffsetDateTime quarantinedAt;
+
+  // SHA-256 normalizované zprávy pro dedup opakovaného spamu (FeedbackSpamDetector) — NIKDY IP,
+  // ta zůstává jen in-memory ve FeedbackRateLimiter (docs/soukromi.md, "Zpětná vazba").
+  @Column(name = "message_hash")
+  private byte[] messageHash;
+
   @PrePersist
   protected void onCreate() {
     createdAt = OffsetDateTime.now();

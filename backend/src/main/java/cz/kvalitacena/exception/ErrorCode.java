@@ -108,6 +108,10 @@ public enum ErrorCode {
   FEEDBACK_MESSAGE_TOO_LONG("error.feedback.messageTooLong"),         // {0} = max délka
   FEEDBACK_CONTACT_EMAIL_INVALID("error.feedback.contactEmailInvalid"),
   FEEDBACK_NOT_FOUND("error.feedback.notFound"),
+  // Proof-of-work výzva (docs/nasazeni.md, obrana proti spamu) — vlastní dvojice kódů, ne
+  // sdílené INVALID_CHALLENGE níž (to je pro OTP login/e-mail/výmaz účtu, jiná věc).
+  FEEDBACK_CHALLENGE_REQUIRED("error.feedback.challengeRequired"),
+  FEEDBACK_CHALLENGE_INVALID("error.feedback.challengeInvalid"),
 
   // --- auth
   INVALID_CHALLENGE("error.auth.invalidChallenge"),

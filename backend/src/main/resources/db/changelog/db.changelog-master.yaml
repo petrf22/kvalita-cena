@@ -38,3 +38,4 @@ databaseChangeLog:
   - include: { file: 2026-08-29/02-off-additives.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-29/03-retail-chain-seed.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-08-30/01-quality-stars.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-09-01/01-feedback-spam.yaml, relativeToChangelogFile: true }

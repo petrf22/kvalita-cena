@@ -65,6 +65,13 @@ app:
       # Bez ověřené odesílací adresy většina SMTP poskytovatelů zprávu s ověřenou doménou
       # rovnou odmítne — proto bez defaultu, appka bez ní v produkci nenastartuje.
       mail-from: ${SMTP_FROM}
+  feedback:
+    challenge:
+      # Prahy zdědí application.yml (difficulty/ttl/min-age) — required je JEDINÁ hodnota,
+      # kterou produkce mění, a musí zůstat true (docs/nasazeni.md, "Zbývá"): appka bez ní
+      # spam formuláře zpětné vazby přijímá a jen skóruje, ne blokuje. Profil "beta" required
+      # dočasně vrací na false, viz application-beta.yml.
+      required: true
   media:
     root: ${MEDIA_ROOT}
   external:

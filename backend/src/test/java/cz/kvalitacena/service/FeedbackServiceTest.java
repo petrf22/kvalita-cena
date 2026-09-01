@@ -14,13 +14,16 @@ import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.TooManyRequestsException;
 import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.security.EmailCipher;
+import cz.kvalitacena.security.FeedbackChallengeService;
 import cz.kvalitacena.security.FeedbackRateLimiter;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,11 +31,15 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /**
  * Zpětná vazba od uživatele appky (core.feedback) — na rozdíl od nahlašování (RecordFlagService)
- * funguje i anonymně, viz docs/soukromi.md.
+ * funguje i anonymně, viz docs/soukromi.md. Proof-of-work ({@link FeedbackChallengeService}) a
+ * skórování ({@link FeedbackSpamDetector}) mají vlastní testy — tady se testuje jen JAK je
+ * FeedbackService používá (required gating, karanténa místo tvrdého odmítnutí).
  */
 @ExtendWith(MockitoExtension.class)
 class FeedbackServiceTest {
@@ -48,23 +55,37 @@ class FeedbackServiceTest {
   @Mock
   private FeedbackRateLimiter feedbackRateLimiter;
   @Mock
+  private FeedbackChallengeService feedbackChallengeService;
+  @Mock
+  private FeedbackSpamDetector feedbackSpamDetector;
+  @Mock
   private EmailCipher emailCipher;
   @Mock
   private HandleRenderer handleRenderer;
 
   private final FeedbackProperties feedbackProperties = new FeedbackProperties();
 
-  private FeedbackService service() {
+  @BeforeEach
+  void defaults() {
     feedbackProperties.setMaxMessageLength(2000);
     feedbackProperties.setMaxDiagnosticsLength(8000);
     feedbackProperties.setMaxPerDayPerIp(20);
     feedbackProperties.setMaxPerDayPerUser(20);
+    // Testy níž necílí na proof-of-work samotné (má FeedbackChallengeServiceTest) — required
+    // vypnuté, ať se soustředí na zbytek submit().
+    feedbackProperties.getChallenge().setRequired(false);
+
+    lenient().when(feedbackSpamDetector.evaluate(any(), anyBoolean(), any(), anyBoolean(), any(), any()))
+        .thenReturn(new FeedbackSpamDetector.Result(0, List.of(), false));
+  }
+
+  private FeedbackService service() {
     return new FeedbackService(feedbackRepository, appUserRepository, feedbackProperties,
-        feedbackRateLimiter, emailCipher, handleRenderer);
+        feedbackRateLimiter, feedbackChallengeService, feedbackSpamDetector, emailCipher, handleRenderer);
   }
 
   private FeedbackInput input(String message, String contactEmail) {
-    return new FeedbackInput(FeedbackCategory.BUG, message, contactEmail, "/product/7", "0.1.0", null);
+    return new FeedbackInput(FeedbackCategory.BUG, message, contactEmail, "/product/7", "0.1.0", null, null, null, null);
   }
 
   @Test
@@ -84,6 +105,7 @@ class FeedbackServiceTest {
     org.mockito.Mockito.verify(feedbackRepository).save(captor.capture());
     assertThat(captor.getValue().getUserId()).isNull();
     assertThat(captor.getValue().getClientKind()).isEqualTo(ClientKind.ANDROID);
+    assertThat(captor.getValue().getMessageHash()).isNotNull();
   }
 
   @Test
@@ -97,9 +119,7 @@ class FeedbackServiceTest {
   void tooLongMessageIsRejected() {
     when(feedbackRateLimiter.tryAcquire(any(), any())).thenReturn(true);
     feedbackProperties.setMaxMessageLength(10);
-    FeedbackService service = new FeedbackService(feedbackRepository, appUserRepository, feedbackProperties,
-        feedbackRateLimiter, emailCipher, handleRenderer);
-    assertThatThrownBy(() -> service.submit(input("tohle je moc dlouhá zpráva", null), USER_ID, ClientKind.WEB,
+    assertThatThrownBy(() -> service().submit(input("tohle je moc dlouhá zpráva", null), USER_ID, ClientKind.WEB,
         IP, null, "cs", "CZ"))
         .isInstanceOf(ValidationException.class);
   }
@@ -137,32 +157,112 @@ class FeedbackServiceTest {
   }
 
   @Test
+  void missingChallengeIsRejectedWhenRequired() {
+    feedbackProperties.getChallenge().setRequired(true);
+    when(feedbackRateLimiter.tryAcquire(any(), any())).thenReturn(true);
+
+    assertThatThrownBy(() -> service().submit(input("test", null), null, ClientKind.WEB, IP, null, "cs", "CZ"))
+        .isInstanceOf(ValidationException.class)
+        .hasFieldOrPropertyWithValue("code", cz.kvalitacena.exception.ErrorCode.FEEDBACK_CHALLENGE_REQUIRED);
+  }
+
+  @Test
+  void invalidChallengeIsRejectedWhenRequired() {
+    feedbackProperties.getChallenge().setRequired(true);
+    when(feedbackRateLimiter.tryAcquire(any(), any())).thenReturn(true);
+    when(feedbackChallengeService.verify("token", "nonce")).thenReturn(FeedbackChallengeService.Outcome.INVALID);
+
+    FeedbackInput input = new FeedbackInput(FeedbackCategory.BUG, "test", null, null, null, null,
+        "token", "nonce", null);
+
+    assertThatThrownBy(() -> service().submit(input, null, ClientKind.WEB, IP, null, "cs", "CZ"))
+        .isInstanceOf(ValidationException.class)
+        .hasFieldOrPropertyWithValue("code", cz.kvalitacena.exception.ErrorCode.FEEDBACK_CHALLENGE_INVALID);
+  }
+
+  @Test
+  void validChallengeIsAcceptedWhenRequired() {
+    feedbackProperties.getChallenge().setRequired(true);
+    when(feedbackRateLimiter.tryAcquire(any(), any())).thenReturn(true);
+    when(feedbackChallengeService.verify("token", "nonce")).thenReturn(FeedbackChallengeService.Outcome.VALID);
+    when(feedbackRepository.save(any())).thenAnswer(inv -> {
+      Feedback f = inv.getArgument(0);
+      f.setId(11L);
+      return f;
+    });
+
+    FeedbackInput input = new FeedbackInput(FeedbackCategory.BUG, "test", null, null, null, null,
+        "token", "nonce", null);
+
+    FeedbackResult result = service().submit(input, null, ClientKind.WEB, IP, null, "cs", "CZ");
+
+    assertThat(result).isNotNull();
+  }
+
+  @Test
+  void highSpamScoreIsQuarantinedNotRejected() {
+    when(feedbackRateLimiter.tryAcquire(any(), any())).thenReturn(true);
+    when(feedbackSpamDetector.evaluate(any(), anyBoolean(), any(), anyBoolean(), any(), any()))
+        .thenReturn(new FeedbackSpamDetector.Result(150, List.of("HONEYPOT"), true));
+    when(feedbackRepository.save(any())).thenAnswer(inv -> {
+      Feedback f = inv.getArgument(0);
+      f.setId(12L);
+      return f;
+    });
+
+    FeedbackResult result = service().submit(input("spam spam spam", null), null, ClientKind.WEB, IP, null, "cs", "CZ");
+
+    assertThat(result).isNotNull(); // uloží se, nevyhodí výjimku
+    ArgumentCaptor<Feedback> captor = ArgumentCaptor.forClass(Feedback.class);
+    org.mockito.Mockito.verify(feedbackRepository).save(captor.capture());
+    assertThat(captor.getValue().getQuarantinedAt()).isNotNull();
+    assertThat(captor.getValue().getSpamScore()).isEqualTo((short) 150);
+    assertThat(captor.getValue().getSpamReasons()).isEqualTo("HONEYPOT");
+  }
+
+  @Test
   void listReturnsAuthorForLoggedInSubmitter() {
     Feedback feedback = Feedback.builder().id(5L).userId(USER_ID).category(FeedbackCategory.IDEA)
         .message("nápad").clientKind(ClientKind.WEB).build();
-    when(feedbackRepository.findPage(null, 20, 0)).thenReturn(List.of(feedback));
-    when(feedbackRepository.countPage(null)).thenReturn(1L);
+    when(feedbackRepository.findPage(null, false, 20, 0)).thenReturn(List.of(feedback));
+    when(feedbackRepository.countPage(null, false)).thenReturn(1L);
     AppUser author = AppUser.builder().id(USER_ID).publicUid(PUBLIC_UID).build();
     when(appUserRepository.findById(USER_ID)).thenReturn(Optional.of(author));
     when(handleRenderer.render(author)).thenReturn("Modrý čáp #4271");
 
-    FeedbackItemResult result = service().list(null, null, null);
+    FeedbackItemResult result = service().list(null, false, null, null);
 
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().get(0).authorPublicUid()).isEqualTo(PUBLIC_UID);
     assertThat(result.items().get(0).authorHandle()).isEqualTo("Modrý čáp #4271");
+    assertThat(result.items().get(0).spamScore()).isZero();
+    assertThat(result.items().get(0).quarantined()).isFalse();
   }
 
   @Test
   void listReturnsNullAuthorForAnonymousSubmission() {
     Feedback feedback = Feedback.builder().id(6L).userId(null).category(FeedbackCategory.OTHER)
         .message("anonym").clientKind(ClientKind.WEB).build();
-    when(feedbackRepository.findPage(null, 20, 0)).thenReturn(List.of(feedback));
-    when(feedbackRepository.countPage(null)).thenReturn(1L);
+    when(feedbackRepository.findPage(null, false, 20, 0)).thenReturn(List.of(feedback));
+    when(feedbackRepository.countPage(null, false)).thenReturn(1L);
 
-    FeedbackItemResult result = service().list(null, null, null);
+    FeedbackItemResult result = service().list(null, false, null, null);
 
     assertThat(result.items().get(0).authorPublicUid()).isNull();
+  }
+
+  @Test
+  void listQuarantinedReturnsSpamReasons() {
+    Feedback feedback = Feedback.builder().id(8L).userId(null).category(FeedbackCategory.OTHER)
+        .message("spam").clientKind(ClientKind.WEB).spamScore((short) 100)
+        .spamReasons("HONEYPOT,DUPLICATE_MESSAGE").quarantinedAt(OffsetDateTime.now()).build();
+    when(feedbackRepository.findPage(null, true, 20, 0)).thenReturn(List.of(feedback));
+    when(feedbackRepository.countPage(null, true)).thenReturn(1L);
+
+    FeedbackItemResult result = service().list(null, true, null, null);
+
+    assertThat(result.items().get(0).quarantined()).isTrue();
+    assertThat(result.items().get(0).spamReasons()).containsExactly("HONEYPOT", "DUPLICATE_MESSAGE");
   }
 
   @Test
@@ -186,5 +286,26 @@ class FeedbackServiceTest {
     assertThat(captor.getValue().getHandledAt()).isNotNull();
     assertThat(captor.getValue().getHandledByUserId()).isEqualTo(USER_ID);
     assertThat(captor.getValue().getHandledNote()).isEqualTo("vyřešeno");
+  }
+
+  @Test
+  void settingQuarantinedOnMissingFeedbackThrowsNotFound() {
+    when(feedbackRepository.findById(999L)).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> service().setQuarantined(999L, false))
+        .isInstanceOf(NotFoundException.class);
+  }
+
+  @Test
+  void settingQuarantinedFalseClearsFlagFalsePositive() {
+    Feedback feedback = Feedback.builder().id(10L).category(FeedbackCategory.BUG).message("x")
+        .clientKind(ClientKind.WEB).quarantinedAt(OffsetDateTime.now()).build();
+    when(feedbackRepository.findById(10L)).thenReturn(Optional.of(feedback));
+    when(feedbackRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    service().setQuarantined(10L, false);
+
+    ArgumentCaptor<Feedback> captor = ArgumentCaptor.forClass(Feedback.class);
+    org.mockito.Mockito.verify(feedbackRepository).save(captor.capture());
+    assertThat(captor.getValue().getQuarantinedAt()).isNull();
   }
 }

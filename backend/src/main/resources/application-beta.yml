@@ -15,3 +15,10 @@ app:
     min-observations: 0
   catalog:
     draft-confirmations: 1
+  feedback:
+    challenge:
+      # Osobně pozvaní testeři mohou mít starší APK bez proof-of-work (docs/nasazeni.md,
+      # "obrana proti spamu") — appka jejich odeslání dál přijme, jen ho FeedbackSpamDetector
+      # penalizuje jako chybějící výzvu. required: true se vrátí samo, jakmile appka vypustí
+      # "beta" z aktivních profilů (SPRING_PROFILES_ACTIVE=prod), viz application-prod.yml.
+      required: false

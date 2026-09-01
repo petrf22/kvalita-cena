@@ -211,9 +211,20 @@ type Query {
 
   """
   Fronta zpětné vazby od uživatelů appky (core.feedback, docs/nasazeni.md "Než pozvat první
-  lidi") — handled null vrací obojí, jinak filtruje podle vyřízeno/nevyřízeno. Jen moderátor.
+  lidi") — handled null vrací obojí, jinak filtruje podle vyřízeno/nevyřízeno. quarantined
+  (výchozí false) odděluje běžnou frontu od záložky "Podezřelé" (FeedbackSpamDetector) — obě
+  fronty se nemíchají, ať karanténa nezavalí moderátora spolu se skutečnými hlášeními. Jen
+  moderátor.
   """
-  feedbackItems(handled: Boolean, first: Int = 20, offset: Int = 0): FeedbackItemResult!
+  feedbackItems(handled: Boolean, quarantined: Boolean = false, first: Int = 20, offset: Int = 0): FeedbackItemResult!
+
+  """
+  Proof-of-work výzva pro formulář zpětné vazby (docs/nasazeni.md, obrana proti spamu) — bez
+  přihlášení, stejně jako submitFeedback samotné. Klient spočítá nonce tak, aby
+  SHA-256(salt + ":" + nonce) mělo `difficulty` vedoucích nulových bitů, a pošle ho zpět ve
+  FeedbackInput spolu s token beze změny.
+  """
+  feedbackChallenge: FeedbackChallenge!
 }
 
 type Mutation {
@@ -309,6 +320,13 @@ type Mutation {
   Vyřízení/vrácení jednoho hlášení zpětné vazby do fronty (core.feedback). Jen moderátor.
   """
   setFeedbackHandled(id: ID!, handled: Boolean!, note: String): Boolean!
+
+  """
+  Vrácení podezřelé zprávy z karantény zpět do běžné fronty, nebo naopak (docs/nasazeni.md,
+  obrana proti spamu, FeedbackSpamDetector) — cesta zpět pro falešný poplach, stejný princip
+  jako resolveFlags DISMISSED. Jen moderátor.
+  """
+  setFeedbackQuarantined(id: ID!, quarantined: Boolean!): Boolean!
 
   """
   Vyřízení všech dosud nevyřízených nahlášení jednoho záznamu (docs/reputace.md, "Moderace").
@@ -498,10 +516,32 @@ input FeedbackInput {
   appVersion: String
   "Volitelně přiložený záznam o posledním pádu appky (mobil) — nikdy neodchází bez akce uživatele."
   diagnostics: String
+  "Token z feedbackChallenge, beze změny. Nepovinné jen kvůli starším klientům bez PoW (docs/nasazeni.md)."
+  challenge: String
+  "Vyřešený nonce k challenge — SHA-256(salt + \":\" + nonce) musí mít difficulty vedoucích nulových bitů."
+  nonce: String
+  """
+  Honeypot proti spamovacím botům — appka pole nikdy nevyplní, jen ho v UI schová (CSS, ne
+  hidden atribut, který by bot mohl přeskočit). Nepoužívá se na mobilu, appka ho tam neposílá.
+  """
+  website: String
 }
 
 type FeedbackResult {
   id: ID!
+}
+
+"""
+Podepsaná proof-of-work výzva (docs/nasazeni.md, obrana proti spamu) — vydává feedbackChallenge,
+řešení se posílá zpět ve FeedbackInput.
+"""
+type FeedbackChallenge {
+  "Posílá se zpět beze změny ve FeedbackInput.challenge."
+  token: String!
+  "Prefix, který klient hashuje spolu s hledaným nonce."
+  salt: String!
+  "Kolik nejvyšších bitů SHA-256(salt + \":\" + nonce) musí být nula."
+  difficulty: Int!
 }
 
 """
@@ -526,6 +566,12 @@ type FeedbackItem {
   handledNote: String
   authorPublicUid: ID
   authorHandle: String
+  "Součet skóre FeedbackSpamDetector — 0 u přihlášeného odesílatele a u všeho bez signálu."
+  spamScore: Int!
+  "Kódy signálů, které ke skóre přispěly (např. HONEYPOT, DUPLICATE_MESSAGE) — prázdné, když spamScore je 0."
+  spamReasons: [String!]!
+  "true = v záložce Podezřelé, ne v běžné frontě. setFeedbackQuarantined je cesta zpět."
+  quarantined: Boolean!
 }
 
 type FeedbackItemResult {
@@ -1340,6 +1386,8 @@ enum ErrorCode {
   FEEDBACK_MESSAGE_TOO_LONG
   FEEDBACK_CONTACT_EMAIL_INVALID
   FEEDBACK_NOT_FOUND
+  FEEDBACK_CHALLENGE_REQUIRED
+  FEEDBACK_CHALLENGE_INVALID
   INVALID_CHALLENGE
   SESSION_EXPIRED
   TERMS_ACCEPTANCE_REQUIRED
