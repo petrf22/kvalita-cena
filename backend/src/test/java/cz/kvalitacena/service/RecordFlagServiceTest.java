@@ -5,10 +5,12 @@ import cz.kvalitacena.controller.FlagResult;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.Media;
 import cz.kvalitacena.db.entity.Product;
+import cz.kvalitacena.db.entity.ProductReview;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
+import cz.kvalitacena.db.repo.ProductReviewRepository;
 import cz.kvalitacena.db.repo.RecordFlagRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.exception.NotFoundException;
@@ -50,14 +52,17 @@ class RecordFlagServiceTest {
   private StoreRepository storeRepository;
   @Mock
   private MediaRepository mediaRepository;
+  @Mock
+  private ProductReviewRepository productReviewRepository;
 
   private final ModerationProperties moderationProperties = new ModerationProperties();
 
   private RecordFlagService service() {
     moderationProperties.setFlagsToHide(3);
     moderationProperties.setPhotoFlagsToHide(1);
+    moderationProperties.setReviewFlagsToHide(2);
     return new RecordFlagService(recordFlagRepository, appUserRepository, productRepository,
-        storeRepository, mediaRepository, moderationProperties);
+        storeRepository, mediaRepository, productReviewRepository, moderationProperties);
   }
 
   private void givenLoggedInUser() {
@@ -124,6 +129,25 @@ class RecordFlagServiceTest {
     assertThat(result.hidden()).isTrue();
     ArgumentCaptor<Media> captor = ArgumentCaptor.forClass(Media.class);
     verify(mediaRepository).save(captor.capture());
+    assertThat(captor.getValue().getHiddenAt()).isNotNull();
+  }
+
+  @Test
+  void twoFlagsHideReviewTextButThreeAreNeededForProduct() {
+    // Práh recenze (2) je mezi fotkou (1) a zbožím/obchodem (3) — viz reachingThresholdHidesRecord.
+    Long reviewId = 5L;
+    givenLoggedInUser();
+    when(productReviewRepository.existsById(reviewId)).thenReturn(true);
+    when(recordFlagRepository.countByRecordTypeAndRecordIdAndResolvedAtIsNull(RecordType.REVIEW, reviewId)).thenReturn(2L);
+    ProductReview review = ProductReview.builder().id(reviewId).build();
+    when(productReviewRepository.findById(reviewId)).thenReturn(Optional.of(review));
+
+    FlagResult result = service().flag(RecordType.REVIEW, reviewId, "urážlivý text", PUBLIC_UID);
+
+    assertThat(result.flagCount()).isEqualTo(2);
+    assertThat(result.hidden()).isTrue();
+    ArgumentCaptor<ProductReview> captor = ArgumentCaptor.forClass(ProductReview.class);
+    verify(productReviewRepository).save(captor.capture());
     assertThat(captor.getValue().getHiddenAt()).isNotNull();
   }
 

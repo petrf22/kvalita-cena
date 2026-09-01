@@ -7,6 +7,7 @@ import cz.kvalitacena.db.entity.AppUserStatus;
 import cz.kvalitacena.db.entity.FlagResolution;
 import cz.kvalitacena.db.entity.PriceObservation;
 import cz.kvalitacena.db.entity.Product;
+import cz.kvalitacena.db.entity.ProductReview;
 import cz.kvalitacena.db.entity.RecomputeReason;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.entity.RevokeReason;
@@ -15,6 +16,7 @@ import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
+import cz.kvalitacena.db.repo.ProductReviewRepository;
 import cz.kvalitacena.db.repo.RecordFlagRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.exception.NotFoundException;
@@ -60,6 +62,8 @@ class ModerationServiceTest {
   @Mock
   private MediaRepository mediaRepository;
   @Mock
+  private ProductReviewRepository productReviewRepository;
+  @Mock
   private AppUserRepository appUserRepository;
   @Mock
   private ProductOverlayService productOverlayService;
@@ -81,8 +85,8 @@ class ModerationServiceTest {
   @BeforeEach
   void setUp() {
     service = new ModerationService(recordFlagRepository, productRepository, storeRepository, mediaRepository,
-        appUserRepository, productOverlayService, storeOverlayService, mediaService, handleRenderer,
-        priceObservationRepository, priceAggregationService, refreshTokenService);
+        productReviewRepository, appUserRepository, productOverlayService, storeOverlayService, mediaService,
+        handleRenderer, priceObservationRepository, priceAggregationService, refreshTokenService);
     // applyOverlay(list, viewerId) je no-op, pokud moderátor sám žádný patch nemá — testy
     // ověřují mapování fronty, ne overlay logiku (ta má vlastní testy u Product/StoreOverlayService).
     lenient().when(productOverlayService.applyOverlay(anyList(), any())).thenAnswer(inv -> inv.getArgument(0));
@@ -135,6 +139,44 @@ class ModerationServiceTest {
     FlaggedRecordResult result = service.flaggedRecords(null, null, null, MODERATOR_ID);
 
     assertThat(result.items()).isEmpty();
+  }
+
+  /**
+   * Nahlášená recenze v moderátorské frontě nese product (kontext textu), autor je autor
+   * RECENZE (core.product_review.user_id), ne autor zboží — na rozdíl od PRODUCT/STORE výš.
+   */
+  @Test
+  void flaggedRecordsMapsReviewGroupWithProductContext() {
+    Long reviewId = 5L;
+    RecordFlagRepository.FlaggedGroup group = flaggedGroup("REVIEW", reviewId, 2L, "urážlivý text");
+    when(recordFlagRepository.findUnresolvedGroups(null, 20, 0)).thenReturn(List.of(group));
+    when(recordFlagRepository.countUnresolvedGroups(null)).thenReturn(1L);
+
+    Long reviewAuthorId = 77L;
+    ProductReview review = ProductReview.builder().id(reviewId).productId(PRODUCT_ID).userId(reviewAuthorId)
+        .stars((short) 1).text("hrozné").build();
+    when(productReviewRepository.findAllById(List.of(reviewId))).thenReturn(List.of(review));
+
+    Product product = Product.builder().id(PRODUCT_ID).build();
+    when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of(product));
+    when(storeRepository.findAllById(List.of())).thenReturn(List.of());
+    when(mediaRepository.findAllById(List.of())).thenReturn(List.of());
+
+    UUID authorUid = UUID.randomUUID();
+    AppUser author = AppUser.builder().id(reviewAuthorId).publicUid(authorUid).build();
+    when(appUserRepository.findAllById(any())).thenReturn(List.of(author));
+    when(handleRenderer.render(author)).thenReturn("Modrý čáp #4271");
+
+    FlaggedRecordResult result = service.flaggedRecords(null, null, null, MODERATOR_ID);
+
+    assertThat(result.items()).hasSize(1);
+    FlaggedRecordItem item = result.items().get(0);
+    assertThat(item.recordType()).isEqualTo(RecordType.REVIEW);
+    assertThat(item.authorPublicUid()).isEqualTo(authorUid);
+    assertThat(item.product()).isNull();
+    assertThat(item.review()).isNotNull();
+    assertThat(item.review().text()).isEqualTo("hrozné");
+    assertThat(item.review().product()).isSameAs(product);
   }
 
   // --- resolveFlags ---

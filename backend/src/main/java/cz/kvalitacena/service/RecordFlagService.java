@@ -7,6 +7,7 @@ import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
+import cz.kvalitacena.db.repo.ProductReviewRepository;
 import cz.kvalitacena.db.repo.RecordFlagRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.exception.ErrorCode;
@@ -35,6 +36,7 @@ public class RecordFlagService {
   private final ProductRepository productRepository;
   private final StoreRepository storeRepository;
   private final MediaRepository mediaRepository;
+  private final ProductReviewRepository productReviewRepository;
   private final ModerationProperties moderationProperties;
 
   @Transactional
@@ -60,12 +62,15 @@ public class RecordFlagService {
   /**
    * Fotka je nejrizikovější uživatelský obsah v appce — cena přehlédnutého nevhodného
    * obrázku je vyšší než cena zbytečně skryté dobré fotky (dá se nahrát znovu), proto mnohem
-   * nižší práh než u zboží/obchodu (docs/reputace.md).
+   * nižší práh než u zboží/obchodu (docs/reputace.md). Text recenze je druhý nejrizikovější
+   * (volný text, ne jen katalogové pole) — práh mezi fotkou a zbožím/obchodem.
    */
   private int flagsToHide(RecordType recordType) {
-    return recordType == RecordType.PHOTO
-        ? moderationProperties.getPhotoFlagsToHide()
-        : moderationProperties.getFlagsToHide();
+    return switch (recordType) {
+      case PHOTO -> moderationProperties.getPhotoFlagsToHide();
+      case REVIEW -> moderationProperties.getReviewFlagsToHide();
+      case PRODUCT, STORE, USER -> moderationProperties.getFlagsToHide();
+    };
   }
 
   private void requireRecordExists(RecordType recordType, Long recordId) {
@@ -73,6 +78,9 @@ public class RecordFlagService {
       case PRODUCT -> productRepository.existsById(recordId);
       case STORE -> storeRepository.existsById(recordId);
       case PHOTO -> mediaRepository.existsById(recordId);
+      // recordId je core.product_review.id (jedna konkrétní recenze), ne product_id — nahlašuje
+      // se TEXT, ne hodnocení jako takové.
+      case REVIEW -> productReviewRepository.existsById(recordId);
       // Avatar profilu se nenahlašuje record_flag kanálem (docs/reputace.md, "žádné veřejné
       // negativní hodnocení uživatelů") — sem se proto nikdy neplatně nedostane.
       case USER -> false;
@@ -100,6 +108,12 @@ public class RecordFlagService {
         if (m.getHiddenAt() == null) {
           m.setHiddenAt(OffsetDateTime.now());
           mediaRepository.save(m);
+        }
+      });
+      case REVIEW -> productReviewRepository.findById(recordId).ifPresent(r -> {
+        if (r.getHiddenAt() == null) {
+          r.setHiddenAt(OffsetDateTime.now());
+          productReviewRepository.save(r);
         }
       });
       // requireRecordExists nad USER vždy vrátí false dřív, než se sem dostaneme — viz výš.

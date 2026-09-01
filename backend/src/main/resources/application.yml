@@ -154,6 +154,8 @@ app:
     flags-to-hide: 3
     # Fotka je nejrizikovější uživatelský obsah — jedno nahlášení stačí (docs/reputace.md).
     photo-flags-to-hide: 1
+    # Text recenze je druhý nejrizikovější obsah — mezi fotkou a zbožím/obchodem.
+    review-flags-to-hide: 2
   feedback:
     # Zpětná vazba od uživatele appky (docs/nasazeni.md, "Než pozvat první lidi") — funguje i
     # anonymně. Vrstvené limity + proof-of-work + spam skóre jsou obrana proti veřejnému

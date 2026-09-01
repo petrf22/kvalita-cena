@@ -2,6 +2,7 @@ package cz.kvalitacena.service;
 
 import cz.kvalitacena.controller.FlaggedRecordItem;
 import cz.kvalitacena.controller.FlaggedRecordResult;
+import cz.kvalitacena.controller.FlaggedReview;
 import cz.kvalitacena.controller.ModerationObservationItem;
 import cz.kvalitacena.controller.ModerationObservationResult;
 import cz.kvalitacena.controller.Photo;
@@ -12,6 +13,7 @@ import cz.kvalitacena.db.entity.Media;
 import cz.kvalitacena.db.entity.ObservationStatus;
 import cz.kvalitacena.db.entity.PriceObservation;
 import cz.kvalitacena.db.entity.Product;
+import cz.kvalitacena.db.entity.ProductReview;
 import cz.kvalitacena.db.entity.RecomputeReason;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.entity.RevokeReason;
@@ -20,6 +22,7 @@ import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
+import cz.kvalitacena.db.repo.ProductReviewRepository;
 import cz.kvalitacena.db.repo.RecordFlagRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.exception.ErrorCode;
@@ -65,6 +68,7 @@ public class ModerationService {
   private final ProductRepository productRepository;
   private final StoreRepository storeRepository;
   private final MediaRepository mediaRepository;
+  private final ProductReviewRepository productReviewRepository;
   private final AppUserRepository appUserRepository;
   private final ProductOverlayService productOverlayService;
   private final StoreOverlayService storeOverlayService;
@@ -84,8 +88,16 @@ public class ModerationService {
     List<RecordFlagRepository.FlaggedGroup> groups = recordFlagRepository.findUnresolvedGroups(filter, limit, off);
     long total = recordFlagRepository.countUnresolvedGroups(filter);
 
+    Map<Long, ProductReview> reviewsById = index(
+        productReviewRepository.findAllById(idsOf(groups, RecordType.REVIEW)), ProductReview::getId);
+
+    // Produkty nejen za PRODUCT-typem nahlášení, ale i produkty patřící nahlášeným recenzím
+    // (FlaggedReview.product) — jeden dotaz místo dvou.
+    Set<Long> productIdSet = new LinkedHashSet<>(idsOf(groups, RecordType.PRODUCT));
+    reviewsById.values().forEach(r -> productIdSet.add(r.getProductId()));
+    List<Long> productIds = List.copyOf(productIdSet);
     Map<Long, Product> productsById = index(
-        productOverlayService.applyOverlay(productRepository.findAllById(idsOf(groups, RecordType.PRODUCT)), moderatorUserId),
+        productOverlayService.applyOverlay(productRepository.findAllById(productIds), moderatorUserId),
         Product::getId);
     Map<Long, Store> storesById = index(
         storeOverlayService.applyOverlay(storeRepository.findAllById(idsOf(groups, RecordType.STORE)), moderatorUserId),
@@ -96,6 +108,7 @@ public class ModerationService {
     productsById.values().forEach(p -> addIfPresent(authorIds, p.getCreatedByUserId()));
     storesById.values().forEach(s -> addIfPresent(authorIds, s.getCreatedByUserId()));
     mediaById.values().forEach(m -> addIfPresent(authorIds, m.getUploadedByUserId()));
+    reviewsById.values().forEach(r -> addIfPresent(authorIds, r.getUserId()));
     Map<Long, AppUser> authorsById = index(appUserRepository.findAllById(authorIds), AppUser::getId);
 
     // publicUid/trusted nejsou pro sestavení fronty potřeba, jen userId (autorizace předchozím
@@ -103,7 +116,7 @@ public class ModerationService {
     ViewerContext moderatorViewer = new ViewerContext(null, moderatorUserId, false, true);
 
     List<FlaggedRecordItem> items = groups.stream()
-        .map(g -> toItem(g, productsById, storesById, mediaById, authorsById, moderatorViewer))
+        .map(g -> toItem(g, productsById, storesById, mediaById, reviewsById, authorsById, moderatorViewer))
         .filter(Objects::nonNull)
         .toList();
 
@@ -123,6 +136,7 @@ public class ModerationService {
       case PRODUCT -> productRepository.existsById(recordId);
       case STORE -> storeRepository.existsById(recordId);
       case PHOTO -> mediaRepository.existsById(recordId);
+      case REVIEW -> productReviewRepository.existsById(recordId);
       case USER -> false; // core.record_flag USER nikdy nepoužívá, viz RecordFlagService
     };
     if (!exists) {
@@ -143,6 +157,10 @@ public class ModerationService {
       case PHOTO -> mediaRepository.findById(recordId).ifPresent(m -> {
         applyHiddenAt(resolution, m.getHiddenAt(), m::setHiddenAt);
         mediaRepository.save(m);
+      });
+      case REVIEW -> productReviewRepository.findById(recordId).ifPresent(r -> {
+        applyHiddenAt(resolution, r.getHiddenAt(), r::setHiddenAt);
+        productReviewRepository.save(r);
       });
       case USER -> {
       }
@@ -223,14 +241,15 @@ public class ModerationService {
   }
 
   private FlaggedRecordItem toItem(RecordFlagRepository.FlaggedGroup g, Map<Long, Product> productsById,
-      Map<Long, Store> storesById, Map<Long, Media> mediaById, Map<Long, AppUser> authorsById,
-      ViewerContext moderatorViewer) {
+      Map<Long, Store> storesById, Map<Long, Media> mediaById, Map<Long, ProductReview> reviewsById,
+      Map<Long, AppUser> authorsById, ViewerContext moderatorViewer) {
     RecordType type = RecordType.valueOf(g.getRecordType());
     Long authorId;
     boolean hidden;
     Product product = null;
     Store store = null;
     Photo photo = null;
+    FlaggedReview review = null;
     switch (type) {
       case PRODUCT -> {
         product = productsById.get(g.getRecordId());
@@ -251,6 +270,15 @@ public class ModerationService {
         hidden = media.isHidden();
         photo = mediaService.toPhoto(media, moderatorViewer);
       }
+      case REVIEW -> {
+        ProductReview productReview = reviewsById.get(g.getRecordId());
+        if (productReview == null) return null; // mezitím smazáno (výmaz účtu, smazání textu)
+        Product reviewProduct = productsById.get(productReview.getProductId());
+        if (reviewProduct == null) return null; // produkt mezitím smazán (FK by smazal i recenzi, ale pro jistotu)
+        authorId = productReview.getUserId();
+        hidden = productReview.isHidden();
+        review = new FlaggedReview(productReview.getId(), productReview.getStars(), productReview.getText(), reviewProduct);
+      }
       default -> {
         return null; // core.record_flag USER nikdy nepoužívá
       }
@@ -260,7 +288,7 @@ public class ModerationService {
         g.getFirstFlaggedAt().atOffset(ZoneOffset.UTC), g.getLastFlaggedAt().atOffset(ZoneOffset.UTC),
         splitReasons(g.getReasons()), hidden,
         author == null ? null : author.getPublicUid(), author == null ? null : handleRenderer.render(author),
-        product, store, photo);
+        product, store, photo, review);
   }
 
   private List<Long> idsOf(List<RecordFlagRepository.FlaggedGroup> groups, RecordType type) {

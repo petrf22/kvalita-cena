@@ -20,4 +20,9 @@ public class ModerationProperties {
    * mnohem nižší práh než u zboží/obchodu (docs/reputace.md).
    */
   private int photoFlagsToHide;
+  /**
+   * Text recenze je druhý nejrizikovější uživatelský obsah (volný text, ne jen katalogové
+   * pole) — práh mezi fotkou (nejnižší) a zbožím/obchodem (docs/reputace.md).
+   */
+  private int reviewFlagsToHide;
 }

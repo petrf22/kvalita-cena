@@ -248,9 +248,9 @@ public class MediaService {
     boolean exists = switch (recordType) {
       case PRODUCT -> productRepository.existsById(recordId);
       case STORE -> storeRepository.existsById(recordId);
-      case PHOTO -> false;
-      // Sem se za normálních okolností nedostane (viz guard v upload() výš) — větev je tu jen
-      // kvůli exhaustivitě switche, ne jako podporovaná cesta.
+      // Fotka ani recenze zatím vlastní fotku nést nemůžou (guard v upload() výš) — obě
+      // větve jsou tu jen kvůli exhaustivitě switche, ne jako podporovaná cesta.
+      case PHOTO, REVIEW -> false;
       case USER -> appUserRepository.existsById(recordId);
     };
     if (!exists) {

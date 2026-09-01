@@ -1,0 +1,22 @@
+# 04-record-flag-allow-review.yaml — text recenze jde nahlásit stejným kanálem jako
+# zboží/obchod/fotka (core.record_flag, RecordFlagService, RecordType.REVIEW). Nahlašuje se
+# TEXT (core.product_review.id), ne autor ani hodnocení jako takové (docs/reputace.md, "žádné
+# veřejné negativní hodnocení uživatelů"). Rozšiřuje se jen CHECK, tabulka i unikátní index
+# (record_type, record_id, user_id) zůstávají beze změny — stejný vzor jako
+# 2026-08-08/01-media.yaml pro PHOTO.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-01-04-record-flag-allow-review
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.record_flag DROP CONSTRAINT chk_record_flag_type;
+              ALTER TABLE core.record_flag
+                ADD CONSTRAINT chk_record_flag_type CHECK (record_type IN ('PRODUCT', 'STORE', 'PHOTO', 'REVIEW'));
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE core.record_flag DROP CONSTRAINT chk_record_flag_type;
+              ALTER TABLE core.record_flag
+                ADD CONSTRAINT chk_record_flag_type CHECK (record_type IN ('PRODUCT', 'STORE', 'PHOTO'));

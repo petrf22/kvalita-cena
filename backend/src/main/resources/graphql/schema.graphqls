@@ -381,6 +381,8 @@ enum RecordType {
   STORE
   "Nahlašovaný typ pro flagRecord — core.media samo nese jen PRODUCT/STORE (čí je fotka)."
   PHOTO
+  "Nahlašovaný typ pro TEXT recenze (core.product_review.text), ne pro hodnocení samotné ani autora."
+  REVIEW
 }
 
 """
@@ -494,6 +496,16 @@ type FlaggedRecordItem {
   store: Store
   "Vyplněno jen pro recordType PHOTO, jinak null."
   photo: Photo
+  "Vyplněno jen pro recordType REVIEW, jinak null."
+  review: FlaggedReview
+}
+
+"Nahlášená recenze v moderátorské frontě — na rozdíl od veřejného ProductReview nese i product (kontext, ke kterému text patří), ne authorName (ten nese FlaggedRecordItem.authorHandle výš)."
+type FlaggedReview {
+  id: ID!
+  stars: Int!
+  text: String!
+  product: Product!
 }
 
 type FlaggedRecordResult {
