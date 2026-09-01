@@ -3,9 +3,9 @@
 Jedno zadání určuje celý tento systém: komunita má být pozitivní, ne toxická. To vylučuje
 veřejné negativní hodnocení uživatelů, i když by bylo technicky nejjednodušší — viz níže.
 
-> **Stav v etapě 1 (MVP):** implementovaná je zatím jen složka `L` (anonym 0,15 / registrovaný
+> **Stav v MVP:** implementovaná je zatím jen složka `L` (anonym 0,15 / registrovaný
 > 1,00) a vážený medián v agregaci. Zbytek vzorce (přesnost, zkušenost, stáří účtu, penalizace,
-> detekce zneužití, skupiny důvěry) je popsaný tady jako cílový stav pro etapu 2/3, aby ladění
+> detekce zneužití, skupiny důvěry) je popsaný tady jako cílový stav pro další rozvoj, aby ladění
 > mělo od začátku jedno místo, kam patří — ne aby se prahy rozsely po kódu.
 
 ## Reputační skóre — čítače s exponenciálním útlumem
@@ -17,7 +17,7 @@ X ← X · 0.5^((t_now − t_prev) / H) + Δ
 ```
 
 kde `H` je poločas rozpadu. Výpočet je O(1) a nepotřebuje log událostí — což je to, co
-umožňuje po 180 dnech (nebo při výmazu účtu, `soukromi.md`, „GDPR") smazat vazbu
+umožňuje po 180 dnech (nebo při výmazu účtu, `docs/soukromi.md`, „GDPR") smazat vazbu
 `price_observation.submitter_id` na uživatele, aniž by se reputace rozbila. Soukromí a výkon
 se tu shodují. Váhu `L` to nemění — je snapshotovaná do `price_observation.submitter_kind`
 při zápisu ceny, ne odvozená z toho, jestli `submitter_id` pořád ukazuje na živý účet.
@@ -52,8 +52,8 @@ f_group   = 3,0 autor je v mé skupině důvěry / 1,5 vzdálenost 2 kroky / 1,0
 ```
 
 Rozlišení `f_evid` mezi „účtenka+OCR" a „foto cedulky" předpokládá, že schéma ukládá **druh
-důkazu**, ne jen odkaz na fotku — až se bude psát fotka jako důkaz ceny (nedodělek etapy 1), viz
-`ai.md`, „Vazba na f_evid".
+důkazu**, ne jen odkaz na fotku — až se bude psát fotka jako důkaz ceny (nedodělek MVP), viz
+`docs/ai.md`, „Vazba na f_evid".
 
 „Nezávislý potvrzovatel" = není ve stejné skupině důvěry jako autor a není v témže
 detekovaném sybil klastru. Bez této podmínky je potvrzování triviálně zneužitelné (skupina
@@ -121,7 +121,7 @@ Profil uživatele (`docs/soukromi.md`, „Profil uživatele a viditelnost") má 
 NEAKTIVNÍ odkazy „Hodnocení systémem" a „Důvěra od přátel" — pojmenování je záměrně jiné než
 prosté „hodnocení", ať je vidět, že jde přesně o tyhle dva mechanismy výš (`user_flag`
 transparentní vlastníkovi, `trust_edge` jako veřejný pozitivní signál), ne o nový kanál pro
-hodnocení člověka člověkem. Než budou skupiny důvěry a plný vzorec `S` napsané (etapa 2/3),
+hodnocení člověka člověkem. Než budou skupiny důvěry a plný vzorec `S` napsané (další rozvoj),
 odkazy nikam nevedou.
 
 ## Detekce zneužití
@@ -168,19 +168,19 @@ nastavené velkoryse, protože **studený start je větší riziko než parazito
 prázdná appka nikoho nezaujme, přísná reciprocita od prvního dne ji zabije dřív, než ji
 někdo stihne ocenit.
 
-> **Zaznamenaná odchylka od tabulky:** `priceHistory` v etapě 1 dává anonymovi 90 dní
+> **Zaznamenaná odchylka od tabulky:** `priceHistory` dnes dává anonymovi 90 dní
 > historie (`app.history.anonymous-max-days` v `application.yml`), ne 7 dní jako tabulka výš.
 > Mechanismus odstupňování existuje (`PriceHistoryService` ořezává okno podle přihlášení),
 > jen je práh zatím nastavený velkoryse ze stejného důvodu jako limity výš — je to úmysl,
 > ne rozjetí kódu s dokumentem. Zpřísnit na 7 dní je jen změna jedné konstanty, až/pokud
 > bude důvod.
 
-## Práh důvěry pro zveřejnění nového záznamu (etapa 1)
+## Práh důvěry pro zveřejnění nového záznamu (MVP)
 
 Nový obchod nebo zboží od nedůvěryhodného autora se hned nezveřejní všem — je vidět jen jemu,
 dokud ho nepotvrdí víc přispěvatelů (`TrustLevelService`, `app.trust.*`). Důvod je stejný jako
 u prahu T2 výš (`≥5 záznamů nebo 1 recenze, ≥7 dní`), jen implementovaný dřív a jednodušeji,
-protože etapa 1 nemá recenze ani plný vzorec `S`:
+protože MVP nemá recenze ani plný vzorec `S`:
 
 ```
 isTrusted(user) = user.createdAt < now − app.trust.min-account-age-days
@@ -188,8 +188,8 @@ isTrusted(user) = user.createdAt < now − app.trust.min-account-age-days
 ```
 
 Výchozí `min-account-age-days = 7`, `min-observations = 5` — schválně stejná čísla jako T2,
-je to jeho etapa-1 aproximace, ne nezávisle vymyšlený práh. Až přibude plný vzorec `S`
-(etapa 2/3), tahle funkce se nahradí `S ≥ práh_T2`, ne zdvojí vedle sebe.
+je to jeho MVP aproximace, ne nezávisle vymyšlený práh. Až přibude plný vzorec `S`
+(další rozvoj), tahle funkce se nahradí `S ≥ práh_T2`, ne zdvojí vedle sebe.
 
 Stejný práh platí i pro založení zboží nad OFF snapshotem (`createProductFromOff`,
 `OffProductCatalogService`) — vlastní EAN je dost silná identifikace zboží (na rozdíl od
@@ -198,23 +198,27 @@ druhové položky níže), ale autor OFF ověřený není, takže i tady nedův�
 
 **`observationCount` je čítač na účtu (`auth.app_user.observation_count`), ne `COUNT(*)` nad
 `core.price_observation`** — ze stejného důvodu jako čítače s útlumem v úvodu dokumentu:
-`submitter_id` se po 180 dnech nuluje (`soukromi.md`), takže počítání přes historii by
+`submitter_id` se po 180 dnech nuluje (`docs/soukromi.md`), takže počítání přes historii by
 zavedenému uživateli po pauze tiše sebralo důvěru, kterou si dřív vybudoval. Roste **+1 za
 zápis (dávku)**, ne za řádek — `submitObservations` může uložit až 5 cen z jedné cenovky
 jedním voláním, takže počítat po řádcích by práh `min-observations = 5` šlo naplnit jediným
 odesláním u jednoho regálu místo pěti nezávislých příspěvků.
 
-Ze stejného důvodu je zpřísněné i počítání anonymních potvrzení
+Ze stejného důvodu se anonymní zápisy do počtu potvrzení vůbec nepočítají
 (`countDistinctContributorsExcluding`/`countDistinctProductContributorsExcluding` a jejich
-`…Batch` varianty, `PriceObservationRepository`): dřív se každá anonymní observace počítala
-jako samostatný přispěvatel (žádný `submitter_id` k odlišení), po zavedení dávky by jedno
-anonymní odeslání tří druhů ceny odemklo DRAFT zboží/PENDING obchod jedním kliknutím. Nově se
-všechny anonymní zápisy JEDNOHO DNE počítají nejvýš jako jedno potvrzení (`COALESCE(submitter_id,
-'anon:' || core.day_utc(observed_at))`).
+`…Batch` varianty, `PriceObservationRepository`: `count(DISTINCT submitter_id) … WHERE
+submitter_id IS NOT NULL`) — dřív se každá anonymní observace počítala jako samostatný
+přispěvatel (žádný `submitter_id` k odlišení), po zavedení dávky by jedno anonymní odeslání tří
+druhů ceny odemklo DRAFT zboží/PENDING obchod jedním kliknutím. Anonymní identita se navíc
+nedá přiřadit k účtu vůbec, takže by ji šlo vydávat za libovolný počet různých přispěvatelů —
+proto DRAFT/PENDING odemyká výhradně shoda **registrovaných** uživatelů. Práh
+`app.catalog.draft-confirmations` (výchozí 3) se tím zpřísnil — k pozorování po spuštění bety,
+jestli u studeného startu bezkódové zboží neuvízne v DRAFTu příliš dlouho a jestli produkční
+práh nesnížit na 2 (`docs/nasazeni.md`, „Zbývá").
 
 Efekt prahu:
 - **Nad prahem** — nový záznam je hned vidět všem, se štítkem "neověřeno" (`verified_at`
-  je `NULL`, dokud neproběhne konsolidační job, viz `datovy-model.md`).
+  je `NULL`, dokud neproběhne konsolidační job, viz `docs/datovy-model.md`).
 - **Pod prahem** — v OTEVŘENÉM hledání (`searchProducts`, `ProductSearchRepositoryImpl`) ho
   vidí jen autor, ať nepotvrzený šum nezahlcuje běžné hledání ostatních. CÍLENĚ ho ale najít
   musí jít i JINÝM přispěvatelům — jinak by `app.catalog.draft-confirmations` (výchozí 3)
@@ -235,14 +239,14 @@ stejné leave-one-out přes `countDistinctProductContributorsExcludingBatch`/
 "zatím 1 ze 3". Prahy samotné (`app.trust.*`, `app.catalog.draft-confirmations`) zůstávají jen
 tady a v `application.yml`, výpis je čistě čtecí vrstva nad nimi.
 
-## Nahlášení záznamu (etapa 1) — hlasuje se o faktu, ne o člověku
+## Nahlášení záznamu (MVP) — hlasuje se o faktu, ne o člověku
 
-`core.record_flag` (`RecordFlagService`) je etapa-1 implementace principu z "Proč žádné
+`core.record_flag` (`RecordFlagService`) je MVP implementace principu z "Proč žádné
 veřejné negativní hodnocení uživatelů" výš, jen aplikovaná na KATALOGOVÉ záznamy (zboží,
 obchody), ne na cenové spory: nahlášení cílí na `(recordType, recordId)`, nikdy na autora.
 Kdo záznam založil, se z API ven nedostane o nic snáz, než dřív — nahlášení jen řekne "tenhle
 konkrétní záznam je podezřelý", stejně jako `user_id` u `product_quality_rating` slouží
-výhradně k vynucení "jeden hlas na člověka" a jinak z DB nikam neuniká (`soukromi.md`).
+výhradně k vynucení "jeden hlas na člověka" a jinak z DB nikam neuniká (`docs/soukromi.md`).
 
 Po dosažení `app.moderation.flags-to-hide` (výchozí 3) RŮZNÝCH nahlášení se záznam skryje
 (`hidden_at`) a čeká na přezkum — vidí ho dál jen autor, se stejným důvodem jako u DRAFT/
@@ -257,14 +261,14 @@ pozitivního nahlášení vysoká (zmizí správný záznam, na kterém visí hi
 falešně negativního nízká (nesmyslný název nikoho nepoškodí, jen matí). U fotky je poměr
 opačný — smazaná dobrá fotka se nahraje znovu za deset vteřin, zatímco přehlédnutý nevhodný
 obrázek je vážný problém a kapacita moderace jednoho člověka je reálný limit projektu
-(`soukromi.md`, "Otevřená rizika"). Fotka je proto vidět hned po nahrání (stejně jako
+(`docs/soukromi.md`, "Otevřená rizika"). Fotka je proto vidět hned po nahrání (stejně jako
 u důvěryhodného autora zboží/obchodu), ale jediné nahlášení ji rovnou skryje.
 
-**Plánovaný strojový předfiltr fotek (`ai.md`) nikdy nenahrazuje hlas člověka ani sám nesahá
+**Plánovaný strojový předfiltr fotek (`docs/ai.md`) nikdy nenahrazuje hlas člověka ani sám nesahá
 na `hidden_at`** — jen řadí frontu k přezkumu, stejně jako zbytek téhle sekce hlasuje o
 záznamu, nikdy o člověku.
 
-## Moderace (etapa 1) — nástroj pro T4
+## Moderace (MVP) — nástroj pro T4
 
 Odstavec výš popisuje, jak se záznam SKRYJE (`flagRecord`/`RecordFlagService`) — tenhle popisuje,
 co se s ním stane dál, protože „čeká na přezkum" dřív nemělo kým se naplnit. Implementace:
@@ -302,15 +306,15 @@ nástroj provozovatele, ne appky, mobil ji nemá).
   naopak jen moderátor, jinak nemá jak uplatnit „Ukončení a vyloučení" z podmínek užití — je to
   jiná informace se schválně jiným pravidlem, viz `docs/soukromi.md`.
 
-## Hodnocení kvality zboží (etapa 1)
+## Hodnocení kvality zboží (MVP)
 
 Jen hvězdičky 1–5 (5 nejlepší), bez textů, bez skupin důvěry — implementace
-`core.product_quality_rating`, popis tabulky v `datovy-model.md`. Původně to byla školní
+`core.product_quality_rating`, popis tabulky v `docs/datovy-model.md`. Původně to byla školní
 známka (1 nejlepší, 5 nejhorší) — testování ukázalo, že se čte matoucně (lidé mají různý
 zvyk, jak známkování číst), takže se škála otočila na hvězdičky, kde víc = líp; sloupec
 `grade` se přejmenoval na `stars`. Vědomá zjednodušení oproti zbytku téhle stránky:
 
-- **Průměr se NEVÁŽÍ reputací `S`** — v etapě 1 je to prostý aritmetický průměr přes všechny
+- **Průměr se NEVÁŽÍ reputací `S`** — dnes je to prostý aritmetický průměr přes všechny
   hodnocení (`AVG(stars)`), protože `S` samo je zatím jen složka `L` (viz úvod dokumentu) a
   vážit průměr neúplným vzorcem by budilo falešný dojem přesnosti. Až bude `S` implementované
   celé, patří sem vážený průměr stejnou logikou jako vážený medián cen výše.
@@ -321,7 +325,7 @@ zvyk, jak známkování číst), takže se škála otočila na hvězdičky, kde 
 
 **Vztah k „žádné veřejné negativní hodnocení uživatelů" výše:** hodnocení je o VĚCI
 (produktu z katalogu), ne o ČLOVĚKU, takže s pravidlem nekoliduje. Riziko je blízké, ne stejné:
-až v etapě 3 přibudou lokální dodavatelé (`core.supplier`, `core.supplier_offer`), hodnocení
+až při dalším rozvoji přibudou lokální dodavatelé (`core.supplier`, `core.supplier_offer`), hodnocení
 „1 hvězdička" na výrobek malého farmáře bude fakticky veřejné negativní hodnocení konkrétního
 člověka — se všemi důsledky popsanými výš (odvetné spirály, právní expozice). Rozhodnutí
 „hodnotí se jen zboží z katalogu, ne nabídky dodavatelů" je proto potřeba **znovu vědomě
@@ -339,10 +343,11 @@ sdílený "koš" pro bezkódové zápisy stejného druhu zboží ("Chléb konzum
 konzumní"), ne nový záznam pro každý jednotlivý zápis.
 
 **Nová položka vzniká jako `status = DRAFT`**, dokud ji nepotvrdí aspoň
-`app.catalog.draft-confirmations` (výchozí 3) různých přispěvatelů — počítáno jako
-`COUNT(DISTINCT COALESCE(submitter_id, observation_id))`, protože anonymní zápisy nejdou
-mezi sebou rozlišit (`submitter_id` je vždy `NULL`, docs/soukromi.md) a každý se tak pesimisticky
-počítá jako samostatný přispěvatel. Jakmile práh padne, `PriceObservationService.submit()`
+`app.catalog.draft-confirmations` (výchozí 3) různých **registrovaných** přispěvatelů —
+počítáno jako `COUNT(DISTINCT submitter_id) … WHERE submitter_id IS NOT NULL`
+(`PriceObservationRepository.countDistinctProductContributorsExcluding`); anonymní zápisy
+(`submitter_id` vždy `NULL`, docs/soukromi.md) se do prahu nepočítají vůbec — viz „Reputační
+skóre — čítače s exponenciálním útlumem" výš. Jakmile práh padne, `PriceObservationService.submit()`
 položku po zápisu ceny rovnou překlopí na `ACTIVE` (`ProductCatalogService.promoteIfConfirmed`) —
 žádný plánovač navíc.
 
