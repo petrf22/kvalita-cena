@@ -424,21 +424,21 @@ Proof-of-work výzvu (`FeedbackChallengeService`, GraphQL `feedbackChallenge`) a
 vůbec — token nese celou výzvu podepsanou HMAC odvozeným z `JWT_SECRET`, jen krátkodobá
 in-memory cache brání přehrání jednou vyřešeného saltu.
 
-## Co ještě není v etapě 1
+## Co ještě není implementováno
 
-### Open Food Facts
+### Open Food Facts — zpětné publikování oprav
 
-EAN lookup nejprve hledá lokální `core.product`, jinak načte a cachuje snapshot v `off.product`.
-OFF hodnoty zůstávají oddělené od `core.*`; při založení lokálního produktu jsou použity jako
-výchozí hodnoty a uživatelská vrstva (`core.product_user_edit`) je může přepsat. Obrázek se
-nestahuje do `core.media`, klient jej zobrazuje přímo z HTTPS URL OFF a vždy uvádí atribuci.
-Budoucí odesílání komunitních oprav zpět do OFF není součástí této etapy.
+Samotný EAN lookup, cache OFF snapshotu a použití OFF hodnot jako výchozích při založení
+produktu jsou HOTOVÉ (`docs/stav-implementace.md`, „Open Food Facts") — tahle sekce popisovala
+ranou fázi vývoje, dnes by čtenáře matla. Jediné, co z původního záměru zbývá: appka umí
+komunitní opravu jen uložit lokálně (`core.product_user_edit`), ne ji poslat zpátky do OFF.
+Odeslání zpět do OFF je mimo dnešní rozsah.
 
 `agg.price_weekly_national` (týdenní řady pro delší grafy), plné textové recenze
 (`core.product_review`, viditelnost `PUBLIC`/`GROUPS`/`PRIVATE`), skupiny důvěry
 (`core.trust_group`, `core.trust_edge`), `core.user_flag`, `core.watch_subscription`,
 lokální dodavatelé (`core.supplier`, `core.supplier_offer`) a `core.access_policy` —
-to všechno je popsané v plánu založení projektu a přijde v etapě 2/3. Tabulky pro ně
+to všechno patří do dalšího rozvoje (`docs/README.md`, „Terminologie fází"). Tabulky pro ně
 ještě nejsou v changelogu, aby se neležel mrtvý kód/schéma, které nikdo nepoužívá.
 
 Nápady mimo tenhle plán (název věrnostního programu podle obchodu, ceny předem z akčního
@@ -450,17 +450,24 @@ není napsaný — vyhodnocovací pravidlo zatím není známé. Existuje jen to
 (sloupce, fronta), aby šel dopsat bez další migrace. Dokud neběží, je `verified_at` u
 všeho `NULL` a klient všude ukazuje "neověřeno" — to je záměr, ne dočasná chyba k opravě.
 
-## GraphQL kontrakt: breaking change bez verzování
+## GraphQL kontrakt: breaking change bez verzování (historie) a dnešní pravidlo
 
-`searchProducts` změnilo návratový typ z `[Product!]!` na `ProductSearchResult!` (přidání
-filtrů obchod/město, řazení a agregátů v `ProductSearchItem`) — v etapě 1 bez dopadu, protože
-nic není nasazené a mobil i web se aktualizují společně s backendem. Až bude appka v provozu,
-takhle přímá změna typu existujícího pole by starším klientům (starší mobilní APK v terénu)
-shodila dotaz. Další podobně tvarová změna už bude potřebovat buď nové pole vedle starého,
-nebo verzované schéma — rozhodnout se má předem, ne až ve chvíli, kdy se to poprvé stane.
+Dva breaking changy proběhly ještě před nasazením, kdy „nic není nasazené a mobil i web se
+aktualizují společně s backendem" byla platná úvaha — dnes už není, appka je v provozu od
+2026-08-24 (`docs/vydani.md`) a starší mobilní APK můžou být v terénu. Ponecháno jako historický
+záznam PROČ jsou typy takové, jaké jsou, ne jako platný návod pro budoucí změny:
 
-Druhý případ: `Store.lat`/`Store.lon` změnily typ z `Float!` na `Float` (nullable) kvůli
-obchodům založeným bez GPS — viz „Identita provozovny" výš. Stejná poznámka platí i tady:
-v provozu by tahle změna klientům, kteří nepočítají s `null`, mohla shodit zobrazení karty
-obchodu (ne dotaz samotný, GraphQL by `null` u dřív non-null pole prostě propustil, ale
-klientský kód typovaný na `Float!` by na runtime `null` mohl spadnout jinde).
+- `searchProducts` změnilo návratový typ z `[Product!]!` na `ProductSearchResult!` (přidání
+  filtrů obchod/město, řazení a agregátů v `ProductSearchItem`).
+- `Store.lat`/`Store.lon` změnily typ z `Float!` na `Float` (nullable) kvůli obchodům založeným
+  bez GPS — viz „Identita provozovny" výš.
+
+**Dnešní pravidlo, už implementované:** budoucí breaking change (změna typu existujícího pole,
+non-null → nullable a naopak) se nedělá tiše — appka místo toho zvedne
+`app.client.min-android-version` (`application.yml`) na `versionCode` prvního APK, které change
+obsahuje. `ClientVersionFilter` pak starším klientům vrátí srozumitelnou chybu „aktualizuj
+appku" místo tichého pádu dotazu nebo nevysvětleného selhání na `null` (`docs/vydani.md`,
+„Verzování a vydání"). Přesně tenhle mechanismus se použil, když se `rateProduct(grade:)`
+přejmenovalo na `rateProduct(stars:)` a otočila se škála. Nekompatibilní pole vedle sebe (nebo
+verzované schéma) zůstává řešením pro změny, které i takhle zablokovaný starý klient nemá
+snést — rozhodnout se má předem, ne až ve chvíli, kdy se to poprvé stane.
