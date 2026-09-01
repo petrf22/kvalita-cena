@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 // Kontrola odkazů v dokumentaci (docs/README.md, „Zdroj rozhodnutí, které v repu nejsou") —
-// hlídá dva tvary, kterými se dokumenty v tomhle repu odkazují na sebe navzájem:
+// hlídá tři tvary, kterými se dokumenty v tomhle repu odkazují na sebe navzájem:
 //
 //   1. klasické markdown odkazy   [text](soubor.md)
 //   2. neformální zmínky v backtičkách  `docs/soubor.md`  — dominantní styl v tomhle repu
 //      (řádově víc výskytů než klasických odkazů), kterým dřív unikl mrtvý odkaz na
 //      `repo_migration.md` (soubor mimo repo, který přestal existovat).
-//
-// Kontroluje jen EXISTENCI cílového souboru, ne existenci konkrétní sekce/kotvy uvnitř —
-// to je vědomě mimo rozsah (viz docs/README.md).
+//   3. kotvy uvnitř markdown odkazů  [text](#kotva)  nebo  [text](soubor.md#kotva)  — kotva
+//      musí odpovídat GitHub-style slugu nějakého nadpisu v cílovém souboru. Tahle kontrola
+//      chytla, že přejmenování nadpisu „cs/sk/en/pl" na „cs/sk/en/pl/de" nechalo v odkazu
+//      starou kotvu s doslovnou mezerou uvnitř.
 //
 // Spouští se ručně (`node tools/docs/check-links.mjs`) i v CI (.github/workflows/ci.yml,
 // job „Dokumentace"). Bez závislostí, čistý Node.
@@ -43,6 +44,47 @@ const MARKDOWN_LINK = /\]\(([^)]+)\)/g;
 // `docs/neco.md` nebo `neco.md` — jen markdown soubory, ne libovolná cesta v backtičkách
 // (ty jsou většinou kódové identifikátory/třídy, ne odkazy).
 const BACKTICK_MD_REF = /`((?:\.\.\/)*(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.md)`/g;
+const HEADING = /^(#{1,6})\s+(.+?)\s*$/gm;
+
+/**
+ * GitHub-style slug z textu nadpisu: markdown formátování (backtičky, **tučné**, [odkazy](...))
+ * se nejdřív odstraní na holý text, pak lowercase, odstraní se vše kromě písmen/číslic/mezer/
+ * podtržítek/pomlček, mezery -> pomlčky. Druhý a další výskyt stejného slugu v souboru dostane
+ * příponu -1/-2/... (GitHub dedupe), proto se slug počítá vždy nad VŠEMI nadpisy souboru
+ * najednou, ne nadpis od nadpisu izolovaně.
+ */
+function slugify(headingText, seenCounts) {
+  const plain = headingText
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/\*\*([^*]*)\*\*/g, '$1')
+    .replace(/__([^_]*)__/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
+  let slug = plain
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}\s_-]/gu, '')
+    .replace(/\s+/g, '-');
+  const seen = seenCounts.get(slug) ?? 0;
+  seenCounts.set(slug, seen + 1);
+  return seen === 0 ? slug : `${slug}-${seen}`;
+}
+
+const anchorCache = new Map();
+
+/** Množina platných kotev pro soubor (absolutní cesta), s cachí přes opakovaná volání. */
+function anchorsFor(absPath) {
+  if (anchorCache.has(absPath)) return anchorCache.get(absPath);
+  const anchors = new Set();
+  if (existsSync(absPath)) {
+    const text = readFileSync(absPath, 'utf8');
+    const seenCounts = new Map();
+    for (const match of text.matchAll(HEADING)) {
+      anchors.add(slugify(match[2], seenCounts));
+    }
+  }
+  anchorCache.set(absPath, anchors);
+  return anchors;
+}
 
 function checkFile(relPath) {
   const absPath = path.join(ROOT, relPath);
@@ -52,14 +94,21 @@ function checkFile(relPath) {
 
   for (const match of text.matchAll(MARKDOWN_LINK)) {
     const target = match[1];
-    if (target.startsWith('http://') || target.startsWith('https://') || target.startsWith('#')) {
+    if (target.startsWith('http://') || target.startsWith('https://')) continue;
+
+    const [targetPath, anchor] = target.split('#');
+    const resolvedAbs = targetPath ? path.normalize(path.join(baseDir, targetPath)) : absPath;
+
+    if (targetPath && !existsSync(resolvedAbs)) {
+      problems.push(`  markdown odkaz -> ${target}`);
       continue;
     }
-    const targetPath = target.split('#')[0];
-    if (!targetPath) continue;
-    const resolved = path.normalize(path.join(baseDir, targetPath));
-    if (!existsSync(resolved)) {
-      problems.push(`  markdown odkaz -> ${target}`);
+    if (anchor !== undefined && resolvedAbs.endsWith('.md')) {
+      const anchors = anchorsFor(resolvedAbs);
+      if (!anchors.has(anchor)) {
+        const displayTarget = targetPath || path.relative(ROOT, absPath);
+        problems.push(`  kotva neexistuje -> ${target} (v ${displayTarget} nenalezena „#${anchor}")`);
+      }
     }
   }
 
@@ -92,5 +141,5 @@ if (hasProblems) {
   console.error('\nNalezeny mrtvé odkazy na dokumentaci (viz výš).');
   process.exit(1);
 } else {
-  console.log('Všechny odkazy v dokumentaci vedou na existující soubory.');
+  console.log('Všechny odkazy v dokumentaci vedou na existující soubory a platné kotvy.');
 }

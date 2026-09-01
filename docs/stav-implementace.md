@@ -19,7 +19,7 @@ v příslušné sekci pod ní.
 | [Adresa/mapa provozovny](#adresamapa-provozovny) | hotovo | hotovo | hotovo | HOTOVO |
 | [Hledání podle čárového kódu](#hledání-podle-čárového-kódu) | hotovo | hotovo | hotovo | HOTOVO |
 | [Hledání podle kategorie](#hledání-podle-kategorie) | hotovo | hotovo | hotovo | HOTOVO |
-| [Lokalizace a multi-měna](#lokalizace-cssken pl de-multi-měna-strojově-čitelný-kontrakt-chyb) | hotovo | hotovo | chybí klientský překlad chyb podle `code` | ČÁSTEČNĚ |
+| [Lokalizace a multi-měna](#lokalizace-csskenplde-multi-měna-strojově-čitelný-kontrakt-chyb) | hotovo | hotovo | chybí klientský překlad chyb podle `code` | ČÁSTEČNĚ |
 | [Vizuální identita](#vizuální-identita) | — | hotovo | hotovo | HOTOVO |
 | [Stránka „O aplikaci"](#stránka-o-aplikaci) | — | hotovo | hotovo | HOTOVO |
 | [Zpětná vazba](#zpětná-vazba) | hotovo | hotovo | hotovo | HOTOVO |
