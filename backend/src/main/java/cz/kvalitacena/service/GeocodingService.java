@@ -97,19 +97,23 @@ public class GeocodingService {
   /**
    * Souřadnice → adresa (docs/soukromi.md: dotaz jde VÝHRADNĚ ze serveru, souřadnice se nikam
    * nezapisují). Slouží k předvyplnění adresy při editaci obchodu tlačítkem "Použít mou
-   * polohu" — na rozdíl od {@code nearbyStores} tady zaokrouhlení na 3 desetinná místa dělá
-   * volající (stejné pravidlo jako u ostatní polohy uživatele), tahle metoda pracuje s tím,
-   * co dostane. Výpadek/timeout vrací prázdný výsledek, nikdy výjimku — editace obchodu nesmí
+   * polohu" — klienti posílají syrovou hodnotu z geolokace (tu samou používají i jako
+   * ukládanou souřadnici PROVOZOVNY, tam se zaokrouhlovat nesmí), zaokrouhlení pro Nominatim
+   * proto dělá TADY server, na 4 desetinná místa (~11 m) — hluboko pod přesností mobilního
+   * fixu, takže se nic reálného neztrácí, jen zmizí falešná sub-metrová přesnost posílaná třetí
+   * straně. Výpadek/timeout vrací prázdný výsledek, nikdy výjimku — editace obchodu nesmí
    * spadnout kvůli nedostupnému Nominatimu.
    */
   public ReverseGeocodeResult reverseGeocode(double lat, double lon) {
-    // Zaokrouhlení klíče na ~11 m (4 desetinná místa) — dost pro cache hit při opakovaném
-    // "Použít mou polohu" ze stejného místa, beze ztráty přesnosti pro Nominatim samotný.
-    String key = String.format(Locale.ROOT, "%.4f|%.4f", lat, lon);
+    double roundedLat = Coordinates.round(lat, 4);
+    double roundedLon = Coordinates.round(lon, 4);
+    // Zaokrouhlení na 4 desetinná místa je teď i cache klíč — dotaz na Nominatim a cache hit
+    // sedí na stejnou hodnotu, dřív se cachovalo na 4 dp, ale ven šla syrová souřadnice.
+    String key = String.format(Locale.ROOT, "%.4f|%.4f", roundedLat, roundedLon);
     // Cachovaná hodnota NENESE atribuci (viz fetchReverseFromNominatim níž) — text je
     // lokalizovaný (docs/lokalizace.md) a cache klíč locale nezná, takže by se jinak zamrzl
     // na jazyku prvního requestu pro dané souřadnice až do vypršení TTL.
-    ReverseGeocodeResult cached = reverseCache().get(key, k -> fetchReverseFromNominatim(lat, lon));
+    ReverseGeocodeResult cached = reverseCache().get(key, k -> fetchReverseFromNominatim(roundedLat, roundedLon));
     return withAttribution(cached);
   }
 

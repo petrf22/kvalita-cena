@@ -113,7 +113,8 @@ type Query {
   Opačný směr než geocodeAddress — souřadnice na adresu, pro tlačítko "Použít mou polohu" při
   editaci obchodu. Stejná pravidla soukromí platí ještě přísněji: parametrem je tady rovnou
   poloha UŽIVATELE, ne adresa obchodu, takže dotaz jde výhradně ze serveru
-  (docs/soukromi.md) a souřadnice se nikam nezapisují. Výpadek Nominatimu vrací prázdná pole,
+  (docs/soukromi.md) a souřadnice se nikam nezapisují. Server souřadnice zaokrouhlí na 4
+  desetinná místa (~11 m), než je pošle Nominatimu. Výpadek Nominatimu vrací prázdná pole,
   nikdy chybu.
   """
   reverseGeocode(lat: Float!, lon: Float!): ReverseGeocodeResult!
@@ -145,7 +146,8 @@ type Query {
 
   """
   Provozovny v okolí zadaného bodu. Souřadnice se používají JEN jako parametry dotazu
-  a nikam se neukládají — viz docs/soukromi.md.
+  a nikam se neukládají — viz docs/soukromi.md. Server je zaokrouhlí na 3 desetinná místa
+  (~110 m) — při rádiusu 3–25 km pod rozlišovací schopnost výsledku.
   """
   nearbyStores(lat: Float!, lon: Float!, radiusKm: Float = 3): [Store!]!
 

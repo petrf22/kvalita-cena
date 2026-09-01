@@ -10,6 +10,7 @@ import cz.kvalitacena.security.ViewerContextResolver;
 import cz.kvalitacena.service.CatalogEditService;
 import cz.kvalitacena.service.ChainCatalogService;
 import cz.kvalitacena.service.CompanyRegistries;
+import cz.kvalitacena.service.Coordinates;
 import cz.kvalitacena.service.CountryResolver;
 import cz.kvalitacena.service.GeocodingService;
 import cz.kvalitacena.service.MediaService;
@@ -51,7 +52,13 @@ public class StoreGraphQlController {
       Authentication authentication) {
     double radius = Math.min(radiusKm == null ? 3 : radiusKm, MAX_RADIUS_KM);
     Long viewerId = viewerContextResolver.resolve(authentication).userId();
-    return storeOverlayService.applyOverlay(storeRepository.findNearby(lat, lon, radius * 1000, viewerId), viewerId);
+    // Zaokrouhlení na 3 desetinná místa (~110 m, docs/soukromi.md — dřív dokumentované, ale
+    // nikde neimplementované) — při rádiusu 3–25 km je to pod rozlišovací schopnost výsledku,
+    // ale snižuje přesnost polohy, která skončí v logu requestu/dotazu.
+    double roundedLat = Coordinates.round(lat, 3);
+    double roundedLon = Coordinates.round(lon, 3);
+    return storeOverlayService.applyOverlay(
+        storeRepository.findNearby(roundedLat, roundedLon, radius * 1000, viewerId), viewerId);
   }
 
   @QueryMapping

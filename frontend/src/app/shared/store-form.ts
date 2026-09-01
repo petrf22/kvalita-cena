@@ -313,6 +313,9 @@ export class StoreForm {
       (position) => {
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
+        // Syrová hodnota schválně: manualLat/Lon je souřadnice PROVOZOVNY (uloží se do
+        // core.store), zaokrouhlení by ji degradovalo. Pro Nominatim zaokrouhluje server
+        // (GeocodingService.reverseGeocode, docs/soukromi.md).
         this.manualLat.set(lat);
         this.manualLon.set(lon);
         this.selectedCandidateRef.set(null);

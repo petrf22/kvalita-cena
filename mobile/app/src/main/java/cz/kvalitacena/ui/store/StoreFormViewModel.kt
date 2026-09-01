@@ -264,6 +264,9 @@ class StoreFormViewModel(
   }
 
   fun useMyLocation(lat: Double, lon: Double) {
+    // Syrová hodnota schválně: manualLat/Lon je souřadnice PROVOZOVNY (uloží se do
+    // core.store), zaokrouhlení by ji degradovalo. Pro Nominatim zaokrouhluje server
+    // (GeocodingService.reverseGeocode, docs/soukromi.md).
     manualLat = lat
     manualLon = lon
     selectedCandidate = null
