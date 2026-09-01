@@ -93,6 +93,13 @@ public enum ErrorCode {
   QUALITY_REQUIRES_LOGIN("error.quality.requiresLogin"),
   QUALITY_STARS_OUT_OF_RANGE("error.quality.starsOutOfRange"),   // {0} = min, {1} = max
 
+  // --- recenze (core.product_review, text k hodnocení kvality)
+  REVIEW_REQUIRES_LOGIN("error.review.requiresLogin"),
+  // Text bez hvězdiček nejde založit — hvězdičky se zadávají přes rateProduct.
+  REVIEW_REQUIRES_RATING("error.review.requiresRating"),
+  REVIEW_TEXT_EMPTY("error.review.textEmpty"),
+  REVIEW_TEXT_TOO_LONG("error.review.textTooLong"),   // {0} = max délka
+
   // --- nahlašování
   FLAG_REQUIRES_LOGIN("error.flag.requiresLogin"),
   FLAG_RECORD_NOT_FOUND("error.flag.recordNotFound"),

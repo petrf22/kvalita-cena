@@ -1,8 +1,7 @@
 """
-Etapa 1 (MVP) — hledání zboží s filtry a řazením, ceny po obchodech, hodnocení kvality
-(jen hvězdičky 1–5, bez textů), denní historie ceny pro graf, dohledání nejbližších provozoven
-a zápis ceny. Textové recenze, skupiny důvěry, notifikace a dodavatelé přijdou v etapě 2/3
-(viz plán založení projektu).
+MVP — hledání zboží s filtry a řazením, ceny po obchodech, hodnocení kvality (hvězdičky 1–5
+s volitelným textem recenze), denní historie ceny pro graf, dohledání nejbližších provozoven
+a zápis ceny. Skupiny důvěry, notifikace a dodavatelé přijdou v dalším rozvoji.
 """
 scalar Long
 scalar BigDecimal
@@ -145,6 +144,13 @@ type Query {
   productLookupByCode(code: String!): ProductLookupResult!
 
   """
+  Recenze pod zbožím — jen s textem a neskryté, nejnovější první (docs/reputace.md, T1: texty
+  vidí jen přihlášený). Nepřihlášený dostane loginRequired=true a prázdné items, ale skutečný
+  totalCount, ať klient umí zobrazit "N recenzí, přihlas se pro zobrazení" místo prázdného stavu.
+  """
+  productReviews(productId: ID!, first: Int = 20, offset: Int = 0): ProductReviewResult!
+
+  """
   Provozovny v okolí zadaného bodu. Souřadnice se používají JEN jako parametry dotazu
   a nikam se neukládají — viz docs/soukromi.md. Server je zaokrouhlí na 3 desetinná místa
   (~110 m) — při rádiusu 3–25 km pod rozlišovací schopnost výsledku.
@@ -196,6 +202,12 @@ type Query {
   myEdits(first: Int = 20, offset: Int = 0): MyEditResult!
 
   """
+  Vlastní recenze s textem, nejnovější první — na rozdíl od productReviews vrací i vlastní
+  recenze skryté moderací (autor tak vidí, že a proč zmizela z produktu). Vyžaduje přihlášení.
+  """
+  myReviews(first: Int = 20, offset: Int = 0): MyReviewResult!
+
+  """
   Fronta nahlášených záznamů čekajících na přezkum (docs/reputace.md, "Moderace") — bez
   recordType všechny tři typy najednou. Jen moderátor (T4), jinak MODERATION_REQUIRES_ROLE.
   """
@@ -239,9 +251,21 @@ type Mutation {
 
   """
   Hodnocení kvality hvězdičkami: 1 nejhorší … 5 nejlepší. Jeden záznam na uživatele a produkt
-  — opakované volání předchozí hodnocení přepíše. Vyžaduje přihlášení.
+  — opakované volání předchozí hodnocení přepíše. Text recenze (pokud existuje) zůstává
+  netknutý. Vyžaduje přihlášení.
   """
   rateProduct(productId: ID!, stars: Int!): ProductQuality!
+
+  """
+  Zapsání nebo úprava textu recenze k VLASTNÍMU hodnocení — hvězdičky musí existovat dřív
+  (REVIEW_REQUIRES_RATING), text sám bez hvězdiček nejde založit. Max 1000 znaků
+  (REVIEW_TEXT_TOO_LONG), prázdný/jen bílé znaky je REVIEW_TEXT_EMPTY (na smazání textu slouží
+  deleteProductReviewText, ne prázdný řetězec). Vyžaduje přihlášení.
+  """
+  saveProductReviewText(productId: ID!, text: String!): MyProductReview!
+
+  "Smazání textu recenze — hvězdičky zůstávají beze změny. Vyžaduje přihlášení."
+  deleteProductReviewText(productId: ID!): MyProductReview!
 
   """
   Založení provozovny — pro zápis ceny bez sdílení polohy nebo zpětně z domova. Vyžaduje
@@ -726,6 +750,10 @@ type Product {
   quality: ProductQuality!
   "Hvězdičky přihlášeného uživatele, null pro anonyma i pro nehodnocený produkt."
   myQualityRating: Int
+  "Počet recenzí S TEXTEM (na rozdíl od quality.count, který počítá i hodnocení bez textu)."
+  reviewCount: Int!
+  "Vlastní text recenze přihlášeného uživatele, null pro anonyma i bez vlastního textu."
+  myReviewText: String
   externalLinks: [ExternalLink!]!
   """
   Konsolidační job zatím neběží (docs/datovy-model.md, "Uživatelská vrstva nad globálními
@@ -889,6 +917,23 @@ type MyEditResult {
   hasMore: Boolean!
 }
 
+type MyReviewItem {
+  product: Product!
+  stars: Int!
+  text: String!
+  createdAt: DateTime!
+  "Null, pokud text po napsání nebyl upraven, stejný princip jako ProductReview.updatedAt."
+  updatedAt: DateTime
+  "Skryto moderací (core.record_flag, RecordType.REVIEW) — vidí jen autor, ať ví, že a proč recenze zmizela z produktu."
+  hidden: Boolean!
+}
+
+type MyReviewResult {
+  items: [MyReviewItem!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
 enum CodeType {
   GTIN
   PLU
@@ -921,6 +966,41 @@ type ProductStats {
 type ProductQuality {
   average: BigDecimal
   count: Int!
+}
+
+"""
+Jedna recenze pod zbožím (core.product_review) — vždy nese hvězdičky, text jen když ho autor
+napsal. Autor je tu VŽDY vidět (authorPublicUid/authorName) — na rozdíl od zbytku veřejného API
+(docs/soukromi.md, "Podepsaná recenze": jinde se autor objevuje jen v moderátorském pohledu).
+"""
+type ProductReview {
+  id: ID!
+  stars: Int!
+  text: String!
+  "public_uid autora, ne databázové id (docs/soukromi.md) — nikdy nejde hádat podle pořadí."
+  authorPublicUid: ID!
+  "Vykreslené jméno autora — přezdívka (je-li veřejná), jinak lokalizovaný handle. Vždy s '#číslo'."
+  authorName: String!
+  createdAt: DateTime!
+  "Null, pokud text po napsání nebyl upraven — klient tím rozliší štítek 'upraveno' od updatedAt, které se hýbe i při změně hvězdiček."
+  updatedAt: DateTime
+  "True pro recenzi přihlášeného viewera — klient tím umí nabídnout Upravit/Smazat místo obecného tlačítka."
+  mine: Boolean!
+}
+
+type ProductReviewResult {
+  items: [ProductReview!]!
+  totalCount: Int!
+  hasMore: Boolean!
+  "Anonym texty nevidí (docs/reputace.md, T1) — true znamená, že items je prázdné bez ohledu na totalCount."
+  loginRequired: Boolean!
+}
+
+"Vlastní hodnocení včetně textu — návratový typ saveProductReviewText/deleteProductReviewText, ať klient nemusí přenačítat celý produkt."
+type MyProductReview {
+  stars: Int!
+  text: String
+  updatedAt: DateTime
 }
 
 enum ExternalLinkKind {
@@ -1376,6 +1456,10 @@ enum ErrorCode {
   OBSERVATION_PROMO_VALID_FROM_IN_FUTURE
   QUALITY_REQUIRES_LOGIN
   QUALITY_STARS_OUT_OF_RANGE
+  REVIEW_REQUIRES_LOGIN
+  REVIEW_REQUIRES_RATING
+  REVIEW_TEXT_EMPTY
+  REVIEW_TEXT_TOO_LONG
   FLAG_REQUIRES_LOGIN
   FLAG_RECORD_NOT_FOUND
   MODERATION_REQUIRES_ROLE

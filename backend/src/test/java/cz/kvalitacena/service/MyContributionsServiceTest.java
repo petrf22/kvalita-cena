@@ -18,6 +18,7 @@ import cz.kvalitacena.db.entity.StoreStatus;
 import cz.kvalitacena.db.entity.StoreUserEdit;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
+import cz.kvalitacena.db.repo.ProductReviewRepository;
 import cz.kvalitacena.db.repo.ProductUserEditRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.db.repo.StoreUserEditRepository;
@@ -61,6 +62,8 @@ class MyContributionsServiceTest {
   @Mock
   private StoreUserEditRepository storeUserEditRepository;
   @Mock
+  private ProductReviewRepository productReviewRepository;
+  @Mock
   private ProductOverlayService productOverlayService;
   @Mock
   private StoreOverlayService storeOverlayService;
@@ -72,8 +75,8 @@ class MyContributionsServiceTest {
   private MyContributionsService service() {
     catalogProperties.setDraftConfirmations(3);
     return new MyContributionsService(productRepository, storeRepository, priceObservationRepository,
-        productUserEditRepository, storeUserEditRepository, productOverlayService, storeOverlayService,
-        catalogProperties, fxRateService);
+        productUserEditRepository, storeUserEditRepository, productReviewRepository, productOverlayService,
+        storeOverlayService, catalogProperties, fxRateService);
   }
 
   private void passthroughOverlays() {

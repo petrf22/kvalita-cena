@@ -14,9 +14,12 @@ import org.springframework.stereotype.Controller;
 
 /**
  * "Moje příspěvky" — čtecí vrstva nad vlastní uživatelskou vrstvou (docs/datovy-model.md,
- * "Uživatelská vrstva nad globálními daty"). Anonym nemá co vypsat, proto všechny čtyři
- * dotazy vyžadují přihlášení, na rozdíl od {@code product}/{@code store}, které fungují i bez
- * něj (viz {@link ProductGraphQlController}/{@link StoreGraphQlController}).
+ * "Uživatelská vrstva nad globálními daty") a nad vlastními recenzemi. Anonym nemá co vypsat,
+ * proto všech pět dotazů vyžaduje přihlášení, na rozdíl od {@code product}/{@code store}, které
+ * fungují i bez něj (viz {@link ProductGraphQlController}/{@link StoreGraphQlController}).
+ * {@code myReviews} vidí i vlastní recenze skryté moderací — na rozdíl od
+ * {@code Query.productReviews} ({@link ProductReviewGraphQlController}), který cizí skryté
+ * recenze nikomu neukáže.
  */
 @Controller
 @RequiredArgsConstructor
@@ -48,6 +51,12 @@ public class MyContributionsGraphQlController {
   public MyEditResult myEdits(@Argument Integer first, @Argument Integer offset,
       Authentication authentication) {
     return myContributionsService.myEdits(requireLoggedIn(authentication), first, offset);
+  }
+
+  @QueryMapping
+  public MyReviewResult myReviews(@Argument Integer first, @Argument Integer offset,
+      Authentication authentication) {
+    return myContributionsService.myReviews(requireLoggedIn(authentication), first, offset);
   }
 
   private Long requireLoggedIn(Authentication authentication) {

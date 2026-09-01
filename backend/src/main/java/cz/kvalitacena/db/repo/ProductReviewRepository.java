@@ -53,6 +53,11 @@ public interface ProductReviewRepository extends JpaRepository<ProductReview, Lo
       + "from ProductReview r where r.userId = :userId and r.productId in :productIds")
   List<StarsRow> starsOfUser(@Param("userId") Long userId, @Param("productIds") Collection<Long> productIds);
 
+  /** Product.myReviewText v dávce (@BatchMapping) — jen vlastní recenze S TEXTEM. */
+  @Query("select r.productId as productId, r.text as text from ProductReview r "
+      + "where r.userId = :userId and r.productId in :productIds and r.text is not null")
+  List<TextRow> textsOfUser(@Param("userId") Long userId, @Param("productIds") Collection<Long> productIds);
+
   /**
    * Upsert jedním kolem — souběžná volání téhož uživatele na tentýž produkt nesmí spadnout na
    * {@code uq_product_review_user} (2026-08-05/01-product-quality-rating.yaml,
@@ -84,5 +89,11 @@ public interface ProductReviewRepository extends JpaRepository<ProductReview, Lo
     Long getProductId();
 
     long getCount();
+  }
+
+  interface TextRow {
+    Long getProductId();
+
+    String getText();
   }
 }

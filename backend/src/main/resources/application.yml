@@ -112,6 +112,12 @@ app:
     # Pod tímto počtem hodnocení klienti známku zobrazí ztlumeně jako "orientační" — obdoba
     # pravidla n_eff < 2 u cen (docs/reputace.md).
     min-ratings-for-badge: 3
+  review:
+    # Text recenze je první veřejný text od uživatelů v appce — vlastní denní strop na ZÁPIS
+    # (docs/reputace.md, "Limity patří do konfigurace"), oddělený od moderace po nahlášení
+    # (app.moderation.review-flags-to-hide). Velkoryse jako ostatní MVP limity.
+    max-text-length: 1000
+    max-per-day: 20
   client:
     # Nejnižší versionCode mobilní appky, který backend ještě obsluhuje (ClientVersionFilter,
     # docs/vydani.md) — vydáním APK zamrzne GraphQL kontrakt, starším klientům v terénu by

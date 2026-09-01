@@ -8,12 +8,15 @@ import cz.kvalitacena.controller.MyObservationItem;
 import cz.kvalitacena.controller.MyObservationResult;
 import cz.kvalitacena.controller.MyProductItem;
 import cz.kvalitacena.controller.MyProductResult;
+import cz.kvalitacena.controller.MyReviewItem;
+import cz.kvalitacena.controller.MyReviewResult;
 import cz.kvalitacena.controller.MyStoreItem;
 import cz.kvalitacena.controller.MyStoreResult;
 import cz.kvalitacena.controller.PublicationState;
 import cz.kvalitacena.controller.PublicationStatus;
 import cz.kvalitacena.db.entity.PriceObservation;
 import cz.kvalitacena.db.entity.Product;
+import cz.kvalitacena.db.entity.ProductReview;
 import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.ProductUserEdit;
 import cz.kvalitacena.db.entity.RecordType;
@@ -22,6 +25,7 @@ import cz.kvalitacena.db.entity.StoreStatus;
 import cz.kvalitacena.db.entity.StoreUserEdit;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
+import cz.kvalitacena.db.repo.ProductReviewRepository;
 import cz.kvalitacena.db.repo.ProductUserEditRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.db.repo.StoreUserEditRepository;
@@ -58,6 +62,7 @@ public class MyContributionsService {
   private final PriceObservationRepository priceObservationRepository;
   private final ProductUserEditRepository productUserEditRepository;
   private final StoreUserEditRepository storeUserEditRepository;
+  private final ProductReviewRepository productReviewRepository;
   private final ProductOverlayService productOverlayService;
   private final StoreOverlayService storeOverlayService;
   private final CatalogProperties catalogProperties;
@@ -167,6 +172,32 @@ public class MyContributionsService {
 
     List<MyEditItem> page = merged.stream().skip(off).limit(limit).toList();
     return new MyEditResult(page, (int) total, off + page.size() < total);
+  }
+
+  /**
+   * Vlastní recenze s textem, nejnovější první — na rozdíl od {@code ProductReviewService
+   * .reviewsFor} (co vidí VIEWER pod zbožím) vrací i vlastní recenze skryté moderací, ať autor
+   * ví, že a proč zmizela (docs/reputace.md, "Moderace").
+   */
+  public MyReviewResult myReviews(Long userId, Integer first, Integer offset) {
+    int limit = clamp(first == null ? 20 : first, 1, MAX_FIRST);
+    int off = clamp(offset == null ? 0 : offset, 0, MAX_OFFSET);
+
+    List<ProductReview> page = productReviewRepository.findTextsByUser(userId, limit, off);
+    long total = productReviewRepository.countByUserIdAndTextIsNotNull(userId);
+
+    Map<Long, Product> productsById = productOverlayService
+        .applyOverlay(productRepository.findAllById(page.stream().map(ProductReview::getProductId).distinct().toList()), userId)
+        .stream().collect(Collectors.toMap(Product::getId, Function.identity()));
+
+    List<MyReviewItem> items = new ArrayList<>();
+    for (ProductReview review : page) {
+      Product product = productsById.get(review.getProductId());
+      if (product == null) continue; // produkt mezitím smazán/sloučen
+      items.add(new MyReviewItem(product, review.getStars(), review.getText(), review.getCreatedAt(),
+          review.getTextUpdatedAt(), review.isHidden()));
+    }
+    return new MyReviewResult(items, (int) total, off + items.size() < total);
   }
 
   private PublicationStatus productStatus(Product product, long confirmationsReceived, int required) {
