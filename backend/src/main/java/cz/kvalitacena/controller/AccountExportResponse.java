@@ -9,7 +9,7 @@ import java.util.List;
  * ne přímo JPA entity — {@code PriceObservation} má lazy {@code submitter}/{@code product}/
  * {@code store} (se serializací entity napřímo by appka vystavila i cizí interní pole jako
  * {@code email_hash}), a i tam, kde entita nese jen skalární pole ({@code ProductUserEdit},
- * {@code StoreUserEdit}, {@code ProductQualityRating}), appka drží stejnou konvenci jako
+ * {@code StoreUserEdit}, {@code ProductReview}), appka drží stejnou konvenci jako
  * GraphQL vrstva — vlastní {@code record} obálku, nikdy syrovou entitu ven z controlleru.
  */
 public record AccountExportResponse(

@@ -31,7 +31,7 @@ import cz.kvalitacena.service.OpenFoodFactsService;
 import cz.kvalitacena.service.ProductCatalogService;
 import cz.kvalitacena.service.ProductOverlayService;
 import cz.kvalitacena.service.ProductSearchService;
-import cz.kvalitacena.service.QualityRatingService;
+import cz.kvalitacena.service.ProductReviewService;
 import cz.kvalitacena.service.TestMessages;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,7 +72,7 @@ class ProductGraphQlControllerLookupByCodeTest {
   @Mock private CategoryRepository categoryRepository;
   @Mock private CategoryI18nRepository categoryI18nRepository;
   @Mock private ProductSearchService productSearchService;
-  @Mock private QualityRatingService qualityRatingService;
+  @Mock private ProductReviewService reviewService;
   @Mock private ProductCatalogService productCatalogService;
   @Mock private OffProductCatalogService offProductCatalogService;
   @Mock private OpenFoodFactsService openFoodFactsService;
@@ -96,7 +96,7 @@ class ProductGraphQlControllerLookupByCodeTest {
   private ProductGraphQlController controller() {
     return new ProductGraphQlController(productRepository, priceCurrentRepository, productCodeRepository,
         offProductRepository, storeRepository, categoryRepository, categoryI18nRepository, productSearchService,
-        qualityRatingService, productCatalogService, offProductCatalogService, openFoodFactsService,
+        reviewService, productCatalogService, offProductCatalogService, openFoodFactsService,
         offNetContentConverter, productOverlayService, catalogEditService, myPriceService, mediaService,
         viewerContextResolver, externalLinkProperties, TestMessages.instance(), countryResolver, fxRateService);
   }

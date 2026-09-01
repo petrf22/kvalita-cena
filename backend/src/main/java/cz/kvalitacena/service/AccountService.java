@@ -15,7 +15,7 @@ import cz.kvalitacena.db.entity.LoginChallenge;
 import cz.kvalitacena.db.entity.Media;
 import cz.kvalitacena.db.entity.PriceObservation;
 import cz.kvalitacena.db.entity.Product;
-import cz.kvalitacena.db.entity.ProductQualityRating;
+import cz.kvalitacena.db.entity.ProductReview;
 import cz.kvalitacena.db.entity.ProductUserEdit;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.entity.StoreUserEdit;
@@ -24,8 +24,8 @@ import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.LoginChallengeRepository;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
-import cz.kvalitacena.db.repo.ProductQualityRatingRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
+import cz.kvalitacena.db.repo.ProductReviewRepository;
 import cz.kvalitacena.db.repo.ProductUserEditRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.db.repo.StoreUserEditRepository;
@@ -78,7 +78,7 @@ public class AccountService {
   private final AppUserRepository appUserRepository;
   private final UserProfileRepository userProfileRepository;
   private final PriceObservationRepository priceObservationRepository;
-  private final ProductQualityRatingRepository qualityRatingRepository;
+  private final ProductReviewRepository reviewRepository;
   private final ProductUserEditRepository productUserEditRepository;
   private final StoreUserEditRepository storeUserEditRepository;
   private final ProductRepository productRepository;
@@ -104,8 +104,8 @@ public class AccountService {
             o.getPriceAmount(), o.getCurrency(), o.getPriceKind().name(), o.getObservedAt()))
         .toList();
 
-    List<ProductQualityRating> ratings = qualityRatingRepository.findByUserId(user.getId());
-    Map<Long, String> productNamesForRatings = productNames(ratings.stream().map(ProductQualityRating::getProductId).toList());
+    List<ProductReview> ratings = reviewRepository.findByUserId(user.getId());
+    Map<Long, String> productNamesForRatings = productNames(ratings.stream().map(ProductReview::getProductId).toList());
     List<QualityRatingExport> ratingExports = ratings.stream()
         .map(r -> new QualityRatingExport(productNamesForRatings.get(r.getProductId()), r.getStars()))
         .toList();
@@ -185,7 +185,7 @@ public class AccountService {
    * Nevratné (co do samotného účtu — cenové observace přežívají anonymizované, viz níž).
    * Pořadí je záměrné: nejdřív smazat SOUBORY fotek (dokud ještě víme, které {@code
    * storageKey} k uživateli patří), teprve pak DB řádek {@link AppUser} — ten smaže kaskádou
-   * zbytek ({@code user_profile}, {@code product_quality_rating}, {@code product_user_edit}/
+   * zbytek ({@code user_profile}, {@code product_review}, {@code product_user_edit}/
    * {@code store_user_edit}, {@code record_flag}, {@code media}, {@code refresh_token}; viz FK
    * přehled u jednotlivých Liquibase changelogů). Opačné pořadí by po neúspěšném mazání
    * souboru nechalo appku s DB řádkem ukazujícím na soubor, který už mezitím zmizel.

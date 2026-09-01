@@ -10,7 +10,7 @@ import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.LoginChallengeRepository;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
-import cz.kvalitacena.db.repo.ProductQualityRatingRepository;
+import cz.kvalitacena.db.repo.ProductReviewRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ProductUserEditRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
@@ -58,7 +58,7 @@ class AccountServiceTest {
   @Mock
   private PriceObservationRepository priceObservationRepository;
   @Mock
-  private ProductQualityRatingRepository qualityRatingRepository;
+  private ProductReviewRepository reviewRepository;
   @Mock
   private ProductUserEditRepository productUserEditRepository;
   @Mock
@@ -95,7 +95,7 @@ class AccountServiceTest {
     properties.setMailEnabled(false); // DEV log větev
 
     service = new AccountService(appUserRepository, userProfileRepository, priceObservationRepository,
-        qualityRatingRepository, productUserEditRepository, storeUserEditRepository, productRepository,
+        reviewRepository, productUserEditRepository, storeUserEditRepository, productRepository,
         storeRepository, mediaRepository, mediaStorage, challengeRepository, emailCipher, codeEncoder,
         rateLimiter, properties, mailSender);
     currentUser = AppUser.builder().id(USER_ID).emailHash(EMAIL_HASH).publicHandle("blue-stork-1").build();

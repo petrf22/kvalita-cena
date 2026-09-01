@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
  * {@code hidden_at}.
  *
  * <p>{@code userId} slouží výhradně k vynucení "jeden hlas na člověka a záznam"
- * (uq_record_flag_user) — z API ven nejde, stejně jako {@code product_quality_rating.user_id}
+ * (uq_record_flag_user) — z API ven nejde, stejně jako {@code product_review.user_id}
  * (docs/soukromi.md).
  */
 @Entity

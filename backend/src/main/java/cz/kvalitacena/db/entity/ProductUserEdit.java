@@ -16,7 +16,7 @@ import java.util.List;
  * pole vymazal" (např. odebrání chybného IČO by jinak nešlo vyjádřit).
  *
  * <p>{@code productId}/{@code userId} jsou schválně skalární, ne {@code @ManyToOne} — stejný
- * důvod jako u {@link ProductQualityRating}: entita se čte a zapisuje jen přímo přes repozitář,
+ * důvod jako u {@link ProductReview}: entita se čte a zapisuje jen přímo přes repozitář,
  * překryv nad hledáním/detailem se skládá v SQL (CLAUDE.md, "autorizace je predikát v dotazu,
  * ne filtr v resolveru"), nikdy načtením a přemapováním této entity.
  */

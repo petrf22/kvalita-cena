@@ -1,0 +1,41 @@
+# 01-rename-product-review.yaml — core.product_quality_rating se přejmenovává na
+# core.product_review PŘED přidáním textu recenze (03-product-review-text.yaml v tomto
+# adresáři). Tabulka byla od začátku (2026-08-05/01-product-quality-rating.yaml) navržená
+# jako "vědomě minimální předstupeň k core.product_review" (docs/datovy-model.md) — přidáním
+# textu se jím doopravdy stává, takže starý název by od teď lhal o obsahu tabulky. Přejmenování
+# je záměrně samostatný changeset beze změny chování, aby šlo v historii jasně odlišit od
+# přidání textového pole.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-01-02-rename-product-review
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.product_quality_rating RENAME TO product_review;
+
+              ALTER INDEX core.uq_product_quality_rating_user RENAME TO uq_product_review_user;
+
+              ALTER TABLE core.product_review
+                RENAME CONSTRAINT fk_product_quality_rating_product TO fk_product_review_product;
+
+              ALTER TABLE core.product_review
+                RENAME CONSTRAINT fk_product_quality_rating_user TO fk_product_review_user;
+
+              ALTER TABLE core.product_review
+                RENAME CONSTRAINT chk_product_quality_rating_stars TO chk_product_review_stars;
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE core.product_review
+                RENAME CONSTRAINT chk_product_review_stars TO chk_product_quality_rating_stars;
+
+              ALTER TABLE core.product_review
+                RENAME CONSTRAINT fk_product_review_user TO fk_product_quality_rating_user;
+
+              ALTER TABLE core.product_review
+                RENAME CONSTRAINT fk_product_review_product TO fk_product_quality_rating_product;
+
+              ALTER INDEX core.uq_product_review_user RENAME TO uq_product_quality_rating_user;
+
+              ALTER TABLE core.product_review RENAME TO product_quality_rating;

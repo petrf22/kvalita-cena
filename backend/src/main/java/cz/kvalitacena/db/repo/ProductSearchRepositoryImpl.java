@@ -151,7 +151,7 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
         ORDER BY product_id, unit_price ASC, store_id ASC
       ), quality AS (
         SELECT product_id, ROUND(AVG(stars)::numeric, 2) AS avg_stars, COUNT(*) AS rating_count
-        FROM core.product_quality_rating
+        FROM core.product_review
         WHERE product_id IN (SELECT id FROM matched) GROUP BY product_id
       )
       """;

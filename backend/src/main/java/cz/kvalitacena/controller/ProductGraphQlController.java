@@ -38,7 +38,7 @@ import cz.kvalitacena.service.ProductCatalogService;
 import cz.kvalitacena.service.Messages;
 import cz.kvalitacena.service.ProductOverlayService;
 import cz.kvalitacena.service.ProductSearchService;
-import cz.kvalitacena.service.QualityRatingService;
+import cz.kvalitacena.service.ProductReviewService;
 import cz.kvalitacena.service.fx.FxRateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -82,7 +82,7 @@ public class ProductGraphQlController {
   private final CategoryRepository categoryRepository;
   private final CategoryI18nRepository categoryI18nRepository;
   private final ProductSearchService productSearchService;
-  private final QualityRatingService qualityRatingService;
+  private final ProductReviewService reviewService;
   private final ProductCatalogService productCatalogService;
   private final OffProductCatalogService offProductCatalogService;
   private final OpenFoodFactsService openFoodFactsService;
@@ -408,7 +408,7 @@ public class ProductGraphQlController {
 
   @BatchMapping(typeName = "Product", field = "quality")
   public Map<Product, ProductQuality> quality(List<Product> products) {
-    Map<Long, ProductQuality> summaries = qualityRatingService.summariesFor(productIds(products));
+    Map<Long, ProductQuality> summaries = reviewService.summariesFor(productIds(products));
     Map<Product, ProductQuality> result = new LinkedHashMap<>();
     for (Product p : products) {
       result.put(p, summaries.getOrDefault(p.getId(), ProductQuality.EMPTY));

@@ -3,8 +3,8 @@ package cz.kvalitacena.service;
 import cz.kvalitacena.controller.ProductQuality;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.repo.AppUserRepository;
-import cz.kvalitacena.db.repo.ProductQualityRatingRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
+import cz.kvalitacena.db.repo.ProductReviewRepository;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.UnauthorizedException;
 import cz.kvalitacena.exception.ValidationException;
@@ -27,27 +27,28 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Hodnocení kvality je v etapě 1 jen hvězdičky 1–5 (5 nejlepší), bez textů a bez viditelnosti
+ * Hodnocení kvality je zatím jen hvězdičky 1–5 (5 nejlepší), bez textů a bez viditelnosti
  * (docs/datovy-model.md). Anonym nesmí hodnotit, jedno hodnocení na uživatele a produkt
  * (vynucuje DB unique index + native upsert — tady se ověřuje jen že service volá upsert
- * správně).
+ * správně). Třída se dřív jmenovala {@code QualityRatingServiceTest}, přejmenováno spolu
+ * s {@code core.product_quality_rating} → {@code core.product_review}.
  */
 @ExtendWith(MockitoExtension.class)
-class QualityRatingServiceTest {
+class ProductReviewServiceTest {
 
   private static final Long PRODUCT_ID = 1L;
   private static final Long USER_ID = 42L;
   private static final UUID PUBLIC_UID = UUID.randomUUID();
 
   @Mock
-  private ProductQualityRatingRepository qualityRatingRepository;
+  private ProductReviewRepository reviewRepository;
   @Mock
   private AppUserRepository appUserRepository;
   @Mock
   private ProductRepository productRepository;
 
-  private QualityRatingService service() {
-    return new QualityRatingService(qualityRatingRepository, appUserRepository, productRepository);
+  private ProductReviewService service() {
+    return new ProductReviewService(reviewRepository, appUserRepository, productRepository);
   }
 
   @Test
@@ -58,7 +59,7 @@ class QualityRatingServiceTest {
 
   @Test
   void starsMustBeBetweenOneAndFive() {
-    QualityRatingService service = service();
+    ProductReviewService service = service();
     assertThatThrownBy(() -> service.rate(PRODUCT_ID, 0, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
     assertThatThrownBy(() -> service.rate(PRODUCT_ID, 6, PUBLIC_UID))
@@ -77,20 +78,20 @@ class QualityRatingServiceTest {
     when(productRepository.existsById(PRODUCT_ID)).thenReturn(true);
     when(appUserRepository.findByPublicUid(PUBLIC_UID))
         .thenReturn(Optional.of(AppUser.builder().id(USER_ID).build()));
-    when(qualityRatingRepository.summarize(any())).thenReturn(List.of());
+    when(reviewRepository.summarize(any())).thenReturn(List.of());
 
-    QualityRatingService service = service();
+    ProductReviewService service = service();
     service.rate(PRODUCT_ID, 2, PUBLIC_UID);
     service.rate(PRODUCT_ID, 4, PUBLIC_UID);
 
     // Upsert (ON CONFLICT DO UPDATE) je jediná cesta zápisu — žádné save/insert napřímo,
     // vynucení unikátnosti (product_id, user_id) je na DB indexu, ne v Javě.
-    verify(qualityRatingRepository, org.mockito.Mockito.times(2)).upsert(eq(PRODUCT_ID), eq(USER_ID), anyShort());
+    verify(reviewRepository, org.mockito.Mockito.times(2)).upsert(eq(PRODUCT_ID), eq(USER_ID), anyShort());
   }
 
   @Test
   void averageOfOneAndFiveIsThree() {
-    ProductQualityRatingRepository.QualityRow row = new ProductQualityRatingRepository.QualityRow() {
+    ProductReviewRepository.QualityRow row = new ProductReviewRepository.QualityRow() {
       @Override
       public Long getProductId() {
         return PRODUCT_ID;
@@ -106,7 +107,7 @@ class QualityRatingServiceTest {
         return 2;
       }
     };
-    when(qualityRatingRepository.summarize(List.of(PRODUCT_ID))).thenReturn(List.of(row));
+    when(reviewRepository.summarize(List.of(PRODUCT_ID))).thenReturn(List.of(row));
 
     var summaries = service().summariesFor(List.of(PRODUCT_ID));
 
