@@ -11,6 +11,13 @@ export interface FeedbackSubmission {
   contactEmail?: string | null;
   pageRef?: string | null;
   diagnostics?: string | null;
+  // Proof-of-work (docs/nasazeni.md, obrana proti spamu) — token beze změny z feedbackChallenge,
+  // nonce spočítaný na klientovi. Nepovinné jen kvůli tomu, že appka je posílá odděleně od
+  // zbytku formuláře (viz feedback-page.ts), ne proto, že by šly vynechat úmyslně.
+  challenge?: string | null;
+  nonce?: string | null;
+  // Honeypot — appka ho nikdy nevyplní, jen ho v šabloně schová (viz feedback-page.html).
+  website?: string | null;
 }
 
 /**
@@ -40,8 +47,26 @@ export class FeedbackService {
           pageRef: submission.pageRef ?? null,
           appVersion: APP_VERSION,
           diagnostics: submission.diagnostics ?? null,
+          challenge: submission.challenge ?? null,
+          nonce: submission.nonce ?? null,
+          website: submission.website ?? null,
         },
       })
       .pipe(map((data) => data.submitFeedback));
+  }
+
+  /** Proof-of-work výzva (docs/nasazeni.md, obrana proti spamu) — token se posílá zpět beze
+   *  změny, nonce spočítá appka na pozadí (viz shared/proof-of-work.ts). */
+  feedbackChallenge() {
+    const document = graphql(`
+      query FeedbackChallenge {
+        feedbackChallenge {
+          token
+          salt
+          difficulty
+        }
+      }
+    `);
+    return this.graphQl.execute(document, {}).pipe(map((data) => data.feedbackChallenge));
   }
 }

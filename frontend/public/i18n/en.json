@@ -115,7 +115,9 @@
     "FEEDBACK_MESSAGE_REQUIRED": "Please write a message",
     "FEEDBACK_MESSAGE_TOO_LONG": "Message may have at most {{p0}} characters",
     "FEEDBACK_CONTACT_EMAIL_INVALID": "Contact email has an invalid format",
-    "FEEDBACK_NOT_FOUND": "This feedback item does not exist"
+    "FEEDBACK_NOT_FOUND": "This feedback item does not exist",
+    "FEEDBACK_CHALLENGE_REQUIRED": "Form verification is missing, try reloading the page",
+    "FEEDBACK_CHALLENGE_INVALID": "Form verification failed, try reloading the page"
   },
   "enum": {
     "priceKind": {

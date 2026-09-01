@@ -115,7 +115,9 @@
     "FEEDBACK_MESSAGE_REQUIRED": "Bitte schreibe eine Nachricht",
     "FEEDBACK_MESSAGE_TOO_LONG": "Die Nachricht darf höchstens {{p0}} Zeichen haben",
     "FEEDBACK_CONTACT_EMAIL_INVALID": "Die Kontakt-E-Mail hat ein ungültiges Format",
-    "FEEDBACK_NOT_FOUND": "Dieses Feedback existiert nicht"
+    "FEEDBACK_NOT_FOUND": "Dieses Feedback existiert nicht",
+    "FEEDBACK_CHALLENGE_REQUIRED": "Formularprüfung fehlt, bitte Seite neu laden",
+    "FEEDBACK_CHALLENGE_INVALID": "Formularprüfung fehlgeschlagen, bitte Seite neu laden"
   },
   "enum": {
     "priceKind": {

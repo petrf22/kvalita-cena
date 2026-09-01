@@ -26,3 +26,14 @@
   display: block;
   margin-top: 16px;
 }
+
+/* Honeypot (docs/nasazeni.md, obrana proti spamu) — schované CSS, ne "hidden" atributem, který
+   by jednoduchý bot mohl přeskočit. Mimo viditelnou oblast, ne display:none (některé prohlížečové
+   heuristiky pro autofill display:none pole samy přeskakují, což by honeypot dělalo zbytečným). */
+.feedback-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}

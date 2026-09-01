@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
@@ -43,7 +43,7 @@ import { translateError } from '../../shared/error-message';
   templateUrl: './feedback-page.html',
   styleUrl: './feedback-page.css',
 })
-export class FeedbackPage {
+export class FeedbackPage implements OnDestroy {
   private readonly feedbackService = inject(FeedbackService);
   private readonly navigationHistory = inject(NavigationHistoryService);
   private readonly transloco = inject(TranslocoService);
@@ -54,6 +54,9 @@ export class FeedbackPage {
   protected readonly category = signal<FeedbackCategory>(FeedbackCategory.Bug);
   protected readonly message = signal('');
   protected readonly contactEmail = signal('');
+  // Honeypot (docs/nasazeni.md, obrana proti spamu) — appka tohle pole nikdy nevyplní, jen ho
+  // v šabloně schová CSS (ne "hidden" atributem, který by bot přeskočil). Zůstává prázdné.
+  protected readonly website = signal('');
 
   protected readonly loading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
@@ -63,28 +66,67 @@ export class FeedbackPage {
   // na /feedback samotnou.
   private readonly pageRef = this.navigationHistory.previousUrl();
 
+  // Proof-of-work (docs/nasazeni.md, obrana proti spamu) — výzva se vyžádá a řeší na pozadí
+  // hned při vstupu na stránku, ať je nonce hotový dřív, než uživatel dopíše zprávu. Worker se
+  // spouští jen tady na webu (mobil má vlastní ProofOfWork.kt), appka bez PoW klidně funguje
+  // dál — required gating je na serveru (application-prod.yml vs. application-beta.yml).
+  private challengeToken: string | null = null;
+  private challengeReady: Promise<{ token: string; nonce: string } | null>;
+  private worker: Worker | null = null;
+
+  constructor() {
+    this.challengeReady = new Promise((resolve) => {
+      this.feedbackService.feedbackChallenge().subscribe({
+        next: (challenge) => {
+          this.challengeToken = challenge.token;
+          this.worker = new Worker(new URL('../../shared/proof-of-work.worker', import.meta.url), {
+            type: 'module',
+          });
+          this.worker.onmessage = ({ data }: MessageEvent<{ nonce: string }>) => {
+            resolve({ token: challenge.token, nonce: data.nonce });
+            this.worker?.terminate();
+            this.worker = null;
+          };
+          this.worker.postMessage({ salt: challenge.salt, difficulty: challenge.difficulty });
+        },
+        // Appka pokračuje bez PoW — server rozhodne (required v prod, jen skóre v beta), ne
+        // klient. Formulář zůstává použitelný, i když se appce nepovede výzvu vyžádat.
+        error: () => resolve(null),
+      });
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.worker?.terminate();
+  }
+
   submit(): void {
     if (!this.message().trim()) return;
 
     this.loading.set(true);
     this.errorMessage.set(null);
-    this.feedbackService
-      .submitFeedback({
-        category: this.category(),
-        message: this.message().trim(),
-        contactEmail: this.contactEmail().trim() || null,
-        pageRef: this.pageRef,
-      })
-      .subscribe({
-        next: () => {
-          this.loading.set(false);
-          this.submitted.set(true);
-        },
-        error: (err) => {
-          this.loading.set(false);
-          this.errorMessage.set(translateError(err, this.transloco));
-        },
-      });
+    this.challengeReady.then((solved) => {
+      this.feedbackService
+        .submitFeedback({
+          category: this.category(),
+          message: this.message().trim(),
+          contactEmail: this.contactEmail().trim() || null,
+          pageRef: this.pageRef,
+          challenge: solved?.token ?? this.challengeToken,
+          nonce: solved?.nonce ?? null,
+          website: this.website().trim() || null,
+        })
+        .subscribe({
+          next: () => {
+            this.loading.set(false);
+            this.submitted.set(true);
+          },
+          error: (err) => {
+            this.loading.set(false);
+            this.errorMessage.set(translateError(err, this.transloco));
+          },
+        });
+    });
   }
 
   submitAnother(): void {

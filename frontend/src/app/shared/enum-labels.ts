@@ -145,6 +145,8 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.FeedbackMessageTooLong]: 'errors.FEEDBACK_MESSAGE_TOO_LONG',
   [ErrorCode.FeedbackContactEmailInvalid]: 'errors.FEEDBACK_CONTACT_EMAIL_INVALID',
   [ErrorCode.FeedbackNotFound]: 'errors.FEEDBACK_NOT_FOUND',
+  [ErrorCode.FeedbackChallengeRequired]: 'errors.FEEDBACK_CHALLENGE_REQUIRED',
+  [ErrorCode.FeedbackChallengeInvalid]: 'errors.FEEDBACK_CHALLENGE_INVALID',
   [ErrorCode.InvalidChallenge]: 'errors.INVALID_CHALLENGE',
   [ErrorCode.SessionExpired]: 'errors.SESSION_EXPIRED',
   [ErrorCode.LocaleRequiresLogin]: 'errors.LOCALE_REQUIRES_LOGIN',

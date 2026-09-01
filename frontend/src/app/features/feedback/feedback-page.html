@@ -58,6 +58,19 @@
           <p class="feedback-hint">{{ t('feedback.contactEmailHint') }}</p>
         </nz-form-item>
 
+        <div class="feedback-honeypot" aria-hidden="true">
+          <label for="website">Website</label>
+          <input
+            id="website"
+            name="website"
+            type="text"
+            tabindex="-1"
+            autocomplete="off"
+            [ngModel]="website()"
+            (ngModelChange)="website.set($event)"
+          />
+        </div>
+
         <button
           nz-button
           nzType="primary"

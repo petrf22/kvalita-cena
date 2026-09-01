@@ -89,13 +89,22 @@ export type FeedbackCategory =
 export type FeedbackInput = {
   appVersion?: string | null | undefined;
   category: FeedbackCategory;
+  /** Token z feedbackChallenge, beze změny. Nepovinné jen kvůli starším klientům bez PoW (docs/nasazeni.md). */
+  challenge?: string | null | undefined;
   /** Nepovinný — odpověď je pak možná jen u přihlášeného odesílatele. */
   contactEmail?: string | null | undefined;
   /** Volitelně přiložený záznam o posledním pádu appky (mobil) — nikdy neodchází bez akce uživatele. */
   diagnostics?: string | null | undefined;
   message: string;
+  /** Vyřešený nonce k challenge — SHA-256(salt + ":" + nonce) musí mít difficulty vedoucích nulových bitů. */
+  nonce?: string | null | undefined;
   /** Route/obrazovka, ze které se odesílalo (jen orientační). */
   pageRef?: string | null | undefined;
+  /**
+   * Honeypot proti spamovacím botům — appka pole nikdy nevyplní, jen ho v UI schová (CSS, ne
+   * hidden atribut, který by bot mohl přeskočit). Nepoužívá se na mobilu, appka ho tam neposílá.
+   */
+  website?: string | null | undefined;
 };
 
 /** Výsledek moderátorského přezkumu nahlášeného záznamu (docs/reputace.md, 'Moderace'). */
@@ -333,6 +342,11 @@ export type SubmitFeedbackMutationVariables = Exact<{
 
 export type SubmitFeedbackMutation = { submitFeedback: { id: string } };
 
+export type FeedbackChallengeQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type FeedbackChallengeQuery = { feedbackChallenge: { token: string, salt: string, difficulty: number } };
+
 export type FxInfoQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -433,12 +447,13 @@ export type SetUserSuspendedMutation = { setUserSuspended: boolean };
 
 export type FeedbackItemsQueryVariables = Exact<{
   handled?: boolean | null | undefined;
+  quarantined?: boolean | null | undefined;
   first?: number | null | undefined;
   offset?: number | null | undefined;
 }>;
 
 
-export type FeedbackItemsQuery = { feedbackItems: { totalCount: number, items: Array<{ id: string, category: FeedbackCategory, message: string, contactEmail: string | null, clientKind: ClientKind, appVersion: string | null, platformInfo: string | null, locale: string | null, country: string | null, pageRef: string | null, diagnostics: string | null, createdAt: string, handled: boolean, handledNote: string | null, authorPublicUid: string | null, authorHandle: string | null }> } };
+export type FeedbackItemsQuery = { feedbackItems: { totalCount: number, items: Array<{ id: string, category: FeedbackCategory, message: string, contactEmail: string | null, clientKind: ClientKind, appVersion: string | null, platformInfo: string | null, locale: string | null, country: string | null, pageRef: string | null, diagnostics: string | null, createdAt: string, handled: boolean, handledNote: string | null, authorPublicUid: string | null, authorHandle: string | null, spamScore: number, spamReasons: Array<string>, quarantined: boolean }> } };
 
 export type SetFeedbackHandledMutationVariables = Exact<{
   id: string;
@@ -448,6 +463,14 @@ export type SetFeedbackHandledMutationVariables = Exact<{
 
 
 export type SetFeedbackHandledMutation = { setFeedbackHandled: boolean };
+
+export type SetFeedbackQuarantinedMutationVariables = Exact<{
+  id: string;
+  quarantined: boolean;
+}>;
+
+
+export type SetFeedbackQuarantinedMutation = { setFeedbackQuarantined: boolean };
 
 export type MyProductsQueryVariables = Exact<{
   first?: number | null | undefined;
@@ -1207,6 +1230,15 @@ export const SubmitFeedbackDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<SubmitFeedbackMutation, SubmitFeedbackMutationVariables>;
+export const FeedbackChallengeDocument = new TypedDocumentString(`
+    query FeedbackChallenge {
+  feedbackChallenge {
+    token
+    salt
+    difficulty
+  }
+}
+    `) as unknown as TypedDocumentString<FeedbackChallengeQuery, FeedbackChallengeQueryVariables>;
 export const FxInfoDocument = new TypedDocumentString(`
     query FxInfo {
   fxInfo {
@@ -1432,8 +1464,13 @@ export const SetUserSuspendedDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<SetUserSuspendedMutation, SetUserSuspendedMutationVariables>;
 export const FeedbackItemsDocument = new TypedDocumentString(`
-    query FeedbackItems($handled: Boolean, $first: Int, $offset: Int) {
-  feedbackItems(handled: $handled, first: $first, offset: $offset) {
+    query FeedbackItems($handled: Boolean, $quarantined: Boolean, $first: Int, $offset: Int) {
+  feedbackItems(
+    handled: $handled
+    quarantined: $quarantined
+    first: $first
+    offset: $offset
+  ) {
     totalCount
     items {
       id
@@ -1452,6 +1489,9 @@ export const FeedbackItemsDocument = new TypedDocumentString(`
       handledNote
       authorPublicUid
       authorHandle
+      spamScore
+      spamReasons
+      quarantined
     }
   }
 }
@@ -1461,6 +1501,11 @@ export const SetFeedbackHandledDocument = new TypedDocumentString(`
   setFeedbackHandled(id: $id, handled: $handled, note: $note)
 }
     `) as unknown as TypedDocumentString<SetFeedbackHandledMutation, SetFeedbackHandledMutationVariables>;
+export const SetFeedbackQuarantinedDocument = new TypedDocumentString(`
+    mutation SetFeedbackQuarantined($id: ID!, $quarantined: Boolean!) {
+  setFeedbackQuarantined(id: $id, quarantined: $quarantined)
+}
+    `) as unknown as TypedDocumentString<SetFeedbackQuarantinedMutation, SetFeedbackQuarantinedMutationVariables>;
 export const MyProductsDocument = new TypedDocumentString(`
     query MyProducts($first: Int, $offset: Int) {
   myProducts(first: $first, offset: $offset) {

@@ -66,6 +66,8 @@ export const ErrorCode = {
   EmailChangeInvalidChallenge: 'EMAIL_CHANGE_INVALID_CHALLENGE',
   EmailChangeRequiresLogin: 'EMAIL_CHANGE_REQUIRES_LOGIN',
   EmailChangeSameAddress: 'EMAIL_CHANGE_SAME_ADDRESS',
+  FeedbackChallengeInvalid: 'FEEDBACK_CHALLENGE_INVALID',
+  FeedbackChallengeRequired: 'FEEDBACK_CHALLENGE_REQUIRED',
   FeedbackContactEmailInvalid: 'FEEDBACK_CONTACT_EMAIL_INVALID',
   FeedbackMessageRequired: 'FEEDBACK_MESSAGE_REQUIRED',
   FeedbackMessageTooLong: 'FEEDBACK_MESSAGE_TOO_LONG',

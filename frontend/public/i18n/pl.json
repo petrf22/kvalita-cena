@@ -115,7 +115,9 @@
     "FEEDBACK_MESSAGE_REQUIRED": "Napisz proszę wiadomość",
     "FEEDBACK_MESSAGE_TOO_LONG": "Wiadomość może mieć najwyżej {{p0}} znaków",
     "FEEDBACK_CONTACT_EMAIL_INVALID": "Kontaktowy e-mail ma nieprawidłowy format",
-    "FEEDBACK_NOT_FOUND": "To zgłoszenie nie istnieje"
+    "FEEDBACK_NOT_FOUND": "To zgłoszenie nie istnieje",
+    "FEEDBACK_CHALLENGE_REQUIRED": "Brak weryfikacji formularza, odśwież stronę i spróbuj ponownie",
+    "FEEDBACK_CHALLENGE_INVALID": "Weryfikacja formularza się nie powiodła, odśwież stronę i spróbuj ponownie"
   },
   "enum": {
     "priceKind": {

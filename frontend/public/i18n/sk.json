@@ -115,7 +115,9 @@
     "FEEDBACK_MESSAGE_REQUIRED": "Napíš prosím správu",
     "FEEDBACK_MESSAGE_TOO_LONG": "Správa smie mať najviac {{p0}} znakov",
     "FEEDBACK_CONTACT_EMAIL_INVALID": "Kontaktný e-mail nemá platný tvar",
-    "FEEDBACK_NOT_FOUND": "Hlásenie spätnej väzby neexistuje"
+    "FEEDBACK_NOT_FOUND": "Hlásenie spätnej väzby neexistuje",
+    "FEEDBACK_CHALLENGE_REQUIRED": "Chýba overenie formulára, skús stránku znova načítať",
+    "FEEDBACK_CHALLENGE_INVALID": "Overenie formulára sa nepodarilo, skús stránku znova načítať"
   },
   "enum": {
     "priceKind": {
