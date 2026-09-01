@@ -31,8 +31,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import cz.kvalitacena.R
 import cz.kvalitacena.location.getCurrentLocation
 import kotlinx.coroutines.launch
-import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.CopyrightOverlay
 
 /**
  * Sdílený osmdroid boilerplate pro [LocationMap] (jeden bod, editovatelný) i [StoreMap] (značky
@@ -51,7 +51,7 @@ fun createOsmMapView(context: Context): MapView =
     // hardwarová vrstva si drží zastaralý bitmap, softwarové vykreslování vynutí přerýsování
     // na aktuální pozici při každém průchodu (známá interop chyba AndroidView + scroll).
     setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
-    setTileSource(TileSourceFactory.MAPNIK)
+    setTileSource(MapConfig.TILE_SOURCE)
     setMultiTouchControls(true)
     setOnTouchListener { view, event ->
       when (event.action) {
@@ -60,6 +60,10 @@ fun createOsmMapView(context: Context): MapView =
       }
       false // dál to zpracuje osmdroid samo (posun/zoom/klik) — jen jsme si vyprosili dotyk od rodiče
     }
+    // ODbL/tile usage policy vyžadují viditelnou atribuci poskytovatele dlaždic v samotné mapě
+    // — dřív appka měla jen text v „O aplikaci". Overlay čte copyright přímo z aktuálního
+    // tile source, takže se s výměnou poskytovatele (KVALITACENA_MAP_TILE_*) mění sám.
+    overlays.add(CopyrightOverlay(context))
   }
 
 /** `mapView.onResume()`/`onPause()` podle lifecycle — bez nich se mapa na části zařízení vykreslí prázdná. */

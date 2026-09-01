@@ -16,6 +16,16 @@ val releaseKeyPassword = findProperty("KVALITACENA_KEY_PASSWORD") as String?
 val hasReleaseSigning = releaseStoreFile != null && releaseStorePassword != null &&
     releaseKeyAlias != null && releaseKeyPassword != null
 
+// Poskytovatel mapových dlaždic (ui/common/OsmMapView.kt, MapConfig.kt) — konfigurovatelný ze
+// stejného důvodu jako BASE_URL níž: property s fallbackem na dnešní hodnotu, aby šla výměna
+// poskytovatele udělat bez zásahu do kódu. Stejné pro debug i release (na rozdíl od BASE_URL),
+// proto v defaultConfig, ne per buildType. Web má obdobu v shared/map-tiles.ts (tam bez
+// runtime konfigurace, viz komentář tam).
+val mapTileUrl = (findProperty("KVALITACENA_MAP_TILE_URL") as String?)
+    ?: "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+val mapTileAttribution = (findProperty("KVALITACENA_MAP_TILE_ATTRIBUTION") as String?)
+    ?: "© OpenStreetMap contributors"
+
 android {
     namespace = "cz.kvalitacena"
     compileSdk = 37
@@ -27,6 +37,10 @@ android {
         // Generováno tools/version/sync.mjs z kořenového VERSION — needituj ručně.
         versionCode = 502
         versionName = "0.5.2"
+
+        buildConfigField("String", "MAP_TILE_URL", "\"$mapTileUrl\"")
+        buildConfigField("String", "MAP_TILE_ATTRIBUTION", "\"$mapTileAttribution\"")
+        buildConfigField("int", "MAP_TILE_MAX_ZOOM", "19")
     }
 
     signingConfigs {
@@ -141,7 +155,8 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.5.0")
 
     // Mapa nad OpenStreetMap (výběr/náhled souřadnic obchodu) — Apache-2.0, stejná licenční
-    // politika jako ZXing/Coil výš (viz plán projektu). Dlaždice se stahují přímo z klienta,
+    // politika jako ZXing/Coil výš (viz plán projektu). Dlaždice se stahují přímo z klienta od
+    // poskytovatele nastaveného výš (KVALITACENA_MAP_TILE_URL, výchozí OpenStreetMap Mapnik),
     // vědomá výjimka z "geokódování jen ze serveru" (docs/soukromi.md) — mapa se proto načte
     // až po explicitním otevření (ui/common/LocationMap.kt), nikdy automaticky.
     implementation("org.osmdroid:osmdroid-android:6.1.20")

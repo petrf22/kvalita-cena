@@ -12,6 +12,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import type * as LeafletNs from 'leaflet';
+import { MAP_TILE_ATTRIBUTION, MAP_TILE_MAX_ZOOM, MAP_TILE_URL } from './map-tiles';
 
 const DEFAULT_CENTER: [number, number] = [49.8, 15.5]; // střed ČR — bez zadaného bodu
 const DEFAULT_ZOOM = 7;
@@ -88,10 +89,9 @@ export class LocationMap {
 
     this.map = leaflet.map(container).setView(center, hasPoint ? POINT_ZOOM : DEFAULT_ZOOM);
     leaflet
-      .tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
+      .tileLayer(MAP_TILE_URL, {
+        attribution: MAP_TILE_ATTRIBUTION,
+        maxZoom: MAP_TILE_MAX_ZOOM,
       })
       .addTo(this.map);
 

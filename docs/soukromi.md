@@ -6,8 +6,10 @@ uživatel. Tento dokument shrnuje, jak se ten rozpor řeší v datovém modelu, 
 
 ## Poloha se nikdy neukládá jako GPS uživatele
 
-Mobil zjistí polohu lokálně, zaokrouhlí ji na 3 desetinná místa (~110 m) a pošle **dotaz**
-`nearbyStores(lat, lon, radius)` — GraphQL query, ne mutace. Server odpoví seznamem
+Mobil zjistí polohu lokálně a pošle **dotaz** `nearbyStores(lat, lon, radius)` — GraphQL
+query, ne mutace. Klient posílá syrovou hodnotu z geolokace; **zaokrouhlení na 3 desetinná
+místa (~110 m) dělá server** (`StoreGraphQlController.nearbyStores`, `Coordinates.round`) —
+při rádiusu 3–25 km je to pod rozlišovací schopnost výsledku. Server odpoví seznamem
 provozoven a **souřadnice nikam nezapisuje** — ani do access logu (GraphQL má vše v POST
 body, to se neloguje). S cenovým záznamem (`price_observation`) odchází jen `store_id`.
 
@@ -25,8 +27,18 @@ výše vyhýbá. Odpověď se do `core.store` nekopíruje celá — jen lat/lon 
 **Opačný směr (`reverseGeocode`, tlačítko „Použít mou polohu" při editaci obchodu) platí
 stejně** — parametrem je tady rovnou poloha UŽIVATELE, ne adresa obchodu, takže je pravidlo
 „jen ze serveru" o to důležitější. Dotaz jde výhradně z `GeocodingService`, souřadnice se
-nikam nezapisují a jsou v POST body, které se neloguje. Výpadek Nominatimu vrací prázdná
-pole, nikdy chybu — editace obchodu nesmí spadnout kvůli nedostupnému externímu serveru.
+nikam nezapisují a jsou v POST body, které se neloguje. Server navíc souřadnice před dotazem
+na Nominatim zaokrouhlí na 4 desetinná místa (~11 m, `Coordinates.round`) — hluboko pod
+přesností mobilního GPS fixu, takže se nic reálného neztrácí, jen zmizí falešná sub-metrová
+přesnost posílaná třetí straně. **Klienti souřadnici posílají syrovou** — tu samou hodnotu
+totiž zároveň používají jako souřadnici PROVOZOVNY (`manualLat`/`manualLon` → `core.store`),
+tu zaokrouhlit nesmí (viz výš). Výpadek Nominatimu vrací prázdná pole, nikdy chybu — editace
+obchodu nesmí spadnout kvůli nedostupnému externímu serveru.
+
+Zaokrouhlení samo o sobě soukromí moc nepřidá — na budovu se trefí 11 i 110 m a Nominatim
+navíc vidí IP **serveru**, ne uživatele, což je ta skutečná ochrana. Přínos je jinde:
+nepředstírat třetí straně přesnost, kterou appka ani nemá, a mít zaokrouhlenou hodnotu jako
+konzistentní cache klíč.
 
 ### EXIF nahrané fotky se strhává na serveru, ne spoléhá na klienta
 
@@ -42,15 +54,22 @@ z mobilu nezůstala ležet na boku.
 
 ### Mapové dlaždice — vědomá výjimka z pravidla „jen ze serveru"
 
-Mapa nad OpenStreetMap (`frontend/shared/location-map.ts` — Leaflet, `mobile/ui/common/
-LocationMap.kt` — osmdroid) na rozdíl od geokódování stahuje dlaždice **přímo z prohlížeče/
-appky** (`tile.openstreetmap.org`) — OSM tak vidí IP uživatele, přesně to, čemu se
-`geocodeAddress`/`reverseGeocode`/`nearbyStores` výš vyhýbají. Proxování dlaždic přes backend
-by šlo, ale je to proti OSM tile usage policy (server-side proxy vyžaduje vlastní tile server
-nebo komerční smlouvu). Zmírnění je proto jen v UI: mapa (a tedy i stahování dlaždic) se
-vytvoří až po explicitním kliknutí na „Zobrazit mapu", nikdy automaticky při načtení stránky/
-obrazovky — na rozdíl od zbytku dokumentu tahle výjimka není beze zbytku vyřešená, jen vědomě
-přijatá a zapsaná, ať se na ni nezapomene při případné budoucí revizi.
+Mapa nad OpenStreetMap (`frontend/shared/map-tiles.ts` + `shared/location-map.ts` — Leaflet,
+`mobile/ui/common/MapConfig.kt` + `OsmMapView.kt` — osmdroid) na rozdíl od geokódování stahuje
+dlaždice **přímo z prohlížeče/appky** (výchozí poskytovatel `tile.openstreetmap.org`,
+konfigurovatelný — na mobilu přes `KVALITACENA_MAP_TILE_URL`, na webu zatím jen editací
+`map-tiles.ts`) — OSM (nebo jiný nakonfigurovaný poskytovatel) tak vidí IP uživatele, přesně
+to, čemu se `geocodeAddress`/`reverseGeocode`/`nearbyStores` výš vyhýbají. Proxování dlaždic
+přes backend by šlo — oficiální OSM tile usage policy proxy nedoporučuje, ale nezakazuje ji,
+za podmínek správného cacheování a identifikace — appka se do toho zatím nepouští, protože by
+to znamenalo provozovat vlastní cache vrstvu navíc. Zmírnění je proto jen v UI: mapa (a tedy
+i stahování dlaždic) se vytvoří až po explicitním kliknutí na „Zobrazit mapu", nikdy
+automaticky při načtení stránky/obrazovky — na rozdíl od zbytku dokumentu tahle výjimka není
+beze zbytku vyřešená, jen vědomě přijatá a zapsaná, ať se na ni nezapomene při případné budoucí
+revizi. Atribuce poskytovatele je v mapě samotné na obou klientech (web: roh Leaflet mapy;
+mobil: `CopyrightOverlay`, čte se z aktivního tile source, takže se s výměnou poskytovatele
+mění sama) — to je jiná věc než atribuce OSM/ODbL DAT (souřadnice provozoven, geokódování),
+která zůstává v „O aplikaci"/podmínkách i po výměně tile serveru.
 
 Tlačítko „Na mou polohu" (mobil, `ui/common/OsmMapView.kt` — `MyLocationButton`, jen
 v editovatelném `LocationMap`) tuhle výjimku o kousek zostřuje: appka mapu vycentruje přímo na
@@ -63,10 +82,10 @@ z bounding boxu obchodů.
 
 ### Lokální AI (plánováno) je opačný případ než mapové dlaždice
 
-U dlaždic výš appka vědomě připouští, že OSM uvidí IP uživatele. Plánovaná AI (`ai.md`) — čtení
+U dlaždic výš appka vědomě připouští, že OSM uvidí IP uživatele. Plánovaná AI (`docs/ai.md`) — čtení
 čísel z fotek, předfiltr moderace, kontrola textů — jde přesně opačným směrem: model běží u
 provozovatele appky (lokální PC), takže fotky ani texty uživatelů neopouští appku vůbec, žádné
-třetí straně. Verdikt je navíc vždy jen poradní, nikdy sám nerozhoduje — viz `ai.md`, „AI nikdy
+třetí straně. Verdikt je navíc vždy jen poradní, nikdy sám nerozhoduje — viz `docs/ai.md`, „AI nikdy
 nerozhoduje".
 
 ## Retence vazby observace → uživatel: 180 dní
@@ -78,7 +97,7 @@ nerozhoduje".
 
 180 dní je nejdelší okno, které potřebuje detekce anomálií a řešení sporů o cenu. Reputace
 tím netrpí, protože se počítá jako průběžně aktualizovaný čítač s exponenciálním útlumem
-(viz `reputace.md`), ne z historie jednotlivých událostí — smazání vazby na starou observaci
+(viz `docs/reputace.md`), ne z historie jednotlivých událostí — smazání vazby na starou observaci
 tedy reputaci nijak nemění.
 
 Pro uživatele to znamená: „moje příspěvky" ukazují jen posledních 180 dní. To je vlastnost,
@@ -86,8 +105,8 @@ ne omezení — starší nákupy už o něm nikdo nedohledá.
 
 ### Výjimka: hodnocení kvality zboží vazbu nepseudonymizuje
 
-`core.product_quality_rating.user_id` (etapa 1, jen známka 1–5 — viz `datovy-model.md` a
-`reputace.md`) je jediné místo v `core.*`, kde tohle pravidlo neplatí. Bez trvalé vazby by
+`core.product_quality_rating.user_id` (MVP, jen známka 1–5 — viz `docs/datovy-model.md` a
+`docs/reputace.md`) je jediné místo v `core.*`, kde tohle pravidlo neplatí. Bez trvalé vazby by
 nešlo vynutit „jedna známka na uživatele a produkt" (unikátní index `(product_id, user_id)`).
 Je to vědomé zhoršení, ne přehlédnutí — zmírněné třemi věcmi:
 
@@ -98,13 +117,13 @@ Je to vědomé zhoršení, ne přehlédnutí — zmírněné třemi věcmi:
   ve veřejném zájmu. Známka bez vlastníka nemá tenhle veřejný zájem, který by odůvodnil
   přežití záznamu po smazání účtu.
 - **`pg_dump --schema=core` musí sloupec vynechat nebo hashovat** — jinak „čistý" export
-  (`datovy-model.md`) tiše prolomí záruku z tohoto dokumentu. Až vznikne skutečný GDPR
+  (`docs/datovy-model.md`) tiše prolomí záruku z tohoto dokumentu. Až vznikne skutečný GDPR
   export/výmaz (`GET /api/me/export`, `POST /api/me/delete` níže), hodnocení kvality do
   něj patří stejně jako cenové záznamy.
 
 ### Druhá výjimka: uživatelská vrstva nad globálními daty vazbu nepseudonymizuje
 
-`core.product_user_edit`/`core.store_user_edit.user_id` (etapa 1 — viz `datovy-model.md`,
+`core.product_user_edit`/`core.store_user_edit.user_id` (MVP — viz `docs/datovy-model.md`,
 "Uživatelská vrstva nad globálními daty") je druhé místo v `core.*`, kde 180denní pravidlo
 neplatí. Bez trvalé vazby by uživateli po půl roce tiše zmizely jeho vlastní opravy (název,
 gramáž, adresa) — patch by se přestal zobrazovat, protože ho backend neumí spárovat s
@@ -279,8 +298,8 @@ Export a výmaz (`AccountService`, `AccountController`) jsou hotové — REST to
   appka sama ukazuje, tzn. posledních 180 dní — starší jsou pseudonymizované, tudíž v exportu
   nejsou), hodnocení kvality a vlastních úprav zboží/obchodu. Vyžaduje jen platný access token,
   žádné zvláštní potvrzení (na rozdíl od výmazu níž) — čtení vlastních dat nic nevratného
-  neriskuje. `user_flag` skórovací systém z původního plánu neexistuje (etapa 1 má jen složku
-  `L`, viz `reputace.md`) — export ho tedy neobsahuje, není co exportovat.
+  neriskuje. `user_flag` skórovací systém z původního plánu neexistuje (implementovaná je jen
+  složka `L`, viz `docs/reputace.md`) — export ho tedy neobsahuje, není co exportovat.
 - **Výmaz**: dvoukrokový OTP tok jako změna e-mailu (`POST /api/me/delete/request` +
   `/confirm`), kód jde vždy na už vlastněnou přihlašovací adresu. Uživatel si NEVYBÍRÁ, co se
   stane s jeho cenovými zápisy — appka je vždy jen anonymizuje, nikdy skutečně nemaže: jde
@@ -290,7 +309,7 @@ Export a výmaz (`AccountService`, `AccountController`) jsou hotové — REST to
   mechanismem jako denní pseudonymizace po 180 dnech — appka pro to nemusí dělat nic navíc.
   Váhu při agregaci to nemění: `PriceAggregationService.weightFor` čte samostatný
   snapshotovaný sloupec `submitter_kind` (`REGISTERED`/`ANONYMOUS`, nastavený při zápisu ceny,
-  viz `reputace.md`), ne `submitter_id` — observace registrovaného uživatele tak zůstává
+  viz `docs/reputace.md`), ne `submitter_id` — observace registrovaného uživatele tak zůstává
   vážená jako registrovaná i po smazání jeho účtu, ne jako anonymní.
 
   Appka nejdřív smaže SOUBORY fotek z disku (`MediaStorage`, včetně avataru), teprve pak řádek
@@ -300,7 +319,7 @@ Export a výmaz (`AccountService`, `AccountController`) jsou hotové — REST to
   mažou/anonymizují se jen věci navázané na *jeho* účet.
 - Žádná analytika třetích stran, žádné externí fonty ani CDN. Jediná cookie je `httpOnly`
   refresh token → není potřeba cookie lišta.
-- Plánovaná AI (`ai.md`) běží lokálně u provozovatele, ne přes cloudové API — jinak by tahle
+- Plánovaná AI (`docs/ai.md`) běží lokálně u provozovatele, ne přes cloudové API — jinak by tahle
   věta neplatila.
 
 **Neimplementováno**: appka výmaz účtu nabízí v UI na webu (`features/profile`), na mobilu
@@ -309,14 +328,14 @@ ručně (viz `docs/zasady-ochrany-osobnich-udaju.md`, „Tvá práva").
 
 ## Otevřená rizika / co hlídat
 
-- **OpenStreetMap i Open Food Facts jsou ODbL** (share-alike) — viz `datovy-model.md`,
+- **OpenStreetMap i Open Food Facts jsou ODbL** (share-alike) — viz `docs/datovy-model.md`,
   oddělení schémat `off`/`osm` od `core`. Na OSM se snadno zapomíná, protože souřadnice
   nevypadají jako "databáze".
-- **Mapové dlaždice jdou přímo z klienta na OSM**, ne přes server jako zbytek geokódování —
-  vědomá, zapsaná výjimka (viz „Mapové dlaždice" výš), ne přehlédnutí. Hlídat při případné
-  budoucí revizi, jestli pořád stojí za to (proxy dlaždic vyžaduje vlastní tile server nebo
-  komerční smlouvu s OSM Foundation).
+- **Mapové dlaždice jdou přímo z klienta na poskytovatele** (výchozí OSM), ne přes server jako
+  zbytek geokódování — vědomá, zapsaná výjimka (viz „Mapové dlaždice" výš), ne přehlédnutí.
+  Hlídat při případné budoucí revizi, jestli pořád stojí za to (proxy dlaždic je oficiální
+  politikou nedoporučená, ne zakázaná — vyžadovala by ale vlastní cache vrstvu navíc).
 - Kapacita moderace jednoho člověka je reálný limit — proto co nejvíc automatiky
   (rate limity, detekce anomálií) a co nejméně věcí vyžadujících lidský zásah. Fotky
   (`app.moderation.photo-flags-to-hide`) mají mnohem nižší práh nahlášení než katalog
-  (`reputace.md`) přesně z tohohle důvodu.
+  (`docs/reputace.md`) přesně z tohohle důvodu.
