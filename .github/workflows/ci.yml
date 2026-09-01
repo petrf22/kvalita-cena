@@ -26,6 +26,19 @@ jobs:
       - run: node tools/version/sync.mjs
       - run: git diff --exit-code
 
+  docs:
+    name: Dokumentace
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      # Kontroluje jen existenci cílového souboru (markdown odkazy i neformální zmínky
+      # `docs/soubor.md` v backtičkách), ne existenci konkrétní sekce uvnitř — viz
+      # docs/README.md a tools/docs/check-links.mjs.
+      - run: node tools/docs/check-links.mjs
+
   backend:
     name: Backend (Spring Boot)
     runs-on: ubuntu-latest
