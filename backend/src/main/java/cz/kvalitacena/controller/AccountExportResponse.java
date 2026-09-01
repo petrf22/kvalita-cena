@@ -37,7 +37,8 @@ public record AccountExportResponse(
       String currency, String priceKind, OffsetDateTime observedAt) {
   }
 
-  public record QualityRatingExport(String productName, short stars) {
+  /** {@code text}/{@code textUpdatedAt} null = jen hvězdičky, autor nikdy nenapsal text (nebo ho smazal). */
+  public record QualityRatingExport(String productName, short stars, String text, OffsetDateTime textUpdatedAt) {
   }
 
   /** {@code null} pole = appka je při úpravě nezměnila; {@code clearedFields} = uživatel je vymazal. */

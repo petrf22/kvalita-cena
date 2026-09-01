@@ -107,7 +107,8 @@ public class AccountService {
     List<ProductReview> ratings = reviewRepository.findByUserId(user.getId());
     Map<Long, String> productNamesForRatings = productNames(ratings.stream().map(ProductReview::getProductId).toList());
     List<QualityRatingExport> ratingExports = ratings.stream()
-        .map(r -> new QualityRatingExport(productNamesForRatings.get(r.getProductId()), r.getStars()))
+        .map(r -> new QualityRatingExport(productNamesForRatings.get(r.getProductId()), r.getStars(),
+            r.getText(), r.getTextUpdatedAt()))
         .toList();
 
     List<ProductUserEdit> productEdits = productUserEditRepository.findByUserId(user.getId());
