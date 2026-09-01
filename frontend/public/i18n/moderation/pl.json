@@ -7,6 +7,7 @@
     "flagged": "Zgłoszone",
     "observations": "Ceny",
     "feedback": "Opinie",
+    "quarantinedFeedback": "Podejrzane",
     "accounts": "Konta"
   },
   "flagged": {
@@ -42,6 +43,13 @@
     "diagnosticsLabel": "Raport awarii",
     "reopen": "Cofnij do kolejki",
     "markHandled": "Oznacz jako rozpatrzone"
+  },
+  "quarantinedFeedback": {
+    "hint": "Wiadomości oznaczone przez FeedbackSpamDetector jako podejrzane — moderator widzi DLACZEGO (spamReasons) i może cofnąć fałszywy alarm do zwykłej kolejki.",
+    "empty": "W kwarantannie nic nie ma.",
+    "scoreLabel": "Wynik:",
+    "reasonsLabel": "Sygnały:",
+    "restore": "Cofnij do kolejki"
   },
   "accounts": {
     "hint": "Wklej ID użytkownika (authorPublicUid) skopiowane z kolejki zgłoszeń lub z listy cen.",

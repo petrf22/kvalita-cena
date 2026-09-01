@@ -123,11 +123,20 @@ export class ModerationService {
       .pipe(map((data) => data.setUserSuspended));
   }
 
-  /** Fronta zpětné vazby od uživatelů appky (core.feedback) — handled null vrací obojí. */
-  feedbackItems(handled: boolean | null, first = 20, offset = 0) {
+  /**
+   * Fronta zpětné vazby od uživatelů appky (core.feedback) — handled null vrací obojí.
+   * quarantined (výchozí false) odděluje běžnou frontu od záložky "Podezřelé"
+   * (FeedbackSpamDetector, docs/nasazeni.md "obrana proti spamu").
+   */
+  feedbackItems(handled: boolean | null, quarantined: boolean, first = 20, offset = 0) {
     const document = graphql(`
-      query FeedbackItems($handled: Boolean, $first: Int, $offset: Int) {
-        feedbackItems(handled: $handled, first: $first, offset: $offset) {
+      query FeedbackItems($handled: Boolean, $quarantined: Boolean, $first: Int, $offset: Int) {
+        feedbackItems(
+          handled: $handled
+          quarantined: $quarantined
+          first: $first
+          offset: $offset
+        ) {
           totalCount
           items {
             id
@@ -146,12 +155,15 @@ export class ModerationService {
             handledNote
             authorPublicUid
             authorHandle
+            spamScore
+            spamReasons
+            quarantined
           }
         }
       }
     `);
     return this.graphQl
-      .execute(document, { handled, first, offset })
+      .execute(document, { handled, quarantined, first, offset })
       .pipe(map((data) => data.feedbackItems));
   }
 
@@ -164,5 +176,17 @@ export class ModerationService {
     return this.graphQl
       .execute(document, { id, handled, note })
       .pipe(map((data) => data.setFeedbackHandled));
+  }
+
+  /** Cesta zpět z karantény (falešný poplach), stejný princip jako resolveFlags DISMISSED. */
+  setFeedbackQuarantined(id: string, quarantined: boolean) {
+    const document = graphql(`
+      mutation SetFeedbackQuarantined($id: ID!, $quarantined: Boolean!) {
+        setFeedbackQuarantined(id: $id, quarantined: $quarantined)
+      }
+    `);
+    return this.graphQl
+      .execute(document, { id, quarantined })
+      .pipe(map((data) => data.setFeedbackQuarantined));
   }
 }

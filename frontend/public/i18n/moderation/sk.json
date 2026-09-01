@@ -7,6 +7,7 @@
     "flagged": "Nahlásené",
     "observations": "Ceny",
     "feedback": "Spätná väzba",
+    "quarantinedFeedback": "Podozrivé",
     "accounts": "Účty"
   },
   "flagged": {
@@ -42,6 +43,13 @@
     "diagnosticsLabel": "Záznam o páde appky",
     "reopen": "Vrátiť do fronty",
     "markHandled": "Označiť ako vybavené"
+  },
+  "quarantinedFeedback": {
+    "hint": "Správy, ktoré FeedbackSpamDetector označil za podozrivé — moderátor vidí PREČO (spamReasons) a môže falošný poplach vrátiť späť do bežnej fronty.",
+    "empty": "V karanténe nič nie je.",
+    "scoreLabel": "Skóre:",
+    "reasonsLabel": "Signály:",
+    "restore": "Vrátiť do fronty"
   },
   "accounts": {
     "hint": "Vlož ID používateľa (authorPublicUid) skopírované z fronty nahlásení alebo z výpisu cien.",

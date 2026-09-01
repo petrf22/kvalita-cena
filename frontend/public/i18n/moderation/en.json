@@ -7,6 +7,7 @@
     "flagged": "Flagged",
     "observations": "Prices",
     "feedback": "Feedback",
+    "quarantinedFeedback": "Suspicious",
     "accounts": "Accounts"
   },
   "flagged": {
@@ -42,6 +43,13 @@
     "diagnosticsLabel": "Crash report",
     "reopen": "Reopen",
     "markHandled": "Mark as handled"
+  },
+  "quarantinedFeedback": {
+    "hint": "Messages that FeedbackSpamDetector flagged as suspicious — the moderator sees WHY (spamReasons) and can send a false positive back to the regular queue.",
+    "empty": "Nothing is in quarantine.",
+    "scoreLabel": "Score:",
+    "reasonsLabel": "Signals:",
+    "restore": "Return to queue"
   },
   "accounts": {
     "hint": "Paste the user ID (authorPublicUid) copied from the flagged records queue or the price list.",

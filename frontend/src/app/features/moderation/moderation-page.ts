@@ -157,9 +157,17 @@ export class ModerationPage {
   // false = jen nevyřízené (výchozí, ať fronta začne tím, co ještě čeká), null = obojí.
   protected readonly feedbackHandledFilter = signal<boolean | null>(false);
   protected readonly feedback = createSection<FeedbackItem>((first, offset) =>
-    this.moderationService.feedbackItems(this.feedbackHandledFilter(), first, offset),
+    this.moderationService.feedbackItems(this.feedbackHandledFilter(), false, first, offset),
   );
   protected readonly feedbackActionLoading = signal<string | null>(null);
+
+  // Samostatná fronta pro FeedbackSpamDetector (docs/nasazeni.md, "obrana proti spamu") — jde
+  // vždy o VŠECHNY podezřelé zprávy bez ohledu na handled, ať se karanténa neschová za
+  // výchozí filtr běžné fronty výš.
+  protected readonly quarantinedFeedback = createSection<FeedbackItem>((first, offset) =>
+    this.moderationService.feedbackItems(null, true, first, offset),
+  );
+  protected readonly quarantinedActionLoading = signal<string | null>(null);
 
   constructor() {
     if (this.auth.isLoggedIn()) {
@@ -172,6 +180,7 @@ export class ModerationPage {
             this.load(this.flagged);
             this.load(this.observations);
             this.load(this.feedback);
+            this.load(this.quarantinedFeedback);
           }
         },
         error: () => this.viewerLoading.set(false),
@@ -245,6 +254,22 @@ export class ModerationPage {
       error: (err: unknown) => {
         this.feedbackActionLoading.set(null);
         this.feedback.error.set(translateError(err, this.transloco));
+      },
+    });
+  }
+
+  /** Cesta zpět z karantény (falešný poplach) — stejný princip jako resolveFlags DISMISSED. */
+  protected setFeedbackQuarantined(item: FeedbackItem, quarantined: boolean): void {
+    this.quarantinedActionLoading.set(item.id);
+    this.moderationService.setFeedbackQuarantined(item.id, quarantined).subscribe({
+      next: () => {
+        this.quarantinedActionLoading.set(null);
+        this.load(this.quarantinedFeedback);
+        this.load(this.feedback);
+      },
+      error: (err: unknown) => {
+        this.quarantinedActionLoading.set(null);
+        this.quarantinedFeedback.error.set(translateError(err, this.transloco));
       },
     });
   }

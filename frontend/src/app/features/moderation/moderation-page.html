@@ -321,6 +321,78 @@
         }
       </nz-tab>
 
+      <nz-tab [nzTitle]="t('moderation.tabs.quarantinedFeedback')">
+        <p class="accounts-hint">{{ t('moderation.quarantinedFeedback.hint') }}</p>
+
+        @if (quarantinedFeedback.error()) {
+          <nz-alert
+            nzType="error"
+            [nzMessage]="quarantinedFeedback.error()"
+            nzShowIcon
+            class="section-alert"
+          />
+        }
+        @if (quarantinedFeedback.loading() && quarantinedFeedback.items().length === 0) {
+          <nz-spin />
+        } @else if (quarantinedFeedback.items().length === 0) {
+          <nz-empty [nzNotFoundContent]="t('moderation.quarantinedFeedback.empty')" />
+        } @else {
+          <nz-list>
+            @for (item of quarantinedFeedback.items(); track item.id) {
+              <nz-list-item>
+                <div class="item-main">
+                  <nz-tag>{{ feedbackCategoryKeys[item.category] | transloco }}</nz-tag>
+                  <nz-tag>{{ clientKindKeys[item.clientKind] | transloco }}</nz-tag>
+                  <nz-tag nzColor="orange">
+                    {{ t('moderation.quarantinedFeedback.scoreLabel') }} {{ item.spamScore }}
+                  </nz-tag>
+                </div>
+                <p class="item-message">{{ item.message }}</p>
+                <p class="item-meta">
+                  {{ t('moderation.quarantinedFeedback.reasonsLabel') }}
+                  {{ item.spamReasons.join(', ') }}
+                </p>
+                <p class="item-meta">
+                  {{ item.appVersion ?? '?' }} — {{ item.locale ?? '?' }}/{{
+                    item.country ?? '?'
+                  }}
+                  — {{ item.createdAt | relativeDate }}
+                </p>
+                <p class="item-meta">
+                  {{ t('moderation.authorLabel') }}
+                  {{ item.authorHandle ?? t('moderation.feedback.anonymous') }}
+                  @if (item.authorPublicUid) {
+                    <code class="public-uid">{{ item.authorPublicUid }}</code>
+                  }
+                </p>
+                <div class="item-actions">
+                  <button
+                    nz-button
+                    nzType="primary"
+                    [nzLoading]="quarantinedActionLoading() === item.id"
+                    (click)="setFeedbackQuarantined(item, false)"
+                  >
+                    {{ t('moderation.quarantinedFeedback.restore') }}
+                  </button>
+                </div>
+              </nz-list-item>
+            }
+          </nz-list>
+        }
+        @if (quarantinedFeedback.totalCount() > 0) {
+          <nz-pagination
+            class="section-pagination"
+            [nzPageIndex]="quarantinedFeedback.pageIndex()"
+            [nzPageSize]="quarantinedFeedback.pageSize()"
+            [nzTotal]="quarantinedFeedback.totalCount()"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="pageSizeOptions"
+            (nzPageIndexChange)="onPageIndexChange(quarantinedFeedback, $event)"
+            (nzPageSizeChange)="onPageSizeChange(quarantinedFeedback, $event)"
+          />
+        }
+      </nz-tab>
+
       <nz-tab [nzTitle]="t('moderation.tabs.accounts')">
         <p class="accounts-hint">{{ t('moderation.accounts.hint') }}</p>
         <nz-form-item>

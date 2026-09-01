@@ -7,6 +7,7 @@
     "flagged": "Gemeldet",
     "observations": "Preise",
     "feedback": "Feedback",
+    "quarantinedFeedback": "Verdächtig",
     "accounts": "Konten"
   },
   "flagged": {
@@ -42,6 +43,13 @@
     "diagnosticsLabel": "Absturzbericht",
     "reopen": "Wieder öffnen",
     "markHandled": "Als bearbeitet markieren"
+  },
+  "quarantinedFeedback": {
+    "hint": "Nachrichten, die FeedbackSpamDetector als verdächtig markiert hat — der Moderator sieht WARUM (spamReasons) und kann einen Fehlalarm zurück in die normale Warteschlange schicken.",
+    "empty": "In der Quarantäne ist nichts.",
+    "scoreLabel": "Punktzahl:",
+    "reasonsLabel": "Signale:",
+    "restore": "Zurück in die Warteschlange"
   },
   "accounts": {
     "hint": "Füge die Benutzer-ID (authorPublicUid) ein, die aus der Meldungswarteschlange oder der Preisliste kopiert wurde.",
