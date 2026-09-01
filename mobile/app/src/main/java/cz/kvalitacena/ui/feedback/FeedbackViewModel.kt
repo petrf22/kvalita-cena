@@ -10,6 +10,7 @@ import cz.kvalitacena.network.FeedbackInput
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.toUiText
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 /**
@@ -39,6 +40,22 @@ class FeedbackViewModel(
   val canSubmit: Boolean
     get() = isFeedbackFormValid(message, contactEmail) && !submitting
 
+  // Proof-of-work (docs/nasazeni.md, obrana proti spamu) — výzva se vyžádá a řeší na pozadí
+  // hned při vstupu na obrazovku (init), ať je nonce hotový dřív, než uživatel dopíše zprávu.
+  // Appka bez PoW klidně funguje dál (required gating je na serveru) — nezdařené vyžádání
+  // výzvy submit() jen pošle bez challenge/nonce.
+  private var challengeToken: String? = null
+  private var challengeNonce: String? = null
+  private val challengeReady = viewModelScope.async {
+    try {
+      val challenge = graphQlClient.feedbackChallenge()
+      challengeToken = challenge.token
+      challengeNonce = ProofOfWork.solve(challenge.salt, challenge.difficulty)
+    } catch (e: Exception) {
+      // Appka pokračuje bez PoW — server rozhodne (required v prod, jen skóre v beta).
+    }
+  }
+
   /** [diagnostics] se posílá jen když uživatel výslovně zaškrtl [attachCrashReport] — nikdy automaticky. */
   fun submit(diagnostics: String?) {
     if (!canSubmit) return
@@ -47,6 +64,7 @@ class FeedbackViewModel(
     submitError = null
     viewModelScope.launch {
       try {
+        challengeReady.await()
         graphQlClient.submitFeedback(
           FeedbackInput(
             category = category,
@@ -55,6 +73,8 @@ class FeedbackViewModel(
             pageRef = pageRef,
             appVersion = BuildConfig.VERSION_NAME,
             diagnostics = if (attachCrashReport) diagnostics else null,
+            challenge = challengeToken,
+            nonce = challengeNonce,
           ),
         )
         submitSuccess = true

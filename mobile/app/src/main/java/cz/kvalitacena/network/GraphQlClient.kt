@@ -606,6 +606,17 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
   }
 
   /**
+   * Proof-of-work výzva pro formulář zpětné vazby (docs/nasazeni.md, obrana proti spamu) — bez
+   * přihlášení, stejně jako [submitFeedback]. Řešení (nonce) počítá [ui.feedback.ProofOfWork]
+   * na pozadí, token se posílá zpět beze změny.
+   */
+  suspend fun feedbackChallenge(): FeedbackChallenge {
+    val gql = "query { feedbackChallenge { token salt difficulty } }"
+    return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(FeedbackChallengeData.serializer()))
+      .feedbackChallenge
+  }
+
+  /**
    * "Moje příspěvky" — vlastní založené zboží, nejnovější první, se stavem zveřejnění
    * (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty"). Vyžaduje přihlášení.
    */

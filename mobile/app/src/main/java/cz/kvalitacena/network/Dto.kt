@@ -570,10 +570,20 @@ data class FeedbackInput(
   val pageRef: String? = null,
   val appVersion: String? = null,
   val diagnostics: String? = null,
+  // Proof-of-work (docs/nasazeni.md, obrana proti spamu) — token beze změny z feedbackChallenge,
+  // nonce spočítaný na zařízení (ui/feedback/ProofOfWork.kt). Bez honeypotu — appka tu nemá
+  // formulářové pole navíc, jen web (feedback-page.html).
+  val challenge: String? = null,
+  val nonce: String? = null,
 )
 
 @Serializable
 data class FeedbackResult(val id: String)
+
+/** Proof-of-work výzva (docs/nasazeni.md, obrana proti spamu) — řešení se posílá zpět ve
+ *  [FeedbackInput.challenge]/[FeedbackInput.nonce]. */
+@Serializable
+data class FeedbackChallenge(val token: String, val salt: String, val difficulty: Int)
 
 @Serializable
 data class PriceObservation(
@@ -769,6 +779,9 @@ data class FlagRecordData(val flagRecord: FlagResult)
 
 @Serializable
 data class SubmitFeedbackData(val submitFeedback: FeedbackResult)
+
+@Serializable
+data class FeedbackChallengeData(val feedbackChallenge: FeedbackChallenge)
 
 @Serializable
 data class FxInfoData(val fxInfo: FxInfo)
