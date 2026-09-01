@@ -145,6 +145,9 @@ data class Product(
   val stats: ProductStats? = null,
   val quality: ProductQuality? = null,
   val myQualityRating: Int? = null,
+  // Počet recenzí S TEXTEM (na rozdíl od quality.count, který počítá i hodnocení bez textu).
+  val reviewCount: Int = 0,
+  val myReviewText: String? = null,
   val externalLinks: List<ExternalLink> = emptyList(),
   // Uživatelská vrstva nad globálními daty (docs/datovy-model.md) — konsolidační job zatím
   // neběží, takže verified je v etapě 1 vždy false.
@@ -219,11 +222,46 @@ data class ProductStats(
   val bestPriceConverted: ConvertedPrice? = null,
 )
 
-/** Průměrná známka 1,00–5,00 (1 nejlepší, jako ve škole). average je null, dokud nikdo nehodnotil. */
+/** Průměr hvězdiček 1,00–5,00 (5 nejlepší). average je null, dokud nikdo nehodnotil. */
 @Serializable
 data class ProductQuality(
   val average: Double? = null,
   val count: Int = 0,
+)
+
+/**
+ * Jedna recenze pod zbožím (docs/soukromi.md, "Podepsaná recenze") — autor je tu VŽDY vidět,
+ * na rozdíl od zbytku appky, kde se autor objevuje jen v moderátorském pohledu.
+ */
+@Serializable
+data class ProductReview(
+  val id: String,
+  val stars: Int,
+  val text: String,
+  val authorPublicUid: String,
+  // Vykreslené jméno autora — přezdívka (je-li veřejná), jinak lokalizovaný handle. Vždy s "#číslo".
+  val authorName: String,
+  val createdAt: String,
+  // Null, pokud text po napsání nebyl upraven — appka tím rozliší štítek "upraveno".
+  val updatedAt: String? = null,
+  val mine: Boolean = false,
+)
+
+@Serializable
+data class ProductReviewResult(
+  val items: List<ProductReview> = emptyList(),
+  val totalCount: Int = 0,
+  val hasMore: Boolean = false,
+  // Anonym texty nevidí (docs/reputace.md, T1) — items je pak vždy prázdné bez ohledu na totalCount.
+  val loginRequired: Boolean = false,
+)
+
+/** Návratový typ saveProductReviewText/deleteProductReviewText — ať appka nemusí přenačítat celý produkt. */
+@Serializable
+data class MyProductReview(
+  val stars: Int,
+  val text: String? = null,
+  val updatedAt: String? = null,
 )
 
 @Serializable
@@ -694,6 +732,24 @@ data class MyEditResult(
   val hasMore: Boolean = false,
 )
 
+/** "Moje recenze" — na rozdíl od [ProductReview] i skryté moderací (autor vidí, že a proč zmizela). */
+@Serializable
+data class MyReviewItem(
+  val product: ProductSummary,
+  val stars: Int,
+  val text: String,
+  val createdAt: String,
+  val updatedAt: String? = null,
+  val hidden: Boolean = false,
+)
+
+@Serializable
+data class MyReviewResult(
+  val items: List<MyReviewItem> = emptyList(),
+  val totalCount: Int = 0,
+  val hasMore: Boolean = false,
+)
+
 // --- Obálky GraphQL odpovědí (per dotaz/mutaci) ---
 
 @Serializable
@@ -722,6 +778,15 @@ data class PriceHistoryData(val priceHistory: PriceHistory)
 
 @Serializable
 data class RateProductData(val rateProduct: ProductQuality)
+
+@Serializable
+data class ProductReviewsData(val productReviews: ProductReviewResult)
+
+@Serializable
+data class SaveProductReviewTextData(val saveProductReviewText: MyProductReview)
+
+@Serializable
+data class DeleteProductReviewTextData(val deleteProductReviewText: MyProductReview)
 
 @Serializable
 data class MeData(val me: Viewer? = null)
@@ -806,6 +871,9 @@ data class MyObservationsData(val myObservations: MyObservationResult)
 
 @Serializable
 data class MyEditsData(val myEdits: MyEditResult)
+
+@Serializable
+data class MyReviewsData(val myReviews: MyReviewResult)
 
 /**
  * `extensions.code`/`params` je strojový kontrakt chyby (docs/lokalizace.md), stejný jako

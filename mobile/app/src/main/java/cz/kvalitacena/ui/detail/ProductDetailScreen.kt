@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -20,6 +21,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,10 +43,12 @@ import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.network.ExternalLink
 import cz.kvalitacena.network.PriceCurrent
+import cz.kvalitacena.network.ProductReview
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.PhotoGallery
 import cz.kvalitacena.ui.common.PhotoPicker
 import cz.kvalitacena.ui.common.QualityBadge
+import cz.kvalitacena.ui.common.StarRatingDisplay
 import cz.kvalitacena.ui.common.StarRatingInput
 import cz.kvalitacena.ui.common.formatRelativeDate
 import cz.kvalitacena.ui.common.openUrl
@@ -156,11 +160,21 @@ fun ProductDetailScreen(
 
         // --- Kvalita ---
         QualityBadge(average = product.quality?.average, count = product.quality?.count ?: 0)
-        StarRatingInput(
-          value = product.myQualityRating,
-          onRate = { stars -> if (isLoggedIn) viewModel.rate(stars) else onNavigateToAccount() },
-          modifier = Modifier.padding(top = 4.dp),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+          StarRatingInput(
+            value = product.myQualityRating,
+            onRate = { stars -> if (isLoggedIn) viewModel.rate(stars) else onNavigateToAccount() },
+          )
+          if (product.myQualityRating != null) {
+            TextButton(onClick = { viewModel.openReviewModal() }) {
+              Text(
+                stringResource(
+                  if (product.myReviewText != null) R.string.review_edit else R.string.review_write,
+                ),
+              )
+            }
+          }
+        }
         if (!isLoggedIn) {
           Text(
             stringResource(R.string.product_quality_requires_login),
@@ -170,6 +184,49 @@ fun ProductDetailScreen(
         }
         viewModel.ratingError?.let {
           Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+        }
+        Gap()
+        HorizontalDivider()
+        Gap()
+
+        // --- Recenze (text k hodnocení) ---
+        Text(
+          stringResource(R.string.review_section_title, viewModel.reviewsTotalCount),
+          style = MaterialTheme.typography.titleMedium,
+        )
+        viewModel.reviewFlagMessage?.let {
+          Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        when {
+          viewModel.reviewsLoginRequired -> {
+            Text(
+              stringResource(R.string.review_login_required),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+
+          viewModel.reviews.isEmpty() && !viewModel.reviewsLoading -> {
+            Text(stringResource(R.string.review_empty), style = MaterialTheme.typography.bodyMedium)
+          }
+
+          else -> {
+            Column(modifier = Modifier.padding(top = 8.dp)) {
+              viewModel.reviews.forEach { review ->
+                ReviewRow(
+                  review = review,
+                  flagging = viewModel.reviewFlaggingId == review.id,
+                  isLoggedIn = isLoggedIn,
+                  onFlag = { viewModel.flagReview(review) },
+                )
+              }
+            }
+            if (viewModel.reviewsHasMore) {
+              TextButton(onClick = { viewModel.loadMoreReviews() }, enabled = !viewModel.reviewsLoading) {
+                Text(stringResource(R.string.review_load_more))
+              }
+            }
+          }
         }
         Gap()
         HorizontalDivider()
@@ -304,8 +361,93 @@ fun ProductDetailScreen(
           Text(stringResource(R.string.product_write_observation))
         }
       }
+
+      if (viewModel.reviewModalVisible) {
+        ReviewDialog(viewModel)
+      }
     }
   }
+}
+
+@Composable
+private fun ReviewRow(review: ProductReview, flagging: Boolean, isLoggedIn: Boolean, onFlag: () -> Unit) {
+  Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      StarRatingDisplay(average = review.stars.toDouble(), starSize = 14.dp)
+      Text(review.authorName, style = MaterialTheme.typography.bodyMedium)
+      Text(
+        formatRelativeDate(review.createdAt),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      if (review.updatedAt != null) {
+        Text(
+          stringResource(R.string.review_edited),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+    }
+    Text(review.text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+    if (!review.mine && isLoggedIn) {
+      TextButton(onClick = onFlag, enabled = !flagging) {
+        Text(stringResource(R.string.common_report))
+      }
+    }
+    HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+  }
+}
+
+@Composable
+private fun ReviewDialog(viewModel: ProductDetailViewModel) {
+  AlertDialog(
+    onDismissRequest = { viewModel.closeReviewModal() },
+    title = { Text(stringResource(R.string.review_dialog_title)) },
+    text = {
+      Column {
+        viewModel.reviewError?.let {
+          Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+          Gap()
+        }
+        OutlinedTextField(
+          value = viewModel.reviewText,
+          onValueChange = { viewModel.reviewText = it },
+          placeholder = { Text(stringResource(R.string.review_text_placeholder)) },
+          minLines = 4,
+          modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+          stringResource(
+            R.string.review_chars_remaining,
+            MAX_REVIEW_TEXT_LENGTH - viewModel.reviewText.trim().length,
+          ),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+    },
+    confirmButton = {
+      TextButton(
+        onClick = { viewModel.saveReviewText() },
+        enabled = viewModel.reviewText.isNotBlank() && !viewModel.reviewSaving,
+      ) {
+        if (viewModel.reviewSaving) CircularProgressIndicator(modifier = Modifier.size(18.dp))
+        else Text(stringResource(R.string.review_save))
+      }
+    },
+    dismissButton = {
+      Row {
+        if (viewModel.product?.myReviewText != null) {
+          TextButton(onClick = { viewModel.deleteReviewText() }, enabled = !viewModel.reviewSaving) {
+            Text(stringResource(R.string.review_delete))
+          }
+        }
+        TextButton(onClick = { viewModel.closeReviewModal() }) {
+          Text(stringResource(R.string.common_cancel))
+        }
+      }
+    },
+  )
 }
 
 @Composable

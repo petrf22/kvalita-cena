@@ -299,6 +299,22 @@
     <!-- contentDescription tlačítka jedné hvězdy v interaktivním hodnocení — %1$d = pozice 1..5. -->
     <string name="quality_rate_stars">Hodnocení %1$d/5</string>
 
+    <string name="review_write">Napsat recenzi</string>
+    <string name="review_edit">Upravit recenzi</string>
+    <string name="review_dialog_title">Vaše recenze</string>
+    <string name="review_text_placeholder">Co si o tomhle zboží myslíte?</string>
+    <string name="review_chars_remaining">Zbývající znaky: %1$d</string>
+    <string name="review_save">Uložit</string>
+    <string name="review_delete">Smazat</string>
+    <string name="review_text_empty">Text recenze nesmí být prázdný</string>
+    <string name="review_text_too_long">Text recenze smí mít nejvýše %1$d znaků</string>
+    <string name="review_section_title">Recenze (%1$d)</string>
+    <string name="review_loading">Načítám recenze…</string>
+    <string name="review_login_required">Textové recenze vidí jen přihlášení uživatelé — přejdi do záložky Účet.</string>
+    <string name="review_empty">Zatím tu nikdo nenapsal recenzi — buď první.</string>
+    <string name="review_edited">upraveno</string>
+    <string name="review_load_more">Načíst další recenze</string>
+
     <string name="price_kind_regular">Běžná cena</string>
     <string name="price_kind_promo">Akce</string>
     <string name="price_kind_club_card">Klubová karta</string>

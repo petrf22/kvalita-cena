@@ -214,6 +214,22 @@
     <string name="quality_rated_approximate">Kvalita %1$.1f/5 (orientačná)</string>
     <string name="quality_rate_stars">Hodnotenie %1$d/5</string>
 
+    <string name="review_write">Napísať recenziu</string>
+    <string name="review_edit">Upraviť recenziu</string>
+    <string name="review_dialog_title">Vaša recenzia</string>
+    <string name="review_text_placeholder">Čo si o tomto tovare myslíte?</string>
+    <string name="review_chars_remaining">Zostávajúce znaky: %1$d</string>
+    <string name="review_save">Uložiť</string>
+    <string name="review_delete">Zmazať</string>
+    <string name="review_text_empty">Text recenzie nesmie byť prázdny</string>
+    <string name="review_text_too_long">Text recenzie môže mať najviac %1$d znakov</string>
+    <string name="review_section_title">Recenzie (%1$d)</string>
+    <string name="review_loading">Načítavam recenzie…</string>
+    <string name="review_login_required">Textové recenzie vidia len prihlásení používatelia — prejdi do záložky Účet.</string>
+    <string name="review_empty">Zatiaľ tu nikto nenapísal recenziu — buď prvý/prvá.</string>
+    <string name="review_edited">upravené</string>
+    <string name="review_load_more">Načítať ďalšie recenzie</string>
+
     <string name="price_kind_regular">Bežná cena</string>
     <string name="price_kind_promo">Akcia</string>
     <string name="price_kind_club_card">Klubová karta</string>

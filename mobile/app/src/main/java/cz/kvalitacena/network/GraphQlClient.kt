@@ -72,6 +72,8 @@ internal val PRODUCT_DETAIL_FIELDS = """
   }
   quality { average count }
   myQualityRating
+  reviewCount
+  myReviewText
   externalLinks { kind label url attribution }
   myPrices {
     store { $STORE_FIELDS } priceKind priceAmount unitPrice observedAt currency
@@ -79,6 +81,11 @@ internal val PRODUCT_DETAIL_FIELDS = """
     converted { $CONVERTED_PRICE_FIELDS }
   }
   photos { $PHOTO_FIELDS }
+"""
+
+/** Jedna recenze pod zbožím (docs/soukromi.md, "Podepsaná recenze") — text je tu vždy vyplněný. */
+internal val PRODUCT_REVIEW_FIELDS = """
+  id stars text authorPublicUid authorName createdAt updatedAt mine
 """
 
 /**
@@ -289,6 +296,54 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
       put("stars", stars)
     }
     return execute(gql, variables, GraphQlResponse.serializer(RateProductData.serializer())).rateProduct
+  }
+
+  /**
+   * Recenze pod zbožím — anonym dostane `loginRequired=true` a prázdné `items`, ale skutečný
+   * `totalCount` (docs/reputace.md, T1: texty recenzí vidí jen přihlášený).
+   */
+  suspend fun productReviews(productId: String, first: Int = 20, offset: Int = 0): ProductReviewResult {
+    val gql = """
+      query(${'$'}productId: ID!, ${'$'}first: Int, ${'$'}offset: Int) {
+        productReviews(productId: ${'$'}productId, first: ${'$'}first, offset: ${'$'}offset) {
+          totalCount hasMore loginRequired
+          items { $PRODUCT_REVIEW_FIELDS }
+        }
+      }
+    """
+    val variables = buildJsonObject {
+      put("productId", productId)
+      put("first", first)
+      put("offset", offset)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(ProductReviewsData.serializer())).productReviews
+  }
+
+  /** Text vyžaduje existující hvězdičkové hodnocení (REVIEW_REQUIRES_RATING) — zapsat je nejdřív rateProduct. */
+  suspend fun saveProductReviewText(productId: String, text: String): MyProductReview {
+    val gql = """
+      mutation(${'$'}productId: ID!, ${'$'}text: String!) {
+        saveProductReviewText(productId: ${'$'}productId, text: ${'$'}text) { stars text updatedAt }
+      }
+    """
+    val variables = buildJsonObject {
+      put("productId", productId)
+      put("text", text)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(SaveProductReviewTextData.serializer()))
+      .saveProductReviewText
+  }
+
+  /** Smazání textu — hvězdičky zůstávají beze změny. */
+  suspend fun deleteProductReviewText(productId: String): MyProductReview {
+    val gql = """
+      mutation(${'$'}productId: ID!) {
+        deleteProductReviewText(productId: ${'$'}productId) { stars text updatedAt }
+      }
+    """
+    val variables = buildJsonObject { put("productId", productId) }
+    return execute(gql, variables, GraphQlResponse.serializer(DeleteProductReviewTextData.serializer()))
+      .deleteProductReviewText
   }
 
   /** Veřejná identita přihlášeného uživatele — null pro anonyma. */
@@ -695,6 +750,23 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     """
     val variables = buildJsonObject { put("first", first); put("offset", offset) }
     return execute(gql, variables, GraphQlResponse.serializer(MyEditsData.serializer())).myEdits
+  }
+
+  /** Vlastní recenze s textem — na rozdíl od productReviews i skryté moderací (autor vidí proč). */
+  suspend fun myReviews(first: Int = 20, offset: Int = 0): MyReviewResult {
+    val gql = """
+      query(${'$'}first: Int, ${'$'}offset: Int) {
+        myReviews(first: ${'$'}first, offset: ${'$'}offset) {
+          totalCount hasMore
+          items {
+            stars text createdAt updatedAt hidden
+            product { $PRODUCT_SUMMARY_FIELDS }
+          }
+        }
+      }
+    """
+    val variables = buildJsonObject { put("first", first); put("offset", offset) }
+    return execute(gql, variables, GraphQlResponse.serializer(MyReviewsData.serializer())).myReviews
   }
 
   private suspend fun <T> execute(

@@ -214,6 +214,22 @@
     <string name="quality_rated_approximate">Quality %1$.1f/5 (approximate)</string>
     <string name="quality_rate_stars">Rating %1$d/5</string>
 
+    <string name="review_write">Write a review</string>
+    <string name="review_edit">Edit review</string>
+    <string name="review_dialog_title">Your review</string>
+    <string name="review_text_placeholder">What do you think about this product?</string>
+    <string name="review_chars_remaining">Characters remaining: %1$d</string>
+    <string name="review_save">Save</string>
+    <string name="review_delete">Delete</string>
+    <string name="review_text_empty">Review text must not be empty</string>
+    <string name="review_text_too_long">Review text can be at most %1$d characters long</string>
+    <string name="review_section_title">Reviews (%1$d)</string>
+    <string name="review_loading">Loading reviews…</string>
+    <string name="review_login_required">Text reviews are visible to signed-in users only — go to the Account tab.</string>
+    <string name="review_empty">No one has written a review here yet — be the first.</string>
+    <string name="review_edited">edited</string>
+    <string name="review_load_more">Load more reviews</string>
+
     <string name="price_kind_regular">Regular price</string>
     <string name="price_kind_promo">Promotion</string>
     <string name="price_kind_club_card">Club card</string>

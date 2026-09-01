@@ -103,6 +103,7 @@ class GraphQlFragmentContractTest {
     "CONVERTED_PRICE_FIELDS" to CONVERTED_PRICE_FIELDS,
     "PUBLICATION_STATUS_FIELDS" to PUBLICATION_STATUS_FIELDS,
     "VIEWER_FIELDS" to VIEWER_FIELDS,
+    "PRODUCT_REVIEW_FIELDS" to PRODUCT_REVIEW_FIELDS,
   )
 
   /**
@@ -169,4 +170,8 @@ class GraphQlFragmentContractTest {
   @Test
   fun viewerFieldsCoverRequiredDtoFields() =
     assertContract("VIEWER_FIELDS", VIEWER_FIELDS, Viewer.serializer().descriptor)
+
+  @Test
+  fun productReviewFieldsCoverRequiredDtoFields() =
+    assertContract("PRODUCT_REVIEW_FIELDS", PRODUCT_REVIEW_FIELDS, ProductReview.serializer().descriptor)
 }

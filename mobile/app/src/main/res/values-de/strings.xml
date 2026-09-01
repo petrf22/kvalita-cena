@@ -216,6 +216,22 @@
     <string name="quality_rated_approximate">Qualität %1$.1f/5 (ungefähr)</string>
     <string name="quality_rate_stars">Bewertung %1$d/5</string>
 
+    <string name="review_write">Rezension schreiben</string>
+    <string name="review_edit">Rezension bearbeiten</string>
+    <string name="review_dialog_title">Deine Rezension</string>
+    <string name="review_text_placeholder">Was denkst du über dieses Produkt?</string>
+    <string name="review_chars_remaining">Verbleibende Zeichen: %1$d</string>
+    <string name="review_save">Speichern</string>
+    <string name="review_delete">Löschen</string>
+    <string name="review_text_empty">Der Rezensionstext darf nicht leer sein</string>
+    <string name="review_text_too_long">Der Rezensionstext darf höchstens %1$d Zeichen lang sein</string>
+    <string name="review_section_title">Rezensionen (%1$d)</string>
+    <string name="review_loading">Rezensionen werden geladen…</string>
+    <string name="review_login_required">Text-Rezensionen sind nur für angemeldete Nutzer sichtbar — wechsle zum Tab Konto.</string>
+    <string name="review_empty">Hier hat noch niemand eine Rezension geschrieben — sei der Erste.</string>
+    <string name="review_edited">bearbeitet</string>
+    <string name="review_load_more">Weitere Rezensionen laden</string>
+
     <string name="price_kind_regular">Regulärer Preis</string>
     <string name="price_kind_promo">Aktion</string>
     <string name="price_kind_club_card">Kundenkarte</string>

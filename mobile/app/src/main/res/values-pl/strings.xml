@@ -214,6 +214,22 @@
     <string name="quality_rated_approximate">Jakość %1$.1f/5 (orientacyjna)</string>
     <string name="quality_rate_stars">Ocena %1$d/5</string>
 
+    <string name="review_write">Napisz recenzję</string>
+    <string name="review_edit">Edytuj recenzję</string>
+    <string name="review_dialog_title">Twoja recenzja</string>
+    <string name="review_text_placeholder">Co sądzisz o tym produkcie?</string>
+    <string name="review_chars_remaining">Pozostało znaków: %1$d</string>
+    <string name="review_save">Zapisz</string>
+    <string name="review_delete">Usuń</string>
+    <string name="review_text_empty">Tekst recenzji nie może być pusty</string>
+    <string name="review_text_too_long">Tekst recenzji może mieć maksymalnie %1$d znaków</string>
+    <string name="review_section_title">Recenzje (%1$d)</string>
+    <string name="review_loading">Ładowanie recenzji…</string>
+    <string name="review_login_required">Recenzje tekstowe widzą tylko zalogowani użytkownicy — przejdź do zakładki Konto.</string>
+    <string name="review_empty">Nikt jeszcze nie napisał tu recenzji — bądź pierwszy/pierwsza.</string>
+    <string name="review_edited">edytowano</string>
+    <string name="review_load_more">Wczytaj więcej recenzji</string>
+
     <string name="price_kind_regular">Cena regularna</string>
     <string name="price_kind_promo">Promocja</string>
     <string name="price_kind_club_card">Karta klubowa</string>
