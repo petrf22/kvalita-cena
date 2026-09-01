@@ -69,8 +69,14 @@ polohu použije jen k dotazu „co je nablízku" a hned zapomene — do databáz
 nezapisuje. Souřadnice obchodů (veřejný fakt, ne osobní údaj — totéž, co je na ceduli u
 vchodu) appka získává buď od tebe při založení obchodu, nebo z OpenStreetMap; dotaz na
 OpenStreetMap přitom vždy posílá appka sama ze svého serveru, ne tvůj telefon nebo prohlížeč
-— tvoje IP adresa se tak k OpenStreetMap nikdy nedostane. Jedinou vědomou výjimkou je mapa
-samotná (viz bod 3.6 níže).
+— tvoje IP adresa se tak k OpenStreetMap nikdy nedostane.
+
+Totéž platí i naopak: tlačítko „Použít mou polohu" při zakládání/editaci obchodu (appka ti
+předvyplní adresu podle toho, kde stojíš) pošle tvoji polohu OpenStreetMap taky výhradně ze
+serveru, nikdy přímo z telefonu/prohlížeče — a než ji pošle, zaokrouhlí ji na přibližně
+11 metrů, ať k OpenStreetMap nejde přesnější poloha, než appka pro najití adresy potřebuje.
+Ani tahle poloha se nikam neukládá. Jedinou vědomou výjimkou z pravidla „jen ze serveru" je
+mapa samotná (viz bod 3.6 níže).
 
 ### 3.5 Fotky zboží a provozoven
 
@@ -86,18 +92,20 @@ jediné nahlášení, než ho někdo přezkoumá.
 ### 3.6 Mapa (vědomá výjimka)
 
 Pokud si na detailu obchodu otevřeš mapu, appka mapové podklady (dlaždice) stahuje přímo
-z tvého telefonu/prohlížeče z OpenStreetMap — na rozdíl od geokódování adres výš tahle jedna
-věc jde přímo z klienta, ne přes náš server, protože proxy pro mapové dlaždice by vyžadovala
-vlastní infrastrukturu nebo komerční smlouvu s OpenStreetMap Foundation. Znamená to, že
-OpenStreetMap při otevření mapy uvidí tvoji IP adresu — appka tomu předchází tím, že se mapa
-nenačte, dokud si o ni výslovně neřekneš (není součástí běžného zobrazení stránky).
+z tvého telefonu/prohlížeče od poskytovatele dlaždic (dnes OpenStreetMap, appka umí
+poskytovatele vyměnit) — na rozdíl od geokódování adres výš tahle jedna věc jde přímo
+z klienta, ne přes náš server. Server by dlaždice mohl proxovat, appka to zatím nedělá — bylo
+by to za cenu vlastní cache infrastruktury navíc, kterou dnešní appka nemá. Znamená to, že
+poskytovatel dlaždic při otevření mapy uvidí tvoji IP adresu — appka tomu předchází tím, že se
+mapa nenačte, dokud si o ni výslovně neřekneš (není součástí běžného zobrazení stránky).
 
 ### 3.7 Technická data
 
 Appka krátkodobě loguje technická data (např. IP adresu u přihlašovacích pokusů a u odesílání
 formuláře zpětné vazby) kvůli ochraně proti zneužití (např. hromadnému zkoušení přihlašovacích
-kódů nebo hromadnému odesílání spamu) — tahle data neslouží k profilování ani analytice a appka
-je neuchovává dlouhodobě, jen v paměti serveru do restartu.
+kódů nebo hromadnému odesílání spamu) — tahle data neslouží k profilování ani analytice. Žijí
+jen v paměti serveru, ne v databázi, nejvýš 1 hodinu u přihlašovacích pokusů a nejvýš 1 den
+u odesílání zpětné vazby — a v obou případech zmizí i dřív, restartem appky.
 
 ### 3.8 Zpětná vazba appce
 
@@ -127,7 +135,7 @@ slouží výhradně ke zlepšování appky.
 | Hodnocení kvality zboží, vlastní úpravy zboží/obchodu | po dobu trvání účtu, smazáno s účtem |
 | Volitelný profil (jméno, telefon, kontaktní e-mail, avatar) | po dobu trvání účtu, smazáno s účtem |
 | Přihlašovací e-mail (hash a šifrovaná podoba) | po dobu trvání účtu |
-| Technická data (IP u přihlašovacích pokusů a odesílání zpětné vazby) | krátkodobě, jen pro ochranu proti zneužití |
+| Technická data (IP u přihlašovacích pokusů a odesílání zpětné vazby) | jen v paměti serveru, nejvýš 1 hodina (přihlašovací pokusy) / 1 den (zpětná vazba), zmizí i dřív restartem |
 | Zpětná vazba appce | po dobu, než ji provozovatel vyřídí a přestane být potřebná |
 
 ## 6. Komu údaje předáváme
@@ -137,8 +145,9 @@ externími službami, u kterých se — mimo výjimku mapových dlaždic v bodě
 staví mezi tebe a danou službu jako prostředník, takže se k nim tvoje IP adresa ani jiný
 identifikátor nedostane:
 
-- **OpenStreetMap (Nominatim)** — vyhledání/ověření adresy provozovny; dotaz posílá appka
-  ze svého serveru.
+- **OpenStreetMap (Nominatim)** — vyhledání/ověření adresy provozovny, i opačným směrem
+  (tvoje poloha → adresa u tlačítka „Použít mou polohu", zaokrouhlená, viz bod 3.4); dotaz
+  vždy posílá appka ze svého serveru.
 - **Open Food Facts** — veřejné údaje o zboží (název, kategorie), žádná osobní data appka
   tomuhle zdroji neposílá.
 - **ARES** (veřejný rejstřík ekonomických subjektů) — jen volitelné ověření IČO provozovny
