@@ -1,3 +1,7 @@
+import java.io.ByteArrayOutputStream
+import java.util.Properties
+import javax.inject.Inject
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -163,4 +167,165 @@ dependencies {
 
     // Jednotkové testy čisté logiky (PriceChartGeometry) bez Androidu/emulátoru.
     testImplementation("junit:junit:4.13.2")
+}
+
+// ---- Publikace: podepsaný a OVĚŘENÝ release (docs/vydani.md, "Podpisový klíč" a "Nahrávaný
+// formát a App access") — na rozdíl od assembleRelease/bundleRelease, které musí projít i bez
+// klíče (CI je staví nepodepsané, viz komentář u hasReleaseSigning výš), publishableBundle/Apk
+// bez klíče SELŽE, a to dřív, než se spustí zdlouhavý R8 build. ----
+
+/** Selže s vyjmenovanými chybějícími `KVALITACENA_*` properties nebo neexistujícím keystorem. */
+val checkReleaseSigning = tasks.register("checkReleaseSigning") {
+    group = "publishing"
+    description = "Ověří, že jsou k dispozici všechny KVALITACENA_* podpisové property a keystore existuje."
+    val missingProperties = listOfNotNull(
+        "KVALITACENA_STORE_FILE".takeIf { releaseStoreFile == null },
+        "KVALITACENA_STORE_PASSWORD".takeIf { releaseStorePassword == null },
+        "KVALITACENA_KEY_ALIAS".takeIf { releaseKeyAlias == null },
+        "KVALITACENA_KEY_PASSWORD".takeIf { releaseKeyPassword == null },
+    )
+    val storeFileExists = releaseStoreFile?.let { file(it).isFile } ?: false
+    val storeFilePath = releaseStoreFile
+    doLast {
+        if (missingProperties.isNotEmpty()) {
+            throw GradleException(
+                "Chybí podpisové property: ${missingProperties.joinToString()} " +
+                    "— viz docs/vydani.md, \"Podpisový klíč\"."
+            )
+        }
+        if (!storeFileExists) {
+            throw GradleException("KVALITACENA_STORE_FILE ('$storeFilePath') neukazuje na existující soubor.")
+        }
+    }
+    // Vždy znovu vyhodnotit — je to levná kontrola, "up-to-date" by tu skrylo zaniklý klíč.
+    outputs.upToDateWhen { false }
+}
+
+/**
+ * Ověří podpis AAB. Bundle se podepisuje jarem (v2/v3 APK Signature Scheme se u něj nepoužívá)
+ * — nástroj je `jarsigner`, ne `apksigner` (ten AAB neumí ověřit). `-strict` nejde použít: náš
+ * keystore je self-signed, jarsigner by ho i tak nahlásil jako chybu (chainNotValidated) —
+ * kontroluje se proto přítomnost "jar verified" ve výstupu.
+ */
+abstract class VerifyJarSignatureTask : DefaultTask() {
+    @get:InputFile
+    abstract val artifact: RegularFileProperty
+
+    @get:Internal
+    abstract val jarsigner: RegularFileProperty
+
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    @TaskAction
+    fun verify() {
+        val output = ByteArrayOutputStream()
+        val result = execOperations.exec {
+            commandLine(
+                jarsigner.get().asFile.absolutePath, "-verify", "-verbose:summary", "-certs",
+                artifact.get().asFile.absolutePath,
+            )
+            standardOutput = output
+            errorOutput = output
+            isIgnoreExitValue = true
+        }
+        val text = output.toString()
+        if (result.exitValue != 0 || !text.contains("jar verified")) {
+            throw GradleException("${artifact.get().asFile.name} není platně podepsaný:\n$text")
+        }
+        logger.lifecycle("Podpis ověřen: ${artifact.get().asFile.name}")
+    }
+}
+
+/** Obdoba [VerifyJarSignatureTask] pro APK — tam `apksigner` funguje a je to správný nástroj. */
+abstract class VerifyApkSignatureTask : DefaultTask() {
+    @get:InputFile
+    abstract val artifact: RegularFileProperty
+
+    @get:Internal
+    abstract val apksigner: RegularFileProperty
+
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    @TaskAction
+    fun verify() {
+        val output = ByteArrayOutputStream()
+        val result = execOperations.exec {
+            commandLine(apksigner.get().asFile.absolutePath, "verify", "--print-certs", artifact.get().asFile.absolutePath)
+            standardOutput = output
+            errorOutput = output
+            isIgnoreExitValue = true
+        }
+        val text = output.toString()
+        if (result.exitValue != 0) {
+            throw GradleException("${artifact.get().asFile.name} není platně podepsaný:\n$text")
+        }
+        logger.lifecycle("Podpis ověřen: ${artifact.get().asFile.name}\n$text")
+    }
+}
+
+// jarsigner z JDK toolchainu (kotlin { jvmToolchain(17) } výš), ne z JAVA_HOME — musí to být
+// stejné JDK, se kterým appka fakticky staví.
+val jarsignerPath = project.extensions.getByType(JavaToolchainService::class.java).launcherFor {
+    languageVersion.set(JavaLanguageVersion.of(17))
+}.map { it.metadata.installationPath.file("bin/jarsigner") }
+
+// apksigner ze sdk.dir v local.properties — stejný soubor, ze kterého ho čte i AGP. Verze podle
+// docs/vydani.md, "Podpisový klíč"; fallback na nejvyšší nainstalovanou, kdyby se přestala
+// instalovat právě tahle.
+val localProperties = Properties().apply {
+    val propertiesFile = rootProject.file("local.properties")
+    if (propertiesFile.exists()) propertiesFile.inputStream().use { stream -> load(stream) }
+}
+val sdkDir = localProperties.getProperty("sdk.dir")
+    ?: System.getenv("ANDROID_HOME")
+    ?: System.getenv("ANDROID_SDK_ROOT")
+val preferredBuildToolsVersion = "36.0.0"
+val apksignerPath = provider {
+    val buildToolsRoot = sdkDir?.let { file("$it/build-tools") }
+    val preferred = buildToolsRoot?.resolve(preferredBuildToolsVersion)?.takeIf { it.isDirectory }
+    val newestInstalled = buildToolsRoot?.listFiles()?.filter { it.isDirectory }?.maxByOrNull { it.name }
+    (preferred ?: newestInstalled)?.resolve("apksigner")
+        ?: throw GradleException(
+            "apksigner nenalezen — chybí sdk.dir v local.properties, nebo build-tools v $buildToolsRoot " +
+                "(doinstaluj přes Android SDK Manager)."
+        )
+}
+
+val verifyBundleSignature = tasks.register<VerifyJarSignatureTask>("verifyBundleSignature") {
+    group = "publishing"
+    description = "Ověří jarsignerem podpis app/build/outputs/bundle/release/app-release.aab."
+    artifact.set(layout.buildDirectory.file("outputs/bundle/release/app-release.aab"))
+    jarsigner.set(jarsignerPath)
+    dependsOn("bundleRelease")
+}
+
+val verifyApkSignature = tasks.register<VerifyApkSignatureTask>("verifyApkSignature") {
+    group = "publishing"
+    description = "Ověří apksignerem podpis app/build/outputs/apk/release/app-release.apk."
+    artifact.set(layout.buildDirectory.file("outputs/apk/release/app-release.apk"))
+    apksigner.fileProvider(apksignerPath)
+    dependsOn("assembleRelease")
+}
+
+// checkReleaseSigning musí doběhnout PŘED zdlouhavým R8 buildem, ne až po něm. AGP registruje
+// bundleRelease/assembleRelease až v afterEvaluate (variant API), tady v afterEvaluate už s
+// jistotou existují — tasks.named() na neregistrovaný task by jinak selhal rovnou při
+// konfiguraci, i kdyby se nikdy nespustil.
+afterEvaluate {
+    tasks.named("bundleRelease") { mustRunAfter(checkReleaseSigning) }
+    tasks.named("assembleRelease") { mustRunAfter(checkReleaseSigning) }
+}
+
+tasks.register("publishableBundle") {
+    group = "publishing"
+    description = "Podepsaný a ověřený AAB pro Play — na rozdíl od bundleRelease BEZ klíče selže."
+    dependsOn(checkReleaseSigning, "bundleRelease", verifyBundleSignature)
+}
+
+tasks.register("publishableApk") {
+    group = "publishing"
+    description = "Podepsané a ověřené APK pro přímou distribuci/F-Droid — na rozdíl od assembleRelease BEZ klíče selže."
+    dependsOn(checkReleaseSigning, "assembleRelease", verifyApkSignature)
 }

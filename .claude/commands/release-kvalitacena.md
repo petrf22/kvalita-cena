@@ -70,12 +70,13 @@ za skutečně spočítanou verzi (krok 1) — dosaď ji, než příkaz spustíš
    ```bash
    WORKDIR=$(mktemp -d -t kvalitacena-release-vX.Y.Z-XXXX)
    git worktree add "$WORKDIR" vX.Y.Z
-   cd "$WORKDIR/mobile" && ./gradlew :app:bundleRelease
+   cd "$WORKDIR/mobile" && ./gradlew :app:publishableBundle
    ```
    Podpisový klíč je v `~/.gradle/gradle.properties` (`KVALITACENA_STORE_*`) — Gradle ho najde
-   automaticky, nic dalšího není potřeba. Pokud `signingConfig` chybí (nepodepsaný výstup),
-   zastav se a upozorni — nejspíš chybí některá z `KVALITACENA_*` hodnot
-   (`docs/vydani.md`, „Podpisový klíč").
+   automaticky, nic dalšího není potřeba. Na rozdíl od `bundleRelease` (ten bez klíče tiše
+   vyrobí nepodepsaný AAB) `publishableBundle` bez klíče SELŽE samo, s hláškou, která
+   vyjmenuje chybějící `KVALITACENA_*` hodnotu, a navíc jarsignerem ověří podpis hotového
+   souboru — žádná další kontrola není potřeba (`docs/vydani.md`, „Podpisový klíč").
 
 9. **Ulož výstup mimo dočasný worktree** (worktree se za chvíli smaže):
    ```bash

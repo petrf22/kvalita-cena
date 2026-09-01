@@ -2,8 +2,8 @@
 
 Jeden zdroj pravdy pro to, jak `mobile/` dojde k publikovatelnému release APK — kde leží
 podpisový klíč, jak funguje registrace balíčku v Play Console a co vydání pořád ještě blokuje.
-Podrobnosti rozhodnutí a jejich odůvodnění jsou v plánu migrace repa (viz paměť
-`repo_migration.md`); tenhle dokument je jen aktuální stav a postup, ne historie rozhodování.
+Tenhle dokument je aktuální stav a postup, ne historie rozhodování — ta byla dřív v odděleném
+plánovacím souboru mimo repo, který přestal existovat (viz `CLAUDE.md`, „Přehled projektu").
 
 ## Podpisový klíč
 
@@ -20,9 +20,14 @@ keytool -genkeypair -v -keystore ~/.keystores/kvalitacena-release.jks \
   Hesla jsou v `~/.gradle/gradle.properties` jako `KVALITACENA_STORE_FILE`,
   `KVALITACENA_STORE_PASSWORD`, `KVALITACENA_KEY_ALIAS`, `KVALITACENA_KEY_PASSWORD` — `mobile/
   app/build.gradle.kts` je čte přes `findProperty(...)`. **Chybí-li kterákoli hodnota,
-  `signingConfig` se vůbec nezaloží** a `assembleRelease` vyrobí nepodepsané APK místo pádu —
-  stejná logika jako `jvmToolchain(17)` místo `org.gradle.java.home`: release build musí projít
-  i na cizím stroji a v CI, kde klíč nikdy nebude.
+  `signingConfig` se vůbec nezaloží** a `assembleRelease`/`bundleRelease` vyrobí nepodepsané
+  APK/AAB místo pádu — stejná logika jako `jvmToolchain(17)` místo `org.gradle.java.home`:
+  release build musí projít i na cizím stroji a v CI, kde klíč nikdy nebude. Pro publikaci proto
+  existují samostatné tasky `:app:publishableBundle`/`:app:publishableApk` — ty na rozdíl od
+  `bundleRelease`/`assembleRelease` bez klíče SELŽOU (hláška vyjmenuje chybějící
+  `KVALITACENA_*` hodnotu) a po sestavení navíc ověří podpis hotového souboru
+  (`jarsigner`/`apksigner`, viz „Release konfigurace `mobile/`" níž) — použij je, ne
+  `bundleRelease`/`assembleRelease` přímo, kdykoli má výstup jít ven.
 - **Ztráta klíče = ztráta možnosti aktualizovat aplikaci** mimo Play App Signing (viz níž). Záloha
   patří mimo tenhle stroj (např. šifrovaný cloud/USB), ne jen do `~/.keystores`.
 - Otisk se zjistí přes:
@@ -30,7 +35,8 @@ keytool -genkeypair -v -keystore ~/.keystores/kvalitacena-release.jks \
   ~/Android/Sdk/build-tools/36.0.0/apksigner verify --print-certs \
     mobile/app/build/outputs/apk/release/app-release.apk
   ```
-  Klíč vznikl 2026-08-09, `apksigner verify` na podepsaném `assembleRelease` potvrzuje:
+  (nebo rovnou `./gradlew :app:publishableApk` — vypíše totéž jako součást ověření). Klíč
+  vznikl 2026-08-09, potvrzuje:
   ```
   Signer #1 certificate DN: CN=Petr Franta, OU=Petr Franta, O=Petr Franta,
     L=Hradek u Rokycan, ST=Plzensky kraj, C=CZ
@@ -126,9 +132,10 @@ app/build/outputs/apk/release/app-release.apk | grep application-label`, musí v
 
 ### Nahrávaný formát a App access
 
-Play přijímá k publikaci jen **AAB** (`./gradlew :app:bundleRelease`), ne APK — `apksigner
-verify`/registrace otisku klíče výš pořád platí na APK (přímá distribuce, F-Droid), ale do Play
-Console jde nahrát bundle. Podepisuje se stejným `signingConfig` jako `assembleRelease`.
+Play přijímá k publikaci jen **AAB** (`./gradlew :app:publishableBundle`), ne APK — `apksigner
+verify`/registrace otisku klíče výš pořád platí na APK (přímá distribuce, F-Droid, tam
+`:app:publishableApk`), ale do Play Console jde nahrát bundle. Podepisuje se stejným
+`signingConfig` jako `assembleRelease`.
 
 Recenzent appky se přes OTP nedostane (žádný testovací účet předem neexistuje, kód chodí na
 reálnou schránku) — ve formuláři **App access** je potřeba deklarovat, že podstatná část appky
@@ -257,10 +264,22 @@ vizuálně na emulátoru s API 36 (viz Ověření v plánu migrace repa).
   R8 by jinak reflexí volané třídy odstranil nebo přejmenoval.
 - **`ApiConfig.BASE_URL`** je `buildConfigField` per build type (`network/ApiConfig.kt` čte
   `BuildConfig.BASE_URL`): debug `http://10.0.2.2:8080`, release `https://api.kvalitacena.cz`.
+  Podobně `MAP_TILE_URL`/`MAP_TILE_ATTRIBUTION` (`ui/common/MapConfig.kt`) — ale ty jsou stejné
+  pro debug i release, jde jen o `KVALITACENA_MAP_TILE_*` property s fallbackem na výchozí
+  OpenStreetMap Mapnik, ne o rozdíl mezi buildy.
 - **Cleartext HTTP je jen v debug variantu** — `src/main/res/xml/network_security_config.xml`
   přesunuté do `src/debug/res/xml/`, atribut `android:networkSecurityConfig` je jen
   v `src/debug/AndroidManifest.xml` (manifest merger ho přidá k `<application>` jen pro debug
   build). `android:usesCleartextTraffic="false"` v `src/main/AndroidManifest.xml` platí vždy.
+- **Publikace jde přes `:app:publishableBundle`/`:app:publishableApk`, ne přímo přes
+  `bundleRelease`/`assembleRelease`.** `checkReleaseSigning` selže hned na začátku (dřív než
+  R8), pokud chybí kterákoli `KVALITACENA_*` hodnota; `verifyBundleSignature`/
+  `verifyApkSignature` po sestavení ověří podpis hotového souboru —
+  `jarsigner -verify` na AAB (bundle se podepisuje jarem, `apksigner` ho ověřit neumí;
+  `-strict` nejde použít, protože náš self-signed keystore by ho i tak nahlásil jako chybu —
+  kontroluje se přítomnost „jar verified" ve výstupu), `apksigner verify --print-certs` na APK.
+  `apksigner` se hledá v `build-tools/36.0.0` podle `sdk.dir` v `local.properties`, s fallbackem
+  na nejvyšší nainstalovanou verzi; `jarsigner` jde z JDK toolchainu (`jvmToolchain(17)`).
 
 ## Verzování a vydání
 
@@ -321,8 +340,9 @@ Trunk-based — `main` je vždy vydatelná, žádné dlouhé větve (dependabot 
   krok po kroku: `git checkout vX.Y.Z`, `export GIT_SHA=$(git rev-parse --short HEAD)`,
   `docker compose -f compose.prod.yaml build backend && docker compose -f compose.prod.yaml build
   web && docker compose -f compose.prod.yaml up -d`.
-- **Mobil**: `git checkout vX.Y.Z`, `./gradlew :app:bundleRelease` na lokálním PC (podpisový
-  klíč viz výš). Ověření: „O aplikaci" ukazuje `X.Y.Z (versionCode)`.
+- **Mobil**: `git checkout vX.Y.Z`, `./gradlew :app:publishableBundle` na lokálním PC (podpisový
+  klíč viz výš — na rozdíl od `bundleRelease` bez něj task rovnou selže, ne tiše nepodepíše).
+  Ověření: „O aplikaci" ukazuje `X.Y.Z (versionCode)`.
 
 ### Hotfix už vydané verze
 

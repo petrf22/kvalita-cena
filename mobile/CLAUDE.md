@@ -19,6 +19,7 @@ build-tools) při buildu sám dostáhne.
 ```bash
 ./gradlew :app:assembleDebug
 ./gradlew :app:compileDebugKotlin     # rychlejší kontrola bez balení APK
+./gradlew :app:publishableBundle      # podepsaný a ověřený AAB pro Play — na rozdíl od bundleRelease bez klíče selže (docs/vydani.md)
 ```
 
 Emulátor (AVD `Pixel_6_API_30`) je vyzkoušený a funkční — `~/Android/Sdk/emulator/emulator -avd
