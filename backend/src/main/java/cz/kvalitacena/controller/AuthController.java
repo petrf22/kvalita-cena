@@ -18,7 +18,7 @@ import java.util.Optional;
 
 /**
  * Passwordless auth (e-mail → OTP kód → token) — jediné REST endpointy v aplikaci, zbytek API
- * je GraphQL (viz plán projektu). Refresh token webového klienta jde VÝHRADNĚ jako httpOnly
+ * je GraphQL. Refresh token webového klienta jde VÝHRADNĚ jako httpOnly
  * cookie, nikdy do těla odpovědi ani do JS paměti — Android ho dostává v těle a ukládá do
  * EncryptedSharedPreferences (docs/soukromi.md).
  */

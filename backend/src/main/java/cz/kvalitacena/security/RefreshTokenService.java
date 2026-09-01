@@ -23,7 +23,7 @@ import java.util.Base64;
 import java.util.UUID;
 
 /**
- * Rotace refresh tokenů s detekcí reuse — viz docs/soukromi.md a plán projektu.
+ * Rotace refresh tokenů s detekcí reuse — viz docs/soukromi.md.
  *
  * <p>Syrový token se NIKDY neukládá, jen jeho SHA-256 hash. Při každém obnovení (rotate) starý
  * token zanikne a vydá se nový ve stejné "rodině" ({@code familyUid}). Použití již jednou

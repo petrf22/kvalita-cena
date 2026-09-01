@@ -23,8 +23,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 /**
- * Passwordless přihlášení: e-mail → OTP kód → token. Viz docs/soukromi.md (§ Passwordless auth)
- * a plán projektu.
+ * Passwordless přihlášení: e-mail → OTP kód → token. Viz docs/soukromi.md (§ Passwordless auth).
  *
  * <p>Request krok NEROZLIŠUJE existující/neexistující e-mail (účet vzniká JIT až při úspěšném
  * ověření) — chování je pro oba případy identické, takže nejde postupně zjišťovat, kdo je

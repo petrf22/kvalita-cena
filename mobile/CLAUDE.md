@@ -39,4 +39,9 @@ spuštění emulátoru, instalaci i logcat automaticky (autodetekuje AVD, `--no-
   `scanner/BarcodeScanner.kt` rozhraní (implementace `ZxingBarcodeScanner`), refresh token jen
   v `EncryptedSharedPreferences` (`auth/TokenStore.kt`), poloha přes obyčejný `LocationManager`
   (`location/LocationHelper.kt`), ne Play Services Fused Location — appka má běžet i bez GMS
+- **ViewModely a obrazovky se automatizovaně netestují** — appka se v nich testuje ručně,
+  checklistem co odklikat. Výjimka je čistá logika bez závislosti na Androidu (validace
+  formulářů, výpočty pro graf, i18n kontrakty) vytažená do vlastního souboru — ta JUnit testy
+  má (`src/test/java/cz/kvalitacena/`, přes deset souborů dnes) a při přidání dalšího nápadu
+  na testovatelnou logiku je žádoucí ji stejně vytáhnout a otestovat.
 - Odsazení 4 mezery (na rozdíl od zbytku monorepa) — viz `.editorconfig`

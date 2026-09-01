@@ -15,7 +15,7 @@ private const val FRESH_LOCATION_MAX_AGE_MS = 5 * 60_000L
 
 /**
  * Obyčejný LocationManager, ne Play Services Fused Location — appka má běžet i bez Google
- * Play Services (stejný důvod jako ZXing místo ML Kit, viz plán projektu). Poloha se použije
+ * Play Services (stejný důvod jako ZXing místo ML Kit, CLAUDE.md, "Konvence"). Poloha se použije
  * jen jako parametr dotazu na nejbližší obchody a nikam se neukládá (docs/soukromi.md
  * v backendu) — volající si výsledek (seznam obchodů) uloží, souřadnice zahodí.
  */

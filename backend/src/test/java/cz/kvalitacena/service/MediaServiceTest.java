@@ -39,8 +39,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Nahrávání fotek jde VÝHRADNĚ na existující záznam (žádné osiřelé uploady), jen přihlášeným,
- * s denním limitem, limitem počtu na záznam a idempotencí podle sha256 — viz plán založení
- * fotek. Viditelnost skryté fotky drží stejné pravidlo jako u zboží/obchodu.
+ * s denním limitem, limitem počtu na záznam a idempotencí podle sha256. Viditelnost skryté
+ * fotky drží stejné pravidlo jako u zboží/obchodu.
  */
 @ExtendWith(MockitoExtension.class)
 class MediaServiceTest {

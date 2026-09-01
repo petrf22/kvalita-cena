@@ -10,7 +10,7 @@ import java.util.UUID;
 /**
  * Jeden refresh token v řetězu rotací. {@code familyUid} je společný pro celou rodinu —
  * při detekci znovupoužití starého tokenu (reuse) se revokuje celá rodina najednou,
- * ne jen jeden token (docs/soukromi.md, plán projektu — Passwordless auth).
+ * ne jen jeden token (docs/soukromi.md, „Passwordless auth").
  */
 @Entity
 @Table(name = "refresh_token", schema = "auth")

@@ -33,7 +33,7 @@ import cz.kvalitacena.R
 import cz.kvalitacena.scanner.BarcodeAnalyzer
 import cz.kvalitacena.scanner.ZxingBarcodeScanner
 
-/** Záložka "Sken" — obrazovky 1/3 flow "sken → cena → výběr provozovny → odeslání" (viz plán projektu). */
+/** Záložka "Sken" — obrazovky 1/3 flow "sken → cena → výběr provozovny → odeslání". */
 @Composable
 fun ScanScreen(onBarcodeDetected: (String) -> Unit) {
   val context = LocalContext.current

@@ -83,7 +83,7 @@ private val QUANTITY_BASIS_LABEL_RES = mapOf(
 private val SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES = listOf("PER_KG", "PER_L", "PER_PIECE")
 
 /**
- * Obrazovky 2–4 flow "sken → cena → výběr provozovny → odeslání" (viz plán projektu). Vstupem
+ * Obrazovky 2–4 flow "sken → cena → výběr provozovny → odeslání". Vstupem
  * je buď naskenovaný kód, nebo id produktu z detailu (tlačítko "Zapsat cenu") — viz
  * [PriceEntryTarget]. `onDone` se volá po úspěšném zápisu i po "zpět" z neznámého kódu; vede
  * vždy tam, odkud se na tuhle obrazovku přišlo (sken nebo detail).

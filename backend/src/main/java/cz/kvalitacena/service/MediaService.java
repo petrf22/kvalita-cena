@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 /**
  * Fotky zboží a provozoven — nahrávají se VÝHRADNĚ na existující záznam (žádné osiřelé
- * uploady, viz plán založení fotek), binární obsah jde přes {@link MediaStorage},
+ * uploady), binární obsah jde přes {@link MediaStorage},
  * zpracování (přeuložení z pixelů, EXIF pryč) přes {@link ImageProcessingService}.
  *
  * <p>Viditelnost skryté fotky řídí stejný predikát jako u produktu/obchodu

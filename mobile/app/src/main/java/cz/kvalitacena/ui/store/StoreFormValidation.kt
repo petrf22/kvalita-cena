@@ -4,8 +4,8 @@ import cz.kvalitacena.ui.common.companyIdDigits
 
 /**
  * Čistá validace formuláře nového obchodu — mimo Compose, ať jde otestovat JUnitem (stejný
- * vzor jako PriceChartGeometry). Kontrolní součet IČO/NIP se tu NEDUPLIKUJE (viz plán projektu)
- * — kontroluje se jen tvar (počet číslic per zemi, docs/lokalizace.md — CompanyId.kt), skutečný
+ * vzor jako PriceChartGeometry). Kontrolní součet IČO/NIP se tu NEDUPLIKUJE — kontroluje se
+ * jen tvar (počet číslic per zemi, docs/lokalizace.md — CompanyId.kt), skutečný
  * kontrolní součet ověří až server (CompanyIdValidator) a volitelně ARES; klient nemá být druhý
  * zdroj pravdy pro totéž pravidlo.
  */

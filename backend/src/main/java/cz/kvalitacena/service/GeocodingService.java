@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Geokódování adresy přes OpenStreetMap Nominatim — VÝHRADNĚ tady na serveru (docs/soukromi.md:
  * dotaz z mobilu/prohlížeče by prozradil Nominatimu přímo IP uživatele). Žádný import POI, jen
- * "adresa → souřadnice" (viz plán projektu). Výsledek se necachuje do core.* ani osm.* — do
+ * "adresa → souřadnice". Výsledek se necachuje do core.* ani osm.* — do
  * core.store se dostane jen lat/lon a osm_ref VYBRANÉHO kandidáta, teprve když ho uživatel
  * potvrdí ve StoreService.create().
  *

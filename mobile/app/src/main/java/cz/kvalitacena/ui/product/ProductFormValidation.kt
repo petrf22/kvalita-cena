@@ -11,9 +11,9 @@ import cz.kvalitacena.network.UpdateProductInput
  * určuje pořadí a druh, o obsah se nezajímá.
  *
  * Zbytek souboru je protějšek editace existujícího zboží (`productFormDefaults`/
- * `netContentForUpdateSubmit`/`buildUpdateProductInput`). Podle rozhodnutí v plánu se pro
- * `mobile/` nové automatizované testy nepíšou (uživatel testuje ručně) — logika je proto co
- * nejtenčí a co nejblíž webovému protějšku, který otestovaný je.
+ * `netContentForUpdateSubmit`/`buildUpdateProductInput`). ViewModely/obrazovky na `mobile/`
+ * se automatizovaně netestují (`mobile/CLAUDE.md`, "Konvence") — logika je proto co nejtenčí a co
+ * nejblíž webovému protějšku, který otestovaný je.
  */
 data class PendingPhotoUpload<T>(val value: T, val kind: String)
 

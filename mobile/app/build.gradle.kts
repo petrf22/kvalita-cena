@@ -138,8 +138,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
 
     // CameraX + ZXing-C++ (Apache-2.0) — ML Kit je proprietární a váže appku na Google Play
-    // Services, viz plán založení projektu. Skener je schovaný za scanner/BarcodeScanner.kt,
-    // aby šla implementace vyměnit, kdyby čtení poškozených kódů dělalo problémy.
+    // Services, což jde proti pravidlu jen svobodných knihoven (CLAUDE.md, "Konvence"). Skener
+    // je schovaný za scanner/BarcodeScanner.kt, aby šla implementace vyměnit, kdyby čtení
+    // poškozených kódů dělalo problémy.
     implementation("androidx.camera:camera-core:1.6.1")
     implementation("androidx.camera:camera-camera2:1.6.1")
     implementation("androidx.camera:camera-lifecycle:1.6.1")
@@ -159,7 +160,7 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.5.0")
 
     // Mapa nad OpenStreetMap (výběr/náhled souřadnic obchodu) — Apache-2.0, stejná licenční
-    // politika jako ZXing/Coil výš (viz plán projektu). Dlaždice se stahují přímo z klienta od
+    // politika jako ZXing/Coil výš. Dlaždice se stahují přímo z klienta od
     // poskytovatele nastaveného výš (KVALITACENA_MAP_TILE_URL, výchozí OpenStreetMap Mapnik),
     // vědomá výjimka z "geokódování jen ze serveru" (docs/soukromi.md) — mapa se proto načte
     // až po explicitním otevření (ui/common/LocationMap.kt), nikdy automaticky.

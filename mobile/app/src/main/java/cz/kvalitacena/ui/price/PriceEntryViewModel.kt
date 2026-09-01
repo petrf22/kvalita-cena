@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 
 private const val STORE_SEARCH_DEBOUNCE_MS = 300L
 
-/** Obrazovky 2–4 flow "sken → cena → výběr provozovny → odeslání" (viz plán projektu). */
+/** Obrazovky 2–4 flow "sken → cena → výběr provozovny → odeslání". */
 class PriceEntryViewModel(
   private val graphQlClient: GraphQlClient,
   private val target: PriceEntryTarget,

@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Kontrolní součet IČO se na klientovi NEDUPLIKUJE (viz plán projektu) — testuje se jen tvar
+ * Kontrolní součet IČO se na klientovi NEDUPLIKUJE — testuje se jen tvar
  * (8 číslic), skutečný kontrolní součet je jen na serveru (IcoValidator).
  */
 class StoreFormValidationTest {

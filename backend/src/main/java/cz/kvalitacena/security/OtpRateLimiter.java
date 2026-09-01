@@ -9,9 +9,10 @@ import java.util.Base64;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * In-memory limity na odesílání OTP kódů (Caffeine — viz plán projektu, bod o Bucket4j licenci).
- * Přežije jen do restartu aplikace, což pro MVP stačí; perzistentní varianta (auth.throttle_counter)
- * je až v3 podle plánu.
+ * In-memory limity na odesílání OTP kódů (Caffeine, ne Bucket4j — vědomá volba kvůli pravidlu
+ * jen svobodných knihoven, CLAUDE.md, "Konvence"). Přežije jen do restartu aplikace, což pro
+ * MVP stačí; perzistentní varianta (`auth.throttle_counter`) je budoucí rozvoj, zatím
+ * nerozhodnuto kdy.
  */
 @Component
 public class OtpRateLimiter {
