@@ -14,8 +14,36 @@ public interface ProductReviewRepository extends JpaRepository<ProductReview, Lo
 
   Optional<ProductReview> findByProductIdAndUserId(Long productId, Long userId);
 
-  /** GDPR export (AccountService) — všechna vlastní hodnocení bez ohledu na produkt. */
+  /** GDPR export (AccountService) — všechna vlastní hodnocení bez ohledu na produkt, bez stránkování. */
   List<ProductReview> findByUserId(Long userId);
+
+  /**
+   * Recenze pod zbožím — jen s textem a neskryté, nejnovější první
+   * (idx_product_review_listing, 2026-09-01/03-product-review-text.yaml).
+   */
+  @Query(value = "SELECT * FROM core.product_review WHERE product_id = :productId "
+      + "AND text IS NOT NULL AND hidden_at IS NULL "
+      + "ORDER BY created_at DESC LIMIT :limit OFFSET :offset", nativeQuery = true)
+  List<ProductReview> findVisibleTextsByProduct(@Param("productId") Long productId,
+      @Param("limit") int limit, @Param("offset") int offset);
+
+  @Query("select count(r) from ProductReview r "
+      + "where r.productId = :productId and r.text is not null and r.hiddenAt is null")
+  long countVisibleTextsByProduct(@Param("productId") Long productId);
+
+  /** Product.reviewCount v dávce (@BatchMapping) — stejný filtr jako {@link #countVisibleTextsByProduct}. */
+  @Query("select r.productId as productId, count(r) as count from ProductReview r "
+      + "where r.productId in :productIds and r.text is not null and r.hiddenAt is null "
+      + "group by r.productId")
+  List<ReviewCountRow> countVisibleTextsByProducts(@Param("productIds") Collection<Long> productIds);
+
+  /** "Moje recenze" (MyContributionsService) — jen vlastní, s textem, i skryté (autor vidí proč zmizely). */
+  @Query(value = "SELECT * FROM core.product_review WHERE user_id = :userId AND text IS NOT NULL "
+      + "ORDER BY created_at DESC LIMIT :limit OFFSET :offset", nativeQuery = true)
+  List<ProductReview> findTextsByUser(@Param("userId") Long userId, @Param("limit") int limit,
+      @Param("offset") int offset);
+
+  long countByUserIdAndTextIsNotNull(Long userId);
 
   @Query("select r.productId as productId, avg(r.stars) as average, count(r) as count "
       + "from ProductReview r where r.productId in :productIds group by r.productId")
@@ -50,5 +78,11 @@ public interface ProductReviewRepository extends JpaRepository<ProductReview, Lo
     Long getProductId();
 
     short getStars();
+  }
+
+  interface ReviewCountRow {
+    Long getProductId();
+
+    long getCount();
   }
 }

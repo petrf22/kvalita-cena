@@ -1,0 +1,52 @@
+# 03-product-review-text.yaml — doplňuje core.product_review o volitelný text (max 1000
+# znaků), čas jeho poslední úpravy a skrytí moderací. Text je nepovinné pole HODNOCENÍ, ne
+# samostatná entita — stars zůstává NOT NULL, takže text bez hvězdiček nejde zapsat ani
+# obejitím API. UNIQUE (product_id, user_id) a ON DELETE CASCADE z 2026-08-05 zůstávají beze
+# změny, takže "smazání účtu smaže i text recenze" platí zadarmo.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-01-03-product-review-text
+      author: Petr F.
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: product_review
+            columns:
+              - column:
+                  name: text
+                  type: TEXT
+              - column:
+                  # NEHÝBE se při pouhé změně hvězdiček (na rozdíl od updated_at) — klient
+                  # podle něj pozná štítek "upraveno" u textu, ne podle updated_at.
+                  name: text_updated_at
+                  type: TIMESTAMPTZ
+              - column:
+                  # Skrytí po nahlášení (core.record_flag, RecordType.REVIEW) — stejný vzor
+                  # jako core.media.hidden_at.
+                  name: hidden_at
+                  type: TIMESTAMPTZ
+        - sql:
+            sql: |
+              ALTER TABLE core.product_review
+                ADD CONSTRAINT chk_product_review_text_length
+                CHECK (char_length(text) <= 1000);
+
+              -- Výpis recenzí pod zbožím vždy filtruje přesně takhle (jen s textem, neskryté) —
+              -- partial index nese jen řádky, které se skutečně vypisují (vzor
+              -- idx_media_record z 2026-08-08/01-media.yaml).
+              CREATE INDEX idx_product_review_listing ON core.product_review (product_id, created_at DESC)
+                WHERE text IS NOT NULL AND hidden_at IS NULL;
+      rollback:
+        - sql:
+            sql: |
+              DROP INDEX core.idx_product_review_listing;
+
+              ALTER TABLE core.product_review
+                DROP CONSTRAINT chk_product_review_text_length;
+        - dropColumn:
+            schemaName: core
+            tableName: product_review
+            columns:
+              - column: { name: hidden_at }
+              - column: { name: text_updated_at }
+              - column: { name: text }
