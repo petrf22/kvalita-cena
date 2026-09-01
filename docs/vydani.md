@@ -87,7 +87,7 @@ popis appky viz „Texty pro store listing" níže.
 
 ### Texty pro store listing
 
-Návrh, k doplnění/úpravě přímo ve formuláři Play Console — drží se jen toho, co appka v etapě 1
+Návrh, k doplnění/úpravě přímo ve formuláři Play Console — drží se jen toho, co appka dnes
 skutečně umí (`docs/stav-implementace.md`), nic nepřislibuje dopředu (recenze, lokální
 dodavatelé apod. ještě nejsou).
 
@@ -145,8 +145,8 @@ zápis ceny/založení záznamu.
 
 ### Play App Signing
 
-**Zastaralé, viz níž — původní plán počítal s volbou, kterou Play Console u nových appek
-(`cz.kvalitacena` založena 2026-08-21) už nenabízí.** Doporučení bylo vygenerovat klíč lokálně
+**Zastaralé, viz níž — dřívější doporučení počítalo s volbou, kterou Play Console u nových
+appek (`cz.kvalitacena` založena 2026-08-21) už nenabízí.** Doporučení bylo vygenerovat klíč lokálně
 a nahrát ho do Play App Signing přes PEPK („use your own signing key"), místo aby Google
 generoval a držel klíč sám — důvod: appka se má distribuovat i mimo Play (přímé APK
 z `kvalitacena.cz`, F-Droid), bez vlastního klíče má dvě různé identity pod jedním balíčkem
@@ -255,7 +255,7 @@ Play od **31. 8. 2026** odmítá nové aplikace i aktualizace s nižším cílov
 build.gradle.kts`. **16 KB stránky jsou ověřené jako v pořádku** — všechny nativní knihovny
 v APK (`libzxingcpp_android.so`, CameraX, `androidx.graphics.path`) mají LOAD zarovnání
 `0x4000`. `MainActivity.kt` už volá `enableEdgeToEdge()`; zbývá projít insety a predictive back
-vizuálně na emulátoru s API 36 (viz Ověření v plánu migrace repa).
+vizuálně na emulátoru s API 36 — ruční ověření, dosud neudělané.
 
 ## Release konfigurace `mobile/`
 

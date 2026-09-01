@@ -132,7 +132,7 @@ přes provozovny).
 
 ### Recenze (další rozvoj, zatím neimplementováno): autorizace je predikát v dotazu, ne filtr v resolveru
 
-Recenze, skupiny důvěry a `ViewerContext` v etapě 1 vůbec neexistují (žádné entity, žádné
+Recenze, skupiny důvěry a `ViewerContext` dnes vůbec neexistují (žádné entity, žádné
 tabulky) — až budou, platí tohle:
 
 Viditelnost `PUBLIC`/`GROUPS`/`PRIVATE` se vynucuje výhradně v `ReviewQueryService`
@@ -163,10 +163,10 @@ jakoukoli změnou v katalogu/cenách:
 
 ### Reputace: vzorce jsou jen v `docs/reputace.md`
 
-**Stav v etapě 1**: implementovaná je jen složka `L` v `PriceAggregationService.weightFor()`
+**Stav v MVP**: implementovaná je jen složka `L` v `PriceAggregationService.weightFor()`
 (anonym 0,15 / registrovaný 1,00) a vážený medián samotný. Plný vzorec `S` (přesnost ×
 zkušenost × stáří účtu × úroveň identity × penalizace), `f_conf`/`f_evid`/`f_recency`/`f_group`,
-`ReputationService` a `core.access_policy` jsou cílový stav pro etapu 2/3 — až se budou psát,
+`ReputationService` a `core.access_policy` jsou cílový stav pro další rozvoj — až se budou psát,
 prahy patří do `docs/reputace.md`, ne rozeseté po kódu jako vlastní konstanty na více místech.
 Klíčové už teď: souhlas (až bude implementovaný) se musí počítat **leave-one-out** (medián bez
 vlastního záznamu uživatele), jinak si osamělý přispěvatel vždy "potvrdí sám sebe".

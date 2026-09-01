@@ -207,7 +207,7 @@ jen vlastník), takže appka se dál nechová jako appka, co si říká o jméno
   audience)` = pole je pro to publikum vidět) nezávisle na tom, jestli je celkový režim
   `PUBLIC`, nebo `FRIENDS` — `UserProfileService.isFieldVisible` je jediné místo pravdy.
   Vlastník vidí přes `me`/`Viewer.profile` vždy úplně vše, filtr se na něj neaplikuje.
-- **Skupiny důvěry (přátelé) v etapě 1 neexistují** (`docs/datovy-model.md`), takže řádky
+- **Skupiny důvěry (přátelé) zatím neexistují** (`docs/datovy-model.md`), takže řádky
   s `audience = FRIENDS` se zatím nikdy neuplatní — to je očekávané, ne chyba. Odkazy na
   "seznam přátel", "hodnocení přáteli" apod. v UI jsou zatím jen `Připravujeme` placeholdery
   bez vlastní logiky.

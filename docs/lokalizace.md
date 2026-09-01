@@ -13,7 +13,7 @@ jazyků, mapu země→měna→locale a pravidla překladu — obdoba toho, čím
 | Slovenčina | `sk` | SK | EUR | |
 | English | `en` | — | — | bez vlastní výchozí země/měny, appka se jím dá používat odkudkoli |
 | Polski | `pl` | PL | PLN | |
-| Deutsch | `de` | DE | EUR | přidáno etapou 2 plánu expanze (2026-08) — pokrývá i AT/CH (`country-locale`) |
+| Deutsch | `de` | DE | EUR | přidáno vlnou expanze 2 (2026-08) — pokrývá i AT/CH (`country-locale`) |
 
 Mapa `country → currency` a `country → locale` je na backendu `app.i18n.*`
 (`application.yml`, `I18nProperties`) — jediné místo, které ji zná; frontend/mobil mají jen
@@ -185,7 +185,7 @@ jakkoli měnilo, v čem se cena **hlásí** (pořád jen CZK/EUR/PLN podle `stor
 stahuje `ExchangeRateSyncService` denně z veřejného API ČNB (`https://api.cnb.cz/cnbapi`) do
 vlastního schématu `fx.exchange_rate` — vedle `core`/`agg`, ne v nich, protože je to externí,
 kdykoli znovu stažitelná data (stejný důvod jako `off`/`osm`), ale na rozdíl od nich appka do
-`fx.*` sama **píše** (plánovaná úloha uvnitř appky, ne read-only sync cizích dat).
+`fx.*` sama **píše** (`ExchangeRateSyncService` běží denně, ne read-only sync cizích dat).
 
 - **CZK je pivot, ne řádek v tabulce.** ČNB kótuje kurzy vůči koruně, `fx.exchange_rate` proto
   CZK vůbec neobsahuje — křížový kurz (`FxRateService.convert`) jde vždy `from → CZK → to`.
@@ -274,7 +274,7 @@ stromu — doplnit řádky a přidat další Liquibase changeset ve stejném vzo
 
 ### Handle: strukturovaně kvůli gramatickému rodu
 
-„Modrý čáp" vs. „Modrá liška" — v cs/sk/pl (a od etapy 2 i `de`) se přídavné jméno ohýbá podle
+„Modrý čáp" vs. „Modrá liška" — v cs/sk/pl (a od vlny expanze 2 i `de`) se přídavné jméno ohýbá podle
 rodu podstatného, takže appka neukládá hotový řetězec, ale `handle_adjective`/`handle_noun`/
 `handle_number` + `Gender` (`HandleGenerator`). `public_handle` zůstává kanonický, jazykově
 neutrální klíč (`blue-stork-4271`) pro unikátnost — ta se musí kontrolovat nad kanonickým

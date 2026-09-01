@@ -356,7 +356,7 @@ položku po zápisu ceny rovnou překlopí na `ACTIVE` (`ProductCatalogService.p
 je slabší důkaz totožnosti zboží než u položky s kódem, i kdyby se na ceně shodlo hodně lidí.
 
 **Tohle vědomě NENÍ multiplikativní faktor váhy jednotlivého záznamu** (uvažovaný a zavržený
-`f_catalog` z plánu založení projektu). Agregace běží vždy uvnitř buňky `(produkt, obchod)` a
+`f_catalog`). Agregace běží vždy uvnitř buňky `(produkt, obchod)` a
 faktor odvozený z produktu by byl v celé buňce konstantní — jak vážený medián, tak Kishovo
 `n_eff = (Σw)²/Σw²` jsou vůči přeškálování **všech** vah v buňce stejným číslem invariantní,
 takže by `agg.price_current` vyšlo bit po bitu stejně jako bez něj. Efekt "bezkódové zboží je

@@ -1,7 +1,7 @@
 # Lokální AI
 
 Tento dokument popisuje **cílový stav**, ne implementaci — stejně jako `docs/reputace.md` v částech
-za etapu 1. Nic z tohohle ještě není napsané: žádná migrace, žádné schéma, žádný worker. Účel
+za MVP. Nic z tohohle ještě není napsané: žádná migrace, žádné schéma, žádný worker. Účel
 dokumentu je mít jedno místo, kam patří rozhodnutí o roli AI v appce, než se první úloha vůbec
 začne psát — ať se neroztroušou po kódu jako vlastní konstanty na víc místech (stejný důvod,
 proč jsou vzorce reputace jen v `docs/reputace.md`).

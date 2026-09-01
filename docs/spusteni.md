@@ -113,9 +113,9 @@ nesedí — ty se zapisují přes appku, viz níže.
 
 Ověření: `SELECT count(*) FROM core.product;` by mělo vrátit `6`.
 
-## 4. Přihlášení (OTP) — jak se v etapě 1 dozvíš kód
+## 4. Přihlášení (OTP) — jak lokálně zjistíš kód
 
-Aplikace je passwordless: zadáš e-mail, dostaneš 6místný kód, kódem se přihlásíš. V etapě 1 je
+Aplikace je passwordless: zadáš e-mail, dostaneš 6místný kód, kódem se přihlásíš. Lokálně je
 `app.auth.otp.mail-enabled: false` — **žádný e-mail se neposílá**, kód se jen vypíše do konzole
 backendu:
 

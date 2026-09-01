@@ -1,7 +1,7 @@
 # Přehled dokumentace
 
 Rozcestník po dokumentech v `docs/` — účel, publikum, charakter a co je pro daný dokument
-zdroj pravdy. Charakter je jedna ze čtyř hodnot:
+zdroj pravdy. Charakter je jedna z pěti hodnot:
 
 - **živý stav** — mění se s kódem, může zastarat, pokud se zapomene aktualizovat spolu se
   změnou.
@@ -9,6 +9,8 @@ zdroj pravdy. Charakter je jedna ze čtyř hodnot:
   ne s každým commitem.
 - **plán** — cílový stav, který zatím není napsaný jako kód.
 - **runbook** — postup pro člověka, který ho provádí ručně.
+- **právní text** — platné znění; předchozí verze jsou v historii souboru, ne v samostatných
+  dokumentech.
 
 Dokument může nést víc charakterů zároveň (typicky rozhodnutí + živý stav vedle sebe pod
 sufixem jako „MVP“) — to je u dokumentů níž vyznačené.

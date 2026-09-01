@@ -37,7 +37,7 @@ cd frontend && npm install && npm start           # web na :4200
 
 Ruční build mobilní appky (Android): `cd mobile && ./gradlew :app:assembleDebug`.
 
-Podrobný návod — přihlášení (OTP kód se v etapě 1 čte z logu backendu), GraphiQL dotazy, spuštění
+Podrobný návod — přihlášení (OTP kód se lokálně čte z logu backendu), GraphiQL dotazy, spuštění
 mobilu v emulátoru a řešení běžných potíží — je v [`docs/spusteni.md`](docs/spusteni.md).
 Podrobnosti k vývoji a architektuře jsou v [`CLAUDE.md`](CLAUDE.md).
 

@@ -89,7 +89,7 @@ na provozovatele je nepovinné IČO (`Store.ico` + `ico_verified_at`, ověřovan
 skutečné přiřazení účtu k provozovně. Zapsat jako předpoklad k dořešení, ne jako hotovou věc.
 
 Souvislost s lokálními dodavateli (`core.supplier`/`core.supplier_offer`,
-`docs/datovy-model.md`, „Co ještě není v etapě 1") — „brambory na náměstí ve středu" je přesně
+`docs/datovy-model.md`, „Co ještě není implementováno") — „brambory na náměstí ve středu" je přesně
 tenhle případ. Až se bude navrhovat jedno nebo druhé, řešit oba nápady společně, ať nevznikají
 dvě podobné datové struktury vedle sebe.
 

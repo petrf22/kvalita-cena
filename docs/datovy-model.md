@@ -126,7 +126,7 @@ takže je potřeba cílený přepočet konkrétních buněk (`product_id, store_
 celé view. Při milionech observací by `REFRESH MATERIALIZED VIEW` bylo o řády dražší než
 fronta + upsert nad změněnými buňkami. `agg.recompute_queue` zatím nezná `day` — přepočet
 denní řady tedy vždy smaže a znovu spočítá celou historii buňky (`product_id, store_id`),
-ne jen změněný den. Pro objemy etapy 1 v pořádku; až přepočet začne měřitelně trvat, signál
+ne jen změněný den. Pro dnešní objemy v pořádku; až přepočet začne měřitelně trvat, signál
 je přidat nullable `day` do fronty (`NULL` = přepočítat vše), ne to řešit preventivně teď.
 
 Čtení grafu je vždy z `agg.*`, nikdy ze syrových `core.price_observation` — index-only
@@ -157,7 +157,7 @@ apod.), je to signál k přehodnocení, ne důvod sahat po PostGIS hned teď.
 
 ## Identita provozovny
 
-Do etapy 1 vstupovaly obchody do appky jen dvěma cestami: `nearbyStores` (nutná poloha) nebo
+Dřív vstupovaly obchody do appky jen dvěma cestami: `nearbyStores` (nutná poloha) nebo
 seed. Kdo nechce sdílet polohu, nebo zapisuje ceny zpětně doma, potřebuje třetí cestu —
 napsat název/město a obchod ručně dohledat nebo založit (`searchStores`, `createStore`,
 `StoreService`). Tři rozhodnutí za tím:
@@ -208,7 +208,7 @@ kandidátů, nikdy jako chyba: založení obchodu bez souřadnic musí projít i
 
 `core.product_quality_rating` (`2026-08-05/01-product-quality-rating.yaml`,
 `2026-08-30/01-quality-stars.yaml`) je vědomě minimální předstupeň k `core.product_review`
-z etapy 2: jen `stars SMALLINT CHECK (1–5)` (5 nejlepší; sloupec se dřív jmenoval `grade` a
+z dalšího rozvoje: jen `stars SMALLINT CHECK (1–5)` (5 nejlepší; sloupec se dřív jmenoval `grade` a
 škála byla obrácená jako školní známka, viz `docs/reputace.md`) na dvojici
 `(product_id, user_id)`, žádný text, žádná viditelnost `PUBLIC`/`GROUPS`/`PRIVATE`,
 žádný `ViewerContext`. Jedno hodnocení na uživatele a produkt vynucuje `UNIQUE (product_id,
@@ -246,7 +246,7 @@ vyhodnocovací pravidlo zatím není známé, proto se zatím nepíše, jen dato
 
 | Sloupec | Význam |
 |---|---|
-| `verified_at` | Job uznal záznam za globální/ověřený. `NULL` ⇒ klient zobrazí štítek "neověřeno" — v etapě 1 tedy úplně všechno kromě seedu, to je očekávaný stav, ne chyba. |
+| `verified_at` | Job uznal záznam za globální/ověřený. `NULL` ⇒ klient zobrazí štítek "neověřeno" — dnes tedy úplně všechno kromě seedu, to je očekávaný stav, ne chyba. |
 | `processed_at` | Job se na patch/záznam podíval. Zpracováno ≠ uznáno za globální — odlišné od `verified_at`. Každá další úprava patche `processed_at` vynuluje (`CatalogEditService`), protože dřívější zpracování se týkalo starého obsahu. |
 | `hidden_at` | Skryto po nahlášení (`core.record_flag`, viz `docs/reputace.md`), čeká na přezkum. Vidí ho jen autor. |
 
