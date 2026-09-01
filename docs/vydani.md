@@ -375,6 +375,10 @@ skutečný `versionCode` (`500`), ne na `0`.
 ## Co vydání pořád blokuje
 
 Produkční backend běží od 2026-08-24, appka je nahraná a funkčně ověřená v Internal testing
-(viz „Cesta do produkce" výš) — jediné, co teď brání produkčnímu vydání appky na Play, je
-**uzavřený test s 12 testery po dobu 14 dní**, viz tamtéž. Než se sežene 12 lidí, appku jinak
-nic nebrzdí.
+(viz „Cesta do produkce" výš) — jediné, co teď brání **způsobilosti appky na Play Console**
+(tj. přechodu z Internal testing na produkční track), je **uzavřený test s 12 testery po dobu
+14 dní**, viz tamtéž. Než se sežene 12 lidí, appku na Play jinak nic nebrzdí.
+
+Tohle je jen podmínka Play Console, ne celkový checklist veřejného spuštění appky — širší
+provozní připravenost (SMTP, obrana proti spamu, indexace, ...) sleduje samostatně
+`docs/nasazeni.md`, „Zbývá".

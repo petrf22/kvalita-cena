@@ -8,7 +8,7 @@ tenhle dokument produkční hosting backendu a webu).
 
 Odškrtávej rovnou v tomhle souboru a commituj. Naprostá většina souboru je dnes hotová a
 ověřená (odškrtnuté položky se schválně nemažou — jsou to i záznamy CO a KDY bylo rozhodnuto/
-ověřeno) — **aktivně nehotové jsou jen tři položky ze sekcí níž, shrnuté tady:**
+ověřeno) — **aktivně nehotové jsou jen položky ze sekcí níž, shrnuté tady:**
 
 ## Zbývá
 
@@ -51,6 +51,17 @@ ověřeno) — **aktivně nehotové jsou jen tři položky ze sekcí níž, shrn
      Přihlášený odesílatel má vždy skóre 0 (prošel OTP, má vlastní limit).
 - [ ] Po spuštění bety sledovat, kolik bezkódového zboží uvízne v DRAFTu (sekce 4) —
   anonymní zápisy se od teď do prahu potvrzení nepočítají (`docs/reputace.md`).
+- [ ] **Před spuštěním veřejného provozu doplnit předfiltr fotek pro moderaci** (`docs/ai.md`,
+  „Čtyři úlohy a jejich pořadí") — dnes žádný kód, jen rozhodnutí v docs. `docs/ai.md` ho sám
+  označuje za předpoklad veřejného provozu (kapacita moderace jednoho člověka), ale dřív tu
+  chyběl — nebyl vidět mezi ostatními blokátory.
+- [ ] **Nastavit retenci provozních/access logů** — appka dnes nemá definovanou politiku pro
+  obecné logy (kontejnerový `stdout`, žádná `docker logging` konfigurace v
+  `compose.prod.yaml`, Caddy bez access logu). IP data pro rate limiting (OTP, feedback) jsou
+  jiná věc a mají krátkou životnost v paměti (`OtpRateLimiter`/`FeedbackRateLimiter`, nejvýš
+  1 hodina, nepřežije restart) — ale širší provozní logy zatím ne. Doplnit před veřejnou
+  betou, ať `docs/zasady-ochrany-osobnich-udaju.md` může slíbit konkrétní číslo místo
+  „krátkodobě".
 
 Zbytek dokumentu jsou dokončené kroky s datem rozhodnutí/ověření — hodí se jako runbook, kdyby
 se stejný postup dělal znovu (nový server, obnova po havárii), ne jako aktuální TODO list.
