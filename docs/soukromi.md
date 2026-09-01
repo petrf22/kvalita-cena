@@ -330,9 +330,10 @@ Export a výmaz (`AccountService`, `AccountController`) jsou hotové — REST to
 - Plánovaná AI (`docs/ai.md`) běží lokálně u provozovatele, ne přes cloudové API — jinak by tahle
   věta neplatila.
 
-**Neimplementováno**: appka výmaz účtu nabízí v UI na webu (`features/profile`), na mobilu
-zatím ne. Export (`GET /api/me/export`) nenabízí v UI žádný klient — jen na kontaktní e-mail,
-ručně (viz `docs/zasady-ochrany-osobnich-udaju.md`, „Tvá práva").
+Výmaz účtu appka v UI nabízí na obou klientech (web `features/profile`, mobil
+`ui/profile/ProfileScreen.kt` — dvoukrokový OTP dialog stejným tokem jako web).
+**Neimplementováno** zůstává export: `GET /api/me/export` nenabízí v UI žádný klient — jen na
+kontaktní e-mail, ručně (viz `docs/zasady-ochrany-osobnich-udaju.md`, „Tvá práva").
 
 ## Otevřená rizika / co hlídat
 
