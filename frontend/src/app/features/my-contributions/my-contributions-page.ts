@@ -1,4 +1,5 @@
 import { Component, WritableSignal, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
   TranslocoDirective,
@@ -11,12 +12,19 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { NzListModule } from 'ng-zorro-antd/list';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
+import { NzRateModule } from 'ng-zorro-antd/rate';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { Observable } from 'rxjs';
 import { Viewer } from '../../models/auth';
-import { MyEditItem, MyObservationItem, MyProductItem, MyStoreItem } from '../../models/catalog';
+import {
+  MyEditItem,
+  MyObservationItem,
+  MyProductItem,
+  MyReviewItem,
+  MyStoreItem,
+} from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
 import { FormatService } from '../../services/format-service';
 import { MyContributionsService } from '../../services/my-contributions-service';
@@ -98,6 +106,7 @@ function createSection<T>(fetch: Section<T>['fetch']): Section<T> {
 @Component({
   selector: 'app-my-contributions-page',
   imports: [
+    FormsModule,
     RouterLink,
     TranslocoDirective,
     TranslocoPipe,
@@ -106,6 +115,7 @@ function createSection<T>(fetch: Section<T>['fetch']): Section<T> {
     NzEmptyModule,
     NzListModule,
     NzPaginationModule,
+    NzRateModule,
     NzSpinModule,
     NzTabsModule,
     NzTagModule,
@@ -140,6 +150,9 @@ export class MyContributionsPage {
   protected readonly edits = createSection<MyEditItem>((first, offset) =>
     this.myContributionsService.myEdits(first, offset),
   );
+  protected readonly reviews = createSection<MyReviewItem>((first, offset) =>
+    this.myContributionsService.myReviews(first, offset),
+  );
 
   protected readonly priceKindKeys = PRICE_KIND_KEYS;
   protected readonly recordTypeKeys = RECORD_TYPE_KEYS;
@@ -152,6 +165,7 @@ export class MyContributionsPage {
       this.load(this.stores);
       this.load(this.observations);
       this.load(this.edits);
+      this.load(this.reviews);
     }
   }
 

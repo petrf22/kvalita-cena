@@ -7,14 +7,17 @@
     "products": "Produkty",
     "stores": "Sklepy",
     "observations": "Ceny",
-    "edits": "Edycje"
+    "edits": "Edycje",
+    "reviews": "Recenzje"
   },
   "empty": {
     "products": "Nie dodałeś/aś jeszcze żadnego produktu.",
     "stores": "Nie dodałeś/aś jeszcze żadnego sklepu.",
     "observations": "Nie zapisałeś/aś jeszcze żadnej ceny.",
-    "edits": "Nie edytowałeś/aś jeszcze cudzego wpisu."
+    "edits": "Nie edytowałeś/aś jeszcze cudzego wpisu.",
+    "reviews": "Nie napisałeś/aś jeszcze żadnej recenzji."
   },
+  "reviewHidden": "Ukryte po zgłoszeniu",
   "loadFailed": "Nie udało się wczytać listy. Spróbuj ponownie.",
   "createdAtLabel": "Dodano",
   "updatedAtLabel": "Edytowano",

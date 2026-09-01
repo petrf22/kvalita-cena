@@ -7,14 +7,17 @@
     "products": "Zboží",
     "stores": "Obchody",
     "observations": "Ceny",
-    "edits": "Úpravy"
+    "edits": "Úpravy",
+    "reviews": "Recenze"
   },
   "empty": {
     "products": "Zatím jsi nezaložil/a žádné zboží.",
     "stores": "Zatím jsi nezaložil/a žádný obchod.",
     "observations": "Zatím jsi nezapsal/a žádnou cenu.",
-    "edits": "Zatím jsi neupravil/a žádný cizí záznam."
+    "edits": "Zatím jsi neupravil/a žádný cizí záznam.",
+    "reviews": "Zatím jsi nenapsal/a žádnou recenzi."
   },
+  "reviewHidden": "Skryto po nahlášení",
   "loadFailed": "Výpis se nepodařilo načíst. Zkus to prosím znovu.",
   "createdAtLabel": "Založeno",
   "updatedAtLabel": "Upraveno",

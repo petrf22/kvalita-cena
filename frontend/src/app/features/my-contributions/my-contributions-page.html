@@ -134,7 +134,9 @@
                   <span class="item-date">({{ item.observedAt | relativeDate }})</span>
                   @if (item.promoValidTo) {
                     <span class="item-date">{{
-                      t('my-contributions.promoValidUntil', { date: format.date(item.promoValidTo) })
+                      t('my-contributions.promoValidUntil', {
+                        date: format.date(item.promoValidTo),
+                      })
                     }}</span>
                   }
                 </div>
@@ -204,6 +206,47 @@
             [nzPageSizeOptions]="pageSizeOptions"
             (nzPageIndexChange)="onPageIndexChange(edits, $event)"
             (nzPageSizeChange)="onPageSizeChange(edits, $event)"
+          />
+        }
+      </nz-tab>
+
+      <nz-tab [nzTitle]="t('my-contributions.tabs.reviews')">
+        @if (reviews.error()) {
+          <nz-alert nzType="error" [nzMessage]="reviews.error()" nzShowIcon class="section-alert" />
+        }
+        @if (reviews.loading() && reviews.items().length === 0) {
+          <nz-spin />
+        } @else if (reviews.items().length === 0) {
+          <nz-empty [nzNotFoundContent]="t('my-contributions.empty.reviews')" />
+        } @else {
+          <nz-list>
+            @for (item of reviews.items(); track item.product.id + item.createdAt) {
+              <nz-list-item>
+                <div class="item-main">
+                  <a [routerLink]="['/product', item.product.id]">{{ item.product.name }}</a>
+                  <nz-rate [ngModel]="item.stars" nzDisabled class="review-stars" />
+                  @if (item.hidden) {
+                    <nz-tag nzColor="red">{{ t('my-contributions.reviewHidden') }}</nz-tag>
+                  }
+                  <span class="item-date">
+                    {{ t('my-contributions.createdAtLabel') }} {{ item.createdAt | relativeDate }}
+                  </span>
+                </div>
+                <p class="review-text">{{ item.text }}</p>
+              </nz-list-item>
+            }
+          </nz-list>
+        }
+        @if (reviews.totalCount() > 0) {
+          <nz-pagination
+            class="section-pagination"
+            [nzPageIndex]="reviews.pageIndex()"
+            [nzPageSize]="reviews.pageSize()"
+            [nzTotal]="reviews.totalCount()"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="pageSizeOptions"
+            (nzPageIndexChange)="onPageIndexChange(reviews, $event)"
+            (nzPageSizeChange)="onPageSizeChange(reviews, $event)"
           />
         }
       </nz-tab>

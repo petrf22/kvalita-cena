@@ -7,14 +7,17 @@
     "products": "Produkte",
     "stores": "Geschäfte",
     "observations": "Preise",
-    "edits": "Bearbeitungen"
+    "edits": "Bearbeitungen",
+    "reviews": "Rezensionen"
   },
   "empty": {
     "products": "Du hast noch kein Produkt angelegt.",
     "stores": "Du hast noch kein Geschäft angelegt.",
     "observations": "Du hast noch keinen Preis erfasst.",
-    "edits": "Du hast noch keinen fremden Eintrag bearbeitet."
+    "edits": "Du hast noch keinen fremden Eintrag bearbeitet.",
+    "reviews": "Du hast noch keine Rezension geschrieben."
   },
+  "reviewHidden": "Nach Meldung ausgeblendet",
   "loadFailed": "Die Liste konnte nicht geladen werden. Bitte versuche es erneut.",
   "createdAtLabel": "Angelegt",
   "updatedAtLabel": "Bearbeitet",

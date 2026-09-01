@@ -21,6 +21,7 @@ import type {
   MyEditsQuery,
   MyObservationsQuery,
   MyProductsQuery,
+  MyReviewsQuery,
   MyStoresQuery,
   PhotoFieldsFragment,
   PriceCurrentFieldsFragment,
@@ -150,6 +151,9 @@ export type MyProductItem = MyProductsQuery['myProducts']['items'][number];
 export type MyStoreItem = MyStoresQuery['myStores']['items'][number];
 export type MyObservationItem = MyObservationsQuery['myObservations']['items'][number];
 export type MyEditItem = MyEditsQuery['myEdits']['items'][number];
+
+/** Vlastní recenze s textem — na rozdíl od ProductReview i skryté moderací (autor vidí proč). */
+export type MyReviewItem = MyReviewsQuery['myReviews']['items'][number];
 
 /** Fronta k přezkumu (docs/reputace.md, "Moderace") — jen moderátor (T4). */
 export type FlaggedRecordItem = FlaggedRecordsQuery['flaggedRecords']['items'][number];

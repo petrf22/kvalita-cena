@@ -7,14 +7,17 @@
     "products": "Products",
     "stores": "Stores",
     "observations": "Prices",
-    "edits": "Edits"
+    "edits": "Edits",
+    "reviews": "Reviews"
   },
   "empty": {
     "products": "You haven't added any products yet.",
     "stores": "You haven't added any stores yet.",
     "observations": "You haven't logged any prices yet.",
-    "edits": "You haven't edited anyone else's record yet."
+    "edits": "You haven't edited anyone else's record yet.",
+    "reviews": "You haven't written any review yet."
   },
+  "reviewHidden": "Hidden after reports",
   "loadFailed": "Couldn't load the list. Please try again.",
   "createdAtLabel": "Added",
   "updatedAtLabel": "Edited",

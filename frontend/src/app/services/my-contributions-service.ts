@@ -5,9 +5,9 @@ import { graphql } from '../models/generated';
 
 /**
  * "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty") — vlastní
- * založené zboží/obchody, vlastní zapsané ceny a vlastní úpravy cizích záznamů, každý se
- * stavem zveřejnění (`PublicationStatusFields`, graphql-fragments.ts). Všechny čtyři dotazy
- * vyžadují přihlášení (`error.contributions.requiresLogin`).
+ * založené zboží/obchody, vlastní zapsané ceny, vlastní úpravy cizích záznamů a vlastní
+ * recenze, každý se stavem zveřejnění (`PublicationStatusFields`, graphql-fragments.ts).
+ * Všech pět dotazů vyžaduje přihlášení (`error.contributions.requiresLogin`).
  */
 @Injectable({ providedIn: 'root' })
 export class MyContributionsService {
@@ -113,5 +113,27 @@ export class MyContributionsService {
       }
     `);
     return this.graphQl.execute(document, { first, offset }).pipe(map((data) => data.myEdits));
+  }
+
+  /** Vlastní recenze s textem — na rozdíl od `ProductService.productReviews` i skryté moderací (autor vidí proč). */
+  myReviews(first = 20, offset = 0) {
+    const document = graphql(`
+      query MyReviews($first: Int, $offset: Int) {
+        myReviews(first: $first, offset: $offset) {
+          totalCount
+          items {
+            stars
+            text
+            createdAt
+            updatedAt
+            hidden
+            product {
+              ...ProductSummaryFields
+            }
+          }
+        }
+      }
+    `);
+    return this.graphQl.execute(document, { first, offset }).pipe(map((data) => data.myReviews));
   }
 }

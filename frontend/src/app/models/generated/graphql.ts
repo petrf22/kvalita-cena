@@ -508,6 +508,14 @@ export type MyEditsQueryVariables = Exact<{
 
 export type MyEditsQuery = { myEdits: { totalCount: number, items: Array<{ recordType: RecordType, updatedAt: string, changedFields: Array<string>, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }> } };
 
+export type MyReviewsQueryVariables = Exact<{
+  first?: number | null | undefined;
+  offset?: number | null | undefined;
+}>;
+
+
+export type MyReviewsQuery = { myReviews: { totalCount: number, items: Array<{ stars: number, text: string, createdAt: string, updatedAt: string | null, hidden: boolean, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } }> } };
+
 export type SearchProductsQueryVariables = Exact<{
   query: string;
   storeId?: string | null | undefined;
@@ -1804,6 +1812,48 @@ fragment PublicationStatusFields on PublicationStatus {
   confirmationsRequired
   verified
 }`) as unknown as TypedDocumentString<MyEditsQuery, MyEditsQueryVariables>;
+export const MyReviewsDocument = new TypedDocumentString(`
+    query MyReviews($first: Int, $offset: Int) {
+  myReviews(first: $first, offset: $offset) {
+    totalCount
+    items {
+      stars
+      text
+      createdAt
+      updatedAt
+      hidden
+      product {
+        ...ProductSummaryFields
+      }
+    }
+  }
+}
+    fragment ProductSummaryFields on Product {
+  id
+  name
+  brand {
+    id
+    name
+    slug
+  }
+  category {
+    id
+    name
+    slug
+    path
+  }
+  isGeneric
+  verified
+  editedByMe
+  photos {
+    id
+    thumbnailUrl
+  }
+  externalImage {
+    thumbnailUrl
+    attribution
+  }
+}`) as unknown as TypedDocumentString<MyReviewsQuery, MyReviewsQueryVariables>;
 export const SearchProductsDocument = new TypedDocumentString(`
     query SearchProducts($query: String!, $storeId: ID, $city: String, $categoryId: ID, $country: String, $sort: ProductSort, $first: Int, $offset: Int) {
   searchProducts(
