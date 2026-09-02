@@ -429,7 +429,7 @@ export type ModerationObservationsQueryVariables = Exact<{
 }>;
 
 
-export type ModerationObservationsQuery = { moderationObservations: { totalCount: number, items: Array<{ authorPublicUid: string | null, authorHandle: string | null, observation: { id: string, priceAmount: number, currency: string, priceKind: PriceKind, unitPrice: number | null, observedAt: string, status: ObservationStatus, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } } }> } };
+export type ModerationObservationsQuery = { moderationObservations: { totalCount: number, items: Array<{ authorPublicUid: string | null, authorHandle: string | null, productPublication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, observation: { id: string, priceAmount: number, currency: string, priceKind: PriceKind, unitPrice: number | null, observedAt: string, status: ObservationStatus, product: { id: string, name: string, isGeneric: boolean, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } } }> } };
 
 export type SetObservationRejectedMutationVariables = Exact<{
   id: string;
@@ -1443,6 +1443,9 @@ export const ModerationObservationsDocument = new TypedDocumentString(`
     items {
       authorPublicUid
       authorHandle
+      productPublication {
+        ...PublicationStatusFields
+      }
       observation {
         id
         priceAmount
@@ -1507,6 +1510,12 @@ fragment ProductSummaryFields on Product {
     thumbnailUrl
     attribution
   }
+}
+fragment PublicationStatusFields on PublicationStatus {
+  state
+  confirmationsReceived
+  confirmationsRequired
+  verified
 }`) as unknown as TypedDocumentString<ModerationObservationsQuery, ModerationObservationsQueryVariables>;
 export const SetObservationRejectedDocument = new TypedDocumentString(`
     mutation SetObservationRejected($id: ID!, $rejected: Boolean!, $reason: String) {

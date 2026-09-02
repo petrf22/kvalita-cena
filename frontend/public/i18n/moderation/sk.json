@@ -31,7 +31,8 @@
     "rejected": "Zamietnuté",
     "active": "Platí",
     "restore": "Obnoviť",
-    "reject": "Zamietnuť"
+    "reject": "Zamietnuť",
+    "awaitingConfirmations": "Tovar čaká na potvrdenie: {{received}} z {{required}}"
   },
   "feedback": {
     "unhandled": "Nevybavené",

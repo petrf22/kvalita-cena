@@ -74,6 +74,9 @@ export class ModerationService {
           items {
             authorPublicUid
             authorHandle
+            productPublication {
+              ...PublicationStatusFields
+            }
             observation {
               id
               priceAmount

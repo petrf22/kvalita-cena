@@ -9,5 +9,6 @@ import java.util.UUID;
  * nahlásit komunitně (core.record_flag míří jen na katalogové záznamy), takže sem moderátor
  * přistupuje přímo přes autora/zboží/obchod, ne přes frontu.
  */
-public record ModerationObservationItem(PriceObservation observation, UUID authorPublicUid, String authorHandle) {
+public record ModerationObservationItem(PriceObservation observation, UUID authorPublicUid, String authorHandle,
+                                          PublicationStatus productPublication) {
 }

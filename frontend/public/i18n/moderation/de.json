@@ -31,7 +31,8 @@
     "rejected": "Abgelehnt",
     "active": "Aktiv",
     "restore": "Wiederherstellen",
-    "reject": "Ablehnen"
+    "reject": "Ablehnen",
+    "awaitingConfirmations": "Produkt wartet auf Bestätigung: {{received}} von {{required}}"
   },
   "feedback": {
     "unhandled": "Unbearbeitet",

@@ -31,7 +31,8 @@
     "rejected": "Rejected",
     "active": "Active",
     "restore": "Restore",
-    "reject": "Reject"
+    "reject": "Reject",
+    "awaitingConfirmations": "Product awaiting confirmation: {{received}} of {{required}}"
   },
   "feedback": {
     "unhandled": "Unhandled",

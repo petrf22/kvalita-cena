@@ -6,6 +6,7 @@ import cz.kvalitacena.controller.FlaggedReview;
 import cz.kvalitacena.controller.ModerationObservationItem;
 import cz.kvalitacena.controller.ModerationObservationResult;
 import cz.kvalitacena.controller.Photo;
+import cz.kvalitacena.controller.PublicationStatus;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.AppUserStatus;
 import cz.kvalitacena.db.entity.FlagResolution;
@@ -77,6 +78,7 @@ public class ModerationService {
   private final PriceObservationRepository priceObservationRepository;
   private final PriceAggregationService priceAggregationService;
   private final RefreshTokenService refreshTokenService;
+  private final ProductCatalogService productCatalogService;
 
   @Transactional(readOnly = true)
   public FlaggedRecordResult flaggedRecords(RecordType recordTypeFilter, Integer first, Integer offset,
@@ -186,19 +188,26 @@ public class ModerationService {
         priceObservationRepository.findForModeration(authorPublicUid, productId, storeId, limit, off);
     long total = priceObservationRepository.countForModeration(authorPublicUid, productId, storeId);
 
-    // submitter je LAZY proxy z nativního dotazu — getId() ji nenačte, dávkové findAllById
-    // zůstává jediným dotazem na autory (žádný N+1), stejný vzor jako MyContributionsService.
+    // submitter/product jsou LAZY proxy z nativního dotazu — getId() je nenačte, dávkové
+    // findAllById zůstává jediným dotazem navíc na autory i na produkty (žádný N+1), stejný
+    // vzor jako MyContributionsService.myObservations.
     Set<Long> submitterIds = new LinkedHashSet<>();
     page.forEach(o -> {
       if (o.getSubmitter() != null) addIfPresent(submitterIds, o.getSubmitter().getId());
     });
+    List<Long> productIds = page.stream().map(o -> o.getProduct().getId()).distinct().toList();
     Map<Long, AppUser> authorsById = index(appUserRepository.findAllById(submitterIds), AppUser::getId);
+    Map<Long, Product> productsById = index(productRepository.findAllById(productIds), Product::getId);
+    Map<Long, Long> confirmations = productCatalogService.confirmationsForProducts(List.copyOf(productsById.values()));
 
     List<ModerationObservationItem> items = page.stream()
         .map(o -> {
           AppUser author = o.getSubmitter() == null ? null : authorsById.get(o.getSubmitter().getId());
+          Product product = productsById.get(o.getProduct().getId());
+          PublicationStatus productPublication =
+              productCatalogService.productStatus(product, confirmations.getOrDefault(product.getId(), 0L));
           return new ModerationObservationItem(o, author == null ? null : author.getPublicUid(),
-              author == null ? null : handleRenderer.render(author));
+              author == null ? null : handleRenderer.render(author), productPublication);
         })
         .toList();
 

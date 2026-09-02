@@ -2,6 +2,8 @@ package cz.kvalitacena.service;
 
 import cz.kvalitacena.config.CatalogProperties;
 import cz.kvalitacena.controller.CreateProductInput;
+import cz.kvalitacena.controller.PublicationState;
+import cz.kvalitacena.controller.PublicationStatus;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.CodeType;
@@ -28,6 +30,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -255,5 +259,63 @@ class ProductCatalogServiceTest {
     verify(productRepository, org.mockito.Mockito.never()).save(any());
     verify(priceObservationRepository, org.mockito.Mockito.never())
         .countDistinctProductContributorsExcluding(any(), any());
+  }
+
+  // --- productStatus / confirmationsForProducts (sdíleno s MyContributionsService a ModerationService) ---
+
+  @Test
+  void draftProductStatusReportsExactConfirmationCount() {
+    Product draft = Product.builder().id(PRODUCT_ID).status(ProductStatus.DRAFT).build();
+
+    PublicationStatus status = service().productStatus(draft, 1L);
+
+    assertThat(status.state()).isEqualTo(PublicationState.AWAITING_CONFIRMATIONS);
+    assertThat(status.confirmationsReceived()).isEqualTo(1);
+    assertThat(status.confirmationsRequired()).isEqualTo(3);
+  }
+
+  @Test
+  void hiddenProductStatusWinsOverDraft() {
+    Product hidden = Product.builder().id(PRODUCT_ID).status(ProductStatus.DRAFT)
+        .hiddenAt(OffsetDateTime.now()).build();
+
+    assertThat(service().productStatus(hidden, 0L).state()).isEqualTo(PublicationState.HIDDEN_AFTER_FLAGS);
+  }
+
+  @Test
+  void activeProductStatusIsPublic() {
+    Product active = Product.builder().id(PRODUCT_ID).status(ProductStatus.ACTIVE).build();
+
+    assertThat(service().productStatus(active, 0L).state()).isEqualTo(PublicationState.PUBLIC);
+  }
+
+  @Test
+  void confirmationsForProductsSkipsNonDraftProducts() {
+    Product active = Product.builder().id(PRODUCT_ID).status(ProductStatus.ACTIVE).build();
+
+    assertThat(service().confirmationsForProducts(List.of(active))).isEmpty();
+  }
+
+  @Test
+  void confirmationsForProductsBatchesDraftIds() {
+    Product draft = Product.builder().id(PRODUCT_ID).status(ProductStatus.DRAFT).build();
+    when(priceObservationRepository.countDistinctProductContributorsExcludingBatch(List.of(PRODUCT_ID)))
+        .thenReturn(List.of(contributorCount(PRODUCT_ID, 2)));
+
+    assertThat(service().confirmationsForProducts(List.of(draft))).containsEntry(PRODUCT_ID, 2L);
+  }
+
+  private PriceObservationRepository.ContributorCount contributorCount(long id, long cnt) {
+    return new PriceObservationRepository.ContributorCount() {
+      @Override
+      public Long getId() {
+        return id;
+      }
+
+      @Override
+      public long getCnt() {
+        return cnt;
+      }
+    };
   }
 }

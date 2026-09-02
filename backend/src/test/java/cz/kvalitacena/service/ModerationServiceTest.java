@@ -2,12 +2,17 @@ package cz.kvalitacena.service;
 
 import cz.kvalitacena.controller.FlaggedRecordItem;
 import cz.kvalitacena.controller.FlaggedRecordResult;
+import cz.kvalitacena.controller.ModerationObservationResult;
+import cz.kvalitacena.controller.PublicationState;
+import cz.kvalitacena.controller.PublicationStatus;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.AppUserStatus;
 import cz.kvalitacena.db.entity.FlagResolution;
+import cz.kvalitacena.db.entity.PriceKind;
 import cz.kvalitacena.db.entity.PriceObservation;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.ProductReview;
+import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.RecomputeReason;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.entity.RevokeReason;
@@ -28,8 +33,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -79,6 +86,8 @@ class ModerationServiceTest {
   private PriceAggregationService priceAggregationService;
   @Mock
   private RefreshTokenService refreshTokenService;
+  @Mock
+  private ProductCatalogService productCatalogService;
 
   private ModerationService service;
 
@@ -86,7 +95,7 @@ class ModerationServiceTest {
   void setUp() {
     service = new ModerationService(recordFlagRepository, productRepository, storeRepository, mediaRepository,
         productReviewRepository, appUserRepository, productOverlayService, storeOverlayService, mediaService,
-        handleRenderer, priceObservationRepository, priceAggregationService, refreshTokenService);
+        handleRenderer, priceObservationRepository, priceAggregationService, refreshTokenService, productCatalogService);
     // applyOverlay(list, viewerId) je no-op, pokud moderátor sám žádný patch nemá — testy
     // ověřují mapování fronty, ne overlay logiku (ta má vlastní testy u Product/StoreOverlayService).
     lenient().when(productOverlayService.applyOverlay(anyList(), any())).thenAnswer(inv -> inv.getArgument(0));
@@ -232,6 +241,36 @@ class ModerationServiceTest {
 
     assertThat(result.getStatus()).isEqualTo(cz.kvalitacena.db.entity.ObservationStatus.REJECTED);
     verify(priceAggregationService).enqueueRecompute(PRODUCT_ID, 3L, RecomputeReason.MODERATION);
+  }
+
+  // --- moderationObservations ---
+
+  /**
+   * "Kolik ze tří" pro DRAFT zboží (docs/reputace.md) se počítá přes {@code ProductCatalogService}
+   * — tenhle test hlídá jen zapojení (findAllById produktů, předání dávkového počtu do
+   * productStatus), samotný výpočet má vlastní testy v ProductCatalogServiceTest.
+   */
+  @Test
+  void moderationObservationsIncludesProductPublicationStatus() {
+    Product draftProduct = Product.builder().id(PRODUCT_ID).status(ProductStatus.DRAFT).build();
+    Store store = Store.builder().id(3L).build();
+    PriceObservation observation = PriceObservation.builder().id(55L).product(draftProduct).store(store)
+        .priceKind(PriceKind.REGULAR).priceAmount(new BigDecimal("29.90")).currency("CZK")
+        .observedAt(OffsetDateTime.now()).build();
+    when(priceObservationRepository.findForModeration(null, null, null, 20, 0)).thenReturn(List.of(observation));
+    when(priceObservationRepository.countForModeration(null, null, null)).thenReturn(1L);
+    when(productRepository.findAllById(List.of(PRODUCT_ID))).thenReturn(List.of(draftProduct));
+    when(appUserRepository.findAllById(any())).thenReturn(List.of());
+    when(productCatalogService.confirmationsForProducts(List.of(draftProduct)))
+        .thenReturn(Map.of(PRODUCT_ID, 1L));
+    PublicationStatus awaiting = PublicationStatus.awaitingConfirmations(1, 3);
+    when(productCatalogService.productStatus(draftProduct, 1L)).thenReturn(awaiting);
+
+    ModerationObservationResult result = service.moderationObservations(null, null, null, null, null);
+
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().get(0).productPublication()).isEqualTo(awaiting);
+    assertThat(result.items().get(0).productPublication().state()).isEqualTo(PublicationState.AWAITING_CONFIRMATIONS);
   }
 
   // --- setUserSuspended ---

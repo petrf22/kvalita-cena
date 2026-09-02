@@ -31,7 +31,8 @@
     "rejected": "Odrzucona",
     "active": "Aktywna",
     "restore": "Przywróć",
-    "reject": "Odrzuć"
+    "reject": "Odrzuć",
+    "awaitingConfirmations": "Produkt czeka na potwierdzenie: {{received}} z {{required}}"
   },
   "feedback": {
     "unhandled": "Nierozpatrzone",

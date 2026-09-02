@@ -2,6 +2,7 @@ package cz.kvalitacena.service;
 
 import cz.kvalitacena.config.CatalogProperties;
 import cz.kvalitacena.controller.CreateProductInput;
+import cz.kvalitacena.controller.PublicationStatus;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.CodeType;
@@ -27,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Založení zboží — s naskenovaným EANem i bez něj. Bezkódové zboží ("pečivo za 45 Kč" z
@@ -146,6 +149,34 @@ public class ProductCatalogService {
       product.setStatus(ProductStatus.ACTIVE);
       productRepository.save(product);
     }
+  }
+
+  /**
+   * Stav zveřejnění produktu (docs/reputace.md, "Práh důvěry pro zveřejnění nového záznamu") —
+   * stejná logika jako {@code MyContributionsService.productStatus} (výpis "Moje příspěvky"),
+   * tady navíc pro moderátorský výpis cen ({@link ModerationService#moderationObservations}),
+   * který produkt vidí i mimo kontext "moje", takže autor ≠ viewer. Duplicita mezi oběma
+   * službami je vědomá — spojit by šlo jen zavlečením store-specifické logiky
+   * {@code MyContributionsService} sem, kam nepatří.
+   */
+  public PublicationStatus productStatus(Product product, long confirmationsReceived) {
+    if (product.getHiddenAt() != null) return PublicationStatus.hiddenAfterFlags();
+    if (product.getStatus() == ProductStatus.DRAFT) {
+      return PublicationStatus.awaitingConfirmations((int) confirmationsReceived, catalogProperties.getDraftConfirmations());
+    }
+    return PublicationStatus.publicState(product.isVerified());
+  }
+
+  /** Dávkové leave-one-out potvrzení pro víc DRAFT produktů najednou, viz {@link #promoteIfConfirmed}. */
+  public Map<Long, Long> confirmationsForProducts(List<Product> products) {
+    List<Long> draftIds = products.stream()
+        .filter(p -> p.getStatus() == ProductStatus.DRAFT)
+        .map(Product::getId)
+        .toList();
+    if (draftIds.isEmpty()) return Map.of();
+    return priceObservationRepository.countDistinctProductContributorsExcludingBatch(draftIds).stream()
+        .collect(Collectors.toMap(PriceObservationRepository.ContributorCount::getId,
+            PriceObservationRepository.ContributorCount::getCnt));
   }
 
   private DuplicateException duplicateGenericOf(String name, Long categoryId) {

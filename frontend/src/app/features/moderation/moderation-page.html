@@ -171,6 +171,16 @@
                   } @else {
                     <nz-tag nzColor="green">{{ t('moderation.observations.active') }}</nz-tag>
                   }
+                  @if (item.productPublication.state === 'AWAITING_CONFIRMATIONS') {
+                    <nz-tag nzColor="orange">
+                      {{
+                        t('moderation.observations.awaitingConfirmations', {
+                          received: item.productPublication.confirmationsReceived,
+                          required: item.productPublication.confirmationsRequired,
+                        })
+                      }}
+                    </nz-tag>
+                  }
                 </div>
                 <p class="item-meta">
                   {{ t('moderation.authorLabel') }}

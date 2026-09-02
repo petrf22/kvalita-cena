@@ -520,6 +520,14 @@ type ModerationObservationItem {
   authorPublicUid: ID
   "Vykreslená podoba ('Modrý čáp #4271'), ne kanonický klíč."
   authorHandle: String
+  """
+  Stav zveřejnění POZOROVANÉHO ZBOŽÍ, ne ceny samotné (docs/reputace.md, "Práh důvěry pro
+  zveřejnění nového záznamu") — moderátor tak u DRAFT zboží vidí konkrétní "kolik ze tří"
+  potvrzení ještě chybí, místo aby si musel status zjišťovat zvlášť. Publikace zůstává čistě
+  peer-to-peer (leave-one-out shoda nezávislých přispěvatelů) — tohle pole je jen čtecí, žádná
+  moderátorská mutace ho neumí urychlit ani obejít.
+  """
+  productPublication: PublicationStatus!
 }
 
 type ModerationObservationResult {
