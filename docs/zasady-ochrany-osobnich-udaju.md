@@ -24,6 +24,12 @@ Tenhle princip je promítnutý přímo do toho, jak appka ukládá data, ne jen 
 
 ## 3. Jaké údaje zpracováváme
 
+Při registraci ti appka automaticky vygeneruje **veřejné jméno** — např. „Modrý čáp #4271" —
+složené z náhodného přídavného jména, zvířete a čísla. Tohle jméno appka zobrazuje ostatním
+uživatelům všude, kde se tvůj příspěvek podepisuje (recenze, viz 3.3); neprozrazuje o tobě nic
+skutečného a nejde z něj nic zjistit. Kdykoli si ho můžeš v profilu (3.2) přepsat na vlastní
+přezdívku — na skutečné jméno appka přepsání nedovolí.
+
 ### 3.1 Přihlašovací e-mail
 
 E-mail, kterým se přihlašuješ, se v databázi neukládá v čitelné podobě. Ukládá se jednak
@@ -52,9 +58,13 @@ vzorce chování nebo vyřešit spor o cenu.
 Z tohoto pravidla existují dvě záměrné výjimky, protože bez trvalé vazby by appka ztratila
 funkci, kterou od nich uživatelé očekávají:
 
-- **Hodnocení kvality zboží** (hvězdičky 1–5) zůstává navázané na tvůj účet po celou dobu
-  trvání účtu — jinak by šlo systém obejít opakovaným hodnocením stejné věci. Navenek appka
-  vždy zobrazuje jen průměr a počet hodnocení, nikdy seznam „kdo jak ohodnotil".
+- **Hodnocení kvality zboží** (hvězdičky 1–5, volitelně s textem recenze) zůstává navázané na
+  tvůj účet po celou dobu trvání účtu — jinak by šlo systém obejít opakovaným hodnocením
+  stejné věci. Samotné hvězdičky navenek appka zobrazuje jen jako průměr a počet hodnocení,
+  nikdy jako seznam „kdo jak ohodnotil". **Napíšeš-li k hodnocení text, appka ho zveřejní
+  podepsaný tvým veřejným jménem** (viz začátek kapitoly 3 výš) — nikdy tvoje skutečné jméno
+  ani e-mail — protože nepodepsaná recenze by nebyla důvěryhodná. Text i podpis zmizí, když
+  text smažeš nebo účet zrušíš.
 - **Tvoje vlastní úpravy existujícího zboží/obchodu** (např. oprava názvu nebo adresy)
   zůstávají navázané na tvůj účet, dokud účet existuje — jinak by ti po půl roce tiše zmizely
   vlastní opravy. I tady appka navenek ukazuje jen výslednou opravenou hodnotu, ne kdo ji

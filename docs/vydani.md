@@ -88,8 +88,8 @@ popis appky viz „Texty pro store listing" níže.
 ### Texty pro store listing
 
 Návrh, k doplnění/úpravě přímo ve formuláři Play Console — drží se jen toho, co appka dnes
-skutečně umí (`docs/stav-implementace.md`), nic nepřislibuje dopředu (recenze, lokální
-dodavatelé apod. ještě nejsou).
+skutečně umí (`docs/stav-implementace.md`), nic nepřislibuje dopředu (lokální dodavatelé apod.
+ještě nejsou; textové recenze zboží už ano, ty do popisu zmínit lze).
 
 **Krátký popis** (limit 80 znaků — ověřit počet přímo v Play Console, český text s diakritikou
 se počítá znak za znak, ne byte):

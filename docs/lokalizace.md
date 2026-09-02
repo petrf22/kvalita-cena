@@ -287,6 +287,12 @@ zvířecích podstatných jmen v `HandleGenerator` vyšlo v němčině rodu muž
 `handle.format` (to by potřebovaly teprve románské jazyky s přídavným jménem za podstatným,
 viz plán expanze).
 
+Recenze (`docs/reputace.md`, „Hodnocení kvality a text recenze") přidávají druhý vykreslovací
+klíč, `handle.customFormat={0} #{1}` — použije se místo `handle.format`, má-li autor veřejnou
+přezdívku (`display_name` + viditelnost přes profilovou matici). Skládá `PublicNameRenderer`
+(nad `HandleRenderer`), stejné pravidlo jako výš: vykreslení je vždy server-side podle jazyka
+ČTENÁŘE, klient handle ani jméno autora sám neskládá.
+
 ### IČO/NIP per zemi
 
 `CompanyIdValidator` (rozhraní) + `IcoValidator`/`SkIcoValidator` (mod-11, 8 číslic — společné

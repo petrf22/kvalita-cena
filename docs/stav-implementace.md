@@ -13,6 +13,7 @@ v příslušné sekci pod ní.
 | [Zakládání katalogu bez skenování/GPS](#zakládání-katalogu-bez-skenovánígps) | hotovo | hotovo | hotovo | HOTOVO |
 | [Uživatelská vrstva nad globálními daty](#uživatelská-vrstva-nad-globálními-daty) | hotovo | hotovo | hotovo | HOTOVO |
 | [Výpis „Moje příspěvky"](#výpis-moje-příspěvky) | hotovo | hotovo | hotovo | HOTOVO |
+| [Textové recenze](#textové-recenze) | hotovo | hotovo | hotovo | HOTOVO |
 | [Moderace](#moderace) | hotovo | hotovo | — (záměr) | HOTOVO |
 | [Fotky zboží a provozoven](#fotky-zboží-a-provozoven) | hotovo | hotovo | hotovo | HOTOVO |
 | [Profil uživatele a viditelnost](#profil-uživatele-a-viditelnost) | hotovo | hotovo | hotovo | HOTOVO (skupiny důvěry mimo MVP) |
@@ -35,8 +36,8 @@ hledání i v číselníku kategorií, řazení, stránkování, agregáty v `Pr
 `searchFacets` / `product` / `productByCode` /
 `nearbyStores` / `priceHistory` / `me` / `submitObservations` / `rateProduct`, vážený medián
 i denní agregace v `PriceAggregationService` (`agg.price_current` + `agg.price_daily`),
-hodnocení kvality jako hvězdičky 1–5 (`core.product_quality_rating`, `QualityRatingService` —
-jen průměr a počet, žádné texty, žádná viditelnost).
+hodnocení kvality jako hvězdičky 1–5 (`core.product_review`, `ProductReviewService` — povinné,
+volitelný text recenze viz „Textové recenze" níž).
 
 ## Zakládání katalogu bez skenování/GPS
 
@@ -135,7 +136,9 @@ je, aby uživatel viděl „zatím 1 ze 3", ne jen štítek „čeká na potvrze
 `shared/publication-status.ts` + `publication-status-text.ts` s testem), mobil obrazovku
 `ui/contributions/MyContributionsScreen.kt` + `MyContributionsViewModel.kt` (odkaz z
 `AccountScreen.kt`, `GraphQlClient.myProducts`/`myStores`/`myObservations`/`myEdits`,
-`PublicationStatusText.kt` s JUnit testem) — obojí čtyři záložky Zboží/Obchody/Ceny/Úpravy.
+`PublicationStatusText.kt` s JUnit testem) — obojí pět záložek Zboží/Obchody/Ceny/Úpravy/
+Recenze (`myReviews`, bez `PublicationStatus` — recenze žádný práh zveřejnění nemá, jen
+`hidden` po moderaci, viz „Textové recenze" níž).
 
 ## Moderace
 
@@ -157,7 +160,30 @@ autentizaci i nový OTP kód (`OtpService`), refresh tokeny se revokují
 (`record_flag.user_id`), kdo záznam založil vidí naopak jen moderátor
 (`authorPublicUid`/`authorHandle`) — dvě různé věci se schválně jiným pravidlem
 (`docs/soukromi.md`). Jen web (`/moderation`, odkaz z Účtu jen pro moderátora), mobil nemá —
-je to nástroj provozovatele, ne appky.
+je to nástroj provozovatele, ne appky. Fronta zahrnuje i nahlášené recenze
+(`RecordType.REVIEW`) — `FlaggedRecordItem.review` (nový typ `FlaggedReview`) nese `product`
+jako kontext textu, autor je autor recenze, ne autor zboží.
+
+## Textové recenze
+
+`docs/datovy-model.md`, „Hodnocení kvality a text recenze"; `docs/soukromi.md`, „Podepsaná
+recenze": `core.product_review` (přejmenováno z `product_quality_rating`) nese hvězdičky
+povinně a text volitelně (max 1000 znaků) v JEDNOM řádku, ne ve dvou entitách.
+`ProductReviewService`/`ProductReviewGraphQlController` — `productReviews` (T1 gating: anonym
+dostane `loginRequired: true` a prázdné `items`, ale reálný `totalCount`), `myReviews`
+(`MyContributionsService`, i vlastní skryté moderací), `saveProductReviewText`/
+`deleteProductReviewText` (text vyžaduje existující hodnocení hvězdičkami,
+`REVIEW_REQUIRES_RATING`, vlastní denní rate limit oddělený od `rateProduct`). Autor recenze
+je **první veřejné místo v API, kde je vidět na netriviálním typu** — `authorPublicUid`/
+`authorName` (vykreslené `PublicNameRenderer`: veřejná přezdívka s dolepeným `#číslo`, jinak
+lokalizovaný handle). Nahlašování/moderace přes stejný `flagRecord`/`ModerationService` kanál
+jako zboží/obchod/fotka (`RecordType.REVIEW`, práh mezi fotkou a katalogem).
+
+Web: tlačítko Napsat/Upravit recenzi vedle hvězdiček na detailu zboží (viditelné až po
+ohodnocení), `nz-modal` se zápisem/úpravou/smazáním a počítadlem znaků, karta s výpisem
+recenzí a stránkováním pod hvězdičkami, pátá záložka „Recenze" v `/my`. Mobil: `AlertDialog`
+stejným vzorem jako `EmailChangeDialog`, výpis s donačítáním (`loadMore`, stejný vzor jako
+hledání), pátá záložka v `MyContributionsScreen.kt`.
 
 ## Fotky zboží a provozoven
 
@@ -338,9 +364,11 @@ tabulka, složení, alergeny, vlastní zadání) je rozvojový nápad v `docs/ro
 
 ## Neimplementováno
 
-Textové recenze (`core.product_review`, viditelnost `PUBLIC`/`GROUPS`/`PRIVATE`,
-`ViewerContext` pro recenze), skupiny důvěry, plný reputační vzorec (jen složka `L`),
-notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo jednorázové geokódování adresy,
+Jemnější viditelnost recenzí `PUBLIC`/`GROUPS`/`PRIVATE` a `ViewerContext` (textové recenze
+samotné už implementované jsou, viz „Textové recenze" výš — chybí jen odstupňování nad
+binární přihlášený/anonym, dokud neexistují skupiny důvěry), skupiny důvěry, plný reputační
+vzorec (jen složka `L`), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo
+jednorázové geokódování adresy,
 `agg.price_weekly_national`, offline fronta v mobilu, konsolidační job nad uživatelskou vrstvou
 (jen datový model a fronta, vyhodnocovací pravidlo zatím není známé — viz „Uživatelská vrstva
 nad globálními daty" výš), fotka jako důkaz ceny

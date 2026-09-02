@@ -175,12 +175,19 @@ někdo stihne ocenit.
 > ne rozjetí kódu s dokumentem. Zpřísnit na 7 dní je jen změna jedné konstanty, až/pokud
 > bude důvod.
 
+> **T1 „texty recenzí" je od dalšího rozvoje implementované doslovně** —
+> `ProductReviewService.reviewsFor` vrací anonymovi `loginRequired: true` a prázdné `items`
+> (ale reálný `totalCount`), přihlášenému plný text. Protože appka nemá stav „neověřený
+> e-mail" (registrace přes OTP kód v e-mailu ho ověří rovnou), podmínka T1 je v kódu prostě
+> „přihlášený", žádná samostatná kontrola verifikace navíc.
+
 ## Práh důvěry pro zveřejnění nového záznamu (MVP)
 
 Nový obchod nebo zboží od nedůvěryhodného autora se hned nezveřejní všem — je vidět jen jemu,
 dokud ho nepotvrdí víc přispěvatelů (`TrustLevelService`, `app.trust.*`). Důvod je stejný jako
-u prahu T2 výš (`≥5 záznamů nebo 1 recenze, ≥7 dní`), jen implementovaný dřív a jednodušeji,
-protože MVP nemá recenze ani plný vzorec `S`:
+u prahu T2 výš (`≥5 záznamů nebo 1 recenze, ≥7 dní`), jen implementovaný dřív a jednodušeji —
+`isTrusted` dnes počítá jen se záznamy cen, recenze (i když už existují) do něj zatím
+nevstupují, protože chybí plný vzorec `S`:
 
 ```
 isTrusted(user) = user.createdAt < now − app.trust.min-account-age-days
@@ -245,8 +252,8 @@ tady a v `application.yml`, výpis je čistě čtecí vrstva nad nimi.
 veřejné negativní hodnocení uživatelů" výš, jen aplikovaná na KATALOGOVÉ záznamy (zboží,
 obchody), ne na cenové spory: nahlášení cílí na `(recordType, recordId)`, nikdy na autora.
 Kdo záznam založil, se z API ven nedostane o nic snáz, než dřív — nahlášení jen řekne "tenhle
-konkrétní záznam je podezřelý", stejně jako `user_id` u `product_quality_rating` slouží
-výhradně k vynucení "jeden hlas na člověka" a jinak z DB nikam neuniká (`docs/soukromi.md`).
+konkrétní záznam je podezřelý", stejně jako `user_id` u `product_review` slouží výhradně
+k vynucení "jeden hlas na člověka" a jinak z DB nikam neuniká (`docs/soukromi.md`).
 
 Po dosažení `app.moderation.flags-to-hide` (výchozí 3) RŮZNÝCH nahlášení se záznam skryje
 (`hidden_at`) a čeká na přezkum — vidí ho dál jen autor, se stejným důvodem jako u DRAFT/
@@ -263,6 +270,14 @@ opačný — smazaná dobrá fotka se nahraje znovu za deset vteřin, zatímco p
 obrázek je vážný problém a kapacita moderace jednoho člověka je reálný limit projektu
 (`docs/soukromi.md`, "Otevřená rizika"). Fotka je proto vidět hned po nahrání (stejně jako
 u důvěryhodného autora zboží/obchodu), ale jediné nahlášení ji rovnou skryje.
+
+**Text recenze (`RecordType.REVIEW`) má práh mezi fotkou a katalogem**
+(`app.moderation.review-flags-to-hide`, výchozí **2**) — nahlašuje se TEXT
+(`core.product_review.id`, konkrétní recenze, ne produkt jako celek ani hodnocení samo), ne
+autor. Volný text je rizikovější než katalogové pole (název zboží nejde snadno urazit ani
+spamovat, volný text ano), ale míň rizikový než obrázek — proto práh mezi fotkou (1) a
+zbožím/obchodem (3). Recenze skrytá po nahlášení zůstává vidět autorovi ve výpisu „Moje
+příspěvky" se štítkem „skryto", ať ví, že a proč zmizela z produktu.
 
 **Plánovaný strojový předfiltr fotek (`docs/ai.md`) nikdy nenahrazuje hlas člověka ani sám nesahá
 na `hidden_at`** — jen řadí frontu k přezkumu, stejně jako zbytek téhle sekce hlasuje o
@@ -306,31 +321,39 @@ nástroj provozovatele, ne appky, mobil ji nemá).
   naopak jen moderátor, jinak nemá jak uplatnit „Ukončení a vyloučení" z podmínek užití — je to
   jiná informace se schválně jiným pravidlem, viz `docs/soukromi.md`.
 
-## Hodnocení kvality zboží (MVP)
+## Hodnocení kvality zboží a text recenze
 
-Jen hvězdičky 1–5 (5 nejlepší), bez textů, bez skupin důvěry — implementace
-`core.product_quality_rating`, popis tabulky v `docs/datovy-model.md`. Původně to byla školní
-známka (1 nejlepší, 5 nejhorší) — testování ukázalo, že se čte matoucně (lidé mají různý
-zvyk, jak známkování číst), takže se škála otočila na hvězdičky, kde víc = líp; sloupec
-`grade` se přejmenoval na `stars`. Vědomá zjednodušení oproti zbytku téhle stránky:
+Hvězdičky 1–5 (5 nejlepší) povinně, text recenze volitelně (max 1000 znaků), bez skupin
+důvěry — implementace `core.product_review`, popis tabulky v `docs/datovy-model.md`. Hvězdičky
+původně byly školní známka (1 nejlepší, 5 nejhorší) — testování ukázalo, že se čte matoucně
+(lidé mají různý zvyk, jak známkování číst), takže se škála otočila na hvězdičky, kde víc =
+líp; sloupec `grade` se přejmenoval na `stars`. Vědomá zjednodušení oproti zbytku téhle
+stránky:
 
-- **Průměr se NEVÁŽÍ reputací `S`** — dnes je to prostý aritmetický průměr přes všechny
-  hodnocení (`AVG(stars)`), protože `S` samo je zatím jen složka `L` (viz úvod dokumentu) a
-  vážit průměr neúplným vzorcem by budilo falešný dojem přesnosti. Až bude `S` implementované
-  celé, patří sem vážený průměr stejnou logikou jako vážený medián cen výše.
+- **Průměr hvězdiček se NEVÁŽÍ reputací `S`** — dnes je to prostý aritmetický průměr přes
+  všechny hodnocení (`AVG(stars)`), protože `S` samo je zatím jen složka `L` (viz úvod
+  dokumentu) a vážit průměr neúplným vzorcem by budilo falešný dojem přesnosti. Až bude `S`
+  implementované celé, patří sem vážený průměr stejnou logikou jako vážený medián cen výše.
 - **Práh `min-ratings-for-badge = 3`** (`app.quality.min-ratings-for-badge`) — pod tímhle
   počtem hodnocení klienti (mobil i web) zobrazí hvězdičky jako „orientační", obdoba pravidla
   `n_eff < 2` u cen. Jedno naštvané (nebo jedno nadšené) hodnocení tak neurčí veřejný obrázek
-  produktu, dokud se nesejde víc hlasů.
+  produktu, dokud se nesejde víc hlasů. Text recenze tenhle práh nemá — je vidět hned (za T1
+  gatingem výš), stejně jako fotka je vidět hned po nahrání.
+- **Text vyžaduje existující hodnocení hvězdičkami** (`REVIEW_REQUIRES_RATING`) — hvězdičky se
+  zadávají přes `rateProduct` a svůj vlastní řádek si založí samy (upsert), text se k
+  existujícímu řádku jen připojuje. Smazání textu hvězdičky nemění.
 
 **Vztah k „žádné veřejné negativní hodnocení uživatelů" výše:** hodnocení je o VĚCI
-(produktu z katalogu), ne o ČLOVĚKU, takže s pravidlem nekoliduje. Riziko je blízké, ne stejné:
-až při dalším rozvoji přibudou lokální dodavatelé (`core.supplier`, `core.supplier_offer`), hodnocení
-„1 hvězdička" na výrobek malého farmáře bude fakticky veřejné negativní hodnocení konkrétního
-člověka — se všemi důsledky popsanými výš (odvetné spirály, právní expozice). Rozhodnutí
-„hodnotí se jen zboží z katalogu, ne nabídky dodavatelů" je proto potřeba **znovu vědomě
-potvrdit nebo přepracovat před založením `core.supplier`**, ne jen automaticky rozšířit
-stejný mechanismus.
+(produktu z katalogu), ne o ČLOVĚKU, takže s pravidlem nekoliduje — ale text recenze je
+volný jazyk, ne jen číslo, takže riziko urážlivého nebo napadajícího textu je reálnější než
+u samotných hvězdiček. Bezpečnostní záklopka je stejná jako u zbytku katalogu: nahlašování
+(`RecordType.REVIEW`, „Nahlášení záznamu" výš) cílí na TEXT, nikdy na autora, a moderátor ho
+umí skrýt/schválit stejným tokem jako zboží nebo fotku. Riziko je blízké, ne stejné: až při
+dalším rozvoji přibudou lokální dodavatelé (`core.supplier`, `core.supplier_offer`), recenze
+na výrobek malého farmáře bude fakticky veřejné hodnocení konkrétního člověka — se všemi
+důsledky popsanými výš (odvetné spirály, právní expozice). Rozhodnutí „hodnotí se jen zboží
+z katalogu, ne nabídky dodavatelů" je proto potřeba **znovu vědomě potvrdit nebo přepracovat
+před založením `core.supplier`**, ne jen automaticky rozšířit stejný mechanismus.
 
 ## Zboží bez čárového kódu
 

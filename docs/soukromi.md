@@ -105,21 +105,47 @@ ne omezení — starší nákupy už o něm nikdo nedohledá.
 
 ### Výjimka: hodnocení kvality zboží vazbu nepseudonymizuje
 
-`core.product_quality_rating.user_id` (MVP, jen známka 1–5 — viz `docs/datovy-model.md` a
+`core.product_review.user_id` (hvězdičky 1–5, volitelně text — viz `docs/datovy-model.md` a
 `docs/reputace.md`) je jediné místo v `core.*`, kde tohle pravidlo neplatí. Bez trvalé vazby by
-nešlo vynutit „jedna známka na uživatele a produkt" (unikátní index `(product_id, user_id)`).
+nešlo vynutit „jedno hodnocení na uživatele a produkt" (unikátní index `(product_id, user_id)`).
 Je to vědomé zhoršení, ne přehlédnutí — zmírněné třemi věcmi:
 
-- **Ven přes API jde jen agregát** (`ProductQuality.average`/`count`), nikdy seznam „kdo co
-  ohodnotil" — `user_id` se z DB nedostane ven ani nepřímo.
-- **`ON DELETE CASCADE`, ne `SET NULL`** — smazání účtu známky rovnou odstraní, na rozdíl od
-  `price_observation.submitter_id`, kde observace zůstávají jako pseudonymizovaná statistika
-  ve veřejném zájmu. Známka bez vlastníka nemá tenhle veřejný zájem, který by odůvodnil
-  přežití záznamu po smazání účtu.
+- **Ven přes API jde jen agregát hvězdiček** (`ProductQuality.average`/`count`), nikdy seznam
+  „kdo co ohodnotil" — `user_id` se z DB nedostane ven ani nepřímo. **U TEXTU platí od podepsané
+  recenze výjimka z výjimky, viz „Podepsaná recenze" níž** — `authorPublicUid`/`authorName` jde
+  ven záměrně, `user_id` (databázové) stále ne.
+- **`ON DELETE CASCADE`, ne `SET NULL`** — smazání účtu hodnocení (hvězdičky i text) rovnou
+  odstraní, na rozdíl od `price_observation.submitter_id`, kde observace zůstávají jako
+  pseudonymizovaná statistika ve veřejném zájmu. Hodnocení bez vlastníka nemá tenhle veřejný
+  zájem, který by odůvodnil přežití záznamu po smazání účtu.
 - **`pg_dump --schema=core` musí sloupec vynechat nebo hashovat** — jinak „čistý" export
-  (`docs/datovy-model.md`) tiše prolomí záruku z tohoto dokumentu. Až vznikne skutečný GDPR
-  export/výmaz (`GET /api/me/export`, `POST /api/me/delete` níže), hodnocení kvality do
-  něj patří stejně jako cenové záznamy.
+  (`docs/datovy-model.md`) tiše prolomí záruku z tohoto dokumentu. GDPR export (`GET
+  /api/me/export`, `AccountService.exportData`) hodnocení kvality včetně textu obsahuje,
+  výmaz (`POST /api/me/delete` níže) ho kaskádou maže spolu s účtem.
+
+### Podepsaná recenze — první veřejný typ s viditelným autorem
+
+Recenze je **první místo v celé appce, kde autor vyleze z API na veřejném typu** — `Query
+.productReviews`/`Query.myReviews` vrací `authorPublicUid`/`authorName`
+(`PublicNameRenderer`) u KAŽDÉHO čtenáře, ne jen moderátorovi. Dosud platilo, že autor se
+objevuje výhradně v moderátorském pohledu (`FlaggedRecordItem.authorHandle`), gatovaný rolí
+(„Identita bez osobních údajů" výš) — nepodepsaná recenze by ale byla nedůvěryhodná (kdokoli by
+mohl psát pod cizí jméno bez možnosti ověřit, kdo skutečně píše), takže tohle rozhodnutí je
+vědomá, ne přehlédnutá výjimka. Zmírněná stejně jako zbytek identity v appce:
+
+- **Nikdy databázové `id`, vždy `public_uid`** — stejné pravidlo jako všude jinde v API, autora
+  recenze nejde počítat ani hádat podle sekvenčního čísla.
+- **`authorName` je vykreslený handle nebo veřejná přezdívka, nikdy reálné jméno** — má-li autor
+  vyplněnou přezdívku (`display_name`) A je viditelná podle profilové matice
+  (`UserProfileService.isFieldVisible`, „Profil uživatele a viditelnost" níž), appka ukáže
+  „{přezdívka} #{handle_number}" (číslo dolepené kvůli unikátnosti — dva uživatelé se stejnou
+  přezdívkou jdou u recenzí odlišit); jinak lokalizovaný handle jako všude jinde.
+- **Vykreslení je vždy server-side** (`PublicNameRenderer`) podle jazyka ČTENÁŘE, ne autora —
+  klient handle skládat nesmí (`docs/lokalizace.md`, „Handle: strukturovaně kvůli gramatickému
+  rodu").
+- **Smazání účtu recenzi (hvězdičky i text) odstraní kaskádou** — na rozdíl od
+  `FlaggedRecordItem.authorHandle`, kde smazaný autor prostě zmizí z pole (`authorPublicUid`
+  je tam nullable), veřejná recenze bez majitele nedává smysl a zmizí celá.
 
 ### Druhá výjimka: uživatelská vrstva nad globálními daty vazbu nepseudonymizuje
 
@@ -127,15 +153,15 @@ Je to vědomé zhoršení, ne přehlédnutí — zmírněné třemi věcmi:
 "Uživatelská vrstva nad globálními daty") je druhé místo v `core.*`, kde 180denní pravidlo
 neplatí. Bez trvalé vazby by uživateli po půl roce tiše zmizely jeho vlastní opravy (název,
 gramáž, adresa) — patch by se přestal zobrazovat, protože ho backend neumí spárovat s
-žádným viewerem. Zmírněné stejně jako u `product_quality_rating` výš:
+žádným viewerem. Zmírněné stejně jako u `product_review` výš:
 
 - **Ven přes API jde jen efektivní hodnota** (globální nebo přepsaná patchem, podle toho, kdo
   se ptá) — seznam "kdo co upravil" v API neexistuje.
 - **`ON DELETE CASCADE`** — smazání účtu patch rovnou odstraní, záznam se vrátí na globální
-  hodnotu. Stejná úvaha jako u `product_quality_rating`: uživatelova pracovní data nemají po
+  hodnotu. Stejná úvaha jako u `product_review`: uživatelova pracovní data nemají po
   smazání účtu veřejný zájem, který by zdůvodnil přežití (na rozdíl od `price_observation`).
 - **`pg_dump --schema=core` musí sloupec `user_id` vynechat nebo hashovat** stejně jako u
-  `product_quality_rating.user_id` — jinak "čistý" export tiše prolomí tuhle záruku.
+  `product_review.user_id` — jinak "čistý" export tiše prolomí tuhle záruku.
 - Až vznikne skutečný GDPR export/výmaz (níže), vlastní patche do něj patří stejně jako
   cenové záznamy a hodnocení kvality.
 
@@ -172,14 +198,16 @@ jen z veřejného ARES, nic z appky do ARES neposílá.
 
 - **Kdo záznam NAHLÁSIL** (`core.record_flag.user_id`) z API nejde ven ani moderátorovi —
   slouží výhradně k vynucení „jeden hlas na člověka a záznam" (`uq_record_flag_user`), stejně
-  jako `product_quality_rating.user_id` výš. Nahlášení je vždy o FAKTU, ne o autorovi ani
+  jako `product_review.user_id` výš. Nahlášení je vždy o FAKTU, ne o autorovi ani
   o nahlašovateli.
 - **Kdo záznam ZALOŽIL/nahrál** (`created_by_user_id`/`uploaded_by_user_id`) moderátor VIDÍ
   jako `authorPublicUid`/`authorHandle` (`FlaggedRecordItem`, `ModerationObservationItem`) —
   bez toho by nešlo uplatnit „Ukončení a vyloučení" z `docs/podminky-uziti.md` (pozastavit účet
   za opakované porušování). Je to `public_uid`/vykreslený `public_handle`, stejná identita jako
   jinde v API, jen tady navíc gatovaná rolí — na veřejných typech (`Product`, `Store`, `Photo`)
-  se autor nikde neobjevuje, jen v moderátorském pohledu.
+  se autor nikde neobjevuje, jen v moderátorském pohledu. **Jediná výjimka je `ProductReview`**
+  (viz „Podepsaná recenze" níž) — tam je autor vidět záměrně, každému čtenáři, ne jen
+  moderátorovi.
 
 ## Profil uživatele a viditelnost
 
@@ -321,7 +349,7 @@ Export a výmaz (`AccountService`, `AccountController`) jsou hotové — REST to
   vážená jako registrovaná i po smazání jeho účtu, ne jako anonymní.
 
   Appka nejdřív smaže SOUBORY fotek z disku (`MediaStorage`, včetně avataru), teprve pak řádek
-  `app_user` — ten kaskádou smaže zbytek (`user_profile`, `product_quality_rating`,
+  `app_user` — ten kaskádou smaže zbytek (`user_profile`, `product_review` — hvězdičky i text,
   `product_user_edit`/`store_user_edit`, `record_flag`, `media` řádky v DB, `refresh_token`).
   Katalogová data (zboží, obchod), na která uživatel jen přispěl cenou, samozřejmě zůstávají —
   mažou/anonymizují se jen věci navázané na *jeho* účet.

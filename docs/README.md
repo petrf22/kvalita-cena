@@ -49,10 +49,12 @@ přidání němčiny na jiném). Od téhle revize platí jedna osa zralosti prod
   pozvat první lidi“).
 - **Veřejná beta** — veřejné spuštění, appka indexovaná, dedikovaný SMTP, obrana formuláře
   zpětné vazby proti spamu (`docs/nasazeni.md`, položky „Před veřejnou betou“).
-- **Další rozvoj** — vše za veřejnou betou: textové recenze, skupiny důvěry, plný reputační
-  vzorec `S`, lokální dodavatelé a nápady v `docs/rozvoj.md`. Nedělí se dál na podfáze podle
-  data — priorita je vyjádřená stavem položky (NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ), ne
-  číslem fáze.
+- **Další rozvoj** — vše za veřejnou betou: skupiny důvěry, plný reputační vzorec `S`, lokální
+  dodavatelé a nápady v `docs/rozvoj.md`. Nedělí se dál na podfáze podle data — priorita je
+  vyjádřená stavem položky (NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ), ne číslem fáze. Textové
+  recenze byly v tomhle pásmu, dokud nevznikly — dnes jsou implementované
+  (`docs/stav-implementace.md`), zůstává jen jemnější viditelnost `PUBLIC`/`GROUPS`/`PRIVATE`
+  vázaná na skupiny důvěry.
 
 Samostatná, nezávislá osa je **vlna expanze 1/2/3+** (`docs/lokalizace.md`) — rozšiřování
 appky o další ZEMĚ a JAZYKY, nemá se svým číslováním nic společného s osou zralosti výš.

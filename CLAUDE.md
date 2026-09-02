@@ -130,16 +130,22 @@ při milionech observací přepisovalo zbytečně celou view. Graf se čte vždy
 nikdy ze syrových observací. Národní cena je **medián mediánů** (nejdřív uvnitř provozovny, pak
 přes provozovny).
 
-### Recenze (další rozvoj, zatím neimplementováno): autorizace je predikát v dotazu, ne filtr v resolveru
+### Recenze: hvězdičky a text jsou jeden záznam, autor je první veřejně viditelný v API
 
-Recenze, skupiny důvěry a `ViewerContext` dnes vůbec neexistují (žádné entity, žádné
-tabulky) — až budou, platí tohle:
+`core.product_review` (přejmenováno z `product_quality_rating`, `docs/datovy-model.md`) nese
+hvězdičky povinně a text recenze volitelně (max 1000 znaků) — jeden řádek, ne dvě entity. Text
+vidí jen přihlášený (`docs/reputace.md`, T1) — `ProductReviewService.reviewsFor` to řeší
+ořezáním v service (anonym dostane `loginRequired: true` a prázdné `items`, ale reálný
+`totalCount`), ne filtrem v resolveru, stejný vzor jako `PriceHistoryService` u anonymního
+okna grafu.
 
-Viditelnost `PUBLIC`/`GROUPS`/`PRIVATE` se vynucuje výhradně v `ReviewQueryService`
-(JPA `Specification` z `ViewerContext`), s Hibernate `@Filter` jako pojistkou pro zapomenuté cesty
-(nativní dotazy, DataLoader). GraphQL `DataLoader` musí mít **viewera v cache klíči**
-(`(productId, viewerId)`) — jinak se cache prolije mezi uživateli. Neviditelná recenze vrací
-`NOT_FOUND`, ne `FORBIDDEN`.
+Recenze je **první veřejný typ v API, kde je autor vidět** (`ProductReview.authorPublicUid`/
+`authorName`, vykreslené `PublicNameRenderer`) — na rozdíl od zbytku appky, kde se autor
+objevuje jen v moderátorském pohledu (`docs/soukromi.md`, „Podepsaná recenze"). Jemnější
+viditelnost `PUBLIC`/`GROUPS`/`PRIVATE` nad `ViewerContext` (`JPA Specification`, Hibernate
+`@Filter` jako pojistka pro zapomenuté cesty, `DataLoader` s viewerem v cache klíči
+`(productId, viewerId)`) zůstává plán pro další rozvoj — dává smysl až se skupinami důvěry,
+zatím by neměla co rozlišovat nad dnešní binární přihlášený/anonym.
 
 ### Lokalizace: `docs/lokalizace.md` je jeden zdroj pravdy
 

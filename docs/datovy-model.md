@@ -36,7 +36,7 @@ Pravidla, která to drží čisté:
 2. Pokud uživatel ručně opíše údaj z OFF do `core.product`, nastaví se
    `data_origin = 'OFF_DERIVED'` a tenhle produkt se vyloučí z "čistého" exportu.
 3. Čistý export vlastních dat: `pg_dump --schema=core --schema=agg`. **Pozor:**
-   `core.product_quality_rating.user_id` (hodnocení kvality, viz níže) se do „čistého"
+   `core.product_review.user_id` (hodnocení kvality a text recenze, viz níže) se do „čistého"
    exportu nesmí dostat beze změny — je to jediné místo v `core.*`, kde vazba na uživatele
    nepodléhá pseudonymizaci po 180 dnech (na rozdíl od `price_observation.submitter_id`,
    viz `docs/soukromi.md`). Export musí sloupec vynechat nebo hashovat, jinak GDPR záruka
@@ -204,21 +204,36 @@ Nominatimova usage policy vyžaduje identifikovatelný `User-Agent` a nejvýš 1
 žádná surová kopie odpovědi. Výpadek/timeout Nominatimu se projeví jako prázdný seznam
 kandidátů, nikdy jako chyba: založení obchodu bez souřadnic musí projít i tak.
 
-## Hodnocení kvality — jen hvězdičky, ne recenze
+## Hodnocení kvality a text recenze — jeden záznam, ne dvě entity
 
-`core.product_quality_rating` (`2026-08-05/01-product-quality-rating.yaml`,
-`2026-08-30/01-quality-stars.yaml`) je vědomě minimální předstupeň k `core.product_review`
-z dalšího rozvoje: jen `stars SMALLINT CHECK (1–5)` (5 nejlepší; sloupec se dřív jmenoval `grade` a
-škála byla obrácená jako školní známka, viz `docs/reputace.md`) na dvojici
-`(product_id, user_id)`, žádný text, žádná viditelnost `PUBLIC`/`GROUPS`/`PRIVATE`,
-žádný `ViewerContext`. Jedno hodnocení na uživatele a produkt vynucuje `UNIQUE (product_id,
-user_id)` a backendový upsert (`ON CONFLICT ... DO UPDATE`), ne aplikační logika.
+`core.product_review` (`2026-08-05/01-product-quality-rating.yaml`,
+`2026-08-30/01-quality-stars.yaml`, přejmenování a text `2026-09-01/02-rename-product-review.yaml`
+a `2026-09-01/03-product-review-text.yaml`) nese hvězdičky POVINNĚ (`stars SMALLINT CHECK
+(1–5)`, 5 nejlepší; sloupec se dřív jmenoval `grade` a škála byla obrácená jako školní známka,
+viz `docs/reputace.md`) a text recenze VOLITELNĚ (`text TEXT`, max 1000 znaků přes CHECK,
+`text_updated_at` — na rozdíl od `updated_at` se nehýbe při pouhé změně hvězdiček, takže z něj
+klient pozná štítek „upraveno" u textu). Jeden záznam na dvojici `(product_id, user_id)`, ne dvě
+tabulky — text bez hvězdiček nedává smysl a oddělená entita by znamenala dva zdroje pravdy pro
+totéž hodnocení. Jedno hodnocení na uživatele a produkt vynucuje `UNIQUE (product_id, user_id)`
+a backendový upsert (`ON CONFLICT ... DO UPDATE`, nedotýká se `text`/`text_updated_at`) —
+opakované hodnocení hvězdičkami existující text nemaže.
+
+`hidden_at` (skrytí po nahlášení, `RecordType.REVIEW` v `core.record_flag`) a partial index
+`idx_product_review_listing (product_id, created_at DESC) WHERE text IS NOT NULL AND hidden_at
+IS NULL` — výpis recenzí pod zbožím vždy filtruje přesně takhle.
 
 Cena za tuhle jednoduchost: vazba `user_id` **se nepseudonymizuje** po 180 dnech jako
 `price_observation.submitter_id` — bez trvalé vazby by nešlo vynutit „jedno hodnocení na
 uživatele". Je to vědomé zhoršení proti běžnému pravidlu projektu, podrobně v
 `docs/soukromi.md` (`ON DELETE CASCADE` při smazání účtu, `user_id` nikdy ven přes API, pozor
-na `pg_dump` export výše).
+na `pg_dump` export výše) — **s jednou vědomou výjimkou**: autor recenze je od tohohle
+rozšíření vidět na veřejném typu `ProductReview.authorPublicUid`/`authorName`, viz
+`docs/soukromi.md`, „Podepsaná recenze".
+
+Text recenze jde nahlásit stejným kanálem jako zboží/obchod/fotka (`flagRecord(recordType:
+REVIEW, recordId: <core.product_review.id>)`) — nahlašuje se TEXT, ne autor ani hodnocení
+samotné (`docs/reputace.md`, „žádné veřejné negativní hodnocení uživatelů"). Práh skrytí
+(`app.moderation.review-flags-to-hide`) je mezi fotkou (nejnižší) a zbožím/obchodem.
 
 ## Uživatelská vrstva nad globálními daty
 
@@ -434,12 +449,14 @@ ranou fázi vývoje, dnes by čtenáře matla. Jediné, co z původního záměr
 komunitní opravu jen uložit lokálně (`core.product_user_edit`), ne ji poslat zpátky do OFF.
 Odeslání zpět do OFF je mimo dnešní rozsah.
 
-`agg.price_weekly_national` (týdenní řady pro delší grafy), plné textové recenze
-(`core.product_review`, viditelnost `PUBLIC`/`GROUPS`/`PRIVATE`), skupiny důvěry
-(`core.trust_group`, `core.trust_edge`), `core.user_flag`, `core.watch_subscription`,
-lokální dodavatelé (`core.supplier`, `core.supplier_offer`) a `core.access_policy` —
-to všechno patří do dalšího rozvoje (`docs/README.md`, „Terminologie fází"). Tabulky pro ně
-ještě nejsou v changelogu, aby se neležel mrtvý kód/schéma, které nikdo nepoužívá.
+`agg.price_weekly_national` (týdenní řady pro delší grafy), skupiny důvěry (`core.trust_group`,
+`core.trust_edge`), `core.user_flag`, `core.watch_subscription`, lokální dodavatelé
+(`core.supplier`, `core.supplier_offer`) a `core.access_policy` — to všechno patří do dalšího
+rozvoje (`docs/README.md`, „Terminologie fází"). Tabulky pro ně ještě nejsou v changelogu, aby
+se neležel mrtvý kód/schéma, které nikdo nepoužívá. Recenze (`core.product_review`) mají dnes
+jen binární viditelnost textu (přihlášený/anonym, T1 v `docs/reputace.md`) — jemnější
+`PUBLIC`/`GROUPS`/`PRIVATE` z původního plánu by dávalo smysl až se skupinami důvěry, zatím by
+neměl co rozlišovat.
 
 Nápady mimo tenhle plán (název věrnostního programu podle obchodu, ceny předem z akčního
 letáku, načtení celé účtenky, nákup podle receptu nebo seznamu) jsou v `docs/rozvoj.md`.
