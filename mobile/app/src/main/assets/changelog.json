@@ -1,5 +1,33 @@
 [
   {
+    "version": "0.6.1",
+    "date": "2026-09-02",
+    "sections": [
+      {
+        "title": "Opraveno",
+        "items": [
+          {
+            "text": "Dlouhý název obchodu už nelámal cenu do svislého sloupce jednotlivých znaků",
+            "parts": [
+              "mobil"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Přidáno",
+        "items": [
+          {
+            "text": "Moderace v záložce Ceny ukazuje u zboží čekajícího na zveřejnění počet chybějících komunitních potvrzení",
+            "parts": [
+              "web"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "0.6.0",
     "date": "2026-09-02",
     "sections": [

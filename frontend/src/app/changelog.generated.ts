@@ -20,6 +20,14 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.6.1", date: "2026-09-02", sections: [
+      { title: "Opraveno", items: [
+        { text: "Dlouhý název obchodu už nelámal cenu do svislého sloupce jednotlivých znaků", parts: ["mobil"] },
+      ] },
+      { title: "Přidáno", items: [
+        { text: "Moderace v záložce Ceny ukazuje u zboží čekajícího na zveřejnění počet chybějících komunitních potvrzení", parts: ["web"] },
+      ] },
+  ] },
   { version: "0.6.0", date: "2026-09-02", sections: [
       { title: "Zabezpečeno", items: [
         { text: "Formulář zpětné vazby má proof-of-work výzvu místo CAPTCHY, vrstvené limity na IP/podsíť/celkový denní počet anonymních odeslání a odkládá podezřelé zprávy do karantény místo skrytí", parts: ["server", "web", "mobil"] },
