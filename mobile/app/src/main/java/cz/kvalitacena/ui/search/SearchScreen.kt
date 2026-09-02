@@ -50,6 +50,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.network.ProductSearchItem
+import cz.kvalitacena.ui.common.LabelValueRow
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.ProductThumb
 import cz.kvalitacena.ui.common.QualityBadge
@@ -278,11 +279,9 @@ private fun SearchResultRow(item: ProductSearchItem, onClick: () -> Unit) {
       if (subtitle.isNotBlank()) {
         Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
       }
-      Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-      ) {
-        Column {
+      LabelValueRow(
+        modifier = Modifier.padding(top = 4.dp),
+        label = {
           // Přepočtená hodnota (X-Display-Currency), když je — jinak originál v měně obchodu
           // (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna").
           val displayAmount = item.converted?.amount ?: item.bestPrice
@@ -297,9 +296,9 @@ private fun SearchResultRow(item: ProductSearchItem, onClick: () -> Unit) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
-        }
-        QualityBadge(average = item.qualityAverage, count = item.qualityCount)
-      }
+        },
+        value = { QualityBadge(average = item.qualityAverage, count = item.qualityCount) },
+      )
     }
   }
 }

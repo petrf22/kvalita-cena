@@ -42,6 +42,7 @@ import cz.kvalitacena.network.MyProductItem
 import cz.kvalitacena.network.MyReviewItem
 import cz.kvalitacena.network.MyStoreItem
 import cz.kvalitacena.network.PublicationStatus
+import cz.kvalitacena.ui.common.LabelValueRow
 import cz.kvalitacena.ui.common.StarRatingDisplay
 import cz.kvalitacena.ui.common.formatRelativeDate
 import cz.kvalitacena.ui.common.priceKindLabel
@@ -198,18 +199,23 @@ private fun ObservationsTab(viewModel: MyContributionsViewModel, onProductClick:
     onPageSizeChange = { viewModel.changeObservationsPageSize(it) },
   ) { item: MyObservationItem ->
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-      Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-        // Jen produkt je proklik (stejně jako na webu) — cena patří k dvojici produkt+obchod,
-        // samotný obchod tu proklik nemá.
-        Text(
-          "${item.product.name} — ${item.store.name} — ${priceKindLabel(item.priceKind)}",
-          modifier = Modifier.clickable { onProductClick(item.product.id) },
-        )
-        Text(
-          rememberMoneyFormatter(item.converted?.currency ?: item.currency)
-            .format(item.converted?.amount ?: item.priceAmount),
-        )
-      }
+      LabelValueRow(
+        label = {
+          // Jen produkt je proklik (stejně jako na webu) — cena patří k dvojici produkt+obchod,
+          // samotný obchod tu proklik nemá.
+          Text(
+            "${item.product.name} — ${item.store.name} — ${priceKindLabel(item.priceKind)}",
+            modifier = Modifier.clickable { onProductClick(item.product.id) },
+          )
+        },
+        value = {
+          Text(
+            rememberMoneyFormatter(item.converted?.currency ?: item.currency)
+              .format(item.converted?.amount ?: item.priceAmount),
+            softWrap = false,
+          )
+        },
+      )
       Text(
         formatRelativeDate(item.observedAt),
         style = MaterialTheme.typography.bodySmall,

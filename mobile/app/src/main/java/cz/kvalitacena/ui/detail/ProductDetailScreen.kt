@@ -44,6 +44,7 @@ import cz.kvalitacena.R
 import cz.kvalitacena.network.ExternalLink
 import cz.kvalitacena.network.PriceCurrent
 import cz.kvalitacena.network.ProductReview
+import cz.kvalitacena.ui.common.LabelValueRow
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.PhotoGallery
 import cz.kvalitacena.ui.common.PhotoPicker
@@ -283,25 +284,25 @@ fun ProductDetailScreen(
         Text(stringResource(R.string.product_cheapest_title), style = MaterialTheme.typography.titleMedium)
         if (stats?.bestPrice != null && stats.cheapestStore != null) {
           val store = stats.cheapestStore
-          Row(
+          LabelValueRow(
             modifier = Modifier
-              .fillMaxWidth()
               .padding(top = 4.dp)
               .clickable { onStoreClick(store.id) },
-            horizontalArrangement = Arrangement.SpaceBetween,
-          ) {
-            Column {
+            label = {
               Text(store.name, style = MaterialTheme.typography.bodyLarge)
               Text(store.city, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            // Přepočtená hodnota (X-Display-Currency), když je — jinak originál v měně obchodu
-            // (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna").
-            Text(
-              rememberMoneyFormatter(stats.bestPriceConverted?.currency ?: stats.bestPriceCurrency)
-                .format(stats.bestPriceConverted?.amount ?: stats.bestPrice),
-              style = MaterialTheme.typography.bodyLarge,
-            )
-          }
+            },
+            value = {
+              // Přepočtená hodnota (X-Display-Currency), když je — jinak originál v měně obchodu
+              // (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna").
+              Text(
+                rememberMoneyFormatter(stats.bestPriceConverted?.currency ?: stats.bestPriceCurrency)
+                  .format(stats.bestPriceConverted?.amount ?: stats.bestPrice),
+                style = MaterialTheme.typography.bodyLarge,
+                softWrap = false,
+              )
+            },
+          )
         } else {
           Text(stringResource(R.string.product_no_price_yet), style = MaterialTheme.typography.bodyMedium)
         }
@@ -329,13 +330,11 @@ fun ProductDetailScreen(
           Text(stringResource(R.string.product_my_price), style = MaterialTheme.typography.titleMedium)
           Column(modifier = Modifier.padding(top = 8.dp)) {
             product.myPrices.forEach { mp ->
-              Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text("${mp.store.name} — ${priceKindLabel(mp.priceKind)}")
-                Text(
-                  rememberMoneyFormatter(mp.converted?.currency ?: mp.currency)
-                    .format(mp.converted?.amount ?: mp.priceAmount),
-                )
-              }
+              LabelValueRow(
+                label = "${mp.store.name} — ${priceKindLabel(mp.priceKind)}",
+                value = rememberMoneyFormatter(mp.converted?.currency ?: mp.currency)
+                  .format(mp.converted?.amount ?: mp.priceAmount),
+              )
               Text(
                 formatRelativeDate(mp.observedAt),
                 style = MaterialTheme.typography.bodySmall,
@@ -453,10 +452,10 @@ private fun ReviewDialog(viewModel: ProductDetailViewModel) {
 @Composable
 private fun PriceRow(price: PriceCurrent, onClick: () -> Unit) {
   Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp)) {
-    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-      Text("${price.store.name} — ${priceKindLabel(price.priceKind)}")
-      Text(price.priceAmount?.let { rememberMoneyFormatter(price.currency).format(it) } ?: "–")
-    }
+    LabelValueRow(
+      label = "${price.store.name} — ${priceKindLabel(price.priceKind)}",
+      value = price.priceAmount?.let { rememberMoneyFormatter(price.currency).format(it) } ?: "–",
+    )
     Text(
       stringResource(R.string.product_reported_summary, price.nObs, formatRelativeDate(price.lastObservedAt)),
       style = MaterialTheme.typography.bodySmall,
