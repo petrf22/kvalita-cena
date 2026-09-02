@@ -400,10 +400,13 @@
     <string name="my_contributions_tab_stores">Obchody</string>
     <string name="my_contributions_tab_observations">Ceny</string>
     <string name="my_contributions_tab_edits">Úpravy</string>
+    <string name="my_contributions_tab_reviews">Recenzie</string>
     <string name="my_contributions_empty_products">Zatiaľ si nezaložil/a žiadny tovar.</string>
     <string name="my_contributions_empty_stores">Zatiaľ si nezaložil/a žiadny obchod.</string>
     <string name="my_contributions_empty_observations">Zatiaľ si nezapísal/a žiadnu cenu.</string>
     <string name="my_contributions_empty_edits">Zatiaľ si neupravil/a žiadny cudzí záznam.</string>
+    <string name="my_contributions_empty_reviews">Zatiaľ si nenapísal/a žiadnu recenziu.</string>
+    <string name="my_contributions_review_hidden">Skryté po nahlásení</string>
     <string name="my_contributions_page_size_label">Na stránku:</string>
     <string name="my_contributions_page_indicator">Strana %1$d z %2$d</string>
     <string name="my_contributions_previous_page">Predchádzajúca</string>

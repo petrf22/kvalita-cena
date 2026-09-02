@@ -485,10 +485,13 @@
     <string name="my_contributions_tab_stores">Obchody</string>
     <string name="my_contributions_tab_observations">Ceny</string>
     <string name="my_contributions_tab_edits">Úpravy</string>
+    <string name="my_contributions_tab_reviews">Recenze</string>
     <string name="my_contributions_empty_products">Zatím jsi nezaložil/a žádné zboží.</string>
     <string name="my_contributions_empty_stores">Zatím jsi nezaložil/a žádný obchod.</string>
     <string name="my_contributions_empty_observations">Zatím jsi nezapsal/a žádnou cenu.</string>
     <string name="my_contributions_empty_edits">Zatím jsi neupravil/a žádný cizí záznam.</string>
+    <string name="my_contributions_empty_reviews">Zatím jsi nenapsal/a žádnou recenzi.</string>
+    <string name="my_contributions_review_hidden">Skryto po nahlášení</string>
     <string name="my_contributions_page_size_label">Na stránku:</string>
     <string name="my_contributions_page_indicator">Strana %1$d z %2$d</string>
     <string name="my_contributions_previous_page">Předchozí</string>

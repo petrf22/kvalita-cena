@@ -402,10 +402,13 @@
     <string name="my_contributions_tab_stores">Geschäfte</string>
     <string name="my_contributions_tab_observations">Preise</string>
     <string name="my_contributions_tab_edits">Bearbeitungen</string>
+    <string name="my_contributions_tab_reviews">Rezensionen</string>
     <string name="my_contributions_empty_products">Du hast noch kein Produkt angelegt.</string>
     <string name="my_contributions_empty_stores">Du hast noch kein Geschäft angelegt.</string>
     <string name="my_contributions_empty_observations">Du hast noch keinen Preis erfasst.</string>
     <string name="my_contributions_empty_edits">Du hast noch keinen fremden Eintrag bearbeitet.</string>
+    <string name="my_contributions_empty_reviews">Du hast noch keine Rezension geschrieben.</string>
+    <string name="my_contributions_review_hidden">Nach Meldung ausgeblendet</string>
     <string name="my_contributions_page_size_label">Pro Seite:</string>
     <string name="my_contributions_page_indicator">Seite %1$d von %2$d</string>
     <string name="my_contributions_previous_page">Zurück</string>

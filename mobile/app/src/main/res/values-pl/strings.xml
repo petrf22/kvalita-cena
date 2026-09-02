@@ -400,10 +400,13 @@
     <string name="my_contributions_tab_stores">Sklepy</string>
     <string name="my_contributions_tab_observations">Ceny</string>
     <string name="my_contributions_tab_edits">Edycje</string>
+    <string name="my_contributions_tab_reviews">Recenzje</string>
     <string name="my_contributions_empty_products">Nie dodałeś/aś jeszcze żadnego produktu.</string>
     <string name="my_contributions_empty_stores">Nie dodałeś/aś jeszcze żadnego sklepu.</string>
     <string name="my_contributions_empty_observations">Nie zapisałeś/aś jeszcze żadnej ceny.</string>
     <string name="my_contributions_empty_edits">Nie edytowałeś/aś jeszcze cudzego wpisu.</string>
+    <string name="my_contributions_empty_reviews">Nie napisałeś/aś jeszcze żadnej recenzji.</string>
+    <string name="my_contributions_review_hidden">Ukryte po zgłoszeniu</string>
     <string name="my_contributions_page_size_label">Na stronę:</string>
     <string name="my_contributions_page_indicator">Strona %1$d z %2$d</string>
     <string name="my_contributions_previous_page">Poprzednia</string>

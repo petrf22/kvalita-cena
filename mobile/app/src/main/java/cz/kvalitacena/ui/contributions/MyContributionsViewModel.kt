@@ -9,6 +9,7 @@ import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.MyEditItem
 import cz.kvalitacena.network.MyObservationItem
 import cz.kvalitacena.network.MyProductItem
+import cz.kvalitacena.network.MyReviewItem
 import cz.kvalitacena.network.MyStoreItem
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.toUiText
@@ -73,12 +74,14 @@ class MyContributionsViewModel(private val graphQlClient: GraphQlClient) : ViewM
   val stores = ContributionSection<MyStoreItem>()
   val observations = ContributionSection<MyObservationItem>()
   val edits = ContributionSection<MyEditItem>()
+  val reviews = ContributionSection<MyReviewItem>()
 
   init {
     loadProducts()
     loadStores()
     loadObservations()
     loadEdits()
+    loadReviews()
   }
 
   fun loadProducts() {
@@ -171,5 +174,29 @@ class MyContributionsViewModel(private val graphQlClient: GraphQlClient) : ViewM
   fun changeEditsPageSize(size: Int) {
     edits.changePageSize(size)
     loadEdits()
+  }
+
+  /** Vlastní recenze s textem — na rozdíl od productReviews i skryté moderací (autor vidí proč). */
+  fun loadReviews() {
+    val offset = (reviews.pageIndex - 1) * reviews.pageSize
+    reviews.startLoading()
+    viewModelScope.launch {
+      try {
+        val result = graphQlClient.myReviews(reviews.pageSize, offset)
+        reviews.applyResult(result.items, result.totalCount)
+      } catch (e: Exception) {
+        reviews.applyError(e.toUiText())
+      }
+    }
+  }
+
+  fun changeReviewsPage(index: Int) {
+    reviews.goToPage(index)
+    loadReviews()
+  }
+
+  fun changeReviewsPageSize(size: Int) {
+    reviews.changePageSize(size)
+    loadReviews()
   }
 }

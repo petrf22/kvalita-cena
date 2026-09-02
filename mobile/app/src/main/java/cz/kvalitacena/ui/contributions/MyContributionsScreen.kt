@@ -39,8 +39,10 @@ import cz.kvalitacena.R
 import cz.kvalitacena.network.MyEditItem
 import cz.kvalitacena.network.MyObservationItem
 import cz.kvalitacena.network.MyProductItem
+import cz.kvalitacena.network.MyReviewItem
 import cz.kvalitacena.network.MyStoreItem
 import cz.kvalitacena.network.PublicationStatus
+import cz.kvalitacena.ui.common.StarRatingDisplay
 import cz.kvalitacena.ui.common.formatRelativeDate
 import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
@@ -52,6 +54,7 @@ private val TAB_LABELS = listOf(
   R.string.my_contributions_tab_stores,
   R.string.my_contributions_tab_observations,
   R.string.my_contributions_tab_edits,
+  R.string.my_contributions_tab_reviews,
 )
 
 private val FIELD_LABELS: Map<String, Int> = mapOf(
@@ -114,7 +117,8 @@ fun MyContributionsScreen(onProductClick: (String) -> Unit, onStoreClick: (Strin
       0 -> ProductsTab(viewModel, onProductClick)
       1 -> StoresTab(viewModel, onStoreClick)
       2 -> ObservationsTab(viewModel, onProductClick)
-      else -> EditsTab(viewModel, onProductClick, onStoreClick)
+      3 -> EditsTab(viewModel, onProductClick, onStoreClick)
+      else -> ReviewsTab(viewModel, onProductClick)
     }
   }
 }
@@ -264,6 +268,42 @@ private fun EditsTab(
         style = MaterialTheme.typography.bodySmall,
       )
       PublicationStatusRow(item.publication, PublicationRecordKind.EDIT)
+    }
+  }
+}
+
+@Composable
+private fun ReviewsTab(viewModel: MyContributionsViewModel, onProductClick: (String) -> Unit) {
+  val section = viewModel.reviews
+  ContributionList(
+    items = section.items,
+    loading = section.loading,
+    error = section.error,
+    totalCount = section.totalCount,
+    pageIndex = section.pageIndex,
+    pageSize = section.pageSize,
+    emptyTextRes = R.string.my_contributions_empty_reviews,
+    onPageChange = { viewModel.changeReviewsPage(it) },
+    onPageSizeChange = { viewModel.changeReviewsPageSize(it) },
+  ) { item: MyReviewItem ->
+    Column(
+      modifier = Modifier.fillMaxWidth()
+        .clickable { onProductClick(item.product.id) }
+        .padding(vertical = 8.dp),
+    ) {
+      Text(item.product.name, style = MaterialTheme.typography.titleSmall)
+      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        StarRatingDisplay(average = item.stars.toDouble(), starSize = 14.dp)
+        if (item.hidden) {
+          AssistChip(onClick = {}, label = { Text(stringResource(R.string.my_contributions_review_hidden)) })
+        }
+      }
+      Text(item.text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+      Text(
+        "${stringResource(R.string.my_contributions_created_at_label)} ${formatRelativeDate(item.createdAt)}",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
     }
   }
 }

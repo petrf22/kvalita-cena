@@ -400,10 +400,13 @@
     <string name="my_contributions_tab_stores">Stores</string>
     <string name="my_contributions_tab_observations">Prices</string>
     <string name="my_contributions_tab_edits">Edits</string>
+    <string name="my_contributions_tab_reviews">Reviews</string>
     <string name="my_contributions_empty_products">You haven’t added any products yet.</string>
     <string name="my_contributions_empty_stores">You haven’t added any stores yet.</string>
     <string name="my_contributions_empty_observations">You haven’t logged any prices yet.</string>
     <string name="my_contributions_empty_edits">You haven’t edited anyone else’s record yet.</string>
+    <string name="my_contributions_empty_reviews">You haven’t written any review yet.</string>
+    <string name="my_contributions_review_hidden">Hidden after reports</string>
     <string name="my_contributions_page_size_label">Per page:</string>
     <string name="my_contributions_page_indicator">Page %1$d of %2$d</string>
     <string name="my_contributions_previous_page">Previous</string>
