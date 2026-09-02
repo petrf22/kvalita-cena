@@ -7,7 +7,7 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
-## [Nezveřejněno]
+## [0.6.0] – 2026-09-02
 
 ### Zabezpečeno
 - Formulář zpětné vazby má proof-of-work výzvu místo CAPTCHY, vrstvené limity na IP/podsíť/celkový denní počet anonymních odeslání a odkládá podezřelé zprávy do karantény místo skrytí (server, web, mobil)
@@ -22,6 +22,8 @@ za jednoduchost skriptu.
 - Atribuce poskytovatele mapových dlaždic přímo v mapě (dřív jen ve „O aplikaci") (mobil)
 - Publikační sestavení mobilní appky teď bez podpisového klíče rovnou selže a po sestavení ověří podpis, místo aby tiše vyrobilo nepodepsaný soubor (mobil)
 - Záložka „Podezřelé" v moderaci pro zprávy zpětné vazby odložené kvůli podezření na spam, s možností vrátit falešný poplach zpět do fronty (web)
+- K hodnocení zboží hvězdičkami lze doplnit textovou recenzi (max 1000 znaků) — zobrazuje se pod zbožím podepsaná veřejným jménem autora, jde upravit, smazat i nahlásit (server, web, mobil)
+- Výpis vlastních recenzí v „Moje příspěvky" (server, web, mobil)
 
 ## [0.5.2] – 2026-08-31
 

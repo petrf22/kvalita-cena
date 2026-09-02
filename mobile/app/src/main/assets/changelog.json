@@ -1,5 +1,91 @@
 [
   {
+    "version": "0.6.0",
+    "date": "2026-09-02",
+    "sections": [
+      {
+        "title": "Zabezpečeno",
+        "items": [
+          {
+            "text": "Formulář zpětné vazby má proof-of-work výzvu místo CAPTCHY, vrstvené limity na IP/podsíť/celkový denní počet anonymních odeslání a odkládá podezřelé zprávy do karantény místo skrytí",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Klientská IP se čte odolně proti podvržení hlavičky `X-Forwarded-For` (server), oprava se týká i limitu na přihlašovací kódy",
+            "parts": []
+          }
+        ]
+      },
+      {
+        "title": "Změněno",
+        "items": [
+          {
+            "text": "Anonymní zápisy se do prahu potvrzení bezkódového zboží/nového obchodu už nepočítají vůbec, dřív se všechny anonymní zápisy jednoho dne počítaly jako jedno potvrzení",
+            "parts": [
+              "server"
+            ]
+          },
+          {
+            "text": "Poloha uživatele se před odesláním na OpenStreetMap Nominatim (reverzní geokódování) a do vyhledání obchodů v okolí zaokrouhlí na méně přesných desetinných míst, ať appka třetí straně neposílá falešně přesnou polohu",
+            "parts": [
+              "server"
+            ]
+          },
+          {
+            "text": "Poskytovatel mapových dlaždic je konfigurovatelný, ne natvrdo v kódu",
+            "parts": [
+              "web",
+              "mobil"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Přidáno",
+        "items": [
+          {
+            "text": "Atribuce poskytovatele mapových dlaždic přímo v mapě (dřív jen ve „O aplikaci\")",
+            "parts": [
+              "mobil"
+            ]
+          },
+          {
+            "text": "Publikační sestavení mobilní appky teď bez podpisového klíče rovnou selže a po sestavení ověří podpis, místo aby tiše vyrobilo nepodepsaný soubor",
+            "parts": [
+              "mobil"
+            ]
+          },
+          {
+            "text": "Záložka „Podezřelé\" v moderaci pro zprávy zpětné vazby odložené kvůli podezření na spam, s možností vrátit falešný poplach zpět do fronty",
+            "parts": [
+              "web"
+            ]
+          },
+          {
+            "text": "K hodnocení zboží hvězdičkami lze doplnit textovou recenzi (max 1000 znaků) — zobrazuje se pod zbožím podepsaná veřejným jménem autora, jde upravit, smazat i nahlásit",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Výpis vlastních recenzí v „Moje příspěvky\"",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "0.5.2",
     "date": "2026-08-31",
     "sections": [
