@@ -60,6 +60,8 @@ import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.StorePicker
 import cz.kvalitacena.ui.common.currencyForCountry
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
+import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
+import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
 import java.time.LocalDate
 import java.util.Currency
 import kotlinx.coroutines.launch
@@ -113,6 +115,14 @@ fun PriceEntryScreen(
   val scope = rememberCoroutineScope()
   val accessToken by AppContainer.authRepository.accessToken.collectAsState()
   val isLoggedIn = accessToken != null
+  val exitGuard = LocalNavigationExitGuard.current
+  val hasUnsavedChanges = viewModel.selectedStore != null || viewModel.observedAt.isNotBlank() ||
+    viewModel.quantityBasis != "PACKAGE" || viewModel.priceRows.size > 1 ||
+    viewModel.priceRows.any {
+      it.priceAmount.isNotBlank() || it.multibuyQty.isNotBlank() || it.multibuyTotal.isNotBlank() ||
+        it.promoValidFrom.isNotBlank() || it.promoValidTo.isNotBlank() || it.priceKind != "REGULAR"
+    }
+  ReportUnsavedChanges(hasUnsavedChanges && !viewModel.submitSuccess)
 
   // Vyzvednutí výsledku z formuláře obchodu/zboží po návratu na tuhle obrazovku — viz
   // NavigationResults. LaunchedEffect(Unit) proběhne znovu pokaždé, když se sem znovu vstoupí
@@ -209,7 +219,7 @@ fun PriceEntryScreen(
             )
           }
           Gap()
-          OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = { exitGuard.requestNavigation(onDone) }, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.common_back))
           }
         }
@@ -380,7 +390,7 @@ fun PriceEntryScreen(
             // Odchod bez zápisu — uživatel nesmí být nucený něco vyplnit jen proto, že sem
             // omylem naskenoval kód nebo si to rozmyslel (žádný nesmyslný údaj "jen aby prošel").
             OutlinedButton(
-              onClick = onDone,
+              onClick = { exitGuard.requestNavigation(onDone) },
               enabled = !viewModel.submitting,
               modifier = Modifier.fillMaxWidth(),
             ) {

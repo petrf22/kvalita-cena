@@ -37,6 +37,9 @@
     <string name="navigation_product_detail">Detail tovaru</string>
     <string name="navigation_store_detail">Detail obchodu</string>
     <string name="navigation_store_form">Obchod</string>
+    <string name="unsaved_changes_title">Zahodiť zmeny?</string>
+    <string name="unsaved_changes_message">Rozpísané údaje sa neuložia.</string>
+    <string name="unsaved_changes_discard">Zahodiť</string>
     <string name="account_logged_in_fallback">Prihlásený</string>
     <string name="account_logout">Odhlásiť sa</string>
     <string name="account_edit_profile">Upraviť profil</string>

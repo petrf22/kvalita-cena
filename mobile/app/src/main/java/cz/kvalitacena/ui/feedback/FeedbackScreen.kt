@@ -34,6 +34,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.crash.CrashReporter
+import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
+import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
 
 /**
  * Jediný first-party kanál zpětné vazby (core.feedback, docs/nasazeni.md "Než pozvat první
@@ -54,6 +56,12 @@ fun FeedbackScreen(source: String, onDone: () -> Unit) {
   // že mezitím appka spadla znovu (proces zůstává živý), takže by se stejně jen znovu přečetl
   // ten samý soubor.
   val pendingCrashReport = remember { CrashReporter.pendingReport(context) }
+  val exitGuard = LocalNavigationExitGuard.current
+  val hasUnsavedChanges = !viewModel.submitSuccess && (
+    viewModel.category != "BUG" || viewModel.message.isNotBlank() ||
+      viewModel.contactEmail.isNotBlank() || viewModel.attachCrashReport
+  )
+  ReportUnsavedChanges(hasUnsavedChanges)
 
   Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
     Text(stringResource(R.string.feedback_title), style = MaterialTheme.typography.headlineSmall)
@@ -66,7 +74,7 @@ fun FeedbackScreen(source: String, onDone: () -> Unit) {
         Text(stringResource(R.string.feedback_send_another))
       }
       Spacer()
-      OutlinedButton(onClick = onDone) {
+      OutlinedButton(onClick = { exitGuard.requestNavigation(onDone) }) {
         Text(stringResource(R.string.common_back))
       }
       return@Column
@@ -137,7 +145,7 @@ fun FeedbackScreen(source: String, onDone: () -> Unit) {
       Text(stringResource(if (viewModel.submitting) R.string.feedback_sending else R.string.feedback_send))
     }
     Spacer()
-    OutlinedButton(onClick = onDone) {
+    OutlinedButton(onClick = { exitGuard.requestNavigation(onDone) }) {
       Text(stringResource(R.string.common_back))
     }
   }

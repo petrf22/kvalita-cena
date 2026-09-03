@@ -37,6 +37,9 @@
     <string name="navigation_product_detail">Szczegóły produktu</string>
     <string name="navigation_store_detail">Szczegóły sklepu</string>
     <string name="navigation_store_form">Sklep</string>
+    <string name="unsaved_changes_title">Odrzucić zmiany?</string>
+    <string name="unsaved_changes_message">Niezapisane dane zostaną utracone.</string>
+    <string name="unsaved_changes_discard">Odrzuć</string>
     <string name="account_logged_in_fallback">Zalogowano</string>
     <string name="account_logout">Wyloguj się</string>
     <string name="account_edit_profile">Edytuj profil</string>

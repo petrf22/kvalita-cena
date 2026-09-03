@@ -32,6 +32,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +52,8 @@ import coil3.compose.AsyncImage
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.ui.common.SingleLineTextField
+import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
+import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
 
 /** Pořadí řádků v tabulce viditelnosti — nezávislé na pořadí, v jakém přijdou ze serveru. */
 private val VISIBILITY_FIELDS = listOf(
@@ -73,6 +79,15 @@ fun ProfileScreen(onDone: () -> Unit) {
     },
   )
   val context = LocalContext.current
+  val exitGuard = LocalNavigationExitGuard.current
+  var formDirty by rememberSaveable { mutableStateOf(false) }
+  val emailDirty = viewModel.emailChangeVisible && !viewModel.emailChangeSuccess &&
+    (viewModel.newEmail.isNotBlank() || viewModel.emailChangeCode.isNotBlank())
+  ReportUnsavedChanges(formDirty || emailDirty)
+
+  LaunchedEffect(viewModel.saveSuccess) {
+    if (viewModel.saveSuccess) formDirty = false
+  }
 
   val avatarLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri: Uri? ->
     uri?.let { viewModel.uploadAvatar(context, it) }
@@ -141,28 +156,28 @@ fun ProfileScreen(onDone: () -> Unit) {
     // --- Textové údaje ---
     SingleLineTextField(
       value = viewModel.firstName,
-      onValueChange = { viewModel.firstName = it },
+      onValueChange = { formDirty = true; viewModel.firstName = it },
       label = stringResource(R.string.profile_first_name_label),
       modifier = Modifier.fillMaxWidth(),
     )
     Gap()
     SingleLineTextField(
       value = viewModel.lastName,
-      onValueChange = { viewModel.lastName = it },
+      onValueChange = { formDirty = true; viewModel.lastName = it },
       label = stringResource(R.string.profile_last_name_label),
       modifier = Modifier.fillMaxWidth(),
     )
     Gap()
     SingleLineTextField(
       value = viewModel.displayName,
-      onValueChange = { viewModel.displayName = it },
+      onValueChange = { formDirty = true; viewModel.displayName = it },
       label = stringResource(R.string.profile_display_name_label),
       modifier = Modifier.fillMaxWidth(),
     )
     Gap()
     SingleLineTextField(
       value = viewModel.phone,
-      onValueChange = { viewModel.phone = it },
+      onValueChange = { formDirty = true; viewModel.phone = it },
       label = stringResource(R.string.profile_phone_label),
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
       modifier = Modifier.fillMaxWidth(),
@@ -170,7 +185,7 @@ fun ProfileScreen(onDone: () -> Unit) {
     Gap()
     SingleLineTextField(
       value = viewModel.contactEmail,
-      onValueChange = { viewModel.contactEmail = it },
+      onValueChange = { formDirty = true; viewModel.contactEmail = it },
       label = stringResource(R.string.profile_contact_email_label),
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
       modifier = Modifier.fillMaxWidth(),
@@ -198,9 +213,9 @@ fun ProfileScreen(onDone: () -> Unit) {
     // --- Viditelnost ---
     Text(stringResource(R.string.profile_visibility_title), style = MaterialTheme.typography.titleMedium)
     Gap()
-    VisibilityOption("ANONYMOUS", R.string.profile_visibility_anonymous, viewModel.visibility) { viewModel.visibility = it }
-    VisibilityOption("PUBLIC", R.string.profile_visibility_public, viewModel.visibility) { viewModel.visibility = it }
-    VisibilityOption("FRIENDS", R.string.profile_visibility_friends, viewModel.visibility) { viewModel.visibility = it }
+    VisibilityOption("ANONYMOUS", R.string.profile_visibility_anonymous, viewModel.visibility) { formDirty = true; viewModel.visibility = it }
+    VisibilityOption("PUBLIC", R.string.profile_visibility_public, viewModel.visibility) { formDirty = true; viewModel.visibility = it }
+    VisibilityOption("FRIENDS", R.string.profile_visibility_friends, viewModel.visibility) { formDirty = true; viewModel.visibility = it }
 
     if (viewModel.visibility != "ANONYMOUS") {
       Gap()
@@ -223,12 +238,12 @@ fun ProfileScreen(onDone: () -> Unit) {
           Text(stringResource(labelRes), modifier = Modifier.weight(1f))
           Checkbox(
             checked = viewModel.isChecked(field, "PUBLIC"),
-            onCheckedChange = { viewModel.toggleField(field, "PUBLIC") },
+            onCheckedChange = { formDirty = true; viewModel.toggleField(field, "PUBLIC") },
             modifier = Modifier.weight(0.6f),
           )
           Checkbox(
             checked = viewModel.isChecked(field, "FRIENDS"),
-            onCheckedChange = { viewModel.toggleField(field, "FRIENDS") },
+            onCheckedChange = { formDirty = true; viewModel.toggleField(field, "FRIENDS") },
             modifier = Modifier.weight(0.6f),
           )
         }
@@ -299,7 +314,7 @@ fun ProfileScreen(onDone: () -> Unit) {
     }
     Gap()
 
-    OutlinedButton(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
+    OutlinedButton(onClick = { exitGuard.requestNavigation(onDone) }, modifier = Modifier.fillMaxWidth()) {
       Text(stringResource(R.string.common_back))
     }
   }
@@ -322,8 +337,15 @@ private fun VisibilityOption(value: String, labelRes: Int, selected: String, onS
 
 @Composable
 private fun EmailChangeDialog(viewModel: ProfileViewModel) {
+  val exitGuard = LocalNavigationExitGuard.current
+  fun closeSafely() {
+    val dirty = !viewModel.emailChangeSuccess &&
+      (viewModel.newEmail.isNotBlank() || viewModel.emailChangeCode.isNotBlank())
+    if (dirty) exitGuard.requestNavigation { viewModel.closeEmailChangeModal() }
+    else viewModel.closeEmailChangeModal()
+  }
   AlertDialog(
-    onDismissRequest = { viewModel.closeEmailChangeModal() },
+    onDismissRequest = ::closeSafely,
     title = { Text(stringResource(R.string.profile_email_change_title)) },
     text = {
       Column {
@@ -358,7 +380,7 @@ private fun EmailChangeDialog(viewModel: ProfileViewModel) {
     },
     confirmButton = {
       if (viewModel.emailChangeSuccess) {
-        TextButton(onClick = { viewModel.closeEmailChangeModal() }) { Text(stringResource(R.string.common_back)) }
+        TextButton(onClick = ::closeSafely) { Text(stringResource(R.string.common_back)) }
       } else if (viewModel.emailChangeStep == "email") {
         TextButton(
           onClick = { viewModel.requestEmailChangeCode() },
@@ -379,7 +401,7 @@ private fun EmailChangeDialog(viewModel: ProfileViewModel) {
     },
     dismissButton = {
       if (!viewModel.emailChangeSuccess) {
-        TextButton(onClick = { viewModel.closeEmailChangeModal() }) { Text(stringResource(R.string.common_cancel)) }
+        TextButton(onClick = ::closeSafely) { Text(stringResource(R.string.common_cancel)) }
       }
     },
   )

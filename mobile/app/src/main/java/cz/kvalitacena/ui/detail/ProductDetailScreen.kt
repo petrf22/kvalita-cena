@@ -55,6 +55,8 @@ import cz.kvalitacena.ui.common.formatRelativeDate
 import cz.kvalitacena.ui.common.openUrl
 import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
+import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
+import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
 
 /**
  * Detail produktu: název, fotky, graf vývoje ceny (rozklikávací rozsah), nejlevnější obchod,
@@ -76,6 +78,9 @@ fun ProductDetailScreen(
   val context = LocalContext.current
   val accessToken by AppContainer.authRepository.accessToken.collectAsState()
   val isLoggedIn = accessToken != null
+  ReportUnsavedChanges(
+    viewModel.reviewModalVisible && viewModel.reviewText != productReviewBaseline(viewModel),
+  )
 
   // Po návratu z editace (ProductFormScreen productId != null) vyzvedne výsledek stejným vzorem
   // jako StoreDetailScreen NavigationResults.updatedStore.
@@ -399,8 +404,16 @@ private fun ReviewRow(review: ProductReview, flagging: Boolean, isLoggedIn: Bool
 
 @Composable
 private fun ReviewDialog(viewModel: ProductDetailViewModel) {
+  val exitGuard = LocalNavigationExitGuard.current
+  fun closeSafely() {
+    if (viewModel.reviewText != productReviewBaseline(viewModel)) {
+      exitGuard.requestNavigation { viewModel.closeReviewModal() }
+    } else {
+      viewModel.closeReviewModal()
+    }
+  }
   AlertDialog(
-    onDismissRequest = { viewModel.closeReviewModal() },
+    onDismissRequest = ::closeSafely,
     title = { Text(stringResource(R.string.review_dialog_title)) },
     text = {
       Column {
@@ -441,13 +454,16 @@ private fun ReviewDialog(viewModel: ProductDetailViewModel) {
             Text(stringResource(R.string.review_delete))
           }
         }
-        TextButton(onClick = { viewModel.closeReviewModal() }) {
+        TextButton(onClick = ::closeSafely) {
           Text(stringResource(R.string.common_cancel))
         }
       }
     },
   )
 }
+
+private fun productReviewBaseline(viewModel: ProductDetailViewModel): String =
+  viewModel.product?.myReviewText ?: ""
 
 @Composable
 private fun PriceRow(price: PriceCurrent, onClick: () -> Unit) {

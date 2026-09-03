@@ -38,6 +38,9 @@
     <string name="navigation_product_detail">Detail zboží</string>
     <string name="navigation_store_detail">Detail obchodu</string>
     <string name="navigation_store_form">Obchod</string>
+    <string name="unsaved_changes_title">Zahodit změny?</string>
+    <string name="unsaved_changes_message">Rozepsané údaje se neuloží.</string>
+    <string name="unsaved_changes_discard">Zahodit</string>
     <string name="account_logged_in_fallback">Přihlášen</string>
     <string name="account_logout">Odhlásit se</string>
     <string name="account_edit_profile">Upravit profil</string>

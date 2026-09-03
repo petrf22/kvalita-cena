@@ -30,11 +30,15 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.ui.common.SingleLineTextField
+import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
 
 @Composable
 fun LoginScreen(onLoggedIn: () -> Unit, onOpenTerms: () -> Unit = {}, onOpenPrivacy: () -> Unit = {}) {
   val viewModel: LoginViewModel = viewModel(
     factory = viewModelFactory { initializer { LoginViewModel(AppContainer.authRepository) } },
+  )
+  ReportUnsavedChanges(
+    viewModel.email.isNotBlank() || viewModel.code.isNotBlank() || viewModel.consentAccepted,
   )
 
   Column(

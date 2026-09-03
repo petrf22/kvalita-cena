@@ -37,6 +37,9 @@
     <string name="navigation_product_detail">Product details</string>
     <string name="navigation_store_detail">Store details</string>
     <string name="navigation_store_form">Store</string>
+    <string name="unsaved_changes_title">Discard changes?</string>
+    <string name="unsaved_changes_message">Your unsaved entries will be lost.</string>
+    <string name="unsaved_changes_discard">Discard</string>
     <string name="account_logged_in_fallback">Signed in</string>
     <string name="account_logout">Sign out</string>
     <string name="account_edit_profile">Edit profile</string>

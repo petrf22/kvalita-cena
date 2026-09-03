@@ -23,7 +23,11 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +50,8 @@ import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.categoryChoicesFor
 import cz.kvalitacena.ui.common.openUrl
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
+import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
+import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
 
 private val UNIT_BASE_LABEL_RES = mapOf(
   "COUNT" to R.string.unit_base_count,
@@ -79,9 +85,13 @@ fun ProductFormScreen(
       initializer { ProductFormViewModel(AppContainer.graphQlClient, barcode, productId) }
     },
   )
+  var formDirty by rememberSaveable { mutableStateOf(false) }
+  val exitGuard = LocalNavigationExitGuard.current
+  ReportUnsavedChanges(formDirty && viewModel.created == null)
 
   LaunchedEffect(viewModel.created) {
     viewModel.created?.let {
+      formDirty = false
       if (viewModel.isEditing) {
         NavigationResults.updatedProduct = it
         onDone()
@@ -138,7 +148,7 @@ fun ProductFormScreen(
     val genericTag = stringResource(R.string.product_form_generic_tag)
     SearchableDropdown(
       query = viewModel.name,
-      onQueryChange = viewModel::onNameChange,
+      onQueryChange = { formDirty = true; viewModel.onNameChange(it) },
       suggestions = viewModel.suggestions,
       onSelect = { viewModel.useExisting(it) },
       itemLabel = { summary ->
@@ -167,9 +177,9 @@ fun ProductFormScreen(
     }
     SearchableDropdown(
       query = viewModel.categoryQuery,
-      onQueryChange = viewModel::onCategoryQueryChange,
+      onQueryChange = { formDirty = true; viewModel.onCategoryQueryChange(it) },
       suggestions = categoryChoices,
-      onSelect = { viewModel.onCategorySelected(it.category) },
+      onSelect = { formDirty = true; viewModel.onCategorySelected(it.category) },
       itemLabel = { it.label },
       label = stringResource(R.string.product_form_category_label),
       modifier = Modifier.fillMaxWidth(),
@@ -178,7 +188,7 @@ fun ProductFormScreen(
 
     SingleLineTextField(
       value = viewModel.brandName,
-      onValueChange = { viewModel.brandName = it },
+      onValueChange = { formDirty = true; viewModel.brandName = it },
       label = stringResource(R.string.product_form_brand_label),
       modifier = Modifier.fillMaxWidth(),
     )
@@ -189,7 +199,7 @@ fun ProductFormScreen(
       UNIT_BASE_LABEL_RES.forEach { (value, labelRes) ->
         FilterChip(
           selected = viewModel.unitBase == value,
-          onClick = { viewModel.unitBase = value },
+          onClick = { formDirty = true; viewModel.unitBase = value },
           label = { Text(stringResource(labelRes)) },
           modifier = Modifier.padding(end = 8.dp),
         )
@@ -204,14 +214,14 @@ fun ProductFormScreen(
           style = MaterialTheme.typography.bodyMedium,
           modifier = Modifier.weight(1f),
         )
-        Switch(checked = viewModel.isVariableWeight, onCheckedChange = { viewModel.isVariableWeight = it })
+        Switch(checked = viewModel.isVariableWeight, onCheckedChange = { formDirty = true; viewModel.isVariableWeight = it })
       }
       Gap()
 
       if (!viewModel.isVariableWeight) {
         SingleLineTextField(
           value = viewModel.netContentValue,
-          onValueChange = { input -> if (input.matches(Regex("^\\d*[.,]?\\d*$"))) viewModel.netContentValue = input },
+          onValueChange = { input -> if (input.matches(Regex("^\\d*[.,]?\\d*$"))) { formDirty = true; viewModel.netContentValue = input } },
           label = stringResource(
             if (viewModel.unitBase == "MASS") R.string.product_form_mass_label else R.string.product_form_volume_label,
           ),
@@ -224,7 +234,7 @@ fun ProductFormScreen(
 
     SingleLineTextField(
       value = viewModel.piecesInPack,
-      onValueChange = { input -> if (input.all(Char::isDigit)) viewModel.piecesInPack = input },
+      onValueChange = { input -> if (input.all(Char::isDigit)) { formDirty = true; viewModel.piecesInPack = input } },
       label = stringResource(R.string.product_form_pieces_in_pack_label),
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
       modifier = Modifier.fillMaxWidth(),
@@ -236,7 +246,7 @@ fun ProductFormScreen(
 
     SingleLineTextField(
       value = viewModel.code,
-      onValueChange = { viewModel.code = it },
+      onValueChange = { formDirty = true; viewModel.code = it },
       label = stringResource(R.string.product_form_code_label),
       readOnly = viewModel.isEditing,
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -256,13 +266,13 @@ fun ProductFormScreen(
     if (!viewModel.isEditing) {
       PhotoSlot(
         label = stringResource(R.string.product_form_item_photo_label),
-        onUriChange = { viewModel.itemPhotoUri = it },
+        onUriChange = { formDirty = true; viewModel.itemPhotoUri = it },
         modifier = Modifier.fillMaxWidth(),
       )
       Gap()
       PhotoSlot(
         label = stringResource(R.string.product_form_label_photo_label),
-        onUriChange = { viewModel.labelPhotoUri = it },
+        onUriChange = { formDirty = true; viewModel.labelPhotoUri = it },
         modifier = Modifier.fillMaxWidth(),
       )
       Gap()
@@ -301,7 +311,11 @@ fun ProductFormScreen(
       }
     }
     Gap()
-    OutlinedButton(onClick = onDone, enabled = !viewModel.saving, modifier = Modifier.fillMaxWidth()) {
+    OutlinedButton(
+      onClick = { exitGuard.requestNavigation(onDone) },
+      enabled = !viewModel.saving,
+      modifier = Modifier.fillMaxWidth(),
+    ) {
       Text(
         stringResource(
           if (viewModel.isEditing) R.string.common_cancel else R.string.product_form_back_without_creating,

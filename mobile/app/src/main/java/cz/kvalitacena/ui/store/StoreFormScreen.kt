@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +58,8 @@ import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.companyIdLabelRes
 import cz.kvalitacena.ui.common.countryNameRes
 import cz.kvalitacena.ui.common.hasCompanyRegistry
+import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
+import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
 import kotlinx.coroutines.launch
 
 /**
@@ -78,9 +81,13 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
   )
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
+  var formDirty by rememberSaveable { mutableStateOf(false) }
+  val exitGuard = LocalNavigationExitGuard.current
+  ReportUnsavedChanges(formDirty && viewModel.created == null)
 
   LaunchedEffect(viewModel.created) {
     viewModel.created?.let {
+      formDirty = false
       if (viewModel.isEditing) NavigationResults.updatedStore = it else NavigationResults.newStore = it
       onDone()
     }
@@ -124,9 +131,9 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
 
     SearchableDropdown(
       query = viewModel.chainQuery,
-      onQueryChange = viewModel::onChainQueryChange,
+      onQueryChange = { formDirty = true; viewModel.onChainQueryChange(it) },
       suggestions = viewModel.chainSuggestions,
-      onSelect = viewModel::onChainSelect,
+      onSelect = { formDirty = true; viewModel.onChainSelect(it) },
       itemLabel = { it.name },
       label = stringResource(R.string.store_form_chain_label),
       loading = viewModel.chainSearching,
@@ -136,28 +143,28 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
 
     SingleLineTextField(
       value = viewModel.name,
-      onValueChange = viewModel::onNameChange,
+      onValueChange = { formDirty = true; viewModel.onNameChange(it) },
       label = stringResource(R.string.store_form_name_label),
       modifier = Modifier.fillMaxWidth(),
     )
     Gap()
     SingleLineTextField(
       value = viewModel.street,
-      onValueChange = { viewModel.street = it },
+      onValueChange = { formDirty = true; viewModel.street = it },
       label = stringResource(R.string.store_form_street_label),
       modifier = Modifier.fillMaxWidth(),
     )
     Gap()
     SingleLineTextField(
       value = viewModel.city,
-      onValueChange = viewModel::onCityChange,
+      onValueChange = { formDirty = true; viewModel.onCityChange(it) },
       label = stringResource(R.string.store_form_city_label),
       modifier = Modifier.fillMaxWidth(),
     )
     Gap()
     SingleLineTextField(
       value = viewModel.postalCode,
-      onValueChange = { viewModel.postalCode = it },
+      onValueChange = { formDirty = true; viewModel.postalCode = it },
       label = stringResource(R.string.store_form_postal_code_label),
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
       modifier = Modifier.fillMaxWidth(),
@@ -165,7 +172,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     Gap()
     SingleLineTextField(
       value = viewModel.url,
-      onValueChange = { viewModel.url = it },
+      onValueChange = { formDirty = true; viewModel.url = it },
       label = stringResource(R.string.store_form_url_label),
       isError = viewModel.url.isNotBlank() && !isUrlShapeValid(viewModel.url),
       supportingText = if (viewModel.url.isNotBlank() && !isUrlShapeValid(viewModel.url)) {
@@ -176,7 +183,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     )
     Gap()
 
-    CountryDropdown(selected = viewModel.country, onSelect = { viewModel.country = it })
+    CountryDropdown(selected = viewModel.country, onSelect = { formDirty = true; viewModel.country = it })
     Gap()
 
     if (viewModel.similarStores.isNotEmpty()) {
@@ -208,14 +215,14 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       SingleLineTextField(
         value = viewModel.ico,
-        onValueChange = { viewModel.ico = it },
+        onValueChange = { formDirty = true; viewModel.ico = it },
         label = companyIdLabel,
         isError = viewModel.ico.isNotBlank() && !isIcoShapeValid(viewModel.ico, viewModel.country),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = Modifier.weight(1f),
       )
       if (hasCompanyRegistry(viewModel.country)) {
-        Button(onClick = { viewModel.lookupIco() }, enabled = !viewModel.icoLookupLoading) {
+        Button(onClick = { formDirty = true; viewModel.lookupIco() }, enabled = !viewModel.icoLookupLoading) {
           if (viewModel.icoLookupLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
           else Text(stringResource(R.string.store_company_id_load_from_registry))
         }
@@ -241,7 +248,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
         if (viewModel.geocoding) CircularProgressIndicator(modifier = Modifier.size(20.dp))
         else Text(stringResource(R.string.store_location_find_coordinates))
       }
-      OutlinedButton(onClick = { useMyLocation() }, enabled = !viewModel.locating) {
+      OutlinedButton(onClick = { formDirty = true; useMyLocation() }, enabled = !viewModel.locating) {
         if (viewModel.locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
         else Text(stringResource(R.string.store_location_use_my_location))
       }
@@ -253,7 +260,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
         CandidateRow(
           candidate = candidate,
           selected = viewModel.selectedCandidate == candidate,
-          onSelect = { viewModel.selectCandidate(candidate) },
+          onSelect = { formDirty = true; viewModel.selectCandidate(candidate) },
         )
       }
       viewModel.geocodeAttribution?.let {
@@ -275,7 +282,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       lat = viewModel.selectedCandidate?.lat ?: viewModel.manualLat,
       lon = viewModel.selectedCandidate?.lon ?: viewModel.manualLon,
       editable = true,
-      onPointSelected = { lat, lon -> viewModel.onMapPointSelected(lat, lon) },
+      onPointSelected = { lat, lon -> formDirty = true; viewModel.onMapPointSelected(lat, lon) },
       modifier = Modifier.fillMaxWidth(),
     )
     Gap()
@@ -296,7 +303,11 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       else Text(stringResource(if (viewModel.isEditing) R.string.store_form_save_changes else R.string.store_form_create))
     }
     Gap()
-    OutlinedButton(onClick = onDone, enabled = !viewModel.saving, modifier = Modifier.fillMaxWidth()) {
+    OutlinedButton(
+      onClick = { exitGuard.requestNavigation(onDone) },
+      enabled = !viewModel.saving,
+      modifier = Modifier.fillMaxWidth(),
+    ) {
       Text(stringResource(if (viewModel.isEditing) R.string.common_cancel else R.string.store_form_back_without_creating))
     }
   }

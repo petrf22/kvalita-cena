@@ -3,6 +3,7 @@ package cz.kvalitacena
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.compose.BackHandler
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -17,6 +18,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +66,9 @@ import cz.kvalitacena.ui.navigation.ROUTE_STORE_FORM
 import cz.kvalitacena.ui.navigation.TopLevelDestination
 import cz.kvalitacena.ui.navigation.feedbackRoute
 import cz.kvalitacena.ui.navigation.isTopLevelRoute
+import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
+import cz.kvalitacena.ui.navigation.NavigationExitGuardDialog
+import cz.kvalitacena.ui.navigation.NavigationExitGuardState
 import cz.kvalitacena.ui.navigation.nestedRouteTitle
 import cz.kvalitacena.ui.navigation.priceEntryRouteByBarcode
 import cz.kvalitacena.ui.navigation.priceEntryRouteByProductId
@@ -117,6 +124,9 @@ private fun AppScaffold() {
   val currentEntry by navController.currentBackStackEntryAsState()
   val currentRoute = currentEntry?.destination?.route
   val isTopLevel = isTopLevelRoute(currentRoute)
+  val exitGuard = remember { NavigationExitGuardState() }
+
+  LaunchedEffect(currentEntry?.id) { exitGuard.clear() }
 
   fun navigateBack() {
     if (!navController.navigateUp()) {
@@ -127,6 +137,11 @@ private fun AppScaffold() {
     }
   }
 
+  BackHandler(enabled = !isTopLevel || exitGuard.dirty) {
+    exitGuard.requestNavigation(::navigateBack)
+  }
+
+  CompositionLocalProvider(LocalNavigationExitGuard provides exitGuard) {
   Scaffold(
     topBar = {
       CenterAlignedTopAppBar(
@@ -147,7 +162,7 @@ private fun AppScaffold() {
         },
         navigationIcon = {
           if (!isTopLevel) {
-            IconButton(onClick = ::navigateBack) {
+            IconButton(onClick = { exitGuard.requestNavigation(::navigateBack) }) {
               Icon(
                 painter = painterResource(R.drawable.ic_arrow_back),
                 contentDescription = stringResource(R.string.common_back),
@@ -159,7 +174,7 @@ private fun AppScaffold() {
       )
     },
     bottomBar = {
-      if (isTopLevel) AppBottomBar(navController)
+      if (isTopLevel) AppBottomBar(navController, exitGuard)
     },
   ) { padding ->
     NavHost(
@@ -324,6 +339,8 @@ private fun AppScaffold() {
       }
     }
   }
+  NavigationExitGuardDialog(exitGuard)
+  }
 }
 
 /**
@@ -331,7 +348,7 @@ private fun AppScaffold() {
  * (`saveState`/`restoreState`) — standardní vzor pro bottom navigation.
  */
 @Composable
-private fun AppBottomBar(navController: NavHostController) {
+private fun AppBottomBar(navController: NavHostController, exitGuard: NavigationExitGuardState) {
   val backStackEntry by navController.currentBackStackEntryAsState()
   val currentRoute = backStackEntry?.destination?.route
 
@@ -339,7 +356,7 @@ private fun AppBottomBar(navController: NavHostController) {
     TopLevelDestination.entries.forEach { destination ->
       NavigationBarItem(
         selected = currentRoute == destination.route,
-        onClick = {
+        onClick = { exitGuard.requestNavigation {
           // Vždy čistý zásobník — jen jedna položka menu. Standardní vzor se saveState/
           // restoreState (obnova stavu při návratu na záložku) se tu ukázal nespolehlivý:
           // návrat na "search" (startDestination) se za určitých stavů zásobníku vůbec
@@ -350,7 +367,7 @@ private fun AppBottomBar(navController: NavHostController) {
             popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
             launchSingleTop = true
           }
-        },
+        } },
         icon = {
           Icon(
             painter = painterResource(destination.iconRes),
