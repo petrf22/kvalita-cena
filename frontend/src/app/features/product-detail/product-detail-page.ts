@@ -11,7 +11,7 @@ import {
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
-import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
+import { NzDropdownModule } from 'ng-zorro-antd/dropdown';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzModalModule } from 'ng-zorro-antd/modal';
@@ -49,7 +49,7 @@ const REVIEWS_PAGE_SIZE = 10;
     FormsModule,
     RouterLink,
     NzCardModule,
-    NzDropDownModule,
+    NzDropdownModule,
     NzTableModule,
     NzTagModule,
     NzButtonModule,
