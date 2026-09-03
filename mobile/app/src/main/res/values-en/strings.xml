@@ -15,6 +15,7 @@
     <string name="common_edit">Edit</string>
     <string name="common_report">Report</string>
     <string name="common_unverified">Unverified</string>
+    <string name="product_actions">More actions</string>
     <string name="report_acknowledged">Thanks for reporting, we\'ve noted it.</string>
 
     <string name="company_id_label_generic">Company ID</string>

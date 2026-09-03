@@ -3,6 +3,7 @@ import {
   CheckCircleOutline,
   DeleteOutline,
   EditOutline,
+  EllipsisOutline,
   EnvironmentOutline,
   FilterOutline,
   FlagOutline,
@@ -51,6 +52,7 @@ export const icons = [
   LeftOutline,
   RightOutline,
   EditOutline,
+  EllipsisOutline,
   UnorderedListOutline,
   SafetyCertificateOutline,
   // Zástupná ikona miniatury zboží, když nemá vlastní fotku ani OFF obrázek (shared/product-thumb.ts).

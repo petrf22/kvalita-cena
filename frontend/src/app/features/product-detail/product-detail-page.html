@@ -56,20 +56,28 @@
         <nz-tag nzColor="orange">{{ t('product-detail.draftPending') }}</nz-tag>
       }
       @if (auth.isLoggedIn()) {
-        <button nz-button nzType="text" nzSize="small" (click)="editing.set(true)">
-          <span nz-icon nzType="edit"></span>
-          {{ 'common.edit' | transloco }}
-        </button>
         <button
           nz-button
           nzType="text"
-          nzSize="small"
-          [nzLoading]="flagging()"
-          (click)="flagProduct()"
+          nz-dropdown
+          [nzDropdownMenu]="productActions"
+          nzTrigger="click"
+          [attr.aria-label]="t('product-detail.actions')"
         >
-          <span nz-icon nzType="flag"></span>
-          {{ t('product-detail.report') }}
+          <span nz-icon nzType="ellipsis"></span>
         </button>
+        <nz-dropdown-menu #productActions="nzDropdownMenu">
+          <ul nz-menu>
+            <li nz-menu-item (click)="editing.set(true)">
+              <span nz-icon nzType="edit"></span>
+              {{ 'common.edit' | transloco }}
+            </li>
+            <li nz-menu-item [nzDisabled]="flagging()" (click)="flagProduct()">
+              <span nz-icon nzType="flag"></span>
+              {{ t('product-detail.report') }}
+            </li>
+          </ul>
+        </nz-dropdown-menu>
       }
     </div>
     @if (flagMessage()) {

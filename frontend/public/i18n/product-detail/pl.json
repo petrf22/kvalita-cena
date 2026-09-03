@@ -6,6 +6,7 @@
   "yourEdit": "Twoja edycja",
   "draftPending": "Oczekuje na potwierdzenie — na razie widzisz to tylko ty",
   "report": "Zgłoś",
+  "actions": "Więcej działań",
   "editModalTitle": "Edytuj produkt",
   "qualityLoginHint": "Ocena jakości wymaga zalogowania — przejdź do strony Konto.",
   "qualityRateStars": "{count, plural, one {# gwiazdka} few {# gwiazdki} many {# gwiazdek} other {# gwiazdek}}",

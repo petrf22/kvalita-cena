@@ -15,6 +15,7 @@
     <string name="common_edit">Edytuj</string>
     <string name="common_report">Zgłoś</string>
     <string name="common_unverified">Niezweryfikowane</string>
+    <string name="product_actions">Więcej działań</string>
     <string name="report_acknowledged">Dziękujemy za zgłoszenie, odnotowaliśmy je.</string>
 
     <string name="company_id_label_generic">IČO</string>

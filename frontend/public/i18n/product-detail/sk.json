@@ -6,6 +6,7 @@
   "yourEdit": "Vaša úprava",
   "draftPending": "Čaká na potvrdenie — zatiaľ vidíte len vy",
   "report": "Nahlásiť",
+  "actions": "Ďalšie akcie",
   "editModalTitle": "Upraviť tovar",
   "qualityLoginHint": "Hodnotenie kvality vyžaduje prihlásenie — prejdi na stránku Účet.",
   "qualityRateStars": "{count, plural, one {# hviezda} few {# hviezdy} many {# hviezdy} other {# hviezd}}",

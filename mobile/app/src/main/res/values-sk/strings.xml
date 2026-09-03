@@ -15,6 +15,7 @@
     <string name="common_edit">Upraviť</string>
     <string name="common_report">Nahlásiť</string>
     <string name="common_unverified">Neoverené</string>
+    <string name="product_actions">Ďalšie akcie</string>
     <string name="report_acknowledged">Ďakujeme za nahlásenie, zaznamenali sme ho.</string>
 
     <string name="company_id_label_generic">IČO</string>

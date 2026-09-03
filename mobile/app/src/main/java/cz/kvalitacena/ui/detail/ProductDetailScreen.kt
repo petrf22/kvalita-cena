@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,8 +18,12 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -28,12 +33,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -78,6 +87,7 @@ fun ProductDetailScreen(
   val context = LocalContext.current
   val accessToken by AppContainer.authRepository.accessToken.collectAsState()
   val isLoggedIn = accessToken != null
+  var productActionsExpanded by remember { mutableStateOf(false) }
   ReportUnsavedChanges(
     viewModel.reviewModalVisible && viewModel.reviewText != productReviewBaseline(viewModel),
   )
@@ -141,22 +151,47 @@ fun ProductDetailScreen(
         if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodyMedium)
 
         // --- Štítky uživatelské vrstvy (docs/datovy-model.md) + nahlášení ---
-        Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          if (!product.verified) {
-            AssistChip(onClick = {}, label = { Text(stringResource(R.string.common_unverified)) })
-          }
-          if (product.editedByMe) {
-            AssistChip(onClick = {}, label = { Text(stringResource(R.string.product_edited_by_me)) })
-          }
-          if (product.status == "DRAFT") {
-            AssistChip(onClick = {}, label = { Text(stringResource(R.string.product_draft_pending)) })
+        Row(
+          modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.Top,
+        ) {
+          FlowRow(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+          ) {
+            if (!product.verified) {
+              AssistChip(onClick = {}, label = { Text(stringResource(R.string.common_unverified)) })
+            }
+            if (product.editedByMe) {
+              AssistChip(onClick = {}, label = { Text(stringResource(R.string.product_edited_by_me)) })
+            }
+            if (product.status == "DRAFT") {
+              AssistChip(onClick = {}, label = { Text(stringResource(R.string.product_draft_pending)) })
+            }
           }
           if (isLoggedIn) {
-            TextButton(onClick = { onEditProduct(productId) }) {
-              Text(stringResource(R.string.common_edit))
-            }
-            TextButton(onClick = { viewModel.flagProduct() }, enabled = !viewModel.flagging) {
-              Text(stringResource(R.string.common_report))
+            Box {
+              IconButton(onClick = { productActionsExpanded = true }) {
+                Icon(
+                  painter = painterResource(R.drawable.ic_more_vert),
+                  contentDescription = stringResource(R.string.product_actions),
+                )
+              }
+              DropdownMenu(
+                expanded = productActionsExpanded,
+                onDismissRequest = { productActionsExpanded = false },
+              ) {
+                DropdownMenuItem(
+                  text = { Text(stringResource(R.string.common_edit)) },
+                  onClick = { productActionsExpanded = false; onEditProduct(productId) },
+                )
+                DropdownMenuItem(
+                  text = { Text(stringResource(R.string.common_report)) },
+                  enabled = !viewModel.flagging,
+                  onClick = { productActionsExpanded = false; viewModel.flagProduct() },
+                )
+              }
             }
           }
         }
