@@ -121,6 +121,14 @@
     <string name="profile_delete_account_request_new_code">Poslať nový kód</string>
 
     <string name="scan_camera_permission_hint">Na skenovanie čiarových kódov appka potrebuje prístup ku kamere.</string>
+    <string name="scan_instruction">Umiestni čiarový kód do rámčeka</string>
+    <string name="scan_flashlight_on">Zapnúť svietidlo</string>
+    <string name="scan_flashlight_off">Vypnúť svietidlo</string>
+    <string name="scan_manual_entry">Zadať kód ručne</string>
+    <string name="scan_manual_title">Ručné zadanie kódu</string>
+    <string name="scan_manual_label">Čiarový kód</string>
+    <string name="scan_manual_error">Zadaj 8 až 14 číslic.</string>
+    <string name="scan_manual_submit">Pokračovať</string>
 
     <string name="settings_title">Nastavenia</string>
     <string name="settings_language">Jazyk</string>

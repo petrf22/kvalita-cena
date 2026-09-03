@@ -121,6 +121,14 @@
     <string name="profile_delete_account_request_new_code">Neuen Code senden</string>
 
     <string name="scan_camera_permission_hint">Zum Scannen von Strichcodes benötigt die App Zugriff auf die Kamera.</string>
+    <string name="scan_instruction">Barcode in den Rahmen halten</string>
+    <string name="scan_flashlight_on">Taschenlampe einschalten</string>
+    <string name="scan_flashlight_off">Taschenlampe ausschalten</string>
+    <string name="scan_manual_entry">Code manuell eingeben</string>
+    <string name="scan_manual_title">Barcode manuell eingeben</string>
+    <string name="scan_manual_label">Barcode</string>
+    <string name="scan_manual_error">8 bis 14 Ziffern eingeben.</string>
+    <string name="scan_manual_submit">Weiter</string>
 
     <string name="settings_title">Einstellungen</string>
     <string name="settings_language">Sprache</string>
