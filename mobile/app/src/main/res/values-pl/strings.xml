@@ -260,6 +260,8 @@
     <string name="search_city_filter">Miasto</string>
     <string name="search_category_filter">Kategoria</string>
     <string name="search_sort_label">Sortowanie</string>
+    <string name="search_filters">Filtry i sortowanie</string>
+    <string name="search_filters_active">Filtry i sortowanie (%1$d)</string>
     <string name="search_filter_all">Wszystkie</string>
     <string name="search_hint">Wpisz, czego szukasz.</string>
     <string name="search_not_found">Nic nie znaleźliśmy.</string>

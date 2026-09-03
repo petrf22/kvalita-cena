@@ -260,6 +260,8 @@
     <string name="search_city_filter">Mesto</string>
     <string name="search_category_filter">Kategória</string>
     <string name="search_sort_label">Radenie</string>
+    <string name="search_filters">Filtre a radenie</string>
+    <string name="search_filters_active">Filtre a radenie (%1$d)</string>
     <string name="search_filter_all">Všetky</string>
     <string name="search_hint">Zadaj, čo hľadáš.</string>
     <string name="search_not_found">Nič sme nenašli.</string>

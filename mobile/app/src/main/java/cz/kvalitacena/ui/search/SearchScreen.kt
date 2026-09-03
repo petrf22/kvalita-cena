@@ -1,9 +1,10 @@
 package cz.kvalitacena.ui.search
 
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,13 +39,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -50,7 +56,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.network.ProductSearchItem
-import cz.kvalitacena.ui.common.LabelValueRow
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.ProductThumb
 import cz.kvalitacena.ui.common.QualityBadge
@@ -93,6 +98,7 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
 
   val accessToken by AppContainer.authRepository.accessToken.collectAsState()
   val isLoggedIn = accessToken != null
+  var filtersExpanded by rememberSaveable { mutableStateOf(false) }
 
   Column(modifier = Modifier.fillMaxSize()) {
     Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -101,9 +107,15 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
         onValueChange = { viewModel.query = it },
         label = stringResource(R.string.search_field_label),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions = KeyboardActions(onSearch = { viewModel.search() }),
+        keyboardActions = KeyboardActions(onSearch = {
+          filtersExpanded = false
+          viewModel.search()
+        }),
         trailingIcon = {
-          IconButton(onClick = { viewModel.search() }) {
+          IconButton(onClick = {
+            filtersExpanded = false
+            viewModel.search()
+          }) {
             Icon(painterResource(R.drawable.ic_tab_search), contentDescription = stringResource(R.string.search_action))
           }
         },
@@ -111,55 +123,77 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
       )
     }
 
-    Row(
+    val activeFilterCount = listOf(
+      viewModel.selectedStoreId,
+      viewModel.selectedCity,
+      viewModel.selectedCategoryId,
+    ).count { it != null }
+    OutlinedButton(
+      onClick = { filtersExpanded = !filtersExpanded },
       modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-      FilterDropdown(
-        label = stringResource(R.string.search_store_filter),
-        options = viewModel.facets.stores.map { it.id to storeLabel(it, AppContainer.countryStore.country) },
-        selected = viewModel.selectedStoreId,
-        onSelect = viewModel::onStoreChange,
+      Text(
+        if (activeFilterCount == 0) {
+          stringResource(R.string.search_filters)
+        } else {
+          stringResource(R.string.search_filters_active, activeFilterCount)
+        },
         modifier = Modifier.weight(1f),
+        textAlign = TextAlign.Start,
       )
-      FilterDropdown(
-        label = stringResource(R.string.search_city_filter),
-        options = viewModel.facets.cities.map { it to it },
-        selected = viewModel.selectedCity,
-        onSelect = viewModel::onCityChange,
-        modifier = Modifier.weight(1f),
-      )
+      ExposedDropdownMenuDefaults.TrailingIcon(expanded = filtersExpanded)
     }
 
-    // Vlastní řádek, ne ve Row s obchodem/městem — breadcrumb vybrané kategorie ("Potraviny ›
-    // Mléčné výrobky › Rostlinné alternativy mléka") potřebuje víc místa než dva sloupce.
     val locale = LocalConfiguration.current.locales[0]
     val categoryChoices = remember(viewModel.categories, viewModel.categoryQuery, locale) {
       categoryChoicesFor(viewModel.categoryQuery, viewModel.categories, locale)
     }
-    SearchableDropdown(
-      query = viewModel.categoryQuery,
-      onQueryChange = viewModel::onCategoryQueryChange,
-      suggestions = categoryChoices,
-      onSelect = viewModel::onCategorySelected,
-      itemLabel = { it.label },
-      label = stringResource(R.string.search_category_filter),
-      // SearchableDropdown sám "vymazat" neumí — položka "Vše" v patičce nabídky zruší filtr,
-      // stejný vzor jako ve FilterDropdown u obchodu/města níž.
-      footer = {
-        DropdownMenuItem(
-          text = { Text(stringResource(R.string.search_filter_all)) },
-          onClick = { viewModel.clearCategory() },
-        )
-      },
-      modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-    )
+    AnimatedVisibility(visible = filtersExpanded) {
+      Column(modifier = Modifier.padding(top = 8.dp)) {
+        Row(
+          modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+          FilterDropdown(
+            label = stringResource(R.string.search_store_filter),
+            options = viewModel.facets.stores.map { it.id to storeLabel(it, AppContainer.countryStore.country) },
+            selected = viewModel.selectedStoreId,
+            onSelect = viewModel::onStoreChange,
+            modifier = Modifier.weight(1f),
+          )
+          FilterDropdown(
+            label = stringResource(R.string.search_city_filter),
+            options = viewModel.facets.cities.map { it to it },
+            selected = viewModel.selectedCity,
+            onSelect = viewModel::onCityChange,
+            modifier = Modifier.weight(1f),
+          )
+        }
 
-    SortDropdown(
-      selected = viewModel.sort,
-      onSelect = viewModel::onSortChange,
-      modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-    )
+        // Breadcrumb vybrané kategorie potřebuje vlastní šířku, ne půlku řádku.
+        SearchableDropdown(
+          query = viewModel.categoryQuery,
+          onQueryChange = viewModel::onCategoryQueryChange,
+          suggestions = categoryChoices,
+          onSelect = viewModel::onCategorySelected,
+          itemLabel = { it.label },
+          label = stringResource(R.string.search_category_filter),
+          footer = {
+            DropdownMenuItem(
+              text = { Text(stringResource(R.string.search_filter_all)) },
+              onClick = { viewModel.clearCategory() },
+            )
+          },
+          modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+
+        SortDropdown(
+          selected = viewModel.sort,
+          onSelect = viewModel::onSortChange,
+          modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        )
+      }
+    }
     HorizontalDivider()
 
     when {
@@ -230,10 +264,13 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
           if (shouldLoadMore) viewModel.loadMore()
         }
 
-        LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+          state = listState,
+          modifier = Modifier.fillMaxSize(),
+          contentPadding = PaddingValues(vertical = 8.dp),
+        ) {
           items(viewModel.items, key = { it.product.id }) { item ->
-            SearchResultRow(item = item, onClick = { onProductClick(item.product.id) })
-            HorizontalDivider()
+            SearchResultCard(item = item, onClick = { onProductClick(item.product.id) })
           }
           if (viewModel.hasMore) {
             item {
@@ -249,55 +286,116 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
 }
 
 @Composable
-private fun SearchResultRow(item: ProductSearchItem, onClick: () -> Unit) {
-  Row(
+private fun SearchResultCard(item: ProductSearchItem, onClick: () -> Unit) {
+  Card(
+    onClick = onClick,
     modifier = Modifier
       .fillMaxWidth()
-      .clickable(onClick = onClick)
-      .padding(horizontal = 16.dp, vertical = 12.dp),
-    verticalAlignment = Alignment.Top,
+      .padding(horizontal = 16.dp, vertical = 6.dp),
+    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
   ) {
-    ProductThumb(
-      name = item.product.name,
-      photos = item.product.photos,
-      externalImage = item.product.externalImage,
-      modifier = Modifier.padding(end = 12.dp, top = 2.dp),
-    )
-    Column(modifier = Modifier.weight(1f)) {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(item.product.name, style = MaterialTheme.typography.titleMedium)
-        if (!item.product.verified) {
+    Column(modifier = Modifier.padding(16.dp)) {
+      Row(verticalAlignment = Alignment.Top) {
+        ProductThumb(
+          name = item.product.name,
+          photos = item.product.photos,
+          externalImage = item.product.externalImage,
+          size = 72.dp,
+          modifier = Modifier.padding(end = 14.dp),
+        )
+        Column(modifier = Modifier.weight(1f)) {
           Text(
-            stringResource(R.string.common_unverified),
-            style = MaterialTheme.typography.labelSmall,
+            item.product.name,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+          )
+          val subtitle = listOfNotNull(item.product.brand?.name, item.product.category.name).joinToString(" · ")
+          if (subtitle.isNotBlank()) {
+            Text(
+              subtitle,
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+              maxLines = 2,
+              overflow = TextOverflow.Ellipsis,
+              modifier = Modifier.padding(top = 2.dp),
+            )
+          }
+          if (!item.product.verified) {
+            Text(
+              stringResource(R.string.common_unverified),
+              style = MaterialTheme.typography.labelSmall,
+              color = MaterialTheme.colorScheme.tertiary,
+              modifier = Modifier.padding(top = 6.dp),
+            )
+          }
+        }
+      }
+
+      HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
+      // Přepočtená hodnota (X-Display-Currency), když je — jinak originál v měně obchodu
+      // (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna"). Cena je hlavní údaj
+      // výsledku, proto dostává vlastní řádek a nesoutěží o šířku s dlouhým štítkem kvality.
+      val displayAmount = item.converted?.amount ?: item.bestPrice
+      val moneyFormatter = rememberMoneyFormatter(item.converted?.currency ?: item.currency)
+      val priceText = displayAmount?.let { moneyFormatter.format(it) } ?: stringResource(R.string.search_unknown_price)
+      Text(
+        stringResource(R.string.product_cheapest_title),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        Text(
+          priceText,
+          style = MaterialTheme.typography.headlineSmall,
+          fontWeight = FontWeight.Bold,
+          color = if (displayAmount == null) {
+            MaterialTheme.colorScheme.onSurfaceVariant
+          } else {
+            MaterialTheme.colorScheme.primary
+          },
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+          modifier = Modifier.weight(1f),
+        )
+        item.bestPriceObservations?.let {
+          Text(
+            stringResource(R.string.search_confirmations, it),
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 6.dp),
+            maxLines = 1,
           )
         }
       }
-      val subtitle = listOfNotNull(item.product.brand?.name, item.product.category.name).joinToString(" · ")
-      if (subtitle.isNotBlank()) {
-        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+      item.cheapestStore?.let { store ->
+        Text(
+          storeLabel(store, AppContainer.countryStore.country),
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          maxLines = 2,
+          overflow = TextOverflow.Ellipsis,
+          modifier = Modifier.padding(top = 2.dp),
+        )
       }
-      LabelValueRow(
+
+      QualityBadge(
+        average = item.qualityAverage,
+        count = item.qualityCount,
+        modifier = Modifier.padding(top = 12.dp),
+      )
+      Text(
+        stringResource(R.string.search_report_summary, item.observationCount, formatRelativeDate(item.lastObservedAt)),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 4.dp),
-        label = {
-          // Přepočtená hodnota (X-Display-Currency), když je — jinak originál v měně obchodu
-          // (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna").
-          val displayAmount = item.converted?.amount ?: item.bestPrice
-          val moneyFormatter = rememberMoneyFormatter(item.converted?.currency ?: item.currency)
-          val priceText = displayAmount?.let { moneyFormatter.format(it) } ?: stringResource(R.string.search_unknown_price)
-          val confirmations = item.bestPriceObservations?.let {
-            " · " + stringResource(R.string.search_confirmations, it)
-          } ?: ""
-          Text("$priceText$confirmations", style = MaterialTheme.typography.bodyMedium)
-          Text(
-            stringResource(R.string.search_report_summary, item.observationCount, formatRelativeDate(item.lastObservedAt)),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-        },
-        value = { QualityBadge(average = item.qualityAverage, count = item.qualityCount) },
       )
     }
   }

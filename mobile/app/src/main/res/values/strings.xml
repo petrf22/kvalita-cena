@@ -345,6 +345,8 @@
     <string name="search_city_filter">Město</string>
     <string name="search_category_filter">Kategorie</string>
     <string name="search_sort_label">Řazení</string>
+    <string name="search_filters">Filtry a řazení</string>
+    <string name="search_filters_active">Filtry a řazení (%1$d)</string>
     <string name="search_filter_all">Vše</string>
     <string name="search_hint">Zadej, co hledáš.</string>
     <string name="search_not_found">Nic jsme nenašli.</string>

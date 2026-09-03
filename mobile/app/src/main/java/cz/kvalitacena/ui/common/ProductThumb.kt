@@ -42,13 +42,13 @@ fun ProductThumb(
       model = url,
       contentDescription = name,
       contentScale = ContentScale.Crop,
-      modifier = modifier.size(size).clip(RoundedCornerShape(4.dp)),
+      modifier = modifier.size(size).clip(RoundedCornerShape(12.dp)),
     )
   } else {
     Box(
       modifier = modifier
         .size(size)
-        .clip(RoundedCornerShape(4.dp))
+        .clip(RoundedCornerShape(12.dp))
         .background(MaterialTheme.colorScheme.surfaceVariant),
       contentAlignment = Alignment.Center,
     ) {
