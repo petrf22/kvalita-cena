@@ -6,6 +6,8 @@
   "storeFilter": "Obchod: všetky",
   "cityFilter": "Mesto: všetky",
   "categoryFilter": "Kategória: všetky",
+  "filters": "Filtre a zoradenie",
+  "filtersActive": "Filtre a zoradenie ({{count}})",
   "notFound": "Nič sme nenašli — skús iné slovo alebo filter.",
   "hint": "Zadaj, čo hľadáš.",
   "colProduct": "Tovar",

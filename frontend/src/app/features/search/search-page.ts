@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoPipe, provideTranslocoScope } from '@jsverse/transloco';
 import type { NzTreeNode } from 'ng-zorro-antd/core/tree';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -42,6 +42,7 @@ const SORT_ORDER = ['REPORT_COUNT', 'PRICE_ASC', 'QUALITY', 'LAST_REPORTED', 'NA
   selector: 'app-search-page',
   imports: [
     FormsModule,
+    RouterLink,
     NzInputModule,
     NzButtonModule,
     NzTableModule,
@@ -78,6 +79,9 @@ export class SearchPage {
   protected readonly categoryId = signal<string | null>(null);
   protected readonly sort = signal<ProductSort>('REPORT_COUNT');
   protected readonly pageIndex = signal(1);
+  protected readonly activeFilterCount = computed(
+    () => [this.storeId(), this.city(), this.categoryId()].filter((value) => value != null).length,
+  );
 
   protected readonly items = signal<ProductSearchItem[]>([]);
   /** Aspoň jeden řádek ukazuje obrázek z Open Food Facts místo vlastní fotky — atribuce zdroje

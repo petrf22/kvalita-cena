@@ -17,53 +17,62 @@
     </button>
   </div>
 
-  <div class="filter-row">
-    <nz-select
-      class="filter-select"
-      [ngModel]="storeId()"
-      (ngModelChange)="storeId.set($event); onFilterChange()"
-      nzAllowClear
-      [nzPlaceHolder]="t('search.storeFilter')"
-    >
-      @for (store of facets().stores; track store.id) {
-        <nz-option [nzValue]="store.id" [nzLabel]="storeLabel(store, countryService.country())" />
-      }
-    </nz-select>
+  <details class="filters-panel">
+    <summary>
+      {{
+        activeFilterCount() === 0
+          ? t('search.filters')
+          : t('search.filtersActive', { count: activeFilterCount() })
+      }}
+    </summary>
+    <div class="filter-row">
+      <nz-select
+        class="filter-select"
+        [ngModel]="storeId()"
+        (ngModelChange)="storeId.set($event); onFilterChange()"
+        nzAllowClear
+        [nzPlaceHolder]="t('search.storeFilter')"
+      >
+        @for (store of facets().stores; track store.id) {
+          <nz-option [nzValue]="store.id" [nzLabel]="storeLabel(store, countryService.country())" />
+        }
+      </nz-select>
 
-    <nz-select
-      class="filter-select"
-      [ngModel]="city()"
-      (ngModelChange)="city.set($event); onFilterChange()"
-      nzAllowClear
-      [nzPlaceHolder]="t('search.cityFilter')"
-    >
-      @for (c of facets().cities; track c) {
-        <nz-option [nzValue]="c" [nzLabel]="c" />
-      }
-    </nz-select>
+      <nz-select
+        class="filter-select"
+        [ngModel]="city()"
+        (ngModelChange)="city.set($event); onFilterChange()"
+        nzAllowClear
+        [nzPlaceHolder]="t('search.cityFilter')"
+      >
+        @for (c of facets().cities; track c) {
+          <nz-option [nzValue]="c" [nzLabel]="c" />
+        }
+      </nz-select>
 
-    <nz-tree-select
-      class="filter-select"
-      [ngModel]="categoryId()"
-      (ngModelChange)="categoryId.set($event); onFilterChange()"
-      [nzNodes]="categoryTree()"
-      nzAllowClear
-      [nzPlaceHolder]="t('search.categoryFilter')"
-      [nzShowSearch]="true"
-      [nzDisplayWith]="categoryDisplayWith"
-      [nzDropdownStyle]="{ 'max-height': '400px', 'overflow-y': 'auto' }"
-    />
+      <nz-tree-select
+        class="filter-select"
+        [ngModel]="categoryId()"
+        (ngModelChange)="categoryId.set($event); onFilterChange()"
+        [nzNodes]="categoryTree()"
+        nzAllowClear
+        [nzPlaceHolder]="t('search.categoryFilter')"
+        [nzShowSearch]="true"
+        [nzDisplayWith]="categoryDisplayWith"
+        [nzDropdownStyle]="{ 'max-height': '400px', 'overflow-y': 'auto' }"
+      />
 
-    <nz-select
-      class="filter-select"
-      [ngModel]="sort()"
-      (ngModelChange)="sort.set($event); onFilterChange()"
-    >
-      @for (value of sortOrder; track value) {
-        <nz-option [nzValue]="value" [nzLabel]="sortKeys[value] | transloco" />
-      }
-    </nz-select>
-  </div>
+      <nz-select
+        class="filter-select"
+        [ngModel]="sort()"
+        (ngModelChange)="sort.set($event); onFilterChange()"
+      >
+        @for (value of sortOrder; track value) {
+          <nz-option [nzValue]="value" [nzLabel]="sortKeys[value] | transloco" />
+        }
+      </nz-select>
+    </div>
+  </details>
 
   @if (hasSearched() && items().length === 0 && !loading()) {
     <nz-empty [nzNotFoundContent]="t('search.notFound')" />
@@ -76,6 +85,7 @@
   @if (items().length > 0) {
     <nz-table
       #resultsTable
+      class="desktop-results"
       [nzData]="items()"
       [nzFrontPagination]="false"
       [nzShowPagination]="false"
@@ -146,6 +156,57 @@
         }
       </tbody>
     </nz-table>
+    <div class="mobile-results">
+      @for (item of items(); track item.product.id) {
+        <a class="result-card" [routerLink]="['/product', item.product.id]">
+          <div class="result-card-heading">
+            <app-product-thumb
+              [name]="item.product.name"
+              [photos]="item.product.photos"
+              [externalImage]="item.product.externalImage"
+            />
+            <div class="result-card-product">
+              <div class="product-name">
+                {{ item.product.name }}
+                @if (!item.product.verified) {
+                  <nz-tag class="unverified-tag">{{ t('search.unverified') }}</nz-tag>
+                }
+              </div>
+              <div class="product-subtitle">
+                {{ item.product.brand?.name ?? item.product.category.name }}
+              </div>
+            </div>
+            <div class="result-card-price">
+              @if (item.bestPrice != null) {
+                @if (item.converted; as converted) {
+                  <strong [title]="item.bestPrice | money: item.currency">{{
+                    converted.amount | money: converted.currency
+                  }}</strong>
+                } @else {
+                  <strong>{{ item.bestPrice | money: item.currency }}</strong>
+                }
+              } @else {
+                <span class="unknown-price">{{ t('search.unknownPrice') }}</span>
+              }
+            </div>
+          </div>
+          <div class="result-card-store">
+            {{
+              item.cheapestStore ? storeLabel(item.cheapestStore, countryService.country()) : '–'
+            }}
+          </div>
+          <div class="result-card-footer">
+            <app-quality-badge [average]="item.qualityAverage" [count]="item.qualityCount" />
+            <span>
+              {{ item.observationCount }}× · {{ item.lastObservedAt | relativeDate }}
+              @if (item.bestPriceObservations) {
+                · {{ t('search.confirmations', { count: item.bestPriceObservations }) }}
+              }
+            </span>
+          </div>
+        </a>
+      }
+    </div>
     @if (showExternalImageNote()) {
       <p class="external-image-note">{{ t('search.externalImageNote') }}</p>
     }

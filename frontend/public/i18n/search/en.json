@@ -6,6 +6,8 @@
   "storeFilter": "Store: all",
   "cityFilter": "City: all",
   "categoryFilter": "Category: all",
+  "filters": "Filters and sorting",
+  "filtersActive": "Filters and sorting ({{count}})",
   "notFound": "We didn't find anything — try a different word or filter.",
   "hint": "Type what you're looking for.",
   "colProduct": "Product",

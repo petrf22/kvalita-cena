@@ -6,6 +6,8 @@
   "storeFilter": "Obchod: vše",
   "cityFilter": "Město: vše",
   "categoryFilter": "Kategorie: vše",
+  "filters": "Filtry a řazení",
+  "filtersActive": "Filtry a řazení ({{count}})",
   "notFound": "Nic jsme nenašli — zkus jiné slovo nebo filtr.",
   "hint": "Zadej, co hledáš.",
   "colProduct": "Zboží",
