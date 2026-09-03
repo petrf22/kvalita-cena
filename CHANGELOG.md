@@ -7,6 +7,18 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [0.6.3] – 2026-09-03
+
+### Přidáno
+- Tlačítko zpět v hlavičce mobilní appky na vnořených obrazovkách (mobil)
+- Appka se před opuštěním rozepsaného formuláře nebo obrazovky zeptá, jestli zahodit neuložené změny (mobil)
+- Ruční zadání kódu a baterka ve skeneru (mobil)
+- Vedlejší akce detailu zboží (upravit, nahlásit) sjednoceny do jedné nabídky (web, mobil)
+
+### Změněno
+- Cena je na detailu zboží nejvýš, před grafem, kvalitou a recenzemi (web, mobil)
+- Panel filtrů hledání na webu je na malých displejích sbalený za tlačítkem, výsledky se zobrazují jako karty (web)
+
 ## [0.6.2] – 2026-09-03
 
 ### Změněno

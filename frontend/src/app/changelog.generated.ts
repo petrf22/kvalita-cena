@@ -20,6 +20,18 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.6.3", date: "2026-09-03", sections: [
+      { title: "Přidáno", items: [
+        { text: "Tlačítko zpět v hlavičce mobilní appky na vnořených obrazovkách", parts: ["mobil"] },
+        { text: "Appka se před opuštěním rozepsaného formuláře nebo obrazovky zeptá, jestli zahodit neuložené změny", parts: ["mobil"] },
+        { text: "Ruční zadání kódu a baterka ve skeneru", parts: ["mobil"] },
+        { text: "Vedlejší akce detailu zboží (upravit, nahlásit) sjednoceny do jedné nabídky", parts: ["web", "mobil"] },
+      ] },
+      { title: "Změněno", items: [
+        { text: "Cena je na detailu zboží nejvýš, před grafem, kvalitou a recenzemi", parts: ["web", "mobil"] },
+        { text: "Panel filtrů hledání na webu je na malých displejích sbalený za tlačítkem, výsledky se zobrazují jako karty", parts: ["web"] },
+      ] },
+  ] },
   { version: "0.6.2", date: "2026-09-03", sections: [
       { title: "Změněno", items: [
         { text: "Výsledek hledání v mobilu se zobrazuje jako karta s větší fotkou a cenou jako hlavním údajem místo řádku", parts: ["mobil"] },
