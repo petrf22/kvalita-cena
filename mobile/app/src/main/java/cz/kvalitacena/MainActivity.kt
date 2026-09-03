@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -60,6 +61,8 @@ import cz.kvalitacena.ui.navigation.ROUTE_STORE_DETAIL
 import cz.kvalitacena.ui.navigation.ROUTE_STORE_FORM
 import cz.kvalitacena.ui.navigation.TopLevelDestination
 import cz.kvalitacena.ui.navigation.feedbackRoute
+import cz.kvalitacena.ui.navigation.isTopLevelRoute
+import cz.kvalitacena.ui.navigation.nestedRouteTitle
 import cz.kvalitacena.ui.navigation.priceEntryRouteByBarcode
 import cz.kvalitacena.ui.navigation.priceEntryRouteByProductId
 import cz.kvalitacena.ui.navigation.productDetailRoute
@@ -111,18 +114,29 @@ private fun AppScaffold() {
   }
 
   val navController = rememberNavController()
-  val currentRoute by navController.currentBackStackEntryAsState()
+  val currentEntry by navController.currentBackStackEntryAsState()
+  val currentRoute = currentEntry?.destination?.route
+  val isTopLevel = isTopLevelRoute(currentRoute)
+
+  fun navigateBack() {
+    if (!navController.navigateUp()) {
+      navController.navigate(TopLevelDestination.SEARCH.route) {
+        popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+        launchSingleTop = true
+      }
+    }
+  }
 
   Scaffold(
     topBar = {
       CenterAlignedTopAppBar(
         title = {
           Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(stringResource(R.string.app_name))
+            Text(stringResource(if (isTopLevel) R.string.app_name else nestedRouteTitle(currentRoute)))
             // Verze appky jen na záložce Nastavení — appbar je sdílený přes celou appku,
             // jinde by šlo o neužitečný šum (uživatel chtěl vidět, jestli appka odpovídá
             // vydané verzi backendu/webu, ne verzi na každé obrazovce).
-            if (currentRoute?.destination?.route == TopLevelDestination.SETTINGS.route) {
+            if (currentRoute == TopLevelDestination.SETTINGS.route) {
               Text(
                 stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
                 style = MaterialTheme.typography.labelSmall,
@@ -131,10 +145,22 @@ private fun AppScaffold() {
             }
           }
         },
+        navigationIcon = {
+          if (!isTopLevel) {
+            IconButton(onClick = ::navigateBack) {
+              Icon(
+                painter = painterResource(R.drawable.ic_arrow_back),
+                contentDescription = stringResource(R.string.common_back),
+              )
+            }
+          }
+        },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(),
       )
     },
-    bottomBar = { AppBottomBar(navController) },
+    bottomBar = {
+      if (isTopLevel) AppBottomBar(navController)
+    },
   ) { padding ->
     NavHost(
       navController = navController,

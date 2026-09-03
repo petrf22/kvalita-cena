@@ -35,6 +35,9 @@
     <string name="company_id_label_rs">PIB</string>
 
     <string name="account_title">Účet</string>
+    <string name="navigation_product_detail">Detail zboží</string>
+    <string name="navigation_store_detail">Detail obchodu</string>
+    <string name="navigation_store_form">Obchod</string>
     <string name="account_logged_in_fallback">Přihlášen</string>
     <string name="account_logout">Odhlásit se</string>
     <string name="account_edit_profile">Upravit profil</string>

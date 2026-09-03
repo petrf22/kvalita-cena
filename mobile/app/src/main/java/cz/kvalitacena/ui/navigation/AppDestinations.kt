@@ -46,6 +46,27 @@ const val ROUTE_STORE_FORM = "store_form?$ARG_STORE_ID={$ARG_STORE_ID}"
 fun storeFormRouteForCreate() = "store_form"
 fun storeFormRouteForEdit(storeId: String) = "store_form?$ARG_STORE_ID=$storeId"
 
+/** True jen pro čtyři kořenové záložky, na kterých má být vidět spodní navigace. */
+fun isTopLevelRoute(route: String?): Boolean = TopLevelDestination.entries.any { it.route == route }
+
+/** Lokalizovaný titul vnořených obrazovek pro společný app bar v MainActivity. */
+@StringRes
+fun nestedRouteTitle(route: String?): Int = when (route) {
+  ROUTE_PRODUCT_DETAIL -> R.string.navigation_product_detail
+  ROUTE_PRICE_ENTRY -> R.string.price_entry_write_price
+  ROUTE_STORE_DETAIL -> R.string.navigation_store_detail
+  ROUTE_STORE_FORM -> R.string.navigation_store_form
+  ROUTE_PRODUCT_FORM -> R.string.product_form_title
+  ROUTE_PROFILE -> R.string.profile_title
+  ROUTE_MY_CONTRIBUTIONS -> R.string.my_contributions_title
+  ROUTE_TERMS -> R.string.terms_title
+  ROUTE_PRIVACY -> R.string.privacy_title
+  ROUTE_ABOUT -> R.string.about_title
+  ROUTE_CHANGELOG -> R.string.changelog_title
+  ROUTE_FEEDBACK -> R.string.feedback_title
+  else -> R.string.app_name
+}
+
 /**
  * Založení zboží — s EANem i bez (bezkódová druhová položka, docs/reputace.md). `writePrice`
  * odlišuje vstup ze SearchScreen (bez EANu, appka po založení chce rovnou zápis ceny) od vstupu

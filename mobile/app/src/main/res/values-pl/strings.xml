@@ -34,6 +34,9 @@
     <string name="company_id_label_rs">PIB</string>
 
     <string name="account_title">Konto</string>
+    <string name="navigation_product_detail">Szczegóły produktu</string>
+    <string name="navigation_store_detail">Szczegóły sklepu</string>
+    <string name="navigation_store_form">Sklep</string>
     <string name="account_logged_in_fallback">Zalogowano</string>
     <string name="account_logout">Wyloguj się</string>
     <string name="account_edit_profile">Edytuj profil</string>
