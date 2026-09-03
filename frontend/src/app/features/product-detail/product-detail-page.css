@@ -63,6 +63,28 @@ app-photo-gallery {
   margin-bottom: 16px;
 }
 
+.price-summary-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: stretch;
+  margin-bottom: 24px;
+}
+
+.price-summary-actions .cheapest-card {
+  margin-bottom: 0;
+}
+
+.price-entry-jump {
+  height: auto;
+  display: inline-flex;
+  align-items: center;
+}
+
+#price-entry {
+  scroll-margin-top: 16px;
+}
+
 .chart-card,
 .cheapest-card,
 .prices-card,
@@ -219,4 +241,15 @@ app-photo-gallery {
 
 .no-prices {
   color: rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: 600px) {
+  .price-summary-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .price-entry-jump {
+    min-height: 44px;
+    justify-content: center;
+  }
 }

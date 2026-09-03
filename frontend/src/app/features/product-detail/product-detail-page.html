@@ -76,6 +76,138 @@
       <nz-alert nzType="info" [nzMessage]="flagMessage()" nzShowIcon class="flag-alert" />
     }
 
+    <div class="price-summary-actions">
+      @if (product()!.stats?.bestPrice != null && product()!.stats?.cheapestStore) {
+        <nz-card [nzTitle]="t('product-detail.cheapestTitle')" class="cheapest-card">
+          <a [routerLink]="['/store', product()!.stats!.cheapestStore!.id]" class="cheapest-row">
+            <span>
+              <span class="cheapest-store-name">{{ product()!.stats!.cheapestStore!.name }}</span>
+              <span class="cheapest-store-city">{{ product()!.stats!.cheapestStore!.city }}</span>
+            </span>
+            <span class="cheapest-price">
+              @if (product()!.stats!.bestPriceConverted; as converted) {
+                <span
+                  [title]="product()!.stats!.bestPrice | money: product()!.stats!.bestPriceCurrency"
+                >
+                  {{ converted.amount | money: converted.currency }}
+                </span>
+              } @else {
+                {{ product()!.stats!.bestPrice | money: product()!.stats!.bestPriceCurrency }}
+              }
+            </span>
+          </a>
+        </nz-card>
+      }
+      <a nz-button nzType="primary" href="#price-entry" class="price-entry-jump">
+        <span nz-icon nzType="plus-circle"></span>
+        {{ t('product-detail.submitTitle') }}
+      </a>
+    </div>
+
+    <nz-card [nzTitle]="t('product-detail.currentPricesTitle')" class="prices-card">
+      @if (product()!.prices.length === 0) {
+        <p class="no-prices">{{ t('product-detail.noPrices') }}</p>
+      } @else {
+        <nz-table
+          #pricesTable
+          [nzData]="product()!.prices"
+          [nzShowPagination]="false"
+          nzSize="small"
+        >
+          <thead>
+            <tr>
+              <th>{{ t('product-detail.colStore') }}</th>
+              <th>{{ t('product-detail.colPriceKind') }}</th>
+              <th>{{ t('product-detail.colPrice') }}</th>
+              <th>{{ t('product-detail.colUnitPrice') }}</th>
+              <th>{{ t('product-detail.colConfidence') }}</th>
+              <th>{{ t('product-detail.colLastReported') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (price of pricesTable.data; track price.store.id + price.priceKind) {
+              <tr>
+                <td>
+                  <a [routerLink]="['/store', price.store.id]">{{ price.store.name }}</a>
+                </td>
+                <td>
+                  {{ priceKindKeys[price.priceKind] | transloco }}
+                  @if (price.promoValidTo) {
+                    <span class="promo-validity-note">{{
+                      t('product-detail.promoValidUntil', { date: format.date(price.promoValidTo) })
+                    }}</span>
+                  }
+                </td>
+                <td>{{ price.priceAmount | money: price.currency }}</td>
+                <td>
+                  @if (price.converted; as converted) {
+                    <span [title]="price.unitPrice | money: price.currency">{{
+                      converted.amount | money: converted.currency
+                    }}</span>
+                  } @else {
+                    {{ price.unitPrice | money: price.currency }}
+                  }
+                </td>
+                <td>
+                  <nz-tag
+                    [nzColor]="
+                      price.confidence === 'HIGH'
+                        ? 'green'
+                        : price.confidence === 'MEDIUM'
+                          ? 'orange'
+                          : 'default'
+                    "
+                  >
+                    {{ t('product-detail.observationCount', { count: price.nObs }) }}
+                  </nz-tag>
+                </td>
+                <td>{{ price.lastObservedAt | relativeDate }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
+    </nz-card>
+
+    <nz-card [nzTitle]="t('product-detail.priceChartTitle')" class="chart-card">
+      <div class="chart-controls">
+        <div class="chart-control-group">
+          @for (days of chartRanges; track days) {
+            <button
+              nz-button
+              [nzType]="selectedDays() === days ? 'primary' : 'default'"
+              nzSize="small"
+              (click)="onDaysChange(days)"
+            >
+              {{ t('product-detail.days', { count: days }) }}
+            </button>
+          }
+        </div>
+        <div class="chart-control-group">
+          <button
+            nz-button
+            [nzType]="selectedPriceKind() === 'REGULAR' ? 'primary' : 'default'"
+            nzSize="small"
+            (click)="onPriceKindChange('REGULAR')"
+          >
+            {{ priceKindKeys.REGULAR | transloco }}
+          </button>
+          <button
+            nz-button
+            [nzType]="selectedPriceKind() === 'PROMO' ? 'primary' : 'default'"
+            nzSize="small"
+            (click)="onPriceKindChange('PROMO')"
+          >
+            {{ priceKindKeys.PROMO | transloco }}
+          </button>
+        </div>
+      </div>
+      <app-price-chart [points]="chartPoints()" [currency]="chartCurrency()" />
+      @if (historyDisplayCurrency()) {
+        <p class="chart-fx-note">{{ t('product-detail.chartConverted') }}</p>
+      }
+    </nz-card>
+
     <div class="quality-section">
       <app-quality-badge
         [average]="product()!.quality?.average ?? null"
@@ -161,131 +293,6 @@
       }
     </nz-card>
 
-    <nz-card [nzTitle]="t('product-detail.priceChartTitle')" class="chart-card">
-      <div class="chart-controls">
-        <div class="chart-control-group">
-          @for (days of chartRanges; track days) {
-            <button
-              nz-button
-              [nzType]="selectedDays() === days ? 'primary' : 'default'"
-              nzSize="small"
-              (click)="onDaysChange(days)"
-            >
-              {{ t('product-detail.days', { count: days }) }}
-            </button>
-          }
-        </div>
-        <div class="chart-control-group">
-          <button
-            nz-button
-            [nzType]="selectedPriceKind() === 'REGULAR' ? 'primary' : 'default'"
-            nzSize="small"
-            (click)="onPriceKindChange('REGULAR')"
-          >
-            {{ priceKindKeys.REGULAR | transloco }}
-          </button>
-          <button
-            nz-button
-            [nzType]="selectedPriceKind() === 'PROMO' ? 'primary' : 'default'"
-            nzSize="small"
-            (click)="onPriceKindChange('PROMO')"
-          >
-            {{ priceKindKeys.PROMO | transloco }}
-          </button>
-        </div>
-      </div>
-      <app-price-chart [points]="chartPoints()" [currency]="chartCurrency()" />
-      @if (historyDisplayCurrency()) {
-        <p class="chart-fx-note">{{ t('product-detail.chartConverted') }}</p>
-      }
-    </nz-card>
-
-    @if (product()!.stats?.bestPrice != null && product()!.stats?.cheapestStore) {
-      <nz-card [nzTitle]="t('product-detail.cheapestTitle')" class="cheapest-card">
-        <a [routerLink]="['/store', product()!.stats!.cheapestStore!.id]" class="cheapest-row">
-          <span>
-            <span class="cheapest-store-name">{{ product()!.stats!.cheapestStore!.name }}</span>
-            <span class="cheapest-store-city">{{ product()!.stats!.cheapestStore!.city }}</span>
-          </span>
-          <span class="cheapest-price">
-            @if (product()!.stats!.bestPriceConverted; as converted) {
-              <span
-                [title]="product()!.stats!.bestPrice | money: product()!.stats!.bestPriceCurrency"
-                >{{ converted.amount | money: converted.currency }}</span
-              >
-            } @else {
-              {{ product()!.stats!.bestPrice | money: product()!.stats!.bestPriceCurrency }}
-            }
-          </span>
-        </a>
-      </nz-card>
-    }
-
-    <nz-card [nzTitle]="t('product-detail.currentPricesTitle')" class="prices-card">
-      @if (product()!.prices.length === 0) {
-        <p class="no-prices">{{ t('product-detail.noPrices') }}</p>
-      } @else {
-        <nz-table
-          #pricesTable
-          [nzData]="product()!.prices"
-          [nzShowPagination]="false"
-          nzSize="small"
-        >
-          <thead>
-            <tr>
-              <th>{{ t('product-detail.colStore') }}</th>
-              <th>{{ t('product-detail.colPriceKind') }}</th>
-              <th>{{ t('product-detail.colPrice') }}</th>
-              <th>{{ t('product-detail.colUnitPrice') }}</th>
-              <th>{{ t('product-detail.colConfidence') }}</th>
-              <th>{{ t('product-detail.colLastReported') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (price of pricesTable.data; track price.store.id + price.priceKind) {
-              <tr>
-                <td>
-                  <a [routerLink]="['/store', price.store.id]">{{ price.store.name }}</a>
-                </td>
-                <td>
-                  {{ priceKindKeys[price.priceKind] | transloco }}
-                  @if (price.promoValidTo) {
-                    <span class="promo-validity-note">{{
-                      t('product-detail.promoValidUntil', { date: format.date(price.promoValidTo) })
-                    }}</span>
-                  }
-                </td>
-                <td>{{ price.priceAmount | money: price.currency }}</td>
-                <td>
-                  @if (price.converted; as converted) {
-                    <span [title]="price.unitPrice | money: price.currency">{{
-                      converted.amount | money: converted.currency
-                    }}</span>
-                  } @else {
-                    {{ price.unitPrice | money: price.currency }}
-                  }
-                </td>
-                <td>
-                  <nz-tag
-                    [nzColor]="
-                      price.confidence === 'HIGH'
-                        ? 'green'
-                        : price.confidence === 'MEDIUM'
-                          ? 'orange'
-                          : 'default'
-                    "
-                  >
-                    {{ t('product-detail.observationCount', { count: price.nObs }) }}
-                  </nz-tag>
-                </td>
-                <td>{{ price.lastObservedAt | relativeDate }}</td>
-              </tr>
-            }
-          </tbody>
-        </nz-table>
-      }
-    </nz-card>
-
     @if (product()!.myPrices && product()!.myPrices!.length > 0) {
       <nz-card [nzTitle]="t('product-detail.myPricesTitle')" class="my-prices-card">
         <ul class="my-prices-list">
@@ -326,7 +333,7 @@
       </nz-card>
     }
 
-    <nz-card [nzTitle]="t('product-detail.submitTitle')" class="submit-card">
+    <nz-card id="price-entry" [nzTitle]="t('product-detail.submitTitle')" class="submit-card">
       <app-price-entry-form [product]="product()!" (submitted)="loadProduct(product()!.id)" />
     </nz-card>
 

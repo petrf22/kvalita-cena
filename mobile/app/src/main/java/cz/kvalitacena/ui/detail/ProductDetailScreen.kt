@@ -104,7 +104,8 @@ fun ProductDetailScreen(
 
     else -> {
       val product = viewModel.product!!
-      Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+      Column(modifier = Modifier.fillMaxSize()) {
+      Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text(product.name, style = MaterialTheme.typography.headlineSmall)
 
         Gap()
@@ -162,6 +163,87 @@ fun ProductDetailScreen(
         viewModel.flagMessage?.let {
           Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+        Gap()
+
+        // Cena je primární obsah detailu — patří před graf, kvalitu a recenze.
+        val stats = product.stats
+        Text(stringResource(R.string.product_cheapest_title), style = MaterialTheme.typography.titleMedium)
+        if (stats?.bestPrice != null && stats.cheapestStore != null) {
+          val store = stats.cheapestStore
+          LabelValueRow(
+            modifier = Modifier.padding(top = 4.dp).clickable { onStoreClick(store.id) },
+            label = {
+              Text(store.name, style = MaterialTheme.typography.bodyLarge)
+              Text(store.city, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            },
+            value = {
+              Text(
+                rememberMoneyFormatter(stats.bestPriceConverted?.currency ?: stats.bestPriceCurrency)
+                  .format(stats.bestPriceConverted?.amount ?: stats.bestPrice),
+                style = MaterialTheme.typography.bodyLarge,
+                softWrap = false,
+              )
+            },
+          )
+        } else {
+          Text(stringResource(R.string.product_no_price_yet), style = MaterialTheme.typography.bodyMedium)
+        }
+        Gap()
+        HorizontalDivider()
+        Gap()
+
+        Text(stringResource(R.string.product_prices_by_store), style = MaterialTheme.typography.titleMedium)
+        if (product.prices.isEmpty()) {
+          Text(stringResource(R.string.product_no_price_be_first), style = MaterialTheme.typography.bodyMedium)
+        } else {
+          Column(modifier = Modifier.padding(top = 8.dp)) {
+            product.prices.forEach { price -> PriceRow(price, onClick = { onStoreClick(price.store.id) }) }
+          }
+        }
+        Gap()
+        HorizontalDivider()
+        Gap()
+
+        // --- Graf vývoje ceny ---
+        Text(stringResource(R.string.product_price_trend), style = MaterialTheme.typography.titleMedium)
+        Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+          CHART_RANGES.forEach { (days, labelRes) ->
+            FilterChip(
+              selected = viewModel.selectedDays == days,
+              onClick = { viewModel.onDaysChange(days) },
+              label = { Text(stringResource(labelRes)) },
+            )
+          }
+        }
+        Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+          listOf("REGULAR", "PROMO").forEach { kind ->
+            FilterChip(
+              selected = viewModel.selectedPriceKind == kind,
+              onClick = { viewModel.onPriceKindChange(kind) },
+              label = { Text(priceKindLabel(kind)) },
+            )
+          }
+        }
+        Gap()
+        if (viewModel.historyLoading) {
+          Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+          }
+        } else {
+          val history = viewModel.history
+          val chartPoints = if (history?.displayCurrency != null) {
+            history.points.map { it.copy(unitPrice = it.convertedUnitPrice ?: it.unitPrice) }
+          } else {
+            history?.points ?: emptyList()
+          }
+          PriceChart(
+            points = chartPoints,
+            currency = history?.displayCurrency ?: history?.currency,
+            modifier = Modifier.fillMaxWidth(),
+          )
+        }
+        Gap()
+        HorizontalDivider()
         Gap()
 
         // --- Kvalita ---
@@ -238,96 +320,6 @@ fun ProductDetailScreen(
         HorizontalDivider()
         Gap()
 
-        // --- Graf vývoje ceny ---
-        Text(stringResource(R.string.product_price_trend), style = MaterialTheme.typography.titleMedium)
-        Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          CHART_RANGES.forEach { (days, labelRes) ->
-            FilterChip(
-              selected = viewModel.selectedDays == days,
-              onClick = { viewModel.onDaysChange(days) },
-              label = { Text(stringResource(labelRes)) },
-            )
-          }
-        }
-        Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-          listOf("REGULAR", "PROMO").forEach { kind ->
-            FilterChip(
-              selected = viewModel.selectedPriceKind == kind,
-              onClick = { viewModel.onPriceKindChange(kind) },
-              label = { Text(priceKindLabel(kind)) },
-            )
-          }
-        }
-        Gap()
-        if (viewModel.historyLoading) {
-          Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-          }
-        } else {
-          val history = viewModel.history
-          // Graf jednu řadu nikdy nemíchá napříč měnami — když appka přepočítává (displayCurrency
-          // vyplněná), substituují se OBĚ pole najednou, se svým vlastním denním kurzem
-          // (PricePoint.convertedUnitPrice), viz docs/lokalizace.md. Chybí-li kurz pro konkrétní
-          // den, ten bod spadne zpět na originál — vzácný okrajový případ, ne důvod řadu zahodit.
-          val chartPoints = if (history?.displayCurrency != null) {
-            history.points.map { it.copy(unitPrice = it.convertedUnitPrice ?: it.unitPrice) }
-          } else {
-            history?.points ?: emptyList()
-          }
-          PriceChart(
-            points = chartPoints,
-            currency = history?.displayCurrency ?: history?.currency,
-            modifier = Modifier.fillMaxWidth(),
-          )
-        }
-        Gap()
-        HorizontalDivider()
-        Gap()
-
-        // --- Nejlevněji ---
-        val stats = product.stats
-        Text(stringResource(R.string.product_cheapest_title), style = MaterialTheme.typography.titleMedium)
-        if (stats?.bestPrice != null && stats.cheapestStore != null) {
-          val store = stats.cheapestStore
-          LabelValueRow(
-            modifier = Modifier
-              .padding(top = 4.dp)
-              .clickable { onStoreClick(store.id) },
-            label = {
-              Text(store.name, style = MaterialTheme.typography.bodyLarge)
-              Text(store.city, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            },
-            value = {
-              // Přepočtená hodnota (X-Display-Currency), když je — jinak originál v měně obchodu
-              // (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna").
-              Text(
-                rememberMoneyFormatter(stats.bestPriceConverted?.currency ?: stats.bestPriceCurrency)
-                  .format(stats.bestPriceConverted?.amount ?: stats.bestPrice),
-                style = MaterialTheme.typography.bodyLarge,
-                softWrap = false,
-              )
-            },
-          )
-        } else {
-          Text(stringResource(R.string.product_no_price_yet), style = MaterialTheme.typography.bodyMedium)
-        }
-        Gap()
-        HorizontalDivider()
-        Gap()
-
-        // --- Ceny po obchodech ---
-        Text(stringResource(R.string.product_prices_by_store), style = MaterialTheme.typography.titleMedium)
-        if (product.prices.isEmpty()) {
-          Text(stringResource(R.string.product_no_price_be_first), style = MaterialTheme.typography.bodyMedium)
-        } else {
-          Column(modifier = Modifier.padding(top = 8.dp)) {
-            product.prices.forEach { price ->
-              PriceRow(price, onClick = { onStoreClick(price.store.id) })
-            }
-          }
-        }
-        Gap()
-
         // --- Vaše cena (poslední vlastní zápisy, i dřív než je zpracuje agregace) ---
         if (product.myPrices.isNotEmpty()) {
           HorizontalDivider()
@@ -361,9 +353,13 @@ fun ProductDetailScreen(
           Gap()
         }
 
-        Button(onClick = onWriteObservation, modifier = Modifier.fillMaxWidth()) {
-          Text(stringResource(R.string.product_write_observation))
-        }
+      }
+
+      Button(
+        onClick = onWriteObservation,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+      ) {
+        Text(stringResource(R.string.product_write_observation))
       }
 
       if (viewModel.reviewModalVisible) {
@@ -371,6 +367,7 @@ fun ProductDetailScreen(
       }
     }
   }
+}
 }
 
 @Composable
