@@ -1,5 +1,28 @@
 [
   {
+    "version": "0.6.2",
+    "date": "2026-09-03",
+    "sections": [
+      {
+        "title": "Změněno",
+        "items": [
+          {
+            "text": "Výsledek hledání v mobilu se zobrazuje jako karta s větší fotkou a cenou jako hlavním údajem místo řádku",
+            "parts": [
+              "mobil"
+            ]
+          },
+          {
+            "text": "Filtry obchodu, města, kategorie a řazení v mobilním hledání jsou sbalené za tlačítkem „Filtry a řazení“ s počtem aktivních filtrů",
+            "parts": [
+              "mobil"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "0.6.1",
     "date": "2026-09-02",
     "sections": [
