@@ -81,9 +81,7 @@ fun ProfileScreen(onDone: () -> Unit) {
   val context = LocalContext.current
   val exitGuard = LocalNavigationExitGuard.current
   var formDirty by rememberSaveable { mutableStateOf(false) }
-  val emailDirty = viewModel.emailChangeVisible && !viewModel.emailChangeSuccess &&
-    (viewModel.newEmail.isNotBlank() || viewModel.emailChangeCode.isNotBlank())
-  ReportUnsavedChanges(formDirty || emailDirty)
+  ReportUnsavedChanges(formDirty || (viewModel.emailChangeVisible && emailChangeDirty(viewModel)))
 
   LaunchedEffect(viewModel.saveSuccess) {
     if (viewModel.saveSuccess) formDirty = false
@@ -339,9 +337,7 @@ private fun VisibilityOption(value: String, labelRes: Int, selected: String, onS
 private fun EmailChangeDialog(viewModel: ProfileViewModel) {
   val exitGuard = LocalNavigationExitGuard.current
   fun closeSafely() {
-    val dirty = !viewModel.emailChangeSuccess &&
-      (viewModel.newEmail.isNotBlank() || viewModel.emailChangeCode.isNotBlank())
-    if (dirty) exitGuard.requestNavigation { viewModel.closeEmailChangeModal() }
+    if (emailChangeDirty(viewModel)) exitGuard.requestNavigation { viewModel.closeEmailChangeModal() }
     else viewModel.closeEmailChangeModal()
   }
   AlertDialog(
@@ -477,3 +473,7 @@ private fun DeleteAccountDialog(viewModel: ProfileViewModel, onDeleted: () -> Un
 private fun Gap() {
   androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
 }
+
+private fun emailChangeDirty(viewModel: ProfileViewModel): Boolean =
+  !viewModel.emailChangeSuccess &&
+    (viewModel.newEmail.isNotBlank() || viewModel.emailChangeCode.isNotBlank())

@@ -82,10 +82,6 @@
   text-align: right;
 }
 
-.mobile-results {
-  display: none;
-}
-
 @media (max-width: 767px) {
   .search-intro {
     margin-bottom: 16px;
@@ -119,10 +115,6 @@
   .filter-select {
     flex-basis: 100%;
     width: 100%;
-  }
-
-  .desktop-results {
-    display: none;
   }
 
   .mobile-results {

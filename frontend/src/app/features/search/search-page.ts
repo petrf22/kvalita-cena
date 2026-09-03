@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoPipe, provideTranslocoScope } from '@jsverse/transloco';
@@ -28,6 +28,8 @@ import { storeLabel } from '../../shared/store-label';
 type CategoryOption = CategoriesQuery['categories'][number];
 
 const PAGE_SIZE = 20;
+// Musí sedět s breakpointem v search-page.css (@media max-width: 767px).
+const DESKTOP_QUERY = '(min-width: 768px)';
 
 // Pořadí zobrazení ve filtru — hodnoty samotné (a jejich popisky) drží PRODUCT_SORT_KEYS,
 // jediný zdroj pravdy nad generovaným enumem (docs/lokalizace.md).
@@ -95,6 +97,19 @@ export class SearchPage {
   protected readonly facets = signal<SearchFacets>({ stores: [], cities: [] });
   protected readonly categories = signal<CategoryOption[]>([]);
 
+  /** Řídí desktop/mobil větev v šabloně (tabulka vs. karty výsledků, panel filtrů) — čistě
+   *  CSS `display: none` by u výsledků obě verze zbytečně zdvojilo v DOM (2× fetch obrázků) a
+   *  u `<details>` panelu filtrů by nefungovalo vůbec: zavřený `<details>` skrývá obsah nativně,
+   *  bez ohledu na CSS `display` potomků, takže "vždy rozbalené na desktopu" musí jít přes `open`. */
+  protected readonly isDesktopViewport = signal(
+    typeof window !== 'undefined' && window.matchMedia(DESKTOP_QUERY).matches,
+  );
+  /** Stav rozbalení panelu filtrů na mobilu (na desktopu je vždy otevřený, summary schovaná CSS). */
+  private readonly filtersOpenOnMobile = signal(false);
+  protected readonly filtersOpen = computed(
+    () => this.isDesktopViewport() || this.filtersOpenOnMobile(),
+  );
+
   /** Strom pro `nz-tree-select` (shared/category-tree.ts) — stejný vzor jako product-form. */
   protected readonly categoryTree = computed(() =>
     buildCategoryTree(this.categories(), INTL_TAGS[this.language.lang()]),
@@ -103,6 +118,14 @@ export class SearchPage {
     categoryBreadcrumb(node.key, this.categories());
 
   constructor() {
+    const desktopQuery = window.matchMedia(DESKTOP_QUERY);
+    const onDesktopQueryChange = (event: MediaQueryListEvent) =>
+      this.isDesktopViewport.set(event.matches);
+    desktopQuery.addEventListener('change', onDesktopQueryChange);
+    inject(DestroyRef).onDestroy(() =>
+      desktopQuery.removeEventListener('change', onDesktopQueryChange),
+    );
+
     // country jde vždy explicitně z CountryService (klient je autoritativní, docs/lokalizace.md)
     // — bez toho by appka spadla na app_user.country/Accept-Language na serveru, což by se
     // rozešlo s tím, co si uživatel zvolil v Nastavení (Čech žijící v Polsku).
@@ -172,6 +195,12 @@ export class SearchPage {
           this.loading.set(false);
         },
       });
+  }
+
+  /** Klik na summary v mobilním rozbalení — desktopu se netýká, tam je summary skrytá CSS,
+   *  takže se toggle nikdy nevyvolá. */
+  onFiltersToggle(event: Event): void {
+    this.filtersOpenOnMobile.set((event.target as HTMLDetailsElement).open);
   }
 
   openProduct(item: ProductSearchItem): void {

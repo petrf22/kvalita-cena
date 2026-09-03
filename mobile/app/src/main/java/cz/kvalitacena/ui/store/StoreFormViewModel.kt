@@ -200,7 +200,9 @@ class StoreFormViewModel(
     }
   }
 
-  fun lookupIco() {
+  /** [onFound] se volá jen při reálném nálezu — pro odlišení "formulář se skutečně změnil" od
+   *  neúspěšného pokusu, viz `formDirty` ve `StoreFormScreen`. */
+  fun lookupIco(onFound: () -> Unit = {}) {
     val trimmed = ico.trim()
     if (!isIcoShapeValid(trimmed, country) || trimmed.isBlank()) {
       val digits = companyIdDigits(country)
@@ -218,6 +220,7 @@ class StoreFormViewModel(
         if (company == null) {
           icoLookupError = UiText.Res(R.string.store_company_id_not_found_in_registry)
         } else {
+          onFound()
           if (name.isBlank()) name = company.name
           if (street.isBlank()) company.street?.let { street = it }
           if (city.isBlank()) company.city?.let { city = it }

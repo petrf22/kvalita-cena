@@ -88,9 +88,7 @@ fun ProductDetailScreen(
   val accessToken by AppContainer.authRepository.accessToken.collectAsState()
   val isLoggedIn = accessToken != null
   var productActionsExpanded by remember { mutableStateOf(false) }
-  ReportUnsavedChanges(
-    viewModel.reviewModalVisible && viewModel.reviewText != productReviewBaseline(viewModel),
-  )
+  ReportUnsavedChanges(viewModel.reviewModalVisible && reviewTextDirty(viewModel))
 
   // Po návratu z editace (ProductFormScreen productId != null) vyzvedne výsledek stejným vzorem
   // jako StoreDetailScreen NavigationResults.updatedStore.
@@ -438,7 +436,7 @@ private fun ReviewRow(review: ProductReview, flagging: Boolean, isLoggedIn: Bool
 private fun ReviewDialog(viewModel: ProductDetailViewModel) {
   val exitGuard = LocalNavigationExitGuard.current
   fun closeSafely() {
-    if (viewModel.reviewText != productReviewBaseline(viewModel)) {
+    if (reviewTextDirty(viewModel)) {
       exitGuard.requestNavigation { viewModel.closeReviewModal() }
     } else {
       viewModel.closeReviewModal()
@@ -496,6 +494,9 @@ private fun ReviewDialog(viewModel: ProductDetailViewModel) {
 
 private fun productReviewBaseline(viewModel: ProductDetailViewModel): String =
   viewModel.product?.myReviewText ?: ""
+
+private fun reviewTextDirty(viewModel: ProductDetailViewModel): Boolean =
+  viewModel.reviewText != productReviewBaseline(viewModel)
 
 @Composable
 private fun PriceRow(price: PriceCurrent, onClick: () -> Unit) {

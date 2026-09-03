@@ -137,10 +137,6 @@ private fun AppScaffold() {
     }
   }
 
-  BackHandler(enabled = !isTopLevel || exitGuard.dirty) {
-    exitGuard.requestNavigation(::navigateBack)
-  }
-
   CompositionLocalProvider(LocalNavigationExitGuard provides exitGuard) {
   Scaffold(
     topBar = {
@@ -338,6 +334,14 @@ private fun AppScaffold() {
         FeedbackScreen(source = source, onDone = { navController.popBackStack() })
       }
     }
+  }
+  // Registrovat AŽ PO NavHostu — OnBackPressedDispatcher volá naposledy přidaný callback jako
+  // první, a NavHost si dovnitř svého composable stromu (výš) registruje vlastní
+  // PredictiveBackHandler. Kdyby byl tenhle BackHandler zaregistrovaný dřív (např. před
+  // Scaffold), systémové Zpět by ho obcházelo a šlo by rovnou přes NavHost bez potvrzení
+  // rozepsaného formuláře.
+  BackHandler(enabled = !isTopLevel || exitGuard.dirty) {
+    exitGuard.requestNavigation(::navigateBack)
   }
   NavigationExitGuardDialog(exitGuard)
   }

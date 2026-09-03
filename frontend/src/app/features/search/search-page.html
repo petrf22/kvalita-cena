@@ -17,7 +17,11 @@
     </button>
   </div>
 
-  <details class="filters-panel">
+  <details
+    class="filters-panel"
+    [attr.open]="filtersOpen() ? '' : null"
+    (toggle)="onFiltersToggle($event)"
+  >
     <summary>
       {{
         activeFilterCount() === 0
@@ -83,130 +87,135 @@
   }
 
   @if (items().length > 0) {
-    <nz-table
-      #resultsTable
-      class="desktop-results"
-      [nzData]="items()"
-      [nzFrontPagination]="false"
-      [nzShowPagination]="false"
-      [nzLoading]="loading()"
-    >
-      <thead>
-        <tr>
-          <th>{{ t('search.colProduct') }}</th>
-          <th>{{ t('search.colPrice') }}</th>
-          <th>{{ t('search.colCheapest') }}</th>
-          <th>{{ t('search.colTotalReports') }}</th>
-          <th>{{ t('search.colLast') }}</th>
-          <th>{{ t('search.colQuality') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (item of resultsTable.data; track item.product.id) {
-          <tr (click)="openProduct(item)" class="search-result-row">
-            <td>
-              <div class="product-name-cell">
-                <app-product-thumb
-                  [name]="item.product.name"
-                  [photos]="item.product.photos"
-                  [externalImage]="item.product.externalImage"
-                />
-                <div>
-                  <div class="product-name">
-                    {{ item.product.name }}
-                    @if (!item.product.verified) {
-                      <nz-tag class="unverified-tag">{{ t('search.unverified') }}</nz-tag>
-                    }
-                  </div>
-                  <div class="product-subtitle">
-                    {{ item.product.brand?.name ?? item.product.category.name }}
+    @if (isDesktopViewport()) {
+      <nz-table
+        #resultsTable
+        class="desktop-results"
+        [nzData]="items()"
+        [nzFrontPagination]="false"
+        [nzShowPagination]="false"
+        [nzLoading]="loading()"
+      >
+        <thead>
+          <tr>
+            <th>{{ t('search.colProduct') }}</th>
+            <th>{{ t('search.colPrice') }}</th>
+            <th>{{ t('search.colCheapest') }}</th>
+            <th>{{ t('search.colTotalReports') }}</th>
+            <th>{{ t('search.colLast') }}</th>
+            <th>{{ t('search.colQuality') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of resultsTable.data; track item.product.id) {
+            <tr (click)="openProduct(item)" class="search-result-row">
+              <td>
+                <div class="product-name-cell">
+                  <app-product-thumb
+                    [name]="item.product.name"
+                    [photos]="item.product.photos"
+                    [externalImage]="item.product.externalImage"
+                  />
+                  <div>
+                    <div class="product-name">
+                      {{ item.product.name }}
+                      @if (!item.product.verified) {
+                        <nz-tag class="unverified-tag">{{ t('search.unverified') }}</nz-tag>
+                      }
+                    </div>
+                    <div class="product-subtitle">
+                      {{ item.product.brand?.name ?? item.product.category.name }}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </td>
-            <td>
-              @if (item.bestPrice != null) {
-                @if (item.converted; as converted) {
-                  <span [title]="item.bestPrice | money: item.currency">{{
-                    converted.amount | money: converted.currency
-                  }}</span>
+              </td>
+              <td>
+                @if (item.bestPrice != null) {
+                  @if (item.converted; as converted) {
+                    <span [title]="item.bestPrice | money: item.currency">{{
+                      converted.amount | money: converted.currency
+                    }}</span>
+                  } @else {
+                    {{ item.bestPrice | money: item.currency }}
+                  }
+                  @if (item.bestPriceObservations) {
+                    <span class="confirmations">{{
+                      t('search.confirmations', { count: item.bestPriceObservations })
+                    }}</span>
+                  }
                 } @else {
-                  {{ item.bestPrice | money: item.currency }}
+                  <span class="unknown-price">{{ t('search.unknownPrice') }}</span>
                 }
-                @if (item.bestPriceObservations) {
-                  <span class="confirmations">{{
-                    t('search.confirmations', { count: item.bestPriceObservations })
-                  }}</span>
+              </td>
+              <td>
+                {{
+                  item.cheapestStore
+                    ? storeLabel(item.cheapestStore, countryService.country())
+                    : '–'
+                }}
+              </td>
+              <td>{{ item.observationCount }}</td>
+              <td>{{ item.lastObservedAt | relativeDate }}</td>
+              <td>
+                <app-quality-badge [average]="item.qualityAverage" [count]="item.qualityCount" />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    } @else {
+      <div class="mobile-results">
+        @for (item of items(); track item.product.id) {
+          <a class="result-card" [routerLink]="['/product', item.product.id]">
+            <div class="result-card-heading">
+              <app-product-thumb
+                [name]="item.product.name"
+                [photos]="item.product.photos"
+                [externalImage]="item.product.externalImage"
+              />
+              <div class="result-card-product">
+                <div class="product-name">
+                  {{ item.product.name }}
+                  @if (!item.product.verified) {
+                    <nz-tag class="unverified-tag">{{ t('search.unverified') }}</nz-tag>
+                  }
+                </div>
+                <div class="product-subtitle">
+                  {{ item.product.brand?.name ?? item.product.category.name }}
+                </div>
+              </div>
+              <div class="result-card-price">
+                @if (item.bestPrice != null) {
+                  @if (item.converted; as converted) {
+                    <strong [title]="item.bestPrice | money: item.currency">{{
+                      converted.amount | money: converted.currency
+                    }}</strong>
+                  } @else {
+                    <strong>{{ item.bestPrice | money: item.currency }}</strong>
+                  }
+                } @else {
+                  <span class="unknown-price">{{ t('search.unknownPrice') }}</span>
                 }
-              } @else {
-                <span class="unknown-price">{{ t('search.unknownPrice') }}</span>
-              }
-            </td>
-            <td>
+              </div>
+            </div>
+            <div class="result-card-store">
               {{
                 item.cheapestStore ? storeLabel(item.cheapestStore, countryService.country()) : '–'
               }}
-            </td>
-            <td>{{ item.observationCount }}</td>
-            <td>{{ item.lastObservedAt | relativeDate }}</td>
-            <td>
+            </div>
+            <div class="result-card-footer">
               <app-quality-badge [average]="item.qualityAverage" [count]="item.qualityCount" />
-            </td>
-          </tr>
+              <span>
+                {{ item.observationCount }}× · {{ item.lastObservedAt | relativeDate }}
+                @if (item.bestPriceObservations) {
+                  · {{ t('search.confirmations', { count: item.bestPriceObservations }) }}
+                }
+              </span>
+            </div>
+          </a>
         }
-      </tbody>
-    </nz-table>
-    <div class="mobile-results">
-      @for (item of items(); track item.product.id) {
-        <a class="result-card" [routerLink]="['/product', item.product.id]">
-          <div class="result-card-heading">
-            <app-product-thumb
-              [name]="item.product.name"
-              [photos]="item.product.photos"
-              [externalImage]="item.product.externalImage"
-            />
-            <div class="result-card-product">
-              <div class="product-name">
-                {{ item.product.name }}
-                @if (!item.product.verified) {
-                  <nz-tag class="unverified-tag">{{ t('search.unverified') }}</nz-tag>
-                }
-              </div>
-              <div class="product-subtitle">
-                {{ item.product.brand?.name ?? item.product.category.name }}
-              </div>
-            </div>
-            <div class="result-card-price">
-              @if (item.bestPrice != null) {
-                @if (item.converted; as converted) {
-                  <strong [title]="item.bestPrice | money: item.currency">{{
-                    converted.amount | money: converted.currency
-                  }}</strong>
-                } @else {
-                  <strong>{{ item.bestPrice | money: item.currency }}</strong>
-                }
-              } @else {
-                <span class="unknown-price">{{ t('search.unknownPrice') }}</span>
-              }
-            </div>
-          </div>
-          <div class="result-card-store">
-            {{
-              item.cheapestStore ? storeLabel(item.cheapestStore, countryService.country()) : '–'
-            }}
-          </div>
-          <div class="result-card-footer">
-            <app-quality-badge [average]="item.qualityAverage" [count]="item.qualityCount" />
-            <span>
-              {{ item.observationCount }}× · {{ item.lastObservedAt | relativeDate }}
-              @if (item.bestPriceObservations) {
-                · {{ t('search.confirmations', { count: item.bestPriceObservations }) }}
-              }
-            </span>
-          </div>
-        </a>
-      }
-    </div>
+      </div>
+    }
     @if (showExternalImageNote()) {
       <p class="external-image-note">{{ t('search.externalImageNote') }}</p>
     }

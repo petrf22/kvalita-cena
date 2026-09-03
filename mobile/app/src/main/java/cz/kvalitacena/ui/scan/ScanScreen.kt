@@ -51,6 +51,8 @@ import androidx.core.content.ContextCompat
 import cz.kvalitacena.R
 import cz.kvalitacena.scanner.BarcodeAnalyzer
 import cz.kvalitacena.scanner.ZxingBarcodeScanner
+import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
+import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
 
 /** Záložka "Sken" — obrazovky 1/3 flow "sken → cena → výběr provozovny → odeslání". */
 @Composable
@@ -69,6 +71,18 @@ fun ScanScreen(onBarcodeDetected: (String) -> Unit) {
   val permissionLauncher = rememberLauncherForActivityResult(
     ActivityResultContracts.RequestPermission(),
   ) { granted -> hasCameraPermission = granted }
+
+  val exitGuard = LocalNavigationExitGuard.current
+  val manualEntryDirty = manualEntryVisible && manualCode.isNotEmpty()
+  ReportUnsavedChanges(manualEntryDirty)
+
+  fun closeManualEntrySafely() {
+    if (manualEntryDirty) {
+      exitGuard.requestNavigation { manualEntryVisible = false; manualCode = "" }
+    } else {
+      manualEntryVisible = false
+    }
+  }
 
   LaunchedEffect(Unit) {
     if (!hasCameraPermission) permissionLauncher.launch(Manifest.permission.CAMERA)
@@ -134,7 +148,7 @@ fun ScanScreen(onBarcodeDetected: (String) -> Unit) {
 
   if (manualEntryVisible) {
     AlertDialog(
-      onDismissRequest = { manualEntryVisible = false },
+      onDismissRequest = ::closeManualEntrySafely,
       title = { Text(stringResource(R.string.scan_manual_title)) },
       text = {
         OutlinedTextField(
@@ -161,7 +175,7 @@ fun ScanScreen(onBarcodeDetected: (String) -> Unit) {
         ) { Text(stringResource(R.string.scan_manual_submit)) }
       },
       dismissButton = {
-        TextButton(onClick = { manualEntryVisible = false }) {
+        TextButton(onClick = ::closeManualEntrySafely) {
           Text(stringResource(R.string.common_cancel))
         }
       },

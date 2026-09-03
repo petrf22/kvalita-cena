@@ -98,7 +98,10 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
   ) { granted ->
     if (granted) {
       scope.launch {
-        getCurrentLocation(context)?.let { viewModel.useMyLocation(it.latitude, it.longitude) }
+        getCurrentLocation(context)?.let {
+          formDirty = true
+          viewModel.useMyLocation(it.latitude, it.longitude)
+        }
       }
     }
   }
@@ -113,7 +116,10 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       return
     }
     scope.launch {
-      getCurrentLocation(context)?.let { viewModel.useMyLocation(it.latitude, it.longitude) }
+      getCurrentLocation(context)?.let {
+        formDirty = true
+        viewModel.useMyLocation(it.latitude, it.longitude)
+      }
     }
   }
 
@@ -222,7 +228,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
         modifier = Modifier.weight(1f),
       )
       if (hasCompanyRegistry(viewModel.country)) {
-        Button(onClick = { formDirty = true; viewModel.lookupIco() }, enabled = !viewModel.icoLookupLoading) {
+        Button(onClick = { viewModel.lookupIco(onFound = { formDirty = true }) }, enabled = !viewModel.icoLookupLoading) {
           if (viewModel.icoLookupLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
           else Text(stringResource(R.string.store_company_id_load_from_registry))
         }
@@ -248,7 +254,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
         if (viewModel.geocoding) CircularProgressIndicator(modifier = Modifier.size(20.dp))
         else Text(stringResource(R.string.store_location_find_coordinates))
       }
-      OutlinedButton(onClick = { formDirty = true; useMyLocation() }, enabled = !viewModel.locating) {
+      OutlinedButton(onClick = { useMyLocation() }, enabled = !viewModel.locating) {
         if (viewModel.locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
         else Text(stringResource(R.string.store_location_use_my_location))
       }
