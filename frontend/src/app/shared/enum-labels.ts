@@ -107,6 +107,7 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.ProductCategoryRequired]: 'errors.PRODUCT_CATEGORY_REQUIRED',
   [ErrorCode.ProductUnitBaseRequired]: 'errors.PRODUCT_UNIT_BASE_REQUIRED',
   [ErrorCode.ProductStoreRequired]: 'errors.PRODUCT_STORE_REQUIRED',
+  [ErrorCode.ProductTooManyUnconfirmed]: 'errors.PRODUCT_TOO_MANY_UNCONFIRMED',
   [ErrorCode.ProductNotAvailableAtStore]: 'errors.PRODUCT_NOT_AVAILABLE_AT_STORE',
   [ErrorCode.StoreNameRequired]: 'errors.STORE_NAME_REQUIRED',
   [ErrorCode.StoreNameEmpty]: 'errors.STORE_NAME_EMPTY',

@@ -35,6 +35,17 @@ public class CatalogRateLimiter {
       .expireAfterWrite(Duration.ofDays(1))
       .build();
 
+  /**
+   * Bezkódová položka patří jedné provozovně, takže i strop na její zakládání dává smysl na
+   * provozovnu — klíčem je dvojice (uživatel, obchod). Škodič tak nemůže zaplevelit jeden
+   * obchod celým denním limitem a poctivý přispěvatel z víc obchodů nenarazí.
+   */
+  private final Cache<StoreKey, AtomicInteger> productsPerStorePerDay = Caffeine.newBuilder()
+      .expireAfterWrite(Duration.ofDays(1))
+      .build();
+
+  private record StoreKey(UUID viewerPublicUid, Long storeId) {}
+
   private final Cache<UUID, AtomicInteger> mediaUploadsPerDay = Caffeine.newBuilder()
       .expireAfterWrite(Duration.ofDays(1))
       .build();
@@ -52,6 +63,12 @@ public class CatalogRateLimiter {
     return tryIncrement(productsPerDay, viewerPublicUid, catalogProperties.getMaxProductsPerDay());
   }
 
+  /** Jen bezkódové zboží — jedině to má provozovnu jako součást identity. */
+  public boolean tryAcquireProductCreationInStore(UUID viewerPublicUid, Long storeId) {
+    return tryIncrement(productsPerStorePerDay, new StoreKey(viewerPublicUid, storeId),
+        catalogProperties.getMaxProductsPerStorePerDay());
+  }
+
   public boolean tryAcquireMediaUpload(UUID viewerPublicUid) {
     return tryIncrement(mediaUploadsPerDay, viewerPublicUid, mediaProperties.getMaxUploadsPerDay());
   }
@@ -61,7 +78,7 @@ public class CatalogRateLimiter {
     return tryIncrement(reviewTextsPerDay, viewerPublicUid, reviewProperties.getMaxPerDay());
   }
 
-  private boolean tryIncrement(Cache<UUID, AtomicInteger> cache, UUID key, int max) {
+  private <K> boolean tryIncrement(Cache<K, AtomicInteger> cache, K key, int max) {
     AtomicInteger counter = cache.get(key, k -> new AtomicInteger(0));
     return counter.incrementAndGet() <= max;
   }

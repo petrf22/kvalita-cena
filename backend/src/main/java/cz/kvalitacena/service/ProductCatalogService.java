@@ -103,6 +103,21 @@ public class ProductCatalogService {
       scopeStore = storeRepository.findById(input.storeId())
           .orElseThrow(() -> new NotFoundException(ErrorCode.STORE_NOT_FOUND));
     }
+    if (scopeStore != null) {
+      // Dva stropy nad rámec denního počtu položek, oba mířené na bezkódové zboží. Rozsah
+      // lokální položky je jeden obchod, takže strop na obchod drží případnou škodu tam, kde
+      // vznikla; strop na otevřené nepotvrzené položky pak zavírá škálování časem, na které
+      // denní limit nestačí (docs/reputace.md, "Zboží bez čárového kódu").
+      long openDrafts = productRepository.countByCreatedByUserIdAndGenericAndStatus(
+          user.getId(), true, ProductStatus.DRAFT);
+      if (openDrafts >= catalogProperties.getMaxUnconfirmedDrafts()) {
+        throw new TooManyRequestsException(ErrorCode.PRODUCT_TOO_MANY_UNCONFIRMED);
+      }
+      if (!catalogRateLimiter.tryAcquireProductCreationInStore(viewerPublicUid, scopeStore.getId())) {
+        throw new TooManyRequestsException();
+      }
+    }
+
     boolean trusted = trustLevelService.isTrusted(user);
 
     Product product = Product.builder()
