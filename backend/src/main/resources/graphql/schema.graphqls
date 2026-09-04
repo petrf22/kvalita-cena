@@ -359,6 +359,9 @@ type Mutation {
   """
   resolveFlags(recordType: RecordType!, recordId: ID!, resolution: FlagResolution!): Boolean!
 
+  "Sloučí duplicitní bezkódový produkt sourceId do kanonického targetId. Jen moderátor."
+  mergeProducts(sourceId: ID!, targetId: ID!): Product!
+
   """
   Zamítnutí/obnovení jednotlivé ceny moderátorem — nesouhlas s cenou nejde nahlásit komunitně
   (docs/reputace.md, cena se opravuje novým zápisem, ne flagem), takže tohle je jediná cesta,
@@ -1503,6 +1506,9 @@ enum ErrorCode {
   MODERATION_RECORD_NOT_FOUND
   MODERATION_OBSERVATION_NOT_FOUND
   MODERATION_USER_NOT_FOUND
+  MODERATION_PRODUCT_MERGE_SAME
+  MODERATION_PRODUCT_MERGE_INVALID
+  MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH
   FEEDBACK_MESSAGE_REQUIRED
   FEEDBACK_MESSAGE_TOO_LONG
   FEEDBACK_CONTACT_EMAIL_INVALID

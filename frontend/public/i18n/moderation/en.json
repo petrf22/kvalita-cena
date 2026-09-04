@@ -19,7 +19,11 @@
     "lastFlaggedAtLabel": "Last flagged",
     "reasonsLabel": "Reasons:",
     "uncover": "Uncover",
-    "confirmHide": "Confirm hiding"
+    "confirmHide": "Confirm hiding",
+    "mergeTargetPlaceholder": "Target product ID",
+    "merge": "Merge into target",
+    "mergeConfirm": "Move prices, aliases, reviews, and photos to the target product? This action cannot be undone.",
+    "mergeSuccess": "The duplicate product was merged into “{{name}}”."
   },
   "authorLabel": "Author:",
   "authorUnknown": "unknown (anonymous or pseudonymized)",

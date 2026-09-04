@@ -133,6 +133,8 @@ export class ModerationPage {
     this.moderationService.flaggedRecords(this.recordTypeFilter(), first, offset),
   );
   protected readonly flaggedActionLoading = signal<string | null>(null);
+  protected readonly mergeTargetIds = signal<Record<string, string>>({});
+  protected readonly mergeSuccess = signal<string | null>(null);
 
   protected readonly observationProductId = signal('');
   protected readonly observationStoreId = signal('');
@@ -215,6 +217,36 @@ export class ModerationPage {
     this.moderationService.resolveFlags(item.recordType, item.recordId, resolution).subscribe({
       next: () => {
         this.flaggedActionLoading.set(null);
+        this.load(this.flagged);
+      },
+      error: (err: unknown) => {
+        this.flaggedActionLoading.set(null);
+        this.flagged.error.set(translateError(err, this.transloco));
+      },
+    });
+  }
+
+  protected mergeTargetId(sourceId: string): string {
+    return this.mergeTargetIds()[sourceId] ?? '';
+  }
+
+  protected setMergeTargetId(sourceId: string, targetId: string): void {
+    this.mergeTargetIds.update((current) => ({ ...current, [sourceId]: targetId }));
+  }
+
+  protected mergeProduct(item: FlaggedRecordItem): void {
+    const targetId = this.mergeTargetId(item.recordId).trim();
+    if (!targetId || !window.confirm(this.transloco.translate('moderation.flagged.mergeConfirm')))
+      return;
+    const key = item.recordType + item.recordId;
+    this.flaggedActionLoading.set(key);
+    this.mergeSuccess.set(null);
+    this.moderationService.mergeProducts(item.recordId, targetId).subscribe({
+      next: (target) => {
+        this.flaggedActionLoading.set(null);
+        this.mergeSuccess.set(
+          this.transloco.translate('moderation.flagged.mergeSuccess', { name: target.name }),
+        );
         this.load(this.flagged);
       },
       error: (err: unknown) => {

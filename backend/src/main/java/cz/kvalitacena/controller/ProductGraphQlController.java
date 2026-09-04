@@ -124,7 +124,8 @@ public class ProductGraphQlController {
   @QueryMapping
   public Product product(@Argument Long id, Authentication authentication) {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
-    return productRepository.findById(id)
+    return productRepository.findWithMergedIntoById(id)
+        .map(p -> p.getStatus() == ProductStatus.MERGED && p.getMergedInto() != null ? p.getMergedInto() : p)
         .filter(p -> isVisible(p, viewer))
         .map(p -> productOverlayService.applyOverlay(p, viewer.userId()))
         .orElse(null);

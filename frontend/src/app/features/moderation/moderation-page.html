@@ -39,6 +39,14 @@
         @if (flagged.error()) {
           <nz-alert nzType="error" [nzMessage]="flagged.error()" nzShowIcon class="section-alert" />
         }
+        @if (mergeSuccess()) {
+          <nz-alert
+            nzType="success"
+            [nzMessage]="mergeSuccess()"
+            nzShowIcon
+            class="section-alert"
+          />
+        }
         @if (flagged.loading() && flagged.items().length === 0) {
           <nz-spin />
         } @else if (flagged.items().length === 0) {
@@ -104,6 +112,26 @@
                     {{ t('moderation.flagged.confirmHide') }}
                   </button>
                 </div>
+                @if (item.recordType === 'PRODUCT' && item.product?.isGeneric) {
+                  <div class="merge-actions">
+                    <input
+                      nz-input
+                      inputmode="numeric"
+                      [placeholder]="t('moderation.flagged.mergeTargetPlaceholder')"
+                      [ngModel]="mergeTargetId(item.recordId)"
+                      (ngModelChange)="setMergeTargetId(item.recordId, $event)"
+                    />
+                    <button
+                      nz-button
+                      nzType="primary"
+                      [disabled]="!mergeTargetId(item.recordId).trim()"
+                      [nzLoading]="flaggedActionLoading() === item.recordType + item.recordId"
+                      (click)="mergeProduct(item)"
+                    >
+                      {{ t('moderation.flagged.merge') }}
+                    </button>
+                  </div>
+                }
               </nz-list-item>
             }
           </nz-list>

@@ -19,7 +19,11 @@
     "lastFlaggedAtLabel": "Naposledy nahlásené",
     "reasonsLabel": "Dôvody:",
     "uncover": "Odkryť",
-    "confirmHide": "Potvrdiť skrytie"
+    "confirmHide": "Potvrdiť skrytie",
+    "mergeTargetPlaceholder": "ID cieľového tovaru",
+    "merge": "Zlúčiť do cieľa",
+    "mergeConfirm": "Naozaj presunúť ceny, aliasy, recenzie a fotky do cieľového tovaru? Túto operáciu nemožno vrátiť.",
+    "mergeSuccess": "Duplicitný tovar bol zlúčený do „{{name}}“."
   },
   "authorLabel": "Autor:",
   "authorUnknown": "neznámy (anonym alebo po pseudonymizácii)",

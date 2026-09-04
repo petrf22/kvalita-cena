@@ -19,7 +19,11 @@
     "lastFlaggedAtLabel": "Ostatnio zgłoszono",
     "reasonsLabel": "Powody:",
     "uncover": "Odkryj",
-    "confirmHide": "Potwierdź ukrycie"
+    "confirmHide": "Potwierdź ukrycie",
+    "mergeTargetPlaceholder": "ID produktu docelowego",
+    "merge": "Połącz z docelowym",
+    "mergeConfirm": "Przenieść ceny, aliasy, recenzje i zdjęcia do produktu docelowego? Tej operacji nie można cofnąć.",
+    "mergeSuccess": "Duplikat produktu połączono z „{{name}}”."
   },
   "authorLabel": "Autor:",
   "authorUnknown": "nieznany (anonim lub po pseudonimizacji)",

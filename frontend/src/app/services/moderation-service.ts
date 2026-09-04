@@ -61,6 +61,19 @@ export class ModerationService {
       .pipe(map((data) => data.resolveFlags));
   }
 
+  mergeProducts(sourceId: string, targetId: string) {
+    const document = graphql(`
+      mutation MergeProducts($sourceId: ID!, $targetId: ID!) {
+        mergeProducts(sourceId: $sourceId, targetId: $targetId) {
+          ...ProductSummaryFields
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { sourceId, targetId })
+      .pipe(map((data) => data.mergeProducts));
+  }
+
   moderationObservations(productId: string | null, storeId: string | null, first = 20, offset = 0) {
     const document = graphql(`
       query ModerationObservations($productId: ID, $storeId: ID, $first: Int, $offset: Int) {
