@@ -11,12 +11,16 @@ import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.ProductCode;
 import cz.kvalitacena.db.entity.ProductStatus;
+import cz.kvalitacena.db.entity.ProductScope;
+import cz.kvalitacena.db.entity.RetailChain;
+import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.entity.UnitBase;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
+import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.exception.DuplicateException;
 import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.TooManyRequestsException;
@@ -51,10 +55,13 @@ class ProductCatalogServiceTest {
   private static final Long USER_ID = 42L;
   private static final Long CATEGORY_ID = 5L;
   private static final Long PRODUCT_ID = 7L;
+  private static final Long STORE_ID = 9L;
   private static final UUID PUBLIC_UID = UUID.randomUUID();
 
   @Mock
   private ProductRepository productRepository;
+  @Mock
+  private StoreRepository storeRepository;
   @Mock
   private BrandResolutionService brandResolutionService;
   @Mock
@@ -76,14 +83,14 @@ class ProductCatalogServiceTest {
 
   private ProductCatalogService service() {
     catalogProperties.setDraftConfirmations(3);
-    return new ProductCatalogService(productRepository, brandResolutionService, categoryRepository,
+    return new ProductCatalogService(productRepository, storeRepository, brandResolutionService, categoryRepository,
         productCodeRepository, priceObservationRepository, appUserRepository, catalogProperties,
-        catalogRateLimiter, duplicateLookupService, trustLevelService);
+        catalogRateLimiter, duplicateLookupService, trustLevelService, new ProductScopeService());
   }
 
   private CreateProductInput input(String code) {
     return new CreateProductInput("Chléb konzumní", null, CATEGORY_ID, UnitBase.MASS,
-        new BigDecimal("1200"), NetContentUom.G, null, false, code);
+        new BigDecimal("1200"), NetContentUom.G, null, false, STORE_ID, code);
   }
 
   private void givenLoggedInUser() {
@@ -92,6 +99,10 @@ class ProductCatalogServiceTest {
 
   private void givenCategoryExists() {
     when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.of(Category.builder().id(CATEGORY_ID).build()));
+  }
+
+  private void givenStoreExists(Store store) {
+    when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(store));
   }
 
   @Test
@@ -103,7 +114,7 @@ class ProductCatalogServiceTest {
   void blankNameIsRejected() {
     givenLoggedInUser();
     CreateProductInput blank = new CreateProductInput(" ", null, CATEGORY_ID, UnitBase.MASS,
-        null, null, null, false, null);
+        null, null, null, false, STORE_ID, null);
     assertThatThrownBy(() -> service().create(blank, PUBLIC_UID)).isInstanceOf(ValidationException.class);
   }
 
@@ -111,7 +122,7 @@ class ProductCatalogServiceTest {
   void missingCategoryIsRejected() {
     givenLoggedInUser();
     CreateProductInput noCategory = new CreateProductInput("Chléb", null, null, UnitBase.MASS,
-        null, null, null, false, null);
+        null, null, null, false, STORE_ID, null);
     assertThatThrownBy(() -> service().create(noCategory, PUBLIC_UID)).isInstanceOf(ValidationException.class);
   }
 
@@ -183,13 +194,30 @@ class ProductCatalogServiceTest {
     givenLoggedInUser();
     givenCategoryExists();
     when(catalogRateLimiter.tryAcquireProductCreation(PUBLIC_UID)).thenReturn(true);
+    givenStoreExists(Store.builder().id(STORE_ID).build());
     when(productRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
     Product product = service().create(input(null), PUBLIC_UID);
 
     assertThat(product.getStatus()).isEqualTo(ProductStatus.DRAFT);
     assertThat(product.isGeneric()).isTrue();
+    assertThat(product.getCatalogScope()).isEqualTo(ProductScope.STORE);
+    assertThat(product.getScopeStore().getId()).isEqualTo(STORE_ID);
     verify(productCodeRepository, org.mockito.Mockito.never()).save(any());
+  }
+
+  @Test
+  void codelessProductRequiresStore() {
+    givenLoggedInUser();
+    givenCategoryExists();
+    when(catalogRateLimiter.tryAcquireProductCreation(PUBLIC_UID)).thenReturn(true);
+    CreateProductInput withoutStore = new CreateProductInput("Chléb", null, CATEGORY_ID,
+        UnitBase.MASS, null, null, null, true, null, null);
+
+    assertThatThrownBy(() -> service().create(withoutStore, PUBLIC_UID))
+        .isInstanceOf(ValidationException.class)
+        .satisfies(e -> assertThat(((ValidationException) e).getCode())
+            .isEqualTo(cz.kvalitacena.exception.ErrorCode.PRODUCT_STORE_REQUIRED));
   }
 
   @Test
@@ -200,11 +228,14 @@ class ProductCatalogServiceTest {
     when(productRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
     CreateProductInput variableWeight = new CreateProductInput("Sýr eidam", null, CATEGORY_ID,
-        UnitBase.MASS, new BigDecimal("300"), NetContentUom.G, null, true, null);
+        UnitBase.MASS, new BigDecimal("300"), NetContentUom.G, null, true, STORE_ID, null);
+    givenStoreExists(Store.builder().id(STORE_ID).chain(RetailChain.builder().id(11L).build()).build());
 
     Product product = service().create(variableWeight, PUBLIC_UID);
 
     assertThat(product.getNetContentBase()).isEqualByComparingTo("1");
+    assertThat(product.getCatalogScope()).isEqualTo(ProductScope.CHAIN);
+    assertThat(product.getScopeChain().getId()).isEqualTo(11L);
   }
 
   @Test
@@ -214,7 +245,7 @@ class ProductCatalogServiceTest {
     when(catalogRateLimiter.tryAcquireProductCreation(PUBLIC_UID)).thenReturn(true);
 
     CreateProductInput mismatched = new CreateProductInput("Mléko", null, CATEGORY_ID,
-        UnitBase.VOLUME, new BigDecimal("1"), NetContentUom.G, null, false, null);
+        UnitBase.VOLUME, new BigDecimal("1"), NetContentUom.G, null, false, STORE_ID, null);
 
     assertThatThrownBy(() -> service().create(mismatched, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);

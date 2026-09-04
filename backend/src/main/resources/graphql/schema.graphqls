@@ -88,7 +88,7 @@ type Query {
   Slouží k nabídnutí existující druhové položky při bezkódovém zápisu i jako povinná kontrola
   duplicit před založením nového zboží (docs/reputace.md, "Zboží bez čárového kódu").
   """
-  productSuggestions(name: String!, first: Int = 10): [Product!]!
+  productSuggestions(name: String!, storeId: ID, first: Int = 10): [Product!]!
 
   """
   Plochý seznam kategorií pro zakládání zboží — hierarchii nese Category.path (řetězec
@@ -653,6 +653,8 @@ input CreateProductInput {
   netContentUom: NetContentUom
   piecesInPack: Int
   isVariableWeight: Boolean = false
+  "Povinné pro bezkódové zboží; server podle provozovny zvolí rozsah CHAIN nebo STORE."
+  storeId: ID
   "Naskenovaný EAN — bez něj vzniká bezkódová druhová položka (isGeneric=true, status=DRAFT)."
   code: String
 }
@@ -744,6 +746,13 @@ enum ProductStatus {
   REJECTED
 }
 
+enum ProductScope {
+  GLOBAL
+  CHAIN
+  STORE
+  LEGACY_GLOBAL
+}
+
 type Product {
   id: ID!
   name: String!
@@ -761,6 +770,10 @@ type Product {
   zastropovaná na MEDIUM, viz docs/reputace.md, 'Zboží bez čárového kódu'.
   """
   isGeneric: Boolean!
+  "Rozsah identity: EAN globálně, bezkódové zboží u řetězce/provozovny."
+  catalogScope: ProductScope!
+  scopeChain: RetailChain
+  scopeStore: Store
   "Aktuální ceny po jednotlivých obchodech (agg.price_current)."
   prices: [PriceCurrent!]!
   codes: [ProductCode!]!

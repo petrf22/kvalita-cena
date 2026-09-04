@@ -1,0 +1,118 @@
+# 01-local-product-scope.yaml — bezkódové zboží patří konkrétnímu prodejci.
+# GTIN/OFF zboží zůstává globální; druhová položka se sdílí v řetězci, nebo jen v jedné
+# provozovně, pokud řetězec nemá. Staré nejednoznačné položky zůstávají LEGACY_GLOBAL.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-04-01-product-local-scope
+      author: Petr F.
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: product
+            columns:
+              - column:
+                  name: catalog_scope
+                  type: VARCHAR(20)
+                  defaultValue: GLOBAL
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scope_chain_id
+                  type: BIGINT
+              - column:
+                  name: scope_store_id
+                  type: BIGINT
+        - addForeignKeyConstraint:
+            constraintName: fk_product_scope_chain
+            baseTableSchemaName: core
+            baseTableName: product
+            baseColumnNames: scope_chain_id
+            referencedTableSchemaName: core
+            referencedTableName: retail_chain
+            referencedColumnNames: id
+            onDelete: RESTRICT
+        - addForeignKeyConstraint:
+            constraintName: fk_product_scope_store
+            baseTableSchemaName: core
+            baseTableName: product
+            baseColumnNames: scope_store_id
+            referencedTableSchemaName: core
+            referencedTableName: store
+            referencedColumnNames: id
+            onDelete: RESTRICT
+        - sql:
+            sql: |
+              -- Jednoznačně používané staré druhové položky lze bezpečně přiřadit. Výraz
+              -- C:/S: dává řetězci přednost stejně jako nový ProductCatalogService.
+              WITH inferred AS (
+                SELECT po.product_id,
+                       MIN(CASE WHEN s.chain_id IS NOT NULL THEN 'C:' || s.chain_id
+                                ELSE 'S:' || s.id END) AS sole_scope,
+                       COUNT(DISTINCT CASE WHEN s.chain_id IS NOT NULL THEN 'C:' || s.chain_id
+                                           ELSE 'S:' || s.id END) AS scope_count
+                  FROM core.price_observation po
+                  JOIN core.store s ON s.id = po.store_id
+                 GROUP BY po.product_id
+              )
+              UPDATE core.product p
+                 SET catalog_scope = CASE WHEN i.sole_scope LIKE 'C:%' THEN 'CHAIN' ELSE 'STORE' END,
+                     scope_chain_id = CASE WHEN i.sole_scope LIKE 'C:%'
+                                           THEN SUBSTRING(i.sole_scope FROM 3)::BIGINT END,
+                     scope_store_id = CASE WHEN i.sole_scope LIKE 'S:%'
+                                           THEN SUBSTRING(i.sole_scope FROM 3)::BIGINT END
+                FROM inferred i
+               WHERE p.id = i.product_id
+                 AND p.is_generic
+                 AND i.scope_count = 1;
+
+              UPDATE core.product
+                 SET catalog_scope = 'LEGACY_GLOBAL'
+               WHERE is_generic
+                 AND catalog_scope = 'GLOBAL';
+
+              ALTER TABLE core.product
+                ADD CONSTRAINT chk_product_catalog_scope
+                CHECK (
+                  (catalog_scope IN ('GLOBAL', 'LEGACY_GLOBAL')
+                    AND scope_chain_id IS NULL AND scope_store_id IS NULL)
+                  OR (catalog_scope = 'CHAIN'
+                    AND scope_chain_id IS NOT NULL AND scope_store_id IS NULL)
+                  OR (catalog_scope = 'STORE'
+                    AND scope_chain_id IS NULL AND scope_store_id IS NOT NULL)
+                );
+
+              DROP INDEX core.uq_product_generic_name;
+              CREATE UNIQUE INDEX uq_product_generic_name_scope ON core.product
+                (core.norm_text(name), category_id, catalog_scope,
+                 COALESCE(scope_chain_id, 0), COALESCE(scope_store_id, 0))
+                WHERE is_generic AND status <> 'MERGED';
+
+              CREATE INDEX idx_product_scope_chain ON core.product (scope_chain_id)
+                WHERE catalog_scope = 'CHAIN' AND status IN ('ACTIVE', 'DRAFT');
+              CREATE INDEX idx_product_scope_store ON core.product (scope_store_id)
+                WHERE catalog_scope = 'STORE' AND status IN ('ACTIVE', 'DRAFT');
+      rollback:
+        - sql:
+            sql: |
+              DROP INDEX IF EXISTS core.idx_product_scope_store;
+              DROP INDEX IF EXISTS core.idx_product_scope_chain;
+              DROP INDEX IF EXISTS core.uq_product_generic_name_scope;
+              CREATE UNIQUE INDEX uq_product_generic_name ON core.product
+                (core.norm_text(name), category_id)
+                WHERE is_generic AND status <> 'MERGED';
+              ALTER TABLE core.product DROP CONSTRAINT IF EXISTS chk_product_catalog_scope;
+        - dropForeignKeyConstraint:
+            baseTableSchemaName: core
+            baseTableName: product
+            constraintName: fk_product_scope_store
+        - dropForeignKeyConstraint:
+            baseTableSchemaName: core
+            baseTableName: product
+            constraintName: fk_product_scope_chain
+        - dropColumn:
+            schemaName: core
+            tableName: product
+            columns:
+              - column: { name: scope_store_id }
+              - column: { name: scope_chain_id }
+              - column: { name: catalog_scope }

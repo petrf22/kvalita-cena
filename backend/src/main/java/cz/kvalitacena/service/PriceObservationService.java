@@ -47,6 +47,7 @@ public class PriceObservationService {
   private final ProductOverlayService productOverlayService;
   private final StoreService storeService;
   private final CurrencyResolver currencyResolver;
+  private final ProductScopeService productScopeService;
   private final EntityManager entityManager;
 
   @Transactional
@@ -74,6 +75,9 @@ public class PriceObservationService {
         .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
     Store store = storeRepository.findById(input.storeId())
         .orElseThrow(() -> new NotFoundException(ErrorCode.STORE_NOT_FOUND));
+    if (!productScopeService.isAvailableAt(product, store)) {
+      throw new ValidationException(ErrorCode.PRODUCT_NOT_AVAILABLE_AT_STORE);
+    }
 
     AppUser submitter = authenticatedPublicUid == null
         ? null

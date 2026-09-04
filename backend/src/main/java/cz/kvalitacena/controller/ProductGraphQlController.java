@@ -258,12 +258,12 @@ public class ProductGraphQlController {
    * (nahlášené) položky se přesto vynechávají.
    */
   @QueryMapping
-  public List<Product> productSuggestions(@Argument String name, @Argument Integer first,
+  public List<Product> productSuggestions(@Argument String name, @Argument Long storeId, @Argument Integer first,
       Authentication authentication) {
     if (name == null || name.isBlank()) return List.of();
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
     int limit = Math.max(1, Math.min(first == null ? 10 : first, MAX_SUGGESTIONS));
-    List<Product> matches = productRepository.findSimilarByName(name.trim(), limit).stream()
+    List<Product> matches = productRepository.findSimilarByName(name.trim(), storeId, limit).stream()
         .filter(p -> p.getHiddenAt() == null || sameUser(p.getCreatedByUserId(), viewer) || viewer.moderator())
         .toList();
     return productOverlayService.applyOverlay(matches, viewer.userId());

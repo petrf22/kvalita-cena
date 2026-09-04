@@ -61,6 +61,19 @@ public class Product implements Persistable<Long> {
   private boolean generic = false;
 
   @Enumerated(EnumType.STRING)
+  @Column(name = "catalog_scope", nullable = false, length = 20)
+  @Builder.Default
+  private ProductScope catalogScope = ProductScope.GLOBAL;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "scope_chain_id", foreignKey = @ForeignKey(name = "fk_product_scope_chain"))
+  private RetailChain scopeChain;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "scope_store_id", foreignKey = @ForeignKey(name = "fk_product_scope_store"))
+  private Store scopeStore;
+
+  @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 20)
   @Builder.Default
   private ProductStatus status = ProductStatus.ACTIVE;

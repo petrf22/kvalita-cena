@@ -26,6 +26,8 @@ public enum ErrorCode {
   PRODUCT_NAME_EMPTY("error.product.nameEmpty"),
   PRODUCT_CATEGORY_REQUIRED("error.product.categoryRequired"),
   PRODUCT_UNIT_BASE_REQUIRED("error.product.unitBaseRequired"),
+  PRODUCT_STORE_REQUIRED("error.product.storeRequired"),
+  PRODUCT_NOT_AVAILABLE_AT_STORE("error.product.notAvailableAtStore"),
   OFF_PRODUCT_NOT_FOUND("error.off.productNotFound"),
   OFF_UNAVAILABLE("error.off.unavailable"),
 
