@@ -83,6 +83,7 @@ class ProductCatalogServiceTest {
 
   private ProductCatalogService service() {
     catalogProperties.setDraftConfirmations(3);
+    catalogProperties.setMaxUnconfirmedDrafts(15);
     return new ProductCatalogService(productRepository, storeRepository, brandResolutionService, categoryRepository,
         productCodeRepository, priceObservationRepository, appUserRepository, catalogProperties,
         catalogRateLimiter, duplicateLookupService, trustLevelService, new ProductScopeService());
@@ -103,6 +104,7 @@ class ProductCatalogServiceTest {
 
   private void givenStoreExists(Store store) {
     when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(store));
+    when(catalogRateLimiter.tryAcquireProductCreationInStore(PUBLIC_UID, store.getId())).thenReturn(true);
   }
 
   @Test
@@ -218,6 +220,48 @@ class ProductCatalogServiceTest {
         .isInstanceOf(ValidationException.class)
         .satisfies(e -> assertThat(((ValidationException) e).getCode())
             .isEqualTo(cz.kvalitacena.exception.ErrorCode.PRODUCT_STORE_REQUIRED));
+  }
+
+  @Test
+  void tooManyUnconfirmedDraftsBlocksAnotherCodelessProduct() {
+    givenLoggedInUser();
+    givenCategoryExists();
+    when(catalogRateLimiter.tryAcquireProductCreation(PUBLIC_UID)).thenReturn(true);
+    when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(Store.builder().id(STORE_ID).build()));
+    when(productRepository.countByCreatedByUserIdAndGenericAndStatus(USER_ID, true, ProductStatus.DRAFT))
+        .thenReturn(15L);
+
+    assertThatThrownBy(() -> service().create(input(null), PUBLIC_UID))
+        .isInstanceOf(TooManyRequestsException.class)
+        .satisfies(e -> assertThat(((TooManyRequestsException) e).getCode())
+            .isEqualTo(cz.kvalitacena.exception.ErrorCode.PRODUCT_TOO_MANY_UNCONFIRMED));
+  }
+
+  @Test
+  void perStoreDailyLimitBlocksAnotherCodelessProduct() {
+    givenLoggedInUser();
+    givenCategoryExists();
+    when(catalogRateLimiter.tryAcquireProductCreation(PUBLIC_UID)).thenReturn(true);
+    when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(Store.builder().id(STORE_ID).build()));
+    when(catalogRateLimiter.tryAcquireProductCreationInStore(PUBLIC_UID, STORE_ID)).thenReturn(false);
+
+    assertThatThrownBy(() -> service().create(input(null), PUBLIC_UID))
+        .isInstanceOf(TooManyRequestsException.class);
+  }
+
+  /** Zboží s kódem oba bezkódové stropy míjí — kód sám je dost silná identifikace. */
+  @Test
+  void codedProductIgnoresCodelessLimits() {
+    givenLoggedInUser();
+    givenCategoryExists();
+    when(catalogRateLimiter.tryAcquireProductCreation(PUBLIC_UID)).thenReturn(true);
+    when(trustLevelService.isTrusted(any())).thenReturn(true);
+    when(productRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
+
+    Product product = service().create(input("8594001234578"), PUBLIC_UID);
+
+    assertThat(product.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+    verify(catalogRateLimiter, org.mockito.Mockito.never()).tryAcquireProductCreationInStore(any(), any());
   }
 
   @Test

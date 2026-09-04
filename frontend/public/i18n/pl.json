@@ -43,6 +43,7 @@
     "PRODUCT_CATEGORY_REQUIRED": "Kategoria jest wymagana",
     "PRODUCT_UNIT_BASE_REQUIRED": "Jednostka podstawowa (kg/l/szt) jest wymagana",
     "PRODUCT_STORE_REQUIRED": "Najpierw wybierz sklep dla produktu bez kodu kreskowego",
+    "PRODUCT_TOO_MANY_UNCONFIRMED": "Masz zbyt wiele niepotwierdzonych produktów bez kodu kreskowego. Poczekaj, aż ktoś inny użyje ich przy dodawaniu ceny.",
     "PRODUCT_NOT_AVAILABLE_AT_STORE": "Ten lokalny produkt nie należy do wybranego sklepu",
     "OFF_PRODUCT_NOT_FOUND": "Produkt nie jest już dostępny w Open Food Facts; kontynuuj ręczne wprowadzanie",
     "OFF_UNAVAILABLE": "Open Food Facts jest obecnie niedostępne; kontynuuj ręczne wprowadzanie",
