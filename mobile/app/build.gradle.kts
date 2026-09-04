@@ -133,7 +133,7 @@ dependencies {
     // AppCompatActivity (MainActivity.kt) — bez zaregistrované AppCompatDelegate instance je
     // setApplicationLocales() no-op na všech API úrovních.
     implementation("androidx.appcompat:appcompat:1.8.0")
-    implementation("androidx.navigation:navigation-compose:2.9.8")
+    implementation("androidx.navigation:navigation-compose:2.10.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
 
