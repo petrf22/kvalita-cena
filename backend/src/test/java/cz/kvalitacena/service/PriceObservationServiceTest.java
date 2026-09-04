@@ -64,6 +64,8 @@ class PriceObservationServiceTest {
   @Mock
   private CurrencyResolver currencyResolver;
   @Mock
+  private ProductAliasService productAliasService;
+  @Mock
   private EntityManager entityManager;
 
   @Captor
@@ -78,7 +80,7 @@ class PriceObservationServiceTest {
   void setUp() {
     service = new PriceObservationService(productRepository, storeRepository, appUserRepository,
         priceObservationRepository, priceAggregationService, productCatalogService, productOverlayService, storeService,
-        currencyResolver, new ProductScopeService(), entityManager);
+        currencyResolver, new ProductScopeService(), productAliasService, entityManager);
 
     product = Product.builder().id(PRODUCT_ID).status(ProductStatus.ACTIVE)
         .netContentBase(BigDecimal.ONE).build();
@@ -107,11 +109,11 @@ class PriceObservationServiceTest {
   }
 
   private static SubmitObservationsInput input(List<ObservationPriceInput> prices) {
-    return new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, null, null, prices);
+    return new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, null, null, null, prices);
   }
 
   private static SubmitObservationsInput inputWithBasis(QuantityBasis basis, List<ObservationPriceInput> prices) {
-    return new SubmitObservationsInput(PRODUCT_ID, STORE_ID, basis, null, null, prices);
+    return new SubmitObservationsInput(PRODUCT_ID, STORE_ID, basis, null, null, null, prices);
   }
 
   private AppException submitAndCaptureError(SubmitObservationsInput submitInput) {
@@ -349,7 +351,7 @@ class PriceObservationServiceTest {
   void unsupportedClientCurrencyFallsBackToStoreCurrencyForWholeBatch() {
     when(currencyResolver.isSupported("XYZ")).thenReturn(false);
     SubmitObservationsInput unsupportedCurrencyInput =
-        new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, null, "XYZ",
+        new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, null, "XYZ", null,
             List.of(price(PriceKind.REGULAR, "29.90"), price(PriceKind.CLUB_CARD, "24.90")));
 
     service.submit(unsupportedCurrencyInput, PUBLIC_UID, ObservationSource.WEB);
@@ -360,9 +362,19 @@ class PriceObservationServiceTest {
   }
 
   @Test
+  void aliasIsLearnedOnlyAfterSuccessfulRegisteredSubmission() {
+    SubmitObservationsInput withAlias = new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, null, null,
+        "třicátník", List.of(price(PriceKind.REGULAR, "29.90")));
+
+    service.submit(withAlias, PUBLIC_UID, ObservationSource.WEB);
+
+    verify(productAliasService).confirmFromObservation(product, submitter, "třicátník");
+  }
+
+  @Test
   void observedAtIsResolvedOnceForWholeBatch() {
     OffsetDateTime observedAt = OffsetDateTime.parse("2026-08-01T09:00:00Z");
-    SubmitObservationsInput submitInput = new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, observedAt, null,
+    SubmitObservationsInput submitInput = new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, observedAt, null, null,
         List.of(price(PriceKind.REGULAR, "29.90"), price(PriceKind.CLUB_CARD, "24.90")));
 
     service.submit(submitInput, PUBLIC_UID, ObservationSource.WEB);

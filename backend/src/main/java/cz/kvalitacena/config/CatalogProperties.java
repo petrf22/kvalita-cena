@@ -17,4 +17,6 @@ public class CatalogProperties {
   private int maxProductsPerDay;
   /** Kolik různých přispěvatelů musí bezkódovou (DRAFT) položku potvrdit, než se stane ACTIVE. */
   private int draftConfirmations;
+  /** Kolik různých účtů musí variantu názvu použít s cenou, než vstoupí do veřejného hledání. */
+  private int aliasConfirmations;
 }

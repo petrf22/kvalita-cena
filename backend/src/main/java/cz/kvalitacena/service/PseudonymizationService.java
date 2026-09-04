@@ -2,6 +2,7 @@ package cz.kvalitacena.service;
 
 import cz.kvalitacena.config.PrivacyProperties;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
+import cz.kvalitacena.db.repo.ProductAliasConfirmationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,6 +22,7 @@ import java.time.OffsetDateTime;
 public class PseudonymizationService {
 
   private final PriceObservationRepository priceObservationRepository;
+  private final ProductAliasConfirmationRepository aliasConfirmationRepository;
   private final PrivacyProperties privacyProperties;
 
   @Scheduled(cron = "@daily")
@@ -28,9 +30,14 @@ public class PseudonymizationService {
   public void pseudonymizeOldObservations() {
     OffsetDateTime cutoff = OffsetDateTime.now().minusDays(privacyProperties.getPseudonymizationDays());
     int affected = priceObservationRepository.pseudonymizeObservationsBefore(cutoff);
+    int aliasConfirmations = aliasConfirmationRepository.pseudonymizeBefore(cutoff);
     if (affected > 0) {
       log.info("Pseudonymizace: zrušena vazba na uživatele u {} observací starších {} dní.",
           affected, privacyProperties.getPseudonymizationDays());
+    }
+    if (aliasConfirmations > 0) {
+      log.info("Pseudonymizace: zrušena vazba na uživatele u {} potvrzení názvových aliasů.",
+          aliasConfirmations);
     }
   }
 }

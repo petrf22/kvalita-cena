@@ -1077,6 +1077,8 @@ type ProductSearchItem {
   qualityCount: Int!
   "Měna bestPrice/bestUnitPrice — null, jen když je bestPrice null (docs/lokalizace.md)."
   currency: String
+  "Varianta názvu použitá k nalezení lokální položky; učí se jen spolu s úspěšným zápisem ceny."
+  productAlias: String
   "Přepočet bestPrice do zobrazovací měny kurzem k lastObservedAt (X-Display-Currency)."
   converted: ConvertedPrice
   "Přepočet bestUnitPrice — vlastní kurzový přepočet, ne dopočet z converted/amount."
