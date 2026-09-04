@@ -263,7 +263,7 @@ public class ProductGraphQlController {
     if (name == null || name.isBlank()) return List.of();
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
     int limit = Math.max(1, Math.min(first == null ? 10 : first, MAX_SUGGESTIONS));
-    List<Product> matches = productRepository.findSimilarByName(name.trim(), storeId, limit).stream()
+    List<Product> matches = productRepository.findSimilarByName(name.trim(), storeId, viewer.userId(), limit).stream()
         .filter(p -> p.getHiddenAt() == null || sameUser(p.getCreatedByUserId(), viewer) || viewer.moderator())
         .toList();
     return productOverlayService.applyOverlay(matches, viewer.userId());

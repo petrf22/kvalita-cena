@@ -48,6 +48,7 @@ public class PriceObservationService {
   private final StoreService storeService;
   private final CurrencyResolver currencyResolver;
   private final ProductScopeService productScopeService;
+  private final ProductAliasService productAliasService;
   private final EntityManager entityManager;
 
   @Transactional
@@ -167,6 +168,7 @@ public class PriceObservationService {
     if (submitter != null) {
       submitter.setObservationCount(submitter.getObservationCount() + 1);
       appUserRepository.save(submitter);
+      productAliasService.confirmFromObservation(product, submitter, input.productAlias());
     }
 
     // Jedna položka fronty pro celou dávku — agg.recompute_queue zná jen (product_id, store_id),

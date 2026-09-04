@@ -15,5 +15,6 @@ public record SubmitObservationsInput(
     QuantityBasis quantityBasis,
     OffsetDateTime observedAt,
     String currency,
+    String productAlias,
     List<ObservationPriceInput> prices) {
 }

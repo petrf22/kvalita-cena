@@ -1,0 +1,103 @@
+# 02-product-alias.yaml — varianty názvu potvrzené skutečným zápisem ceny.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-04-02-product-alias
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: product_alias
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints: { nullable: false }
+              - column:
+                  name: name
+                  type: VARCHAR(200)
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: VARCHAR(10)
+                  defaultValue: PENDING
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints: { nullable: false }
+              - column:
+                  name: activated_at
+                  type: TIMESTAMPTZ
+        - addForeignKeyConstraint:
+            constraintName: fk_product_alias_product
+            baseTableSchemaName: core
+            baseTableName: product_alias
+            baseColumnNames: product_id
+            referencedTableSchemaName: core
+            referencedTableName: product
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createTable:
+            schemaName: core
+            tableName: product_alias_confirmation
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: alias_id
+                  type: BIGINT
+                  constraints: { nullable: false }
+              - column:
+                  name: user_id
+                  type: BIGINT
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_product_alias_confirmation_alias
+            baseTableSchemaName: core
+            baseTableName: product_alias_confirmation
+            baseColumnNames: alias_id
+            referencedTableSchemaName: core
+            referencedTableName: product_alias
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_product_alias_confirmation_user
+            baseTableSchemaName: core
+            baseTableName: product_alias_confirmation
+            baseColumnNames: user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - sql:
+            sql: |
+              ALTER TABLE core.product_alias
+                ADD CONSTRAINT chk_product_alias_status CHECK (status IN ('PENDING', 'ACTIVE')),
+                ADD CONSTRAINT chk_product_alias_name_length CHECK (char_length(btrim(name)) BETWEEN 2 AND 200);
+
+              CREATE UNIQUE INDEX uq_product_alias_name ON core.product_alias
+                (product_id, core.norm_text(name));
+              CREATE INDEX idx_product_alias_name_trgm ON core.product_alias
+                USING gin (core.norm_text(name) gin_trgm_ops);
+              CREATE UNIQUE INDEX uq_product_alias_confirmation_user
+                ON core.product_alias_confirmation (alias_id, user_id)
+                WHERE user_id IS NOT NULL;
+              CREATE INDEX idx_product_alias_confirmation_user
+                ON core.product_alias_confirmation (user_id, created_at)
+                WHERE user_id IS NOT NULL;
+      rollback:
+        - dropTable: { schemaName: core, tableName: product_alias_confirmation }
+        - dropTable: { schemaName: core, tableName: product_alias }
