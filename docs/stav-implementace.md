@@ -51,8 +51,14 @@ jediné nezávislé provozovně, a vzniká jako `DRAFT`/`isGeneric`, po potvrzen
 `app.catalog.draft-confirmations` různými **registrovanými** přispěvateli se překlopí na
 `ACTIVE`, confidence agregátu má zastropovaná na `MEDIUM` — `docs/reputace.md`, „Zboží bez
 čárového kódu"). `productSuggestions(name, storeId)` hledá v tomto rozsahu i v potvrzených
-aliasech s tolerancí překlepů. Alias se učí jen z úspěšného cenového zápisu registrovaného
-uživatele a zveřejní se po `app.catalog.alias-confirmations` různých potvrzeních (výchozí 2).
+aliasech s tolerancí překlepů — skóre je maximum ze `similarity` a `word_similarity`, takže
+stačí jedno slovo z názvu; **bez `name`** vrátí celou lokální nabídku provozovny seřazenou
+podle toho, jak často se v ní zapisuje cena (procházení bez psaní). Nepotvrzené položky jsou
+vidět, ale řadí se až za potvrzené a klient je označí. Alias se učí jen z úspěšného cenového
+zápisu registrovaného uživatele a zveřejní se po `app.catalog.alias-confirmations` různých
+potvrzeních (výchozí 2). Zakládání bezkódové položky má dva stropy navíc:
+`app.catalog.max-products-per-store-per-day` a `app.catalog.max-unconfirmed-drafts`
+(otevřené DRAFTy jednoho účtu → `PRODUCT_TOO_MANY_UNCONFIRMED`).
 
 ### Web
 
@@ -64,7 +70,9 @@ na stránce „Zadat cenu" a v detailu produktu), samostatná stránka „Zadat 
 (`features/price-entry`) hledá zboží podle názvu i kódu a umí založit nové zboží/obchod
 (`features/product-form`, `shared/store-form.ts`) včetně zpětného data (`observedAt`), stránka
 nastavení. U bezkódového zboží vybírá nejprve obchod, poslední použitý si lokálně pamatuje 30
-dní a původní hledaný text předá cenovému zápisu jako kandidátní alias. Zápis ceny umí víc cen
+dní a původní hledaný text předá cenovému zápisu jako kandidátní alias; nabídku obchodu ukáže
+hned po jeho výběru a našeptává průběžně (debounce 300 ms), po zápisu ceny nabídne „zapsat další
+zboží v tomhle obchodě". Zápis ceny umí víc cen
 z jedné cenovky najednou (`shared/price-rows.ts` — běžná +
 klubová + množstevní/MULTIBUY se zadají jedním „+" formulářem a odešlou jedním voláním
 `submitObservations`, kolize jediného druhu ceny shodí celou dávku). PROMO navíc umí nepovinnou
@@ -170,8 +178,13 @@ autentizaci i nový OTP kód (`OtpService`), refresh tokeny se revokují
 je to nástroj provozovatele, ne appky. Fronta zahrnuje i nahlášené recenze
 (`RecordType.REVIEW`) — `FlaggedRecordItem.review` (nový typ `FlaggedReview`) nese `product`
 jako kontext textu, autor je autor recenze, ne autor zboží. U nahlášeného bezkódového produktu
-lze zadat kanonické cílové ID a zavolat `mergeProducts`: backend ověří obchodní rozsah,
-přesune historii a související obsah, přepočítá agregáty a staré ID přesměruje na cíl.
+lze vybrat kanonický cíl z našeptávače ve stejném rozsahu a zavolat `mergeProducts`: backend
+ověří obchodní rozsah, přesune historii a související obsah, přepočítá agregáty a staré ID
+přesměruje na cíl. Samostatná záložka „Duplicity" (`duplicateCandidates`) nabízí dvojice
+podobných bezkódových položek v témže rozsahu a kategorii i bez nahlášení — duplicitu totiž
+nikdo nenahlásí, jen tiše rozděluje ceny jedné věci do dvou košů; slučuje se vždy ručně a směr
+si volí moderátor. `renameGenericProduct` opraví kanonický název pro všechny (na rozdíl od
+`updateProduct`, který je osobní patch) a původní název zachová jako `ACTIVE` alias.
 
 ## Textové recenze
 
