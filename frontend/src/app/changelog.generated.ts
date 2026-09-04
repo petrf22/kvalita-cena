@@ -24,10 +24,21 @@ export const CHANGELOG: ChangelogRelease[] = [
       { title: "Přidáno", items: [
         { text: "Varianty názvů bezkódového zboží se učí z úspěšných cenových zápisů a po potvrzení dvěma různými registrovanými uživateli pomáhají s našeptáváním i překlepy", parts: ["server", "web", "mobil"] },
         { text: "Moderátor může sloučit nahlášené duplicitní bezkódové produkty včetně jejich cen, recenzí, fotek a aliasů; původní odkaz se přesměruje na kanonický produkt", parts: ["server", "web"] },
+        { text: "Po výběru obchodu je hned vidět, jaké bezkódové zboží už v něm máme, seřazené podle toho, jak často se v něm zapisuje cena — bez psaní", parts: ["server", "web", "mobil"] },
+        { text: "Moderace má záložku Duplicity s dvojicemi podezřele podobného bezkódového zboží ve stejném obchodě a kategorii, bez čekání na nahlášení", parts: ["server", "web"] },
+        { text: "Moderátor může opravit název bezkódového zboží pro všechny; původní název zůstane dohledatelný jako alias", parts: ["server", "web"] },
+        { text: "Tlačítko „Zapsat další zboží v tomhle obchodě\" po úspěšném zápisu ceny", parts: ["web"] },
       ] },
       { title: "Změněno", items: [
         { text: "Bezkódové zboží se už nespojuje globálně jen podle volného názvu: patří konkrétnímu řetězci, nebo nezávislé provozovně, a formulář proto vybírá obchod před zbožím", parts: ["server", "web", "mobil"] },
         { text: "Poslední obchod použitý pro zadání ceny se na zařízení pamatuje 30 dní, aby jej nebylo nutné vybírat při každé další položce", parts: ["web", "mobil"] },
+        { text: "Našeptávání zboží najde položku i podle jednoho slova z dlouhého názvu („polévku\" najde „Dršťkovou polévku s kroupami\"), dřív takovou shodu délka názvu utopila", parts: ["server"] },
+        { text: "Zboží na webu našeptává průběžně při psaní, ne až po odeslání hledání", parts: ["web"] },
+        { text: "Zatím nepotvrzené zboží se v nabídce řadí až za potvrzené a je označené, ať nepotvrzený název nestojí nad zavedeným", parts: ["server", "web", "mobil"] },
+        { text: "Cíl sloučení duplicit vybírá moderátor z našeptávače ve stejném obchodním rozsahu místo opisování číselného ID", parts: ["web"] },
+      ] },
+      { title: "Zabezpečeno", items: [
+        { text: "Zakládání bezkódového zboží má strop na jednu provozovnu za den a na počet nepotvrzených položek otevřených jedním účtem naráz, aby zaplevelení katalogu nešlo škálovat časem", parts: ["server"] },
       ] },
   ] },
   { version: "0.6.3", date: "2026-09-03", sections: [

@@ -384,6 +384,22 @@ detail vždy znovu načte ze serveru a nekompatibilní či smazanou volbu zahod�
 `core.norm_text` a `pg_trgm`, takže snese diakritiku i běžné překlepy; lokální shody řadí před
 globálními.
 
+Skóre podobnosti je **maximum ze `similarity` a `word_similarity`** (práh
+`app.catalog.suggestion-similarity`, výchozí 0,2). Samotná `similarity` poměřuje shodu vůči
+trigramům CELÉHO názvu, takže dlouhý název krátký dotaz utopí — „polevku" proti „dršťková
+polévka s kroupami a majoránkou" dá 0,14, tedy pod prahem, i když je to zjevná shoda;
+`word_similarity` hledá dotaz jen v nejlepším souvislém úseku názvu a dá 0,75. U bezkódového
+zboží, kde si název vymýšlí člověk, je „napsal jsem jedno slovo z názvu" ten častější případ.
+Obě funkce jedou po témže GIN `gin_trgm_ops` indexu.
+
+**`productSuggestions` bez `name`, jen se `storeId`, vrátí celou lokální nabídku provozovny**
+seřazenou podle toho, jak často se v ní cena zapisuje. Duplicity u bezkódového zboží totiž
+nevznikají ani tak překlepy jako tím, že člověk **nemá co odklepnout**: kdo nic nevidí, název
+si vymyslí. Web ukáže nabídku hned po výběru obchodu a našeptává průběžně (debounce 300 ms, ne
+až na tlačítko — kdo dopíše celý vymyšlený název, existující položky si už většinou nevšimne);
+mobil ji ukáže nad formulářem nového zboží. Bez `name` i bez `storeId` vrací dotaz prázdno —
+prázdný dotaz nad celým katalogem není nabídka, ale seznam.
+
 Jeden kanonický název nestačí pro „chléb třicátník celý" / „třicátník". Pokud registrovaný
 uživatel vybere existující lokální druhovou položku jiným názvem a **současně úspěšně zapíše
 cenu**, server uloží návrh do `core.product_alias`. Alias se veřejně nabízí až po potvrzení
@@ -402,11 +418,51 @@ skóre — čítače s exponenciálním útlumem" výš. Jakmile práh padne, `P
 položku po zápisu ceny rovnou překlopí na `ACTIVE` (`ProductCatalogService.promoteIfConfirmed`) —
 žádný plánovač navíc.
 
-Když ani obchodní rozsah a aliasy nezabrání založení dvou položek pro tutéž věc, nahlášení
-dostane duplicitu do moderace. `mergeProducts(sourceId, targetId)` ji sloučí beze ztráty
-historie; původní název zdroje se stane aktivním aliasem cíle. Automatické slučování podle
-podobnosti názvu se nedělá — „dršťková polévka" a „gulášová polévka" mohou být textově blízko,
-ale nejsou stejný výrobek.
+Nepotvrzená položka **zůstává v nabídce vidět** (jinak by ji neměl kdo potvrdit, viz „Práh
+důvěry pro zveřejnění nového záznamu"), ale **řadí se až za potvrzené** a klient ji označí
+štítkem „zatím nepotvrzeno" (`Product.status` v `ProductSummaryFields`). Bez toho by platila
+obrácená asymetrie, než dává smysl: alias, který jen přidá další název existující položce,
+potřebuje dvě potvrzení, kdežto zbrusu nová položka od kohokoli by v obchodě skákala nahoře.
+
+Zakládání bezkódové položky mají navíc **dva stropy nad rámec denního počtu**
+(`ProductCatalogService.create`, obojí jen pro bezkódové zboží — kód sám je dost silná
+identifikace):
+
+- `app.catalog.max-products-per-store-per-day` (výchozí 10) — rozsah lokální položky je jeden
+  obchod, takže i případná škoda zůstane tam, kde vznikla, a kdo poctivě zapisuje z víc obchodů,
+  na strop nenarazí;
+- `app.catalog.max-unconfirmed-drafts` (výchozí 15) — kolik DRAFT položek smí mít jeden účet
+  otevřených naráz. Tohle zavírá **škálování časem**, na které denní počet nestačí: dokud
+  škodiči nikdo ani jednu položku nepotvrdí zápisem ceny, další nezaloží. Poctivého přispěvatele
+  neomezí, jeho položky se potvrzují. Chyba je `PRODUCT_TOO_MANY_UNCONFIRMED`.
+
+Hrozbou je tu **zaplevelení, ne škoda** — nesmyslný název nikoho nepoškodí (viz „Nahlášení
+záznamu" výš) a na cenu nemá vliv, tu chrání vážený medián a limit jednoho zápisu na
+účet/produkt/obchod/den. Proto obrana patří do řazení a stropů, ne do vrátnice: velkorysé
+limity zůstávají, studený start je pořád větší riziko než zneužití.
+
+Když ani obchodní rozsah a aliasy nezabrání založení dvou položek pro tutéž věc, moderace má
+dvě cesty. Nahlášení dostane duplicitu do fronty jako dřív, ale **duplicitu obvykle nikdo
+nenahlásí** — nikoho nepoškozuje, jen tiše rozděluje ceny jedné věci do dvou košů. Proto je
+vedle ní `duplicateCandidates`: dvojice bezkódových položek v témže rozsahu a kategorii, jejichž
+názvy jsou si podobnější než `app.catalog.duplicate-similarity` (výchozí 0,55), seřazené
+sestupně. Měří se **symetrickou `similarity`**, ne `word_similarity` jako u našeptávače — tam se
+poměřuje krátký dotaz proti dlouhému názvu, tady dva rovnocenné názvy proti sobě. Práh je
+výrazně vyšší než u našeptávače záměrně: „dršťková" a „gulášová polévka" mají 0,42, „dršťková
+polévka" a „dršťková polévka velká" 0,77.
+
+`mergeProducts(sourceId, targetId)` dvojici sloučí beze ztráty historie; původní název zdroje se
+stane aktivním aliasem cíle. Moderátor cíl **vybírá z našeptávače** ve stejném rozsahu
+(`productSuggestions`), ne opisováním číselného ID, a směr sloučení si volí sám — appka nemá jak
+vědět, který z dvojice je „ten správný". Automatické slučování podle podobnosti názvu se
+nedělá; fronta je jen seřazená nabídka k přezkumu.
+
+`renameGenericProduct(productId, name)` opraví **kanonický název pro všechny**. Je to
+samostatná moderátorská mutace, protože `updateProduct` ukládá název do `core.product_user_edit`
+— což je patch JEDNOHO uživatele. U zboží s EANem to dává smysl (identitu nese kód, název je jen
+popis), u bezkódové položky je ale název její identita, takže by šlo překlep opravit jen sám
+sobě a ostatní by vedle něj dál zakládali duplicity. Původní název zůstane jako `ACTIVE` alias,
+aby se podle něj dál dalo hledat.
 
 **Confidence buňky (`agg.price_current.confidence`) je pro druhovou položku zastropovaná na
 `MEDIUM`**, bez ohledu na `n_eff` (`PriceAggregationService.confidenceFor()`) — chybějící EAN
