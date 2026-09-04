@@ -424,6 +424,7 @@
     <string name="price_entry_back_without_price">Zpět bez zadání ceny</string>
     <string name="price_entry_submit_success">Cena byla zapsána, díky!</string>
     <string name="price_entry_location_unavailable">Polohu se nepodařilo zjistit — vyber obchod, až budou data.</string>
+    <string name="price_entry_store_not_available">Tohle místní zboží do vybraného obchodu nepatří — vyber jiný, nebo jiné zboží.</string>
 
     <string name="product_form_title">Nové zboží</string>
     <string name="product_form_store_first_hint">U zboží bez čárového kódu nejdřív vyber obchod. Nabídneme názvy používané právě tam.</string>

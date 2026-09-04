@@ -65,4 +65,26 @@ class ProductAliasServiceTest {
   void normalizationMatchesDatabaseContractForCommonCzechInput() {
     assertThat(ProductAliasService.normalized("  Dršťková   POLÉVKA ")).isEqualTo("drstkova polevka");
   }
+
+  @Test
+  void searchPrefixOfCanonicalNameIsNotLearnedAsAlias() {
+    Product product = Product.builder().id(7L).name("Rohlík celozrnný").generic(true)
+        .catalogScope(ProductScope.STORE).build();
+    AppUser user = AppUser.builder().id(9L).build();
+
+    service.confirmFromObservation(product, user, "rohl");
+
+    verifyNoInteractions(entityManager, confirmationRepository, aliasRepository);
+  }
+
+  @Test
+  void tooShortNameIsNotLearnedAsAlias() {
+    Product product = Product.builder().id(7L).name("Chléb Třicátník celý").generic(true)
+        .catalogScope(ProductScope.STORE).build();
+    AppUser user = AppUser.builder().id(9L).build();
+
+    service.confirmFromObservation(product, user, "abc");
+
+    verifyNoInteractions(entityManager, confirmationRepository, aliasRepository);
+  }
 }

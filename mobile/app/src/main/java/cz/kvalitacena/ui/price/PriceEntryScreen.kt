@@ -322,6 +322,13 @@ fun PriceEntryScreen(
               modifier = Modifier.fillMaxWidth(),
               expandSignal = viewModel.nearbyStoresSignal,
             )
+            if (viewModel.storeScopeMismatch) {
+              Text(
+                stringResource(R.string.price_entry_store_not_available),
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+              )
+            }
             Gap()
 
             if (product.isVariableWeight) {

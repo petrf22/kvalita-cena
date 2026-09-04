@@ -16,8 +16,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
   @EntityGraph(attributePaths = {"mergedInto"})
   Optional<Product> findWithMergedIntoById(Long id);
 
-  /** Dotažení pro hledání dávkou — vyhýbá se N+1 na brand/category u seznamu výsledků. */
-  @EntityGraph(attributePaths = {"brand", "category"})
+  /**
+   * Dotažení pro hledání dávkou — vyhýbá se N+1 na brand/category i na scope lokálního zboží
+   * (ProductSummaryFields nese i catalogScope/scopeChain/scopeStore) u seznamu výsledků.
+   */
+  @EntityGraph(attributePaths = {"brand", "category", "scopeChain", "scopeStore", "scopeStore.chain"})
   List<Product> findWithBrandAndCategoryByIdIn(Collection<Long> ids);
 
   /**

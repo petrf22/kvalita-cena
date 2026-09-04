@@ -339,6 +339,7 @@
     <string name="price_entry_back_without_price">Back without recording a price</string>
     <string name="price_entry_submit_success">Price recorded, thanks!</string>
     <string name="price_entry_location_unavailable">We couldn\'t determine your location — pick a store once data is available.</string>
+    <string name="price_entry_store_not_available">This local item doesn\'t belong to the selected store — pick a different store or item.</string>
 
     <string name="product_form_title">New product</string>
     <string name="product_form_store_first_hint">For a product without a barcode, choose the store first. We will suggest names used there.</string>
