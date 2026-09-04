@@ -431,6 +431,14 @@ export type ResolveFlagsMutationVariables = Exact<{
 
 export type ResolveFlagsMutation = { resolveFlags: boolean };
 
+export type MergeProductsMutationVariables = Exact<{
+  sourceId: string;
+  targetId: string;
+}>;
+
+
+export type MergeProductsMutation = { mergeProducts: { id: string, name: string, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } };
+
 export type ModerationObservationsQueryVariables = Exact<{
   productId?: string | null | undefined;
   storeId?: string | null | undefined;
@@ -1507,6 +1515,68 @@ export const ResolveFlagsDocument = new TypedDocumentString(`
   )
 }
     `) as unknown as TypedDocumentString<ResolveFlagsMutation, ResolveFlagsMutationVariables>;
+export const MergeProductsDocument = new TypedDocumentString(`
+    mutation MergeProducts($sourceId: ID!, $targetId: ID!) {
+  mergeProducts(sourceId: $sourceId, targetId: $targetId) {
+    ...ProductSummaryFields
+  }
+}
+    fragment StoreFields on Store {
+  id
+  name
+  street
+  city
+  postalCode
+  country
+  lat
+  lon
+  geoSource
+  ico
+  url
+  chain {
+    id
+    name
+    chainType
+  }
+  verified
+  editedByMe
+  pendingConfirmation
+}
+fragment ProductSummaryFields on Product {
+  id
+  name
+  brand {
+    id
+    name
+    slug
+  }
+  category {
+    id
+    name
+    slug
+    path
+  }
+  isGeneric
+  catalogScope
+  scopeChain {
+    id
+    name
+    chainType
+  }
+  scopeStore {
+    ...StoreFields
+  }
+  verified
+  editedByMe
+  photos {
+    id
+    thumbnailUrl
+  }
+  externalImage {
+    thumbnailUrl
+    attribution
+  }
+}`) as unknown as TypedDocumentString<MergeProductsMutation, MergeProductsMutationVariables>;
 export const ModerationObservationsDocument = new TypedDocumentString(`
     query ModerationObservations($productId: ID, $storeId: ID, $first: Int, $offset: Int) {
   moderationObservations(

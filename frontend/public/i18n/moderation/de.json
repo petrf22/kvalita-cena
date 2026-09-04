@@ -19,7 +19,11 @@
     "lastFlaggedAtLabel": "Zuletzt gemeldet",
     "reasonsLabel": "Gründe:",
     "uncover": "Wieder einblenden",
-    "confirmHide": "Ausblenden bestätigen"
+    "confirmHide": "Ausblenden bestätigen",
+    "mergeTargetPlaceholder": "ID der Zielware",
+    "merge": "In Ziel zusammenführen",
+    "mergeConfirm": "Preise, Aliase, Bewertungen und Fotos in die Zielware verschieben? Dies kann nicht rückgängig gemacht werden.",
+    "mergeSuccess": "Die doppelte Ware wurde in „{{name}}“ zusammengeführt."
   },
   "authorLabel": "Autor:",
   "authorUnknown": "unbekannt (anonym oder pseudonymisiert)",

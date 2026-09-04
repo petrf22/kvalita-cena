@@ -133,6 +133,20 @@ class ProductGraphQlControllerLookupByCodeTest {
     verify(openFoodFactsService, never()).lookup(any());
   }
 
+  @Test
+  void productDetailFollowsMergedProductToCanonicalTarget() {
+    givenAnonymousViewer();
+    Product target = Product.builder().id(2L).name("Kanonický chléb").status(ProductStatus.ACTIVE).build();
+    Product source = Product.builder().id(1L).status(ProductStatus.MERGED).mergedInto(target).build();
+    Product overlaid = target.toBuilder().editedByMe(true).build();
+    when(productRepository.findWithMergedIntoById(1L)).thenReturn(Optional.of(source));
+    when(productOverlayService.applyOverlay(target, null)).thenReturn(overlaid);
+
+    Product result = controller().product(1L, null);
+
+    assertThat(result).isSameAs(overlaid);
+  }
+
   /**
    * Skryté (nahlášené a potvrzené moderátorem) zboží se anonymnímu/cizímu čtenáři musí tvářit
    * jako neexistující (CLAUDE.md — stejné pravidlo jako u neviditelných recenzí), ne jako

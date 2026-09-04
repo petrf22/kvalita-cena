@@ -111,6 +111,9 @@ public enum ErrorCode {
   MODERATION_RECORD_NOT_FOUND("error.moderation.recordNotFound"),
   MODERATION_OBSERVATION_NOT_FOUND("error.moderation.observationNotFound"),
   MODERATION_USER_NOT_FOUND("error.moderation.userNotFound"),
+  MODERATION_PRODUCT_MERGE_SAME("error.moderation.productMergeSame"),
+  MODERATION_PRODUCT_MERGE_INVALID("error.moderation.productMergeInvalid"),
+  MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH("error.moderation.productMergeScopeMismatch"),
 
   // --- zpětná vazba (core.feedback, docs/nasazeni.md "Než pozvat první lidi")
   FEEDBACK_MESSAGE_REQUIRED("error.feedback.messageRequired"),

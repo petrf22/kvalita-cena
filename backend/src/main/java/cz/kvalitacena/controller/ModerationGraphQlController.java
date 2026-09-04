@@ -2,6 +2,7 @@ package cz.kvalitacena.controller;
 
 import cz.kvalitacena.db.entity.FlagResolution;
 import cz.kvalitacena.db.entity.PriceObservation;
+import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.NotFoundException;
@@ -10,6 +11,7 @@ import cz.kvalitacena.security.ViewerContext;
 import cz.kvalitacena.security.ViewerContextResolver;
 import cz.kvalitacena.service.FeedbackService;
 import cz.kvalitacena.service.ModerationService;
+import cz.kvalitacena.service.ProductMergeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -34,6 +36,7 @@ import java.util.UUID;
 public class ModerationGraphQlController {
 
   private final ModerationService moderationService;
+  private final ProductMergeService productMergeService;
   private final FeedbackService feedbackService;
   private final ViewerContextResolver viewerContextResolver;
 
@@ -79,6 +82,11 @@ public class ModerationGraphQlController {
       @Argument FlagResolution resolution, Authentication authentication) {
     moderationService.resolveFlags(recordType, recordId, resolution, requireModerator(authentication));
     return true;
+  }
+
+  @MutationMapping
+  public Product mergeProducts(@Argument Long sourceId, @Argument Long targetId, Authentication authentication) {
+    return productMergeService.merge(sourceId, targetId, requireModerator(authentication));
   }
 
   @MutationMapping

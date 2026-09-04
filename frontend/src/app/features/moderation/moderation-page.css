@@ -40,6 +40,13 @@
   margin-top: 8px;
 }
 
+.merge-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  max-width: 420px;
+}
+
 .observation-filters {
   display: flex;
   gap: 8px;

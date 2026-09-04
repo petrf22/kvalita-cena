@@ -8,8 +8,13 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long>, ProductSearchRepository {
+
+  /** Detail starého sloučeného id musí umět přesměrovat na kanonický produkt. */
+  @EntityGraph(attributePaths = {"mergedInto"})
+  Optional<Product> findWithMergedIntoById(Long id);
 
   /** Dotažení pro hledání dávkou — vyhýbá se N+1 na brand/category u seznamu výsledků. */
   @EntityGraph(attributePaths = {"brand", "category"})
