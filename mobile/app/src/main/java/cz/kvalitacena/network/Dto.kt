@@ -207,6 +207,9 @@ data class ProductSummary(
   val brand: Brand? = null,
   val category: Category,
   val isGeneric: Boolean = false,
+  // Nepotvrzená (DRAFT) položka se v nabídce ukáže, ale označená a až za potvrzenými —
+  // docs/reputace.md, "Zboží bez čárového kódu".
+  val status: String = "ACTIVE",
   val catalogScope: String = "GLOBAL",
   val scopeChain: RetailChain? = null,
   val scopeStore: Store? = null,

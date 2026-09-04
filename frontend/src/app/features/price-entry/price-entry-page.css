@@ -65,3 +65,20 @@
   color: rgba(0, 0, 0, 0.65);
   font-size: 13px;
 }
+
+/* Nepotvrzená položka je vidět (jinak by ji neměl kdo potvrdit), ale nemá vypadat jako
+   rovnocenná se zavedenou — docs/reputace.md, "Zboží bez čárového kódu". */
+.draft-tag {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.store-offer-empty {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px;
+}
+
+.enter-another {
+  margin-top: 12px;
+}

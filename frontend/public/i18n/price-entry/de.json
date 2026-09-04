@@ -6,6 +6,9 @@
   "namePlaceholder": "Wonach suchst du?",
   "codePlaceholder": "Strichcode",
   "search": "Suchen",
+  "storeOfferTitle": "Schon in diesem Geschäft",
+  "storeOfferEmpty": "Für dieses Geschäft haben wir noch keine Ware ohne Barcode.",
+  "unconfirmedTag": "(noch nicht bestätigt)",
   "codeNotFound": "Diesen Code kennen wir im Katalog noch nicht.",
   "offUnavailable": "Der Open-Food-Facts-Katalog ist gerade nicht erreichbar — trag die Angaben manuell ein.",
   "addNewHint": "Ware nicht gefunden?",
@@ -14,6 +17,7 @@
   "newProductTitle": "Neue Ware",
   "genericTag": "(generische Position)",
   "changeProduct": "Ware ändern",
+  "enterAnother": "Weiteren Artikel in diesem Geschäft erfassen",
   "searchFailed": "Die Suche ist fehlgeschlagen, bitte versuch es erneut.",
   "externalImageNote": "Manche Miniaturbilder stammen von Open Food Facts (Quelle beim Hovern sichtbar)."
 }

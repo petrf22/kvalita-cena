@@ -6,6 +6,9 @@
   "namePlaceholder": "Čo hľadáš?",
   "codePlaceholder": "Čiarový kód",
   "search": "Hľadať",
+  "storeOfferTitle": "Čo už v obchode máme",
+  "storeOfferEmpty": "V tomto obchode zatiaľ žiadny tovar bez čiarového kódu nemáme.",
+  "unconfirmedTag": "(zatiaľ nepotvrdené)",
   "codeNotFound": "Tento kód zatiaľ v katalógu nepoznáme.",
   "offUnavailable": "Katalóg Open Food Facts je teraz nedostupný — údaje o tovare vyplň ručne.",
   "addNewHint": "Tovar si nenašiel/nenašla?",
@@ -14,6 +17,7 @@
   "newProductTitle": "Nový tovar",
   "genericTag": "(druhová položka)",
   "changeProduct": "Zmeniť tovar",
+  "enterAnother": "Zapísať ďalší tovar v tomto obchode",
   "searchFailed": "Hľadanie sa nepodarilo, skús to prosím znova.",
   "externalImageNote": "Niektoré miniatúry pochádzajú z Open Food Facts (zdroj nájdeš pri prejdení myšou)."
 }

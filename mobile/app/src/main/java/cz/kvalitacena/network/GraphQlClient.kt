@@ -99,6 +99,7 @@ internal val PRODUCT_SUMMARY_FIELDS = """
   brand { id name slug }
   category { id name slug path }
   isGeneric
+  status
   catalogScope scopeChain { id name chainType } scopeStore { $STORE_FIELDS }
   verified editedByMe
   photos { id url thumbnailUrl width height }
@@ -441,10 +442,14 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     return execute(gql, variables, GraphQlResponse.serializer(ChainsData.serializer())).chains
   }
 
-  /** Podobné zboží podle názvu — nabídne existující druhové položky před založením nového (docs/reputace.md). */
+  /**
+   * Nabídka zboží pro zápis ceny — s názvem podobné položky (nabídne existující druhovou položku
+   * před založením nového, docs/reputace.md), s PRÁZDNÝM názvem a vybraným obchodem celá lokální
+   * nabídka té provozovny, aby uživatel viděl, co v obchodě je, dřív než začne vymýšlet název.
+   */
   suspend fun productSuggestions(name: String, storeId: String? = null, first: Int = 10): List<ProductSummary> {
     val gql = """
-      query(${'$'}name: String!, ${'$'}storeId: ID, ${'$'}first: Int) {
+      query(${'$'}name: String, ${'$'}storeId: ID, ${'$'}first: Int) {
         productSuggestions(name: ${'$'}name, storeId: ${'$'}storeId, first: ${'$'}first) { $PRODUCT_SUMMARY_FIELDS }
       }
     """

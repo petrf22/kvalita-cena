@@ -380,13 +380,13 @@ export type ProductFieldsFragment = { id: string, name: string, catalogSource: C
 
 export type ProductDetailFieldsFragment = { gtin: string | null, myQualityRating: number | null, reviewCount: number, myReviewText: string | null, id: string, name: string, catalogSource: CatalogDataSource, catalogAttribution: string | null, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, stats: { observationCount: number, storeCount: number, lastObservedAt: string | null, bestPrice: number | null, bestUnitPrice: number | null, bestPriceCurrency: string | null, bestPriceConverted: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }, quality: { average: number | null, count: number }, externalLinks: Array<{ kind: ExternalLinkKind, label: string, url: string, attribution: string }>, myPrices: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, promoValidFrom: string | null, promoValidTo: string | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }>, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string, kind: PhotoKind }>, externalImage: { url: string, thumbnailUrl: string, attribution: string } | null, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, promoValidTo: string | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }> };
 
-export type ProductSummaryFieldsFragment = { id: string, name: string, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null };
+export type ProductSummaryFieldsFragment = { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null };
 
 export type PublicationStatusFieldsFragment = { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean };
 
 export type ProductReviewFieldsFragment = { id: string, stars: number, text: string, authorPublicUid: string, authorName: string, createdAt: string, updatedAt: string | null, mine: boolean };
 
-export type SearchItemFieldsFragment = { observationCount: number, bestPrice: number | null, bestUnitPrice: number | null, currency: string | null, bestPriceObservations: number | null, lastObservedAt: string | null, qualityAverage: number | null, qualityCount: number, product: { id: string, name: string, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }, converted: { amount: number, currency: string, rateDate: string } | null, convertedUnit: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null };
+export type SearchItemFieldsFragment = { observationCount: number, bestPrice: number | null, bestUnitPrice: number | null, currency: string | null, bestPriceObservations: number | null, lastObservedAt: string | null, qualityAverage: number | null, qualityCount: number, product: { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }, converted: { amount: number, currency: string, rateDate: string } | null, convertedUnit: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null };
 
 export type UpdatePhotoMutationVariables = Exact<{
   id: string;
@@ -420,7 +420,7 @@ export type FlaggedRecordsQueryVariables = Exact<{
 }>;
 
 
-export type FlaggedRecordsQuery = { flaggedRecords: { totalCount: number, items: Array<{ recordType: RecordType, recordId: string, flagCount: number, firstFlaggedAt: string, lastFlaggedAt: string, reasons: Array<string>, hidden: boolean, authorPublicUid: string | null, authorHandle: string | null, product: { id: string, name: string, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photo: { id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string, kind: PhotoKind } | null }> } };
+export type FlaggedRecordsQuery = { flaggedRecords: { totalCount: number, items: Array<{ recordType: RecordType, recordId: string, flagCount: number, firstFlaggedAt: string, lastFlaggedAt: string, reasons: Array<string>, hidden: boolean, authorPublicUid: string | null, authorHandle: string | null, product: { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photo: { id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string, kind: PhotoKind } | null }> } };
 
 export type ResolveFlagsMutationVariables = Exact<{
   recordType: RecordType;
@@ -431,13 +431,29 @@ export type ResolveFlagsMutationVariables = Exact<{
 
 export type ResolveFlagsMutation = { resolveFlags: boolean };
 
+export type DuplicateCandidatesQueryVariables = Exact<{
+  first?: number | null | undefined;
+  offset?: number | null | undefined;
+}>;
+
+
+export type DuplicateCandidatesQuery = { duplicateCandidates: { totalCount: number, items: Array<{ score: number, left: { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }, right: { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } }> } };
+
+export type RenameGenericProductMutationVariables = Exact<{
+  productId: string;
+  name: string;
+}>;
+
+
+export type RenameGenericProductMutation = { renameGenericProduct: { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } };
+
 export type MergeProductsMutationVariables = Exact<{
   sourceId: string;
   targetId: string;
 }>;
 
 
-export type MergeProductsMutation = { mergeProducts: { id: string, name: string, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } };
+export type MergeProductsMutation = { mergeProducts: { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } };
 
 export type ModerationObservationsQueryVariables = Exact<{
   productId?: string | null | undefined;
@@ -447,7 +463,7 @@ export type ModerationObservationsQueryVariables = Exact<{
 }>;
 
 
-export type ModerationObservationsQuery = { moderationObservations: { totalCount: number, items: Array<{ authorPublicUid: string | null, authorHandle: string | null, productPublication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, observation: { id: string, priceAmount: number, currency: string, priceKind: PriceKind, unitPrice: number | null, observedAt: string, status: ObservationStatus, product: { id: string, name: string, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } } }> } };
+export type ModerationObservationsQuery = { moderationObservations: { totalCount: number, items: Array<{ authorPublicUid: string | null, authorHandle: string | null, productPublication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, observation: { id: string, priceAmount: number, currency: string, priceKind: PriceKind, unitPrice: number | null, observedAt: string, status: ObservationStatus, product: { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } } }> } };
 
 export type SetObservationRejectedMutationVariables = Exact<{
   id: string;
@@ -500,7 +516,7 @@ export type MyProductsQueryVariables = Exact<{
 }>;
 
 
-export type MyProductsQuery = { myProducts: { totalCount: number, items: Array<{ createdAt: string, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } }> } };
+export type MyProductsQuery = { myProducts: { totalCount: number, items: Array<{ createdAt: string, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } }> } };
 
 export type MyStoresQueryVariables = Exact<{
   first?: number | null | undefined;
@@ -516,7 +532,7 @@ export type MyObservationsQueryVariables = Exact<{
 }>;
 
 
-export type MyObservationsQuery = { myObservations: { totalCount: number, items: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, promoValidFrom: string | null, promoValidTo: string | null, observedAt: string, createdAt: string, converted: { amount: number, currency: string, rateDate: string } | null, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> } };
+export type MyObservationsQuery = { myObservations: { totalCount: number, items: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, promoValidFrom: string | null, promoValidTo: string | null, observedAt: string, createdAt: string, converted: { amount: number, currency: string, rateDate: string } | null, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } }> } };
 
 export type MyEditsQueryVariables = Exact<{
   first?: number | null | undefined;
@@ -524,7 +540,7 @@ export type MyEditsQueryVariables = Exact<{
 }>;
 
 
-export type MyEditsQuery = { myEdits: { totalCount: number, items: Array<{ recordType: RecordType, updatedAt: string, changedFields: Array<string>, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }> } };
+export type MyEditsQuery = { myEdits: { totalCount: number, items: Array<{ recordType: RecordType, updatedAt: string, changedFields: Array<string>, publication: { state: PublicationState, confirmationsReceived: number | null, confirmationsRequired: number | null, verified: boolean }, product: { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }> } };
 
 export type MyReviewsQueryVariables = Exact<{
   first?: number | null | undefined;
@@ -532,7 +548,7 @@ export type MyReviewsQueryVariables = Exact<{
 }>;
 
 
-export type MyReviewsQuery = { myReviews: { totalCount: number, items: Array<{ stars: number, text: string, createdAt: string, updatedAt: string | null, hidden: boolean, product: { id: string, name: string, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } }> } };
+export type MyReviewsQuery = { myReviews: { totalCount: number, items: Array<{ stars: number, text: string, createdAt: string, updatedAt: string | null, hidden: boolean, product: { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } }> } };
 
 export type SearchProductsQueryVariables = Exact<{
   query: string;
@@ -546,7 +562,7 @@ export type SearchProductsQueryVariables = Exact<{
 }>;
 
 
-export type SearchProductsQuery = { searchProducts: { totalCount: number, hasMore: boolean, items: Array<{ observationCount: number, bestPrice: number | null, bestUnitPrice: number | null, currency: string | null, bestPriceObservations: number | null, lastObservedAt: string | null, qualityAverage: number | null, qualityCount: number, product: { id: string, name: string, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }, converted: { amount: number, currency: string, rateDate: string } | null, convertedUnit: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }> } };
+export type SearchProductsQuery = { searchProducts: { totalCount: number, hasMore: boolean, items: Array<{ observationCount: number, bestPrice: number | null, bestUnitPrice: number | null, currency: string | null, bestPriceObservations: number | null, lastObservedAt: string | null, qualityAverage: number | null, qualityCount: number, product: { id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }, converted: { amount: number, currency: string, rateDate: string } | null, convertedUnit: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }> } };
 
 export type SearchFacetsQueryVariables = Exact<{
   country?: string | null | undefined;
@@ -570,13 +586,13 @@ export type ProductLookupByCodeQueryVariables = Exact<{
 export type ProductLookupByCodeQuery = { productLookupByCode: { status: ProductLookupStatus, product: { gtin: string | null, myQualityRating: number | null, reviewCount: number, myReviewText: string | null, id: string, name: string, catalogSource: CatalogDataSource, catalogAttribution: string | null, unitBase: UnitBase, netContentValue: number | null, netContentUom: NetContentUom | null, netContentBase: number, piecesInPack: number | null, isVariableWeight: boolean, status: ProductStatus, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, stats: { observationCount: number, storeCount: number, lastObservedAt: string | null, bestPrice: number | null, bestUnitPrice: number | null, bestPriceCurrency: string | null, bestPriceConverted: { amount: number, currency: string, rateDate: string } | null, cheapestStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null }, quality: { average: number | null, count: number }, externalLinks: Array<{ kind: ExternalLinkKind, label: string, url: string, attribution: string }>, myPrices: Array<{ priceKind: PriceKind, priceAmount: number, unitPrice: number | null, currency: string, observedAt: string, promoValidFrom: string | null, promoValidTo: string | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }>, photos: Array<{ id: string, url: string, thumbnailUrl: string, width: number, height: number, caption: string | null, mine: boolean, hidden: boolean, attribution: string, kind: PhotoKind }>, externalImage: { url: string, thumbnailUrl: string, attribution: string } | null, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, prices: Array<{ priceKind: PriceKind, unitPrice: number | null, priceAmount: number | null, currency: string, nObs: number, nEff: number, lastObservedAt: string | null, confidence: Confidence, promoValidTo: string | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null }, converted: { amount: number, currency: string, rateDate: string } | null }> } | null, candidate: { code: string, name: string | null, brandName: string | null, unitBase: UnitBase | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, category: { id: string, name: string, slug: string, path: string } | null, image: { url: string, thumbnailUrl: string, attribution: string } | null } | null } };
 
 export type ProductSuggestionsQueryVariables = Exact<{
-  name: string;
+  name?: string | null | undefined;
   storeId?: string | null | undefined;
   first?: number | null | undefined;
 }>;
 
 
-export type ProductSuggestionsQuery = { productSuggestions: Array<{ id: string, name: string, isGeneric: boolean, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }> };
+export type ProductSuggestionsQuery = { productSuggestions: Array<{ id: string, name: string, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null }> };
 
 export type CategoriesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1222,6 +1238,7 @@ export const ProductSummaryFieldsFragmentDoc = new TypedDocumentString(`
     path
   }
   isGeneric
+  status
   catalogScope
   scopeChain {
     id
@@ -1327,6 +1344,7 @@ fragment ProductSummaryFields on Product {
     path
   }
   isGeneric
+  status
   catalogScope
   scopeChain {
     id
@@ -1486,6 +1504,7 @@ fragment ProductSummaryFields on Product {
     path
   }
   isGeneric
+  status
   catalogScope
   scopeChain {
     id
@@ -1515,6 +1534,141 @@ export const ResolveFlagsDocument = new TypedDocumentString(`
   )
 }
     `) as unknown as TypedDocumentString<ResolveFlagsMutation, ResolveFlagsMutationVariables>;
+export const DuplicateCandidatesDocument = new TypedDocumentString(`
+    query DuplicateCandidates($first: Int, $offset: Int) {
+  duplicateCandidates(first: $first, offset: $offset) {
+    totalCount
+    items {
+      score
+      left {
+        ...ProductSummaryFields
+      }
+      right {
+        ...ProductSummaryFields
+      }
+    }
+  }
+}
+    fragment StoreFields on Store {
+  id
+  name
+  street
+  city
+  postalCode
+  country
+  lat
+  lon
+  geoSource
+  ico
+  url
+  chain {
+    id
+    name
+    chainType
+  }
+  verified
+  editedByMe
+  pendingConfirmation
+}
+fragment ProductSummaryFields on Product {
+  id
+  name
+  brand {
+    id
+    name
+    slug
+  }
+  category {
+    id
+    name
+    slug
+    path
+  }
+  isGeneric
+  status
+  catalogScope
+  scopeChain {
+    id
+    name
+    chainType
+  }
+  scopeStore {
+    ...StoreFields
+  }
+  verified
+  editedByMe
+  photos {
+    id
+    thumbnailUrl
+  }
+  externalImage {
+    thumbnailUrl
+    attribution
+  }
+}`) as unknown as TypedDocumentString<DuplicateCandidatesQuery, DuplicateCandidatesQueryVariables>;
+export const RenameGenericProductDocument = new TypedDocumentString(`
+    mutation RenameGenericProduct($productId: ID!, $name: String!) {
+  renameGenericProduct(productId: $productId, name: $name) {
+    ...ProductSummaryFields
+  }
+}
+    fragment StoreFields on Store {
+  id
+  name
+  street
+  city
+  postalCode
+  country
+  lat
+  lon
+  geoSource
+  ico
+  url
+  chain {
+    id
+    name
+    chainType
+  }
+  verified
+  editedByMe
+  pendingConfirmation
+}
+fragment ProductSummaryFields on Product {
+  id
+  name
+  brand {
+    id
+    name
+    slug
+  }
+  category {
+    id
+    name
+    slug
+    path
+  }
+  isGeneric
+  status
+  catalogScope
+  scopeChain {
+    id
+    name
+    chainType
+  }
+  scopeStore {
+    ...StoreFields
+  }
+  verified
+  editedByMe
+  photos {
+    id
+    thumbnailUrl
+  }
+  externalImage {
+    thumbnailUrl
+    attribution
+  }
+}`) as unknown as TypedDocumentString<RenameGenericProductMutation, RenameGenericProductMutationVariables>;
 export const MergeProductsDocument = new TypedDocumentString(`
     mutation MergeProducts($sourceId: ID!, $targetId: ID!) {
   mergeProducts(sourceId: $sourceId, targetId: $targetId) {
@@ -1557,6 +1711,7 @@ fragment ProductSummaryFields on Product {
     path
   }
   isGeneric
+  status
   catalogScope
   scopeChain {
     id
@@ -1646,6 +1801,7 @@ fragment ProductSummaryFields on Product {
     path
   }
   isGeneric
+  status
   catalogScope
   scopeChain {
     id
@@ -1779,6 +1935,7 @@ fragment ProductSummaryFields on Product {
     path
   }
   isGeneric
+  status
   catalogScope
   scopeChain {
     id
@@ -1916,6 +2073,7 @@ fragment ProductSummaryFields on Product {
     path
   }
   isGeneric
+  status
   catalogScope
   scopeChain {
     id
@@ -1998,6 +2156,7 @@ fragment ProductSummaryFields on Product {
     path
   }
   isGeneric
+  status
   catalogScope
   scopeChain {
     id
@@ -2076,6 +2235,7 @@ fragment ProductSummaryFields on Product {
     path
   }
   isGeneric
+  status
   catalogScope
   scopeChain {
     id
@@ -2156,6 +2316,7 @@ fragment ProductSummaryFields on Product {
     path
   }
   isGeneric
+  status
   catalogScope
   scopeChain {
     id
@@ -2561,7 +2722,7 @@ fragment ProductDetailFields on Product {
   }
 }`) as unknown as TypedDocumentString<ProductLookupByCodeQuery, ProductLookupByCodeQueryVariables>;
 export const ProductSuggestionsDocument = new TypedDocumentString(`
-    query ProductSuggestions($name: String!, $storeId: ID, $first: Int) {
+    query ProductSuggestions($name: String, $storeId: ID, $first: Int) {
   productSuggestions(name: $name, storeId: $storeId, first: $first) {
     ...ProductSummaryFields
   }
@@ -2602,6 +2763,7 @@ fragment ProductSummaryFields on Product {
     path
   }
   isGeneric
+  status
   catalogScope
   scopeChain {
     id

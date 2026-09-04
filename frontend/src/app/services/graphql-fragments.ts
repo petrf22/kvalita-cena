@@ -232,6 +232,9 @@ export const productSummaryFieldsFragment = graphql(`
       path
     }
     isGeneric
+    # Nepotvrzená (DRAFT) položka se v nabídce ukáže, ale označená a až za potvrzenými —
+    # bez tohohle pole ji klient nemá jak odlišit (docs/reputace.md, "Zboží bez čárového kódu").
+    status
     catalogScope
     scopeChain {
       id

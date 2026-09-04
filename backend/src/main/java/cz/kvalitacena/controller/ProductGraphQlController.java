@@ -1,5 +1,6 @@
 package cz.kvalitacena.controller;
 
+import cz.kvalitacena.config.CatalogProperties;
 import cz.kvalitacena.config.ExternalLinkProperties;
 import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.CategoryI18n;
@@ -74,6 +75,7 @@ public class ProductGraphQlController {
 
   private static final int MAX_SUGGESTIONS = 30;
 
+  private final CatalogProperties catalogProperties;
   private final ProductRepository productRepository;
   private final PriceCurrentRepository priceCurrentRepository;
   private final ProductCodeRepository productCodeRepository;
@@ -251,20 +253,31 @@ public class ProductGraphQlController {
   }
 
   /**
-   * Podobné zboží podle názvu (idx_product_name_trgm) — nabídne existující druhové položky
-   * dřív, než uživatel založí bezkódový duplikát, a slouží i jako "našli jsme podobné" krok
-   * u nového zboží s kódem (docs/reputace.md, "Zboží bez čárového kódu"). Na rozdíl od
-   * {@link #product}/{@link #searchProducts} tu DRAFT položky vidí VŠICHNI, ne jen autor —
-   * účel je zabránit duplicitám napříč uživateli, ne skrýt nepotvrzené zboží. Skryté
-   * (nahlášené) položky se přesto vynechávají.
+   * Nabídka existujícího zboží při zápisu ceny — dvě podoby podle toho, co uživatel zadal.
+   * S názvem podobnostní hledání (idx_product_name_trgm), aby nezaložil bezkódový duplikát,
+   * a zároveň "našli jsme podobné" krok u nového zboží s kódem. BEZ názvu, jen s obchodem,
+   * celá lokální nabídka té provozovny — u bezkódového zboží je vymýšlení názvu hlavní zdroj
+   * duplicit, takže nejlepší obrana je nenechat uživatele vymýšlet (docs/reputace.md,
+   * "Zboží bez čárového kódu").
+   *
+   * <p>Na rozdíl od {@link #product}/{@link #searchProducts} tu DRAFT položky vidí VŠICHNI,
+   * ne jen autor — účel je zabránit duplicitám napříč uživateli, ne skrýt nepotvrzené zboží;
+   * řadí se ale až za potvrzené. Skryté (nahlášené) položky se vynechávají.
    */
   @QueryMapping
   public List<Product> productSuggestions(@Argument String name, @Argument Long storeId, @Argument Integer first,
       Authentication authentication) {
-    if (name == null || name.isBlank()) return List.of();
+    boolean blankName = name == null || name.isBlank();
+    // Bez názvu, ale s obchodem = "ukaž, co tu je" (procházení lokální nabídky). Bez obchodu
+    // by prázdný dotaz znamenal výpis celého katalogu, což není nabídka, ale seznam.
+    if (blankName && storeId == null) return List.of();
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
     int limit = Math.max(1, Math.min(first == null ? 10 : first, MAX_SUGGESTIONS));
-    List<Product> matches = productRepository.findSimilarByName(name.trim(), storeId, viewer.userId(), limit).stream()
+    List<Product> found = blankName
+        ? productRepository.findLocalByStore(storeId, limit)
+        : productRepository.findSimilarByName(name.trim(), storeId, viewer.userId(),
+            catalogProperties.getSuggestionSimilarity(), limit);
+    List<Product> matches = found.stream()
         .filter(p -> p.getHiddenAt() == null || sameUser(p.getCreatedByUserId(), viewer) || viewer.moderator())
         .toList();
     return productOverlayService.applyOverlay(matches, viewer.userId());
