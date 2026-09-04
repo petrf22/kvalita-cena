@@ -76,9 +76,12 @@ public class ProductMergeService {
     recordFlagRepository.resolveAllPending(RecordType.PRODUCT.name(), sourceId, moderatorUserId, "UPHELD");
     jdbcTemplate.update("UPDATE core.product SET merged_into_id = ? WHERE merged_into_id = ?", targetId, sourceId);
 
+    // hiddenAt se NEnuluje — flagy se uzavírají jako UPHELD (ModerationService.applyHiddenAt
+    // pro UPHELD taky nikdy neodkrývá), zrušení moderátorského skrytí zdroje by tomu
+    // odporovalo. Na viditelnost výsledku to nemá vliv: MERGED produkt se dál dohledá jen
+    // přes mergedInto (ProductGraphQlController.product), findSimilarByName MERGED vynechává.
     source.setStatus(ProductStatus.MERGED);
     source.setMergedInto(target);
-    source.setHiddenAt(null);
     productRepository.save(source);
 
     storeIds.forEach(storeId ->

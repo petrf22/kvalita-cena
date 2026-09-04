@@ -13,7 +13,10 @@ public interface ProductAliasRepository extends JpaRepository<ProductAlias, Long
       + "AND core.norm_text(name)=core.norm_text(:name)", nativeQuery = true)
   Optional<ProductAlias> findByNormalizedName(@Param("productId") Long productId, @Param("name") String name);
 
-  @Modifying(flushAutomatically = true, clearAutomatically = true)
+  // Bez clearAutomatically — volá se uvnitř PriceObservationService.submit, kde jsou product/
+  // store/submitter i vracené observace pořád potřeba v persistence kontextu; clear() by je
+  // odpojil a lazy dotažení (product.brand, scopeChain, ...) by spadlo na LazyInitializationException.
+  @Modifying(flushAutomatically = true)
   @Query(value = "UPDATE core.product_alias SET status='ACTIVE', activated_at=CURRENT_TIMESTAMP "
       + "WHERE id=:aliasId AND status='PENDING' AND "
       + "(SELECT count(DISTINCT user_id) FROM core.product_alias_confirmation "

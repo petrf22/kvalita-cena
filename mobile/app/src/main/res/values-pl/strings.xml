@@ -339,6 +339,7 @@
     <string name="price_entry_back_without_price">Wstecz bez podania ceny</string>
     <string name="price_entry_submit_success">Cena została zapisana, dziękujemy!</string>
     <string name="price_entry_location_unavailable">Nie udało się ustalić lokalizacji — wybierz sklep, gdy dane będą dostępne.</string>
+    <string name="price_entry_store_not_available">Ten lokalny produkt nie należy do wybranego sklepu — wybierz inny sklep lub produkt.</string>
 
     <string name="product_form_title">Nowy produkt</string>
     <string name="product_form_store_first_hint">Dla produktu bez kodu kreskowego najpierw wybierz sklep. Zaproponujemy nazwy używane właśnie tam.</string>

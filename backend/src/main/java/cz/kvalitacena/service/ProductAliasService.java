@@ -18,6 +18,9 @@ import java.util.Locale;
 @Service
 @RequiredArgsConstructor
 public class ProductAliasService {
+  /** Pod touto délkou je vstup skoro jistě nedopsaný útržek hledání, ne skutečný název. */
+  private static final int MIN_ALIAS_LENGTH = 4;
+
   private final ProductAliasRepository aliasRepository;
   private final ProductAliasConfirmationRepository confirmationRepository;
   private final CatalogProperties catalogProperties;
@@ -31,7 +34,12 @@ public class ProductAliasService {
       return;
     }
     String name = rawName.trim().replaceAll("\\s+", " ");
-    if (name.length() < 2 || name.length() > 200 || normalized(name).equals(normalized(product.getName()))) {
+    if (name.length() < MIN_ALIAS_LENGTH || name.length() > 200) {
+      return;
+    }
+    String normalizedName = normalized(name);
+    String normalizedProductName = normalized(product.getName());
+    if (normalizedName.equals(normalizedProductName) || isUnfinishedPrefixOf(normalizedName, normalizedProductName)) {
       return;
     }
 
@@ -51,6 +59,32 @@ public class ProductAliasService {
 
     confirmationRepository.insertIfAbsent(aliasId.longValue(), submitter.getId());
     aliasRepository.activateIfConfirmed(aliasId.longValue(), catalogProperties.getAliasConfirmations());
+  }
+
+  /**
+   * Rozezná nedopsaný útržek vyhledávacího dotazu ("rohl" z "Rohlík celozrnný") od skutečné
+   * kratší varianty názvu, která se shodou okolností jako podřetězec objeví taky ("Třicátník"
+   * v "Chléb Třicátník celý") — ta druhá je platný alias, první ne. Rozdíl je na hranici slova:
+   * candidate se porovná token po tokenu od začátku kanonického názvu; dokud se tokeny shodují
+   * přesně, je to jen kratší/zkrácený zápis (v pořádku). Jakmile poslední token candidate
+   * odpovídá jen NEÚPLNÉMU začátku odpovídajícího tokenu kanonického názvu, je to rozepsané
+   * slovo uprostřed psaní, ne dokončený název.
+   */
+  private static boolean isUnfinishedPrefixOf(String candidate, String canonicalName) {
+    String[] candidateTokens = candidate.split(" ");
+    String[] canonicalTokens = canonicalName.split(" ");
+    if (candidateTokens.length > canonicalTokens.length) {
+      return false;
+    }
+    for (int i = 0; i < candidateTokens.length - 1; i++) {
+      if (!candidateTokens[i].equals(canonicalTokens[i])) {
+        return false;
+      }
+    }
+    String lastCandidateToken = candidateTokens[candidateTokens.length - 1];
+    String correspondingCanonicalToken = canonicalTokens[candidateTokens.length - 1];
+    return !lastCandidateToken.equals(correspondingCanonicalToken)
+        && correspondingCanonicalToken.startsWith(lastCandidateToken);
   }
 
   static String normalized(String value) {

@@ -12,7 +12,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
-import { Product, ProductSearchItem, Store } from '../../models/catalog';
+import { Product, ProductSummary, Store } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
 import { ProductService } from '../../services/product-service';
 import { PRICE_KIND_KEYS } from '../../shared/enum-labels';
@@ -64,11 +64,11 @@ export class PriceEntryPage {
   protected readonly codeQuery = signal('');
   protected readonly searching = signal(false);
   protected readonly searchError = signal<string | null>(null);
-  protected readonly results = signal<ProductSearchItem[]>([]);
+  protected readonly results = signal<ProductSummary[]>([]);
   /** Aspoň jeden výsledek ukazuje obrázek z Open Food Facts místo vlastní fotky — atribuce
    *  zdroje se do řádku nevejde, appka ji shrne jednou pod celý seznam (ODbL). */
   protected readonly showExternalImageNote = computed(() =>
-    this.results().some((item) => usesExternalImageFallback(item.product)),
+    this.results().some((item) => usesExternalImageFallback(item)),
   );
   protected readonly codeNotFound = signal(false);
   /** OFF katalog je teď nedostupný (výpadek/rate limit) — jiná hláška než "nemáme ho" pod codeNotFound. */
@@ -86,9 +86,12 @@ export class PriceEntryPage {
     this.searching.set(true);
     this.searchError.set(null);
     this.codeNotFound.set(false);
-    this.productService.searchProducts({ query, storeId: store.id, first: 10 }).subscribe({
+    // productSuggestions (ne searchProducts) — storeId u searchProducts filtruje agregáty
+    // (agg.price_current), takže by tu ukázal jen zboží, které v obchodě UŽ cenu má. Tady
+    // hledáme napříč katalogem v rozsahu obchodu/řetězce a chceme i potvrzené aliasy.
+    this.productService.suggestions(query, store.id, 10).subscribe({
       next: (result) => {
-        this.results.set(result.items);
+        this.results.set(result);
         this.searching.set(false);
       },
       error: () => {
@@ -126,9 +129,9 @@ export class PriceEntryPage {
     });
   }
 
-  selectFromResults(item: ProductSearchItem): void {
+  selectFromResults(item: ProductSummary): void {
     this.loadingProduct.set(true);
-    this.productService.getById(item.product.id).subscribe({
+    this.productService.getById(item.id).subscribe({
       next: (product) => {
         this.loadingProduct.set(false);
         if (product) {

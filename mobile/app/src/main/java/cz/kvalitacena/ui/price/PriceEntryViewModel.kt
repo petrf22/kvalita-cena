@@ -58,6 +58,9 @@ class PriceEntryViewModel(
     private set
   var selectedStore by mutableStateOf<Store?>(null)
     private set
+  /** Ručně vybraný obchod nepatří do rozsahu lokálního zboží (product.catalogScope) — blokuje odeslání. */
+  var storeScopeMismatch by mutableStateOf(false)
+    private set
   /** Varianta názvu, přes kterou uživatel vybral existující položku ve formuláři. */
   var productAlias by mutableStateOf<String?>(null)
     private set
@@ -96,7 +99,7 @@ class PriceEntryViewModel(
     private set
 
   val canSubmit: Boolean
-    get() = selectedStore != null && arePriceRowsValid(priceRows) && !submitting
+    get() = selectedStore != null && arePriceRowsValid(priceRows) && !submitting && !storeScopeMismatch
 
   fun addPriceRow() {
     priceRows = priceRows + PriceRow(id = nextRowId++, priceKind = firstAvailablePriceKind(priceRows))
@@ -204,6 +207,7 @@ class PriceEntryViewModel(
     if (!productAvailableAtStore(currentProduct, store)) {
       selectedStore = null
       storeQuery = ""
+      storeScopeMismatch = false
     }
   }
 
@@ -229,7 +233,11 @@ class PriceEntryViewModel(
 
   fun onStoreSelected(store: Store) {
     selectStore(store)
-    lastStoreStore.remember(store.id)
+    // Nekompatibilní obchod se rovnou neschová (na rozdíl od discardIncompatibleStore při
+    // změně produktu) — uživatel ho právě vybral ručně, appka jen zablokuje odeslání a napíše
+    // proč, ať mu výběr nezmizí beze stopy.
+    storeScopeMismatch = product?.let { !productAvailableAtStore(it, store) } ?: false
+    if (!storeScopeMismatch) lastStoreStore.remember(store.id)
   }
 
   private fun selectStore(store: Store) {

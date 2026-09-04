@@ -341,6 +341,7 @@
     <string name="price_entry_back_without_price">Zurück ohne Preis einzugeben</string>
     <string name="price_entry_submit_success">Der Preis wurde gespeichert, danke!</string>
     <string name="price_entry_location_unavailable">Der Standort konnte nicht ermittelt werden — wähle ein Geschäft, sobald Daten verfügbar sind.</string>
+    <string name="price_entry_store_not_available">Dieses lokale Produkt gehört nicht zum gewählten Geschäft — wähle ein anderes Geschäft oder Produkt.</string>
 
     <string name="product_form_title">Neue Ware</string>
     <string name="product_form_store_first_hint">Wähle bei Waren ohne Strichcode zuerst das Geschäft. Dann werden dort verwendete Namen vorgeschlagen.</string>
