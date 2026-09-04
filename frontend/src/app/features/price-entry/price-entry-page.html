@@ -1,6 +1,16 @@
 <ng-container *transloco="let t; scope: 'price-entry'">
   <h1>{{ t('price-entry.title') }}</h1>
 
+  <nz-form-item>
+    <nz-form-label>{{ t('price-entry.storeFirstLabel') }}</nz-form-label>
+    <nz-form-control>
+      <app-store-picker
+        [selectedStoreId]="selectedStore()?.id ?? null"
+        (selectedStoreChange)="onStoreChange($event)"
+      />
+    </nz-form-control>
+  </nz-form-item>
+
   @if (!selectedProduct() && !showProductForm()) {
     <nz-form-item>
       <nz-form-control>
@@ -23,9 +33,16 @@
           name="nameQuery"
           [ngModel]="nameQuery()"
           (ngModelChange)="nameQuery.set($event)"
+          [disabled]="!selectedStore()"
           (keyup.enter)="searchByName()"
         />
-        <button nz-button nzType="primary" [nzLoading]="searching()" (click)="searchByName()">
+        <button
+          nz-button
+          nzType="primary"
+          [nzLoading]="searching()"
+          [disabled]="!selectedStore()"
+          (click)="searchByName()"
+        >
           {{ t('price-entry.search') }}
         </button>
       </div>
@@ -108,7 +125,9 @@
     <h2 class="section-title">{{ t('price-entry.newProductTitle') }}</h2>
     <app-product-form
       [barcode]="codeQuery()"
+      [store]="selectedStore()"
       (created)="onProductCreated($event)"
+      (existingMatched)="onExistingProductMatched($event)"
       (cancelled)="showProductForm.set(false)"
     />
   }
@@ -145,6 +164,11 @@
       </ul>
     }
 
-    <app-price-entry-form [product]="product" (submitted)="onPricesSubmitted(product.id)" />
+    <app-price-entry-form
+      [product]="product"
+      [store]="selectedStore()"
+      [productAlias]="productAlias()"
+      (submitted)="onPricesSubmitted(product.id)"
+    />
   }
 </ng-container>

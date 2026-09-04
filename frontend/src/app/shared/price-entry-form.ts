@@ -1,4 +1,13 @@
-import { Component, EventEmitter, Output, computed, inject, input, signal } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Output,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   TranslocoDirective,
@@ -66,6 +75,10 @@ export class PriceEntryForm {
   protected readonly format = inject(FormatService);
 
   readonly product = input.required<Product>();
+  /** Když obchod vybral nadřazený store-first tok, formulář jej znovu nevyžaduje. */
+  readonly store = input<Store | null>(null);
+  /** Napsaná varianta názvu; server ji započítá až s touto úspěšnou observací. */
+  readonly productAlias = input<string | null>(null);
   /** Rodič si obnoví agregované ceny/graf na produktu — viz price-entry-page/product-detail-page. */
   @Output() readonly submitted = new EventEmitter<PriceObservation[]>();
 
@@ -80,6 +93,13 @@ export class PriceEntryForm {
   protected readonly observedAt = signal<Date | null>(null);
   protected readonly rows = signal<PriceRow[]>([newPriceRow(0, [])]);
   private nextRowKey = 1;
+
+  private readonly fixedStoreEffect = effect(() => {
+    const store = this.store();
+    if (!store) return;
+    this.selectedStoreId.set(store.id);
+    this.onStoreChange(store);
+  });
 
   protected readonly submitting = signal(false);
   protected readonly submitSuccess = signal(false);
@@ -201,6 +221,7 @@ export class PriceEntryForm {
         storeId,
         quantityBasis: product.isVariableWeight ? this.quantityBasis() : 'PACKAGE',
         observedAt: observedAt ? toObservedAtIso(observedAt) : undefined,
+        productAlias: this.productAlias()?.trim() || undefined,
         prices: toObservationPriceInputs(rows),
       })
       .subscribe({

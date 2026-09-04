@@ -1,4 +1,13 @@
-import { Component, EventEmitter, Output, computed, inject, input, signal } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  OnInit,
+  Output,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslocoDirective, TranslocoService, provideTranslocoScope } from '@jsverse/transloco';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -9,6 +18,7 @@ import { Store } from '../models/catalog';
 import { AuthService } from '../services/auth-service';
 import { CountryService } from '../services/country-service';
 import { StoreService } from '../services/store-service';
+import { LastStoreService } from '../services/last-store-service';
 import { translateError } from './error-message';
 import { StoreForm } from './store-form';
 import { storeLabel } from './store-label';
@@ -37,9 +47,10 @@ const SEARCH_DEBOUNCE_MS = 300;
   templateUrl: './store-picker.html',
   styleUrl: './store-picker.css',
 })
-export class StorePicker {
+export class StorePicker implements OnInit {
   private readonly storeService = inject(StoreService);
   private readonly transloco = inject(TranslocoService);
+  private readonly lastStore = inject(LastStoreService);
   protected readonly auth = inject(AuthService);
   protected readonly countryService = inject(CountryService);
   protected readonly storeLabel = storeLabel;
@@ -65,6 +76,28 @@ export class StorePicker {
 
   private searchTimer?: ReturnType<typeof setTimeout>;
 
+  ngOnInit(): void {
+    if (this.selectedStoreId()) return;
+    const id = this.lastStore.read();
+    if (!id) return;
+    this.searching.set(true);
+    this.storeService.getById(id).subscribe({
+      next: (store) => {
+        this.searching.set(false);
+        if (store) {
+          this.suggestions.set([store]);
+          this.onSelectId(store.id);
+        } else {
+          this.lastStore.clear();
+        }
+      },
+      error: () => {
+        this.searching.set(false);
+        this.lastStore.clear();
+      },
+    });
+  }
+
   onSearch(query: string): void {
     clearTimeout(this.searchTimer);
     if (!query.trim()) {
@@ -87,6 +120,8 @@ export class StorePicker {
     const store = this.displayOptions().find((s) => s.id === id) ?? null;
     this.selectedStore.set(store);
     if (store) this.locationError.set(null);
+    if (store) this.lastStore.remember(store.id);
+    else this.lastStore.clear();
     this.selectedStoreIdChange.emit(id);
     this.selectedStoreChange.emit(store);
   }

@@ -12,16 +12,18 @@
   }
 
   <form nz-form nzLayout="vertical" (ngSubmit)="submit()">
-    <nz-form-item>
-      <nz-form-label>{{ t('price-form.storeLabel') }}</nz-form-label>
-      <nz-form-control>
-        <app-store-picker
-          [selectedStoreId]="selectedStoreId()"
-          (selectedStoreIdChange)="selectedStoreId.set($event)"
-          (selectedStoreChange)="onStoreChange($event)"
-        />
-      </nz-form-control>
-    </nz-form-item>
+    @if (!store()) {
+      <nz-form-item>
+        <nz-form-label>{{ t('price-form.storeLabel') }}</nz-form-label>
+        <nz-form-control>
+          <app-store-picker
+            [selectedStoreId]="selectedStoreId()"
+            (selectedStoreIdChange)="selectedStoreId.set($event)"
+            (selectedStoreChange)="onStoreChange($event)"
+          />
+        </nz-form-control>
+      </nz-form-item>
+    }
 
     @if (product().isVariableWeight) {
       <nz-form-item>

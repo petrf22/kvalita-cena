@@ -146,6 +146,15 @@ export const productFieldsFragment = graphql(`
     isVariableWeight
     status
     isGeneric
+    catalogScope
+    scopeChain {
+      id
+      name
+      chainType
+    }
+    scopeStore {
+      ...StoreFields
+    }
     verified
     editedByMe
     prices {
@@ -223,6 +232,15 @@ export const productSummaryFieldsFragment = graphql(`
       path
     }
     isGeneric
+    catalogScope
+    scopeChain {
+      id
+      name
+      chainType
+    }
+    scopeStore {
+      ...StoreFields
+    }
     verified
     editedByMe
     # Jen thumbnailUrl (ne celý PhotoFields fragment) — tenhle fragment se tahá pro každý řádek

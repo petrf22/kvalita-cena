@@ -1,5 +1,6 @@
 {
   "title": "Preis eingeben",
+  "storeFirstLabel": "Wähle zuerst das Geschäft",
   "byName": "Nach Name",
   "byCode": "Nach Strichcode",
   "namePlaceholder": "Wonach suchst du?",

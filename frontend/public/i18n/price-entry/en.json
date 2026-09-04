@@ -1,5 +1,6 @@
 {
   "title": "Add price",
+  "storeFirstLabel": "Choose the store first",
   "byName": "By name",
   "byCode": "By barcode",
   "namePlaceholder": "What are you looking for?",

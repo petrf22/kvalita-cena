@@ -1,5 +1,6 @@
 {
   "title": "Zadať cenu",
+  "storeFirstLabel": "Najprv vyber obchod",
   "byName": "Podľa názvu",
   "byCode": "Podľa čiarového kódu",
   "namePlaceholder": "Čo hľadáš?",

@@ -42,6 +42,8 @@
     "PRODUCT_NAME_EMPTY": "Název zboží nesmí být prázdný",
     "PRODUCT_CATEGORY_REQUIRED": "Kategorie je povinná",
     "PRODUCT_UNIT_BASE_REQUIRED": "Základní jednotka (kg/l/ks) je povinná",
+    "PRODUCT_STORE_REQUIRED": "Pro zboží bez čárového kódu nejdřív vyber obchod",
+    "PRODUCT_NOT_AVAILABLE_AT_STORE": "Toto místní zboží nepatří do vybraného obchodu",
     "OFF_PRODUCT_NOT_FOUND": "Produkt už v Open Food Facts není dostupný, pokračuj ručním zadáním",
     "OFF_UNAVAILABLE": "Open Food Facts je momentálně nedostupné, pokračuj ručním zadáním",
     "STORE_NAME_REQUIRED": "Název obchodu je povinný",

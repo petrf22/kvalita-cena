@@ -179,16 +179,16 @@ export class ProductService {
    * Podobné zboží podle názvu — nabídne existující druhové položky před založením nového
    * (docs/reputace.md, "Zboží bez čárového kódu") i jako "našli jsme podobné" krok obecně.
    */
-  suggestions(name: string, first = 10) {
+  suggestions(name: string, storeId: string | null = null, first = 10) {
     const document = graphql(`
-      query ProductSuggestions($name: String!, $first: Int) {
-        productSuggestions(name: $name, first: $first) {
+      query ProductSuggestions($name: String!, $storeId: ID, $first: Int) {
+        productSuggestions(name: $name, storeId: $storeId, first: $first) {
           ...ProductSummaryFields
         }
       }
     `);
     return this.graphQl
-      .execute(document, { name, first })
+      .execute(document, { name, storeId, first })
       .pipe(map((data) => data.productSuggestions));
   }
 
