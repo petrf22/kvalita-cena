@@ -175,8 +175,9 @@ duplicitám — klient si musí před uložením ověřit `searchStores`, tohle 
 `country` přibyla do indexu až `2026-08-16/01-store-country.yaml` — do té doby dvě stejnojmenné
 provozovny ve stejnojmenném městě ve dvou zemích kolidovaly, `docs/lokalizace.md`, „Country
 selector v UI"), v
-`uq_product_generic_name` (druhové položky, `docs/reputace.md`) a v `pg_trgm` indexech pro
-podobnostní hledání. Past stejného druhu jako `core.day_utc` u `date_trunc`
+`uq_product_generic_name_scope` (druhové položky v rozsahu prodejce, viz níže a
+`docs/reputace.md`) a v `pg_trgm` indexech pro podobnostní hledání. Past stejného druhu jako
+`core.day_utc` u `date_trunc`
 („Past: `date_trunc` není IMMUTABLE" výš): **obě varianty `unaccent()` (jedno- i
 dvouargumentová) jsou ve skutečnosti `STABLE`**, ne `IMMUTABLE`, přestože se dvouargumentová
 varianta po síti běžně mylně vydává za immutable. Deklarovat obalovou funkci jako IMMUTABLE
@@ -187,6 +188,31 @@ inlinovat — a selže na „text search dictionary unaccent does not exist", pr
 za běhu migrace (`pg_ts_dict`/`pg_extension`) a jejich OID/jméno se natvrdo vloží do textu
 definice funkce (`format(...) + EXECUTE`) — ve výsledném těle je pak jen numerický OID a plně
 kvalifikované jméno, žádná identifikace závislá na `search_path`.
+
+### Identita bezkódového zboží je lokální k prodejci
+
+`core.product.catalog_scope` rozlišuje `GLOBAL` (GTIN/OFF), `CHAIN`, `STORE` a migrační
+`LEGACY_GLOBAL`. U lokální druhové položky je právě jeden z `scope_chain_id`/`scope_store_id`
+povinný a `chk_product_catalog_scope` hlídá všechny kombinace. Provozovna s řetězcem vždy
+zakládá `CHAIN`, nezávislá provozovna `STORE`; unikátní index
+`uq_product_generic_name_scope` brání duplicitě normalizovaného názvu a kategorie pouze ve
+stejném rozsahu. Cena lokálního produktu se v jiné provozovně/řetězci odmítne i serverem —
+klientský filtr není bezpečnostní hranice. Staré jednoznačné druhové produkty migrace přiřadí
+podle jejich cen, nejednoznačné označí `LEGACY_GLOBAL` a zachová jen kvůli historii.
+
+Varianty názvu jsou oddělené od kanonického produktu: `core.product_alias` má normalizovaně
+unikátní `(product_id, name)`, stav `PENDING`/`ACTIVE` a trigramový index.
+`core.product_alias_confirmation` dokládá potvrzení různými registrovanými uživateli; vzniká
+výhradně spolu s úspěšným zápisem ceny a `UNIQUE (alias_id, user_id)` brání dvojímu hlasu.
+Po prahu `app.catalog.alias-confirmations` (výchozí 2) se alias aktivuje pro všechny, předtím
+jej ve výsledcích vidí jen jeho potvrzovatel. `user_id` potvrzení je po 180 dnech nebo při
+smazání účtu nulováno, alias i jeho už získaný stav ale zůstávají komunitním údajem.
+
+Moderátorské `mergeProducts(sourceId, targetId)` je transakční konsolidace dvou druhových
+položek. Ověří rozsah cíle, přesune observace, recenze, média, patche, kódy i aliasy, vyřeší
+unikátní kolize ve prospěch cíle, smaže staré agregáty a zařadí přepočet cílových buněk.
+Zdroj zůstane jako `MERGED` s `merged_into_id`; přímé čtení starého ID vrátí kanonický cíl.
+Původní název zdroje se aktivuje jako alias, takže sloučení nezhorší našeptávání.
 
 **IČO (`core.store.ico`, `core.store.ico_verified_at`) je volitelný identifikátor
 provozovatele** — pro podnikovou prodejnu zemědělského družstva nebo OSVČ, kde samotný název

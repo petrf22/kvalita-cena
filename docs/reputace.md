@@ -310,6 +310,12 @@ nástroj provozovatele, ne appky, mobil ji nemá).
   autora/zboží/obchod (`moderationObservations`) a zamítá ji (`setObservationRejected` →
   `ObservationStatus.REJECTED`), což vždy zařadí dotčenou buňku do `agg.recompute_queue`
   (`RecomputeReason.MODERATION`) — bez toho by zamítnutá cena zůstala v grafu ještě několik dní.
+- **Duplicitní bezkódové zboží jde sloučit** (`mergeProducts`) z řádku produktu ve frontě.
+  Moderátor zadá kanonické cílové ID; server před přesunem cen ověří, že všechny provozovny
+  zdroje patří do rozsahu cíle. Ceny, recenze, fotky, uživatelské úpravy a aliasy se přesunou,
+  deterministické kolize ponechají záznam už připojený k cíli a dotčené agregáty se přepočítají.
+  Zdroj dostane `status = MERGED` a staré ID se při přímém čtení přesměruje na cíl — uložené
+  odkazy tedy nekončí chybou.
 - **Pozastavení účtu** (`setUserSuspended`, docs/podminky-uziti.md, „Ukončení a vyloučení") —
   `AppUserStatus.SUSPENDED` + inkrement `token_version` + revokace refresh tokenů
   (`RefreshTokenService.revokeAllForUser`). Pozastavený účet se přestane autentizovat nejpozději
@@ -360,10 +366,32 @@ před založením `core.supplier`**, ne jen automaticky rozšířit stejný mech
 Ne všechno zboží má EAN — účtenka z pekárny umí napsat jen "pečivo za 45 Kč", podniková
 prodejna zemědělského družstva na vsi často nemá vůbec žádný pokladní systém s čárovými kódy.
 Takový zápis má menší cenu než zápis s EANem (žádný jednoznačný identifikátor napříč obchody),
-ale je lepší mít ho s nižší důvěryhodností než ho odmítnout úplně — proto `createProduct` bez
-`code` založí **druhovou položku** (`core.product.is_generic`, `ProductCatalogService`):
-sdílený "koš" pro bezkódové zápisy stejného druhu zboží ("Chléb konzumní", "Brambory
-konzumní"), ne nový záznam pro každý jednotlivý zápis.
+ale je lepší mít ho s nižší důvěryhodností než ho odmítnout úplně. Globální shoda podle
+uživatelského názvu by však spojovala různé výrobky a rozbíjela reputaci překlepy. Identita je
+proto **lokální k prodejci**:
+
+- zboží s GTIN nebo z Open Food Facts má `catalog_scope = GLOBAL` a funguje všude;
+- bezkódové zboží založené pro provozovnu řetězce má `catalog_scope = CHAIN` a sdílí se jen
+  uvnitř daného řetězce;
+- u nezávislého obchodu má `catalog_scope = STORE` a existuje jen v dané provozovně;
+- staré druhové položky, jejichž rozsah nešel z historie jednoznačně odvodit, zůstávají jako
+  `LEGACY_GLOBAL`, aby migrace neztratila cenu ani nerozhodla svévolně. Nově se tento rozsah
+  nezakládá.
+
+Web i mobil proto při ručním zadání vybírají **nejprve obchod** a až v jeho rozsahu volají
+`productSuggestions(name, storeId)`. Poslední použitý obchod si klient pamatuje lokálně 30 dní,
+detail vždy znovu načte ze serveru a nekompatibilní či smazanou volbu zahodí. Hledání používá
+`core.norm_text` a `pg_trgm`, takže snese diakritiku i běžné překlepy; lokální shody řadí před
+globálními.
+
+Jeden kanonický název nestačí pro „chléb třicátník celý" / „třicátník". Pokud registrovaný
+uživatel vybere existující lokální druhovou položku jiným názvem a **současně úspěšně zapíše
+cenu**, server uloží návrh do `core.product_alias`. Alias se veřejně nabízí až po potvrzení
+`app.catalog.alias-confirmations` (výchozí 2) různými registrovanými účty; do té doby ho při
+dalším hledání vidí jen jeho potvrzovatel. Anonym alias nevytvoří, jeden účet jej potvrdí jen
+jednou a volný návrh bez cenové observace neexistuje. Tím se možnost škodit opírá o existující
+limity cenových zápisů, úzký obchodní rozsah a komunitní práh místo o globální slovník, který by
+mohl kdokoli zaplevelit.
 
 **Nová položka vzniká jako `status = DRAFT`**, dokud ji nepotvrdí aspoň
 `app.catalog.draft-confirmations` (výchozí 3) různých **registrovaných** přispěvatelů —
@@ -373,6 +401,12 @@ počítáno jako `COUNT(DISTINCT submitter_id) … WHERE submitter_id IS NOT NUL
 skóre — čítače s exponenciálním útlumem" výš. Jakmile práh padne, `PriceObservationService.submit()`
 položku po zápisu ceny rovnou překlopí na `ACTIVE` (`ProductCatalogService.promoteIfConfirmed`) —
 žádný plánovač navíc.
+
+Když ani obchodní rozsah a aliasy nezabrání založení dvou položek pro tutéž věc, nahlášení
+dostane duplicitu do moderace. `mergeProducts(sourceId, targetId)` ji sloučí beze ztráty
+historie; původní název zdroje se stane aktivním aliasem cíle. Automatické slučování podle
+podobnosti názvu se nedělá — „dršťková polévka" a „gulášová polévka" mohou být textově blízko,
+ale nejsou stejný výrobek.
 
 **Confidence buňky (`agg.price_current.confidence`) je pro druhovou položku zastropovaná na
 `MEDIUM`**, bez ohledu na `n_eff` (`PriceAggregationService.confidenceFor()`) — chybějící EAN
