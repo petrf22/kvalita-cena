@@ -150,6 +150,7 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.ModerationObservationNotFound]: 'errors.MODERATION_OBSERVATION_NOT_FOUND',
   [ErrorCode.ModerationUserNotFound]: 'errors.MODERATION_USER_NOT_FOUND',
   [ErrorCode.ModerationProductMergeSame]: 'errors.MODERATION_PRODUCT_MERGE_SAME',
+  [ErrorCode.ModerationProductRenameInvalid]: 'errors.MODERATION_PRODUCT_RENAME_INVALID',
   [ErrorCode.ModerationProductMergeInvalid]: 'errors.MODERATION_PRODUCT_MERGE_INVALID',
   [ErrorCode.ModerationProductMergeScopeMismatch]: 'errors.MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH',
   [ErrorCode.FeedbackMessageRequired]: 'errors.FEEDBACK_MESSAGE_REQUIRED',

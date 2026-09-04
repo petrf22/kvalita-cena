@@ -1,5 +1,8 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.config.CatalogProperties;
+import cz.kvalitacena.controller.DuplicateCandidate;
+import cz.kvalitacena.controller.DuplicateCandidateResult;
 import cz.kvalitacena.controller.FlaggedRecordItem;
 import cz.kvalitacena.controller.FlaggedRecordResult;
 import cz.kvalitacena.controller.FlaggedReview;
@@ -20,6 +23,7 @@ import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.entity.RevokeReason;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.AppUserRepository;
+import cz.kvalitacena.db.repo.DuplicateCandidateRow;
 import cz.kvalitacena.db.repo.MediaRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
@@ -67,6 +71,7 @@ public class ModerationService {
 
   private final RecordFlagRepository recordFlagRepository;
   private final ProductRepository productRepository;
+  private final CatalogProperties catalogProperties;
   private final StoreRepository storeRepository;
   private final MediaRepository mediaRepository;
   private final ProductReviewRepository productReviewRepository;
@@ -81,6 +86,37 @@ public class ModerationService {
   private final ProductCatalogService productCatalogService;
 
   @Transactional(readOnly = true)
+  /**
+   * Fronta podezřelých duplicit bezkódového zboží. Na rozdíl od {@link #flaggedRecords} nestojí
+   * na nahlášení — duplicitu nikdo nenahlásí, protože nikoho nepoškozuje, jen tiše rozděluje
+   * ceny jedné věci do dvou košů a tím kazí agregát (docs/reputace.md, "Zboží bez čárového
+   * kódu"). Sloučení zůstává ruční, tohle je jen seřazená nabídka k přezkumu.
+   */
+  public DuplicateCandidateResult duplicateCandidates(Integer first, Integer offset, Long moderatorUserId) {
+    int limit = clamp(first == null ? 20 : first, 1, MAX_FIRST);
+    int off = clamp(offset == null ? 0 : offset, 0, MAX_OFFSET);
+    double threshold = catalogProperties.getDuplicateSimilarity();
+
+    List<DuplicateCandidateRow> rows = productRepository.findDuplicateCandidates(threshold, limit, off);
+    long total = productRepository.countDuplicateCandidates(threshold);
+
+    Set<Long> productIds = new LinkedHashSet<>();
+    rows.forEach(row -> {
+      productIds.add(row.getLeftId());
+      productIds.add(row.getRightId());
+    });
+    Map<Long, Product> productsById = index(
+        productOverlayService.applyOverlay(productRepository.findAllById(productIds), moderatorUserId),
+        Product::getId);
+
+    List<DuplicateCandidate> items = rows.stream()
+        .map(row -> new DuplicateCandidate(
+            productsById.get(row.getLeftId()), productsById.get(row.getRightId()), row.getScore()))
+        .filter(candidate -> candidate.left() != null && candidate.right() != null)
+        .toList();
+    return new DuplicateCandidateResult(items, (int) total, off + rows.size() < total);
+  }
+
   public FlaggedRecordResult flaggedRecords(RecordType recordTypeFilter, Integer first, Integer offset,
       Long moderatorUserId) {
     int limit = clamp(first == null ? 20 : first, 1, MAX_FIRST);

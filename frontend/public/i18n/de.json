@@ -119,6 +119,7 @@
     "MODERATION_OBSERVATION_NOT_FOUND": "Der moderierte Preis existiert nicht.",
     "MODERATION_USER_NOT_FOUND": "Der Benutzer existiert nicht.",
     "MODERATION_PRODUCT_MERGE_SAME": "Quell- und Zielware müssen verschieden sein.",
+    "MODERATION_PRODUCT_RENAME_INVALID": "Nur aktive Artikel ohne Barcode können umbenannt werden",
     "MODERATION_PRODUCT_MERGE_INVALID": "Es können nur zwei gültige Waren ohne Strichcode zusammengeführt werden.",
     "MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH": "Die Preise der Quellware gehören nicht zum Bereich der Zielfiliale oder Zielkette.",
     "ACCOUNT_SUSPENDED": "Dieses Konto ist gesperrt.",

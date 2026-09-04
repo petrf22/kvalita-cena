@@ -46,6 +46,10 @@ class ProductMergeServiceIntegrationTest {
   @Autowired
   private ProductMergeService mergeService;
   @Autowired
+  private ProductRenameService renameService;
+  @Autowired
+  private ModerationService moderationService;
+  @Autowired
   private ProductRepository productRepository;
   @Autowired
   private StoreRepository storeRepository;
@@ -94,6 +98,70 @@ class ProductMergeServiceIntegrationTest {
         .isEqualTo(ProductStatus.ACTIVE);
   }
 
+  @Test
+  void renameKeepsOldNameAsActiveAlias() {
+    Store store = persistStore();
+    Product product = persistProduct(store, "Polevka drstkova " + UUID.randomUUID());
+    String previousName = product.getName();
+
+    Product renamed = renameService.rename(product.getId(), "  Dršťková   polévka  ", 1L);
+
+    assertThat(renamed.getName()).isEqualTo("Dršťková polévka");
+    assertThat(productRepository.findById(product.getId()).orElseThrow().getName())
+        .isEqualTo("Dršťková polévka");
+    // Kdo si pamatuje původní (chybný) název, musí položku dál najít.
+    assertThat(jdbcTemplate.queryForList(
+        "SELECT name FROM core.product_alias WHERE product_id = ? AND status = 'ACTIVE'",
+        String.class, product.getId())).contains(previousName);
+  }
+
+  /** Oprava, která mění jen diakritiku/velikost písmen, nesmí založit alias shodný s názvem. */
+  @Test
+  void renameToTheSameNormalizedNameCreatesNoAlias() {
+    Store store = persistStore();
+    String suffix = UUID.randomUUID().toString();
+    Product product = persistProduct(store, "drstkova polevka " + suffix);
+
+    renameService.rename(product.getId(), "Dršťková polévka " + suffix, 1L);
+
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT count(*) FROM core.product_alias WHERE product_id = ?", Long.class, product.getId()))
+        .isZero();
+  }
+
+  @Test
+  void renameRejectsProductWithBarcode() {
+    Store store = persistStore();
+    Product product = persistProduct(store, "S kódem " + UUID.randomUUID());
+    product.setGeneric(false);
+    productRepository.saveAndFlush(product);
+
+    assertThatThrownBy(() -> renameService.rename(product.getId(), "Nový název", 1L))
+        .isInstanceOf(ValidationException.class);
+  }
+
+  @Test
+  void duplicateCandidatesPairsSimilarNamesInSameStore() {
+    // Obchod i kategorie jsou pro každý test nové, takže názvy mohou být holé bez UUID přípony
+    // — a musí být: společná přípona by podobnost všech tří dvojic uměle nafoukla.
+    Store store = persistStore();
+    Category category = persistCategory();
+    Product first = persistProduct(store, category, "Dršťková polévka");
+    Product second = persistProduct(store, category, "Dršťková polévka velká");
+    // Jiná polévka v témže obchodě a kategorii — textově blízko (0,42), ale jiný výrobek, takže
+    // pod prahem 0,55 a nesmí se spárovat (docs/reputace.md, automatické slučování se nedělá).
+    Product other = persistProduct(store, category, "Gulášová polévka");
+
+    var result = moderationService.duplicateCandidates(50, 0, 1L);
+
+    assertThat(result.items())
+        .anySatisfy(candidate -> assertThat(java.util.Set.of(candidate.left().getId(), candidate.right().getId()))
+            .containsExactlyInAnyOrder(first.getId(), second.getId()));
+    assertThat(result.items())
+        .noneSatisfy(candidate -> assertThat(java.util.Set.of(candidate.left().getId(), candidate.right().getId()))
+            .contains(other.getId()));
+  }
+
   private Store persistStore() {
     String suffix = UUID.randomUUID().toString();
     return storeRepository.saveAndFlush(Store.builder()
@@ -104,12 +172,19 @@ class ProductMergeServiceIntegrationTest {
         .build());
   }
 
-  private Product persistProduct(Store store, String name) {
-    Category category = categoryRepository.saveAndFlush(Category.builder()
+  private Category persistCategory() {
+    return categoryRepository.saveAndFlush(Category.builder()
         .name("Merge kategorie " + UUID.randomUUID())
         .slug("merge-" + UUID.randomUUID())
         .path("merge-" + UUID.randomUUID())
         .build());
+  }
+
+  private Product persistProduct(Store store, String name) {
+    return persistProduct(store, persistCategory(), name);
+  }
+
+  private Product persistProduct(Store store, Category category, String name) {
     return productRepository.saveAndFlush(Product.builder()
         .name(name)
         .category(category)

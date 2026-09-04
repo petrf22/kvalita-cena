@@ -5,6 +5,7 @@
   "notAuthorized": "Táto stránka je len pre moderátorov.",
   "tabs": {
     "flagged": "Nahlásené",
+    "duplicates": "Duplicity",
     "observations": "Ceny",
     "feedback": "Spätná väzba",
     "quarantinedFeedback": "Podozrivé",
@@ -20,10 +21,21 @@
     "reasonsLabel": "Dôvody:",
     "uncover": "Odkryť",
     "confirmHide": "Potvrdiť skrytie",
-    "mergeTargetPlaceholder": "ID cieľového tovaru",
+    "mergeTargetPlaceholder": "Nájsť cieľovú položku podľa názvu",
+    "mergeUnconfirmed": "(zatiaľ nepotvrdené)",
     "merge": "Zlúčiť do cieľa",
     "mergeConfirm": "Naozaj presunúť ceny, aliasy, recenzie a fotky do cieľového tovaru? Túto operáciu nemožno vrátiť.",
     "mergeSuccess": "Duplicitný tovar bol zlúčený do „{{name}}“."
+  },
+  "duplicates": {
+    "hint": "Dvojice tovaru bez čiarového kódu s rovnakým rozsahom a kategóriou, ktorých názvy sú si podobné. Nejde o nahlásenie — duplicitu nikto nenahlási, len ticho rozdeľuje ceny jednej veci do dvoch košov. Zlučuj vždy po kontrole, „držková“ a „gulášová polievka“ sú textovo blízko, ale nie sú to isté.",
+    "empty": "Žiadne podozrenie na duplicitu.",
+    "versus": "vs.",
+    "mergeLeftIntoRight": "Zlúčiť prvú do druhej",
+    "mergeRightIntoLeft": "Zlúčiť druhú do prvej",
+    "rename": "Premenovať",
+    "renamePlaceholder": "Nový názov pre „{{name}}“",
+    "renameSuccess": "Tovar bol premenovaný na „{{name}}“, pôvodný názov zostal ako alias."
   },
   "authorLabel": "Autor:",
   "authorUnknown": "neznámy (anonym alebo po pseudonymizácii)",

@@ -47,6 +47,10 @@
   max-width: 420px;
 }
 
+.merge-target {
+  flex: 1;
+}
+
 .observation-filters {
   display: flex;
   gap: 8px;
@@ -83,4 +87,36 @@
 .section-pagination {
   margin-top: 16px;
   text-align: right;
+}
+
+.duplicate-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.duplicate-versus {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.duplicate-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rename-actions {
+  display: flex;
+  gap: 8px;
+  max-width: 560px;
+}
+
+.rename-actions input {
+  flex: 1;
+}
+
+.section-hint {
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 13px;
 }

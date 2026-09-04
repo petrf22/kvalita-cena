@@ -119,6 +119,7 @@
     "MODERATION_OBSERVATION_NOT_FOUND": "Moderovaná cena neexistuje.",
     "MODERATION_USER_NOT_FOUND": "Používateľ neexistuje.",
     "MODERATION_PRODUCT_MERGE_SAME": "Zdrojový a cieľový tovar musia byť rôzne.",
+    "MODERATION_PRODUCT_RENAME_INVALID": "Premenovať možno len aktívny tovar bez čiarového kódu",
     "MODERATION_PRODUCT_MERGE_INVALID": "Zlúčiť možno len dve platné položky bez čiarového kódu.",
     "MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH": "Ceny zdrojového tovaru nepatria do rozsahu cieľového obchodu alebo reťazca.",
     "ACCOUNT_SUSPENDED": "Tento účet je pozastavený.",

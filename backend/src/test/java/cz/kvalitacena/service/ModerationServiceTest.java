@@ -1,5 +1,6 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.config.CatalogProperties;
 import cz.kvalitacena.controller.FlaggedRecordItem;
 import cz.kvalitacena.controller.FlaggedRecordResult;
 import cz.kvalitacena.controller.ModerationObservationResult;
@@ -93,7 +94,8 @@ class ModerationServiceTest {
 
   @BeforeEach
   void setUp() {
-    service = new ModerationService(recordFlagRepository, productRepository, storeRepository, mediaRepository,
+    service = new ModerationService(recordFlagRepository, productRepository, new CatalogProperties(),
+        storeRepository, mediaRepository,
         productReviewRepository, appUserRepository, productOverlayService, storeOverlayService, mediaService,
         handleRenderer, priceObservationRepository, priceAggregationService, refreshTokenService, productCatalogService);
     // applyOverlay(list, viewerId) je no-op, pokud moderátor sám žádný patch nemá — testy

@@ -113,6 +113,7 @@ public enum ErrorCode {
   MODERATION_OBSERVATION_NOT_FOUND("error.moderation.observationNotFound"),
   MODERATION_USER_NOT_FOUND("error.moderation.userNotFound"),
   MODERATION_PRODUCT_MERGE_SAME("error.moderation.productMergeSame"),
+  MODERATION_PRODUCT_RENAME_INVALID("error.moderation.productRenameInvalid"),
   MODERATION_PRODUCT_MERGE_INVALID("error.moderation.productMergeInvalid"),
   MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH("error.moderation.productMergeScopeMismatch"),
 

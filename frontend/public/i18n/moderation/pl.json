@@ -5,6 +5,7 @@
   "notAuthorized": "Ta strona jest tylko dla moderatorów.",
   "tabs": {
     "flagged": "Zgłoszone",
+    "duplicates": "Duplikaty",
     "observations": "Ceny",
     "feedback": "Opinie",
     "quarantinedFeedback": "Podejrzane",
@@ -20,10 +21,21 @@
     "reasonsLabel": "Powody:",
     "uncover": "Odkryj",
     "confirmHide": "Potwierdź ukrycie",
-    "mergeTargetPlaceholder": "ID produktu docelowego",
+    "mergeTargetPlaceholder": "Znajdź pozycję docelową po nazwie",
+    "mergeUnconfirmed": "(jeszcze niepotwierdzone)",
     "merge": "Połącz z docelowym",
     "mergeConfirm": "Przenieść ceny, aliasy, recenzje i zdjęcia do produktu docelowego? Tej operacji nie można cofnąć.",
     "mergeSuccess": "Duplikat produktu połączono z „{{name}}”."
+  },
+  "duplicates": {
+    "hint": "Pary produktów bez kodu kreskowego o tym samym zakresie i kategorii, których nazwy są podobne. To nie są zgłoszenia — duplikatu nikt nie zgłosi, po prostu po cichu dzieli ceny jednej rzeczy na dwa koszyki. Zawsze sprawdź przed scaleniem: „flaczki” i „zupa gulaszowa” są tekstowo blisko, ale to nie to samo.",
+    "empty": "Brak podejrzeń o duplikaty.",
+    "versus": "vs.",
+    "mergeLeftIntoRight": "Scal pierwszy w drugi",
+    "mergeRightIntoLeft": "Scal drugi w pierwszy",
+    "rename": "Zmień nazwę",
+    "renamePlaceholder": "Nowa nazwa dla „{{name}}”",
+    "renameSuccess": "Zmieniono nazwę na „{{name}}”; poprzednia nazwa pozostała jako alias."
   },
   "authorLabel": "Autor:",
   "authorUnknown": "nieznany (anonim lub po pseudonimizacji)",

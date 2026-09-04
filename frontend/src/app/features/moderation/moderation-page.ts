@@ -14,6 +14,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzListModule } from 'ng-zorro-antd/list';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
+import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
@@ -23,11 +24,14 @@ import { Viewer } from '../../models/auth';
 import {
   FeedbackItem,
   FlaggedRecordItem,
+  DuplicateCandidateItem,
   ModerationObservationItem,
+  ProductSummary,
   RecordType,
 } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
 import { ModerationService } from '../../services/moderation-service';
+import { ProductService } from '../../services/product-service';
 import { ViewerService } from '../../services/viewer-service';
 import {
   CLIENT_KIND_KEYS,
@@ -39,6 +43,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { RelativeDatePipe } from '../../shared/relative-date.pipe';
 import { translateError } from '../../shared/error-message';
 
+const MERGE_SEARCH_DEBOUNCE_MS = 300;
 const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
@@ -98,6 +103,7 @@ function createSection<T>(fetch: Section<T>['fetch']): Section<T> {
     NzInputModule,
     NzListModule,
     NzPaginationModule,
+    NzPopconfirmModule,
     NzSelectModule,
     NzSpinModule,
     NzTabsModule,
@@ -113,6 +119,7 @@ export class ModerationPage {
   protected readonly auth = inject(AuthService);
   private readonly viewerService = inject(ViewerService);
   private readonly moderationService = inject(ModerationService);
+  private readonly productService = inject(ProductService);
   private readonly transloco = inject(TranslocoService);
 
   protected readonly viewer = signal<Viewer | null>(null);
@@ -134,7 +141,19 @@ export class ModerationPage {
   );
   protected readonly flaggedActionLoading = signal<string | null>(null);
   protected readonly mergeTargetIds = signal<Record<string, string>>({});
+  /** Kandidáti na cíl sloučení pro jeden zdrojový produkt — klíčem je jeho recordId. */
+  protected readonly mergeCandidates = signal<Record<string, ProductSummary[]>>({});
+  protected readonly mergeSearching = signal<string | null>(null);
+  private mergeSearchTimer?: ReturnType<typeof setTimeout>;
   protected readonly mergeSuccess = signal<string | null>(null);
+
+  /** Fronta podezřelých duplicit bezkódového zboží — nestojí na nahlášení, viz ModerationService. */
+  protected readonly duplicates = createSection<DuplicateCandidateItem>((first, offset) =>
+    this.moderationService.duplicateCandidates(first, offset),
+  );
+  protected readonly duplicateActionLoading = signal<string | null>(null);
+  protected readonly renameTargets = signal<Record<string, string>>({});
+  protected readonly renameLoading = signal<string | null>(null);
 
   protected readonly observationProductId = signal('');
   protected readonly observationStoreId = signal('');
@@ -180,6 +199,7 @@ export class ModerationPage {
           this.viewerLoading.set(false);
           if (viewer?.moderator) {
             this.load(this.flagged);
+            this.load(this.duplicates);
             this.load(this.observations);
             this.load(this.feedback);
             this.load(this.quarantinedFeedback);
@@ -234,10 +254,42 @@ export class ModerationPage {
     this.mergeTargetIds.update((current) => ({ ...current, [sourceId]: targetId }));
   }
 
+  protected mergeCandidatesFor(sourceId: string): ProductSummary[] {
+    return this.mergeCandidates()[sourceId] ?? [];
+  }
+
+  /**
+   * Kandidáti na cíl sloučení — `productSuggestions` v rozsahu zdrojové položky, ať moderátor
+   * neopisuje číselné ID z jiné obrazovky. Prázdný dotaz vrátí celou lokální nabídku
+   * provozovny, takže se seznam nabídne hned po otevření. U položky s rozsahem CHAIN žádné
+   * `storeId` nemáme (scopeStore je NULL), takže se hledá napříč rozsahy a nesmyslnou dvojici
+   * odmítne až server (MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH).
+   */
+  protected onMergeSearch(item: FlaggedRecordItem, query: string): void {
+    const scopeStoreId = item.product?.scopeStore?.id ?? null;
+    clearTimeout(this.mergeSearchTimer);
+    this.mergeSearchTimer = setTimeout(() => {
+      this.mergeSearching.set(item.recordId);
+      this.productService.suggestions(query.trim(), scopeStoreId, 10).subscribe({
+        next: (result) => {
+          this.mergeCandidates.update((current) => ({
+            ...current,
+            [item.recordId]: result.filter((candidate) => candidate.id !== item.recordId),
+          }));
+          this.mergeSearching.set(null);
+        },
+        error: () => this.mergeSearching.set(null),
+      });
+    }, MERGE_SEARCH_DEBOUNCE_MS);
+  }
+
+  protected onMergeOpenChange(item: FlaggedRecordItem, open: boolean): void {
+    if (open && !this.mergeCandidates()[item.recordId]) this.onMergeSearch(item, '');
+  }
+
   protected mergeProduct(item: FlaggedRecordItem): void {
     const targetId = this.mergeTargetId(item.recordId).trim();
-    if (!targetId || !window.confirm(this.transloco.translate('moderation.flagged.mergeConfirm')))
-      return;
+    if (!targetId) return;
     const key = item.recordType + item.recordId;
     this.flaggedActionLoading.set(key);
     this.mergeSuccess.set(null);
@@ -252,6 +304,59 @@ export class ModerationPage {
       error: (err: unknown) => {
         this.flaggedActionLoading.set(null);
         this.flagged.error.set(translateError(err, this.transloco));
+      },
+    });
+  }
+
+  protected renameTarget(productId: string): string {
+    return this.renameTargets()[productId] ?? '';
+  }
+
+  protected setRenameTarget(productId: string, name: string): void {
+    this.renameTargets.update((current) => ({ ...current, [productId]: name }));
+  }
+
+  /**
+   * Oprava kanonického názvu bezkódové položky. `updateProduct` na to nestačí — ta ukládá
+   * název jen jako osobní patch (core.product_user_edit), takže by překlep zmizel jen tomu,
+   * kdo ho opravil, a ostatní by vedle něj dál zakládali duplicity.
+   */
+  protected renameProduct(product: ProductSummary): void {
+    const name = this.renameTarget(product.id).trim();
+    if (!name) return;
+    this.renameLoading.set(product.id);
+    this.moderationService.renameGenericProduct(product.id, name).subscribe({
+      next: (renamed) => {
+        this.renameLoading.set(null);
+        this.setRenameTarget(product.id, '');
+        this.mergeSuccess.set(
+          this.transloco.translate('moderation.duplicates.renameSuccess', { name: renamed.name }),
+        );
+        this.load(this.duplicates);
+        this.load(this.flagged);
+      },
+      error: (err: unknown) => {
+        this.renameLoading.set(null);
+        this.duplicates.error.set(translateError(err, this.transloco));
+      },
+    });
+  }
+
+  /** Moderátor volí směr sám — appka nemá jak vědět, který z dvojice je "ten správný". */
+  protected mergeDuplicate(sourceId: string, targetId: string): void {
+    this.duplicateActionLoading.set(sourceId + targetId);
+    this.mergeSuccess.set(null);
+    this.moderationService.mergeProducts(sourceId, targetId).subscribe({
+      next: (target) => {
+        this.duplicateActionLoading.set(null);
+        this.mergeSuccess.set(
+          this.transloco.translate('moderation.flagged.mergeSuccess', { name: target.name }),
+        );
+        this.load(this.duplicates);
+      },
+      error: (err: unknown) => {
+        this.duplicateActionLoading.set(null);
+        this.duplicates.error.set(translateError(err, this.transloco));
       },
     });
   }

@@ -61,6 +61,47 @@ export class ModerationService {
       .pipe(map((data) => data.resolveFlags));
   }
 
+  /**
+   * Fronta podezřelých duplicit bezkódového zboží — na rozdíl od `flaggedRecords` nestojí na
+   * nahlášení, protože duplicitu nikdo nenahlásí (nikoho nepoškozuje, jen tiše rozděluje ceny
+   * jedné věci do dvou košů).
+   */
+  duplicateCandidates(first = 20, offset = 0) {
+    const document = graphql(`
+      query DuplicateCandidates($first: Int, $offset: Int) {
+        duplicateCandidates(first: $first, offset: $offset) {
+          totalCount
+          items {
+            score
+            left {
+              ...ProductSummaryFields
+            }
+            right {
+              ...ProductSummaryFields
+            }
+          }
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { first, offset })
+      .pipe(map((data) => data.duplicateCandidates));
+  }
+
+  /** Oprava kanonického názvu bezkódové položky pro všechny (ne osobní patch jako updateProduct). */
+  renameGenericProduct(productId: string, name: string) {
+    const document = graphql(`
+      mutation RenameGenericProduct($productId: ID!, $name: String!) {
+        renameGenericProduct(productId: $productId, name: $name) {
+          ...ProductSummaryFields
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { productId, name })
+      .pipe(map((data) => data.renameGenericProduct));
+  }
+
   mergeProducts(sourceId: string, targetId: string) {
     const document = graphql(`
       mutation MergeProducts($sourceId: ID!, $targetId: ID!) {
