@@ -103,6 +103,13 @@ tedy reputaci nijak nemění.
 Pro uživatele to znamená: „moje příspěvky" ukazují jen posledních 180 dní. To je vlastnost,
 ne omezení — starší nákupy už o něm nikdo nedohledá.
 
+Stejné okno platí pro `core.product_alias_confirmation.user_id`: potvrzení varianty názvu
+vzniká jen s cenovou observací registrovaného uživatele, denní job po 180 dnech vazbu v obou
+tabulkách nuluje a `ON DELETE SET NULL` totéž zajistí při smazání účtu. Samotný alias a jeho
+stav zůstávají jako sdílený katalogový údaj; po pseudonymizaci už z nich nejde určit, kdo jej
+potvrdil. Poslední obchod, který formulář předvyplní, server jako historii vůbec neukládá — web
+i mobil si drží jen jeho ID lokálně v zařízení a po 30 dnech je smažou.
+
 ### Výjimka: hodnocení kvality zboží vazbu nepseudonymizuje
 
 `core.product_review.user_id` (hvězdičky 1–5, volitelně text — viz `docs/datovy-model.md` a

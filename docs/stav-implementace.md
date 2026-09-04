@@ -46,10 +46,13 @@ volitelný text recenze viz „Textové recenze" níž).
 pojistka proti duplicitám, volitelné IČO s kontrolním součtem + `companyByIco` přes ARES,
 volitelné souřadnice přes `geocodeAddress`/OpenStreetMap Nominatim vždy ze serveru) a
 `productSuggestions`/`categories`/`createProduct` (`ProductCatalogService` — zboží s EANem
-i bez něj; bezkódová druhová položka vzniká jako `DRAFT`/`isGeneric`, po potvrzení
+i bez něj; bezkódová druhová položka vyžaduje obchod, sdílí se jen v jeho řetězci, případně
+jediné nezávislé provozovně, a vzniká jako `DRAFT`/`isGeneric`, po potvrzení
 `app.catalog.draft-confirmations` různými **registrovanými** přispěvateli se překlopí na
 `ACTIVE`, confidence agregátu má zastropovaná na `MEDIUM` — `docs/reputace.md`, „Zboží bez
-čárového kódu").
+čárového kódu"). `productSuggestions(name, storeId)` hledá v tomto rozsahu i v potvrzených
+aliasech s tolerancí překlepů. Alias se učí jen z úspěšného cenového zápisu registrovaného
+uživatele a zveřejní se po `app.catalog.alias-confirmations` různých potvrzeních (výchozí 2).
 
 ### Web
 
@@ -60,7 +63,9 @@ testováno Vitestem) a formulářem zápisu ceny přes sdílenou `shared/price-e
 na stránce „Zadat cenu" a v detailu produktu), samostatná stránka „Zadat cenu"
 (`features/price-entry`) hledá zboží podle názvu i kódu a umí založit nové zboží/obchod
 (`features/product-form`, `shared/store-form.ts`) včetně zpětného data (`observedAt`), stránka
-nastavení. Zápis ceny umí víc cen z jedné cenovky najednou (`shared/price-rows.ts` — běžná +
+nastavení. U bezkódového zboží vybírá nejprve obchod, poslední použitý si lokálně pamatuje 30
+dní a původní hledaný text předá cenovému zápisu jako kandidátní alias. Zápis ceny umí víc cen
+z jedné cenovky najednou (`shared/price-rows.ts` — běžná +
 klubová + množstevní/MULTIBUY se zadají jedním „+" formulářem a odešlou jedním voláním
 `submitObservations`, kolize jediného druhu ceny shodí celou dávku). PROMO navíc umí nepovinnou
 platnost „od–do" (`promo_valid_from`/`promo_valid_to`, `docs/datovy-model.md`) — `od` nesmí být
@@ -78,6 +83,8 @@ testováno JUnitem), zápis ceny ze skenu i z detailu přes sdílený `ui/common
 `PriceEntryViewModel.kt` se stejným seznamem řádků „(druh ceny, částka)" jako web
 (`ui/price/PriceRowValidation.kt`, testováno JUnitem), založení obchodu
 (`ui/store/StoreFormScreen.kt`) i zboží (`ui/product/ProductFormScreen.kt`), mapa/OFF odkazy.
+Ruční bezkódový tok stejně jako web začíná obchodem, nabízí jen produkty použitelné v jeho
+rozsahu, poslední obchod drží lokálně 30 dní a s cenou odešle i použitou variantu názvu.
 Sekce „Zadat cenu" na `PriceEntryScreen` je schovaná za tlačítkem, dokud uživatel jednou
 úspěšně nezapíše cenu (`ui/settings/PriceEntryVisibilityStore.kt`) — appka tak stejně dobře
 slouží lidem, co jen hledají ceny poblíž.
@@ -162,7 +169,9 @@ autentizaci i nový OTP kód (`OtpService`), refresh tokeny se revokují
 (`docs/soukromi.md`). Jen web (`/moderation`, odkaz z Účtu jen pro moderátora), mobil nemá —
 je to nástroj provozovatele, ne appky. Fronta zahrnuje i nahlášené recenze
 (`RecordType.REVIEW`) — `FlaggedRecordItem.review` (nový typ `FlaggedReview`) nese `product`
-jako kontext textu, autor je autor recenze, ne autor zboží.
+jako kontext textu, autor je autor recenze, ne autor zboží. U nahlášeného bezkódového produktu
+lze zadat kanonické cílové ID a zavolat `mergeProducts`: backend ověří obchodní rozsah,
+přesune historii a související obsah, přepočítá agregáty a staré ID přesměruje na cíl.
 
 ## Textové recenze
 

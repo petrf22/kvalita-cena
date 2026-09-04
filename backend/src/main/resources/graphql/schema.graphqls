@@ -85,7 +85,8 @@ type Query {
 
   """
   Podobné zboží podle názvu (pg_trgm) — druhové položky (Product.isGeneric) i zboží s kódem.
-  Slouží k nabídnutí existující druhové položky při bezkódovém zápisu i jako povinná kontrola
+  StoreId omezí lokální položky na danou provozovnu/řetězec a zpřístupní potvrzené aliasy;
+  slouží k nabídnutí existující druhové položky při bezkódovém zápisu i jako povinná kontrola
   duplicit před založením nového zboží (docs/reputace.md, "Zboží bez čárového kódu").
   """
   productSuggestions(name: String!, storeId: ID, first: Int = 10): [Product!]!
@@ -278,8 +279,8 @@ type Mutation {
   """
   Založení zboží — s naskenovaným kódem i bez něj (bezkódová druhová položka, docs/reputace.md,
   "Zboží bez čárového kódu"). Vyžaduje přihlášení. Bez kódu vzniká jako status DRAFT a
-  isGeneric=true; klient by měl nejdřív zkusit productSuggestions(name), ať nezaloží duplikát
-  existující druhové položky.
+  isGeneric=true; klient musí předat storeId a nejdřív zkusit productSuggestions(name, storeId),
+  ať nezaloží duplikát existující položky v témže obchodním rozsahu.
   """
   createProduct(input: CreateProductInput!): Product!
   "Založí identitu produktu nad potvrzeným OFF kandidátem; odchylky uloží jako product_user_edit."
