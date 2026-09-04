@@ -9,11 +9,13 @@ import cz.kvalitacena.db.entity.CodeType;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.ProductCode;
 import cz.kvalitacena.db.entity.ProductStatus;
+import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
+import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.exception.DuplicateException;
 import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.NotFoundException;
@@ -46,6 +48,7 @@ import java.util.stream.Collectors;
 public class ProductCatalogService {
 
   private final ProductRepository productRepository;
+  private final StoreRepository storeRepository;
   private final BrandResolutionService brandResolutionService;
   private final CategoryRepository categoryRepository;
   private final ProductCodeRepository productCodeRepository;
@@ -55,6 +58,7 @@ public class ProductCatalogService {
   private final CatalogRateLimiter catalogRateLimiter;
   private final DuplicateLookupService duplicateLookupService;
   private final TrustLevelService trustLevelService;
+  private final ProductScopeService productScopeService;
 
   @Transactional
   public Product create(CreateProductInput input, UUID viewerPublicUid) {
@@ -91,6 +95,14 @@ public class ProductCatalogService {
     BigDecimal netContentBase = NetContentCalculator.computeNetContentBase(input.unitBase(),
         input.netContentValue(), input.netContentUom(), variableWeight);
     boolean generic = gtin14 == null;
+    Store scopeStore = null;
+    if (generic) {
+      if (input.storeId() == null) {
+        throw new ValidationException(ErrorCode.PRODUCT_STORE_REQUIRED);
+      }
+      scopeStore = storeRepository.findById(input.storeId())
+          .orElseThrow(() -> new NotFoundException(ErrorCode.STORE_NOT_FOUND));
+    }
     boolean trusted = trustLevelService.isTrusted(user);
 
     Product product = Product.builder()
@@ -112,10 +124,14 @@ public class ProductCatalogService {
         .createdByUserId(user.getId())
         .build();
 
+    if (scopeStore != null) {
+      productScopeService.assignLocalScope(product, scopeStore);
+    }
+
     try {
       product = productRepository.saveAndFlush(product);
     } catch (DataIntegrityViolationException e) {
-      throw duplicateGenericOf(input.name().trim(), category.getId());
+      throw duplicateGenericOf(input.name().trim(), scopeStore == null ? null : scopeStore.getId());
     }
 
     if (gtin14 != null) {
@@ -179,9 +195,9 @@ public class ProductCatalogService {
             PriceObservationRepository.ContributorCount::getCnt));
   }
 
-  private DuplicateException duplicateGenericOf(String name, Long categoryId) {
+  private DuplicateException duplicateGenericOf(String name, Long storeId) {
     // Vlastní transakce (DuplicateLookupService) — viz StoreService.duplicateOf, stejný důvod.
-    List<Product> similar = duplicateLookupService.findSimilarProducts(name);
+    List<Product> similar = duplicateLookupService.findSimilarProducts(name, storeId);
     Long existingId = similar.isEmpty() ? null : similar.get(0).getId();
     return new DuplicateException(ErrorCode.DUPLICATE_GENERIC_PRODUCT, existingId);
   }

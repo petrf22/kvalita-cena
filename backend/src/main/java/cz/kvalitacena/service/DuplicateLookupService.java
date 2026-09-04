@@ -33,7 +33,7 @@ public class DuplicateLookupService {
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
-  public List<Product> findSimilarProducts(String name) {
-    return productRepository.findSimilarByName(name, 5);
+  public List<Product> findSimilarProducts(String name, Long storeId) {
+    return productRepository.findSimilarByName(name, storeId, 5);
   }
 }

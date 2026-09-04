@@ -78,7 +78,7 @@ class PriceObservationServiceTest {
   void setUp() {
     service = new PriceObservationService(productRepository, storeRepository, appUserRepository,
         priceObservationRepository, priceAggregationService, productCatalogService, productOverlayService, storeService,
-        currencyResolver, entityManager);
+        currencyResolver, new ProductScopeService(), entityManager);
 
     product = Product.builder().id(PRODUCT_ID).status(ProductStatus.ACTIVE)
         .netContentBase(BigDecimal.ONE).build();
@@ -315,6 +315,17 @@ class PriceObservationServiceTest {
 
     assertThat(error.getCode()).isEqualTo(ErrorCode.OBSERVATION_PRICES_REQUIRED);
     verifyNoInteractions(productRepository, storeRepository, priceObservationRepository);
+  }
+
+  @Test
+  void storeScopedProductCannotBeReportedAtAnotherStore() {
+    product.setCatalogScope(ProductScope.STORE);
+    product.setScopeStore(Store.builder().id(99L).build());
+
+    AppException error = submitAndCaptureError(input(List.of(price(PriceKind.REGULAR, "29.90"))));
+
+    assertThat(error.getCode()).isEqualTo(ErrorCode.PRODUCT_NOT_AVAILABLE_AT_STORE);
+    verifyNoInteractions(priceObservationRepository);
   }
 
   @Test

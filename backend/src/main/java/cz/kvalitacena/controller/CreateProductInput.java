@@ -14,5 +14,6 @@ public record CreateProductInput(
     NetContentUom netContentUom,
     Integer piecesInPack,
     Boolean isVariableWeight,
+    Long storeId,
     String code) {
 }

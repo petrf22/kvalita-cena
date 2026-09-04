@@ -42,3 +42,4 @@ databaseChangeLog:
   - include: { file: 2026-09-01/02-rename-product-review.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-09-01/03-product-review-text.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-09-01/04-record-flag-allow-review.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-09-04/01-local-product-scope.yaml, relativeToChangelogFile: true }
