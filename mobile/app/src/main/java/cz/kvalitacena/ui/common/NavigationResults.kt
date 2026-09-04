@@ -15,6 +15,8 @@ import cz.kvalitacena.network.Store
 object NavigationResults {
   var newStore: Store? = null
   var newProduct: Product? = null
+  /** Napsaný název, kterým uživatel našel existující lokální položku; odešle se až s cenou. */
+  var productAlias: String? = null
 
   /** Stejný vzor, ale pro editaci existující provozovny (StoreFormScreen storeId != null) — StoreDetailScreen ho vyzvedne. */
   var updatedStore: Store? = null

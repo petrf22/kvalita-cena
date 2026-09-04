@@ -107,6 +107,7 @@ fun PriceEntryScreen(
           target,
           AppContainer.countryStore,
           AppContainer.priceEntryVisibilityStore,
+          AppContainer.lastStoreStore,
         )
       }
     },
@@ -134,8 +135,9 @@ fun PriceEntryScreen(
       NavigationResults.newStore = null
     }
     NavigationResults.newProduct?.let {
-      viewModel.onNewProductCreated(it)
+      viewModel.onNewProductCreated(it, NavigationResults.productAlias)
       NavigationResults.newProduct = null
+      NavigationResults.productAlias = null
     }
   }
 

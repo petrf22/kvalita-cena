@@ -15,15 +15,20 @@ import cz.kvalitacena.network.ExternalProductCandidate
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.ProductSummary
+import cz.kvalitacena.network.Store
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.categoryBreadcrumb
 import cz.kvalitacena.ui.common.normalizeCode
+import cz.kvalitacena.ui.common.storeLabel
 import cz.kvalitacena.ui.common.toUiText
+import cz.kvalitacena.ui.settings.CountryStore
+import cz.kvalitacena.ui.settings.LastStoreStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val SUGGESTIONS_DEBOUNCE_MS = 300L
+private const val STORE_SEARCH_DEBOUNCE_MS = 300L
 
 /**
  * Založení zboží — s naskenovaným EANem i bez něj. Bezkódové zboží (žádný kód na obalu, jen
@@ -42,6 +47,8 @@ private const val SUGGESTIONS_DEBOUNCE_MS = 300L
 class ProductFormViewModel(
   private val graphQlClient: GraphQlClient,
   barcode: String?,
+  private val countryStore: CountryStore,
+  private val lastStoreStore: LastStoreStore,
   private val editingProductId: String? = null,
 ) : ViewModel() {
 
@@ -56,6 +63,16 @@ class ProductFormViewModel(
   var suggestionsLoading by mutableStateOf(false)
     private set
   private var suggestionsJob: Job? = null
+
+  var storeQuery by mutableStateOf("")
+    private set
+  var storeSuggestions by mutableStateOf<List<Store>>(emptyList())
+    private set
+  var storeSearching by mutableStateOf(false)
+    private set
+  var selectedStore by mutableStateOf<Store?>(null)
+    private set
+  private var storeSearchJob: Job? = null
 
   var categories by mutableStateOf<List<Category>>(emptyList())
     private set
@@ -103,6 +120,8 @@ class ProductFormViewModel(
     private set
   var usingExisting by mutableStateOf(false)
     private set
+  var matchedAlias by mutableStateOf<String?>(null)
+    private set
 
   /** Nabídnutý OFF kandidát pro banner nad formulářem — null, dokud appka nic nenašla/nehledala. */
   var offCandidate by mutableStateOf<ExternalProductCandidate?>(null)
@@ -116,6 +135,7 @@ class ProductFormViewModel(
   private var editDefaults: ProductFormDefaults? = null
 
   init {
+    if (!isEditing) loadRememberedStore()
     viewModelScope.launch {
       try {
         categories = graphQlClient.categories()
@@ -222,7 +242,7 @@ class ProductFormViewModel(
       delay(SUGGESTIONS_DEBOUNCE_MS)
       suggestionsLoading = true
       try {
-        suggestions = graphQlClient.productSuggestions(value)
+        suggestions = graphQlClient.productSuggestions(value, selectedStore?.id)
       } catch (e: Exception) {
         // Chyba v nabídce nesmí blokovat založení nového zboží.
       } finally {
@@ -236,6 +256,7 @@ class ProductFormViewModel(
     usingExisting = true
     saving = true
     saveError = null
+    matchedAlias = name.trim().ifBlank { null }
     viewModelScope.launch {
       try {
         created = graphQlClient.productById(summary.id)
@@ -247,6 +268,54 @@ class ProductFormViewModel(
       }
     }
   }
+
+  fun onStoreQueryChange(query: String) {
+    storeQuery = query
+    storeSearchJob?.cancel()
+    if (query.isBlank()) {
+      storeSuggestions = emptyList()
+      selectedStore = null
+      return
+    }
+    storeSearchJob = viewModelScope.launch {
+      delay(STORE_SEARCH_DEBOUNCE_MS)
+      storeSearching = true
+      try {
+        storeSuggestions = graphQlClient.searchStores(query = query).items
+      } catch (e: Exception) {
+        // Chyba našeptávače nesmí blokovat formulář; uživatel může pokus zopakovat.
+      } finally {
+        storeSearching = false
+      }
+    }
+  }
+
+  fun onStoreSelected(store: Store) {
+    selectedStore = store
+    storeQuery = storeLabel(store, countryStore.country)
+    lastStoreStore.remember(store.id)
+    if (name.isNotBlank()) onNameChange(name)
+  }
+
+  fun onNewStoreCreated(store: Store) {
+    onStoreSelected(store)
+    storeSuggestions = emptyList()
+  }
+
+  private fun loadRememberedStore() {
+    val id = lastStoreStore.rememberedId() ?: return
+    viewModelScope.launch {
+      try {
+        graphQlClient.storeById(id)?.let(::onStoreSelected) ?: lastStoreStore.clear()
+      } catch (e: Exception) {
+        // Poslední obchod je jen pohodlný prefill, jeho výpadek formulář neblokuje.
+      }
+    }
+  }
+
+  val canSubmit: Boolean
+    get() = name.isNotBlank() && selectedCategoryId != null && !saving &&
+      (isEditing || code.isNotBlank() || selectedStore != null)
 
   fun submit(context: Context) {
     val categoryId = selectedCategoryId ?: return
@@ -281,6 +350,7 @@ class ProductFormViewModel(
               netContentUom = impliedUom(),
               piecesInPack = piecesInPack.toIntOrNull(),
               isVariableWeight = isVariableWeight,
+              storeId = selectedStore?.id,
               code = code.trim().ifBlank { null },
             ),
           )

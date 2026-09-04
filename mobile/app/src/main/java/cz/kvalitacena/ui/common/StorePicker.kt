@@ -34,8 +34,8 @@ fun StorePicker(
   searching: Boolean,
   selectedStoreId: String?,
   onSelect: (Store) -> Unit,
-  onFindNearby: () -> Unit,
-  locating: Boolean,
+  onFindNearby: (() -> Unit)? = null,
+  locating: Boolean = false,
   onAddNew: () -> Unit,
   isLoggedIn: Boolean,
   homeCountry: String?,
@@ -69,9 +69,11 @@ fun StorePicker(
         },
         expandSignal = expandSignal,
       )
-      Button(onClick = onFindNearby) {
-        if (locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-        else Text(stringResource(R.string.store_picker_find_nearby))
+      if (onFindNearby != null) {
+        Button(onClick = onFindNearby) {
+          if (locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+          else Text(stringResource(R.string.store_picker_find_nearby))
+        }
       }
     }
     if (selectedStoreId == null && query.isBlank() && suggestions.isEmpty()) {
