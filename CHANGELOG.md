@@ -7,6 +7,16 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [0.7.0] – 2026-09-04
+
+### Přidáno
+- Varianty názvů bezkódového zboží se učí z úspěšných cenových zápisů a po potvrzení dvěma různými registrovanými uživateli pomáhají s našeptáváním i překlepy (server, web, mobil)
+- Moderátor může sloučit nahlášené duplicitní bezkódové produkty včetně jejich cen, recenzí, fotek a aliasů; původní odkaz se přesměruje na kanonický produkt (server, web)
+
+### Změněno
+- Bezkódové zboží se už nespojuje globálně jen podle volného názvu: patří konkrétnímu řetězci, nebo nezávislé provozovně, a formulář proto vybírá obchod před zbožím (server, web, mobil)
+- Poslední obchod použitý pro zadání ceny se na zařízení pamatuje 30 dní, aby jej nebylo nutné vybírat při každé další položce (web, mobil)
+
 ## [0.6.3] – 2026-09-03
 
 ### Přidáno

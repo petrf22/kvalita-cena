@@ -20,6 +20,16 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.7.0", date: "2026-09-04", sections: [
+      { title: "Přidáno", items: [
+        { text: "Varianty názvů bezkódového zboží se učí z úspěšných cenových zápisů a po potvrzení dvěma různými registrovanými uživateli pomáhají s našeptáváním i překlepy", parts: ["server", "web", "mobil"] },
+        { text: "Moderátor může sloučit nahlášené duplicitní bezkódové produkty včetně jejich cen, recenzí, fotek a aliasů; původní odkaz se přesměruje na kanonický produkt", parts: ["server", "web"] },
+      ] },
+      { title: "Změněno", items: [
+        { text: "Bezkódové zboží se už nespojuje globálně jen podle volného názvu: patří konkrétnímu řetězci, nebo nezávislé provozovně, a formulář proto vybírá obchod před zbožím", parts: ["server", "web", "mobil"] },
+        { text: "Poslední obchod použitý pro zadání ceny se na zařízení pamatuje 30 dní, aby jej nebylo nutné vybírat při každé další položce", parts: ["web", "mobil"] },
+      ] },
+  ] },
   { version: "0.6.3", date: "2026-09-03", sections: [
       { title: "Přidáno", items: [
         { text: "Tlačítko zpět v hlavičce mobilní appky na vnořených obrazovkách", parts: ["mobil"] },
