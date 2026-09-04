@@ -351,6 +351,8 @@
     <string name="product_form_off_banner_title">Aus Open Food Facts geladen — prüfe und passe bei Bedarf an. Tippen zeigt die Quelle.</string>
     <string name="product_form_name_label">Name der Ware</string>
     <string name="product_form_generic_tag">generische Position</string>
+    <string name="product_form_unconfirmed_tag">noch nicht bestätigt</string>
+    <string name="product_form_store_offer_title">Schon in diesem Geschäft</string>
     <string name="product_form_suggestions_hint">Ist es nicht schon eine dieser Positionen? Tippe darauf, um sie direkt zu verwenden.</string>
     <string name="product_form_category_label">Kategorie</string>
     <string name="product_form_category_placeholder">Kategorie auswählen</string>

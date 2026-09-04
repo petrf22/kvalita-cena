@@ -6,6 +6,9 @@
   "namePlaceholder": "Co hledáš?",
   "codePlaceholder": "Čárový kód",
   "search": "Hledat",
+  "storeOfferTitle": "Co už v obchodě máme",
+  "storeOfferEmpty": "V tomhle obchodě zatím žádné zboží bez čárového kódu nemáme.",
+  "unconfirmedTag": "(zatím nepotvrzeno)",
   "codeNotFound": "Tenhle kód zatím v katalogu neznáme.",
   "offUnavailable": "Katalog Open Food Facts je teď nedostupný — údaje o zboží vyplň ručně.",
   "addNewHint": "Zboží nenašel(a)?",
@@ -14,6 +17,7 @@
   "newProductTitle": "Nové zboží",
   "genericTag": "(druhová položka)",
   "changeProduct": "Změnit zboží",
+  "enterAnother": "Zapsat další zboží v tomhle obchodě",
   "searchFailed": "Hledání se nepovedlo, zkus to prosím znovu.",
   "externalImageNote": "Některé miniatury pocházejí z Open Food Facts (najeď myší pro zdroj)."
 }

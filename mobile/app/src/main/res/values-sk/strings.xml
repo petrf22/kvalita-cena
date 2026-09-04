@@ -349,6 +349,8 @@
     <string name="product_form_off_banner_title">Načítané z Open Food Facts — skontroluj a uprav podľa potreby. Klepnutím zobrazíš zdroj.</string>
     <string name="product_form_name_label">Názov tovaru</string>
     <string name="product_form_generic_tag">druhová položka</string>
+    <string name="product_form_unconfirmed_tag">zatiaľ nepotvrdené</string>
+    <string name="product_form_store_offer_title">Čo už v obchode máme</string>
     <string name="product_form_suggestions_hint">Nie je to už niektorá z týchto položiek? Klepnutím ju rovno použiješ.</string>
     <string name="product_form_category_label">Kategória</string>
     <string name="product_form_category_placeholder">Vyber kategóriu</string>

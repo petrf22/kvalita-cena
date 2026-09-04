@@ -1,5 +1,6 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.config.CatalogProperties;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.ProductRepository;
@@ -26,6 +27,7 @@ public class DuplicateLookupService {
 
   private final StoreRepository storeRepository;
   private final ProductRepository productRepository;
+  private final CatalogProperties catalogProperties;
 
   @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   public List<Store> findSimilarStores(String name, String city) {
@@ -34,6 +36,7 @@ public class DuplicateLookupService {
 
   @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   public List<Product> findSimilarProducts(String name, Long storeId) {
-    return productRepository.findSimilarByName(name, storeId, null, 5);
+    return productRepository.findSimilarByName(name, storeId, null,
+        catalogProperties.getSuggestionSimilarity(), 5);
   }
 }

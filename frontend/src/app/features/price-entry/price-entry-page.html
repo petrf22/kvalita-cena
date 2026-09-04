@@ -16,7 +16,7 @@
       <nz-form-control>
         <nz-radio-group
           [ngModel]="searchMode()"
-          (ngModelChange)="searchMode.set($event)"
+          (ngModelChange)="onSearchModeChange($event)"
           name="searchMode"
         >
           <label nz-radio nzValue="name">{{ t('price-entry.byName') }}</label>
@@ -32,7 +32,7 @@
           [placeholder]="t('price-entry.namePlaceholder')"
           name="nameQuery"
           [ngModel]="nameQuery()"
-          (ngModelChange)="nameQuery.set($event)"
+          (ngModelChange)="onNameChange($event)"
           [disabled]="!selectedStore()"
           (keyup.enter)="searchByName()"
         />
@@ -78,6 +78,9 @@
     }
 
     @if (results().length > 0) {
+      @if (browsingStoreOffer()) {
+        <h2 class="section-title">{{ t('price-entry.storeOfferTitle') }}</h2>
+      }
       <ul class="result-list">
         @for (item of results(); track item.id) {
           <li>
@@ -99,6 +102,9 @@
                   — {{ item.brand!.name }}
                 }
                 · {{ item.category.name }}
+                @if (item.status === 'DRAFT') {
+                  <span class="draft-tag">{{ t('price-entry.unconfirmedTag') }}</span>
+                }
               </span>
             </button>
           </li>
@@ -107,6 +113,10 @@
       @if (showExternalImageNote()) {
         <p class="external-image-note">{{ t('price-entry.externalImageNote') }}</p>
       }
+    }
+
+    @if (browsingStoreOffer() && results().length === 0 && !searching()) {
+      <p class="store-offer-empty">{{ t('price-entry.storeOfferEmpty') }}</p>
     }
 
     <p class="add-new-hint">
@@ -170,5 +180,17 @@
       [productAlias]="productAlias()"
       (submitted)="onPricesSubmitted(product.id)"
     />
+
+    @if (justSubmitted()) {
+      <button
+        nz-button
+        nzType="primary"
+        type="button"
+        class="enter-another"
+        (click)="enterAnother()"
+      >
+        {{ t('price-entry.enterAnother') }}
+      </button>
+    }
   }
 </ng-container>

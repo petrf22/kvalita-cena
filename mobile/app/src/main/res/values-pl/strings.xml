@@ -349,6 +349,8 @@
     <string name="product_form_off_banner_title">Wczytano z Open Food Facts — sprawdź i popraw, jeśli trzeba. Dotknij, aby zobaczyć źródło.</string>
     <string name="product_form_name_label">Nazwa produktu</string>
     <string name="product_form_generic_tag">pozycja rodzajowa</string>
+    <string name="product_form_unconfirmed_tag">jeszcze niepotwierdzone</string>
+    <string name="product_form_store_offer_title">Co już mamy w tym sklepie</string>
     <string name="product_form_suggestions_hint">Czy nie chodzi o jedną z tych pozycji? Dotknij, aby jej użyć.</string>
     <string name="product_form_category_label">Kategoria</string>
     <string name="product_form_category_placeholder">Wybierz kategorię</string>

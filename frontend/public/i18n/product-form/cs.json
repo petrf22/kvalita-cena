@@ -2,6 +2,7 @@
   "nameLabel": "Název zboží",
   "suggestionsWarning": "Není to už některá z těchhle položek?",
   "genericTag": "druhová položka",
+  "unconfirmedTag": "zatím nepotvrzeno",
   "categoryLabel": "Kategorie",
   "categoryPlaceholder": "Vyber kategorii",
   "brandLabel": "Značka (volitelné)",

@@ -176,12 +176,13 @@ export class ProductService {
   }
 
   /**
-   * Podobné zboží podle názvu — nabídne existující druhové položky před založením nového
-   * (docs/reputace.md, "Zboží bez čárového kódu") i jako "našli jsme podobné" krok obecně.
+   * Nabídka zboží pro zápis ceny — s názvem podobné položky (nabídne existující druhovou
+   * položku před založením nového, docs/reputace.md, "Zboží bez čárového kódu"), s prázdným
+   * názvem a vybraným obchodem celá lokální nabídka té provozovny (procházení bez psaní).
    */
   suggestions(name: string, storeId: string | null = null, first = 10) {
     const document = graphql(`
-      query ProductSuggestions($name: String!, $storeId: ID, $first: Int) {
+      query ProductSuggestions($name: String, $storeId: ID, $first: Int) {
         productSuggestions(name: $name, storeId: $storeId, first: $first) {
           ...ProductSummaryFields
         }

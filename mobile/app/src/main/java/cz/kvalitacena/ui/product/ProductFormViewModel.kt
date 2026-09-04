@@ -62,6 +62,10 @@ class ProductFormViewModel(
     private set
   var suggestionsLoading by mutableStateOf(false)
     private set
+
+  /** Seznam ukazuje celou nabídku obchodu, ne výsledky hledání — jiný nadpis nad stejným seznamem. */
+  var browsingStoreOffer by mutableStateOf(false)
+    private set
   private var suggestionsJob: Job? = null
 
   var storeQuery by mutableStateOf("")
@@ -232,17 +236,30 @@ class ProductFormViewModel(
 
   fun onNameChange(value: String) {
     name = value
+    loadSuggestions(value)
+  }
+
+  /**
+   * Nabídka existujících položek. S názvem podobné položky, BEZ názvu (a s vybraným obchodem)
+   * celá lokální nabídka té provozovny — u bezkódového zboží nevznikají duplicity ani tak
+   * překlepy jako tím, že člověk nemá co odklepnout, tak ať vidí, co v obchodě je, dřív než
+   * začne vymýšlet vlastní název (docs/reputace.md, "Zboží bez čárového kódu").
+   */
+  private fun loadSuggestions(value: String) {
     suggestionsJob?.cancel()
-    // V režimu editace nedává nabídka podobných položek smysl — zboží už existuje.
-    if (isEditing || value.isBlank()) {
+    val storeId = selectedStore?.id
+    // V režimu editace nedává nabídka podobných položek smysl — zboží už existuje. Prázdný
+    // dotaz bez obchodu by znamenal výpis celého katalogu, ne nabídku.
+    if (isEditing || (value.isBlank() && storeId == null)) {
       suggestions = emptyList()
       return
     }
+    browsingStoreOffer = value.isBlank()
     suggestionsJob = viewModelScope.launch {
       delay(SUGGESTIONS_DEBOUNCE_MS)
       suggestionsLoading = true
       try {
-        suggestions = graphQlClient.productSuggestions(value, selectedStore?.id)
+        suggestions = graphQlClient.productSuggestions(value, storeId)
       } catch (e: Exception) {
         // Chyba v nabídce nesmí blokovat založení nového zboží.
       } finally {
@@ -294,7 +311,7 @@ class ProductFormViewModel(
     selectedStore = store
     storeQuery = storeLabel(store, countryStore.country)
     lastStoreStore.remember(store.id)
-    if (name.isNotBlank()) onNameChange(name)
+    loadSuggestions(name)
   }
 
   fun onNewStoreCreated(store: Store) {

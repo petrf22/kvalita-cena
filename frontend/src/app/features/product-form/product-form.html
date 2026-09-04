@@ -58,6 +58,9 @@
                 @if (item.isGeneric) {
                   <span class="generic-tag">({{ t('product-form.genericTag') }})</span>
                 }
+                @if (item.status === 'DRAFT') {
+                  <span class="generic-tag">({{ t('product-form.unconfirmedTag') }})</span>
+                }
                 — {{ item.brand?.name ? item.brand!.name + ' · ' : '' }}{{ item.category.name }}
                 @if (item.catalogScope === 'CHAIN' && item.scopeChain) {
                   · {{ item.scopeChain.name }}

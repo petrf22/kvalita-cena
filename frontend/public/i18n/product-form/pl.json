@@ -2,6 +2,7 @@
   "nameLabel": "Nazwa produktu",
   "suggestionsWarning": "Czy nie chodzi o jedną z tych pozycji?",
   "genericTag": "pozycja rodzajowa",
+  "unconfirmedTag": "jeszcze niepotwierdzone",
   "categoryLabel": "Kategoria",
   "categoryPlaceholder": "Wybierz kategorię",
   "brandLabel": "Marka (opcjonalnie)",

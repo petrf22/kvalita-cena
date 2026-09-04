@@ -349,6 +349,8 @@
     <string name="product_form_off_banner_title">Loaded from Open Food Facts — check and adjust as needed. Tap to view the source.</string>
     <string name="product_form_name_label">Product name</string>
     <string name="product_form_generic_tag">generic item</string>
+    <string name="product_form_unconfirmed_tag">not confirmed yet</string>
+    <string name="product_form_store_offer_title">Already in this shop</string>
     <string name="product_form_suggestions_hint">Isn\'t it one of these existing items? Tap to use it directly.</string>
     <string name="product_form_category_label">Category</string>
     <string name="product_form_category_placeholder">Pick a category</string>

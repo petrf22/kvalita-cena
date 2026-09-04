@@ -84,12 +84,15 @@ type Query {
   store(id: ID!): Store
 
   """
-  Podobné zboží podle názvu (pg_trgm) — druhové položky (Product.isGeneric) i zboží s kódem.
-  StoreId omezí lokální položky na danou provozovnu/řetězec a zpřístupní potvrzené aliasy;
-  slouží k nabídnutí existující druhové položky při bezkódovém zápisu i jako povinná kontrola
-  duplicit před založením nového zboží (docs/reputace.md, "Zboží bez čárového kódu").
+  Nabídka zboží pro zápis ceny — druhové položky (Product.isGeneric) i zboží s kódem.
+  StoreId omezí lokální položky na danou provozovnu/řetězec a zpřístupní potvrzené aliasy.
+  S name podobnostní hledání (pg_trgm, max ze similarity a word_similarity, takže stačí jedno
+  slovo z názvu); BEZ name a se storeId celá lokální nabídka provozovny seřazená podle toho,
+  jak často se v ní zapisuje cena — aby uživatel viděl, co v obchodě je, dřív než začne
+  vymýšlet vlastní název (docs/reputace.md, "Zboží bez čárového kódu"). Bez name i bez storeId
+  vrací prázdno. Nepotvrzené (DRAFT) položky jsou vidět, ale řadí se až za potvrzené.
   """
-  productSuggestions(name: String!, storeId: ID, first: Int = 10): [Product!]!
+  productSuggestions(name: String, storeId: ID, first: Int = 10): [Product!]!
 
   """
   Plochý seznam kategorií pro zakládání zboží — hierarchii nese Category.path (řetězec
@@ -213,6 +216,14 @@ type Query {
   recordType všechny tři typy najednou. Jen moderátor (T4), jinak MODERATION_REQUIRES_ROLE.
   """
   flaggedRecords(recordType: RecordType, first: Int = 20, offset: Int = 0): FlaggedRecordResult!
+
+  """
+  Dvojice podezřele podobných bezkódových položek v témže obchodním rozsahu a kategorii. Jen
+  moderátor. Na rozdíl od flaggedRecords nestojí na nahlášení — duplicitu nikdo nenahlásí,
+  protože nikoho nepoškozuje, jen tiše rozděluje ceny jedné věci do dvou košů. Sloučení je vždy
+  ruční přes mergeProducts (docs/reputace.md, "Zboží bez čárového kódu").
+  """
+  duplicateCandidates(first: Int = 20, offset: Int = 0): DuplicateCandidateResult!
 
   """
   Ceny k moderátorskému přezkumu — cenu nejde nahlásit komunitně (viz setObservationRejected),
@@ -362,6 +373,14 @@ type Mutation {
 
   "Sloučí duplicitní bezkódový produkt sourceId do kanonického targetId. Jen moderátor."
   mergeProducts(sourceId: ID!, targetId: ID!): Product!
+
+  """
+  Opraví kanonický název bezkódové položky pro VŠECHNY. Jen moderátor — updateProduct ukládá
+  název jen jako osobní patch (core.product_user_edit), což u položky, jejíž identitou je
+  název, opraví chybu pouze autorovi opravy. Původní název zůstane jako ACTIVE alias, takže
+  se podle něj dál dá hledat.
+  """
+  renameGenericProduct(productId: ID!, name: String!): Product!
 
   """
   Zamítnutí/obnovení jednotlivé ceny moderátorem — nesouhlas s cenou nejde nahlásit komunitně
@@ -514,6 +533,23 @@ type FlaggedReview {
 
 type FlaggedRecordResult {
   items: [FlaggedRecordItem!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
+"""
+Dvojice podezřele podobných bezkódových položek. Který z nich je "ten správný", server
+nerozhoduje — moderátor si směr sloučení volí sám, proto left/right, ne source/target.
+"""
+type DuplicateCandidate {
+  left: Product!
+  right: Product!
+  "Podobnost názvů 0–1 (pg_trgm similarity) — jen pro seřazení fronty, ne rozhodnutí."
+  score: Float!
+}
+
+type DuplicateCandidateResult {
+  items: [DuplicateCandidate!]!
   totalCount: Int!
   hasMore: Boolean!
 }
@@ -1456,6 +1492,7 @@ enum ErrorCode {
   PRODUCT_CATEGORY_REQUIRED
   PRODUCT_UNIT_BASE_REQUIRED
   PRODUCT_STORE_REQUIRED
+  PRODUCT_TOO_MANY_UNCONFIRMED
   PRODUCT_NOT_AVAILABLE_AT_STORE
   OFF_PRODUCT_NOT_FOUND
   OFF_UNAVAILABLE
@@ -1508,6 +1545,7 @@ enum ErrorCode {
   MODERATION_OBSERVATION_NOT_FOUND
   MODERATION_USER_NOT_FOUND
   MODERATION_PRODUCT_MERGE_SAME
+  MODERATION_PRODUCT_RENAME_INVALID
   MODERATION_PRODUCT_MERGE_INVALID
   MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH
   FEEDBACK_MESSAGE_REQUIRED

@@ -6,6 +6,9 @@
   "namePlaceholder": "Czego szukasz?",
   "codePlaceholder": "Kod kreskowy",
   "search": "Szukaj",
+  "storeOfferTitle": "Co już mamy w tym sklepie",
+  "storeOfferEmpty": "Dla tego sklepu nie mamy jeszcze towarów bez kodu kreskowego.",
+  "unconfirmedTag": "(jeszcze niepotwierdzone)",
   "codeNotFound": "Nie znamy jeszcze tego kodu w katalogu.",
   "offUnavailable": "Katalog Open Food Facts jest teraz niedostępny — wpisz dane produktu ręcznie.",
   "addNewHint": "Nie znalazłeś/znalazłaś produktu?",
@@ -14,6 +17,7 @@
   "newProductTitle": "Nowy produkt",
   "genericTag": "(pozycja rodzajowa)",
   "changeProduct": "Zmień produkt",
+  "enterAnother": "Dodaj kolejny produkt w tym sklepie",
   "searchFailed": "Wyszukiwanie nie powiodło się, spróbuj ponownie.",
   "externalImageNote": "Niektóre miniatury pochodzą z Open Food Facts (najedź myszką, aby zobaczyć źródło)."
 }

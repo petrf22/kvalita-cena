@@ -1,5 +1,6 @@
 package cz.kvalitacena.controller;
 
+import cz.kvalitacena.config.CatalogProperties;
 import cz.kvalitacena.config.ExternalLinkProperties;
 import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.CodeType;
@@ -86,6 +87,7 @@ class ProductGraphQlControllerLookupByCodeTest {
 
   private final OffNetContentConverter offNetContentConverter = new OffNetContentConverter();
   private final ExternalLinkProperties externalLinkProperties = new ExternalLinkProperties();
+  private final CatalogProperties catalogProperties = new CatalogProperties();
 
   {
     externalLinkProperties.getOpenFoodFacts().setProductUrlTemplate("https://world.openfoodfacts.org/product/{barcode}");
@@ -94,8 +96,9 @@ class ProductGraphQlControllerLookupByCodeTest {
   }
 
   private ProductGraphQlController controller() {
-    return new ProductGraphQlController(productRepository, priceCurrentRepository, productCodeRepository,
-        offProductRepository, storeRepository, categoryRepository, categoryI18nRepository, productSearchService,
+    return new ProductGraphQlController(catalogProperties, productRepository, priceCurrentRepository,
+        productCodeRepository, offProductRepository, storeRepository, categoryRepository, categoryI18nRepository,
+        productSearchService,
         reviewService, productCatalogService, offProductCatalogService, openFoodFactsService,
         offNetContentConverter, productOverlayService, catalogEditService, myPriceService, mediaService,
         viewerContextResolver, externalLinkProperties, TestMessages.instance(), countryResolver, fxRateService);

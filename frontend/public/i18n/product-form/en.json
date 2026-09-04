@@ -2,6 +2,7 @@
   "nameLabel": "Product name",
   "suggestionsWarning": "Isn't it one of these existing items?",
   "genericTag": "generic item",
+  "unconfirmedTag": "not confirmed yet",
   "categoryLabel": "Category",
   "categoryPlaceholder": "Pick a category",
   "brandLabel": "Brand (optional)",

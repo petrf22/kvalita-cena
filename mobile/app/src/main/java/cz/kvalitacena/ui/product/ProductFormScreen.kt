@@ -44,6 +44,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import coil3.compose.AsyncImage
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
+import cz.kvalitacena.network.ProductSummary
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.PhotoSlot
 import cz.kvalitacena.ui.common.SearchableDropdown
@@ -186,28 +187,52 @@ fun ProductFormScreen(
     }
 
     val genericTag = stringResource(R.string.product_form_generic_tag)
+    val unconfirmedTag = stringResource(R.string.product_form_unconfirmed_tag)
     val chainScope = stringResource(R.string.product_form_chain_scope)
     val storeScope = stringResource(R.string.product_form_store_scope)
+    val summaryLabel: (ProductSummary) -> String = { summary ->
+      val kind = if (summary.isGeneric) " ($genericTag)" else ""
+      val unconfirmed = if (summary.status == "DRAFT") " ($unconfirmedTag)" else ""
+      val brand = summary.brand?.name?.let { "$it · " } ?: ""
+      val scope = when (summary.catalogScope) {
+        "CHAIN" -> summary.scopeChain?.name?.let { " · $chainScope: $it" }.orEmpty()
+        "STORE" -> summary.scopeStore?.name?.let { " · $storeScope: $it" }.orEmpty()
+        else -> ""
+      }
+      "${summary.name}$kind$unconfirmed — $brand${summary.category.name}$scope"
+    }
+
+    // Nabídka obchodu se ukáže JEŠTĚ NEŽ uživatel začne psát — u bezkódového zboží vznikají
+    // duplicity hlavně tím, že člověk nevidí, co v obchodě už je, a název si vymyslí
+    // (docs/reputace.md, "Zboží bez čárového kódu"). Dropdown níž se otevře až při psaní,
+    // proto samostatný seznam, ne jen jeho naplnění.
+    if (viewModel.browsingStoreOffer && viewModel.suggestions.isNotEmpty()) {
+      Text(
+        stringResource(R.string.product_form_store_offer_title),
+        style = MaterialTheme.typography.titleSmall,
+      )
+      viewModel.suggestions.forEach { summary ->
+        OutlinedButton(
+          onClick = { viewModel.useExisting(summary) },
+          modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        ) {
+          Text(summaryLabel(summary), style = MaterialTheme.typography.bodyMedium)
+        }
+      }
+      Gap()
+    }
+
     SearchableDropdown(
       query = viewModel.name,
       onQueryChange = { formDirty = true; viewModel.onNameChange(it) },
       suggestions = viewModel.suggestions,
       onSelect = { viewModel.useExisting(it) },
-      itemLabel = { summary ->
-        val kind = if (summary.isGeneric) " ($genericTag)" else ""
-        val brand = summary.brand?.name?.let { "$it · " } ?: ""
-        val scope = when (summary.catalogScope) {
-          "CHAIN" -> summary.scopeChain?.name?.let { " · $chainScope: $it" }.orEmpty()
-          "STORE" -> summary.scopeStore?.name?.let { " · $storeScope: $it" }.orEmpty()
-          else -> ""
-        }
-        "${summary.name}$kind — $brand${summary.category.name}$scope"
-      },
+      itemLabel = summaryLabel,
       label = stringResource(R.string.product_form_name_label),
       loading = viewModel.suggestionsLoading,
       modifier = Modifier.fillMaxWidth(),
     )
-    if (viewModel.suggestions.isNotEmpty()) {
+    if (viewModel.suggestions.isNotEmpty() && !viewModel.browsingStoreOffer) {
       Text(
         stringResource(R.string.product_form_suggestions_hint),
         style = MaterialTheme.typography.bodySmall,

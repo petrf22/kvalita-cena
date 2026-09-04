@@ -6,6 +6,9 @@
   "namePlaceholder": "What are you looking for?",
   "codePlaceholder": "Barcode",
   "search": "Search",
+  "storeOfferTitle": "Already in this shop",
+  "storeOfferEmpty": "We have no items without a barcode for this shop yet.",
+  "unconfirmedTag": "(not confirmed yet)",
   "codeNotFound": "We don't know this code in the catalog yet.",
   "offUnavailable": "The Open Food Facts catalog is unavailable right now — fill in the details manually.",
   "addNewHint": "Couldn't find the product?",
@@ -14,6 +17,7 @@
   "newProductTitle": "New product",
   "genericTag": "(generic item)",
   "changeProduct": "Change product",
+  "enterAnother": "Add another item from this shop",
   "searchFailed": "Search failed, please try again.",
   "externalImageNote": "Some thumbnails come from Open Food Facts (hover for the source)."
 }
