@@ -285,6 +285,7 @@ private fun AppScaffold() {
           barcode = barcode,
           productId = productId,
           onDone = { navController.popBackStack() },
+          onAddStore = { navController.navigate(storeFormRouteForCreate()) },
           onCreated = if (writePrice) {
             { productId ->
               // Rovnou na zápis ceny nově založeného zboží (bez EANu, ze SearchScreen) — ať

@@ -14,6 +14,7 @@ import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.storeLabel
 import cz.kvalitacena.ui.common.toUiText
 import cz.kvalitacena.ui.settings.CountryStore
+import cz.kvalitacena.ui.settings.LastStoreStore
 import cz.kvalitacena.ui.settings.PriceEntryVisibilityStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -27,6 +28,7 @@ class PriceEntryViewModel(
   private val target: PriceEntryTarget,
   private val countryStore: CountryStore,
   private val visibilityStore: PriceEntryVisibilityStore,
+  private val lastStoreStore: LastStoreStore,
 ) : ViewModel() {
 
   var loading by mutableStateOf(true)
@@ -55,6 +57,9 @@ class PriceEntryViewModel(
   var storeSearching by mutableStateOf(false)
     private set
   var selectedStore by mutableStateOf<Store?>(null)
+    private set
+  /** Varianta názvu, přes kterou uživatel vybral existující položku ve formuláři. */
+  var productAlias by mutableStateOf<String?>(null)
     private set
   private var storeSearchJob: Job? = null
 
@@ -109,6 +114,7 @@ class PriceEntryViewModel(
 
   init {
     loadProduct()
+    loadRememberedStore()
   }
 
   private fun loadProduct() {
@@ -139,6 +145,7 @@ class PriceEntryViewModel(
             notFound = product == null
           }
         }
+        discardIncompatibleStore()
       } catch (e: Exception) {
         notFound = true
       } finally {
@@ -165,9 +172,39 @@ class PriceEntryViewModel(
   }
 
   /** Návrat z formuláře nového zboží (ProductFormScreen) — obrazovka rovnou pokračuje se zápisem ceny. */
-  fun onNewProductCreated(newProduct: Product) {
+  fun onNewProductCreated(newProduct: Product, alias: String? = null) {
     product = newProduct
+    productAlias = alias?.trim()?.ifBlank { null }
     notFound = false
+    discardIncompatibleStore()
+  }
+
+  private fun loadRememberedStore() {
+    val id = lastStoreStore.rememberedId() ?: return
+    viewModelScope.launch {
+      try {
+        graphQlClient.storeById(id)?.let { store ->
+          if (product == null || productAvailableAtStore(product!!, store)) selectStore(store)
+        } ?: lastStoreStore.clear()
+      } catch (e: Exception) {
+        // Výpadek načtení posledního obchodu nesmí blokovat ruční výběr.
+      }
+    }
+  }
+
+  private fun productAvailableAtStore(product: Product, store: Store): Boolean = when (product.catalogScope) {
+    "CHAIN" -> product.scopeChain?.id == store.chain?.id
+    "STORE" -> product.scopeStore?.id == store.id
+    else -> true
+  }
+
+  private fun discardIncompatibleStore() {
+    val currentProduct = product ?: return
+    val store = selectedStore ?: return
+    if (!productAvailableAtStore(currentProduct, store)) {
+      selectedStore = null
+      storeQuery = ""
+    }
   }
 
   fun onStoreQueryChange(query: String) {
@@ -191,14 +228,18 @@ class PriceEntryViewModel(
   }
 
   fun onStoreSelected(store: Store) {
+    selectStore(store)
+    lastStoreStore.remember(store.id)
+  }
+
+  private fun selectStore(store: Store) {
     selectedStore = store
     storeQuery = storeLabel(store, countryStore.country)
   }
 
   /** Návrat z formuláře nového obchodu (StoreFormScreen) — rovnou ho vybrat. */
   fun onNewStoreCreated(store: Store) {
-    selectedStore = store
-    storeQuery = storeLabel(store, countryStore.country)
+    onStoreSelected(store)
     storeSuggestions = emptyList()
   }
 
@@ -250,6 +291,7 @@ class PriceEntryViewModel(
           SubmitObservationsInput(
             productId = currentProduct.id,
             storeId = storeId,
+            productAlias = productAlias,
             quantityBasis = if (currentProduct.isVariableWeight) quantityBasis else "PACKAGE",
             observedAt = toObservedAtIso(observedAt),
             prices = toObservationPriceInputs(priceRows),

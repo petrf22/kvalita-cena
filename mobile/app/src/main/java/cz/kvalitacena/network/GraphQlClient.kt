@@ -57,6 +57,7 @@ internal val PRODUCT_FIELDS = """
   brand { id name slug }
   category { id name slug path }
   unitBase netContentValue netContentUom netContentBase piecesInPack isVariableWeight status isGeneric
+  catalogScope scopeChain { id name chainType } scopeStore { $STORE_FIELDS }
   verified editedByMe
   prices { $PRICE_CURRENT_FIELDS }
 """
@@ -98,6 +99,7 @@ internal val PRODUCT_SUMMARY_FIELDS = """
   brand { id name slug }
   category { id name slug path }
   isGeneric
+  catalogScope scopeChain { id name chainType } scopeStore { $STORE_FIELDS }
   verified editedByMe
   photos { id url thumbnailUrl width height }
   externalImage { url thumbnailUrl attribution }
@@ -440,14 +442,15 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
   }
 
   /** Podobné zboží podle názvu — nabídne existující druhové položky před založením nového (docs/reputace.md). */
-  suspend fun productSuggestions(name: String, first: Int = 10): List<ProductSummary> {
+  suspend fun productSuggestions(name: String, storeId: String? = null, first: Int = 10): List<ProductSummary> {
     val gql = """
-      query(${'$'}name: String!, ${'$'}first: Int) {
-        productSuggestions(name: ${'$'}name, first: ${'$'}first) { $PRODUCT_SUMMARY_FIELDS }
+      query(${'$'}name: String!, ${'$'}storeId: ID, ${'$'}first: Int) {
+        productSuggestions(name: ${'$'}name, storeId: ${'$'}storeId, first: ${'$'}first) { $PRODUCT_SUMMARY_FIELDS }
       }
     """
     val variables = buildJsonObject {
       put("name", name)
+      put("storeId", storeId)
       put("first", first)
     }
     return execute(gql, variables, GraphQlResponse.serializer(ProductSuggestionsData.serializer())).productSuggestions

@@ -139,6 +139,11 @@ data class Product(
   val status: String,
   // Druhová položka bez čárového kódu — viz docs/reputace.md, "Zboží bez čárového kódu".
   val isGeneric: Boolean = false,
+  // EAN/OFF jsou GLOBAL, bezkódové zboží patří řetězci nebo jedné provozovně. LEGACY_GLOBAL
+  // označuje starší nejednoznačné položky zachované kvůli historii.
+  val catalogScope: String = "GLOBAL",
+  val scopeChain: RetailChain? = null,
+  val scopeStore: Store? = null,
   val prices: List<PriceCurrent> = emptyList(),
   // Jen v detailu (PRODUCT_DETAIL_FIELDS) — productByCode je nežádá, viz GraphQlClient.
   val gtin: String? = null,
@@ -202,6 +207,9 @@ data class ProductSummary(
   val brand: Brand? = null,
   val category: Category,
   val isGeneric: Boolean = false,
+  val catalogScope: String = "GLOBAL",
+  val scopeChain: RetailChain? = null,
+  val scopeStore: Store? = null,
   val verified: Boolean = false,
   val editedByMe: Boolean = false,
   // Miniatura v řádku — priorita zdroje: vlastní fotka > OFF > zástupná ikona (ui/common/ProductThumb.kt).
@@ -429,6 +437,8 @@ data class ObservationPriceInput(
 data class SubmitObservationsInput(
   val productId: String,
   val storeId: String,
+  // Napsaná varianta názvu se započítá jako alias až spolu s úspěšnou observací.
+  val productAlias: String? = null,
   val quantityBasis: String = "PACKAGE",
   // Kdy uživatel cenu viděl — chybí-li, backend dosadí now() (docs/datovy-model.md,
   // observed_at ≠ created_at). ISO-8601 DateTime, ne jen den — web protějšek:
@@ -521,6 +531,8 @@ data class CreateProductInput(
   val netContentUom: String? = null,
   val piecesInPack: Int? = null,
   val isVariableWeight: Boolean = false,
+  // Povinné jen pro bezkódové zboží; server z něj odvodí rozsah řetězec/provozovna.
+  val storeId: String? = null,
   val code: String? = null,
 )
 

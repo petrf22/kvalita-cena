@@ -23,6 +23,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +48,7 @@ import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.PhotoSlot
 import cz.kvalitacena.ui.common.SearchableDropdown
 import cz.kvalitacena.ui.common.SingleLineTextField
+import cz.kvalitacena.ui.common.StorePicker
 import cz.kvalitacena.ui.common.categoryChoicesFor
 import cz.kvalitacena.ui.common.openUrl
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
@@ -78,11 +80,20 @@ fun ProductFormScreen(
   barcode: String?,
   productId: String? = null,
   onDone: () -> Unit,
+  onAddStore: () -> Unit = {},
   onCreated: (productId: String) -> Unit = { onDone() },
 ) {
   val viewModel: ProductFormViewModel = viewModel(
     factory = viewModelFactory {
-      initializer { ProductFormViewModel(AppContainer.graphQlClient, barcode, productId) }
+      initializer {
+        ProductFormViewModel(
+          AppContainer.graphQlClient,
+          barcode,
+          AppContainer.countryStore,
+          AppContainer.lastStoreStore,
+          productId,
+        )
+      }
     },
   )
   var formDirty by rememberSaveable { mutableStateOf(false) }
@@ -97,12 +108,21 @@ fun ProductFormScreen(
         onDone()
       } else {
         NavigationResults.newProduct = it
+        NavigationResults.productAlias = if (viewModel.usingExisting) viewModel.matchedAlias else null
         onCreated(it.id)
       }
     }
   }
 
   val context = LocalContext.current
+  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
+
+  LaunchedEffect(Unit) {
+    NavigationResults.newStore?.let {
+      viewModel.onNewStoreCreated(it)
+      NavigationResults.newStore = null
+    }
+  }
 
   if (viewModel.loadingExisting) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
@@ -115,6 +135,26 @@ fun ProductFormScreen(
       style = MaterialTheme.typography.headlineSmall,
     )
     Gap()
+
+    if (!viewModel.isEditing && viewModel.code.isBlank()) {
+      Text(
+        stringResource(R.string.product_form_store_first_hint),
+        style = MaterialTheme.typography.bodyMedium,
+      )
+      StorePicker(
+        query = viewModel.storeQuery,
+        onQueryChange = { formDirty = true; viewModel.onStoreQueryChange(it) },
+        suggestions = viewModel.storeSuggestions,
+        searching = viewModel.storeSearching,
+        selectedStoreId = viewModel.selectedStore?.id,
+        onSelect = { formDirty = true; viewModel.onStoreSelected(it) },
+        onAddNew = onAddStore,
+        isLoggedIn = accessToken != null,
+        homeCountry = AppContainer.countryStore.country,
+        modifier = Modifier.fillMaxWidth(),
+      )
+      Gap()
+    }
 
     // ODbL vyžaduje, aby appka u převzatých dat vždy uvedla zdroj (docs/datovy-model.md) —
     // celá karta je klikací na candidate.sourceUrl, stejný vzor jako ExternalLinkRow v detailu.
@@ -146,6 +186,8 @@ fun ProductFormScreen(
     }
 
     val genericTag = stringResource(R.string.product_form_generic_tag)
+    val chainScope = stringResource(R.string.product_form_chain_scope)
+    val storeScope = stringResource(R.string.product_form_store_scope)
     SearchableDropdown(
       query = viewModel.name,
       onQueryChange = { formDirty = true; viewModel.onNameChange(it) },
@@ -154,7 +196,12 @@ fun ProductFormScreen(
       itemLabel = { summary ->
         val kind = if (summary.isGeneric) " ($genericTag)" else ""
         val brand = summary.brand?.name?.let { "$it · " } ?: ""
-        "${summary.name}$kind — $brand${summary.category.name}"
+        val scope = when (summary.catalogScope) {
+          "CHAIN" -> summary.scopeChain?.name?.let { " · $chainScope: $it" }.orEmpty()
+          "STORE" -> summary.scopeStore?.name?.let { " · $storeScope: $it" }.orEmpty()
+          else -> ""
+        }
+        "${summary.name}$kind — $brand${summary.category.name}$scope"
       },
       label = stringResource(R.string.product_form_name_label),
       loading = viewModel.suggestionsLoading,
@@ -301,7 +348,7 @@ fun ProductFormScreen(
 
     Button(
       onClick = { viewModel.submit(context) },
-      enabled = viewModel.name.isNotBlank() && viewModel.selectedCategoryId != null && !viewModel.saving,
+      enabled = viewModel.canSubmit,
       modifier = Modifier.fillMaxWidth(),
     ) {
       if (viewModel.saving) {

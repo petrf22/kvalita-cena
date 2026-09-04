@@ -341,6 +341,9 @@
     <string name="price_entry_location_unavailable">Nie udało się ustalić lokalizacji — wybierz sklep, gdy dane będą dostępne.</string>
 
     <string name="product_form_title">Nowy produkt</string>
+    <string name="product_form_store_first_hint">Dla produktu bez kodu kreskowego najpierw wybierz sklep. Zaproponujemy nazwy używane właśnie tam.</string>
+    <string name="product_form_chain_scope">sieć</string>
+    <string name="product_form_store_scope">sklep</string>
     <string name="product_form_edit_title">Edytuj produkt</string>
     <string name="product_form_off_banner_title">Wczytano z Open Food Facts — sprawdź i popraw, jeśli trzeba. Dotknij, aby zobaczyć źródło.</string>
     <string name="product_form_name_label">Nazwa produktu</string>

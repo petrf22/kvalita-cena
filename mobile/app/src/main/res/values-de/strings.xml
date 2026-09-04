@@ -343,6 +343,9 @@
     <string name="price_entry_location_unavailable">Der Standort konnte nicht ermittelt werden — wähle ein Geschäft, sobald Daten verfügbar sind.</string>
 
     <string name="product_form_title">Neue Ware</string>
+    <string name="product_form_store_first_hint">Wähle bei Waren ohne Strichcode zuerst das Geschäft. Dann werden dort verwendete Namen vorgeschlagen.</string>
+    <string name="product_form_chain_scope">Kette</string>
+    <string name="product_form_store_scope">Filiale</string>
     <string name="product_form_edit_title">Ware bearbeiten</string>
     <string name="product_form_off_banner_title">Aus Open Food Facts geladen — prüfe und passe bei Bedarf an. Tippen zeigt die Quelle.</string>
     <string name="product_form_name_label">Name der Ware</string>
