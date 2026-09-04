@@ -1,5 +1,6 @@
 {
   "title": "Dodaj cenę",
+  "storeFirstLabel": "Najpierw wybierz sklep",
   "byName": "Według nazwy",
   "byCode": "Według kodu kreskowego",
   "namePlaceholder": "Czego szukasz?",

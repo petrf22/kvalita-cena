@@ -1,5 +1,6 @@
 {
   "title": "Zadat cenu",
+  "storeFirstLabel": "Nejdřív vyber obchod",
   "byName": "Podle názvu",
   "byCode": "Podle čárového kódu",
   "namePlaceholder": "Co hledáš?",

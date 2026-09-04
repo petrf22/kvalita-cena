@@ -12,14 +12,15 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
-import { Product, ProductSearchItem } from '../../models/catalog';
+import { Product, ProductSearchItem, Store } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
 import { ProductService } from '../../services/product-service';
 import { PRICE_KIND_KEYS } from '../../shared/enum-labels';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { PriceEntryForm } from '../../shared/price-entry-form';
 import { ProductThumb, usesExternalImageFallback } from '../../shared/product-thumb';
-import { ProductForm } from '../product-form/product-form';
+import { StorePicker } from '../../shared/store-picker';
+import { ExistingProductMatch, ProductForm } from '../product-form/product-form';
 
 /**
  * Samostatná stránka "Zadat cenu" — na rozdíl od formuláře v detailu produktu (který
@@ -41,6 +42,7 @@ import { ProductForm } from '../product-form/product-form';
     PriceEntryForm,
     ProductForm,
     ProductThumb,
+    StorePicker,
     TranslocoDirective,
     TranslocoPipe,
     MoneyPipe,
@@ -57,6 +59,7 @@ export class PriceEntryPage {
   protected readonly priceKindKeys = PRICE_KIND_KEYS;
 
   protected readonly searchMode = signal<'name' | 'code'>('name');
+  protected readonly selectedStore = signal<Store | null>(null);
   protected readonly nameQuery = signal('');
   protected readonly codeQuery = signal('');
   protected readonly searching = signal(false);
@@ -73,15 +76,17 @@ export class PriceEntryPage {
 
   protected readonly showProductForm = signal(false);
   protected readonly selectedProduct = signal<Product | null>(null);
+  protected readonly productAlias = signal<string | null>(null);
   protected readonly loadingProduct = signal(false);
 
   searchByName(): void {
     const query = this.nameQuery().trim();
-    if (!query) return;
+    const store = this.selectedStore();
+    if (!query || !store) return;
     this.searching.set(true);
     this.searchError.set(null);
     this.codeNotFound.set(false);
-    this.productService.searchProducts({ query, first: 10 }).subscribe({
+    this.productService.searchProducts({ query, storeId: store.id, first: 10 }).subscribe({
       next: (result) => {
         this.results.set(result.items);
         this.searching.set(false);
@@ -126,7 +131,10 @@ export class PriceEntryPage {
     this.productService.getById(item.product.id).subscribe({
       next: (product) => {
         this.loadingProduct.set(false);
-        if (product) this.selectedProduct.set(product);
+        if (product) {
+          this.selectedProduct.set(product);
+          this.productAlias.set(this.nameQuery().trim() || null);
+        }
       },
       error: () => this.loadingProduct.set(false),
     });
@@ -141,6 +149,24 @@ export class PriceEntryPage {
     this.codeNotFound.set(false);
     this.offUnavailable.set(false);
     this.selectedProduct.set(product);
+    this.productAlias.set(null);
+  }
+
+  onExistingProductMatched(match: ExistingProductMatch): void {
+    this.showProductForm.set(false);
+    this.selectedProduct.set(match.product);
+    this.productAlias.set(match.alias);
+  }
+
+  onStoreChange(store: Store | null): void {
+    const previous = this.selectedStore();
+    this.selectedStore.set(store);
+    if (previous?.id !== store?.id) {
+      this.selectedProduct.set(null);
+      this.productAlias.set(null);
+      this.results.set([]);
+      this.showProductForm.set(false);
+    }
   }
 
   changeProduct(): void {
@@ -148,6 +174,7 @@ export class PriceEntryPage {
     this.results.set([]);
     this.codeNotFound.set(false);
     this.offUnavailable.set(false);
+    this.productAlias.set(null);
   }
 
   /** Obnoví agregované ceny na vybraném produktu po úspěšném zápisu (`app-price-entry-form`). */

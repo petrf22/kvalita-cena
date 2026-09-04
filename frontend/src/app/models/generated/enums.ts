@@ -109,7 +109,9 @@ export const ErrorCode = {
   ProductEditRequiresLogin: 'PRODUCT_EDIT_REQUIRES_LOGIN',
   ProductNameEmpty: 'PRODUCT_NAME_EMPTY',
   ProductNameRequired: 'PRODUCT_NAME_REQUIRED',
+  ProductNotAvailableAtStore: 'PRODUCT_NOT_AVAILABLE_AT_STORE',
   ProductNotFound: 'PRODUCT_NOT_FOUND',
+  ProductStoreRequired: 'PRODUCT_STORE_REQUIRED',
   ProductUnitBaseRequired: 'PRODUCT_UNIT_BASE_REQUIRED',
   ProfileDisplayNameTooLong: 'PROFILE_DISPLAY_NAME_TOO_LONG',
   ProfileEmailInvalid: 'PROFILE_EMAIL_INVALID',
@@ -221,6 +223,14 @@ export const ProductLookupStatus = {
 } as const;
 
 export type ProductLookupStatus = typeof ProductLookupStatus[keyof typeof ProductLookupStatus];
+export const ProductScope = {
+  Chain: 'CHAIN',
+  Global: 'GLOBAL',
+  LegacyGlobal: 'LEGACY_GLOBAL',
+  Store: 'STORE'
+} as const;
+
+export type ProductScope = typeof ProductScope[keyof typeof ProductScope];
 export const ProductSort = {
   LastReported: 'LAST_REPORTED',
   Name: 'NAME',

@@ -26,7 +26,13 @@ import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTreeSelectModule } from 'ng-zorro-antd/tree-select';
-import { ExternalProductCandidate, Product, ProductSummary, UnitBase } from '../../models/catalog';
+import {
+  ExternalProductCandidate,
+  Product,
+  ProductSummary,
+  Store,
+  UnitBase,
+} from '../../models/catalog';
 import type { CategoriesQuery } from '../../models/generated/graphql';
 import { FormatService } from '../../services/format-service';
 import { INTL_TAGS, LanguageService } from '../../services/language-service';
@@ -53,6 +59,11 @@ import {
 type CategoryOption = CategoriesQuery['categories'][number];
 
 const SUGGESTIONS_DEBOUNCE_MS = 300;
+
+export interface ExistingProductMatch {
+  product: Product;
+  alias: string;
+}
 
 /** Pořadí ve formuláři — popisky drží UNIT_BASE_KEYS, jediný zdroj pravdy (docs/lokalizace.md). */
 const UNIT_BASE_ORDER: readonly UnitBase[] = ['COUNT', 'MASS', 'VOLUME'];
@@ -118,8 +129,11 @@ export class ProductForm {
 
   /** Nastavený vstup přepne formulář do režimu editace tohohle zboží. */
   readonly product = input<Product | null>(null);
+  /** Obchod vybraný před formulářem; pro bezkódový produkt je povinnou součástí identity. */
+  readonly store = input<Store | null>(null);
 
   @Output() readonly created = new EventEmitter<Product>();
+  @Output() readonly existingMatched = new EventEmitter<ExistingProductMatch>();
   @Output() readonly cancelled = new EventEmitter<void>();
 
   protected readonly unitBaseOrder = UNIT_BASE_ORDER;
@@ -200,7 +214,7 @@ export class ProductForm {
     }
     this.suggestionsTimer = setTimeout(() => {
       this.suggestionsLoading.set(true);
-      this.productService.suggestions(value.trim()).subscribe({
+      this.productService.suggestions(value.trim(), this.store()?.id ?? null).subscribe({
         next: (result) => {
           this.suggestions.set(result);
           this.suggestionsLoading.set(false);
@@ -231,7 +245,7 @@ export class ProductForm {
     this.productService.getById(summary.id).subscribe({
       next: (product) => {
         this.saving.set(false);
-        if (product) this.created.emit(product);
+        if (product) this.existingMatched.emit({ product, alias: this.name().trim() });
       },
       error: (err) => {
         this.saving.set(false);
@@ -241,7 +255,10 @@ export class ProductForm {
   }
 
   isValid(): boolean {
-    return isProductFormValid(this.name(), this.selectedCategoryId(), this.unitBase());
+    return (
+      isProductFormValid(this.name(), this.selectedCategoryId(), this.unitBase()) &&
+      (this.product() != null || this.code().trim().length > 0 || this.store() != null)
+    );
   }
 
   /**
@@ -284,6 +301,7 @@ export class ProductForm {
             netContentUom: impliedNetContentUom(this.unitBase()),
             piecesInPack: this.piecesInPack(),
             isVariableWeight: this.isVariableWeight(),
+            storeId: this.store()?.id ?? null,
             code: this.code().trim() || null,
           });
 

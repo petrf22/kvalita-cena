@@ -1077,8 +1077,6 @@ type ProductSearchItem {
   qualityCount: Int!
   "Měna bestPrice/bestUnitPrice — null, jen když je bestPrice null (docs/lokalizace.md)."
   currency: String
-  "Varianta názvu použitá k nalezení lokální položky; učí se jen spolu s úspěšným zápisem ceny."
-  productAlias: String
   "Přepočet bestPrice do zobrazovací měny kurzem k lastObservedAt (X-Display-Currency)."
   converted: ConvertedPrice
   "Přepočet bestUnitPrice — vlastní kurzový přepočet, ne dopočet z converted/amount."
@@ -1400,6 +1398,8 @@ by pak nedávalo smysl, co se má přepočítat (jedna položka agg.recompute_qu
 input SubmitObservationsInput {
   productId: ID!
   storeId: ID!
+  "Varianta názvu použitá k nalezení lokální položky; učí se jen spolu s úspěšným zápisem ceny."
+  productAlias: String
   quantityBasis: QuantityBasis = PACKAGE
   "Kdy uživatel cenu viděl — chybí-li, použije se teď (docs/datovy-model.md, observed_at ≠ created_at)."
   observedAt: DateTime
@@ -1451,6 +1451,8 @@ enum ErrorCode {
   PRODUCT_NAME_EMPTY
   PRODUCT_CATEGORY_REQUIRED
   PRODUCT_UNIT_BASE_REQUIRED
+  PRODUCT_STORE_REQUIRED
+  PRODUCT_NOT_AVAILABLE_AT_STORE
   OFF_PRODUCT_NOT_FOUND
   OFF_UNAVAILABLE
   STORE_NAME_REQUIRED
