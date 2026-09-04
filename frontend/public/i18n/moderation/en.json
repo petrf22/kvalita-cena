@@ -5,6 +5,7 @@
   "notAuthorized": "This page is for moderators only.",
   "tabs": {
     "flagged": "Flagged",
+    "duplicates": "Duplicates",
     "observations": "Prices",
     "feedback": "Feedback",
     "quarantinedFeedback": "Suspicious",
@@ -20,10 +21,21 @@
     "reasonsLabel": "Reasons:",
     "uncover": "Uncover",
     "confirmHide": "Confirm hiding",
-    "mergeTargetPlaceholder": "Target product ID",
+    "mergeTargetPlaceholder": "Find the target item by name",
+    "mergeUnconfirmed": "(not confirmed yet)",
     "merge": "Merge into target",
     "mergeConfirm": "Move prices, aliases, reviews, and photos to the target product? This action cannot be undone.",
     "mergeSuccess": "The duplicate product was merged into “{{name}}”."
+  },
+  "duplicates": {
+    "hint": "Pairs of items without a barcode in the same scope and category whose names look alike. These are not reports — nobody reports a duplicate, it just quietly splits one thing's prices into two buckets. Always check before merging: “tripe” and “goulash soup” are textually close but not the same product.",
+    "empty": "No suspected duplicates.",
+    "versus": "vs.",
+    "mergeLeftIntoRight": "Merge first into second",
+    "mergeRightIntoLeft": "Merge second into first",
+    "rename": "Rename",
+    "renamePlaceholder": "New name for “{{name}}”",
+    "renameSuccess": "The item was renamed to “{{name}}”; the old name stays as an alias."
   },
   "authorLabel": "Author:",
   "authorUnknown": "unknown (anonymous or pseudonymized)",

@@ -119,6 +119,7 @@
     "MODERATION_OBSERVATION_NOT_FOUND": "The moderated price does not exist.",
     "MODERATION_USER_NOT_FOUND": "The user does not exist.",
     "MODERATION_PRODUCT_MERGE_SAME": "Source and target products must be different.",
+    "MODERATION_PRODUCT_RENAME_INVALID": "Only active items without a barcode can be renamed",
     "MODERATION_PRODUCT_MERGE_INVALID": "Only two valid products without barcodes can be merged.",
     "MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH": "The source prices do not belong to the target store or chain scope.",
     "ACCOUNT_SUSPENDED": "This account is suspended.",

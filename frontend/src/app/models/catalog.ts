@@ -14,6 +14,7 @@ import type {
   CreateStoreInput,
   FeedbackItemsQuery,
   FlagProductMutation,
+  DuplicateCandidatesQuery,
   FlaggedRecordsQuery,
   FxInfoQuery,
   GeocodeAddressQuery,
@@ -157,6 +158,10 @@ export type MyReviewItem = MyReviewsQuery['myReviews']['items'][number];
 
 /** Fronta k přezkumu (docs/reputace.md, "Moderace") — jen moderátor (T4). */
 export type FlaggedRecordItem = FlaggedRecordsQuery['flaggedRecords']['items'][number];
+
+/** Dvojice podezřele podobných bezkódových položek — fronta duplicit v moderaci. */
+export type DuplicateCandidateItem =
+  DuplicateCandidatesQuery['duplicateCandidates']['items'][number];
 
 /** Cena k moderátorskému přezkumu — nesouhlas s cenou nejde nahlásit komunitně, viz setObservationRejected. */
 export type ModerationObservationItem =

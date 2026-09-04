@@ -114,19 +114,40 @@
                 </div>
                 @if (item.recordType === 'PRODUCT' && item.product?.isGeneric) {
                   <div class="merge-actions">
-                    <input
-                      nz-input
-                      inputmode="numeric"
-                      [placeholder]="t('moderation.flagged.mergeTargetPlaceholder')"
-                      [ngModel]="mergeTargetId(item.recordId)"
-                      (ngModelChange)="setMergeTargetId(item.recordId, $event)"
-                    />
+                    <nz-select
+                      class="merge-target"
+                      nzShowSearch
+                      nzServerSearch
+                      nzAllowClear
+                      [nzPlaceHolder]="t('moderation.flagged.mergeTargetPlaceholder')"
+                      [nzLoading]="mergeSearching() === item.recordId"
+                      [ngModel]="mergeTargetId(item.recordId) || null"
+                      (ngModelChange)="setMergeTargetId(item.recordId, $event ?? '')"
+                      (nzOnSearch)="onMergeSearch(item, $event)"
+                      (nzOpenChange)="onMergeOpenChange(item, $event)"
+                    >
+                      @for (candidate of mergeCandidatesFor(item.recordId); track candidate.id) {
+                        <nz-option
+                          [nzValue]="candidate.id"
+                          [nzLabel]="
+                            candidate.name +
+                            ' · ' +
+                            candidate.category.name +
+                            (candidate.status === 'DRAFT'
+                              ? ' ' + t('moderation.flagged.mergeUnconfirmed')
+                              : '')
+                          "
+                        />
+                      }
+                    </nz-select>
                     <button
                       nz-button
                       nzType="primary"
+                      nz-popconfirm
+                      [nzPopconfirmTitle]="t('moderation.flagged.mergeConfirm')"
                       [disabled]="!mergeTargetId(item.recordId).trim()"
                       [nzLoading]="flaggedActionLoading() === item.recordType + item.recordId"
-                      (click)="mergeProduct(item)"
+                      (nzOnConfirm)="mergeProduct(item)"
                     >
                       {{ t('moderation.flagged.merge') }}
                     </button>
@@ -146,6 +167,90 @@
             [nzPageSizeOptions]="pageSizeOptions"
             (nzPageIndexChange)="onPageIndexChange(flagged, $event)"
             (nzPageSizeChange)="onPageSizeChange(flagged, $event)"
+          />
+        }
+      </nz-tab>
+
+      <nz-tab [nzTitle]="t('moderation.tabs.duplicates')">
+        <p class="section-hint">{{ t('moderation.duplicates.hint') }}</p>
+        @if (duplicates.error()) {
+          <nz-alert
+            nzType="error"
+            [nzMessage]="duplicates.error()"
+            nzShowIcon
+            class="section-alert"
+          />
+        }
+        @if (duplicates.loading() && duplicates.items().length === 0) {
+          <nz-spin />
+        } @else if (duplicates.items().length === 0) {
+          <nz-empty [nzNotFoundContent]="t('moderation.duplicates.empty')" />
+        } @else {
+          <nz-list>
+            @for (pair of duplicates.items(); track pair.left.id + '-' + pair.right.id) {
+              <nz-list-item>
+                <div class="duplicate-pair">
+                  <div class="item-main">
+                    <nz-tag>{{ (pair.score * 100).toFixed(0) }} %</nz-tag>
+                    <a [routerLink]="['/product', pair.left.id]">{{ pair.left.name }}</a>
+                    <span class="duplicate-versus">{{ t('moderation.duplicates.versus') }}</span>
+                    <a [routerLink]="['/product', pair.right.id]">{{ pair.right.name }}</a>
+                  </div>
+                  <div class="duplicate-actions">
+                    <button
+                      nz-button
+                      nz-popconfirm
+                      [nzPopconfirmTitle]="t('moderation.flagged.mergeConfirm')"
+                      [nzLoading]="duplicateActionLoading() === pair.left.id + pair.right.id"
+                      (nzOnConfirm)="mergeDuplicate(pair.left.id, pair.right.id)"
+                    >
+                      {{ t('moderation.duplicates.mergeLeftIntoRight') }}
+                    </button>
+                    <button
+                      nz-button
+                      nz-popconfirm
+                      [nzPopconfirmTitle]="t('moderation.flagged.mergeConfirm')"
+                      [nzLoading]="duplicateActionLoading() === pair.right.id + pair.left.id"
+                      (nzOnConfirm)="mergeDuplicate(pair.right.id, pair.left.id)"
+                    >
+                      {{ t('moderation.duplicates.mergeRightIntoLeft') }}
+                    </button>
+                  </div>
+                  @for (product of [pair.left, pair.right]; track product.id) {
+                    <div class="rename-actions">
+                      <input
+                        nz-input
+                        [placeholder]="
+                          t('moderation.duplicates.renamePlaceholder', { name: product.name })
+                        "
+                        [ngModel]="renameTarget(product.id)"
+                        (ngModelChange)="setRenameTarget(product.id, $event)"
+                      />
+                      <button
+                        nz-button
+                        [disabled]="!renameTarget(product.id).trim()"
+                        [nzLoading]="renameLoading() === product.id"
+                        (click)="renameProduct(product)"
+                      >
+                        {{ t('moderation.duplicates.rename') }}
+                      </button>
+                    </div>
+                  }
+                </div>
+              </nz-list-item>
+            }
+          </nz-list>
+        }
+        @if (duplicates.totalCount() > 0) {
+          <nz-pagination
+            class="section-pagination"
+            [nzPageIndex]="duplicates.pageIndex()"
+            [nzPageSize]="duplicates.pageSize()"
+            [nzTotal]="duplicates.totalCount()"
+            [nzShowSizeChanger]="true"
+            [nzPageSizeOptions]="pageSizeOptions"
+            (nzPageIndexChange)="onPageIndexChange(duplicates, $event)"
+            (nzPageSizeChange)="onPageSizeChange(duplicates, $event)"
           />
         }
       </nz-tab>

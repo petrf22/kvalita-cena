@@ -12,6 +12,7 @@ import cz.kvalitacena.security.ViewerContextResolver;
 import cz.kvalitacena.service.FeedbackService;
 import cz.kvalitacena.service.ModerationService;
 import cz.kvalitacena.service.ProductMergeService;
+import cz.kvalitacena.service.ProductRenameService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
@@ -37,6 +38,7 @@ public class ModerationGraphQlController {
 
   private final ModerationService moderationService;
   private final ProductMergeService productMergeService;
+  private final ProductRenameService productRenameService;
   private final FeedbackService feedbackService;
   private final ViewerContextResolver viewerContextResolver;
 
@@ -45,6 +47,20 @@ public class ModerationGraphQlController {
       @Argument Integer first, @Argument Integer offset, Authentication authentication) {
     requireModerator(authentication);
     return feedbackService.list(handled, quarantined, first, offset);
+  }
+
+  @MutationMapping
+  public Product renameGenericProduct(@Argument Long productId, @Argument String name,
+      Authentication authentication) {
+    Long moderatorUserId = requireModerator(authentication);
+    return productRenameService.rename(productId, name, moderatorUserId);
+  }
+
+  @QueryMapping
+  public DuplicateCandidateResult duplicateCandidates(@Argument Integer first, @Argument Integer offset,
+      Authentication authentication) {
+    Long moderatorUserId = requireModerator(authentication);
+    return moderationService.duplicateCandidates(first, offset, moderatorUserId);
   }
 
   @MutationMapping

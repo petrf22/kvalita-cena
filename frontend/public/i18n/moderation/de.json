@@ -5,6 +5,7 @@
   "notAuthorized": "Diese Seite ist nur für Moderatoren.",
   "tabs": {
     "flagged": "Gemeldet",
+    "duplicates": "Duplikate",
     "observations": "Preise",
     "feedback": "Feedback",
     "quarantinedFeedback": "Verdächtig",
@@ -20,10 +21,21 @@
     "reasonsLabel": "Gründe:",
     "uncover": "Wieder einblenden",
     "confirmHide": "Ausblenden bestätigen",
-    "mergeTargetPlaceholder": "ID der Zielware",
+    "mergeTargetPlaceholder": "Zielartikel nach Namen suchen",
+    "mergeUnconfirmed": "(noch nicht bestätigt)",
     "merge": "In Ziel zusammenführen",
     "mergeConfirm": "Preise, Aliase, Bewertungen und Fotos in die Zielware verschieben? Dies kann nicht rückgängig gemacht werden.",
     "mergeSuccess": "Die doppelte Ware wurde in „{{name}}“ zusammengeführt."
+  },
+  "duplicates": {
+    "hint": "Paare von Artikeln ohne Barcode im selben Bereich und derselben Kategorie mit ähnlichen Namen. Das sind keine Meldungen — Duplikate meldet niemand, sie teilen die Preise einer Sache nur still auf zwei Töpfe auf. Vor dem Zusammenführen immer prüfen: „Kuttelsuppe“ und „Gulaschsuppe“ liegen textlich nah beieinander, sind aber nicht dasselbe.",
+    "empty": "Keine Duplikatverdachtsfälle.",
+    "versus": "vs.",
+    "mergeLeftIntoRight": "Ersten in zweiten zusammenführen",
+    "mergeRightIntoLeft": "Zweiten in ersten zusammenführen",
+    "rename": "Umbenennen",
+    "renamePlaceholder": "Neuer Name für „{{name}}“",
+    "renameSuccess": "Der Artikel wurde in „{{name}}“ umbenannt; der alte Name bleibt als Alias."
   },
   "authorLabel": "Autor:",
   "authorUnknown": "unbekannt (anonym oder pseudonymisiert)",
