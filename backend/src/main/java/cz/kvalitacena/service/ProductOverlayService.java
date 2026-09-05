@@ -111,7 +111,11 @@ public class ProductOverlayService {
         .offImageFrontSmallUrl(off.getImageFrontSmallUrl());
     if (off.getProductName() != null) builder.name(off.getProductName());
     if (off.getBrandName() != null) builder.brand(null).externalBrandName(off.getBrandName());
-    Category category = categories.get(off.getMappedCategorySlug());
+    // Slug MUSÍ projít testem na null dřív, než se sáhne do mapy — categoryFor() vrací pro
+    // nenamapované zboží Map.of() a to na get(null) hází NPE (na rozdíl od HashMapy z dávkové
+    // větve). Zboží, jehož kategorie z OFF nesedí na náš strom, je běžný stav, ne chyba.
+    Category category = off.getMappedCategorySlug() == null ? null
+        : categories.get(off.getMappedCategorySlug());
     if (category != null) builder.category(category);
     OffNetContent content = netContentConverter.convert(off);
     if (content != null) {
