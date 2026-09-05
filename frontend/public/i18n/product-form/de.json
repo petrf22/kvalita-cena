@@ -1,5 +1,16 @@
 {
   "nameLabel": "Name der Ware",
+  "lang": {
+    "cs": "auf Tschechisch",
+    "sk": "auf Slowakisch",
+    "en": "auf Englisch",
+    "pl": "auf Polnisch",
+    "de": "auf Deutsch"
+  },
+  "foreignNameWarning": "Der Artikel hat bisher nur einen Namen {{lang}}: „{{name}}“. Bitte ergänze einen in deiner Sprache — die vorhandene Fassung geht nicht verloren.",
+  "otherNamesShow": "Namen in anderen Sprachen",
+  "otherNamesHide": "Andere Sprachen ausblenden",
+  "otherNamesHint": "Optional. Eine Sprache, die der Artikel noch nicht hat, sehen alle; das Überschreiben eines vorhandenen Namens gilt nur für dich.",
   "suggestionsWarning": "Ist es nicht schon eine dieser Positionen?",
   "genericTag": "generische Position",
   "unconfirmedTag": "noch nicht bestätigt",
@@ -16,8 +27,8 @@
   "codeLabel": "Strichcode (optional)",
   "codeHint": "Ohne Code entsteht eine generische Position (z. B. „Gebäck für {{example}}“ vom Kassenbon) — mit geringerer Datenzuverlässigkeit, kann aber trotzdem gespeichert werden.",
   "codeReadOnlyHint": "Der Strichcode lässt sich in der Bearbeitung nicht ändern.",
-  "itemPhotoLabel": "Foto der Ware (optional)",
-  "labelPhotoLabel": "Foto des Etiketts (optional)",
+  "itemPhotoLabel": "Produktfoto ({{lang}}, optional)",
+  "labelPhotoLabel": "Etikettenfoto ({{lang}}, optional)",
   "uploadingPhotos": "Fotos werden hochgeladen…",
   "photoUploadFailedWarning": "Die Ware wurde angelegt, aber das Foto konnte nicht hochgeladen werden. Versuch es auf ihrer Detailseite noch einmal.",
   "submit": "Ware anlegen",

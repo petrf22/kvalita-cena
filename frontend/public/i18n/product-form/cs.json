@@ -1,5 +1,16 @@
 {
   "nameLabel": "Název zboží",
+  "lang": {
+    "cs": "česky",
+    "sk": "slovensky",
+    "en": "anglicky",
+    "pl": "polsky",
+    "de": "německy"
+  },
+  "foreignNameWarning": "Zboží zatím má název jen {{lang}}: „{{name}}“. Doplň prosím název ve svém jazyce — cizojazyčná verze se nikam neztratí.",
+  "otherNamesShow": "Názvy v jiných jazycích",
+  "otherNamesHide": "Skrýt jiné jazyky",
+  "otherNamesHint": "Volitelné. Vyplněný jazyk, který zboží zatím nemá, uvidí všichni; přepsání existujícího názvu platí jen pro tebe.",
   "suggestionsWarning": "Není to už některá z těchhle položek?",
   "genericTag": "druhová položka",
   "unconfirmedTag": "zatím nepotvrzeno",
@@ -16,8 +27,8 @@
   "codeLabel": "Čárový kód (volitelné)",
   "codeHint": "Bez kódu vznikne druhová položka (např. „pečivo za {{example}}“ z účtenky) — s nižší důvěryhodností dat, ale zapsat se dá i tak.",
   "codeReadOnlyHint": "Čárový kód nejde v editaci změnit.",
-  "itemPhotoLabel": "Fotka zboží (volitelné)",
-  "labelPhotoLabel": "Fotka etikety (volitelné)",
+  "itemPhotoLabel": "Fotka zboží ({{lang}}, volitelné)",
+  "labelPhotoLabel": "Fotka etikety ({{lang}}, volitelné)",
   "uploadingPhotos": "Nahrávám fotky…",
   "photoUploadFailedWarning": "Zboží je založené, ale fotku se nepodařilo nahrát. Zkus to znovu na jeho detailu.",
   "submit": "Založit zboží",

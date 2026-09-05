@@ -35,7 +35,7 @@ import {
 } from '../../models/catalog';
 import type { CategoriesQuery } from '../../models/generated/graphql';
 import { FormatService } from '../../services/format-service';
-import { INTL_TAGS, LanguageService } from '../../services/language-service';
+import { AVAILABLE_LANGS, INTL_TAGS, LanguageService } from '../../services/language-service';
 import { MediaService } from '../../services/media-service';
 import { ProductService } from '../../services/product-service';
 import { buildCategoryTree, categoryBreadcrumb } from '../../shared/category-tree';
@@ -47,6 +47,7 @@ import {
   ProductFormDefaults,
   buildUpdateProductInput,
   changedFromOff,
+  changedNames,
   codeMatchesOffCandidate,
   impliedNetContentUom,
   isProductFormValid,
@@ -140,6 +141,30 @@ export class ProductForm {
   protected readonly unitBaseKeys = UNIT_BASE_KEYS;
 
   protected readonly name = signal('');
+
+  /**
+   * Pole „Název" je VŽDY v jazyce appky (docs/lokalizace.md) — proto se do něj nikdy nedosazuje
+   * cizojazyčný název z OFF. Ostatní jazyky mají vlastní, sbalenou sekci; `sourceNames` drží,
+   * jak vypadaly na začátku, aby se serveru posílalo jen to, co uživatel opravdu změnil
+   * (u OFF hodnot je to podmínka ODbL, ne úspora — viz `changedNames`).
+   */
+  protected readonly nameLang = computed(() => this.language.lang());
+  protected readonly otherLangs = computed(() =>
+    AVAILABLE_LANGS.filter((l) => l !== this.nameLang()),
+  );
+  protected readonly otherNames = signal<Record<string, string>>({});
+  protected readonly otherNamesExpanded = signal(false);
+  private sourceNames: Record<string, string> = {};
+
+  /** Název, který zboží zatím má jen v cizím jazyce — podklad pro upozornění nad formulářem. */
+  protected readonly foreignNameHint = computed(() => {
+    if (this.name().trim() !== '') return null;
+    const filled = this.otherLangs()
+      .map((lang) => ({ lang, name: this.otherNames()[lang] ?? '' }))
+      .filter((entry) => entry.name !== '');
+    return filled.length > 0 ? filled[0] : null;
+  });
+
   protected readonly suggestions = signal<ProductSummary[]>([]);
   protected readonly suggestionsLoading = signal(false);
   private suggestionsTimer?: ReturnType<typeof setTimeout>;
@@ -191,8 +216,10 @@ export class ProductForm {
     effect(() => {
       const product = this.product();
       if (!product) return;
-      const defaults = productFormDefaults(product);
+      const defaults = productFormDefaults(product, this.nameLang());
       this.editDefaults = defaults;
+      this.sourceNames = defaults.names;
+      this.otherNames.set({ ...defaults.names });
       this.name.set(defaults.name);
       this.brandName.set(defaults.brandName);
       this.selectedCategoryId.set(defaults.categoryId);
@@ -202,6 +229,18 @@ export class ProductForm {
       this.isVariableWeight.set(defaults.isVariableWeight);
       this.code.set(product.gtin ?? '');
     });
+  }
+
+  onOtherNameChange(lang: string, value: string): void {
+    this.otherNames.update((names) => ({ ...names, [lang]: value }));
+  }
+
+  protected otherName(lang: string): string {
+    return this.otherNames()[lang] ?? '';
+  }
+
+  toggleOtherNames(): void {
+    this.otherNamesExpanded.update((expanded) => !expanded);
   }
 
   onNameChange(value: string): void {
@@ -229,8 +268,13 @@ export class ProductForm {
    *  pole, která kandidát nemá (necháme prázdné pro ruční vyplnění). */
   private applyOffCandidate(candidate: ExternalProductCandidate): void {
     this.offCandidate.set(candidate);
-    const defaults = offCandidateDefaults(candidate);
+    const defaults = offCandidateDefaults(candidate, this.nameLang());
     this.offDefaults = defaults;
+    this.sourceNames = defaults.names;
+    this.otherNames.set({ ...defaults.names });
+    // Cizojazyčný název sám sekci rozbalí — uživatel má hned vidět, co o zboží víme,
+    // i když do pole "Název" musí češtinu doplnit sám.
+    if (!defaults.name && Object.keys(defaults.names).length > 0) this.otherNamesExpanded.set(true);
     if (defaults.name) this.name.set(defaults.name);
     if (defaults.brandName) this.brandName.set(defaults.brandName);
     if (defaults.categoryId) this.selectedCategoryId.set(defaults.categoryId);
@@ -294,6 +338,8 @@ export class ProductForm {
         ? this.createFromOff(candidate, defaults, categoryId)
         : this.productService.createProduct({
             name: this.name().trim(),
+            nameLang: this.nameLang(),
+            names: changedNames(this.otherNames(), this.sourceNames, this.nameLang()),
             brandName: this.brandName().trim() || null,
             categoryId,
             unitBase: this.unitBase(),
@@ -332,6 +378,8 @@ export class ProductForm {
     const input = buildUpdateProductInput(
       {
         name: this.name(),
+        nameLang: this.nameLang(),
+        names: changedNames(this.otherNames(), this.sourceNames, this.nameLang()),
         brandName: this.brandName(),
         categoryId,
         unitBase: this.unitBase(),
@@ -366,13 +414,17 @@ export class ProductForm {
     this.uploadingPhotos.set(true);
     return from(uploads).pipe(
       concatMap((upload) =>
-        this.mediaService.upload('PRODUCT', productId, upload.file, null, upload.kind).pipe(
-          map(() => true),
-          catchError(() => {
-            this.photoUploadWarning.set(true);
-            return of(false);
-          }),
-        ),
+        // Jazyk obalu na fotce = jazyk appky: uživatel fotí to balení, které má v ruce,
+        // a u etikety (LABEL) je jazyk podstata věci — je to fotka textu složení.
+        this.mediaService
+          .upload('PRODUCT', productId, upload.file, null, upload.kind, this.nameLang())
+          .pipe(
+            map(() => true),
+            catchError(() => {
+              this.photoUploadWarning.set(true);
+              return of(false);
+            }),
+          ),
       ),
       toArray(),
       map(() => null),
@@ -403,6 +455,8 @@ export class ProductForm {
     return this.productService.createProductFromOff({
       code: candidate.code,
       name: text.name,
+      nameLang: this.nameLang(),
+      names: changedNames(this.otherNames(), this.sourceNames, this.nameLang()),
       brandName: text.brandName,
       categoryId: text.categoryId,
       unitBase: this.unitBase(),

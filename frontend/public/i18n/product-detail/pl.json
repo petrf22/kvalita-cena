@@ -49,5 +49,12 @@
   "chartSelected": "Wybrana",
   "timesConfirmed": "potwierdzone {{count}}×",
   "chartEmpty": "Za mało zgłoszeń na wykres",
-  "chartAriaLabel": "Wykres historii ceny, {{count}} pomiarów"
+  "chartAriaLabel": "Wykres historii ceny, {{count}} pomiarów",
+  "lang": {
+    "cs": "po czesku",
+    "sk": "po słowacku",
+    "en": "po angielsku",
+    "pl": "po polsku",
+    "de": "po niemiecku"
+  }
 }

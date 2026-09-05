@@ -1,5 +1,16 @@
 {
   "nameLabel": "Názov tovaru",
+  "lang": {
+    "cs": "česky",
+    "sk": "slovensky",
+    "en": "anglicky",
+    "pl": "poľsky",
+    "de": "nemecky"
+  },
+  "foreignNameWarning": "Tovar má zatiaľ názov len {{lang}}: „{{name}}“. Doplň prosím názov vo svojom jazyku — cudzojazyčná verzia sa nikam nestratí.",
+  "otherNamesShow": "Názvy v iných jazykoch",
+  "otherNamesHide": "Skryť iné jazyky",
+  "otherNamesHint": "Voliteľné. Vyplnený jazyk, ktorý tovar zatiaľ nemá, uvidia všetci; prepísanie existujúceho názvu platí len pre teba.",
   "suggestionsWarning": "Nemyslíš skôr niektorú z týchto položiek?",
   "genericTag": "druhová položka",
   "unconfirmedTag": "zatiaľ nepotvrdené",
@@ -16,8 +27,8 @@
   "codeLabel": "Čiarový kód (voliteľné)",
   "codeHint": "Bez kódu vznikne druhová položka (napr. „pečivo za {{example}}“ z účtenky) — s nižšou dôveryhodnosťou dát, ale zapísať sa dá aj tak.",
   "codeReadOnlyHint": "Čiarový kód sa v editácii nedá zmeniť.",
-  "itemPhotoLabel": "Fotka tovaru (voliteľné)",
-  "labelPhotoLabel": "Fotka etikety (voliteľné)",
+  "itemPhotoLabel": "Fotka tovaru ({{lang}}, voliteľné)",
+  "labelPhotoLabel": "Fotka etikety ({{lang}}, voliteľné)",
   "uploadingPhotos": "Nahrávam fotky…",
   "photoUploadFailedWarning": "Tovar je založený, ale fotku sa nepodarilo nahrať. Skús to znova na jeho detaile.",
   "submit": "Založiť tovar",

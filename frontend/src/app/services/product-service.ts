@@ -133,6 +133,15 @@ export class ProductService {
           candidate {
             code
             name
+            # V jakém jazyce nabízený název doopravdy je — formulář podle toho upozorní,
+            # že zboží zatím český název nemá (docs/lokalizace.md).
+            nameLang
+            names {
+              lang
+              name
+              source
+              editedByMe
+            }
             brandName
             category {
               id
@@ -146,6 +155,15 @@ export class ProductService {
             image {
               url
               thumbnailUrl
+              kind
+              lang
+              attribution
+            }
+            images {
+              url
+              thumbnailUrl
+              kind
+              lang
               attribution
             }
             sourceUrl

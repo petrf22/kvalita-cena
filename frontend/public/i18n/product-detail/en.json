@@ -49,5 +49,12 @@
   "chartSelected": "Selected",
   "timesConfirmed": "confirmed {{count}}×",
   "chartEmpty": "Not enough reports yet for a chart",
-  "chartAriaLabel": "Price history chart, {{count}} measurements"
+  "chartAriaLabel": "Price history chart, {{count}} measurements",
+  "lang": {
+    "cs": "in Czech",
+    "sk": "in Slovak",
+    "en": "in English",
+    "pl": "in Polish",
+    "de": "in German"
+  }
 }

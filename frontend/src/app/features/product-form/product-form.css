@@ -46,3 +46,24 @@
 .off-candidate-source p {
   margin: 0;
 }
+
+/* Jazyk názvu — štítek u popisku pole a sbalená sekce ostatních jazyků (docs/lokalizace.md). */
+.name-lang-tag {
+  margin-left: 0.4rem;
+  font-weight: 400;
+  color: rgb(0 0 0 / 45%);
+}
+
+.other-names {
+  margin-bottom: 1rem;
+}
+
+.other-names button {
+  padding-left: 0;
+}
+
+.other-names-hint {
+  margin: 0 0 0.5rem;
+  color: rgb(0 0 0 / 45%);
+  font-size: 0.85em;
+}

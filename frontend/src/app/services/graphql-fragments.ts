@@ -44,6 +44,7 @@ export const photoFieldsFragment = graphql(`
     hidden
     attribution
     kind
+    lang
   }
 `);
 
@@ -120,11 +121,15 @@ export const productFieldsFragment = graphql(`
   fragment ProductFields on Product {
     id
     name
+    # Jazyk, ze kterého název skutečně je — 'de' u zboží, které český název ještě nemá.
+    nameLang
     catalogSource
     catalogAttribution
     externalImage {
       url
       thumbnailUrl
+      kind
+      lang
       attribution
     }
     brand {
@@ -168,6 +173,21 @@ export const productDetailFieldsFragment = graphql(`
   fragment ProductDetailFields on Product {
     ...ProductFields
     gtin
+    names {
+      lang
+      name
+      source
+      editedByMe
+    }
+    # Obal i etiketa ve všech jazycích, které OFF má — etiketa je vyfocený text složení,
+    # takže bez jazyka je k ničemu (docs/lokalizace.md).
+    externalImages {
+      url
+      thumbnailUrl
+      kind
+      lang
+      attribution
+    }
     stats {
       observationCount
       storeCount
@@ -220,6 +240,7 @@ export const productSummaryFieldsFragment = graphql(`
   fragment ProductSummaryFields on Product {
     id
     name
+    nameLang
     brand {
       id
       name

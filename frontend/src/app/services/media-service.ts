@@ -24,6 +24,7 @@ export class MediaService {
     file: File,
     caption?: string | null,
     kind?: PhotoKind | null,
+    lang?: string | null,
   ) {
     const formData = new FormData();
     formData.append('file', file);
@@ -32,6 +33,11 @@ export class MediaService {
     }
     if (kind) {
       formData.append('kind', kind);
+    }
+    // Jazyk obalu/etikety na fotce — u LABEL je to podstata věci (etiketa je vyfocený text
+    // složení). Bez něj backend dosadí jazyk requestu (docs/lokalizace.md).
+    if (lang) {
+      formData.append('lang', lang);
     }
     return this.http.post<PhotoFieldsFragment>(`/api/media/${recordType}/${recordId}`, formData);
   }
@@ -46,17 +52,29 @@ export class MediaService {
     return this.http.post<PhotoFieldsFragment>('/api/media/user/avatar', formData);
   }
 
-  /** Popisek, pořadí (nejnižší sortOrder = hlavní fotka záznamu) a druh. Jen autor fotky. */
-  update(id: string, caption: string | null, sortOrder: number | null, kind?: PhotoKind | null) {
+  /** Popisek, pořadí (nejnižší sortOrder = hlavní fotka záznamu), druh a jazyk. Jen autor fotky. */
+  update(
+    id: string,
+    caption: string | null,
+    sortOrder: number | null,
+    kind?: PhotoKind | null,
+    lang?: string | null,
+  ) {
     const document = graphql(`
-      mutation UpdatePhoto($id: ID!, $caption: String, $sortOrder: Int, $kind: PhotoKind) {
-        updatePhoto(id: $id, caption: $caption, sortOrder: $sortOrder, kind: $kind) {
+      mutation UpdatePhoto(
+        $id: ID!
+        $caption: String
+        $sortOrder: Int
+        $kind: PhotoKind
+        $lang: String
+      ) {
+        updatePhoto(id: $id, caption: $caption, sortOrder: $sortOrder, kind: $kind, lang: $lang) {
           ...PhotoFields
         }
       }
     `);
     return this.graphQl
-      .execute(document, { id, caption, sortOrder, kind: kind ?? null })
+      .execute(document, { id, caption, sortOrder, kind: kind ?? null, lang: lang ?? null })
       .pipe(map((data) => data.updatePhoto));
   }
 
