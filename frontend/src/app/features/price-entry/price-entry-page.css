@@ -43,6 +43,11 @@
   font-weight: 600;
 }
 
+app-product-preview {
+  display: block;
+  margin-bottom: 8px;
+}
+
 .selected-product {
   display: flex;
   align-items: center;
