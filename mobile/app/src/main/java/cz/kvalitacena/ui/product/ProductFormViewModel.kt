@@ -21,8 +21,10 @@ import cz.kvalitacena.ui.common.categoryBreadcrumb
 import cz.kvalitacena.ui.common.normalizeCode
 import cz.kvalitacena.ui.common.storeLabel
 import cz.kvalitacena.ui.common.toUiText
+import cz.kvalitacena.ui.settings.AppLang
 import cz.kvalitacena.ui.settings.CountryStore
 import cz.kvalitacena.ui.settings.LastStoreStore
+import java.util.Locale
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -58,6 +60,32 @@ class ProductFormViewModel(
     private set
 
   var name by mutableStateOf("")
+
+  /**
+   * Pole "Název" je VŽDY v jazyce appky (docs/lokalizace.md) — cizojazyčný název z OFF se do
+   * něj nikdy nedosazuje. Ostatní jazyky mají vlastní, sbalenou sekci; [sourceNames] drží, jak
+   * vypadaly na začátku, aby se serveru posílalo jen to, co uživatel opravdu změnil (u hodnot
+   * z OFF je to podmínka ODbL, ne úspora — viz `changedNames`).
+   *
+   * Jazyk se bere z `values/`, ne z nastavení serveru: `values/` je čeština a Android sám
+   * vybere podle jazyka telefonu (kořenový CLAUDE.md), takže je to týž jazyk, jaký jde
+   * v `Accept-Language` (AcceptLanguageInterceptor).
+   */
+  val nameLang: String = AppLang.entries.firstOrNull { it.tag == Locale.getDefault().language }?.tag
+    ?: AppLang.CS.tag
+  val otherLangs: List<String> = AppLang.entries.map { it.tag }.filter { it != nameLang }
+  var otherNames by mutableStateOf<Map<String, String>>(emptyMap())
+    private set
+  var otherNamesExpanded by mutableStateOf(false)
+    private set
+  private var sourceNames: Map<String, String> = emptyMap()
+
+  /** Název, který zboží zatím má jen v cizím jazyce — podklad pro upozornění nad formulářem. */
+  val foreignNameHint: Pair<String, String>?
+    get() = if (name.isNotBlank()) null
+    else otherLangs.firstNotNullOfOrNull { lang ->
+      otherNames[lang]?.takeIf { it.isNotBlank() }?.let { lang to it }
+    }
   var suggestions by mutableStateOf<List<ProductSummary>>(emptyList())
     private set
   var suggestionsLoading by mutableStateOf(false)
@@ -173,8 +201,10 @@ class ProductFormViewModel(
     viewModelScope.launch {
       try {
         graphQlClient.productById(id)?.let { product ->
-          val defaults = productFormDefaultsFrom(product)
+          val defaults = productFormDefaultsFrom(product, nameLang)
           editDefaults = defaults
+          sourceNames = defaults.names
+          otherNames = defaults.names
           name = defaults.name
           brandName = defaults.brandName
           unitBase = defaults.unitBase
@@ -210,7 +240,9 @@ class ProductFormViewModel(
       else -> null
     }
     return OffDefaults(
-      name = candidate.name,
+      // Jen název v jazyce appky — cizojazyčný by se uložil jako název v jazyce appky, tedy
+      // přesně ta chyba, kvůli které vícejazyčnost vznikla (docs/lokalizace.md).
+      name = offNamesFrom(candidate)[nameLang],
       brandName = candidate.brandName,
       categoryId = candidate.category?.id,
       unitBase = candidate.unitBase,
@@ -224,6 +256,11 @@ class ProductFormViewModel(
     offCandidate = candidate
     val defaults = offDefaultsFrom(candidate)
     offDefaults = defaults
+    sourceNames = offNamesFrom(candidate)
+    otherNames = sourceNames
+    // Cizojazyčný název sekci sám rozbalí — uživatel má hned vidět, co o zboží víme,
+    // i když do pole "Název" musí češtinu doplnit sám.
+    if (defaults.name == null && sourceNames.isNotEmpty()) otherNamesExpanded = true
     defaults.name?.let { name = it }
     defaults.brandName?.let { brandName = it }
     defaults.unitBase?.let { unitBase = it }
@@ -232,6 +269,14 @@ class ProductFormViewModel(
       val category = categories.find { it.id == id }
       if (category != null) onCategorySelected(category) else pendingCategoryId = id
     }
+  }
+
+  fun onOtherNameChange(lang: String, value: String) {
+    otherNames = otherNames + (lang to value)
+  }
+
+  fun toggleOtherNames() {
+    otherNamesExpanded = !otherNamesExpanded
   }
 
   fun onNameChange(value: String) {
@@ -360,6 +405,8 @@ class ProductFormViewModel(
           graphQlClient.createProduct(
             CreateProductInput(
               name = name.trim(),
+              nameLang = nameLang,
+              names = changedNames(otherNames, sourceNames, nameLang),
               brandName = brandName.trim().ifBlank { null },
               categoryId = categoryId,
               unitBase = unitBase,
@@ -398,6 +445,8 @@ class ProductFormViewModel(
       try {
         val input = buildUpdateProductInput(
           name = name,
+          nameLang = nameLang,
+          names = changedNames(otherNames, sourceNames, nameLang),
           brandName = brandName,
           categoryId = categoryId,
           unitBase = unitBase,
@@ -424,7 +473,11 @@ class ProductFormViewModel(
   private suspend fun uploadPendingPhotos(context: Context, productId: String) {
     for (upload in pendingPhotoUploads(itemPhotoUri, labelPhotoUri)) {
       try {
-        AppContainer.mediaClient.upload(context, "PRODUCT", productId, upload.value, kind = upload.kind)
+        // Jazyk obalu na fotce = jazyk appky: uživatel fotí to balení, které má v ruce,
+        // a u etikety (LABEL) je jazyk podstata věci — je to fotka TEXTU složení.
+        AppContainer.mediaClient.upload(
+          context, "PRODUCT", productId, upload.value, kind = upload.kind, lang = nameLang,
+        )
       } catch (e: Exception) {
         photoUploadFailed = true
       }
@@ -448,6 +501,8 @@ class ProductFormViewModel(
     return CreateProductFromOffInput(
       code = candidate.code,
       name = if (trimmedName == defaults.name) null else trimmedName,
+      nameLang = nameLang,
+      names = changedNames(otherNames, sourceNames, nameLang),
       brandName = if (trimmedBrand == defaults.brandName) null else trimmedBrand,
       categoryId = if (categoryId == defaults.categoryId) null else categoryId,
       unitBase = unitBase,

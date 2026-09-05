@@ -39,6 +39,9 @@ class MediaClient(private val authRepository: AuthRepository, private val client
     uri: Uri,
     caption: String? = null,
     kind: String? = null,
+    // Jazyk obalu/etikety na fotce — u LABEL je to podstata věci (etiketa je vyfocený text
+    // složení). Bez něj backend dosadí jazyk requestu (docs/lokalizace.md).
+    lang: String? = null,
   ): Photo =
     withContext(Dispatchers.IO) {
       val resolver = context.contentResolver
@@ -52,6 +55,7 @@ class MediaClient(private val authRepository: AuthRepository, private val client
         .addFormDataPart("file", "upload.$extension", bytes.toRequestBody(mimeType.toMediaTypeOrNull()))
         .apply { if (!caption.isNullOrBlank()) addFormDataPart("caption", caption) }
         .apply { if (!kind.isNullOrBlank()) addFormDataPart("kind", kind) }
+        .apply { if (!lang.isNullOrBlank()) addFormDataPart("lang", lang) }
         .build()
 
       uploadAttempt(

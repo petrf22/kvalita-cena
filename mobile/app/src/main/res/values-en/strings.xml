@@ -471,4 +471,16 @@
     <string name="my_contributions_status_hidden_store">Hidden after being reported, awaiting review. Only you can see it for now.</string>
     <string name="my_contributions_status_hidden_observation">The underlying product or store was hidden after a report — this price isn’t visible to anyone else yet.</string>
     <string name="my_contributions_status_pending_merge_edit">Only you can see your edit for now — merging it into the public record hasn’t started yet.</string>
+    <string name="lang_cs">in Czech</string>
+    <string name="lang_sk">in Slovak</string>
+    <string name="lang_en">in English</string>
+    <string name="lang_pl">in Polish</string>
+    <string name="lang_de">in German</string>
+    <string name="product_form_name_label_with_lang">%1$s (%2$s)</string>
+    <string name="product_form_foreign_name_warning">This item only has a name %1$s so far: “%2$s”. Please add one in your language — the existing version will not be lost.</string>
+    <string name="product_form_other_names_show">Names in other languages</string>
+    <string name="product_form_other_names_hide">Hide other languages</string>
+    <string name="product_form_other_names_hint">Optional. A language the item does not have yet becomes visible to everyone; overwriting an existing name applies only to you.</string>
+    <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
+    <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
 </resources>

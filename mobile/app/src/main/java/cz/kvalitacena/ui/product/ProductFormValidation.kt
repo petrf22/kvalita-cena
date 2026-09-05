@@ -1,6 +1,9 @@
 package cz.kvalitacena.ui.product
 
+import cz.kvalitacena.network.ExternalProductCandidate
 import cz.kvalitacena.network.Product
+import cz.kvalitacena.network.ProductName
+import cz.kvalitacena.network.ProductNameInput
 import cz.kvalitacena.network.UpdateProductInput
 
 /**
@@ -31,6 +34,8 @@ fun <T> pendingPhotoUploads(itemPhoto: T?, labelPhoto: T?): List<PendingPhotoUpl
 
 data class ProductFormDefaults(
   val name: String,
+  /** Všechny známé názvy po jazycích (i ty z OFF) — zdroj pro diff, viz [changedNames]. */
+  val names: Map<String, String>,
   val brandName: String,
   val categoryId: String?,
   val unitBase: String,
@@ -50,15 +55,51 @@ private fun toFormNetContentValue(value: Double?, uom: String?): Double? {
   }
 }
 
-fun productFormDefaultsFrom(product: Product): ProductFormDefaults = ProductFormDefaults(
-  name = product.name,
-  brandName = product.brand?.name.orEmpty(),
-  categoryId = product.category.id,
-  unitBase = product.unitBase,
-  netContentValue = toFormNetContentValue(product.netContentValue, product.netContentUom),
-  piecesInPack = product.piecesInPack,
-  isVariableWeight = product.isVariableWeight,
-)
+fun productFormDefaultsFrom(product: Product, lang: String): ProductFormDefaults {
+  val names = namesByLang(product.names)
+  return ProductFormDefaults(
+    // Pole "Název" je vždy v jazyce appky (docs/lokalizace.md). Product.name sem nejde dosadit
+    // naslepo — může to být fallback z jiného jazyka (viz Product.nameLang).
+    name = names[lang].orEmpty(),
+    names = names,
+    brandName = product.brand?.name.orEmpty(),
+    categoryId = product.category.id,
+    unitBase = product.unitBase,
+    netContentValue = toFormNetContentValue(product.netContentValue, product.netContentUom),
+    piecesInPack = product.piecesInPack,
+    isVariableWeight = product.isVariableWeight,
+  )
+}
+
+/**
+ * Názvy po jazycích na mapu jazyk→název. Položky bez jazyka se zahazují — u "hlavního" názvu
+ * z OFF se jazyk poznat nedá (docs/lokalizace.md) a formulář by ho neměl kam zařadit.
+ */
+fun namesByLang(names: List<ProductName>): Map<String, String> =
+  names.mapNotNull { entry -> entry.lang?.let { it to entry.name } }.toMap()
+
+/**
+ * Které z ostatních jazyků poslat serveru: jen ty, jejichž text se liší od zdrojové hodnoty.
+ * U OFF kandidáta je to podmínka, ne optimalizace — poslat zpátky nezměněný název z OFF by
+ * znamenalo zapsat cizí data do core.product_name, což ODbL share-alike zakazuje
+ * (kořenový CLAUDE.md, past OFF kandidáta).
+ */
+fun changedNames(
+  current: Map<String, String>,
+  source: Map<String, String>,
+  excludeLang: String,
+): List<ProductNameInput> = current.entries
+  .filter { (lang, name) -> lang != excludeLang && name.isNotBlank() && name.trim() != source[lang] }
+  .map { (lang, name) -> ProductNameInput(lang = lang, name = name.trim()) }
+
+/**
+ * Názvy z OFF kandidáta pro předvyplnění. Pole "Název" dostane hodnotu, JEN když ji OFF má
+ * v jazyce appky — jinak zůstane prázdné a cizojazyčná varianta se ukáže v sekci ostatních
+ * jazyků. Předvyplnit ho německým textem by znamenalo uložit němčinu jako český název, tedy
+ * přesně to, co se touhle změnou opravuje.
+ */
+fun offNamesFrom(candidate: ExternalProductCandidate): Map<String, String> =
+  namesByLang(candidate.names)
 
 /** Server implied UOM konvence (docs/datovy-model.md): MASS→kg, VOLUME→l, COUNT→ks. */
 private fun impliedUom(unitBase: String): String? = when (unitBase) {
@@ -97,6 +138,8 @@ private fun netContentForUpdateSubmit(
  */
 fun buildUpdateProductInput(
   name: String,
+  nameLang: String,
+  names: List<ProductNameInput>,
   brandName: String,
   categoryId: String,
   unitBase: String,
@@ -111,6 +154,8 @@ fun buildUpdateProductInput(
     netContentForUpdateSubmit(netContentValue, unitBase, isVariableWeight, defaults)
   return UpdateProductInput(
     name = if (trimmedName == defaults.name) null else trimmedName,
+    nameLang = nameLang,
+    names = names,
     brandName = if (trimmedBrand.isEmpty() || trimmedBrand == defaults.brandName) null else trimmedBrand,
     clearBrand = trimmedBrand.isEmpty() && defaults.brandName.isNotEmpty(),
     categoryId = if (categoryId == defaults.categoryId) null else categoryId,

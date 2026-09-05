@@ -556,4 +556,16 @@
     <string name="my_contributions_status_hidden_store">Skryto po nahlášení, čeká na přezkum. Zatím ho vidíte jen vy.</string>
     <string name="my_contributions_status_hidden_observation">Podkladové zboží nebo obchod bylo skryto po nahlášení — cena zatím není vidět nikomu jinému.</string>
     <string name="my_contributions_status_pending_merge_edit">Vaši úpravu zatím vidíte jen vy — sloučení s veřejným záznamem se teprve připravuje.</string>
+    <string name="lang_cs">česky</string>
+    <string name="lang_sk">slovensky</string>
+    <string name="lang_en">anglicky</string>
+    <string name="lang_pl">polsky</string>
+    <string name="lang_de">německy</string>
+    <string name="product_form_name_label_with_lang">%1$s (%2$s)</string>
+    <string name="product_form_foreign_name_warning">Zboží zatím má název jen %1$s: „%2$s“. Doplň prosím název ve svém jazyce — cizojazyčná verze se nikam neztratí.</string>
+    <string name="product_form_other_names_show">Názvy v jiných jazycích</string>
+    <string name="product_form_other_names_hide">Skrýt jiné jazyky</string>
+    <string name="product_form_other_names_hint">Volitelné. Vyplněný jazyk, který zboží zatím nemá, uvidí všichni; přepsání existujícího názvu platí jen pro tebe.</string>
+    <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
+    <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
 </resources>
