@@ -424,6 +424,8 @@ hodnocení kvality vs. dodavatelích.
 
 Další rozvojové nápady mimo MVP (nezávazné, k realizaci až přijde řada, se stavem
 NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `docs/rozvoj.md`: pojmenování slevové karty podle
-obchodu, ceny předem z akčního letáku, načtení celé účtenky, nákup podle receptu nebo seznamu,
-údaje z etikety (nutriční hodnoty, složení, alergeny — aditiva/E-čka jako odkazy z OFF už
+obchodu, ceny předem z akčního letáku, načtení celé účtenky, mapování obchodního označení
+zboží na katalogovou položku (párování řádků účtenky/letáku), zdroj ceny a druh důkazu
+(`core.price_observation.source` dnes existuje, ale nikdo ho nečte), nákup podle receptu nebo
+seznamu, údaje z etikety (nutriční hodnoty, složení, alergeny — aditiva/E-čka jako odkazy z OFF už
 hotová jsou, viz výš).
