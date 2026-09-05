@@ -14,6 +14,9 @@ import cz.kvalitacena.db.entity.StoreUserEdit;
 import cz.kvalitacena.db.entity.UnitBase;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.CategoryRepository;
+import cz.kvalitacena.db.repo.OffProductRepository;
+import cz.kvalitacena.db.repo.ProductCodeRepository;
+import cz.kvalitacena.db.repo.ProductNameRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ProductUserEditRepository;
 import cz.kvalitacena.db.repo.RetailChainRepository;
@@ -21,6 +24,9 @@ import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.db.repo.StoreUserEditRepository;
 import cz.kvalitacena.exception.UnauthorizedException;
 import cz.kvalitacena.exception.ValidationException;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -29,6 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,6 +61,22 @@ class CatalogEditServiceTest {
   private static final Long STORE_ID = 9L;
   private static final Long CATEGORY_ID = 3L;
 
+  /**
+   * Jazyk requestu se v jednotkovém testu nebere z Accept-Language, ale z LocaleContextHolder,
+   * který by jinak spadl na locale STROJE — na anglicky nastaveném počítači by pak zápis názvu
+   * mířil do jiného jazyka než na českém. Nastavuje se proto explicitně.
+   */
+  @BeforeEach
+  void useCzechRequestLocale() {
+    LocaleContextHolder.setLocale(Locale.forLanguageTag("cs"));
+  }
+
+  @AfterEach
+  void resetRequestLocale() {
+    LocaleContextHolder.resetLocaleContext();
+  }
+
+
   @Mock
   private ProductRepository productRepository;
   @Mock
@@ -77,6 +100,13 @@ class CatalogEditServiceTest {
   @Mock
   private TrustLevelService trustLevelService;
 
+  @Mock
+  private OffProductRepository offProductRepository;
+  @Mock
+  private ProductCodeRepository productCodeRepository;
+  @Mock
+  private ProductNameRepository productNameRepository;
+
   private final CompanyIdValidators companyIdValidators = new CompanyIdValidators(List.of(new IcoValidator()));
   private final I18nProperties i18nProperties = new I18nProperties();
 
@@ -86,7 +116,9 @@ class CatalogEditServiceTest {
     // Messages je null — tenhle test volá jen resolve()/isSupported(), ne supportedCountries().
     CountryResolver countryResolver = new CountryResolver(i18nProperties, appUserRepository, null);
     return new CatalogEditService(productRepository, productUserEditRepository, categoryRepository,
-        brandResolutionService, productOverlayService, storeRepository, storeUserEditRepository,
+        brandResolutionService, productOverlayService,
+        new ProductNameWriter(productNameRepository, TestI18n.properties()), TestI18n.nameResolver(),
+        offProductRepository, productCodeRepository, storeRepository, storeUserEditRepository,
         retailChainRepository, companyIdValidators, storeOverlayService, countryResolver,
         trustLevelService, appUserRepository);
   }
@@ -104,7 +136,7 @@ class CatalogEditServiceTest {
 
   @Test
   void anonymousCannotUpdateProduct() {
-    UpdateProductInput input = new UpdateProductInput("Nový název", null, null, null, null, null,
+    UpdateProductInput input = new UpdateProductInput("Nový název", null, null, null, null, null, null, null,
         null, null, null, null);
     assertThatThrownBy(() -> service().updateProduct(PRODUCT_ID, input, null))
         .isInstanceOf(UnauthorizedException.class);
@@ -124,7 +156,7 @@ class CatalogEditServiceTest {
     when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct()));
     when(productUserEditRepository.findByProductIdAndUserId(PRODUCT_ID, USER_ID)).thenReturn(Optional.empty());
 
-    UpdateProductInput input = new UpdateProductInput("Mléko plnotučné", null, null, null, null, null,
+    UpdateProductInput input = new UpdateProductInput("Mléko plnotučné", null, null, null, null, null, null, null,
         null, null, null, null);
     service().updateProduct(PRODUCT_ID, input, PUBLIC_UID);
 
@@ -140,7 +172,7 @@ class CatalogEditServiceTest {
     when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct()));
     when(productUserEditRepository.findByProductIdAndUserId(PRODUCT_ID, USER_ID)).thenReturn(Optional.empty());
 
-    UpdateProductInput input = new UpdateProductInput("Mléko polotučné", null, null, null, null, null,
+    UpdateProductInput input = new UpdateProductInput("Mléko polotučné", null, null, null, null, null, null, null,
         null, null, null, null);
     service().updateProduct(PRODUCT_ID, input, PUBLIC_UID);
 
@@ -157,7 +189,7 @@ class CatalogEditServiceTest {
     when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
     when(productUserEditRepository.findByProductIdAndUserId(PRODUCT_ID, USER_ID)).thenReturn(Optional.empty());
 
-    UpdateProductInput input = new UpdateProductInput(null, null, true, null, null, null,
+    UpdateProductInput input = new UpdateProductInput(null, null, null, null, true, null, null, null,
         null, null, null, null);
     service().updateProduct(PRODUCT_ID, input, PUBLIC_UID);
 
@@ -172,12 +204,12 @@ class CatalogEditServiceTest {
     givenLoggedInUser();
     when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct()));
     ProductUserEdit previousEdit = ProductUserEdit.builder().productId(PRODUCT_ID).userId(USER_ID)
-        .name("Starý patch název").build();
+        .name("Starý patch název").nameLang("cs").build();
     when(productUserEditRepository.findByProductIdAndUserId(PRODUCT_ID, USER_ID))
         .thenReturn(Optional.of(previousEdit));
 
     // Uživatel se vrací na globální název — patch se tím vyprázdní a smaže.
-    UpdateProductInput input = new UpdateProductInput("Mléko polotučné", null, null, null, null, null,
+    UpdateProductInput input = new UpdateProductInput("Mléko polotučné", null, null, null, null, null, null, null,
         null, null, null, null);
     service().updateProduct(PRODUCT_ID, input, PUBLIC_UID);
 

@@ -17,8 +17,11 @@ import cz.kvalitacena.db.entity.PhotoKind;
  * codegenu — bez téhle anotace kotlinx.serialization na tom nesouhlasu shazovalo celý upload
  * i po úspěšném uložení na serveru (appka ukázala obecné "Něco se pokazilo", ačkoli fotka už
  * byla nahraná).
+ *
+ * <p>{@code lang} je jazyk obalu/etikety na fotce ({@code null} = neurčeno) — u
+ * {@link PhotoKind#LABEL} podstata věci, protože etiketa je vyfocený TEXT složení.
  */
 public record Photo(@JsonFormat(shape = JsonFormat.Shape.STRING) Long id, String url, String thumbnailUrl,
                      int width, int height, String caption, boolean mine, boolean hidden, String attribution,
-                     PhotoKind kind) {
+                     PhotoKind kind, String lang) {
 }

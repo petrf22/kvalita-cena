@@ -1,0 +1,143 @@
+# 02-product-name-i18n.yaml — název zboží přestává být jednojazyčný (docs/lokalizace.md).
+#
+# Proč: přepsáním německého názvu z OFF na český se dosud německá varianta z pohledu appky
+# ztratila, a u OFF-podloženého zboží skončil ten český název jen v core.product_user_edit,
+# takže každý další česky mluvící uživatel dál viděl němčinu.
+#
+# Rozdělení odpovědnosti, aby nevznikly dva zdroje pravdy:
+#   core.product.name       = PRIMÁRNÍ název + nový name_lang říká, v jakém je jazyce
+#   core.product_name       = komunitní názvy v OSTATNÍCH jazycích (nikdy řádek pro name_lang)
+#   core.product_user_edit  = osobní patch, nově s name_lang (na který jazyk se vztahuje)
+# Primární název zůstává na core.product.name schválně: drží idx_product_name_norm_fts
+# i idx_product_name_trgm a je poslední článek fallbacku, když zboží v jazyce klienta název
+# nemá. Vzor tabulky je core.category_i18n (2026-08-09/03-category-i18n.yaml).
+#
+# Osobní patch záměrně NEMÁ vlastní podřízenou tabulku (jeden uživatel v praxi nepřepisuje
+# název ve třech jazycích naráz) — stačí, že ví, kterého jazyka se týká. Běžná cesta
+# "doplnění chybějícího jazyka" jde stejně globálně do core.product_name, ne do patche.
+#
+# Jazyk se NEomezuje výčtem podporovaných jazyků appky — výčet v CHECKu by znamenal migraci
+# při každém rozšíření (docs/lokalizace.md, plán expanze). Hlídá se jen tvar kódu.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-05-01-product-name-lang
+      author: Petr F.
+      comment: >
+        Default 'cs' odpovídá skutečnosti: appka vznikla pro český trh a všechno dosud zadané
+        zboží je pojmenované česky (docs/lokalizace.md, "čeština je zdrojový jazyk a fallback").
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: product
+            columns:
+              - column:
+                  name: name_lang
+                  type: VARCHAR(5)
+                  defaultValue: "cs"
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: |
+              ALTER TABLE core.product
+                ADD CONSTRAINT chk_product_name_lang CHECK (name_lang ~ '^[a-z]{2}$');
+
+  - changeSet:
+      id: 2026-09-05-02-product-name-table
+      author: Petr F.
+      comment: >
+        Komunitní překlady názvu. created_by_user_id je jen stopa autorství pro budoucí
+        konsolidaci (SET NULL při smazání účtu, stejně jako core.product.created_by_user_id) —
+        název samotný je globální data komunity a smazání účtu ho nemaže.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: product_name
+            columns:
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lang
+                  type: VARCHAR(5)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by_user_id
+                  type: BIGINT
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            schemaName: core
+            tableName: product_name
+            columnNames: product_id, lang
+            constraintName: pk_product_name
+        - addForeignKeyConstraint:
+            constraintName: fk_product_name_product
+            baseTableSchemaName: core
+            baseTableName: product_name
+            baseColumnNames: product_id
+            referencedTableSchemaName: core
+            referencedTableName: product
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_product_name_created_by
+            baseTableSchemaName: core
+            baseTableName: product_name
+            baseColumnNames: created_by_user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - sql:
+            sql: |
+              ALTER TABLE core.product_name
+                ADD CONSTRAINT chk_product_name_lang CHECK (lang ~ '^[a-z]{2}$');
+
+              -- Tytéž dva indexy jako nad core.product.name — hledání matchuje název
+              -- v libovolném jazyce, ne jen v tom zobrazovaném.
+              CREATE INDEX idx_product_name_i18n_norm_fts ON core.product_name
+                USING gin (to_tsvector('simple', core.norm_text(name)));
+              CREATE INDEX idx_product_name_i18n_trgm ON core.product_name
+                USING gin (core.norm_text(name) gin_trgm_ops);
+
+  - changeSet:
+      id: 2026-09-05-03-product-user-edit-name-lang
+      author: Petr F.
+      comment: >
+        NULL znamená "patch se názvu netýká" — stejná konvence jako u ostatních sloupců téhle
+        tabulky (NULL = nezměněno). Existující patche jsou české, proto se vyplní 'cs' jen tam,
+        kde name opravdu je.
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: product_user_edit
+            columns:
+              - column:
+                  name: name_lang
+                  type: VARCHAR(5)
+        - sql:
+            sql: |
+              UPDATE core.product_user_edit SET name_lang = 'cs' WHERE name IS NOT NULL;
+
+              ALTER TABLE core.product_user_edit
+                ADD CONSTRAINT chk_product_user_edit_name_lang
+                  CHECK (name_lang IS NULL OR name_lang ~ '^[a-z]{2}$'),
+                -- Název bez jazyka by se nedal nikam zařadit a jazyk bez názvu nic neznamená.
+                ADD CONSTRAINT chk_product_user_edit_name_with_lang
+                  CHECK ((name IS NULL) = (name_lang IS NULL));

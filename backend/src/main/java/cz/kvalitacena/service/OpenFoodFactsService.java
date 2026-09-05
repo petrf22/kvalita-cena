@@ -13,6 +13,8 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -65,11 +67,13 @@ public class OpenFoodFactsService {
 
   private OffProduct found(String gtin, OffRemoteProduct p) {
     return OffProduct.builder()
-        .gtin(gtin).fetchStatus(OffFetchStatus.FOUND).productName(p.productName())
+        .gtin(gtin).fetchStatus(OffFetchStatus.FOUND).lang(p.lang()).productName(p.productName())
+        .names(new LinkedHashMap<>(p.names())).nameLocales(new ArrayList<>(p.nameLocales()))
         .brandName(p.brandName()).productQuantity(p.productQuantity())
         .productQuantityUnit(p.productQuantityUnit()).categoryTags(p.categoryTags())
         .mappedCategorySlug(categoryMapper.categorySlugFor(p.categoryTags()))
         .imageFrontUrl(p.imageFrontUrl()).imageFrontSmallUrl(p.imageFrontSmallUrl())
+        .images(new ArrayList<>(p.images()))
         .additivesTags(p.additivesTags())
         .sourceRevision(p.revision()).sourceUpdatedAt(p.updatedAt()).fetchedAt(now()).build();
   }
@@ -79,10 +83,25 @@ public class OpenFoodFactsService {
         .fetchedAt(now()).build();
   }
 
+  /**
+   * Vedle TTL rozhoduje i JAZYKOVÁ ÚPLNOST snapshotu: záznam stažený v době, kdy appka uměla
+   * o jazyk míň, nemá název v tom novém a nedozvěděl by se ho, dokud mu nevyprší TTL (týdny).
+   * Rozšíření {@code app.i18n.supported-locales} tak samo vynutí dotažení při prvním čtení —
+   * zboží, na které nikdo nesáhne, dožene {@link OffSnapshotRefreshService}.
+   *
+   * <p>Týká se jen nalezených produktů; u NOT_FOUND není co překládat a opakovat dotaz jen
+   * kvůli novému jazyku by bylo mrhání limitem.
+   */
   private boolean isFresh(OffProduct product) {
     var ttl = product.getFetchStatus() == OffFetchStatus.FOUND
         ? properties.getPositiveCacheTtl() : properties.getNegativeCacheTtl();
-    return !product.getFetchedAt().plus(ttl).isBefore(now());
+    if (product.getFetchedAt().plus(ttl).isBefore(now())) return false;
+    return product.getFetchStatus() != OffFetchStatus.FOUND || hasAllNameLocales(product);
+  }
+
+  /** Pokrývá snapshot všechny jazyky, o které dnes umíme požádat? */
+  public boolean hasAllNameLocales(OffProduct product) {
+    return product.getNameLocales().containsAll(apiClient.nameLocales());
   }
 
   private OffLookupResult fromCache(OffProduct product) {

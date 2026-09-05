@@ -21,9 +21,9 @@ public class MediaGraphQlController {
 
   @MutationMapping
   public Photo updatePhoto(@Argument Long id, @Argument String caption, @Argument Integer sortOrder,
-      @Argument PhotoKind kind, Authentication authentication) {
+      @Argument PhotoKind kind, @Argument String lang, Authentication authentication) {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
-    Media media = mediaService.update(id, caption, sortOrder, kind, viewer.publicUid());
+    Media media = mediaService.update(id, caption, sortOrder, kind, lang, viewer.publicUid());
     return mediaService.toPhoto(media, viewer);
   }
 

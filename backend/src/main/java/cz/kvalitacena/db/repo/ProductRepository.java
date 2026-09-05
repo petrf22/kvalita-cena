@@ -37,6 +37,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
    * kde si název vymýšlí člověk, je to ten častější případ. Obě funkce jedou po témže GIN
    * {@code gin_trgm_ops} indexu, žádná migrace navíc.
    *
+   * <p>Porovnává se s názvem v KTERÉMKOLI jazyce (vedle primárního názvu a varianty z OFF
+   * i komunitní překlady {@code core.product_name} a jazykové varianty {@code off.product_name})
+   * — duplicita je duplicita i tehdy, když ji zakládající vidí česky a existující položka je
+   * v katalogu pod německým názvem. Jinak by vícejazyčnost duplicity naopak plodila.
+   *
    * <p>Nepotvrzené (DRAFT) položky se řadí AŽ ZA potvrzené. Vidět musí být, jinak by je neměl
    * kdo potvrdit (docs/reputace.md, "Práh důvěry pro zveřejnění nového záznamu" — najít je
    * cíleně musí jít i jiným přispěvatelům), ale nepotvrzený název nemá stát nad zavedeným.
@@ -48,6 +53,8 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
       LEFT JOIN core.product_alias pa ON pa.product_id=p.id
         AND (pa.status='ACTIVE' OR EXISTS (SELECT 1 FROM core.product_alias_confirmation pac
              WHERE pac.alias_id=pa.id AND pac.user_id=:viewerId))
+      LEFT JOIN core.product_name pn ON pn.product_id=p.id
+      LEFT JOIN off.product_name opn ON opn.gtin=op.gtin
       WHERE p.status IN ('ACTIVE', 'DRAFT')
       AND (:storeId IS NULL OR p.catalog_scope IN ('GLOBAL', 'LEGACY_GLOBAL')
         OR (p.catalog_scope='STORE' AND p.scope_store_id=:storeId)
@@ -55,7 +62,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
       AND (GREATEST(similarity(core.norm_text(COALESCE(op.product_name,p.name)), core.norm_text(:name)),
                     word_similarity(core.norm_text(:name), core.norm_text(COALESCE(op.product_name,p.name)))) > :threshold
         OR GREATEST(similarity(core.norm_text(pa.name), core.norm_text(:name)),
-                    word_similarity(core.norm_text(:name), core.norm_text(pa.name))) > :threshold)
+                    word_similarity(core.norm_text(:name), core.norm_text(pa.name))) > :threshold
+        OR GREATEST(similarity(core.norm_text(pn.name), core.norm_text(:name)),
+                    word_similarity(core.norm_text(:name), core.norm_text(pn.name))) > :threshold
+        OR GREATEST(similarity(core.norm_text(opn.name), core.norm_text(:name)),
+                    word_similarity(core.norm_text(:name), core.norm_text(opn.name))) > :threshold)
       GROUP BY p.id, op.product_name
       ORDER BY CASE WHEN p.scope_store_id=:storeId THEN 0
         WHEN p.scope_chain_id=(SELECT s.chain_id FROM core.store s WHERE s.id=:storeId) THEN 1
@@ -66,7 +77,11 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
         GREATEST(similarity(core.norm_text(COALESCE(op.product_name,p.name)), core.norm_text(:name)),
                  word_similarity(core.norm_text(:name), core.norm_text(COALESCE(op.product_name,p.name)))),
         COALESCE(MAX(GREATEST(similarity(core.norm_text(pa.name), core.norm_text(:name)),
-                              word_similarity(core.norm_text(:name), core.norm_text(pa.name)))), 0)) DESC
+                              word_similarity(core.norm_text(:name), core.norm_text(pa.name)))), 0),
+        COALESCE(MAX(GREATEST(similarity(core.norm_text(pn.name), core.norm_text(:name)),
+                              word_similarity(core.norm_text(:name), core.norm_text(pn.name)))), 0),
+        COALESCE(MAX(GREATEST(similarity(core.norm_text(opn.name), core.norm_text(:name)),
+                              word_similarity(core.norm_text(:name), core.norm_text(opn.name)))), 0)) DESC
       LIMIT :limit
       """, nativeQuery = true)
   List<Product> findSimilarByName(@Param("name") String name, @Param("storeId") Long storeId,

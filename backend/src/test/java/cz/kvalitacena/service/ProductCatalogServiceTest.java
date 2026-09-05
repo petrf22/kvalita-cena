@@ -78,6 +78,8 @@ class ProductCatalogServiceTest {
   private DuplicateLookupService duplicateLookupService;
   @Mock
   private TrustLevelService trustLevelService;
+  @Mock
+  private ProductNameWriter productNameWriter;
 
   private final CatalogProperties catalogProperties = new CatalogProperties();
 
@@ -86,11 +88,12 @@ class ProductCatalogServiceTest {
     catalogProperties.setMaxUnconfirmedDrafts(15);
     return new ProductCatalogService(productRepository, storeRepository, brandResolutionService, categoryRepository,
         productCodeRepository, priceObservationRepository, appUserRepository, catalogProperties,
-        catalogRateLimiter, duplicateLookupService, trustLevelService, new ProductScopeService());
+        catalogRateLimiter, duplicateLookupService, trustLevelService, new ProductScopeService(),
+        productNameWriter, TestI18n.nameResolver());
   }
 
   private CreateProductInput input(String code) {
-    return new CreateProductInput("Chléb konzumní", null, CATEGORY_ID, UnitBase.MASS,
+    return new CreateProductInput("Chléb konzumní", null, null, null, CATEGORY_ID, UnitBase.MASS,
         new BigDecimal("1200"), NetContentUom.G, null, false, STORE_ID, code);
   }
 
@@ -115,16 +118,16 @@ class ProductCatalogServiceTest {
   @Test
   void blankNameIsRejected() {
     givenLoggedInUser();
-    CreateProductInput blank = new CreateProductInput(" ", null, CATEGORY_ID, UnitBase.MASS,
-        null, null, null, false, STORE_ID, null);
+    CreateProductInput blank = new CreateProductInput(" ", null, null, null, CATEGORY_ID,
+        UnitBase.MASS, null, null, null, false, STORE_ID, null);
     assertThatThrownBy(() -> service().create(blank, PUBLIC_UID)).isInstanceOf(ValidationException.class);
   }
 
   @Test
   void missingCategoryIsRejected() {
     givenLoggedInUser();
-    CreateProductInput noCategory = new CreateProductInput("Chléb", null, null, UnitBase.MASS,
-        null, null, null, false, STORE_ID, null);
+    CreateProductInput noCategory = new CreateProductInput("Chléb", null, null, null, null,
+        UnitBase.MASS, null, null, null, false, STORE_ID, null);
     assertThatThrownBy(() -> service().create(noCategory, PUBLIC_UID)).isInstanceOf(ValidationException.class);
   }
 
@@ -213,7 +216,7 @@ class ProductCatalogServiceTest {
     givenLoggedInUser();
     givenCategoryExists();
     when(catalogRateLimiter.tryAcquireProductCreation(PUBLIC_UID)).thenReturn(true);
-    CreateProductInput withoutStore = new CreateProductInput("Chléb", null, CATEGORY_ID,
+    CreateProductInput withoutStore = new CreateProductInput("Chléb", null, null, null, CATEGORY_ID,
         UnitBase.MASS, null, null, null, true, null, null);
 
     assertThatThrownBy(() -> service().create(withoutStore, PUBLIC_UID))
@@ -271,8 +274,8 @@ class ProductCatalogServiceTest {
     when(catalogRateLimiter.tryAcquireProductCreation(PUBLIC_UID)).thenReturn(true);
     when(productRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
 
-    CreateProductInput variableWeight = new CreateProductInput("Sýr eidam", null, CATEGORY_ID,
-        UnitBase.MASS, new BigDecimal("300"), NetContentUom.G, null, true, STORE_ID, null);
+    CreateProductInput variableWeight = new CreateProductInput("Sýr eidam", null, null, null,
+        CATEGORY_ID, UnitBase.MASS, new BigDecimal("300"), NetContentUom.G, null, true, STORE_ID, null);
     givenStoreExists(Store.builder().id(STORE_ID).chain(RetailChain.builder().id(11L).build()).build());
 
     Product product = service().create(variableWeight, PUBLIC_UID);
@@ -288,7 +291,7 @@ class ProductCatalogServiceTest {
     givenCategoryExists();
     when(catalogRateLimiter.tryAcquireProductCreation(PUBLIC_UID)).thenReturn(true);
 
-    CreateProductInput mismatched = new CreateProductInput("Mléko", null, CATEGORY_ID,
+    CreateProductInput mismatched = new CreateProductInput("Mléko", null, null, null, CATEGORY_ID,
         UnitBase.VOLUME, new BigDecimal("1"), NetContentUom.G, null, false, STORE_ID, null);
 
     assertThatThrownBy(() -> service().create(mismatched, PUBLIC_UID))

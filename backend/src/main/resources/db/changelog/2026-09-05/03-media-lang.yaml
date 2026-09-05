@@ -1,0 +1,35 @@
+# 03-media-lang.yaml — jazyk obalu/etikety na fotce (core.media.lang).
+#
+# Formulář nového zboží nahrává dvě fotky (PhotoKind.ITEM = obal, LABEL = etiketa se
+# složením). Obě jsou fotkou konkrétní jazykové mutace obalu a u LABEL to platí bezvýhradně:
+# je to fotka TEXTU. Bez jazyka appka nemá jak vybrat etiketu, které čtenář rozumí, a budoucí
+# čtení složení z etikety (docs/ai.md) by nevědělo, v jakém jazyce text je — což je přesně ta
+# situace, před kterou docs/ai.md u f_evid varuje: rozlišení musí schéma nést od začátku.
+#
+# NULL = "jazyk neurčen". U existujících řádků se zpětně odvodit nedá (fotka mohla vzniknout
+# před tím, než appka jazyk vůbec sledovala), a u fotek provozoven a avatarů nedává smysl —
+# stejně jako photo_kind zůstávají na výchozí hodnotě. NULL se při čtení chová jako
+# univerzální varianta, ne jako chyba.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-05-01-media-lang
+      author: Petr F.
+      comment: >
+        Bez defaultu a nullable — na rozdíl od photo_kind ('OTHER' je platná odpověď pro
+        každou dosavadní fotku) tady žádná hodnota, kterou bychom mohli dosadit, pravdivá není.
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: media
+            columns:
+              - column:
+                  name: lang
+                  type: VARCHAR(5)
+        - sql:
+            sql: |
+              ALTER TABLE core.media
+                ADD CONSTRAINT chk_media_lang CHECK (lang IS NULL OR lang ~ '^[a-z]{2}$');
+
+              -- Detail zboží řadí fotky v jazyce klienta dopředu; index nese record_* jako
+              -- dosavadní čtení fotek jednoho záznamu, jazyk je jen doplněk pro to řazení.
+              CREATE INDEX idx_media_record_lang ON core.media (record_type, record_id, lang);

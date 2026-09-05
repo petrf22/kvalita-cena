@@ -23,8 +23,8 @@ import java.util.List;
  * které tam nikdo nezapsal) a ORDER BY, a obojí je whitelist z pevné množiny (boolean /
  * {@link ProductSort}), nikdy hodnota od uživatele.
  *
- * <p>{@code candidate} je čtyřvětvý UNION (název zboží, uživatelský patch názvu, kategorie,
- * čárový kód), NE jeden OR přes čtyři tabulky — OR, jehož některá strana sahá na LEFT JOINovanou
+ * <p>{@code candidate} je vícevětvý UNION (název zboží a jeho překlady, uživatelský patch
+ * názvu, jazykové varianty z OFF, kategorie, čárový kód), NE jeden OR přes všechny tabulky — OR, jehož některá strana sahá na LEFT JOINovanou
  * nebo jinak spojenou tabulku, nejde poskládat do BitmapOr a planner spadne na seq scan celého
  * katalogu. Takhle každá větev běží přes svůj vlastní index (idx_product_name_norm_fts,
  * primární klíč product_user_edit, idx_product_category_status, idx_product_code_code). UNION
@@ -92,6 +92,11 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
           SELECT p.id FROM core.product p
           WHERE to_tsvector('simple', core.norm_text(p.name)) @@ (SELECT tsq FROM q)
         UNION
+          -- Komunitní překlady názvu BEZ filtru na jazyk: kdo v české appce napíše "Magnesia",
+          -- má zboží najít, i když ho uvidí pod českým názvem (docs/lokalizace.md).
+          SELECT pn.product_id FROM core.product_name pn
+          WHERE to_tsvector('simple', core.norm_text(pn.name)) @@ (SELECT tsq FROM q)
+        UNION
           SELECT e.product_id FROM core.product_user_edit e
           WHERE e.user_id = CAST(:viewerId AS BIGINT)
             AND to_tsvector('simple', core.norm_text(e.name)) @@ (SELECT tsq FROM q)
@@ -100,6 +105,11 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
           JOIN core.product_code pc ON pc.code = op.gtin AND pc.code_type = 'GTIN'
           WHERE op.fetch_status = 'FOUND'
             AND to_tsvector('simple', core.norm_text(op.product_name)) @@ (SELECT tsq FROM q)
+        UNION
+          -- Totéž pro jazykové varianty z OFF (off.product_name).
+          SELECT pc.product_id FROM off.product_name opn
+          JOIN core.product_code pc ON pc.code = opn.gtin AND pc.code_type = 'GTIN'
+          WHERE to_tsvector('simple', core.norm_text(opn.name)) @@ (SELECT tsq FROM q)
         UNION
           SELECT p.id FROM core.product p WHERE p.category_id IN (SELECT id FROM cat_scope)
         UNION
@@ -112,17 +122,28 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
           WHERE CAST(:codeQuery AS TEXT) IS NOT NULL
             AND pc2.code = CAST(:codeQuery AS TEXT) AND pc2.code_type = 'GTIN'
       ), matched AS (
-        SELECT p.id, COALESCE(e.name, op.product_name, p.name) AS name
+        -- Název tu slouží k ŘAZENÍ (ProductSort.NAME a druhotné ORDER BY), ne k zobrazení —
+        -- to skládá ProductOverlayService/ProductNameResolver nad načtenými entitami. Pořadí
+        -- vrstev je proto stejné (v jazyce requestu patch → komunita → OFF, jinak primární
+        -- název a nakonec "hlavní" varianta z OFF); jemnější fallback napříč jazyky, který
+        -- resolver umí, by se v SQL nevyplatil a řazení neovlivní.
+        SELECT p.id, COALESCE(
+                 CASE WHEN e.name_lang = CAST(:locale AS TEXT) THEN e.name END,
+                 CASE WHEN p.name_lang = CAST(:locale AS TEXT) THEN p.name END,
+                 pn.name, opn.name, p.name, op.product_name) AS name
         FROM core.product p
         JOIN candidate cnd ON cnd.id = p.id
         LEFT JOIN core.product_user_edit e
           ON e.product_id = p.id AND e.user_id = CAST(:viewerId AS BIGINT)
+        LEFT JOIN core.product_name pn
+          ON pn.product_id = p.id AND pn.lang = CAST(:locale AS TEXT)
         LEFT JOIN LATERAL (
           SELECT pc.code FROM core.product_code pc
           WHERE pc.product_id = p.id AND pc.code_type = 'GTIN'
           ORDER BY pc.is_primary DESC, pc.id ASC LIMIT 1
         ) gt ON TRUE
         LEFT JOIN off.product op ON op.gtin = gt.code AND op.fetch_status = 'FOUND'
+        LEFT JOIN off.product_name opn ON opn.gtin = op.gtin AND opn.lang = CAST(:locale AS TEXT)
         LEFT JOIN core.category oc ON oc.slug = op.mapped_category_slug
         WHERE (p.status = 'ACTIVE'
                OR (p.status = 'DRAFT' AND p.created_by_user_id = CAST(:viewerId AS BIGINT)))
