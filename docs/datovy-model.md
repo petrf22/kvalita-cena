@@ -278,6 +278,18 @@ sloupce jsou nullable zrcadla editovatelných polí — `NULL` znamená "nezměn
 cena zapsaná uživatelem k jeho kopii by se v agregátu nikdy neobjevila). Jedno `id` po celou
 dobu životnosti záznamu je přesně to, co tenhle problém obchází.
 
+**Název zboží je z tohohle pravidla částečná výjimka — doplnění chybějícího jazyka jde
+GLOBÁLNĚ, ne do patche** (`2026-09-05/02-product-name-i18n.yaml`, `ProductNameWriter`).
+Zdůvodnění: patch vyjadřuje NESOUHLAS s existující hodnotou, kdežto název v jazyce, který
+zboží zatím nemá vůbec, žádnou existující hodnotu nepřepisuje — je to zaplnění díry, tedy
+totéž co založení záznamu. Kdyby šel do patche, viděl by český překlad německého názvu
+z OFF navždycky jen ten, kdo ho napsal, a každý další česky mluvící uživatel by narazil na
+tutéž němčinu. **Změna už existujícího názvu do patche jde dál** — tam nesouhlas je.
+Rozdělení tabulek: primární název v `core.product.name` + `name_lang`, překlady
+v `core.product_name (product_id, lang, name)`, osobní patch v `core.product_user_edit.name`
++ `name_lang` (jeden uživatel = jeden jazyk). Pořadí při čtení a fallback napříč jazyky jsou
+v `docs/lokalizace.md`, „Název zboží po jazycích".
+
 **`cleared_fields TEXT[]`** na obou patch tabulkách odlišuje "pole nezměněno" (`NULL` ve
 sloupci) od "uživatel volitelné pole vědomě vymazal" (např. odstranění chybně zadaného IČO)
 — bez něj by šlo pole jen přepsat, nikdy smazat, protože `NULL` už má jiný význam.
@@ -379,6 +391,16 @@ soubor jen podrží v paměti (`File`/`Uri`) a nahraje ho AŽ po úspěšném `c
 jen odloží existující tok o jeden krok. Selhání uploadu nezruší založené zboží (produkt v tu
 chvíli už existuje); appka jen upozorní, fotku jde doplnit později z detailu.
 
+**`core.media.lang` (`2026-09-05/03-media-lang.yaml`) je jazyk obalu/etikety na fotce**,
+`NULL` = neurčeno. U `LABEL` je to podstata věci — je to fotka TEXTU složení, takže bez jazyka
+nejde vybrat ta, které čtenář rozumí, a budoucí čtení složení (`docs/ai.md`) by nevědělo, co
+čte. Klient jazyk posílá explicitně (`POST /api/media/...?lang=`), bez něj se u fotek zboží
+doplní jazyk requestu jako nejlepší dostupný odhad a autor ho může opravit přes `updatePhoto`.
+Existující řádky zůstaly `NULL` — zpětně se odvodit nedá — a `NULL` se při čtení chová jako
+univerzální varianta, ne jako chyba. Fotky provozoven a avatary jazyk nenesou, stejně jako
+nenesou `photo_kind`. Detail zboží řadí fotky v jazyce klienta dopředu, cizojazyčné za ně;
+nic se neskrývá (cizojazyčná etiketa je pořád lepší než žádná).
+
 **Skrytí po nahlášení má stejnou sémantiku jako `core.product.hidden_at`/`core.store.hidden_at`**
 — vidí ji dál jen autor. Práh je ale jiný a mnohem nižší (`app.moderation.photo-flags-to-hide`,
 výchozí 1) — zdůvodnění patří do `docs/reputace.md`.
@@ -386,7 +408,10 @@ výchozí 1) — zdůvodnění patří do `docs/reputace.md`.
 **Obrázky z Open Food Facts (`off.*`) se do `core.media` nikdy nekopírují** — jsou pod CC-BY-SA
 stejně jako zbytek OFF dat, platí pro ně přesně to pravidlo oddělení schémat, které je popsané
 na začátku tohohle dokumentu. Případné zobrazení OFF fotky by šlo výhradně odkazem přes
-`Product.externalLinks`, ne uložením do `core.media`.
+`Product.externalLinks`, ne uložením do `core.media`. Od `2026-09-05/01-off-product-i18n.yaml`
+drží `off.product_image (gtin, kind, lang, url, small_url)` vybrané OFF fotky po druhu
+(`FRONT`/`INGREDIENTS`, protějšek našeho `ITEM`/`LABEL`) a po jazyku obalu — pořád jen URL,
+nikdy binárku, a pořád v `off.*`.
 
 ## Profil uživatele a viditelnost
 

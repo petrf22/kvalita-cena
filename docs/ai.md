@@ -72,6 +72,12 @@ jiným polem fotky. Nemá nic společného s `f_evid` (ten je na `core.price_obs
 vznikla, ne dopisovaný později. Cílový stav čtení etikety (nutriční tabulka, složení, alergeny)
 je zapsaný v `docs/rozvoj.md`, „Údaje z etikety" — LABEL je jeho pátá úloha v pořadí výš.
 
+Od 2026-09 nese fotka i **jazyk** (`core.media.lang`, `docs/lokalizace.md`) a je to přímý
+předpoklad té úlohy: etiketa je fotka TEXTU, takže čtení složení musí vědět, v jakém jazyce
+text je — jinak nemá jak vybrat správný slovník alergenů ani si ověřit, že vytěžený text
+patří k jazykové mutaci, kterou uživatel drží v ruce. Platí tu přesně totéž co u `photo_kind`
+výš: rozlišení je v datech od chvíle, kdy funkce vznikla, ne dopisované později.
+
 ## Hardware a volba modelu
 
 Zjištěný stroj (srpen 2026): **NVIDIA RTX 4060 Ti, 8 GB VRAM**, AMD Ryzen 9 7900 (24 vláken),

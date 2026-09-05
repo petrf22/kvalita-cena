@@ -69,6 +69,13 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   editaci existujícího zboží (`updateProduct`) — tam dvojice musí dorazit i tehdy, když se
   změnila jen základní jednotka nebo přepínač váhového zboží, ne jen samotné číslo
   (`netContentForUpdateSubmit`/`buildUpdateProductInput`).
+- **Pole „Název" ve formuláři je VŽDY v jazyce appky** a cizojazyčný název z OFF se do něj
+  nikdy nepředvyplňuje (`offCandidateDefaults`/`offNamesFrom` berou jen `names[lang]`) — jinak
+  by se němčina uložila jako český název, což je přesně ta chyba, kvůli které vícejazyčnost
+  vznikla. Cizojazyčná varianta se ukáže v upozornění a v sekci ostatních jazyků; do serveru
+  se z ní posílá jen to, co uživatel změnil (`changedNames`), protože poslat zpátky nezměněnou
+  hodnotu z OFF by znamenalo zapsat cizí data do `core.product_name` (ODbL). Pořadí vrstev
+  a fallback napříč jazyky: `docs/lokalizace.md`, „Název zboží po jazycích".
 - Klientský překlad chyb podle `code` na mobilu chybí — appka ukáže `serverMessage`, protože
   `network/Dto.kt` negeneruje typy ze schématu jako web (`docs/lokalizace.md`, „Co zbývá").
 - Geometrie ikon (favicon, PWA manifest, Android launcher) žije v `tools/icons/generate.py`,
