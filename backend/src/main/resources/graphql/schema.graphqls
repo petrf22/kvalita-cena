@@ -322,7 +322,7 @@ type Mutation {
   Popisek, pořadí a druh fotky (nejnižší sortOrder = hlavní fotka záznamu). Jen autor fotky,
   jinak UnauthorizedException.
   """
-  updatePhoto(id: ID!, caption: String, sortOrder: Int, kind: PhotoKind): Photo!
+  updatePhoto(id: ID!, caption: String, sortOrder: Int, kind: PhotoKind, lang: String): Photo!
 
   "Smazání vlastní fotky (core.media i soubor v MediaStorage). Jen autor."
   deletePhoto(id: ID!): Boolean!
@@ -441,10 +441,19 @@ type Photo {
   "Povinný text licence, klient ho MUSÍ zobrazit u galerie."
   attribution: String!
   kind: PhotoKind!
+  """
+  Jazyk obalu/etikety na fotce; null = neurčeno (fotky provozoven, avatary a všechno nahrané
+  dřív, než appka jazyk sledovala). U LABEL je to podstata věci — je to fotka textu složení.
+  """
+  lang: String
 }
 
 input UpdateProductInput {
+  "Název v jazyce nameLang (prázdné nameLang = jazyk requestu)."
   name: String
+  nameLang: String
+  "Názvy v dalších jazycích. Doplnit chybějící jde libovolně mnoho, přepsat existující jen jeden."
+  names: [ProductNameInput!]
   brandName: String
   "True smaže značku (vrátí zboží na 'bez značky') — jinak se posílá brandName."
   clearBrand: Boolean = false
@@ -683,8 +692,21 @@ input CreateStoreInput {
   url: String
 }
 
-input CreateProductInput {
+"""
+Název zboží v jednom jazyce. Ve vstupech jde vždy o DALŠÍ jazyky vedle dvojice name/nameLang.
+"""
+input ProductNameInput {
+  lang: String!
   name: String!
+}
+
+input CreateProductInput {
+  "Primární název v jazyce nameLang."
+  name: String!
+  "Jazyk primárního názvu; prázdné = jazyk requestu. Server jazyk nikdy nehádá z textu."
+  nameLang: String
+  "Názvy v DALŠÍCH jazycích; duplicita s nameLang je chyba."
+  names: [ProductNameInput!]
   "Volný text značky — pokud neexistuje, založí se nová core.brand."
   brandName: String
   categoryId: ID!
@@ -701,7 +723,13 @@ input CreateProductInput {
 
 input CreateProductFromOffInput {
   code: String!
+  """
+  Potvrzený název v jazyce nameLang. Když ho OFF v tom jazyce nemá, uloží se GLOBÁLNĚ
+  (doplnění díry, ne nesouhlas) — jinak jako osobní patch, viz docs/lokalizace.md.
+  """
   name: String
+  nameLang: String
+  names: [ProductNameInput!]
   brandName: String
   categoryId: ID
   unitBase: UnitBase
@@ -726,13 +754,20 @@ type ProductLookupResult {
 
 type ExternalProductCandidate {
   code: String!
+  "Název v jazyce klienta, jinak nejbližší náhrada — nameLang říká, jaký jazyk to nakonec je."
   name: String
+  nameLang: String
+  "Všechny názvy, které OFF pro zboží má — formulář z nich předvyplní ostatní jazyky."
+  names: [ProductName!]!
   brandName: String
   category: Category
   unitBase: UnitBase
   netContentValue: BigDecimal
   netContentUom: NetContentUom
+  "Přední fotka v jazyce klienta (s fallbackem)."
   image: ExternalProductImage
+  "Obal i etiketa ve všech jazycích, které OFF má; jazyk requestu první."
+  images: [ExternalProductImage!]!
   sourceUrl: String!
   attribution: String!
 }
@@ -740,7 +775,23 @@ type ExternalProductCandidate {
 type ExternalProductImage {
   url: String!
   thumbnailUrl: String!
+  "Obal (ITEM) nebo etiketa se složením (LABEL) — táž osa jako u vlastních fotek."
+  kind: PhotoKind!
+  "Jazyk obalu na fotce; null u starých snapshotů, kde OFF jazykové varianty ještě neukládal."
+  lang: String
   attribution: String!
+}
+
+"""
+Název zboží v jednom jazyce i s tím, odkud je — formulář podle toho pozná, že nabízený název
+je z OFF a k tomu v cizím jazyce (docs/lokalizace.md).
+"""
+type ProductName {
+  lang: String
+  name: String!
+  source: CatalogDataSource!
+  "Název pochází z vlastního patche přihlášeného uživatele, ne z globální vrstvy."
+  editedByMe: Boolean!
 }
 
 type Brand {
@@ -795,7 +846,19 @@ enum ProductScope {
 
 type Product {
   id: ID!
+  """
+  Název v jazyce requestu (Accept-Language). Když ho zboží v tom jazyce nemá, vrátí se
+  nejbližší náhrada (primární název → hlavní jazyk OFF → výchozí jazyk appky → cokoli) —
+  název ve špatném jazyce je pořád lepší než prázdno, a nameLang řekne, co se stalo.
+  """
   name: String!
+  """
+  Jazyk, ze kterého název SKUTEČNĚ je — klient podle něj označí, že zboží zatím český název
+  nemá. null jen u starých snapshotů z OFF, kde jazyk neznáme.
+  """
+  nameLang: String
+  "Všechny známé názvy po jazycích (jazyk requestu první) — pro editaci a štítky na detailu."
+  names: [ProductName!]!
   brand: Brand
   category: Category!
   unitBase: UnitBase!
@@ -839,15 +902,25 @@ type Product {
   catalogSource: CatalogDataSource!
   "Povinná atribuce, jen když catalogSource=OPEN_FOOD_FACTS."
   catalogAttribution: String
-  "Externí OFF obrázek; nikdy nejde o core.media Photo."
+  "Přední OFF fotka v jazyce klienta (s fallbackem); nikdy nejde o core.media Photo."
   externalImage: ExternalProductImage
+  """
+  Všechny fotky z OFF snapshotu — obal (ITEM) i etiketa se složením (LABEL), ve všech
+  jazycích, které OFF má; jazyk requestu první. Etiketa je vyfocený TEXT, takže bez jazyka
+  je k ničemu (docs/lokalizace.md).
+  """
+  externalImages: [ExternalProductImage!]!
   """
   Poslední vlastní zápisy přihlášeného uživatele (na obchod a druh ceny) — zobrazí se jako
   "Vaše cena" vedle komunitního agregátu (prices), i dřív než je zpracuje agregace. Prázdné
   pole pro anonyma i pro produkt bez vlastního zápisu.
   """
   myPrices: [MyPrice!]!
-  "Fotky zboží (core.media) — první (nejnižší sortOrder) je hlavní. Prázdné, dokud je nikdo nenahraje."
+  """
+  Fotky zboží (core.media) — první je hlavní. Řadí se fotky v jazyce klienta, pak ty bez
+  určeného jazyka, pak cizojazyčné; uvnitř skupiny podle sortOrder. Nic se neskrývá,
+  cizojazyčná etiketa je pořád lepší než žádná. Prázdné, dokud je nikdo nenahraje.
+  """
   photos: [Photo!]!
 }
 
@@ -1489,6 +1562,9 @@ enum ErrorCode {
   CHAIN_NOT_FOUND
   PRODUCT_NAME_REQUIRED
   PRODUCT_NAME_EMPTY
+  PRODUCT_NAME_LANG_UNSUPPORTED
+  PRODUCT_NAME_LANG_DUPLICATE
+  PRODUCT_NAME_EDIT_SINGLE_LANG
   PRODUCT_CATEGORY_REQUIRED
   PRODUCT_UNIT_BASE_REQUIRED
   PRODUCT_STORE_REQUIRED

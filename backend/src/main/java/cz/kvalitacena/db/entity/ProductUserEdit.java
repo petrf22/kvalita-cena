@@ -41,6 +41,16 @@ public class ProductUserEdit {
   @Column(name = "name", length = 200)
   private String name;
 
+  // Na který jazyk se patch názvu vztahuje — bez něj by se osobní český překlad ukázal
+  // i tomu, kdo si appku přepnul do němčiny. Vyplněné právě tehdy, když je vyplněné name
+  // (hlídá chk_product_user_edit_name_with_lang).
+  //
+  // Jeden uživatel má na produkt jeden patch, takže si osobně přepíše název v JEDNOM jazyce.
+  // Vědomé zjednodušení: běžná cesta "doplnit chybějící jazyk" jde globálně do
+  // core.product_name, ne sem, takže vlastní tabulka patchů po jazycích by se nevyplatila.
+  @Column(name = "name_lang", length = 5)
+  private String nameLang;
+
   @Column(name = "brand_id")
   private Long brandId;
 

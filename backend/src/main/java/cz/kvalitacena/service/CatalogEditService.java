@@ -5,8 +5,12 @@ import cz.kvalitacena.controller.UpdateStoreInput;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.Brand;
 import cz.kvalitacena.db.entity.Category;
+import cz.kvalitacena.db.entity.CodeType;
 import cz.kvalitacena.db.entity.NetContentUom;
+import cz.kvalitacena.db.entity.OffFetchStatus;
+import cz.kvalitacena.db.entity.OffProduct;
 import cz.kvalitacena.db.entity.Product;
+import cz.kvalitacena.db.entity.ProductCode;
 import cz.kvalitacena.db.entity.ProductUserEdit;
 import cz.kvalitacena.db.entity.RetailChain;
 import cz.kvalitacena.db.entity.Store;
@@ -14,6 +18,8 @@ import cz.kvalitacena.db.entity.StoreUserEdit;
 import cz.kvalitacena.db.entity.UnitBase;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.CategoryRepository;
+import cz.kvalitacena.db.repo.OffProductRepository;
+import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ProductUserEditRepository;
 import cz.kvalitacena.db.repo.RetailChainRepository;
@@ -29,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -51,6 +58,10 @@ public class CatalogEditService {
   private final CategoryRepository categoryRepository;
   private final BrandResolutionService brandResolutionService;
   private final ProductOverlayService productOverlayService;
+  private final ProductNameWriter productNameWriter;
+  private final ProductNameResolver productNameResolver;
+  private final OffProductRepository offProductRepository;
+  private final ProductCodeRepository productCodeRepository;
 
   private final StoreRepository storeRepository;
   private final StoreUserEditRepository storeUserEditRepository;
@@ -75,10 +86,14 @@ public class CatalogEditService {
         ProductUserEdit.builder().productId(productId).userId(user.getId()).build());
     List<String> cleared = new ArrayList<>(edit.getClearedFields());
 
-    if (input.name() != null) {
-      String trimmed = input.name().trim();
-      if (trimmed.isEmpty()) throw new ValidationException(ErrorCode.PRODUCT_NAME_EMPTY);
-      edit.setName(trimmed.equals(product.getName()) ? null : trimmed);
+    // Název je jazyková věc, ne jednohodnotová: doplnění chybějícího jazyka jde globálně,
+    // změna existujícího do patche (docs/lokalizace.md). Rozhoduje o tom ProductNameWriter,
+    // který k tomu potřebuje ULOŽENOU entitu a OFF snapshot, ne překrytou kopii.
+    if (input.name() != null || (input.names() != null && !input.names().isEmpty())) {
+      productNameWriter.apply(storedProduct, offSnapshotFor(productId), edit, input.name(),
+          productNameWriter.primaryLang(input.nameLang(), productNameResolver.requestLanguage()),
+          input.names(), user);
+      productRepository.save(storedProduct);
     }
 
     if (input.brandName() != null) {
@@ -269,6 +284,16 @@ public class CatalogEditService {
     }
 
     return storeOverlayService.applyOverlay(store, user.getId());
+  }
+
+  /** OFF snapshot podle primárního GTINu — týž výběr jako v {@link ProductOverlayService}. */
+  private OffProduct offSnapshotFor(Long productId) {
+    return productCodeRepository.findByProductId(productId).stream()
+        .filter(code -> code.getCodeType() == CodeType.GTIN)
+        .sorted(Comparator.comparing(ProductCode::isPrimary).reversed())
+        .map(ProductCode::getCode).map(offProductRepository::findById)
+        .flatMap(Optional::stream)
+        .filter(off -> off.getFetchStatus() == OffFetchStatus.FOUND).findFirst().orElse(null);
   }
 
   private AppUser requireUser(UUID viewerPublicUid, ErrorCode requiresLoginCode) {

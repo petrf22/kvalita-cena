@@ -16,7 +16,9 @@ import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.OffProductRepository;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
 import cz.kvalitacena.db.repo.ProductCodeRepository;
+import cz.kvalitacena.db.repo.ProductNameRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
+import cz.kvalitacena.db.repo.ProductUserEditRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.security.ViewerContext;
 import cz.kvalitacena.security.ViewerContextResolver;
@@ -33,6 +35,7 @@ import cz.kvalitacena.service.ProductCatalogService;
 import cz.kvalitacena.service.ProductOverlayService;
 import cz.kvalitacena.service.ProductSearchService;
 import cz.kvalitacena.service.ProductReviewService;
+import cz.kvalitacena.service.TestI18n;
 import cz.kvalitacena.service.TestMessages;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,6 +87,8 @@ class ProductGraphQlControllerLookupByCodeTest {
   @Mock private ViewerContextResolver viewerContextResolver;
   @Mock private CountryResolver countryResolver;
   @Mock private FxRateService fxRateService;
+  @Mock private ProductNameRepository productNameRepository;
+  @Mock private ProductUserEditRepository productUserEditRepository;
 
   private final OffNetContentConverter offNetContentConverter = new OffNetContentConverter();
   private final ExternalLinkProperties externalLinkProperties = new ExternalLinkProperties();
@@ -100,7 +105,8 @@ class ProductGraphQlControllerLookupByCodeTest {
         productCodeRepository, offProductRepository, storeRepository, categoryRepository, categoryI18nRepository,
         productSearchService,
         reviewService, productCatalogService, offProductCatalogService, openFoodFactsService,
-        offNetContentConverter, productOverlayService, catalogEditService, myPriceService, mediaService,
+        offNetContentConverter, productOverlayService, TestI18n.nameResolver(), TestI18n.imageResolver(),
+        productNameRepository, productUserEditRepository, catalogEditService, myPriceService, mediaService,
         viewerContextResolver, externalLinkProperties, TestMessages.instance(), countryResolver, fxRateService);
   }
 

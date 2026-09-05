@@ -44,6 +44,8 @@ public class OffProductCatalogService {
   private final OffNetContentConverter netContentConverter;
   private final CatalogEditService catalogEditService;
   private final TrustLevelService trustLevelService;
+  private final ProductNameWriter productNameWriter;
+  private final ProductNameResolver productNameResolver;
 
   @Transactional
   public Product create(CreateProductFromOffInput input, UUID viewerPublicUid) {
@@ -61,8 +63,13 @@ public class OffProductCatalogService {
     });
     if (!catalogRateLimiter.tryAcquireProductCreation(viewerPublicUid)) throw new TooManyRequestsException();
 
-    boolean offHasName = off.getProductName() != null;
+    // "Má OFF nějaký název?" se ptá napříč VŠEMI jazyky, ne jen v tom klientově — zboží
+    // s německým názvem se v české appce založí bez vlastního core.product.name a čeština
+    // se doplní až tím, co uživatel do formuláře napíše (updateProduct níž). Kdyby se tady
+    // vyžadoval název v jazyce klienta, nešlo by nabízený cizojazyčný název prostě přijmout.
+    boolean offHasName = off.getProductName() != null || !off.getNames().isEmpty();
     String fallbackName = offHasName ? null : requiredName(input.name());
+    String primaryLang = productNameWriter.primaryLang(input.nameLang(), productNameResolver.requestLanguage());
     Category mappedCategory = off.getMappedCategorySlug() == null ? null
         : categoryRepository.findBySlug(off.getMappedCategorySlug()).orElse(null);
     Category fallbackCategory = mappedCategory == null ? requiredCategory(input.categoryId()) : null;
@@ -74,6 +81,7 @@ public class OffProductCatalogService {
 
     Product product = Product.builder()
         .name(fallbackName)
+        .nameLang(primaryLang)
         .brand(off.getBrandName() == null ? brandResolutionService.resolve(input.brandName()) : null)
         .category(fallbackCategory)
         .unitBase(fallbackUnitBase)
@@ -100,9 +108,9 @@ public class OffProductCatalogService {
     // updateProduct vrací vždy overlay nad uloženým produktem (nikdy null) — patch, kde se
     // potvrzená hodnota shoduje s OFF/komunitním základem, CatalogEditService sám zahodí.
     UpdateProductInput confirmedValues = new UpdateProductInput(
-        input.name(), input.brandName(), false, input.categoryId(), input.unitBase(),
-        input.netContentValue(), input.netContentUom(), input.piecesInPack(), false,
-        input.isVariableWeight());
+        input.name(), primaryLang, input.names(), input.brandName(), false, input.categoryId(),
+        input.unitBase(), input.netContentValue(), input.netContentUom(), input.piecesInPack(),
+        false, input.isVariableWeight());
     return catalogEditService.updateProduct(product.getId(), confirmedValues, viewerPublicUid);
   }
 

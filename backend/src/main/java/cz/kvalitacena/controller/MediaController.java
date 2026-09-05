@@ -50,9 +50,11 @@ public class MediaController {
       @RequestParam("file") MultipartFile file,
       @RequestParam(value = "caption", required = false) String caption,
       @RequestParam(value = "kind", required = false) PhotoKind kind,
+      @RequestParam(value = "lang", required = false) String lang,
       Authentication authentication) {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
-    Media media = mediaService.upload(recordType, recordId, readBytes(file), caption, kind, viewer.publicUid());
+    Media media = mediaService.upload(recordType, recordId, readBytes(file), caption, kind, lang,
+        viewer.publicUid());
     return mediaService.toPhoto(media, viewer);
   }
 

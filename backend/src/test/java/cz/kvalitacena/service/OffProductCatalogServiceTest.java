@@ -66,17 +66,18 @@ class OffProductCatalogServiceTest {
   @Mock private OpenFoodFactsService offService;
   @Mock private CatalogEditService catalogEditService;
   @Mock private TrustLevelService trustLevelService;
+  @Mock private ProductNameWriter productNameWriter;
 
   private final OffNetContentConverter netContentConverter = new OffNetContentConverter();
 
   private OffProductCatalogService service() {
     return new OffProductCatalogService(productRepository, productCodeRepository, appUserRepository,
         categoryRepository, brandResolutionService, catalogRateLimiter, offService, netContentConverter,
-        catalogEditService, trustLevelService);
+        catalogEditService, trustLevelService, productNameWriter, TestI18n.nameResolver());
   }
 
   private CreateProductFromOffInput input(String name, Long categoryId, UnitBase unitBase) {
-    return new CreateProductFromOffInput(RAW_CODE, name, null, categoryId, unitBase, null, null, null, false);
+    return new CreateProductFromOffInput(RAW_CODE, name, null, null, null, categoryId, unitBase, null, null, null, false);
   }
 
   private void givenLoggedInUser() {
@@ -326,7 +327,7 @@ class OffProductCatalogServiceTest {
     when(catalogEditService.updateProduct(eq(PRODUCT_ID), any(), eq(PUBLIC_UID))).thenReturn(patched);
 
     CreateProductFromOffInput confirmed = new CreateProductFromOffInput(
-        RAW_CODE, "Šumavský eidam plátky", null, null, null, null, null, 2, false);
+        RAW_CODE, "Šumavský eidam plátky", null, null, null, null, null, null, null, 2, false);
     Product result = service().create(confirmed, PUBLIC_UID);
 
     assertThat(result).isSameAs(patched);

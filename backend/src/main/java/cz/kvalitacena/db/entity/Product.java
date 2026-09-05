@@ -6,6 +6,8 @@ import org.springframework.data.domain.Persistable;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "product", schema = "core")
@@ -22,6 +24,18 @@ public class Product implements Persistable<Long> {
 
   @Column(name = "name", length = 200)
   private String name;
+
+  // Jazyk PRIMÁRNÍHO názvu výš (docs/lokalizace.md). Překlady do dalších jazyků leží
+  // v core.product_name, nikdy tady. Výchozí 'cs' odpovídá tomu, že čeština je zdrojový
+  // jazyk projektu; zakládací služby ho stejně vždy vyplní podle jazyka klienta.
+  //
+  // POZOR: ProductOverlayService na DETACHED kopii přepisuje name i nameLang na EFEKTIVNÍ
+  // hodnotu pro jazyk requestu (a ta může být z jiného jazyka, když v tom klientově název
+  // chybí). Kdo potřebuje uložený primární jazyk, musí sáhnout na entitu PŘED překryvem —
+  // tak to dělá CatalogEditService, které si drží storedProduct zvlášť.
+  @Column(name = "name_lang", nullable = false, length = 5)
+  @Builder.Default
+  private String nameLang = "cs";
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "brand_id", foreignKey = @ForeignKey(name = "fk_product_brand"))
@@ -128,6 +142,16 @@ public class Product implements Persistable<Long> {
 
   @Transient
   private String offImageFrontSmallUrl;
+
+  // Jazyk obalu na vybrané OFF fotce (NULL u starých snapshotů bez selected_images) —
+  // klient podle něj označí fotku, která je z jiného jazyka než appka.
+  @Transient
+  private String offImageLang;
+
+  // Všechny fotky z OFF snapshotu (obal i etiketa, všechny jazyky), jazyk requestu první.
+  @Transient
+  @Builder.Default
+  private List<OffProductImage> offImages = new ArrayList<>();
 
   @PrePersist
   protected void onCreate() {

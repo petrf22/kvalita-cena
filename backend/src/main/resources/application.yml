@@ -222,6 +222,11 @@ app:
       positive-cache-ttl: P7D
       negative-cache-ttl: P1D
       max-requests-per-minute: 15
+      # Dotažení jazyků do snapshotů stažených dřív, než appka uměla dnešní sadu jazyků
+      # (OffSnapshotRefreshService). Běží v noci a po dávkách, protože sdílí
+      # max-requests-per-minute s interaktivním skenováním — přednost má vždy uživatel.
+      backfill-cron: "0 20 3 * * *"
+      backfill-batch-size: 200
     nominatim:
       # Usage policy Nominatimu vyžaduje identifikovatelný User-Agent — v produkci nahradit
       # reálným kontaktem (viz https://operations.osmfoundation.org/policies/nominatim/).

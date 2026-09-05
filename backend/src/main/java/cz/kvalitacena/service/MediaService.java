@@ -20,11 +20,14 @@ import cz.kvalitacena.exception.ValidationException;
 import cz.kvalitacena.security.CatalogRateLimiter;
 import cz.kvalitacena.security.ViewerContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,9 +57,13 @@ public class MediaService {
   private final MediaProperties mediaProperties;
   private final Messages messages;
 
+  /**
+   * @param lang jazyk obalu/etikety na fotce; {@code null} = doplní se jazyk requestu, ale jen
+   *             u fotek zboží — u provozoven a avatarů jazyk nic neznamená (docs/lokalizace.md)
+   */
   @Transactional
   public Media upload(RecordType recordType, Long recordId, byte[] raw, String caption, PhotoKind kind,
-      UUID viewerPublicUid) {
+      String lang, UUID viewerPublicUid) {
     if (viewerPublicUid == null) {
       throw new UnauthorizedException(ErrorCode.PHOTO_UPLOAD_REQUIRES_LOGIN);
     }
@@ -104,6 +111,7 @@ public class MediaService {
         .byteSize(processed.full().length)
         .sha256(processed.sha256())
         .caption(blankToNull(caption))
+        .lang(photoLang(recordType, lang))
         .sortOrder((int) existingCount)
         .build();
     return mediaRepository.save(media);
@@ -117,7 +125,8 @@ public class MediaService {
   }
 
   @Transactional
-  public Media update(Long mediaId, String caption, Integer sortOrder, PhotoKind kind, UUID viewerPublicUid) {
+  public Media update(Long mediaId, String caption, Integer sortOrder, PhotoKind kind, String lang,
+      UUID viewerPublicUid) {
     Media media = requireOwnMedia(mediaId, viewerPublicUid, ErrorCode.PHOTO_UPDATE_NOT_OWNER);
     if (caption != null) {
       media.setCaption(blankToNull(caption));
@@ -128,6 +137,11 @@ public class MediaService {
     if (kind != null) {
       media.setPhotoKind(kind);
     }
+    // Jazyk smí autor opravit, když appka tipla podle jazyka requestu špatně (vyfotil cizí
+    // obal). Prázdný řetězec znamená "nevím", tedy návrat na NULL.
+    if (lang != null) {
+      media.setLang(normalizeLang(lang));
+    }
     return mediaRepository.save(media);
   }
 
@@ -135,8 +149,24 @@ public class MediaService {
   public List<Photo> photosFor(RecordType recordType, Long recordId, ViewerContext viewer) {
     return mediaRepository.findByRecordTypeAndRecordIdOrderBySortOrderAscIdAsc(recordType, recordId).stream()
         .filter(media -> visibleTo(media, viewer))
+        .sorted(byViewerLanguage())
         .map(media -> toPhoto(media, viewer))
         .toList();
+  }
+
+  /**
+   * Fotky v jazyce klienta dopředu, pak ty bez určeného jazyka, pak cizojazyčné — uvnitř
+   * každé skupiny zůstává pořadí z DB ({@code sortOrder}, viz kontrakt „první = hlavní").
+   * Nic se neskrývá: cizojazyčná etiketa je pořád lepší než žádná, jen nemá být první.
+   * U provozoven a avatarů je jazyk vždy NULL, takže se pro ně nic nemění.
+   */
+  private Comparator<Media> byViewerLanguage() {
+    String language = LocaleContextHolder.getLocale().getLanguage();
+    return Comparator.comparingInt((Media media) -> {
+      String lang = media.getLang();
+      if (lang == null) return 1;
+      return lang.equals(language) ? 0 : 2;
+    });
   }
 
   /** Dotažení fotek pro víc záznamů najednou (GraphQL {@code @BatchMapping}) — žádné N+1. */
@@ -144,6 +174,7 @@ public class MediaService {
   public Map<Long, List<Photo>> photosForBatch(RecordType recordType, Collection<Long> recordIds, ViewerContext viewer) {
     return mediaRepository.findByRecordTypeAndRecordIdInOrderBySortOrderAscIdAsc(recordType, recordIds).stream()
         .filter(media -> visibleTo(media, viewer))
+        .sorted(byViewerLanguage())
         .collect(Collectors.groupingBy(Media::getRecordId,
             Collectors.mapping(media -> toPhoto(media, viewer), Collectors.toList())));
   }
@@ -152,7 +183,24 @@ public class MediaService {
     boolean mine = viewer.userId() != null && media.getUploadedByUserId().equals(viewer.userId());
     return new Photo(media.getId(), "/api/media/" + media.getId(), "/api/media/" + media.getId() + "/thumb",
         media.getWidth(), media.getHeight(), media.getCaption(), mine, media.isHidden(),
-        messages.get("attribution.media"), media.getPhotoKind());
+        messages.get("attribution.media"), media.getPhotoKind(), media.getLang());
+  }
+
+  /**
+   * Jazyk se doplňuje jen u fotek zboží. Klient ho posílá explicitně (ví, co fotí); když
+   * nepošle nic, vezme se jazyk requestu — u obalu i etikety je to nejlepší dostupný odhad
+   * a autor ho může opravit přes {@code updatePhoto}.
+   */
+  private String photoLang(RecordType recordType, String lang) {
+    if (recordType != RecordType.PRODUCT) return null;
+    String normalized = normalizeLang(lang);
+    return normalized != null ? normalized : LocaleContextHolder.getLocale().getLanguage();
+  }
+
+  private String normalizeLang(String lang) {
+    if (lang == null || lang.isBlank()) return null;
+    String language = Locale.forLanguageTag(lang.trim()).getLanguage();
+    return language.isEmpty() ? null : language.toLowerCase(Locale.ROOT);
   }
 
   private Media requireOwnMedia(Long mediaId, UUID viewerPublicUid, ErrorCode notOwnerCode) {

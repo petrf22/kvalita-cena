@@ -24,6 +24,13 @@ public enum ErrorCode {
   // --- katalog: validace založení/úpravy zboží
   PRODUCT_NAME_REQUIRED("error.product.nameRequired"),
   PRODUCT_NAME_EMPTY("error.product.nameEmpty"),
+  // Vícejazyčný název (docs/lokalizace.md) — jazyk mimo app.i18n.supported-locales by appka
+  // nikdy nikomu neukázala, takže se odmítne při zápisu, ne až při čtení.
+  PRODUCT_NAME_LANG_UNSUPPORTED("error.product.nameLangUnsupported"),
+  PRODUCT_NAME_LANG_DUPLICATE("error.product.nameLangDuplicate"),
+  // Osobní patch nese jeden jazyk (core.product_user_edit.name_lang) — přepsat cizí názvy
+  // ve dvou jazycích naráz nejde, doplnit chybějící libovolně mnoho ano.
+  PRODUCT_NAME_EDIT_SINGLE_LANG("error.product.nameEditSingleLang"),
   PRODUCT_CATEGORY_REQUIRED("error.product.categoryRequired"),
   PRODUCT_UNIT_BASE_REQUIRED("error.product.unitBaseRequired"),
   PRODUCT_STORE_REQUIRED("error.product.storeRequired"),

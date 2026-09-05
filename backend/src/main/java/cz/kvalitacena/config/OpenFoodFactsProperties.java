@@ -19,4 +19,8 @@ public class OpenFoodFactsProperties {
   private Duration positiveCacheTtl;
   private Duration negativeCacheTtl;
   private int maxRequestsPerMinute = 15;
+
+  /** Dotažení chybějících jazyků do starších snapshotů — {@code OffSnapshotRefreshService}. */
+  private String backfillCron = "-";
+  private int backfillBatchSize = 200;
 }

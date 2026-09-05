@@ -9,9 +9,11 @@ import cz.kvalitacena.db.entity.OffFetchStatus;
 import cz.kvalitacena.db.entity.OffProduct;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.PriceCurrent;
+import cz.kvalitacena.db.entity.PhotoKind;
 import cz.kvalitacena.db.entity.PriceKind;
 import cz.kvalitacena.db.entity.ProductCode;
 import cz.kvalitacena.db.entity.ProductStatus;
+import cz.kvalitacena.db.entity.ProductUserEdit;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.CategoryI18nRepository;
@@ -19,8 +21,10 @@ import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
 import cz.kvalitacena.db.repo.OffProductRepository;
 import cz.kvalitacena.db.repo.ProductCodeRepository;
+import cz.kvalitacena.db.repo.ProductNameRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ProductSort;
+import cz.kvalitacena.db.repo.ProductUserEditRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.security.ViewerContext;
 import cz.kvalitacena.security.ViewerContextResolver;
@@ -32,14 +36,17 @@ import cz.kvalitacena.service.MyPriceService;
 import cz.kvalitacena.service.OffLookupResult;
 import cz.kvalitacena.service.OffLookupStatus;
 import cz.kvalitacena.service.OffNetContent;
+import cz.kvalitacena.service.OffImageResolver;
 import cz.kvalitacena.service.OffNetContentConverter;
 import cz.kvalitacena.service.OffProductCatalogService;
 import cz.kvalitacena.service.OpenFoodFactsService;
 import cz.kvalitacena.service.ProductCatalogService;
 import cz.kvalitacena.service.Messages;
+import cz.kvalitacena.service.ProductNameResolver;
 import cz.kvalitacena.service.ProductOverlayService;
 import cz.kvalitacena.service.ProductSearchService;
 import cz.kvalitacena.service.ProductReviewService;
+import cz.kvalitacena.service.ResolvedProductName;
 import cz.kvalitacena.service.fx.FxRateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -90,6 +97,10 @@ public class ProductGraphQlController {
   private final OpenFoodFactsService openFoodFactsService;
   private final OffNetContentConverter offNetContentConverter;
   private final ProductOverlayService productOverlayService;
+  private final ProductNameResolver productNameResolver;
+  private final OffImageResolver offImageResolver;
+  private final ProductNameRepository productNameRepository;
+  private final ProductUserEditRepository productUserEditRepository;
   private final CatalogEditService catalogEditService;
   private final MyPriceService myPriceService;
   private final MediaService mediaService;
@@ -167,11 +178,18 @@ public class ProductGraphQlController {
         : categoryRepository.findBySlug(off.getMappedCategorySlug()).orElse(null);
     OffNetContent content = offNetContentConverter.convert(off);
     String attribution = messages.get("attribution.off");
-    ExternalProductImage image = externalImage(off.getImageFrontUrl(), off.getImageFrontSmallUrl(), attribution);
+    // Název i fotka se vybírají podle jazyka klienta, ne podle "hlavní" varianty z OFF —
+    // jinak formulář nabídne německou Magnesii česky mluvícímu uživateli (docs/lokalizace.md).
+    ResolvedProductName offName = productNameResolver.effectiveOffName(off);
+    List<ExternalProductImage> images = externalImages(off, attribution);
     ExternalProductCandidate candidate = new ExternalProductCandidate(
-        stripLeadingZeros(off.getGtin()), off.getProductName(), off.getBrandName(), category,
+        stripLeadingZeros(off.getGtin()),
+        offName == null ? null : offName.name(), offName == null ? null : offName.lang(),
+        productNameResolver.offNames(off), off.getBrandName(), category,
         content == null ? null : content.unitBase(), content == null ? null : content.value(),
-        content == null ? null : content.uom(), image,
+        content == null ? null : content.uom(),
+        images.stream().filter(image -> image.kind() == PhotoKind.ITEM).findFirst().orElse(null),
+        images,
         externalLinkProperties.getOpenFoodFacts().getProductUrlTemplate()
             .replace("{barcode}", stripLeadingZeros(off.getGtin())), attribution);
     return new ProductLookupResult(ProductLookupStatus.OFF_CANDIDATE, null, candidate);
@@ -220,7 +238,45 @@ public class ProductGraphQlController {
 
   @SchemaMapping(typeName = "Product", field = "externalImage")
   public ExternalProductImage externalImage(Product product) {
-    return externalImage(product.getOffImageFrontUrl(), product.getOffImageFrontSmallUrl(), messages.get("attribution.off"));
+    return externalImage(product.getOffImageFrontUrl(), product.getOffImageFrontSmallUrl(),
+        PhotoKind.ITEM, product.getOffImageLang(), messages.get("attribution.off"));
+  }
+
+  /** Obal i etiketa ve všech jazycích, které OFF má — pořadí už nastavil OffImageResolver. */
+  @SchemaMapping(typeName = "Product", field = "externalImages")
+  public List<ExternalProductImage> externalImages(Product product) {
+    String attribution = messages.get("attribution.off");
+    return product.getOffImages().stream()
+        .map(image -> externalImage(image.getUrl(), image.getSmallUrl(),
+            image.getKind().toPhotoKind(), image.getLang(), attribution))
+        .filter(Objects::nonNull).toList();
+  }
+
+  /**
+   * Všechny názvy zboží po jazycích. Vlastní {@code @BatchMapping} (ne transientní pole na
+   * {@link Product}) ze dvou důvodů: entita by kvůli tomu musela znát typy z API vrstvy,
+   * a hlavně se to načte JEN když si o pole klient řekne — seznamy zboží ho nechtějí,
+   * formulář a detail ano.
+   */
+  @BatchMapping(typeName = "Product", field = "names")
+  public Map<Product, List<ResolvedProductName>> names(List<Product> products, Authentication authentication) {
+    ViewerContext viewer = viewerContextResolver.resolve(authentication);
+    List<Long> ids = productIds(products);
+    Map<Long, List<cz.kvalitacena.db.entity.ProductName>> communityByProduct =
+        productNameRepository.findByProductIdIn(ids).stream()
+            .collect(Collectors.groupingBy(cz.kvalitacena.db.entity.ProductName::getProductId));
+    Map<Long, ProductUserEdit> editsByProduct = viewer.userId() == null ? Map.of()
+        : productUserEditRepository.findByProductIdInAndUserId(ids, viewer.userId()).stream()
+            .collect(Collectors.toMap(ProductUserEdit::getProductId, Function.identity()));
+    Map<Long, OffProduct> offByProduct = offSnapshotsByProductId(ids);
+
+    Map<Product, List<ResolvedProductName>> result = new LinkedHashMap<>();
+    for (Product product : products) {
+      result.put(product, productNameResolver.allNames(product, offByProduct.get(product.getId()),
+          editsByProduct.get(product.getId()),
+          communityByProduct.getOrDefault(product.getId(), List.of())));
+    }
+    return result;
   }
 
   @SchemaMapping(typeName = "Product", field = "brand")
@@ -508,10 +564,42 @@ public class ProductGraphQlController {
         .orElse(null);
   }
 
-  private ExternalProductImage externalImage(String url, String thumbnailUrl, String attribution) {
+  private ExternalProductImage externalImage(String url, String thumbnailUrl, PhotoKind kind,
+      String lang, String attribution) {
     String effectiveUrl = url != null ? url : thumbnailUrl;
     if (effectiveUrl == null) return null;
-    return new ExternalProductImage(effectiveUrl, thumbnailUrl != null ? thumbnailUrl : effectiveUrl, attribution);
+    return new ExternalProductImage(effectiveUrl, thumbnailUrl != null ? thumbnailUrl : effectiveUrl,
+        kind, lang, attribution);
+  }
+
+  private List<ExternalProductImage> externalImages(OffProduct off, String attribution) {
+    return offImageResolver.all(off).stream()
+        .map(image -> externalImage(image.getUrl(), image.getSmallUrl(),
+            image.getKind().toPhotoKind(), image.getLang(), attribution))
+        .filter(Objects::nonNull).toList();
+  }
+
+  /**
+   * OFF snapshoty pro dávku produktů — týž výběr primárního GTINu jako
+   * {@code ProductOverlayService}, jen v jednom dotazu na kódy a jednom na snapshoty.
+   */
+  private Map<Long, OffProduct> offSnapshotsByProductId(List<Long> productIds) {
+    Map<Long, String> gtins = productCodeRepository.findByProductIdIn(productIds).stream()
+        .filter(code -> code.getCodeType() == CodeType.GTIN)
+        .collect(Collectors.groupingBy(code -> code.getProduct().getId())).entrySet().stream()
+        .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stream()
+            .sorted(java.util.Comparator.comparing(ProductCode::isPrimary).reversed())
+            .map(ProductCode::getCode).findFirst().orElseThrow()));
+    if (gtins.isEmpty()) return Map.of();
+    Map<String, OffProduct> byGtin = offProductRepository.findByGtinIn(gtins.values()).stream()
+        .filter(off -> off.getFetchStatus() == OffFetchStatus.FOUND)
+        .collect(Collectors.toMap(OffProduct::getGtin, Function.identity()));
+    Map<Long, OffProduct> result = new LinkedHashMap<>();
+    gtins.forEach((productId, gtin) -> {
+      OffProduct off = byGtin.get(gtin);
+      if (off != null) result.put(productId, off);
+    });
+    return result;
   }
 
   private String slugify(String value) {

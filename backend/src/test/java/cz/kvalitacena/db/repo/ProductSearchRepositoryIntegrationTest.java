@@ -14,6 +14,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -55,6 +56,8 @@ class ProductSearchRepositoryIntegrationTest {
   private ProductCodeRepository productCodeRepository;
   @Autowired
   private OffProductRepository offProductRepository;
+  @Autowired
+  private ProductNameRepository productNameRepository;
   @Autowired
   private CategoryRepository categoryRepository;
   @Autowired
@@ -376,5 +379,43 @@ class ProductSearchRepositoryIntegrationTest {
     // viditelnosti v matched jako kandidáti ze jmenné větve — hidden_at/cizí DRAFT se nesmí
     // "prosáknout" jen proto, že se JOIN kategorie na matched přesunul mimo WHERE.
     assertThat(rows).extracting(ProductSearchRow::productId).doesNotContain(hidden.getId(), foreignDraft.getId());
+  }
+
+  /**
+   * Vícejazyčnost nesmí zboží schovat: hledá se napříč VŠEMI jazyky (i tím, který uživatel
+   * v appce nemá nastavený), zatímco zobrazovaný název se skládá pro jazyk requestu
+   * (docs/lokalizace.md). Scénář odpovídá Magnesii — česky "jemně perlivá", německy "Magnesia".
+   */
+  @Test
+  void searchMatchesNameInAnyLanguageAndSortsByTheDisplayedOne() {
+    String suffix = UUID.randomUUID().toString().replace("-", "");
+    Category category = persistCategory();
+    Product product = persistProduct(category, "perliva" + suffix);
+    productNameRepository.saveAndFlush(ProductName.builder().productId(product.getId())
+        .lang("de").name("magnesiade" + suffix).build());
+
+    // Německý překlad najde i klient s českou appkou.
+    assertThat(productRepository.search(criteria("magnesiade" + suffix, null, "cs")))
+        .extracting(ProductSearchRow::productId).contains(product.getId());
+    // A obráceně: český primární název najde i klient s německou appkou.
+    assertThat(productRepository.search(criteria("perliva" + suffix, null, "de")))
+        .extracting(ProductSearchRow::productId).contains(product.getId());
+  }
+
+  /** Totéž pro jazykové varianty ze snapshotu OFF (off.product_name). */
+  @Test
+  void searchMatchesOffNameInAnyLanguage() {
+    String suffix = UUID.randomUUID().toString().replace("-", "");
+    Product product = productRepository.saveAndFlush(Product.builder().status(ProductStatus.ACTIVE).build());
+    String gtin = GtinNormalization.toGtin14(randomCode());
+    productCodeRepository.saveAndFlush(ProductCode.builder().product(product).code(gtin)
+        .codeType(CodeType.GTIN).primary(true).build());
+    offProductRepository.saveAndFlush(OffProduct.builder().gtin(gtin).fetchStatus(OffFetchStatus.FOUND)
+        .lang("en").productName("offmain" + suffix)
+        .names(Map.of("cs", "offcs" + suffix, "de", "offde" + suffix))
+        .fetchedAt(OffsetDateTime.now()).build());
+
+    assertThat(productRepository.search(criteria("offde" + suffix, null, "cs")))
+        .extracting(ProductSearchRow::productId).contains(product.getId());
   }
 }

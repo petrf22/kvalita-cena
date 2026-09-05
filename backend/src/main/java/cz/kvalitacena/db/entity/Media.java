@@ -67,6 +67,13 @@ public class Media implements Persistable<Long> {
   @Builder.Default
   private PhotoKind photoKind = PhotoKind.OTHER;
 
+  // Jazyk obalu/etikety na fotce; NULL = neurčeno (fotky provozoven, avatary a všechno
+  // nahrané dřív, než appka jazyk sledovala). U PhotoKind.LABEL je to podstata věci — je to
+  // fotka TEXTU složení, takže bez jazyka nejde vybrat ta, které čtenář rozumí, a budoucí
+  // čtení složení (docs/ai.md) by nevědělo, co čte.
+  @Column(name = "lang", length = 5)
+  private String lang;
+
   @Column(name = "sort_order", nullable = false)
   @Builder.Default
   private int sortOrder = 0;

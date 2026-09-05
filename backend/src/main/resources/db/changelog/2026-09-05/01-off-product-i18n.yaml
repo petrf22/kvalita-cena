@@ -1,0 +1,140 @@
+# 01-off-product-i18n.yaml — snapshot Open Food Facts přestává být jednojazyčný.
+#
+# Proč: off.product.product_name je POČÍTANÉ pole OFF ("hlavní" varianta), ze kterého se jazyk
+# nepozná — u EANu 8586007690441 (Magnesia) vrací OFF lang='en', product_name='jemně perlivá',
+# product_name_de='Magnesia'. Sken v české appce tak nabídl německý název a německou fotku
+# obalu. OFF přitom drží jak název (product_name_<lc>), tak vybrané fotky
+# (selected_images.front/ingredients.<lc>) po jazycích — stačí si o ně říct.
+#
+# Dosavadní sloupce product_name / image_front_url / image_front_small_url ZŮSTÁVAJÍ jako
+# varianta hlavního jazyka a poslední článek fallbacku: žádná datová migrace a beze změny běží
+# dál větev hledání v ProductSearchRepositoryImpl i ProductRepository.findSimilarByName.
+#
+# name_locales je klíč k samoopravě při rozšíření o jazyk: ukládá se do něj seznam jazyků,
+# které jsme si při fetchi VYŽÁDALI (fields nepodporuje wildcard, jazyky se musí vyjmenovat).
+# OpenFoodFactsService pak snapshot s neúplným seznamem považuje za nečerstvý, takže přidání
+# jazyka do app.i18n.supported-locales samo vynutí dotažení — u zboží, na které nikdo nesáhne,
+# to dožene OffSnapshotRefreshService.
+#
+# Pořád platí oddělení schémat kvůli ODbL (docs/datovy-model.md): tabulky leží v off.*, do
+# core.* se nekopírují a u fotek se ukládají jen URL, nikdy binárka.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-05-01-off-product-language-columns
+      author: Petr F.
+      comment: >
+        lang = hlavní jazyk záznamu v OFF (podle něj se pozná, v jakém jazyce je product_name).
+        name_locales = jazyky vyžádané při fetchi; prázdné pole u existujících řádků znamená
+        "stažené ještě po staru", takže si je OpenFoodFactsService vyžádá znovu.
+      changes:
+        - addColumn:
+            schemaName: "off"
+            tableName: product
+            columns:
+              - column:
+                  name: lang
+                  type: VARCHAR(5)
+              - column:
+                  name: name_locales
+                  type: TEXT[]
+                  defaultValueComputed: "ARRAY[]::TEXT[]"
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 2026-09-05-02-off-product-name
+      author: Petr F.
+      comment: >
+        Název po jazycích. Jazyk se NEomezuje výčtem podporovaných jazyků appky — přichází
+        z OFF a smí být jakýkoli (appka si vybere, co umí, zbytek slouží jako fallback);
+        CHECK hlídá jen tvar kódu, aby se do klíče nedostal nesmysl.
+      changes:
+        - createTable:
+            schemaName: "off"
+            tableName: product_name
+            columns:
+              - column:
+                  name: gtin
+                  type: VARCHAR(14)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lang
+                  type: VARCHAR(5)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(300)
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            schemaName: "off"
+            tableName: product_name
+            columnNames: gtin, lang
+            constraintName: pk_off_product_name
+        - sql:
+            sql: |
+              ALTER TABLE off.product_name
+                ADD CONSTRAINT fk_off_product_name_product
+                  FOREIGN KEY (gtin) REFERENCES off.product (gtin) ON DELETE CASCADE,
+                ADD CONSTRAINT chk_off_product_name_lang CHECK (lang ~ '^[a-z]{2}$');
+
+              -- Stejný vzor jako idx_product_name_norm_fts / idx_product_name_trgm nad
+              -- core.product.name — hledání matchuje názvy ve VŠECH jazycích, ne jen v tom
+              -- zobrazovaném ("Magnesia" napsaná v české appce musí zboží najít). Přípona
+              -- _i18n odlišuje od idx_off_product_name_norm_fts nad off.product.product_name
+              -- (2026-08-27/02-effective-off-catalog.yaml) — jména indexů jsou v PostgreSQL
+              -- unikátní v rámci schématu, ne tabulky.
+              CREATE INDEX idx_off_product_name_i18n_norm_fts ON off.product_name
+                USING gin (to_tsvector('simple', core.norm_text(name)));
+              CREATE INDEX idx_off_product_name_i18n_trgm ON off.product_name
+                USING gin (core.norm_text(name) gin_trgm_ops);
+
+  - changeSet:
+      id: 2026-09-05-03-off-product-image
+      author: Petr F.
+      comment: >
+        selected_images z OFF po jazycích. kind kopíruje osu core.media.photo_kind
+        (2026-08-29/01-media-photo-kind.yaml): FRONT je protějšek ITEM, INGREDIENTS protějšek
+        LABEL. Fotka etikety je na jazyku závislá úplně — je to fotka textu složení.
+      changes:
+        - createTable:
+            schemaName: "off"
+            tableName: product_image
+            columns:
+              - column:
+                  name: gtin
+                  type: VARCHAR(14)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: kind
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lang
+                  type: VARCHAR(5)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: url
+                  type: VARCHAR(1000)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: small_url
+                  type: VARCHAR(1000)
+        - addPrimaryKey:
+            schemaName: "off"
+            tableName: product_image
+            columnNames: gtin, kind, lang
+            constraintName: pk_off_product_image
+        - sql:
+            sql: |
+              ALTER TABLE off.product_image
+                ADD CONSTRAINT fk_off_product_image_product
+                  FOREIGN KEY (gtin) REFERENCES off.product (gtin) ON DELETE CASCADE,
+                ADD CONSTRAINT chk_off_product_image_lang CHECK (lang ~ '^[a-z]{2}$'),
+                ADD CONSTRAINT chk_off_product_image_kind CHECK (kind IN ('FRONT', 'INGREDIENTS'));

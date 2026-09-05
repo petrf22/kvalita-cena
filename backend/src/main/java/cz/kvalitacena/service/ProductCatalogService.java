@@ -59,6 +59,8 @@ public class ProductCatalogService {
   private final DuplicateLookupService duplicateLookupService;
   private final TrustLevelService trustLevelService;
   private final ProductScopeService productScopeService;
+  private final ProductNameWriter productNameWriter;
+  private final ProductNameResolver productNameResolver;
 
   @Transactional
   public Product create(CreateProductInput input, UUID viewerPublicUid) {
@@ -119,9 +121,11 @@ public class ProductCatalogService {
     }
 
     boolean trusted = trustLevelService.isTrusted(user);
+    String primaryLang = productNameWriter.primaryLang(input.nameLang(), productNameResolver.requestLanguage());
 
     Product product = Product.builder()
         .name(input.name().trim())
+        .nameLang(primaryLang)
         .brand(brandResolutionService.resolve(input.brandName()))
         .category(category)
         .unitBase(input.unitBase())
@@ -157,6 +161,10 @@ public class ProductCatalogService {
           .primary(true)
           .build());
     }
+
+    // Další jazyky jdou do core.product_name — u právě zakládaného zboží není s čím
+    // nesouhlasit, takže globálně (docs/lokalizace.md).
+    productNameWriter.applyOnCreate(product, input.name(), primaryLang, input.names(), user);
 
     return product;
   }
