@@ -471,4 +471,16 @@
     <string name="my_contributions_status_hidden_store">Ukryto po zgłoszeniu, czeka na przegląd. Na razie widzisz go tylko Ty.</string>
     <string name="my_contributions_status_hidden_observation">Powiązany produkt lub sklep został ukryty po zgłoszeniu — ta cena nie jest jeszcze widoczna dla nikogo innego.</string>
     <string name="my_contributions_status_pending_merge_edit">Twoją edycję na razie widzisz tylko Ty — scalenie z publicznym wpisem dopiero się przygotowuje.</string>
+    <string name="lang_cs">po czesku</string>
+    <string name="lang_sk">po słowacku</string>
+    <string name="lang_en">po angielsku</string>
+    <string name="lang_pl">po polsku</string>
+    <string name="lang_de">po niemiecku</string>
+    <string name="product_form_name_label_with_lang">%1$s (%2$s)</string>
+    <string name="product_form_foreign_name_warning">Produkt ma na razie nazwę tylko %1$s: „%2$s”. Dodaj proszę nazwę w swoim języku — dotychczasowa wersja nie zniknie.</string>
+    <string name="product_form_other_names_show">Nazwy w innych językach</string>
+    <string name="product_form_other_names_hide">Ukryj inne języki</string>
+    <string name="product_form_other_names_hint">Opcjonalne. Uzupełniony język, którego produkt jeszcze nie ma, zobaczą wszyscy; nadpisanie istniejącej nazwy dotyczy tylko Ciebie.</string>
+    <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
+    <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
 </resources>

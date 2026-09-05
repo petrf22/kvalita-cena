@@ -25,7 +25,7 @@ internal val STORE_FIELDS = """
 """
 
 internal val PHOTO_FIELDS = """
-  id url thumbnailUrl width height caption mine hidden attribution kind
+  id url thumbnailUrl width height caption mine hidden attribution kind lang
 """
 
 /** Profil uživatele (docs/soukromi.md, "Profil uživatele a viditelnost") — vždy plný pohled vlastníka. */
@@ -51,9 +51,9 @@ internal val PRICE_CURRENT_FIELDS = """
 """
 
 internal val PRODUCT_FIELDS = """
-  id name
+  id name nameLang
   catalogSource catalogAttribution
-  externalImage { url thumbnailUrl attribution }
+  externalImage { url thumbnailUrl kind lang attribution }
   brand { id name slug }
   category { id name slug path }
   unitBase netContentValue netContentUom netContentBase piecesInPack isVariableWeight status isGeneric
@@ -68,6 +68,8 @@ internal val PRODUCT_FIELDS = """
 internal val PRODUCT_DETAIL_FIELDS = """
   $PRODUCT_FIELDS
   gtin
+  names { lang name source editedByMe }
+  externalImages { url thumbnailUrl kind lang attribution }
   stats {
     observationCount storeCount lastObservedAt bestPrice bestUnitPrice bestPriceCurrency
     bestPriceConverted { $CONVERTED_PRICE_FIELDS }
@@ -96,7 +98,7 @@ internal val PRODUCT_REVIEW_FIELDS = """
  * `MissingFieldException` (viz `GraphQlFragmentContractTest`).
  */
 internal val PRODUCT_SUMMARY_FIELDS = """
-  id name
+  id name nameLang
   brand { id name slug }
   category { id name slug path }
   isGeneric
@@ -104,7 +106,7 @@ internal val PRODUCT_SUMMARY_FIELDS = """
   catalogScope scopeChain { id name chainType } scopeStore { $STORE_FIELDS }
   verified editedByMe
   photos { id url thumbnailUrl width height }
-  externalImage { url thumbnailUrl attribution }
+  externalImage { url thumbnailUrl kind lang attribution }
 """
 
 /** Veřejná identita přihlášeného uživatele — společné pro me/updateProfile/deleteAvatar. */
@@ -158,7 +160,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
   suspend fun productLookupByCode(code: String): ProductLookupResult {
     val key = normalizeCode(code)
     lookupCache[key]?.let { return it }
-    val query = "query(${'$'}code: String!) { productLookupByCode(code: ${'$'}code) { status product { $PRODUCT_FIELDS } candidate { code name brandName category { id name slug path } unitBase netContentValue netContentUom image { url thumbnailUrl attribution } sourceUrl attribution } } }"
+    val query = "query(${'$'}code: String!) { productLookupByCode(code: ${'$'}code) { status product { $PRODUCT_FIELDS } candidate { code name nameLang names { lang name source editedByMe } brandName category { id name slug path } unitBase netContentValue netContentUom image { url thumbnailUrl kind lang attribution } images { url thumbnailUrl kind lang attribution } sourceUrl attribution } } }"
     val variables = buildJsonObject { put("code", code) }
     val result = execute(query, variables, GraphQlResponse.serializer(ProductLookupByCodeData.serializer())).productLookupByCode
     if (result.status != "OFF_UNAVAILABLE") lookupCache[key] = result
@@ -530,16 +532,17 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
   }
 
   /** Popisek a pořadí (nejnižší sortOrder = hlavní fotka záznamu). Jen autor fotky. */
-  suspend fun updatePhoto(id: String, caption: String?, sortOrder: Int?): Photo {
+  suspend fun updatePhoto(id: String, caption: String?, sortOrder: Int?, lang: String? = null): Photo {
     val query = """
-      mutation(${'$'}id: ID!, ${'$'}caption: String, ${'$'}sortOrder: Int) {
-        updatePhoto(id: ${'$'}id, caption: ${'$'}caption, sortOrder: ${'$'}sortOrder) { $PHOTO_FIELDS }
+      mutation(${'$'}id: ID!, ${'$'}caption: String, ${'$'}sortOrder: Int, ${'$'}lang: String) {
+        updatePhoto(id: ${'$'}id, caption: ${'$'}caption, sortOrder: ${'$'}sortOrder, lang: ${'$'}lang) { $PHOTO_FIELDS }
       }
     """
     val variables = buildJsonObject {
       put("id", id)
       put("caption", caption)
       put("sortOrder", sortOrder)
+      put("lang", lang)
     }
     return execute(query, variables, GraphQlResponse.serializer(UpdatePhotoData.serializer())).updatePhoto
   }

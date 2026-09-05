@@ -19,8 +19,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -228,7 +230,14 @@ fun ProductFormScreen(
       suggestions = viewModel.suggestions,
       onSelect = { viewModel.useExisting(it) },
       itemLabel = summaryLabel,
-      label = stringResource(R.string.product_form_name_label),
+      // Popisek nese jazyk: pole "Název" je VŽDY v jazyce appky (docs/lokalizace.md), takže
+      // do něj nikdy nespadne cizojazyčný název z OFF — ten se ukáže v upozornění a v sekci
+      // ostatních jazyků níž.
+      label = stringResource(
+        R.string.product_form_name_label_with_lang,
+        stringResource(R.string.product_form_name_label),
+        langName(viewModel.nameLang),
+      ),
       loading = viewModel.suggestionsLoading,
       modifier = Modifier.fillMaxWidth(),
     )
@@ -238,6 +247,39 @@ fun ProductFormScreen(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
+    }
+    viewModel.foreignNameHint?.let { (lang, foreignName) ->
+      Text(
+        stringResource(R.string.product_form_foreign_name_warning, langName(lang), foreignName),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+      )
+    }
+    Gap()
+
+    TextButton(onClick = { viewModel.toggleOtherNames() }) {
+      Text(
+        stringResource(
+          if (viewModel.otherNamesExpanded) R.string.product_form_other_names_hide
+          else R.string.product_form_other_names_show,
+        ),
+      )
+    }
+    if (viewModel.otherNamesExpanded) {
+      Text(
+        stringResource(R.string.product_form_other_names_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      viewModel.otherLangs.forEach { lang ->
+        OutlinedTextField(
+          value = viewModel.otherNames[lang].orEmpty(),
+          onValueChange = { formDirty = true; viewModel.onOtherNameChange(lang, it) },
+          label = { Text(langName(lang)) },
+          singleLine = true,
+          modifier = Modifier.fillMaxWidth(),
+        )
+      }
     }
     Gap()
 
@@ -336,14 +378,24 @@ fun ProductFormScreen(
     Gap()
 
     if (!viewModel.isEditing) {
+      // Obě fotky se ukládají s jazykem obalu (= jazyk appky). U etikety je to podstata věci —
+      // je to fotka TEXTU složení (docs/lokalizace.md, docs/ai.md).
       PhotoSlot(
-        label = stringResource(R.string.product_form_item_photo_label),
+        label = stringResource(
+          R.string.product_form_item_photo_label_with_lang,
+          stringResource(R.string.product_form_item_photo_label),
+          langName(viewModel.nameLang),
+        ),
         onUriChange = { formDirty = true; viewModel.itemPhotoUri = it },
         modifier = Modifier.fillMaxWidth(),
       )
       Gap()
       PhotoSlot(
-        label = stringResource(R.string.product_form_label_photo_label),
+        label = stringResource(
+          R.string.product_form_label_photo_label_with_lang,
+          stringResource(R.string.product_form_label_photo_label),
+          langName(viewModel.nameLang),
+        ),
         onUriChange = { formDirty = true; viewModel.labelPhotoUri = it },
         modifier = Modifier.fillMaxWidth(),
       )
@@ -400,4 +452,19 @@ fun ProductFormScreen(
 @Composable
 private fun Gap() {
   androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+}
+
+/**
+ * Jméno jazyka pro popisky a upozornění ("česky", "německy") — přes `values/` resources, takže
+ * se překládá stejně jako zbytek appky (docs/lokalizace.md). Neznámý kód se ukáže tak, jak
+ * přišel; nastat může jen u dat ze serveru, ne u jazyků appky.
+ */
+@Composable
+private fun langName(lang: String): String = when (lang) {
+  "cs" -> stringResource(R.string.lang_cs)
+  "sk" -> stringResource(R.string.lang_sk)
+  "en" -> stringResource(R.string.lang_en)
+  "pl" -> stringResource(R.string.lang_pl)
+  "de" -> stringResource(R.string.lang_de)
+  else -> lang
 }

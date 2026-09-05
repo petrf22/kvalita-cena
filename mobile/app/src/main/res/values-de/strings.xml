@@ -473,4 +473,16 @@
     <string name="my_contributions_status_hidden_store">Nach einer Meldung ausgeblendet, wartet auf Prüfung. Vorerst siehst nur du es.</string>
     <string name="my_contributions_status_hidden_observation">Das zugrunde liegende Produkt oder Geschäft wurde nach einer Meldung ausgeblendet — dieser Preis ist noch für niemand anderen sichtbar.</string>
     <string name="my_contributions_status_pending_merge_edit">Deine Bearbeitung siehst vorerst nur du — die Zusammenführung mit dem öffentlichen Eintrag ist noch nicht erfolgt.</string>
+    <string name="lang_cs">auf Tschechisch</string>
+    <string name="lang_sk">auf Slowakisch</string>
+    <string name="lang_en">auf Englisch</string>
+    <string name="lang_pl">auf Polnisch</string>
+    <string name="lang_de">auf Deutsch</string>
+    <string name="product_form_name_label_with_lang">%1$s (%2$s)</string>
+    <string name="product_form_foreign_name_warning">Der Artikel hat bisher nur einen Namen %1$s: „%2$s“. Bitte ergänze einen in deiner Sprache — die vorhandene Fassung geht nicht verloren.</string>
+    <string name="product_form_other_names_show">Namen in anderen Sprachen</string>
+    <string name="product_form_other_names_hide">Andere Sprachen ausblenden</string>
+    <string name="product_form_other_names_hint">Optional. Eine Sprache, die der Artikel noch nicht hat, sehen alle; das Überschreiben eines vorhandenen Namens gilt nur für dich.</string>
+    <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
+    <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
 </resources>

@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -115,6 +116,16 @@ fun ProductDetailScreen(
       Column(modifier = Modifier.fillMaxSize()) {
       Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text(product.name, style = MaterialTheme.typography.headlineSmall)
+        // Název může být z jiného jazyka než appka — pak to musí být vidět, ať je jasné, že
+        // chybí překlad, ne že se zboží tak jmenuje (docs/lokalizace.md).
+        val appLang = LocalConfiguration.current.locales[0].language
+        product.nameLang?.takeIf { it != appLang }?.let { lang ->
+          Text(
+            productNameLangLabel(lang),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
 
         Gap()
         PhotoGallery(photos = product.photos, onPhotosChange = viewModel::onPhotosChange, modifier = Modifier.fillMaxWidth())
@@ -528,4 +539,15 @@ private fun ExternalLinkRow(link: ExternalLink, onClick: () -> Unit) {
 @Composable
 private fun Gap() {
   androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+}
+
+/** Jméno jazyka pro štítek u názvu ("německy") — přes `values/`, jako zbytek appky. */
+@Composable
+private fun productNameLangLabel(lang: String): String = when (lang) {
+  "cs" -> stringResource(R.string.lang_cs)
+  "sk" -> stringResource(R.string.lang_sk)
+  "en" -> stringResource(R.string.lang_en)
+  "pl" -> stringResource(R.string.lang_pl)
+  "de" -> stringResource(R.string.lang_de)
+  else -> lang
 }

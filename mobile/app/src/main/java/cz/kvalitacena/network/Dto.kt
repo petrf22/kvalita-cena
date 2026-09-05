@@ -87,6 +87,9 @@ data class Photo(
   // ITEM/LABEL/OTHER (docs/datovy-model.md) — enumy se tu mapují ručně na String, appka
   // z GraphQL schématu typy negeneruje (kořenový CLAUDE.md).
   val kind: String = "OTHER",
+  // Jazyk obalu/etikety na fotce; null = neurčeno (fotky provozoven a všechno nahrané dřív,
+  // než appka jazyk sledovala). U LABEL je to podstata věci — je to fotka TEXTU složení.
+  val lang: String? = null,
 ) {
   fun fullUrl(): String = ApiConfig.BASE_URL + url
   fun thumbUrl(): String = ApiConfig.BASE_URL + thumbnailUrl
@@ -125,7 +128,13 @@ data class PriceCurrent(
 @Serializable
 data class Product(
   val id: String,
+  // Název v jazyce requestu (Accept-Language). Když ho zboží v tom jazyce nemá, přijde
+  // nejbližší náhrada a nameLang řekne, o jaký jazyk doopravdy jde (docs/lokalizace.md).
   val name: String,
+  val nameLang: String? = null,
+  // Jen v detailu (PRODUCT_DETAIL_FIELDS) — všechny známé názvy po jazycích, jazyk requestu
+  // první; formulář z nich plní sekci ostatních jazyků.
+  val names: List<ProductName> = emptyList(),
   val brand: Brand? = null,
   val category: Category,
   val unitBase: String,
@@ -165,17 +174,42 @@ data class Product(
   val catalogSource: String = "COMMUNITY",
   val catalogAttribution: String? = null,
   val externalImage: ExternalProductImage? = null,
+  // Obal i etiketa z OFF ve všech jazycích, které OFF má; jazyk requestu první.
+  val externalImages: List<ExternalProductImage> = emptyList(),
+)
+
+/**
+ * Název zboží v jednom jazyce i s tím, odkud je (docs/lokalizace.md). `lang` je null jen
+ * u "hlavního" názvu ze starého OFF snapshotu, kde jazyk poznat nejde. `source` je
+ * COMMUNITY/OPEN_FOOD_FACTS — enumy se tu jako všude jinde mapují ručně na String.
+ */
+@Serializable
+data class ProductName(
+  val lang: String? = null,
+  val name: String,
+  val source: String = "COMMUNITY",
+  val editedByMe: Boolean = false,
 )
 
 @Serializable
-data class ExternalProductImage(val url: String, val thumbnailUrl: String, val attribution: String)
+data class ExternalProductImage(
+  val url: String,
+  val thumbnailUrl: String,
+  // ITEM = obal, LABEL = etiketa se složením — táž osa jako u vlastních fotek (Photo.kind).
+  val kind: String = "ITEM",
+  // Jazyk obalu na fotce; null u snapshotů stažených dřív, než OFF jazykové varianty ukládal.
+  val lang: String? = null,
+  val attribution: String,
+)
 
 @Serializable
 data class ExternalProductCandidate(
-  val code: String, val name: String? = null, val brandName: String? = null,
+  val code: String, val name: String? = null, val nameLang: String? = null,
+  val names: List<ProductName> = emptyList(), val brandName: String? = null,
   val category: Category? = null, val unitBase: String? = null,
   val netContentValue: Double? = null, val netContentUom: String? = null,
-  val image: ExternalProductImage? = null, val sourceUrl: String = "", val attribution: String = "",
+  val image: ExternalProductImage? = null, val images: List<ExternalProductImage> = emptyList(),
+  val sourceUrl: String = "", val attribution: String = "",
 )
 
 @Serializable
@@ -527,6 +561,11 @@ data class CreateStoreInput(
 @Serializable
 data class CreateProductInput(
   val name: String,
+  // Jazyk primárního názvu; null = jazyk requestu. Server jazyk nikdy nehádá z textu
+  // (docs/lokalizace.md) — zná ho klient.
+  val nameLang: String? = null,
+  // Názvy v DALŠÍCH jazycích; duplicita s nameLang je validační chyba.
+  val names: List<ProductNameInput> = emptyList(),
   val brandName: String? = null,
   val categoryId: String,
   val unitBase: String,
@@ -549,6 +588,8 @@ data class CreateProductInput(
 data class CreateProductFromOffInput(
   val code: String,
   val name: String? = null,
+  val nameLang: String? = null,
+  val names: List<ProductNameInput> = emptyList(),
   val brandName: String? = null,
   val categoryId: String? = null,
   val unitBase: String? = null,
@@ -558,10 +599,16 @@ data class CreateProductFromOffInput(
   val isVariableWeight: Boolean = false,
 )
 
+/** Název zboží v jednom jazyce ve vstupu — vždy jde o DALŠÍ jazyk vedle name/nameLang. */
+@Serializable
+data class ProductNameInput(val lang: String, val name: String)
+
 /** Patch nad core.product_user_edit — pole null = nezměněno (docs/datovy-model.md). */
 @Serializable
 data class UpdateProductInput(
   val name: String? = null,
+  val nameLang: String? = null,
+  val names: List<ProductNameInput> = emptyList(),
   val brandName: String? = null,
   val clearBrand: Boolean = false,
   val categoryId: String? = null,

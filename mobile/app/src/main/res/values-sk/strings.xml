@@ -471,4 +471,16 @@
     <string name="my_contributions_status_hidden_store">Skryté po nahlásení, čaká na preskúmanie. Zatiaľ ho vidíte len vy.</string>
     <string name="my_contributions_status_hidden_observation">Podkladový tovar alebo obchod bol skrytý po nahlásení — cena zatiaľ nie je vidieť nikomu inému.</string>
     <string name="my_contributions_status_pending_merge_edit">Vašu úpravu zatiaľ vidíte len vy — zlúčenie s verejným záznamom sa ešte len pripravuje.</string>
+    <string name="lang_cs">česky</string>
+    <string name="lang_sk">slovensky</string>
+    <string name="lang_en">anglicky</string>
+    <string name="lang_pl">poľsky</string>
+    <string name="lang_de">nemecky</string>
+    <string name="product_form_name_label_with_lang">%1$s (%2$s)</string>
+    <string name="product_form_foreign_name_warning">Tovar má zatiaľ názov len %1$s: „%2$s“. Doplň prosím názov vo svojom jazyku — cudzojazyčná verzia sa nikam nestratí.</string>
+    <string name="product_form_other_names_show">Názvy v iných jazykoch</string>
+    <string name="product_form_other_names_hide">Skryť iné jazyky</string>
+    <string name="product_form_other_names_hint">Voliteľné. Vyplnený jazyk, ktorý tovar zatiaľ nemá, uvidia všetci; prepísanie existujúceho názvu platí len pre teba.</string>
+    <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
+    <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
 </resources>
