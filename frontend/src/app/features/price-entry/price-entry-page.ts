@@ -18,7 +18,11 @@ import { ProductService } from '../../services/product-service';
 import { PRICE_KIND_KEYS } from '../../shared/enum-labels';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { PriceEntryForm } from '../../shared/price-entry-form';
-import { ProductThumb, usesExternalImageFallback } from '../../shared/product-thumb';
+import {
+  ProductPreview,
+  ProductThumb,
+  usesExternalImageFallback,
+} from '../../shared/product-thumb';
 import { StorePicker } from '../../shared/store-picker';
 import { ExistingProductMatch, ProductForm } from '../product-form/product-form';
 
@@ -43,6 +47,7 @@ const SUGGESTIONS_DEBOUNCE_MS = 300;
     NzSpinModule,
     PriceEntryForm,
     ProductForm,
+    ProductPreview,
     ProductThumb,
     StorePicker,
     TranslocoDirective,
@@ -83,6 +88,12 @@ export class PriceEntryPage {
   protected readonly showProductForm = signal(false);
   protected readonly selectedProduct = signal<Product | null>(null);
   protected readonly productAlias = signal<string | null>(null);
+  /** Vybrané zboží ukazuje místo vlastní fotky obrázek z Open Food Facts — atribuce zdroje
+   *  musí být vidět u něj (ODbL), na rozdíl od seznamu ji sem lze napsat rovnou pod náhled. */
+  protected readonly selectedUsesExternalImage = computed(() => {
+    const product = this.selectedProduct();
+    return product != null && usesExternalImageFallback(product);
+  });
   protected readonly loadingProduct = signal(false);
   /** Právě proběhl zápis ceny — nabídne "zapsat další" místo návratu na začátek. */
   protected readonly justSubmitted = signal(false);

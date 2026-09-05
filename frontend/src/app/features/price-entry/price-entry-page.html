@@ -147,6 +147,15 @@
   }
 
   @if (selectedProduct(); as product) {
+    <app-product-preview
+      [name]="product.name"
+      [photos]="product.photos"
+      [externalImage]="product.externalImage"
+    />
+    @if (selectedUsesExternalImage()) {
+      <p class="external-image-note">{{ product.externalImage!.attribution }}</p>
+    }
+
     <div class="selected-product">
       <div>
         <strong>{{ product.name }}</strong>

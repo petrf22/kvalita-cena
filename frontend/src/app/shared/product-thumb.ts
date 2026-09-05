@@ -68,3 +68,46 @@ export class ProductThumb {
     return this.externalImage()?.attribution ?? null;
   });
 }
+
+/** Užší tvar než {@link ProductThumbSource} — velký náhled bere plnou fotku, ne miniaturu
+ *  (na plné šířce by byl thumbnail rozmazaný), takže potřebuje `url`. */
+export interface ProductPreviewSource {
+  photos?: readonly { url: string }[] | null;
+  externalImage?: { url: string; attribution: string } | null;
+}
+
+/**
+ * Velký náhled zboží nad názvem (zápis ceny) — stejná priorita zdroje jako {@link ProductThumb}
+ * (vlastní fotka > Open Food Facts), ale plná fotka a `object-fit: contain`, ať se neořezávají
+ * obaly s různým poměrem stran. Bez obrázku nevykreslí NIC (na rozdíl od miniatury v řádku
+ * seznamu, kde zástupná ikona drží zarovnání). Mobilní protějšek: ui/common/ProductThumb.kt.
+ */
+@Component({
+  selector: 'app-product-preview',
+  template: `
+    @if (imageUrl(); as url) {
+      <img [src]="url" [alt]="name()" class="preview" />
+    }
+  `,
+  styles: `
+    .preview {
+      display: block;
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.04);
+    }
+  `,
+})
+export class ProductPreview {
+  readonly name = input<string>('');
+  readonly photos = input<ProductPreviewSource['photos']>(null);
+  readonly externalImage = input<ProductPreviewSource['externalImage']>(null);
+
+  protected readonly imageUrl = computed<string | null>(() => {
+    const photos = this.photos();
+    if (photos && photos.length > 0) return photos[0].url;
+    return this.externalImage()?.url ?? null;
+  });
+}

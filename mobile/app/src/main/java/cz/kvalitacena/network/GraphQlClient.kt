@@ -60,9 +60,11 @@ internal val PRODUCT_FIELDS = """
   catalogScope scopeChain { id name chainType } scopeStore { $STORE_FIELDS }
   verified editedByMe
   prices { $PRICE_CURRENT_FIELDS }
+  photos { $PHOTO_FIELDS }
 """
 
-/** Navíc oproti PRODUCT_FIELDS — jen pro obrazovku detailu, aby seznam hledání netahal zbytečně moc. */
+/** Navíc oproti PRODUCT_FIELDS — jen pro obrazovku detailu (statistiky, graf, recenze, moje
+ * ceny), aby si to seznam hledání netahal zbytečně. */
 internal val PRODUCT_DETAIL_FIELDS = """
   $PRODUCT_FIELDS
   gtin
@@ -81,7 +83,6 @@ internal val PRODUCT_DETAIL_FIELDS = """
     promoValidFrom promoValidTo
     converted { $CONVERTED_PRICE_FIELDS }
   }
-  photos { $PHOTO_FIELDS }
 """
 
 /** Jedna recenze pod zbožím (docs/soukromi.md, "Podepsaná recenze") — text je tu vždy vyplněný. */

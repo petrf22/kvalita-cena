@@ -53,13 +53,16 @@ import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.location.getCurrentLocation
 import cz.kvalitacena.ui.common.NavigationResults
+import cz.kvalitacena.ui.common.ProductImagePreview
 import cz.kvalitacena.ui.common.SELECTABLE_PRICE_KINDS
 import cz.kvalitacena.ui.common.formatShortDate
 import cz.kvalitacena.ui.common.priceKindLabel
+import cz.kvalitacena.ui.common.productImageUrl
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.StorePicker
 import cz.kvalitacena.ui.common.currencyForCountry
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
+import cz.kvalitacena.ui.common.usesExternalImage
 import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
 import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
 import java.time.LocalDate
@@ -234,6 +237,24 @@ fun PriceEntryScreen(
         // dokud jednou úspěšně nezapíše cenu (PriceEntryViewModel.priceEntryExpanded) — appka
         // slouží stejně dobře lidem, co jen hledají ceny poblíž.
         Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)) {
+          // Vizuální potvrzení, že sken trefil správné zboží — vlastní fotka, jinak obrázek
+          // z Open Food Facts; bez obojího se nevykreslí nic (ProductImagePreview).
+          ProductImagePreview(
+            name = product.name,
+            photos = product.photos,
+            externalImage = product.externalImage,
+            modifier = Modifier.fillMaxWidth(),
+          )
+          // Atribuce zdroje/licence MUSÍ být vidět — ODbL (docs/datovy-model.md).
+          if (usesExternalImage(product.photos, product.externalImage)) {
+            Text(
+              product.externalImage!!.attribution,
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+          if (productImageUrl(product.photos, product.externalImage, full = true) != null) Gap()
+
           Text(product.name, style = MaterialTheme.typography.headlineSmall)
           val subtitle = listOfNotNull(product.brand?.name, product.category.name).joinToString(" · ")
           Text(subtitle, style = MaterialTheme.typography.bodyMedium)
