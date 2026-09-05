@@ -1,5 +1,16 @@
 {
   "nameLabel": "Nazwa produktu",
+  "lang": {
+    "cs": "po czesku",
+    "sk": "po słowacku",
+    "en": "po angielsku",
+    "pl": "po polsku",
+    "de": "po niemiecku"
+  },
+  "foreignNameWarning": "Produkt ma na razie nazwę tylko {{lang}}: „{{name}}”. Dodaj proszę nazwę w swoim języku — dotychczasowa wersja nie zniknie.",
+  "otherNamesShow": "Nazwy w innych językach",
+  "otherNamesHide": "Ukryj inne języki",
+  "otherNamesHint": "Opcjonalne. Uzupełniony język, którego produkt jeszcze nie ma, zobaczą wszyscy; nadpisanie istniejącej nazwy dotyczy tylko Ciebie.",
   "suggestionsWarning": "Czy nie chodzi o jedną z tych pozycji?",
   "genericTag": "pozycja rodzajowa",
   "unconfirmedTag": "jeszcze niepotwierdzone",
@@ -16,8 +27,8 @@
   "codeLabel": "Kod kreskowy (opcjonalnie)",
   "codeHint": "Bez kodu powstanie pozycja rodzajowa (np. „pieczywo za {{example}}” z paragonu) — z niższą wiarygodnością danych, ale zapisać i tak można.",
   "codeReadOnlyHint": "Kodu kreskowego nie da się zmienić w edycji.",
-  "itemPhotoLabel": "Zdjęcie produktu (opcjonalnie)",
-  "labelPhotoLabel": "Zdjęcie etykiety (opcjonalnie)",
+  "itemPhotoLabel": "Zdjęcie produktu ({{lang}}, opcjonalne)",
+  "labelPhotoLabel": "Zdjęcie etykiety ({{lang}}, opcjonalne)",
   "uploadingPhotos": "Przesyłanie zdjęć…",
   "photoUploadFailedWarning": "Produkt został dodany, ale przesłanie zdjęcia się nie powiodło. Spróbuj ponownie na jego stronie szczegółów.",
   "submit": "Dodaj produkt",

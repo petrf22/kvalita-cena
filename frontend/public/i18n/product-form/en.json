@@ -1,5 +1,16 @@
 {
   "nameLabel": "Product name",
+  "lang": {
+    "cs": "in Czech",
+    "sk": "in Slovak",
+    "en": "in English",
+    "pl": "in Polish",
+    "de": "in German"
+  },
+  "foreignNameWarning": "This item only has a name {{lang}} so far: “{{name}}”. Please add one in your language — the existing version will not be lost.",
+  "otherNamesShow": "Names in other languages",
+  "otherNamesHide": "Hide other languages",
+  "otherNamesHint": "Optional. A language the item does not have yet becomes visible to everyone; overwriting an existing name applies only to you.",
   "suggestionsWarning": "Isn't it one of these existing items?",
   "genericTag": "generic item",
   "unconfirmedTag": "not confirmed yet",
@@ -16,8 +27,8 @@
   "codeLabel": "Barcode (optional)",
   "codeHint": "Without a code, a generic item is created (e.g. \"bread for {{example}}\" from a receipt) — with lower data confidence, but it can still be recorded.",
   "codeReadOnlyHint": "The barcode can't be changed while editing.",
-  "itemPhotoLabel": "Photo of the product (optional)",
-  "labelPhotoLabel": "Photo of the label (optional)",
+  "itemPhotoLabel": "Product photo ({{lang}}, optional)",
+  "labelPhotoLabel": "Label photo ({{lang}}, optional)",
   "uploadingPhotos": "Uploading photos…",
   "photoUploadFailedWarning": "The product was created, but the photo failed to upload. Try again from its detail page.",
   "submit": "Create product",

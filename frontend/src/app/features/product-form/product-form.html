@@ -28,8 +28,16 @@
   }
 
   <form nz-form nzLayout="vertical" (ngSubmit)="submit()">
+    <!--
+      Pole "Název" je vždy v jazyce appky (docs/lokalizace.md) — proto v popisku svítí jazyk.
+      Cizojazyčný název z OFF se sem NIKDY nepředvyplní; ukáže se v upozornění pod polem
+      a v sekci ostatních jazyků, jinak by se němčina uložila jako český název.
+    -->
     <nz-form-item>
-      <nz-form-label>{{ t('product-form.nameLabel') }}</nz-form-label>
+      <nz-form-label>
+        {{ t('product-form.nameLabel') }}
+        <span class="name-lang-tag">{{ t('product-form.lang.' + nameLang()) }}</span>
+      </nz-form-label>
       <nz-form-control>
         <input
           nz-input
@@ -40,6 +48,44 @@
         />
       </nz-form-control>
     </nz-form-item>
+
+    @if (foreignNameHint(); as hint) {
+      <nz-alert
+        nzType="warning"
+        [nzMessage]="
+          t('product-form.foreignNameWarning', {
+            lang: t('product-form.lang.' + hint.lang),
+            name: hint.name,
+          })
+        "
+        nzShowIcon
+        class="form-alert"
+      />
+    }
+
+    <div class="other-names">
+      <button nz-button nzType="link" type="button" (click)="toggleOtherNames()">
+        {{
+          otherNamesExpanded() ? t('product-form.otherNamesHide') : t('product-form.otherNamesShow')
+        }}
+      </button>
+      @if (otherNamesExpanded()) {
+        <p class="other-names-hint">{{ t('product-form.otherNamesHint') }}</p>
+        @for (lang of otherLangs(); track lang) {
+          <nz-form-item>
+            <nz-form-label>{{ t('product-form.lang.' + lang) }}</nz-form-label>
+            <nz-form-control>
+              <input
+                nz-input
+                [name]="'name-' + lang"
+                [ngModel]="otherName(lang)"
+                (ngModelChange)="onOtherNameChange(lang, $event)"
+              />
+            </nz-form-control>
+          </nz-form-item>
+        }
+      }
+    </div>
 
     @if (!product() && suggestions().length > 0) {
       <nz-alert
@@ -184,12 +230,17 @@
     </nz-form-item>
 
     @if (!product()) {
+      <!--
+        Obě fotky se ukládají s jazykem obalu (= jazyk appky). U etikety je to podstata věci —
+        je to fotka TEXTU složení, takže bez jazyka nejde vybrat ta, které čtenář rozumí
+        (docs/lokalizace.md, docs/ai.md).
+      -->
       <app-photo-slot
-        [label]="t('product-form.itemPhotoLabel')"
+        [label]="t('product-form.itemPhotoLabel', { lang: t('product-form.lang.' + nameLang()) })"
         (fileChange)="itemPhotoFile.set($event)"
       />
       <app-photo-slot
-        [label]="t('product-form.labelPhotoLabel')"
+        [label]="t('product-form.labelPhotoLabel', { lang: t('product-form.lang.' + nameLang()) })"
         (fileChange)="labelPhotoFile.set($event)"
       />
     }

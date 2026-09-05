@@ -23,6 +23,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { PriceKind, PricePoint, Product, ProductReview } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
 import { FormatService } from '../../services/format-service';
+import { LanguageService } from '../../services/language-service';
 import { NavigationHistoryService } from '../../services/navigation-history-service';
 import { ProductService } from '../../services/product-service';
 import { translateError } from '../../shared/error-message';
@@ -82,6 +83,7 @@ export class ProductDetailPage {
   protected readonly auth = inject(AuthService);
   protected readonly format = inject(FormatService);
   protected readonly navigationHistory = inject(NavigationHistoryService);
+  private readonly language = inject(LanguageService);
 
   protected readonly priceKindKeys = PRICE_KIND_KEYS;
   protected readonly netContentUomKeys = NET_CONTENT_UOM_KEYS;
@@ -89,6 +91,16 @@ export class ProductDetailPage {
 
   protected readonly product = signal<Product | null>(null);
   protected readonly loading = signal(true);
+
+  /**
+   * Jazyk zobrazeného názvu, KDYŽ se liší od jazyka appky — pak se u nadpisu ukáže štítek
+   * (docs/lokalizace.md). Null znamená „název je v jazyce appky", tedy štítek není potřeba;
+   * null je i u starých OFF snapshotů, kde jazyk názvu neznáme a tvrdit se o něm nedá nic.
+   */
+  protected readonly foreignNameLang = computed(() => {
+    const lang = this.product()?.nameLang;
+    return lang && lang !== this.language.lang() ? lang : null;
+  });
 
   protected readonly historyPoints = signal<PricePoint[]>([]);
   protected readonly historyLoading = signal(false);

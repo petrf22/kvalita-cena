@@ -2,6 +2,49 @@ import type { PhotoKind } from '../../models/generated/enums';
 import { NetContentUom, Product, UnitBase, UpdateProductInput } from '../../models/catalog';
 import { normalizeCode } from '../../shared/gtin';
 
+/** Název v jednom jazyce, jak ho vrací API (`Product.names`, `ExternalProductCandidate.names`). */
+export interface NameInLanguage {
+  lang?: string | null;
+  name: string;
+}
+
+export interface ProductNameSubmit {
+  lang: string;
+  name: string;
+}
+
+/**
+ * Názvy po jazycích na mapu jazyk→název. Položky bez jazyka se zahazují — u „hlavního" názvu
+ * z OFF se jazyk poznat nedá (docs/lokalizace.md) a formulář by ho neměl kam zařadit.
+ */
+export function namesByLang(
+  names: readonly NameInLanguage[] | null | undefined,
+): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const entry of names ?? []) {
+    if (entry.lang) result[entry.lang] = entry.name;
+  }
+  return result;
+}
+
+/**
+ * Které z ostatních jazyků poslat serveru: jen ty, jejichž text se liší od zdrojové hodnoty.
+ * U OFF kandidáta je to podmínka, ne optimalizace — poslat zpátky nezměněný název z OFF by
+ * znamenalo zapsat cizí data do `core.product_name`, což ODbL share-alike zakazuje
+ * (CLAUDE.md, past OFF kandidáta).
+ */
+export function changedNames(
+  current: Record<string, string>,
+  source: Record<string, string>,
+  excludeLang: string,
+): ProductNameSubmit[] {
+  return Object.entries(current)
+    .filter(
+      ([lang, name]) => lang !== excludeLang && name.trim() !== '' && name.trim() !== source[lang],
+    )
+    .map(([lang, name]) => ({ lang, name: name.trim() }));
+}
+
 /**
  * Čistá validace/dopočty pro formulář nového zboží — mimo Angular, ať jde otestovat Vitestem
  * bez TestBed (stejný vzor jako price-chart-geometry.ts). Server (ProductCatalogService)
@@ -49,6 +92,8 @@ export function previewUnitPrice(
  *  ProductLookupByCodeQuery typu, ať jde testovat i bez fixtur odpovídajících celému dotazu. */
 export interface OffCandidateShape {
   name?: string | null;
+  nameLang?: string | null;
+  names?: readonly NameInLanguage[] | null;
   brandName?: string | null;
   category?: { id: string } | null;
   unitBase?: UnitBase | null;
@@ -58,6 +103,8 @@ export interface OffCandidateShape {
 
 export interface OffCandidateDefaults {
   name: string | null;
+  /** Názvy z OFF po jazycích — zdroj pro sekci ostatních jazyků i pro diff při submitu. */
+  names: Record<string, string>;
   brandName: string | null;
   categoryId: string | null;
   unitBase: UnitBase | null;
@@ -70,9 +117,17 @@ export interface OffCandidateDefaults {
  * dělení 1000. Tenhle převedený snímek appka drží stranou (`offDefaults`) a při submitu ho
  * používá k rozhodnutí, které pole poslat serveru (CLAUDE.md, past OFF kandidáta).
  */
-export function offCandidateDefaults(candidate: OffCandidateShape): OffCandidateDefaults {
+export function offCandidateDefaults(
+  candidate: OffCandidateShape,
+  lang: string,
+): OffCandidateDefaults {
+  const names = namesByLang(candidate.names);
   return {
-    name: candidate.name ?? null,
+    // Do pole "Název" patří jen název v jazyce appky. Když ho OFF nemá, zůstane pole PRÁZDNÉ
+    // a cizojazyčná varianta se ukáže v sekci ostatních jazyků — předvyplnit ho německým
+    // textem by znamenalo uložit němčinu jako český název (přesně to, co se opravuje).
+    name: names[lang] ?? null,
+    names,
     brandName: candidate.brandName ?? null,
     categoryId: candidate.category?.id ?? null,
     unitBase: candidate.unitBase ?? null,
@@ -161,6 +216,8 @@ export function codeMatchesOffCandidate(code: string, candidateCode: string): bo
 
 export interface ProductFormDefaults {
   name: string;
+  /** Všechny známé názvy po jazycích (i ty z OFF) — zdroj pro diff, viz `changedNames`. */
+  names: Record<string, string>;
   brandName: string;
   categoryId: string | null;
   unitBase: UnitBase;
@@ -175,9 +232,13 @@ export interface ProductFormDefaults {
  * (KG/L/PCS), přesto se pro jistotu žene přes stejný převod jako OFF (past OFF kandidáta platí
  * i tady, kdyby server někdy vrátil G/ML).
  */
-export function productFormDefaults(product: Product): ProductFormDefaults {
+export function productFormDefaults(product: Product, lang: string): ProductFormDefaults {
+  const names = namesByLang(product.names);
   return {
-    name: product.name,
+    // Stejné pravidlo jako u OFF kandidáta: pole "Název" je vždy v jazyce appky. Product.name
+    // sem nejde dosadit naslepo — může to být fallback z jiného jazyka (viz Product.nameLang).
+    name: names[lang] ?? '',
+    names,
     brandName: product.brand?.name ?? '',
     categoryId: product.category?.id ?? null,
     unitBase: product.unitBase,
@@ -220,6 +281,10 @@ export function netContentForUpdateSubmit(
 
 export interface ProductFormState {
   name: string;
+  /** Jazyk pole „Název" — vždy jazyk appky, server ho nikdy nehádá z textu. */
+  nameLang: string;
+  /** Názvy v OSTATNÍCH jazycích, už profiltrované přes `changedNames`. */
+  names: ProductNameSubmit[];
   brandName: string;
   categoryId: string | null;
   unitBase: UnitBase;
@@ -241,6 +306,8 @@ export function buildUpdateProductInput(
   const trimmedBrand = form.brandName.trim();
   return {
     name: form.name.trim() === defaults.name ? null : form.name.trim(),
+    nameLang: form.nameLang,
+    names: form.names.length > 0 ? form.names : null,
     brandName: trimmedBrand === '' || trimmedBrand === defaults.brandName ? null : trimmedBrand,
     clearBrand: trimmedBrand === '' && defaults.brandName !== '',
     categoryId: form.categoryId === defaults.categoryId ? null : form.categoryId,

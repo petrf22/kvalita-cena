@@ -49,5 +49,12 @@
   "chartSelected": "Vybráno",
   "timesConfirmed": "{{count}}× potvrzeno",
   "chartEmpty": "Zatím nemáme dost hlášení na graf",
-  "chartAriaLabel": "Graf vývoje ceny, {{count}} měření"
+  "chartAriaLabel": "Graf vývoje ceny, {{count}} měření",
+  "lang": {
+    "cs": "česky",
+    "sk": "slovensky",
+    "en": "anglicky",
+    "pl": "polsky",
+    "de": "německy"
+  }
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Product } from '../../models/catalog';
 import {
   buildUpdateProductInput,
+  changedNames,
   changedFromOff,
   codeMatchesOffCandidate,
   impliedNetContentUom,
@@ -58,41 +59,80 @@ describe('previewUnitPrice', () => {
 describe('offCandidateDefaults', () => {
   it('converts grams and millilitres to the form units (kg/l)', () => {
     expect(
-      offCandidateDefaults({ netContentValue: 250, netContentUom: 'G', unitBase: 'MASS' }),
+      offCandidateDefaults({ netContentValue: 250, netContentUom: 'G', unitBase: 'MASS' }, 'cs'),
     ).toMatchObject({ netContentValue: 0.25, unitBase: 'MASS' });
     expect(
-      offCandidateDefaults({ netContentValue: 500, netContentUom: 'ML', unitBase: 'VOLUME' }),
+      offCandidateDefaults({ netContentValue: 500, netContentUom: 'ML', unitBase: 'VOLUME' }, 'cs'),
     ).toMatchObject({ netContentValue: 0.5, unitBase: 'VOLUME' });
   });
 
   it('leaves kg/l values unchanged', () => {
     expect(
-      offCandidateDefaults({ netContentValue: 1.5, netContentUom: 'KG', unitBase: 'MASS' }),
+      offCandidateDefaults({ netContentValue: 1.5, netContentUom: 'KG', unitBase: 'MASS' }, 'cs'),
     ).toMatchObject({ netContentValue: 1.5 });
   });
 
   it('is null without a parseable quantity', () => {
-    expect(offCandidateDefaults({}).netContentValue).toBeNull();
+    expect(offCandidateDefaults({}, 'cs').netContentValue).toBeNull();
     expect(
-      offCandidateDefaults({ netContentValue: 6, netContentUom: 'PCS' }).netContentValue,
+      offCandidateDefaults({ netContentValue: 6, netContentUom: 'PCS' }, 'cs').netContentValue,
     ).toBeNull();
   });
 
-  it('carries name/brand/category through, null when absent', () => {
+  it('prefills the name only from the app language, never from another one', () => {
+    // Kandidát MÁ český název — pole "Název" se předvyplní.
     expect(
-      offCandidateDefaults({ name: 'Rama Klasik', brandName: 'Rama', category: { id: '4' } }),
+      offCandidateDefaults(
+        {
+          name: 'Rama Klasik',
+          names: [{ lang: 'cs', name: 'Rama Klasik' }],
+          brandName: 'Rama',
+          category: { id: '4' },
+        },
+        'cs',
+      ),
     ).toMatchObject({ name: 'Rama Klasik', brandName: 'Rama', categoryId: '4' });
-    expect(offCandidateDefaults({})).toMatchObject({
+
+    // Magnesia z OFF: jen německý název. Pole "Název" musí zůstat PRÁZDNÉ, jinak by se
+    // němčina uložila jako český název — přesně to, co se touhle změnou opravuje.
+    const germanOnly = offCandidateDefaults(
+      { name: 'Magnesia', nameLang: 'de', names: [{ lang: 'de', name: 'Magnesia' }] },
+      'cs',
+    );
+    expect(germanOnly.name).toBeNull();
+    expect(germanOnly.names).toEqual({ de: 'Magnesia' });
+
+    expect(offCandidateDefaults({}, 'cs')).toMatchObject({
       name: null,
+      names: {},
       brandName: null,
       categoryId: null,
     });
   });
 });
 
+describe('changedNames', () => {
+  it('sends only languages the user actually changed', () => {
+    const source = { de: 'Magnesia', en: 'Sparkling water' };
+    expect(changedNames({ de: 'Magnesia', en: 'Fizzy water' }, source, 'cs')).toEqual([
+      { lang: 'en', name: 'Fizzy water' },
+    ]);
+  });
+
+  /** Poslat zpátky nezměněnou hodnotu z OFF by znamenalo zapsat cizí data do core.* (ODbL). */
+  it('never echoes an unchanged OFF value back to the server', () => {
+    expect(changedNames({ de: 'Magnesia' }, { de: 'Magnesia' }, 'cs')).toEqual([]);
+  });
+
+  it('skips the primary language and empty fields', () => {
+    expect(changedNames({ cs: 'Minerálka', de: '   ' }, {}, 'cs')).toEqual([]);
+  });
+});
+
 describe('changedFromOff', () => {
   const defaults = {
     name: 'Rama Klasik',
+    names: { cs: 'Rama Klasik' },
     brandName: 'Rama',
     categoryId: '4',
     unitBase: 'MASS' as const,
@@ -157,6 +197,7 @@ describe('productFormDefaults', () => {
   it('converts grams/millilitres to form units (kg/l), same as OFF candidates', () => {
     const product = {
       name: 'Rama Klasik',
+      names: [{ lang: 'cs', name: 'Rama Klasik' }],
       brand: { name: 'Rama' },
       category: { id: '4' },
       unitBase: 'MASS',
@@ -165,7 +206,7 @@ describe('productFormDefaults', () => {
       piecesInPack: null,
       isVariableWeight: false,
     } as unknown as Product;
-    expect(productFormDefaults(product)).toMatchObject({
+    expect(productFormDefaults(product, 'cs')).toMatchObject({
       name: 'Rama Klasik',
       brandName: 'Rama',
       categoryId: '4',
@@ -176,6 +217,7 @@ describe('productFormDefaults', () => {
   it('falls back to an empty brand name when the product has none', () => {
     const product = {
       name: 'Bezznačkový chléb',
+      names: [{ lang: 'cs', name: 'Bezznačkový chléb' }],
       brand: null,
       category: { id: '1' },
       unitBase: 'MASS',
@@ -184,13 +226,14 @@ describe('productFormDefaults', () => {
       piecesInPack: null,
       isVariableWeight: false,
     } as unknown as Product;
-    expect(productFormDefaults(product).brandName).toBe('');
+    expect(productFormDefaults(product, 'cs').brandName).toBe('');
   });
 });
 
 describe('netContentForUpdateSubmit', () => {
   const defaults = {
     name: 'Rama Klasik',
+    names: { cs: 'Rama Klasik' },
     brandName: 'Rama',
     categoryId: '4',
     unitBase: 'MASS' as const,
@@ -239,6 +282,8 @@ describe('netContentForUpdateSubmit', () => {
 describe('buildUpdateProductInput', () => {
   const defaults = {
     name: 'Rama Klasik',
+    names: { cs: 'Rama Klasik' },
+    nameLang: 'cs',
     brandName: 'Rama',
     categoryId: '4',
     unitBase: 'MASS' as const,
@@ -248,8 +293,10 @@ describe('buildUpdateProductInput', () => {
   };
 
   it('sends null for every field left unchanged', () => {
-    expect(buildUpdateProductInput(defaults, defaults)).toEqual({
+    expect(buildUpdateProductInput({ ...defaults, names: [] }, defaults)).toEqual({
       name: null,
+      nameLang: 'cs',
+      names: null,
       brandName: null,
       clearBrand: false,
       categoryId: null,
@@ -263,7 +310,7 @@ describe('buildUpdateProductInput', () => {
   });
 
   it('clears brand and pieces when emptied', () => {
-    const form = { ...defaults, brandName: '', piecesInPack: null };
+    const form = { ...defaults, names: [], brandName: '', piecesInPack: null };
     const input = buildUpdateProductInput(form, defaults);
     expect(input.clearBrand).toBe(true);
     expect(input.brandName).toBeNull();
@@ -272,7 +319,7 @@ describe('buildUpdateProductInput', () => {
   });
 
   it('sends the changed name and category', () => {
-    const form = { ...defaults, name: 'Rama Light', categoryId: '7' };
+    const form = { ...defaults, names: [], name: 'Rama Light', categoryId: '7' };
     const input = buildUpdateProductInput(form, defaults);
     expect(input.name).toBe('Rama Light');
     expect(input.categoryId).toBe('7');

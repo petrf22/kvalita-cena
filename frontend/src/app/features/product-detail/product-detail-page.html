@@ -12,7 +12,16 @@
   } @else if (!product()) {
     <nz-alert nzType="error" [nzMessage]="t('product-detail.notFound')" nzShowIcon />
   } @else {
-    <h1>{{ product()!.name }}</h1>
+    <h1>
+      {{ product()!.name }}
+      <!--
+        Název může být z jiného jazyka než appka — v tom případě to musí být vidět, ať je
+        jasné, že chybí překlad, ne že se zboží tak jmenuje (docs/lokalizace.md).
+      -->
+      @if (foreignNameLang(); as lang) {
+        <span class="name-lang-tag">{{ t('product-detail.lang.' + lang) }}</span>
+      }
+    </h1>
 
     <app-photo-gallery
       recordType="PRODUCT"

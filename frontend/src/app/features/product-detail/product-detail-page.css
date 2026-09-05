@@ -254,3 +254,12 @@ app-photo-gallery {
     justify-content: center;
   }
 }
+
+/* Štítek jazyka u názvu — svítí jen tehdy, když název NENÍ v jazyce appky (docs/lokalizace.md). */
+.name-lang-tag {
+  margin-left: 0.5rem;
+  font-size: 0.55em;
+  font-weight: 400;
+  vertical-align: middle;
+  color: rgb(0 0 0 / 45%);
+}

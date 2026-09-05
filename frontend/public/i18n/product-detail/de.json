@@ -49,5 +49,12 @@
   "chartSelected": "Ausgewählt",
   "timesConfirmed": "{{count}}× bestätigt",
   "chartEmpty": "Noch nicht genug Meldungen für ein Diagramm",
-  "chartAriaLabel": "Diagramm des Preisverlaufs, {{count}} Messungen"
+  "chartAriaLabel": "Diagramm des Preisverlaufs, {{count}} Messungen",
+  "lang": {
+    "cs": "auf Tschechisch",
+    "sk": "auf Slowakisch",
+    "en": "auf Englisch",
+    "pl": "auf Polnisch",
+    "de": "auf Deutsch"
+  }
 }
