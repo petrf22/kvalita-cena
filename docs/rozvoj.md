@@ -136,7 +136,8 @@ Vnitroobchodní kódy z účtenky nejsou globální identifikátor —
 `core.product_code.code_type = STORE_INTERNAL` s povinným `chain_id`
 (`docs/datovy-model.md`, „Vnitroobchodní kódy vs. globální EAN"). Párování řádku účtenky na
 existující katalogové zboží (podle názvu, kódu, ceny) je hlavní otevřený problém — bez něj se
-vytěžená data nedají spojit s tím, co appka už zná.
+vytěžená data nedají spojit s tím, co appka už zná. Návrh mapovací tabulky je níž,
+„Mapování obchodního označení zboží na katalogovou položku".
 
 **Soukromí je tu jiná liga než dnešní fotky.** Účtenka nese čas, místo a celý obsah jednoho
 nákupu konkrétního člověka — mnohem citlivější než fotka regálu, ze které `ImageProcessingService`
@@ -154,6 +155,140 @@ hlavičku/patičku, takže nejcitlivější údaje se na server v ideálním př
 Konkrétní mechanismus (oříznutí podle pozice v obraze, ruční vymezení oblasti uživatelem, nebo
 worker, který citlivé řádky rozpozná a zahodí ještě před uložením) není rozhodnutý — k dořešení
 spolu s oddílem v `docs/soukromi.md` zmíněným výš.
+
+## Mapování obchodního označení zboží na katalogovou položku (ROZHODNOUT)
+
+**Zadání:** účtenka i akční leták mluví názvoslovím obchodu, ne katalogu — na účtence je
+`ROHLIK TUZ 43G`, ne EAN a ne „Rohlík tukový 43 g". EAN na účtence prakticky nikdy není, takže
+bez mostu mezi obchodním označením a katalogovou položkou se z vytěžené účtenky nedá udělat
+cenový zápis. Cíl: co bylo v Bille jednou spárované, spáruje se příště samo a cena z účtenky
+spadne do `core.price_observation` úplně stejně, jako by ji člověk zapsal z webu nebo mobilu.
+Tohle je ta „hlavní otevřená otázka" z oddílu „Načtení celé účtenky" výš — návrh k ní patří sem.
+
+**Tři stavební kameny, které v modelu už jsou, a proč ani jeden sám nestačí:**
+
+- `core.product_code` s `code_type = STORE_INTERNAL` a povinným `chain_id`
+  (`docs/datovy-model.md`, „Vnitroobchodní kódy vs. globální EAN") — přesné a jednoznačné, ale
+  funguje jen tehdy, když účtenka kód vytiskne. Spousta účtenek tiskne jen název, případně kód
+  jiný než ten z cenovky.
+- `core.product_alias` + `core.product_alias_confirmation` (`docs/datovy-model.md`, „Varianty
+  názvu jsou oddělené") — správný vzor učení (vzniká jen spolu s úspěšným zápisem ceny,
+  komunitní práh, anonym nepřispívá), ale alias je **globální pro produkt a bez rozsahu**, míří
+  do veřejného našeptávače a jeho unikátnost `(product_id, name)` je obrácená, než párování
+  potřebuje. Zkratky z účtenky (`ROHLIK TUZ 43G`, `JOG.BIL.SELSKY`) do našeptávače nepatří —
+  jsou to interní zkratky jednoho řetězce, ne názvy, které by kdokoli psal do hledání.
+- `core.product.catalog_scope` (`CHAIN`/`STORE`, `docs/datovy-model.md`, „Identita bezkódového
+  zboží je lokální k prodejci") — správný tvar rozsahu, ale platí jen pro bezkódové druhové
+  položky. Řádek účtenky s Coca-Colou míří na `GLOBAL` položku s EANem, a přesto potřebuje
+  označení vázané na řetězec.
+
+**Návrh: `core.product_store_label`** — samostatná mapovací tabulka, ne další význam naroubovaný
+na alias:
+
+- `product_id` (FK na katalogovou položku, ne na kód — EAN je jen jeden z identifikátorů zboží
+  a mapování musí přežít `mergeProducts`), `label` (text tak, jak ho obchod tiskne),
+  `label_norm` (`core.norm_text`, `docs/datovy-model.md`),
+- rozsah přesně vzorem `chk_product_catalog_scope`: právě jeden z `chain_id`/`store_id` —
+  řetězec tiskne stejné zkratky ve všech provozovnách, nezávislý obchod potřebuje vlastní,
+- unikátnost `(label_norm, COALESCE(chain_id,0), COALESCE(store_id,0))` jako raw SQL index
+  (týž důvod pro `COALESCE` jako u `uq_product_code_code_type_chain`). **Směr je opačný než
+  u aliasu:** párování jde označení → zboží, takže jedno označení smí v jednom rozsahu ukazovat
+  nejvýš na jednu položku. Dvě položky hlásící se ke stejné zkratce v témže řetězci nejsou
+  legitimní stav, ale případ pro moderaci (typicky duplicita ke sloučení),
+- `status` `PENDING`/`ACTIVE` + `core.product_store_label_confirmation` přesně vzorem aliasu
+  (práh `app.catalog.label-confirmations`, jeden účet jeden hlas, `user_id` nulované po 180
+  dnech — `docs/soukromi.md`),
+- `last_seen_at` — když řetězec zboží přejmenuje, staré označení nezmizí, jen přestane chodit;
+  bez téhle značky nejde poznat mrtvé mapování od živého.
+
+**Kaskáda párování jednoho řádku** (první, co sedne, vyhrává):
+
+1. vnitroobchodní kód z řádku → `core.product_code` (`STORE_INTERNAL` + `chain_id`) — jistota,
+2. přesná shoda `label_norm` v rozsahu (nejdřív provozovna, pak řetězec) → mapovací tabulka,
+3. podobnost přes `pg_trgm` proti označením v rozsahu, pak proti `core.product_alias` a názvu
+   zboží — stejné skóre jako `productSuggestions` (maximum ze `similarity`/`word_similarity`,
+   `docs/stav-implementace.md`),
+4. nic → nová položka běžnou cestou (`DRAFT`, `catalog_scope` podle obchodu z účtenky —
+   `docs/reputace.md`, „Zboží bez čárového kódu").
+
+Kroky 1–2 jsou strojově jisté, 3–4 jsou **návrh k potvrzení člověkem** (`docs/ai.md`, „AI nikdy
+nerozhoduje"). Nové mapování se učí jen z potvrzeného řádku, který skutečně vedl k zápisu ceny —
+tytéž podmínky jako u aliasu. Jinak by šlo mapovací tabulku zaplevelit nahráním libovolného
+obrázku.
+
+**Co se nesmí zapomenout:**
+
+- `mergeProducts` dnes přesouvá observace, recenze, média, patche, kódy i aliasy
+  (`docs/datovy-model.md`) — mapování musí do stejného výčtu, včetně řešení unikátní kolize ve
+  prospěch cíle. Bez toho by sloučení duplicity rozbilo párování, které předtím fungovalo.
+- **Dávková sémantika `submitObservations` na účtenku nesedí.** Dnes kolize jediného druhu ceny
+  shodí celou dávku, protože dávka = jedna cenovka a uživatel má jeden formulář
+  (`docs/datovy-model.md`). Účtenka je ale čtyřicet položek a stačí, aby jednu z nich týž člověk
+  týž den zapsal ručně, a `uq_price_observation_submitter_kind_per_day` shodí celý import.
+  Rozhodnout, jestli import z účtenky duplicitní řádky přeskočí a nahlásí (doporučení), nebo
+  půjdou řádky jako samostatné dávky.
+- **Množství na účtence není gramáž balení.** `net_content_base` je snapshot z katalogu
+  (`docs/datovy-model.md`), kdežto `0,432 kg × 89,90 = 38,84` na řádku váhového zboží říká,
+  kolik toho člověk koupil. Zapsat se má jednotková cena (`quantityBasis = PER_KG`), nikdy
+  zaplacená částka jako cena zboží — nejpravděpodobnější tichá chyba celé funkce.
+- **Druh ceny je na účtence rozhozený přes víc řádků** — sleva bývá vlastní řádek pod položkou
+  a klubová cena je klubová jen tehdy, když u nákupu byla použita karta. Mapování řádků na
+  `price_kind` je součást vytěžení, ne až zápisu, a je zároveň soukromostní vstup (že u nákupu
+  byla karta, je údaj o člověku — `docs/soukromi.md` a „záměrně částečný sken" výš).
+
+**Otevřené otázky:** rozlišovat u označení, odkud se naučilo (účtenka vs. leták)? Zkratky
+z účtenky a marketingové názvy z letáku jsou jiný slovník a jeden jmenný prostor pro obojí může
+párovat nesmysly — sloučit je do jednoho pole se nedoporučuje, ale rozhodnout se má až podle
+skutečných dat z testovacího provozu. A dál: kdo smí mapování opravit, když se naučí špatně —
+moderátor, nebo stačí komunitní práh jako u aliasu.
+
+## Zdroj ceny: kanál klienta vs. druh důkazu (ČÁSTEČNĚ)
+
+**Stav:** sloupec už existuje — `core.price_observation.source` (`ObservationSource`:
+`MOBILE`/`WEB`/`IMPORT`), plní ho server v `ObservationGraphQlController.resolveSource()` podle
+hlavičky `X-Client-Kind`. **Nikdo ho ale zatím nečte:** není v GraphQL schématu, nevstupuje do
+`PriceAggregationService.weightFor()` ani se nikde nezobrazuje. Hodnota `IMPORT` dnes nevzniká
+vůbec — je rezervovaná pro budoucí hromadný import, ne pro účtenky.
+
+**Oddělené vstupní metody pro každý zdroj (`setPriceWeb`, `setPriceMobile`, …) se
+nedoporučují** — zdroj má i dál vyplňovat server:
+
+- kanál se dnes odvozuje z hlavičky, ne z toho, co klient tvrdí. Kdyby o zdroji rozhodovalo
+  jméno zavolané mutace, byl by údaj sebedeklarovaný — a u druhu důkazu (níž) je to rovnou
+  bezpečnostní rozdíl, protože důkaz je násobič váhy (`docs/reputace.md`).
+- `PriceObservationService.submit()` drží validace, jednu transakci a jednu položku
+  `agg.recompute_queue` na celou dávku. N mutací = N kopií téhle logiky, které se časem rozejdou.
+- číselník roste líp než API: přidat hodnotu do enumu je migrace, přidat mutaci je změna
+  kontraktu pro oba klienty i pro `graphql-codegen`.
+
+**Co doplnit místo toho: druhou osu, ne další hodnoty do jedné.** „Z mobilu" a „z účtenky"
+nejsou alternativy — účtenka vyfocená telefonem je obojí. Kdyby `RECEIPT` přibylo do
+`ObservationSource`, přestala by jít hodnota odvodit z hlavičky a ztratila by se informace,
+který klient zápis poslal:
+
+- `source` = **kanál** (`MOBILE`/`WEB`/`IMPORT`) — kdo záznam poslal; odvozuje server, beze změny,
+- `evidence_kind` = **na čem cena stojí** (`NONE`/`PRICE_TAG_PHOTO`/`RECEIPT_OCR`/`LEAFLET`).
+
+Druhá osa není nový nápad — je to přesně ten sloupec, který si `docs/ai.md` („Vazba na
+`f_evid`") rezervuje a který `f_evid` (1,30 účtenka+OCR / 1,15 foto cedulky / 1,00 bez důkazu,
+`docs/reputace.md`) potřebuje, aby se rozlišení nedopisovalo pozdější migrací. Účtenka a leták
+do něj jen přidají hodnoty.
+
+**Druh důkazu určuje server podle skutečně připojeného artefaktu** (fotka v `core.media`,
+dokončená úloha vytěžení ve schématu `ai`), ne klient v inputu. Klient, který si napíše
+`RECEIPT_OCR` bez účtenky, by si sám zvedl váhu vlastních zápisů — to není zobrazovací údaj,
+ale reputační útok.
+
+**Leták je zvláštní případ a má se rozhodnout spolu s oddílem „Ceny předem z akčního letáku"
+výš.** Leták není důkaz o ceně v regálu, ale oznámení o budoucí platnosti. Pokud ceny z letáku
+skončí jako samostatný `core.price_announcement` (doporučení tamtéž), nepatří `LEAFLET` do
+`evidence_kind` vůbec — je to původ jiného typu záznamu. Řešit obojí najednou, ať nevznikne
+hodnota enumu, kterou pak nemá kdo nastavit.
+
+**Zobrazení:** „cena z účtenky" je užitečná informace o důvěryhodnosti a patří do API i UI.
+`source` (z jakého zařízení zápis přišel) je naopak údaj o člověku, ne o ceně — nechat ho
+interní, konzistentně s tím, že se autor cenového zápisu veřejně neukazuje vůbec
+(`docs/soukromi.md`).
 
 ## Rozšíření číselníku kategorií zboží (ČÁSTEČNĚ)
 
