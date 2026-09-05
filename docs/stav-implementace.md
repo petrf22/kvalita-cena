@@ -26,6 +26,7 @@ v příslušné sekci pod ní.
 | [Zpětná vazba](#zpětná-vazba) | hotovo | hotovo | hotovo | HOTOVO |
 | [Open Food Facts — základní integrace](#open-food-facts) | hotovo | hotovo | hotovo | HOTOVO |
 | [Aditiva (E-čka) z OFF](#aditiva-e-čka-z-off) | hotovo | hotovo (beze změny) | hotovo (beze změny) | HOTOVO |
+| [Vícejazyčný název a fotky zboží](#vícejazyčný-název-a-fotky-zboží) | hotovo | hotovo | hotovo | HOTOVO |
 | Neimplementováno | — | — | — | viz [„Neimplementováno"](#neimplementováno) níž |
 
 ## Passwordless auth a GraphQL základ
@@ -372,9 +373,29 @@ a možností uživatelského přepsání. GraphQL API (`productLookupByCode`, `P
 a formulář nového zboží (`product-form.ts`/`ProductFormViewModel.kt`) OFF kandidáta předvyplní
 (gramáž převedenou z G/ML na kg/l) a odešle přes `createProductFromOff` — jen pole, která
 uživatel skutečně změnil oproti OFF defaultu, aby nevznikl zbytečný `core.product_user_edit`
-patch. Detail zboží na obou klientech zobrazuje `catalogAttribution`/`externalImage`. Klientská
+patch. Detail zboží na obou klientech zobrazuje `catalogAttribution`/`externalImage` (od 2026-09
+vybraný podle jazyka obalu, viz „Vícejazyčný název a fotky zboží" níž). Klientská
 session cache nad `productLookupByCode` (`ProductService`/`GraphQlClient`) šetří opakované
 dotazy na stejný kód. Zpětné publikování oprav do OFF zůstává mimo MVP.
+
+## Vícejazyčný název a fotky zboží
+
+Zboží nese název ve všech jazycích appky, ne v jednom (`core.product.name` + `name_lang`
+pro primární, `core.product_name` pro překlady, `off.product_name` pro varianty z OFF).
+Zobrazuje se název v jazyce klienta s fallbackem napříč jazyky, `Product.nameLang` říká,
+z jakého jazyka název doopravdy je, a `Product.names` nese všechny — z toho formulář na obou
+klientech plní sbalenou sekci „Názvy v jiných jazycích". Doplnění chybějícího jazyka jde
+globálně, změna existujícího do osobního patche. Hledání i nabídka duplicit matchují napříč
+všemi jazyky.
+
+Fotky mají stejné pravidlo: `off.product_image` drží přední fotku i fotku složení po jazycích
+obalu (`selected_images` z OFF) a vlastní fotky nesou `core.media.lang` (u `PhotoKind.LABEL`
+je jazyk podstata věci — je to fotka textu složení, `docs/ai.md`).
+
+Přidání dalšího jazyka je jeden řádek v `app.i18n.supported-locales`: `OpenFoodFactsApiClient`
+z něj skládá `fields` pro OFF, `off.product.name_locales` drží použitou sadu a snapshot
+s neúplnou sadou je automaticky nečerstvý; zboží, na které nikdo nesáhne, dožene noční
+`OffSnapshotRefreshService`. Podrobnosti: `docs/lokalizace.md`, „Název zboží po jazycích".
 
 ## Aditiva (E-čka) z OFF
 

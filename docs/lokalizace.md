@@ -236,6 +236,70 @@ kdykoli znovu stažitelná data (stejný důvod jako `off`/`osm`), ale na rozdí
   otestovaného živým `curl`), tvar požadavku je zdokumentovaný odhad, který je potřeba opravit
   po získání licence, než půjde appka s RSD do provozu.
 
+### Název zboží po jazycích: `core.product_name` + `off.product_name`
+
+Zboží nese název ve víc jazycích ze stejného důvodu jako kategorie — je to **data, ne UI
+chrome**. Rozdíl je v tom, kdo je píše: kategorie seed, názvy zboží komunita a Open Food Facts.
+
+Původ změny (2026-09): sken EANu, který katalog nezná, nabízel název z `off.product.product_name`,
+což je POČÍTANÉ pole OFF — u produktu s `lang='en'` umí vrátit český text, takže se z něj jazyk
+poznat nedá. Česky mluvícímu uživateli se tak u Mattoni/Magnesie (EAN 8586007690441) nabídla
+německá „Magnesia", ačkoli OFF má i `product_name_cs`. Přepsáním do češtiny se německá varianta
+ztratila a u OFF-podloženého zboží skončil český název jen v `core.product_user_edit`, takže
+každý další Čech viděl dál němčinu.
+
+**Kde který název leží**
+
+| Vrstva | Kde | Kdo píše |
+|---|---|---|
+| Primární název | `core.product.name` + `name_lang` | zakladatel zboží |
+| Překlady | `core.product_name (product_id, lang, name)` | kdokoli přihlášený, kdo doplní chybějící jazyk |
+| Osobní patch | `core.product_user_edit.name` + `name_lang` | jeden uživatel, jeden jazyk |
+| Snapshot OFF | `off.product_name (gtin, lang, name)` + `off.product.lang` | synchronizace z OFF |
+
+`core.product_name` NIKDY neobsahuje řádek pro `name_lang` — jinak by měl název dva zdroje
+pravdy. Primární název zůstává na `core.product.name` schválně: drží
+`idx_product_name_norm_fts` i `idx_product_name_trgm` a je poslední článek fallbacku.
+
+**Pořadí při čtení** (`ProductNameResolver`, jediné místo, kde se to rozhoduje): uvnitř jazyka
+requestu patch → komunita → OFF; teprve když v tom jazyce nemá název NIKDO, sáhne se napříč
+jazyky (primární název → hlavní jazyk OFF → výchozí jazyk appky → cokoli dalšího abecedně →
+„hlavní" název z OFF, u kterého jazyk neznáme). Název ve špatném jazyce je pořád lepší než
+prázdno; `Product.nameLang` říká, co se stalo, a klient podle něj vykreslí štítek.
+
+**Přednost komunity před OFF ve stejném jazyce je vědomá změna** oproti stavu do 2026-09, kdy
+OFF přebíjel `core.product.name` vždy. Komunitní překlad vzniká právě proto, že v OFF v daném
+jazyce nic nebylo — později doplněný `product_name_cs` v OFF by ho jinak tiše přebil.
+
+**Zápis: doplnění chybějícího jazyka je globální, změna existujícího osobní** — zdůvodnění
+v `docs/datovy-model.md`, „Uživatelská vrstva nad globálními daty". Práh důvěry
+(`TrustLevelService`) se u doplnění NEuplatňuje: zboží samotné smí založit každý přihlášený
+(nedůvěryhodný autor dostane DRAFT, ne odmítnutí) a chybějící jazyk je tatáž třída příspěvku.
+Práh by ho navíc zavřel právě těm, kdo na cizojazyčné zboží narážejí nejčastěji — novým
+uživatelům. Obrana je stejná jako u zbytku katalogu: nahlášení a moderace.
+
+**Hledání matchuje napříč VŠEMI jazyky**, ne jen tím zobrazovaným — kdo v české appce napíše
+„Magnesia", musí zboží najít, i když ho uvidí pod českým názvem. `ProductSearchRepositoryImpl`
+má proto v UNIONu `candidate` větev pro `core.product_name` i `off.product_name` bez filtru na
+jazyk, zatímco zobrazovaný název skládá pro `locale` requestu. Totéž platí pro nabídku duplicit
+(`ProductRepository.findSimilarByName`, `GREATEST` přes všechny jazykové varianty) — duplicita
+je duplicita i tehdy, když ji zakládající vidí česky a existující položka je pod německým názvem.
+
+**Fotky mají stejné pravidlo jako názvy.** OFF drží přední fotku i fotku složení zvlášť pro
+každý jazyk obalu (`selected_images.front/ingredients.<lc>`) — ukládají se do
+`off.product_image` a vybírají týmž fallbackem (`OffImageResolver`), takže Čech dostane
+`front_cs`, ne `front_de`. Vlastní fotky nesou `core.media.lang`; u `PhotoKind.LABEL` je jazyk
+podstata věci, je to fotka TEXTU složení.
+
+**Rozšíření o jazyk je jeden řádek v `application.yml` a nic víc.** `app.i18n.supported-locales`
+je jediný zdroj: `OpenFoodFactsApiClient` z něj skládá `fields` pro OFF API (`product_name_<lc>`
+pro každý jazyk — `fields` nezná zástupný znak, takže vyjmenovat se musí) a použitou sadu uloží
+do `off.product.name_locales`. `OpenFoodFactsService.isFresh()` pak snapshot s neúplnou sadou
+považuje za nečerstvý BEZ ohledu na TTL, takže první čtení po přidání jazyka si ho dotáhne samo;
+zboží, na které nikdo nesáhne, dožene noční `OffSnapshotRefreshService`
+(`app.external.open-food-facts.backfill-cron`), který sdílí limit dotazů s interaktivním skenem
+a při jeho vyčerpání dávku ukončí — přednost má vždy uživatel u kasy.
+
 ### Kategorie: `core.category_i18n`, ne klíče v bundlech
 
 Kategorie jsou **data, ne UI chrome** — rostou (od `2026-08-20/01-category-tree.yaml` ~106

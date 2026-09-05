@@ -214,8 +214,15 @@ v datovém modelu není. Cíl je posunout appku od „kolik to stojí" k „co v
 
 **Co je hotové:** aditiva (E-čka) jako odkazy z OFF `additives_tags` (`off.product`,
 `ProductGraphQlController.externalLinksFor`, `docs/stav-implementace.md`) — čistě čtecí, beze
-změny klientů, karta „Další informace" odkazy renderuje generickým cyklem. Zbytek níž je cílový
-stav, ne implementace — žádná migrace, žádné API pole, žádný kód.
+změny klientů, karta „Další informace" odkazy renderuje generickým cyklem. Od 2026-09 navíc
+fotka etikety ví, v jakém jazyce je (`core.media.lang`, `off.product_image` s druhem
+`INGREDIENTS`, viz `docs/lokalizace.md`) — bez toho by čtení složení nemělo jak vybrat slovník
+alergenů. Zbytek níž je cílový stav, ne implementace — žádná migrace, žádné API pole, žádný kód.
+
+**Co sem NEPATŘÍ, ač to vypadá příbuzně: varianty obalu podle země.** Jazyk názvu/fotky
+(hotovo) říká, v jakém jazyce je text; varianta obalu by řešila, že se totéž zboží prodává
+v různých zemích s jiným složením nebo gramáží pod stejným EANem. To je jiná osa (země, ne
+jazyk) a znamenala by rozštěpit identitu zboží, ne přidat překlad — stav NÁPAD, bez zadání.
 
 Rozděleno na dva kroky, protože každý řeší jiný problém — nejde o obecnou osu fází výš, jen o
 pořadí uvnitř týhle jedné položky:
