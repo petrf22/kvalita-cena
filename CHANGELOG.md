@@ -7,12 +7,7 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
-## [Nezveřejněno]
-
-### Opraveno
-- Po naskenování nebo zadání kódu se u nalezeného zboží na obrazovce zápisu ceny zobrazí obrázek zboží (web, mobil)
-
-## [0.7.0] – 2026-09-04
+## [0.7.0] – 2026-09-05
 
 ### Přidáno
 - Varianty názvů bezkódového zboží se učí z úspěšných cenových zápisů a po potvrzení dvěma různými registrovanými uživateli pomáhají s našeptáváním i překlepy (server, web, mobil)
@@ -21,6 +16,9 @@ za jednoduchost skriptu.
 - Moderace má záložku Duplicity s dvojicemi podezřele podobného bezkódového zboží ve stejném obchodě a kategorii, bez čekání na nahlášení (server, web)
 - Moderátor může opravit název bezkódového zboží pro všechny; původní název zůstane dohledatelný jako alias (server, web)
 - Tlačítko „Zapsat další zboží v tomhle obchodě" po úspěšném zápisu ceny (web)
+- Zboží má název ve víc jazycích: appka ukáže název v jazyce, ve kterém běží, a když v něm název nikdo nemá, sáhne po jiném jazyce a označí jej štítkem (server, web, mobil)
+- Formulář zboží upozorní, když má zboží zatím název jen cizojazyčně, a nabídne sbalenou sekci „Názvy v jiných jazycích" — pole „Název" zůstává vždy v jazyce appky (web, mobil)
+- Fotky zboží se ukládají s jazykem obalu, ať se u složení nenabídne cizojazyčná etiketa (server, web, mobil)
 
 ### Změněno
 - Bezkódové zboží se už nespojuje globálně jen podle volného názvu: patří konkrétnímu řetězci, nebo nezávislé provozovně, a formulář proto vybírá obchod před zbožím (server, web, mobil)
@@ -32,6 +30,10 @@ za jednoduchost skriptu.
 
 ### Zabezpečeno
 - Zakládání bezkódového zboží má strop na jednu provozovnu za den a na počet nepotvrzených položek otevřených jedním účtem naráz, aby zaplevelení katalogu nešlo škálovat časem (server)
+
+### Opraveno
+- Po naskenování nebo zadání kódu se u nalezeného zboží na obrazovce zápisu ceny zobrazí obrázek zboží (web, mobil)
+- Detail zboží z Open Food Facts, jehož kategorie neodpovídá našemu stromu, se otevře místo pádu (server)
 
 ## [0.6.3] – 2026-09-03
 

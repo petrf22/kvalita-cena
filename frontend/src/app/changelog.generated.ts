@@ -20,7 +20,7 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
-  { version: "0.7.0", date: "2026-09-04", sections: [
+  { version: "0.7.0", date: "2026-09-05", sections: [
       { title: "Přidáno", items: [
         { text: "Varianty názvů bezkódového zboží se učí z úspěšných cenových zápisů a po potvrzení dvěma různými registrovanými uživateli pomáhají s našeptáváním i překlepy", parts: ["server", "web", "mobil"] },
         { text: "Moderátor může sloučit nahlášené duplicitní bezkódové produkty včetně jejich cen, recenzí, fotek a aliasů; původní odkaz se přesměruje na kanonický produkt", parts: ["server", "web"] },
@@ -28,6 +28,9 @@ export const CHANGELOG: ChangelogRelease[] = [
         { text: "Moderace má záložku Duplicity s dvojicemi podezřele podobného bezkódového zboží ve stejném obchodě a kategorii, bez čekání na nahlášení", parts: ["server", "web"] },
         { text: "Moderátor může opravit název bezkódového zboží pro všechny; původní název zůstane dohledatelný jako alias", parts: ["server", "web"] },
         { text: "Tlačítko „Zapsat další zboží v tomhle obchodě\" po úspěšném zápisu ceny", parts: ["web"] },
+        { text: "Zboží má název ve víc jazycích: appka ukáže název v jazyce, ve kterém běží, a když v něm název nikdo nemá, sáhne po jiném jazyce a označí jej štítkem", parts: ["server", "web", "mobil"] },
+        { text: "Formulář zboží upozorní, když má zboží zatím název jen cizojazyčně, a nabídne sbalenou sekci „Názvy v jiných jazycích\" — pole „Název\" zůstává vždy v jazyce appky", parts: ["web", "mobil"] },
+        { text: "Fotky zboží se ukládají s jazykem obalu, ať se u složení nenabídne cizojazyčná etiketa", parts: ["server", "web", "mobil"] },
       ] },
       { title: "Změněno", items: [
         { text: "Bezkódové zboží se už nespojuje globálně jen podle volného názvu: patří konkrétnímu řetězci, nebo nezávislé provozovně, a formulář proto vybírá obchod před zbožím", parts: ["server", "web", "mobil"] },
@@ -39,6 +42,10 @@ export const CHANGELOG: ChangelogRelease[] = [
       ] },
       { title: "Zabezpečeno", items: [
         { text: "Zakládání bezkódového zboží má strop na jednu provozovnu za den a na počet nepotvrzených položek otevřených jedním účtem naráz, aby zaplevelení katalogu nešlo škálovat časem", parts: ["server"] },
+      ] },
+      { title: "Opraveno", items: [
+        { text: "Po naskenování nebo zadání kódu se u nalezeného zboží na obrazovce zápisu ceny zobrazí obrázek zboží", parts: ["web", "mobil"] },
+        { text: "Detail zboží z Open Food Facts, jehož kategorie neodpovídá našemu stromu, se otevře místo pádu", parts: ["server"] },
       ] },
   ] },
   { version: "0.6.3", date: "2026-09-03", sections: [
