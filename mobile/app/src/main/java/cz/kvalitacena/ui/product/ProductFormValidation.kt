@@ -68,6 +68,36 @@ fun netContentUomFor(unitBase: String, current: String?): String {
   return if (current != null && current in options) current else options.first()
 }
 
+data class VisibleNetContent(
+  val netContentValue: Double?,
+  val netContentUom: String,
+  val isVariableWeight: Boolean,
+)
+
+/**
+ * Gramáž/objem a příznak váhového zboží očištěné o to, co formulář právě neukazuje — jediná
+ * cesta, kterou tahle trojice smí odejít do serveru.
+ *
+ * Pole se totiž skrývají (u kusového zboží obojí, u váhového číslo), ale stav ViewModelu si
+ * hodnotu drží dál. Bez tohohle by do serveru dorazilo číslo, které uživatel zadal ještě
+ * u hmotnosti a pak přepnul na kusy: 60 spárovaných s PCS uloží balení o 60 kusech, protože
+ * NetContentCalculator u COUNT bere hodnotu rovnou jako počet — místo aby net_content_base
+ * zůstalo 1. Váhové zboží se stejným způsobem drží na prázdné gramáži (cena je za kg/l).
+ */
+fun visibleNetContent(
+  unitBase: String,
+  netContentValue: Double?,
+  netContentUom: String,
+  isVariableWeight: Boolean,
+): VisibleNetContent {
+  if (unitBase == "COUNT") return VisibleNetContent(null, "PCS", false)
+  return VisibleNetContent(
+    netContentValue = if (isVariableWeight) null else netContentValue,
+    netContentUom = netContentUomFor(unitBase, netContentUom),
+    isVariableWeight = isVariableWeight,
+  )
+}
+
 /** Gramáž/objem ze serveru do pole formuláře — beze změny čísla, jen s jednotkou vedle. Kusy
  *  do pole gramáže nepatří (formulář ho u COUNT vůbec neukazuje), proto u PCS nechá obojí null. */
 private fun toFormNetContent(value: Double?, uom: String?): Pair<Double?, String?> =
