@@ -9,6 +9,9 @@ za jednoduchost skriptu.
 
 ## [Nezveřejněno]
 
+### Opraveno
+- Změna balení na kusové zboží při úpravě položky už neuloží starou gramáž jako počet kusů (250 g → 250 ks) (server, web, mobil)
+
 ### Změněno
 - Gramáž a objem se zadávají v jednotce z obalu: před číslem se vybere g/kg (u hmotnosti) nebo ml/l (u objemu), takže „60 g" jde opsat, místo aby se přepočítávalo na 0,06 kg — zvolená jednotka se pak u zboží i zobrazuje (web, mobil)
 
