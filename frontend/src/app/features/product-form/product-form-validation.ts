@@ -120,6 +120,40 @@ export function netContentBase(
   }
 }
 
+export interface NetContentFormState {
+  unitBase: UnitBase;
+  netContentValue: number | null;
+  netContentUom: NetContentUomChoice;
+  isVariableWeight: boolean;
+}
+
+export interface VisibleNetContent {
+  netContentValue: number | null;
+  netContentUom: NetContentUomChoice;
+  isVariableWeight: boolean;
+}
+
+/**
+ * Gramáž/objem a příznak váhového zboží očištěné o to, co formulář právě neukazuje — jediná
+ * cesta, kterou tahle trojice smí odejít do serveru.
+ *
+ * Pole se totiž skrývají (u kusového zboží obojí, u váhového číslo), ale signály si hodnotu
+ * drží dál. Bez tohohle by do serveru dorazilo číslo, které uživatel zadal ještě u hmotnosti
+ * a pak přepnul na kusy: 60 spárovaných s `PCS` uloží balení o 60 kusech, protože
+ * `NetContentCalculator` u COUNT bere hodnotu rovnou jako počet — místo aby `net_content_base`
+ * zůstalo 1. Váhové zboží se stejným způsobem drží na prázdné gramáži (cena je za kg/l).
+ */
+export function visibleNetContent(state: NetContentFormState): VisibleNetContent {
+  if (state.unitBase === 'COUNT') {
+    return { netContentValue: null, netContentUom: 'PCS', isVariableWeight: false };
+  }
+  return {
+    netContentValue: state.isVariableWeight ? null : state.netContentValue,
+    netContentUom: netContentUomFor(state.unitBase, state.netContentUom),
+    isVariableWeight: state.isVariableWeight,
+  };
+}
+
 /**
  * Náhled jednotkové ceny pro uživatele (server ji stejně dopočítá znovu z GENERATED sloupce) —
  * null, pokud gramáž není zadaná/kladná nebo se položka prodává jako váhové zboží (tam je

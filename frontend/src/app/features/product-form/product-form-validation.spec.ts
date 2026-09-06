@@ -12,6 +12,7 @@ import {
   netContentForUpdateSubmit,
   netContentUomFor,
   netContentUomOptions,
+  visibleNetContent,
   offCandidateDefaults,
   pendingPhotoUploads,
   previewUnitPrice,
@@ -75,6 +76,55 @@ describe('netContentBase', () => {
   it('is null without both the value and the unit', () => {
     expect(netContentBase(null, 'G')).toBeNull();
     expect(netContentBase(60, null)).toBeNull();
+  });
+});
+
+describe('visibleNetContent', () => {
+  /** Past: pole gramáže je u kusového zboží skryté, ale signál si drží, co uživatel zadal
+   *  ještě u hmotnosti. 60 s PCS uloží balení o 60 kusech, net_content_base má zůstat 1. */
+  it('drops a quantity left over from before the switch to piece goods', () => {
+    expect(
+      visibleNetContent({
+        unitBase: 'COUNT',
+        netContentValue: 60,
+        netContentUom: 'G',
+        isVariableWeight: true,
+      }),
+    ).toEqual({ netContentValue: null, netContentUom: 'PCS', isVariableWeight: false });
+  });
+
+  it('drops the quantity for variable-weight goods (price is already per kg/l)', () => {
+    expect(
+      visibleNetContent({
+        unitBase: 'MASS',
+        netContentValue: 60,
+        netContentUom: 'G',
+        isVariableWeight: true,
+      }),
+    ).toEqual({ netContentValue: null, netContentUom: 'G', isVariableWeight: true });
+  });
+
+  it('passes a visible quantity through untouched', () => {
+    expect(
+      visibleNetContent({
+        unitBase: 'MASS',
+        netContentValue: 60,
+        netContentUom: 'G',
+        isVariableWeight: false,
+      }),
+    ).toEqual({ netContentValue: 60, netContentUom: 'G', isVariableWeight: false });
+  });
+
+  /** Jednotka se dorovná i tehdy, když ji přepnutí základní jednotky nestihlo překlopit. */
+  it('repairs a unit that no longer fits the unit base', () => {
+    expect(
+      visibleNetContent({
+        unitBase: 'VOLUME',
+        netContentValue: 500,
+        netContentUom: 'G',
+        isVariableWeight: false,
+      }),
+    ).toEqual({ netContentValue: 500, netContentUom: 'ML', isVariableWeight: false });
   });
 });
 

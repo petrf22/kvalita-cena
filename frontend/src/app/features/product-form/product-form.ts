@@ -46,6 +46,7 @@ import { PhotoSlot } from '../../shared/photo-slot';
 import {
   NetContentUomChoice,
   OffCandidateDefaults,
+  VisibleNetContent,
   ProductFormDefaults,
   buildUpdateProductInput,
   changedFromOff,
@@ -59,6 +60,7 @@ import {
   offCandidateDefaults,
   pendingPhotoUploads,
   productFormDefaults,
+  visibleNetContent,
 } from './product-form-validation';
 
 type CategoryOption = CategoriesQuery['categories'][number];
@@ -373,10 +375,8 @@ export class ProductForm {
             brandName: this.brandName().trim() || null,
             categoryId,
             unitBase: this.unitBase(),
-            netContentValue: this.isVariableWeight() ? null : this.netContentValue(),
-            netContentUom: this.netContentUom(),
+            ...this.submittedNetContent(),
             piecesInPack: this.piecesInPack(),
-            isVariableWeight: this.isVariableWeight(),
             storeId: this.store()?.id ?? null,
             code: this.code().trim() || null,
           });
@@ -413,10 +413,8 @@ export class ProductForm {
         brandName: this.brandName(),
         categoryId,
         unitBase: this.unitBase(),
-        netContentValue: this.isVariableWeight() ? null : this.netContentValue(),
-        netContentUom: this.netContentUom(),
+        ...this.submittedNetContent(),
         piecesInPack: this.piecesInPack(),
-        isVariableWeight: this.isVariableWeight(),
       },
       defaults,
     );
@@ -478,13 +476,8 @@ export class ProductForm {
       { name: this.name(), brandName: this.brandName(), categoryId },
       defaults,
     );
-    const netContent = netContentForOffSubmit(
-      {
-        netContentValue: this.isVariableWeight() ? null : this.netContentValue(),
-        netContentUom: this.netContentUom(),
-      },
-      defaults,
-    );
+    const visible = this.submittedNetContent();
+    const netContent = netContentForOffSubmit(visible, defaults);
     return this.productService.createProductFromOff({
       code: candidate.code,
       name: text.name,
@@ -496,6 +489,20 @@ export class ProductForm {
       netContentValue: netContent.netContentValue,
       netContentUom: netContent.netContentUom,
       piecesInPack: this.piecesInPack(),
+      isVariableWeight: visible.isVariableWeight,
+    });
+  }
+
+  /**
+   * Gramáž/objem + váhové zboží tak, jak smí odejít do serveru — očištěné o pole, která
+   * formulář zrovna neukazuje (`visibleNetContent`). Jediná cesta, kterou tahle trojice do
+   * submitu chodí; sáhnout na signály přímo by propustilo hodnotu zbylou po přepnutí jednotky.
+   */
+  private submittedNetContent(): VisibleNetContent {
+    return visibleNetContent({
+      unitBase: this.unitBase(),
+      netContentValue: this.netContentValue(),
+      netContentUom: this.netContentUom(),
       isVariableWeight: this.isVariableWeight(),
     });
   }

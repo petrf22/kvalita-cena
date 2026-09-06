@@ -419,6 +419,7 @@ class ProductFormViewModel(
         val product = if (candidate != null && defaults != null && codeMatchesOffCandidate(code, candidate.code)) {
           graphQlClient.createProductFromOff(buildOffInput(candidate, defaults, categoryId))
         } else {
+          val visible = submittedNetContent()
           graphQlClient.createProduct(
             CreateProductInput(
               name = name.trim(),
@@ -427,10 +428,10 @@ class ProductFormViewModel(
               brandName = brandName.trim().ifBlank { null },
               categoryId = categoryId,
               unitBase = unitBase,
-              netContentValue = netContentValue.replace(',', '.').toDoubleOrNull(),
-              netContentUom = netContentUom,
+              netContentValue = visible.netContentValue,
+              netContentUom = visible.netContentUom,
               piecesInPack = piecesInPack.toIntOrNull(),
-              isVariableWeight = isVariableWeight,
+              isVariableWeight = visible.isVariableWeight,
               storeId = selectedStore?.id,
               code = code.trim().ifBlank { null },
             ),
@@ -458,6 +459,7 @@ class ProductFormViewModel(
   private fun updateExisting(categoryId: String) {
     val defaults = editDefaults ?: return
     val id = editingProductId ?: return
+    val visible = submittedNetContent()
     viewModelScope.launch {
       try {
         val input = buildUpdateProductInput(
@@ -467,10 +469,10 @@ class ProductFormViewModel(
           brandName = brandName,
           categoryId = categoryId,
           unitBase = unitBase,
-          netContentValue = if (isVariableWeight) null else netContentValue.replace(',', '.').toDoubleOrNull(),
-          netContentUom = netContentUom,
+          netContentValue = visible.netContentValue,
+          netContentUom = visible.netContentUom,
           piecesInPack = piecesInPack.toIntOrNull(),
-          isVariableWeight = isVariableWeight,
+          isVariableWeight = visible.isVariableWeight,
           defaults = defaults,
         )
         created = graphQlClient.updateProduct(id, input)
@@ -514,8 +516,8 @@ class ProductFormViewModel(
   ): CreateProductFromOffInput {
     val trimmedName = name.trim()
     val trimmedBrand = brandName.trim().ifBlank { null }
-    val currentNetContentValue = if (isVariableWeight) null else netContentValue.replace(',', '.').toDoubleOrNull()
-    val (offNetContentValue, offNetContentUom) = netContentForOffSubmit(currentNetContentValue, defaults)
+    val visible = submittedNetContent()
+    val (offNetContentValue, offNetContentUom) = netContentForOffSubmit(visible, defaults)
     return CreateProductFromOffInput(
       code = candidate.code,
       name = if (trimmedName == defaults.name) null else trimmedName,
@@ -527,9 +529,21 @@ class ProductFormViewModel(
       netContentValue = offNetContentValue,
       netContentUom = offNetContentUom,
       piecesInPack = piecesInPack.toIntOrNull(),
-      isVariableWeight = isVariableWeight,
+      isVariableWeight = visible.isVariableWeight,
     )
   }
+
+  /**
+   * Gramáž/objem + váhové zboží tak, jak smí odejít do serveru — očištěné o pole, která
+   * formulář zrovna neukazuje ([visibleNetContent]). Jediná cesta, kterou tahle trojice do
+   * submitu chodí; sáhnout na stav přímo by propustilo hodnotu zbylou po přepnutí jednotky.
+   */
+  private fun submittedNetContent(): VisibleNetContent = visibleNetContent(
+    unitBase = unitBase,
+    netContentValue = netContentValue.replace(',', '.').toDoubleOrNull(),
+    netContentUom = netContentUom,
+    isVariableWeight = isVariableWeight,
+  )
 
   /**
    * Gramáž/objem pro CreateProductFromOffInput — hodnota a jednotka se MUSÍ posílat vždy jako
@@ -539,12 +553,12 @@ class ProductFormViewModel(
    * dodává OFF; jinak (uživatel opravil číslo nebo přepnul jednotku, nebo OFF žádnou gramáž
    * nedal) obojí z formuláře.
    */
-  private fun netContentForOffSubmit(currentValue: Double?, defaults: OffDefaults): Pair<Double?, String?> {
-    if (currentValue == null) return null to null
+  private fun netContentForOffSubmit(current: VisibleNetContent, defaults: OffDefaults): Pair<Double?, String?> {
+    val currentValue = current.netContentValue ?: return null to null
     val changed = defaults.netContentValue == null ||
-      netContentUom != defaults.netContentUom ||
+      current.netContentUom != defaults.netContentUom ||
       kotlin.math.abs(currentValue - defaults.netContentValue) >= 1e-9
-    return if (!changed) null to null else currentValue to netContentUom
+    return if (!changed) null to null else currentValue to current.netContentUom
   }
 
   /** Naskenovaný/zadaný kód pořád patří k nabídnutému OFF kandidátovi — jinak uživatel kód
