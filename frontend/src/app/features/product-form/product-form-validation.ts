@@ -417,6 +417,9 @@ export function buildUpdateProductInput(
     unitBase: form.unitBase === defaults.unitBase ? null : form.unitBase,
     netContentValue: netContent.netContentValue,
     netContentUom: netContent.netContentUom,
+    // Vyprázdnění gramáže se `netContentValue: null` vyjádřit nedá (v patchi to znamená
+    // "nezměněno") — server by sáhl po staré hodnotě a u kusového zboží ji spočítal jako počet.
+    clearNetContent: form.netContentValue == null && defaults.netContentValue != null,
     piecesInPack: form.piecesInPack === defaults.piecesInPack ? null : form.piecesInPack,
     clearPiecesInPack: form.piecesInPack == null && defaults.piecesInPack != null,
     isVariableWeight:

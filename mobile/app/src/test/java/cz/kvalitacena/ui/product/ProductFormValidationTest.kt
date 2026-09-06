@@ -1,6 +1,7 @@
 package cz.kvalitacena.ui.product
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -62,6 +63,30 @@ class ProductFormValidationTest {
       VisibleNetContent(null, "G", true),
       visibleNetContent("MASS", 60.0, "G", isVariableWeight = true),
     )
+  }
+
+  /**
+   * Past, kvůli které clearNetContent vzniklo: netContentValue = null v patchi znamená
+   * "nezměněno", takže server sáhne po staré gramáži a u kusového zboží ji spočítá jako počet
+   * (250 g → 250 ks). Vyprázdnění se proto musí říct vlastním příznakem.
+   */
+  @Test
+  fun asksServerToClearQuantityOnlyWhenTheFormNoLongerHasOne() {
+    val defaults = ProductFormDefaults(
+      name = "Rama Klasik", names = mapOf("cs" to "Rama Klasik"), brandName = "Rama",
+      categoryId = "4", unitBase = "MASS", netContentValue = 250.0, netContentUom = "G",
+      piecesInPack = null, isVariableWeight = false,
+    )
+    fun clearFor(value: Double?, uom: String?, unitBase: String, defs: ProductFormDefaults) =
+      buildUpdateProductInput(
+        name = defs.name, nameLang = "cs", names = emptyList(), brandName = defs.brandName,
+        categoryId = "4", unitBase = unitBase, netContentValue = value, netContentUom = uom,
+        piecesInPack = null, isVariableWeight = false, defaults = defs,
+      ).clearNetContent
+
+    assertTrue(clearFor(null, "PCS", "COUNT", defaults))
+    assertFalse(clearFor(300.0, "G", "MASS", defaults))
+    assertFalse(clearFor(null, null, "MASS", defaults.copy(netContentValue = null, netContentUom = null)))
   }
 
   @Test

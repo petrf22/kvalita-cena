@@ -308,6 +308,12 @@ export type UpdateProductInput = {
   categoryId?: string | null | undefined;
   /** True smaže značku (vrátí zboží na 'bez značky') — jinak se posílá brandName. */
   clearBrand?: boolean | null | undefined;
+  /**
+   * True smaže gramáž/objem (zboží se vrátí na net_content_base = 1). Nutné proto, že netContentValue
+   * = null znamená "nezměněno", ne "smazat" — bez tohohle příznaku by přepnutí balení na kusové zboží
+   * ponechalo starou gramáž a server by ji u COUNT spočítal jako počet kusů (250 g → 250 ks).
+   */
+  clearNetContent?: boolean | null | undefined;
   clearPiecesInPack?: boolean | null | undefined;
   isVariableWeight?: boolean | null | undefined;
   /** Název v jazyce nameLang (prázdné nameLang = jazyk requestu). */
