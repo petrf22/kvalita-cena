@@ -49,7 +49,7 @@
       }
       {{ product()!.category.name }}
       @if (product()!.netContentValue && product()!.netContentUom) {
-        · {{ product()!.netContentValue }}
+        · {{ format.number(product()!.netContentValue) }}
         {{ netContentUomKeys[product()!.netContentUom!] | transloco }}
       }
     </p>
