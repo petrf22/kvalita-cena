@@ -430,10 +430,40 @@ describe('buildUpdateProductInput', () => {
       unitBase: null,
       netContentValue: null,
       netContentUom: null,
+      clearNetContent: false,
       piecesInPack: null,
       clearPiecesInPack: false,
       isVariableWeight: null,
     });
+  });
+
+  /**
+   * Past, kvůli které clearNetContent vzniklo: `netContentValue: null` v patchi znamená
+   * "nezměněno", takže server sáhne po staré gramáži a u kusového zboží ji spočítá jako počet
+   * (250 g → 250 ks). Vyprázdnění se proto musí říct vlastním příznakem.
+   */
+  it('asks the server to clear the quantity when the form no longer has one', () => {
+    const form = {
+      ...defaults,
+      names: [],
+      unitBase: 'COUNT' as const,
+      netContentValue: null,
+      netContentUom: 'PCS' as const,
+    };
+    const input = buildUpdateProductInput(form, defaults);
+    expect(input.clearNetContent).toBe(true);
+    expect(input.netContentValue).toBeNull();
+  });
+
+  it('does not clear when the quantity was empty all along', () => {
+    const emptyDefaults = { ...defaults, netContentValue: null, netContentUom: null };
+    const form = { ...emptyDefaults, names: [] };
+    expect(buildUpdateProductInput(form, emptyDefaults).clearNetContent).toBe(false);
+  });
+
+  it('does not clear when the quantity only changed', () => {
+    const form = { ...defaults, names: [], netContentValue: 300 };
+    expect(buildUpdateProductInput(form, defaults).clearNetContent).toBe(false);
   });
 
   it('clears brand and pieces when emptied', () => {

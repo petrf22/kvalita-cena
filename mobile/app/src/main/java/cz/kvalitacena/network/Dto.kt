@@ -615,6 +615,8 @@ data class UpdateProductInput(
   val unitBase: String? = null,
   val netContentValue: Double? = null,
   val netContentUom: String? = null,
+  /** True smaže gramáž (net_content_base spadne na 1) — null u hodnoty znamená "nezměněno". */
+  val clearNetContent: Boolean = false,
   val piecesInPack: Int? = null,
   val clearPiecesInPack: Boolean = false,
   val isVariableWeight: Boolean? = null,

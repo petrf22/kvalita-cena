@@ -210,6 +210,9 @@ fun buildUpdateProductInput(
     unitBase = if (unitBase == defaults.unitBase) null else unitBase,
     netContentValue = submitValue,
     netContentUom = submitUom,
+    // Vyprázdnění gramáže se netContentValue = null vyjádřit nedá (v patchi to znamená
+    // "nezměněno") — server by sáhl po staré hodnotě a u kusového zboží ji spočítal jako počet.
+    clearNetContent = netContentValue == null && defaults.netContentValue != null,
     piecesInPack = if (piecesInPack == defaults.piecesInPack) null else piecesInPack,
     clearPiecesInPack = piecesInPack == null && defaults.piecesInPack != null,
     isVariableWeight = if (isVariableWeight == defaults.isVariableWeight) null else isVariableWeight,
