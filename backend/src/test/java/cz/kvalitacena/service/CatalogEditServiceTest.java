@@ -137,7 +137,7 @@ class CatalogEditServiceTest {
   @Test
   void anonymousCannotUpdateProduct() {
     UpdateProductInput input = new UpdateProductInput("Nový název", null, null, null, null, null, null, null,
-        null, null, null, null);
+        null, null, null, null, null);
     assertThatThrownBy(() -> service().updateProduct(PRODUCT_ID, input, null))
         .isInstanceOf(UnauthorizedException.class);
   }
@@ -157,7 +157,7 @@ class CatalogEditServiceTest {
     when(productUserEditRepository.findByProductIdAndUserId(PRODUCT_ID, USER_ID)).thenReturn(Optional.empty());
 
     UpdateProductInput input = new UpdateProductInput("Mléko plnotučné", null, null, null, null, null, null, null,
-        null, null, null, null);
+        null, null, null, null, null);
     service().updateProduct(PRODUCT_ID, input, PUBLIC_UID);
 
     ArgumentCaptor<ProductUserEdit> captor = ArgumentCaptor.forClass(ProductUserEdit.class);
@@ -173,7 +173,7 @@ class CatalogEditServiceTest {
     when(productUserEditRepository.findByProductIdAndUserId(PRODUCT_ID, USER_ID)).thenReturn(Optional.empty());
 
     UpdateProductInput input = new UpdateProductInput("Mléko polotučné", null, null, null, null, null, null, null,
-        null, null, null, null);
+        null, null, null, null, null);
     service().updateProduct(PRODUCT_ID, input, PUBLIC_UID);
 
     // Patch by byl prázdný (žádné pole se neliší od globálu) — nemá smysl ho ukládat.
@@ -190,13 +190,78 @@ class CatalogEditServiceTest {
     when(productUserEditRepository.findByProductIdAndUserId(PRODUCT_ID, USER_ID)).thenReturn(Optional.empty());
 
     UpdateProductInput input = new UpdateProductInput(null, null, null, null, true, null, null, null,
-        null, null, null, null);
+        null, null, null, null, null);
     service().updateProduct(PRODUCT_ID, input, PUBLIC_UID);
 
     ArgumentCaptor<ProductUserEdit> captor = ArgumentCaptor.forClass(ProductUserEdit.class);
     verify(productUserEditRepository).save(captor.capture());
     assertThat(captor.getValue().getBrandId()).isNull();
     assertThat(captor.getValue().getClearedFields()).containsExactly("brand");
+  }
+
+  /**
+   * Past, kvůli které clearNetContent vzniklo: přepnutí balení (1 l) na kusové zboží nechávalo
+   * starou gramáž, protože null v patchi znamená "nezměněno" — NetContentCalculator ji pak
+   * u COUNT bere rovnou jako počet, takže by z 1 l vzniklo balení o jednom kuse jen náhodou,
+   * a z 250 g rovnou 250 kusů.
+   */
+  @Test
+  void clearNetContentDropsTheQuantityInsteadOfReusingItAsPieceCount() {
+    givenLoggedInUser();
+    when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct()));
+    when(productUserEditRepository.findByProductIdAndUserId(PRODUCT_ID, USER_ID)).thenReturn(Optional.empty());
+
+    UpdateProductInput input = new UpdateProductInput(null, null, null, null, null, null,
+        UnitBase.COUNT, null, NetContentUom.PCS, true, null, null, null);
+    service().updateProduct(PRODUCT_ID, input, PUBLIC_UID);
+
+    ArgumentCaptor<ProductUserEdit> captor = ArgumentCaptor.forClass(ProductUserEdit.class);
+    verify(productUserEditRepository).save(captor.capture());
+    ProductUserEdit edit = captor.getValue();
+    assertThat(edit.getNetContentValue()).isNull();
+    assertThat(edit.getNetContentUom()).isNull();
+    assertThat(edit.getClearedFields()).containsExactly("netContent");
+    // Základní jednotka je NOT NULL — po vymazání gramáže dopadne na 1, ne na starou hodnotu.
+    assertThat(edit.getNetContentBase()).isNull();
+    assertThat(edit.getUnitBase()).isEqualTo("COUNT");
+  }
+
+  /** Bez příznaku zůstává fallback na uloženou hodnotu — jinak by prosté přepnutí jednotky
+   *  gramáž mlčky zahodilo. */
+  @Test
+  void quantityIsKeptWhenClearWasNotAsked() {
+    givenLoggedInUser();
+    when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(existingProduct()));
+    when(productUserEditRepository.findByProductIdAndUserId(PRODUCT_ID, USER_ID)).thenReturn(Optional.empty());
+
+    UpdateProductInput input = new UpdateProductInput(null, null, null, null, null, null, null,
+        null, NetContentUom.ML, false, null, null, null);
+    service().updateProduct(PRODUCT_ID, input, PUBLIC_UID);
+
+    ArgumentCaptor<ProductUserEdit> captor = ArgumentCaptor.forClass(ProductUserEdit.class);
+    verify(productUserEditRepository).save(captor.capture());
+    ProductUserEdit edit = captor.getValue();
+    assertThat(edit.getClearedFields()).isEmpty();
+    // 1 (globální hodnota) nově v mililitrech, tedy 0,001 l.
+    assertThat(edit.getNetContentUom()).isEqualTo("ML");
+    assertThat(edit.getNetContentBase()).isEqualByComparingTo(new BigDecimal("0.001"));
+  }
+
+  /** Mazat není co — patch by ukazoval na prázdno a zbytečně by existoval. */
+  @Test
+  void clearNetContentIsNotRecordedWhenTheProductHadNoQuantity() {
+    givenLoggedInUser();
+    Product product = existingProduct();
+    product.setNetContentValue(null);
+    product.setNetContentUom(null);
+    when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
+    when(productUserEditRepository.findByProductIdAndUserId(PRODUCT_ID, USER_ID)).thenReturn(Optional.empty());
+
+    UpdateProductInput input = new UpdateProductInput(null, null, null, null, null, null, null,
+        null, null, true, null, null, null);
+    service().updateProduct(PRODUCT_ID, input, PUBLIC_UID);
+
+    verify(productUserEditRepository, never()).save(any());
   }
 
   @Test
@@ -210,7 +275,7 @@ class CatalogEditServiceTest {
 
     // Uživatel se vrací na globální název — patch se tím vyprázdní a smaže.
     UpdateProductInput input = new UpdateProductInput("Mléko polotučné", null, null, null, null, null, null, null,
-        null, null, null, null);
+        null, null, null, null, null);
     service().updateProduct(PRODUCT_ID, input, PUBLIC_UID);
 
     verify(productUserEditRepository).delete(previousEdit);

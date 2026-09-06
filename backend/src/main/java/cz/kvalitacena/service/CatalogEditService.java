@@ -128,17 +128,34 @@ public class CatalogEditService {
     if (input.unitBase() != null) {
       edit.setUnitBase(input.unitBase() == product.getUnitBase() ? null : input.unitBase().name());
     }
-    if (input.netContentValue() != null || input.netContentUom() != null || input.isVariableWeight() != null) {
+    boolean clearNetContent = Boolean.TRUE.equals(input.clearNetContent());
+    if (clearNetContent || input.netContentValue() != null || input.netContentUom() != null
+        || input.isVariableWeight() != null) {
       boolean effectiveVariableWeight = input.isVariableWeight() != null
           ? input.isVariableWeight() : product.isVariableWeight();
-      BigDecimal effectiveValue = input.netContentValue() != null
+      // Vyprázdnění musí přebít fallback na uloženou hodnotu. Bez něj by `null` znamenalo
+      // "nezměněno" a stará gramáž by se u kusového zboží spočítala jako počet (250 g → 250 ks).
+      BigDecimal effectiveValue = clearNetContent ? null : input.netContentValue() != null
           ? input.netContentValue() : product.getNetContentValue();
-      NetContentUom effectiveUom = input.netContentUom() != null ? input.netContentUom() : product.getNetContentUom();
+      NetContentUom effectiveUom = clearNetContent ? null : input.netContentUom() != null
+          ? input.netContentUom() : product.getNetContentUom();
       BigDecimal netContentBase = NetContentCalculator.computeNetContentBase(
           effectiveUnitBase, effectiveValue, effectiveUom, effectiveVariableWeight);
 
-      edit.setNetContentValue(bigDecimalEquals(effectiveValue, product.getNetContentValue()) ? null : effectiveValue);
-      edit.setNetContentUom(effectiveUom == product.getNetContentUom() ? null : nameOrNull(effectiveUom));
+      if (clearNetContent) {
+        // Smazání nejde vyjádřit hodnotou patche (`null` = nezměněno), musí do cleared_fields —
+        // stejně jako u značky. ProductOverlayService pak hodnoty nepřebírá z globálního řádku.
+        edit.setNetContentValue(null);
+        edit.setNetContentUom(null);
+        setCleared(cleared, "netContent",
+            product.getNetContentValue() != null || product.getNetContentUom() != null);
+      } else {
+        cleared.remove("netContent");
+        edit.setNetContentValue(bigDecimalEquals(effectiveValue, product.getNetContentValue()) ? null : effectiveValue);
+        edit.setNetContentUom(effectiveUom == product.getNetContentUom() ? null : nameOrNull(effectiveUom));
+      }
+      // Základní jednotka je NOT NULL, takže se ani při mazání neuvolňuje — dopadne na 1
+      // (NetContentCalculator u prázdné hodnoty), aby jednotková cena zůstala cenou za balení.
       edit.setNetContentBase(bigDecimalEquals(netContentBase, product.getNetContentBase()) ? null : netContentBase);
       edit.setVariableWeight(effectiveVariableWeight == product.isVariableWeight() ? null : effectiveVariableWeight);
     }

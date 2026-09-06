@@ -109,8 +109,10 @@ public class OffProductCatalogService {
     // potvrzená hodnota shoduje s OFF/komunitním základem, CatalogEditService sám zahodí.
     UpdateProductInput confirmedValues = new UpdateProductInput(
         input.name(), primaryLang, input.names(), input.brandName(), false, input.categoryId(),
-        input.unitBase(), input.netContentValue(), input.netContentUom(), input.piecesInPack(),
-        false, input.isVariableWeight());
+        // clearNetContent = false: zakládání nad OFF kandidátem gramáž nikdy nemaže, jen
+        // potvrzuje hodnoty z formuláře (nebo je nechává dodávat OFF).
+        input.unitBase(), input.netContentValue(), input.netContentUom(), false,
+        input.piecesInPack(), false, input.isVariableWeight());
     return catalogEditService.updateProduct(product.getId(), confirmedValues, viewerPublicUid);
   }
 

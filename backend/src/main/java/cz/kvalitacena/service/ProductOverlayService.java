@@ -166,8 +166,15 @@ public class ProductOverlayService {
     }
     if (edit.getCategoryId() != null) categoryRepository.findById(edit.getCategoryId()).ifPresent(builder::category);
     if (edit.getUnitBase() != null) builder.unitBase(UnitBase.valueOf(edit.getUnitBase()));
-    if (edit.getNetContentValue() != null) builder.netContentValue(edit.getNetContentValue());
-    if (edit.getNetContentUom() != null) builder.netContentUom(NetContentUom.valueOf(edit.getNetContentUom()));
+    // Vymazaná gramáž se nesmí vzít z globálního řádku — patch ji hodnotou vyjádřit neumí
+    // (null = nezměněno), proto stejný cleared_fields vzor jako u značky výš.
+    if (edit.getClearedFields().contains("netContent")) {
+      builder.netContentValue(null).netContentUom(null);
+    } else {
+      if (edit.getNetContentValue() != null) builder.netContentValue(edit.getNetContentValue());
+      if (edit.getNetContentUom() != null) builder.netContentUom(NetContentUom.valueOf(edit.getNetContentUom()));
+    }
+    // Základní jednotka je NOT NULL i po vymazání (CatalogEditService ji dopočítá na 1).
     if (edit.getNetContentBase() != null) builder.netContentBase(edit.getNetContentBase());
     if (edit.getPiecesInPack() != null) builder.piecesInPack(edit.getPiecesInPack());
     if (edit.getVariableWeight() != null) builder.variableWeight(edit.getVariableWeight());

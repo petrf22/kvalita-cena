@@ -461,6 +461,12 @@ input UpdateProductInput {
   unitBase: UnitBase
   netContentValue: BigDecimal
   netContentUom: NetContentUom
+  """
+  True smaže gramáž/objem (zboží se vrátí na net_content_base = 1). Nutné proto, že netContentValue
+  = null znamená "nezměněno", ne "smazat" — bez tohohle příznaku by přepnutí balení na kusové zboží
+  ponechalo starou gramáž a server by ji u COUNT spočítal jako počet kusů (250 g → 250 ks).
+  """
+  clearNetContent: Boolean = false
   piecesInPack: Int
   clearPiecesInPack: Boolean = false
   isVariableWeight: Boolean
