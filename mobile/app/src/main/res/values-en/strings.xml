@@ -357,8 +357,14 @@
     <string name="product_form_brand_label">Brand (optional)</string>
     <string name="product_form_unit_base_label">Base unit</string>
     <string name="product_form_variable_weight_label">Sold by weight (price always per kg/l, no fixed net content)</string>
-    <string name="product_form_mass_label">Package weight (kg)</string>
-    <string name="product_form_volume_label">Package volume (l)</string>
+    <string name="product_form_mass_label">Package weight</string>
+    <string name="product_form_volume_label">Package volume</string>
+    <string name="product_form_net_content_uom_label">Unit as on the package</string>
+    <string name="net_content_uom_g">g</string>
+    <string name="net_content_uom_kg">kg</string>
+    <string name="net_content_uom_ml">ml</string>
+    <string name="net_content_uom_l">l</string>
+    <string name="net_content_uom_pcs">pcs</string>
     <string name="product_form_pieces_in_pack_label">Pieces per pack (optional)</string>
     <string name="product_form_code_label">Barcode (optional)</string>
     <string name="product_form_code_hint">Without a code, a generic item is created (e.g. \"bread for %1$s\" from a receipt) — with lower data confidence, but it can still be recorded.</string>
