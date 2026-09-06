@@ -9,15 +9,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -62,6 +68,15 @@ private val UNIT_BASE_LABEL_RES = mapOf(
   "COUNT" to R.string.unit_base_count,
   "MASS" to R.string.unit_base_mass,
   "VOLUME" to R.string.unit_base_volume,
+)
+
+/** Zkratky jednotek gramáže/objemu — protějšek `enum.netContentUom.*` na webu. */
+private val NET_CONTENT_UOM_LABEL_RES = mapOf(
+  "G" to R.string.net_content_uom_g,
+  "KG" to R.string.net_content_uom_kg,
+  "ML" to R.string.net_content_uom_ml,
+  "L" to R.string.net_content_uom_l,
+  "PCS" to R.string.net_content_uom_pcs,
 )
 
 /**
@@ -313,7 +328,7 @@ fun ProductFormScreen(
       UNIT_BASE_LABEL_RES.forEach { (value, labelRes) ->
         FilterChip(
           selected = viewModel.unitBase == value,
-          onClick = { formDirty = true; viewModel.unitBase = value },
+          onClick = { formDirty = true; viewModel.onUnitBaseChange(value) },
           label = { Text(stringResource(labelRes)) },
           modifier = Modifier.padding(end = 8.dp),
         )
@@ -333,15 +348,26 @@ fun ProductFormScreen(
       Gap()
 
       if (!viewModel.isVariableWeight) {
-        SingleLineTextField(
-          value = viewModel.netContentValue,
-          onValueChange = { input -> if (input.matches(Regex("^\\d*[.,]?\\d*$"))) { formDirty = true; viewModel.netContentValue = input } },
-          label = stringResource(
-            if (viewModel.unitBase == "MASS") R.string.product_form_mass_label else R.string.product_form_volume_label,
-          ),
-          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-          modifier = Modifier.fillMaxWidth(),
-        )
+        // Jednotka jde PŘED číslo, protože se v tom pořadí i zadává: uživatel vybere „g" a
+        // opíše z obalu 60. Přepočet na kg/l dělá server (net_content_base), do formuláře se
+        // nikdy nevrací přepočtená hodnota.
+        Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
+          NetContentUomDropdown(
+            selected = viewModel.netContentUom,
+            options = netContentUomOptions(viewModel.unitBase),
+            onSelect = { formDirty = true; viewModel.netContentUom = it },
+            modifier = Modifier.width(120.dp),
+          )
+          SingleLineTextField(
+            value = viewModel.netContentValue,
+            onValueChange = { input -> if (input.matches(Regex("^\\d*[.,]?\\d*$"))) { formDirty = true; viewModel.netContentValue = input } },
+            label = stringResource(
+              if (viewModel.unitBase == "MASS") R.string.product_form_mass_label else R.string.product_form_volume_label,
+            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.padding(start = 8.dp).weight(1f),
+          )
+        }
         Gap()
       }
     }
@@ -453,6 +479,52 @@ fun ProductFormScreen(
 private fun Gap() {
   androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
 }
+
+/**
+ * Jednotka, ve které se zadává gramáž/objem — g/kg u hmotnosti, ml/l u objemu. Nabídka musí
+ * sedět na serverovém `NetContentCalculator` ([netContentUomOptions]), jinak by uložení
+ * skončilo chybou UOM_MISMATCH.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NetContentUomDropdown(
+  selected: String,
+  options: List<String>,
+  onSelect: (String) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  var expanded by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(
+    expanded = expanded,
+    onExpandedChange = { expanded = it },
+    modifier = modifier,
+  ) {
+    SingleLineTextField(
+      value = netContentUomLabel(selected),
+      onValueChange = {},
+      readOnly = true,
+      label = stringResource(R.string.product_form_net_content_uom_label),
+      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+      modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+    )
+    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+      options.forEach { value ->
+        DropdownMenuItem(
+          text = { Text(netContentUomLabel(value)) },
+          onClick = {
+            onSelect(value)
+            expanded = false
+          },
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun netContentUomLabel(uom: String): String =
+  NET_CONTENT_UOM_LABEL_RES[uom]?.let { stringResource(it) } ?: uom
 
 /**
  * Jméno jazyka pro popisky a upozornění ("česky", "německy") — přes `values/` resources, takže

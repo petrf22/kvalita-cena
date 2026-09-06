@@ -131,7 +131,14 @@ class ProductFormViewModel(
 
   var brandName by mutableStateOf("")
   var unitBase by mutableStateOf("COUNT")
+    private set
   var netContentValue by mutableStateOf("")
+  /**
+   * Jednotka, ve které uživatel gramáž/objem zadává — vybírá se PŘED číslem, ať jde opsat
+   * „60 g" z obalu místo přepočítávání na 0,06 kg. Do serveru jde v páru s hodnotou,
+   * net_content_base (kg/l) si z dvojice dopočítá sám.
+   */
+  var netContentUom by mutableStateOf(netContentUomFor("COUNT", null))
   var piecesInPack by mutableStateOf("")
   var isVariableWeight by mutableStateOf(false)
   var code by mutableStateOf(barcode.orEmpty())
@@ -208,6 +215,7 @@ class ProductFormViewModel(
           name = defaults.name
           brandName = defaults.brandName
           unitBase = defaults.unitBase
+          netContentUom = netContentUomFor(defaults.unitBase, defaults.netContentUom)
           netContentValue = defaults.netContentValue?.toString().orEmpty()
           piecesInPack = defaults.piecesInPack?.toString().orEmpty()
           isVariableWeight = defaults.isVariableWeight
@@ -230,15 +238,15 @@ class ProductFormViewModel(
     val categoryId: String?,
     val unitBase: String?,
     val netContentValue: Double?,
+    val netContentUom: String?,
   )
 
-  /** Gramáž/objem OFF nese v G/ML (OffNetContentConverter na backendu), appka vždy v kg/l. */
+  /** Gramáž/objem se přebírá i s jednotkou, jak ji OFF nese (typicky G/ML,
+   *  OffNetContentConverter na backendu) — uživatel má vidět „250 g" jako na obale. Kusy do
+   *  pole gramáže nepatří (formulář ho u COUNT neukazuje), proto u PCS obojí null. */
   private fun offDefaultsFrom(candidate: ExternalProductCandidate): OffDefaults {
-    val netContentValue = when (candidate.netContentUom) {
-      "G", "ML" -> candidate.netContentValue?.div(1000)
-      "KG", "L" -> candidate.netContentValue
-      else -> null
-    }
+    val hasNetContent = candidate.netContentValue != null && candidate.netContentUom != null &&
+      candidate.netContentUom != "PCS"
     return OffDefaults(
       // Jen název v jazyce appky — cizojazyčný by se uložil jako název v jazyce appky, tedy
       // přesně ta chyba, kvůli které vícejazyčnost vznikla (docs/lokalizace.md).
@@ -246,7 +254,8 @@ class ProductFormViewModel(
       brandName = candidate.brandName,
       categoryId = candidate.category?.id,
       unitBase = candidate.unitBase,
-      netContentValue = netContentValue,
+      netContentValue = if (hasNetContent) candidate.netContentValue else null,
+      netContentUom = if (hasNetContent) candidate.netContentUom else null,
     )
   }
 
@@ -265,10 +274,18 @@ class ProductFormViewModel(
     defaults.brandName?.let { brandName = it }
     defaults.unitBase?.let { unitBase = it }
     defaults.netContentValue?.let { netContentValue = it.toString() }
+    netContentUom = netContentUomFor(defaults.unitBase ?: unitBase, defaults.netContentUom)
     defaults.categoryId?.let { id ->
       val category = categories.find { it.id == id }
       if (category != null) onCategorySelected(category) else pendingCategoryId = id
     }
+  }
+
+  /** Přepnutí hmotnost/objem/kusy musí překlopit i jednotku gramáže (g→ml), jinak by server
+   *  vrátil UOM_MISMATCH. Zadané číslo zůstává — uživatel opravuje jednotku, ne hodnotu. */
+  fun onUnitBaseChange(value: String) {
+    unitBase = value
+    netContentUom = netContentUomFor(value, netContentUom)
   }
 
   fun onOtherNameChange(lang: String, value: String) {
@@ -411,7 +428,7 @@ class ProductFormViewModel(
               categoryId = categoryId,
               unitBase = unitBase,
               netContentValue = netContentValue.replace(',', '.').toDoubleOrNull(),
-              netContentUom = impliedUom(),
+              netContentUom = netContentUom,
               piecesInPack = piecesInPack.toIntOrNull(),
               isVariableWeight = isVariableWeight,
               storeId = selectedStore?.id,
@@ -451,6 +468,7 @@ class ProductFormViewModel(
           categoryId = categoryId,
           unitBase = unitBase,
           netContentValue = if (isVariableWeight) null else netContentValue.replace(',', '.').toDoubleOrNull(),
+          netContentUom = netContentUom,
           piecesInPack = piecesInPack.toIntOrNull(),
           isVariableWeight = isVariableWeight,
           defaults = defaults,
@@ -497,7 +515,7 @@ class ProductFormViewModel(
     val trimmedName = name.trim()
     val trimmedBrand = brandName.trim().ifBlank { null }
     val currentNetContentValue = if (isVariableWeight) null else netContentValue.replace(',', '.').toDoubleOrNull()
-    val (offNetContentValue, offNetContentUom) = netContentForOffSubmit(currentNetContentValue, defaults.netContentValue)
+    val (offNetContentValue, offNetContentUom) = netContentForOffSubmit(currentNetContentValue, defaults)
     return CreateProductFromOffInput(
       code = candidate.code,
       name = if (trimmedName == defaults.name) null else trimmedName,
@@ -516,14 +534,17 @@ class ProductFormViewModel(
   /**
    * Gramáž/objem pro CreateProductFromOffInput — hodnota a jednotka se MUSÍ posílat vždy jako
    * dvojice, nikdy jen jedna z nich: server by jinak spočítal netContentBase ze staré OFF
-   * hodnoty spárované s novou jednotkou z formuláře (u gramů vs. kg 1000× větší číslo). Shoda
-   * s převedeným OFF defaultem (nebo nic nezadáno) → obojí null, ať hodnotu dál dodává OFF;
-   * jinak (uživatel opravil, nebo OFF žádnou gramáž nedal) obojí z formuláře.
+   * hodnoty spárované s novou jednotkou z formuláře (250 g vs. 0,25 kg je 1000× větší číslo).
+   * Shoda s OFF defaultem v hodnotě I jednotce (nebo nic nezadáno) → obojí null, ať hodnotu dál
+   * dodává OFF; jinak (uživatel opravil číslo nebo přepnul jednotku, nebo OFF žádnou gramáž
+   * nedal) obojí z formuláře.
    */
-  private fun netContentForOffSubmit(currentValue: Double?, defaultValue: Double?): Pair<Double?, String?> {
-    val changed = currentValue != null &&
-      (defaultValue == null || kotlin.math.abs(currentValue - defaultValue) >= 1e-9)
-    return if (!changed) null to null else currentValue to impliedUom()
+  private fun netContentForOffSubmit(currentValue: Double?, defaults: OffDefaults): Pair<Double?, String?> {
+    if (currentValue == null) return null to null
+    val changed = defaults.netContentValue == null ||
+      netContentUom != defaults.netContentUom ||
+      kotlin.math.abs(currentValue - defaults.netContentValue) >= 1e-9
+    return if (!changed) null to null else currentValue to netContentUom
   }
 
   /** Naskenovaný/zadaný kód pořád patří k nabídnutému OFF kandidátovi — jinak uživatel kód
@@ -534,11 +555,4 @@ class ProductFormViewModel(
     return normalized.isNotEmpty() && normalized == normalizeCode(candidateCode)
   }
 
-  /** Server dopočítá netContentBase ze základní jednotky, appka jen pošle odpovídající UOM. */
-  private fun impliedUom(): String? = when (unitBase) {
-    "MASS" -> "KG"
-    "VOLUME" -> "L"
-    "COUNT" -> "PCS"
-    else -> null
-  }
 }

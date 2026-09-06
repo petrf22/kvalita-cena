@@ -40,20 +40,38 @@ data class ProductFormDefaults(
   val categoryId: String?,
   val unitBase: String,
   val netContentValue: Double?,
+  /** Jednotka, ve které je gramáž uložená — formulář ji přebírá, ať uživatel vidí „250 g" tak,
+   *  jak je na obale, a ne přepočtené „0,25 kg". */
+  val netContentUom: String?,
   val piecesInPack: Int?,
   val isVariableWeight: Boolean,
 )
 
-/** Gramáž/objem server nese v G/ML (OffNetContentConverter), appka vždy v kg/l — stejný převod
- *  jako [ProductFormViewModel.offDefaultsFrom] pro OFF kandidáta. */
-private fun toFormNetContentValue(value: Double?, uom: String?): Double? {
-  if (value == null || uom == null) return null
-  return when (uom) {
-    "G", "ML" -> value / 1000
-    "KG", "L" -> value
-    else -> null
-  }
+/**
+ * Jednotky nabídnuté ve formuláři pro danou základní jednotku, v pořadí nabídky. Množina musí
+ * sedět na `NetContentCalculator.validateUomMatchesUnitBase` na serveru — nabídnout u MASS
+ * litry by znamenalo UOM_MISMATCH až při uložení. První v pořadí (tedy g/ml) je výchozí:
+ * většina obalů nese „60 g" nebo „330 ml" a uživatel má opisovat, ne přepočítávat.
+ */
+fun netContentUomOptions(unitBase: String): List<String> = when (unitBase) {
+  "MASS" -> listOf("G", "KG")
+  "VOLUME" -> listOf("ML", "L")
+  else -> listOf("PCS")
 }
+
+/**
+ * Jednotka po přepnutí základní jednotky — současnou volbu nechá být, dokud pro nový [unitBase]
+ * dává smysl (MASS→VOLUME musí překlopit g na ml), jinak spadne na výchozí.
+ */
+fun netContentUomFor(unitBase: String, current: String?): String {
+  val options = netContentUomOptions(unitBase)
+  return if (current != null && current in options) current else options.first()
+}
+
+/** Gramáž/objem ze serveru do pole formuláře — beze změny čísla, jen s jednotkou vedle. Kusy
+ *  do pole gramáže nepatří (formulář ho u COUNT vůbec neukazuje), proto u PCS nechá obojí null. */
+private fun toFormNetContent(value: Double?, uom: String?): Pair<Double?, String?> =
+  if (value == null || uom == null || uom == "PCS") null to null else value to uom
 
 fun productFormDefaultsFrom(product: Product, lang: String): ProductFormDefaults {
   val names = namesByLang(product.names)
@@ -65,7 +83,8 @@ fun productFormDefaultsFrom(product: Product, lang: String): ProductFormDefaults
     brandName = product.brand?.name.orEmpty(),
     categoryId = product.category.id,
     unitBase = product.unitBase,
-    netContentValue = toFormNetContentValue(product.netContentValue, product.netContentUom),
+    netContentValue = toFormNetContent(product.netContentValue, product.netContentUom).first,
+    netContentUom = toFormNetContent(product.netContentValue, product.netContentUom).second,
     piecesInPack = product.piecesInPack,
     isVariableWeight = product.isVariableWeight,
   )
@@ -101,34 +120,32 @@ fun changedNames(
 fun offNamesFrom(candidate: ExternalProductCandidate): Map<String, String> =
   namesByLang(candidate.names)
 
-/** Server implied UOM konvence (docs/datovy-model.md): MASS→kg, VOLUME→l, COUNT→ks. */
-private fun impliedUom(unitBase: String): String? = when (unitBase) {
-  "MASS" -> "KG"
-  "VOLUME" -> "L"
-  "COUNT" -> "PCS"
-  else -> null
-}
-
 /**
  * Gramáž/objem pro UpdateProductInput — MUSÍ se posílat vždy jako dvojice, i když se změnil jen
  * unitBase/isVariableWeight (CatalogEditService.updateProduct přepočítává netContentBase
  * v jediném bloku podmíněném tím, že aspoň jedno z trojice netContentValue/netContentUom/
  * isVariableWeight přišlo nenulové — samotný unitBase by netContentBase pro novou jednotku
- * nedopočítal). Shoda s prefillem (nebo nic nezadáno) → obojí null; jinak obojí z formuláře.
+ * nedopočítal). Přepnutí samotné jednotky je taky změna: stejné číslo v kg znamená 1000× víc
+ * než v g. Shoda s prefillem (nebo nic nezadáno) → obojí null; jinak obojí z formuláře.
  */
 private fun netContentForUpdateSubmit(
   netContentValue: Double?,
+  netContentUom: String?,
   unitBase: String,
   isVariableWeight: Boolean,
   defaults: ProductFormDefaults,
 ): Pair<Double?, String?> {
   val changed = unitBase != defaults.unitBase ||
     isVariableWeight != defaults.isVariableWeight ||
+    netContentUom != defaults.netContentUom ||
     (netContentValue == null) != (defaults.netContentValue == null) ||
     (netContentValue != null && defaults.netContentValue != null &&
       kotlin.math.abs(netContentValue - defaults.netContentValue) >= 1e-9)
   if (!changed) return null to null
-  return (if (isVariableWeight) null else netContentValue) to impliedUom(unitBase)
+  // Jednotka musí dorazit i u váhového zboží (hodnota je tam null) — server podle ní ověřuje
+  // shodu se základní jednotkou a bez ní by netContentBase nepřepočítal.
+  return (if (isVariableWeight) null else netContentValue) to
+    netContentUomFor(unitBase, netContentUom)
 }
 
 /**
@@ -144,14 +161,15 @@ fun buildUpdateProductInput(
   categoryId: String,
   unitBase: String,
   netContentValue: Double?,
+  netContentUom: String?,
   piecesInPack: Int?,
   isVariableWeight: Boolean,
   defaults: ProductFormDefaults,
 ): UpdateProductInput {
   val trimmedName = name.trim()
   val trimmedBrand = brandName.trim()
-  val (netContent, netContentUom) =
-    netContentForUpdateSubmit(netContentValue, unitBase, isVariableWeight, defaults)
+  val (submitValue, submitUom) =
+    netContentForUpdateSubmit(netContentValue, netContentUom, unitBase, isVariableWeight, defaults)
   return UpdateProductInput(
     name = if (trimmedName == defaults.name) null else trimmedName,
     nameLang = nameLang,
@@ -160,8 +178,8 @@ fun buildUpdateProductInput(
     clearBrand = trimmedBrand.isEmpty() && defaults.brandName.isNotEmpty(),
     categoryId = if (categoryId == defaults.categoryId) null else categoryId,
     unitBase = if (unitBase == defaults.unitBase) null else unitBase,
-    netContentValue = netContent,
-    netContentUom = netContentUom,
+    netContentValue = submitValue,
+    netContentUom = submitUom,
     piecesInPack = if (piecesInPack == defaults.piecesInPack) null else piecesInPack,
     clearPiecesInPack = piecesInPack == null && defaults.piecesInPack != null,
     isVariableWeight = if (isVariableWeight == defaults.isVariableWeight) null else isVariableWeight,

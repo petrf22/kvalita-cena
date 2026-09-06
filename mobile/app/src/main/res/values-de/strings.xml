@@ -359,8 +359,14 @@
     <string name="product_form_brand_label">Marke (optional)</string>
     <string name="product_form_unit_base_label">Grundeinheit</string>
     <string name="product_form_variable_weight_label">Wiegeware (Preis immer pro kg/l, ohne feste Füllmenge)</string>
-    <string name="product_form_mass_label">Packungsgewicht (kg)</string>
-    <string name="product_form_volume_label">Packungsvolumen (l)</string>
+    <string name="product_form_mass_label">Packungsgewicht</string>
+    <string name="product_form_volume_label">Packungsvolumen</string>
+    <string name="product_form_net_content_uom_label">Einheit laut Verpackung</string>
+    <string name="net_content_uom_g">g</string>
+    <string name="net_content_uom_kg">kg</string>
+    <string name="net_content_uom_ml">ml</string>
+    <string name="net_content_uom_l">l</string>
+    <string name="net_content_uom_pcs">St.</string>
     <string name="product_form_pieces_in_pack_label">Stück pro Packung (optional)</string>
     <string name="product_form_code_label">Strichcode (optional)</string>
     <string name="product_form_code_hint">Ohne Code entsteht eine generische Position (z. B. „Gebäck für %1$s“ vom Kassenbon) — mit geringerer Datenzuverlässigkeit, kann aber trotzdem gespeichert werden.</string>

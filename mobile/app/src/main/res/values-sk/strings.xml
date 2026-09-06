@@ -357,8 +357,14 @@
     <string name="product_form_brand_label">Značka (voliteľné)</string>
     <string name="product_form_unit_base_label">Základná jednotka</string>
     <string name="product_form_variable_weight_label">Váhový tovar (cena vždy za kg/l, bez pevnej gramáže)</string>
-    <string name="product_form_mass_label">Hmotnosť balenia (kg)</string>
-    <string name="product_form_volume_label">Objem balenia (l)</string>
+    <string name="product_form_mass_label">Hmotnosť balenia</string>
+    <string name="product_form_volume_label">Objem balenia</string>
+    <string name="product_form_net_content_uom_label">Jednotka podľa obalu</string>
+    <string name="net_content_uom_g">g</string>
+    <string name="net_content_uom_kg">kg</string>
+    <string name="net_content_uom_ml">ml</string>
+    <string name="net_content_uom_l">l</string>
+    <string name="net_content_uom_pcs">ks</string>
     <string name="product_form_pieces_in_pack_label">Kusov v balení (voliteľné)</string>
     <string name="product_form_code_label">Čiarový kód (voliteľné)</string>
     <string name="product_form_code_hint">Bez kódu vznikne druhová položka (napr. „pečivo za %1$s“ z účtenky) — s nižšou dôveryhodnosťou dát, ale zapísať sa dá aj tak.</string>
