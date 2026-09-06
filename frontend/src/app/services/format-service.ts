@@ -12,6 +12,7 @@ export class FormatService {
   private readonly language = inject(LanguageService);
   private readonly moneyFormatters = new Map<string, Intl.NumberFormat>();
   private readonly dateFormatters = new Map<string, Intl.DateTimeFormat>();
+  private readonly numberFormatters = new Map<string, Intl.NumberFormat>();
 
   /** @param currency ISO-4217 kód z dat (docs/lokalizace.md) — chybí-li, CZK je jen nouzový fallback. */
   money(amount: number | null | undefined, currency: string | null | undefined): string {
@@ -35,11 +36,15 @@ export class FormatService {
     return this.dateFormatter(style).format(date);
   }
 
-  number(value: number, digits = 2): string {
-    return new Intl.NumberFormat(this.tag(), {
-      minimumFractionDigits: digits,
-      maximumFractionDigits: digits,
-    }).format(value);
+  /**
+   * Množství podle jazyka (desetinná čárka/tečka) — bez doplňování nul, takže „250 g" zůstane
+   * „250 g" a jen skutečně desetinná hodnota se ukáže s místy („0,25 kg"). Peníze mají vlastní
+   * {@link money}, kde je pevný počet míst naopak žádoucí. Výchozí tři místa odpovídají
+   * `NUMERIC(12,3)` sloupce `core.product.net_content_value`.
+   */
+  number(value: number | null | undefined, maxDigits = 3): string {
+    if (value == null) return '—';
+    return this.numberFormatterFor(maxDigits).format(value);
   }
 
   /** date-fns tokeny pro `nz-date-picker` — `NzNativeDateAdapter` formátuje přes date-fns, ne
@@ -66,6 +71,16 @@ export class FormatService {
       .formatToParts(1.1)
       .find((p) => p.type === 'decimal');
     return part?.value ?? '.';
+  }
+
+  private numberFormatterFor(maxDigits: number): Intl.NumberFormat {
+    const key = `${this.language.lang()}|${maxDigits}`;
+    let formatter = this.numberFormatters.get(key);
+    if (!formatter) {
+      formatter = new Intl.NumberFormat(this.tag(), { maximumFractionDigits: maxDigits });
+      this.numberFormatters.set(key, formatter);
+    }
+    return formatter;
   }
 
   private moneyFormatter(currency: string): Intl.NumberFormat {
