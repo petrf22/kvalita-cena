@@ -7,6 +7,11 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [Nezveřejněno]
+
+### Změněno
+- Gramáž a objem se zadávají v jednotce z obalu: před číslem se vybere g/kg (u hmotnosti) nebo ml/l (u objemu), takže „60 g" jde opsat, místo aby se přepočítávalo na 0,06 kg — zvolená jednotka se pak u zboží i zobrazuje (web, mobil)
+
 ## [0.7.0] – 2026-09-05
 
 ### Přidáno
