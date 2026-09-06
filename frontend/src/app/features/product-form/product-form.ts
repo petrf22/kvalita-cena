@@ -24,6 +24,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
+import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTreeSelectModule } from 'ng-zorro-antd/tree-select';
 import {
@@ -40,18 +41,21 @@ import { MediaService } from '../../services/media-service';
 import { ProductService } from '../../services/product-service';
 import { buildCategoryTree, categoryBreadcrumb } from '../../shared/category-tree';
 import { translateError } from '../../shared/error-message';
-import { UNIT_BASE_KEYS } from '../../shared/enum-labels';
+import { NET_CONTENT_UOM_KEYS, UNIT_BASE_KEYS } from '../../shared/enum-labels';
 import { PhotoSlot } from '../../shared/photo-slot';
 import {
+  NetContentUomChoice,
   OffCandidateDefaults,
   ProductFormDefaults,
   buildUpdateProductInput,
   changedFromOff,
   changedNames,
   codeMatchesOffCandidate,
-  impliedNetContentUom,
+  defaultNetContentUom,
   isProductFormValid,
   netContentForOffSubmit,
+  netContentUomFor,
+  netContentUomOptions,
   offCandidateDefaults,
   pendingPhotoUploads,
   productFormDefaults,
@@ -91,6 +95,7 @@ const UNIT_BASE_ORDER: readonly UnitBase[] = ['COUNT', 'MASS', 'VOLUME'];
     NzInputNumberModule,
     NzTreeSelectModule,
     NzRadioModule,
+    NzSelectModule,
     NzSwitchModule,
     NzButtonModule,
     NzAlertModule,
@@ -186,6 +191,19 @@ export class ProductForm {
   protected readonly brandName = signal('');
   protected readonly unitBase = signal<UnitBase>('COUNT');
   protected readonly netContentValue = signal<number | null>(null);
+  /**
+   * Jednotka, ve které uživatel gramáž/objem zadává — vybírá se z comboboxu PŘED číslem, ať jde
+   * opsat „60 g" z obalu místo přepočítávání na 0,06 kg. Do serveru jde v páru s hodnotou,
+   * `net_content_base` (kg/l) si z dvojice dopočítá sám.
+   */
+  protected readonly netContentUom = signal<NetContentUomChoice>(defaultNetContentUom('COUNT'));
+  protected readonly netContentUomKeys = NET_CONTENT_UOM_KEYS;
+  protected readonly netContentUomChoices = computed(() => netContentUomOptions(this.unitBase()));
+  /** Krok šipek podle jednotky — v gramech/mililitrech se zadávají celá čísla (60 g, 330 ml),
+   *  v kilogramech/litrech desetiny (0,5 kg). */
+  protected readonly netContentStep = computed(() =>
+    this.netContentUom() === 'G' || this.netContentUom() === 'ML' ? 1 : 0.05,
+  );
   protected readonly piecesInPack = signal<number | null>(null);
   protected readonly isVariableWeight = signal(false);
   protected readonly code = signal('');
@@ -200,7 +218,7 @@ export class ProductForm {
 
   /** Nabídnutý OFF kandidát pro banner nad formulářem — null, dokud appka nic nenašla/nehledala. */
   protected readonly offCandidate = signal<ExternalProductCandidate | null>(null);
-  /** Snímek předvyplněných hodnot (gramáž převedená na kg/l) — jen appka sama, ne pro šablonu. */
+  /** Snímek předvyplněných hodnot (gramáž i s jednotkou z OFF) — jen appka sama, ne pro šablonu. */
   private offDefaults: OffCandidateDefaults | null = null;
 
   /** Snímek prefillu z `product()` pro editaci — obdoba `offDefaults`, jiný zdroj. */
@@ -225,10 +243,18 @@ export class ProductForm {
       this.selectedCategoryId.set(defaults.categoryId);
       this.unitBase.set(defaults.unitBase);
       this.netContentValue.set(defaults.netContentValue);
+      this.netContentUom.set(netContentUomFor(defaults.unitBase, defaults.netContentUom));
       this.piecesInPack.set(defaults.piecesInPack);
       this.isVariableWeight.set(defaults.isVariableWeight);
       this.code.set(product.gtin ?? '');
     });
+  }
+
+  /** Přepnutí hmotnost/objem/kusy musí překlopit i jednotku gramáže (g→ml), jinak by server
+   *  vrátil UOM_MISMATCH. Zadané číslo zůstává — uživatel opravuje jednotku, ne hodnotu. */
+  protected onUnitBaseChange(value: UnitBase): void {
+    this.unitBase.set(value);
+    this.netContentUom.set(netContentUomFor(value, this.netContentUom()));
   }
 
   onOtherNameChange(lang: string, value: string): void {
@@ -264,7 +290,8 @@ export class ProductForm {
   }
 
   /** Předvyplní formulář z OFF kandidáta — gramáž převede na kg/l (`offCandidateDefaults`,
-   *  past OFF kandidáta) a snímek pro submit() si uloží stranou do `offDefaults`. Nepřepisuje
+   *  past OFF kandidáta — hodnotu i jednotku bere, jak jsou) a snímek pro submit() si uloží
+   *  stranou do `offDefaults`. Nepřepisuje
    *  pole, která kandidát nemá (necháme prázdné pro ruční vyplnění). */
   private applyOffCandidate(candidate: ExternalProductCandidate): void {
     this.offCandidate.set(candidate);
@@ -280,6 +307,9 @@ export class ProductForm {
     if (defaults.categoryId) this.selectedCategoryId.set(defaults.categoryId);
     if (defaults.unitBase) this.unitBase.set(defaults.unitBase);
     if (defaults.netContentValue != null) this.netContentValue.set(defaults.netContentValue);
+    this.netContentUom.set(
+      netContentUomFor(defaults.unitBase ?? this.unitBase(), defaults.netContentUom),
+    );
   }
 
   /** Uživatel si vybral existující nabídnutou položku místo založení nové (docs/reputace.md). */
@@ -344,7 +374,7 @@ export class ProductForm {
             categoryId,
             unitBase: this.unitBase(),
             netContentValue: this.isVariableWeight() ? null : this.netContentValue(),
-            netContentUom: impliedNetContentUom(this.unitBase()),
+            netContentUom: this.netContentUom(),
             piecesInPack: this.piecesInPack(),
             isVariableWeight: this.isVariableWeight(),
             storeId: this.store()?.id ?? null,
@@ -384,6 +414,7 @@ export class ProductForm {
         categoryId,
         unitBase: this.unitBase(),
         netContentValue: this.isVariableWeight() ? null : this.netContentValue(),
+        netContentUom: this.netContentUom(),
         piecesInPack: this.piecesInPack(),
         isVariableWeight: this.isVariableWeight(),
       },
@@ -448,9 +479,11 @@ export class ProductForm {
       defaults,
     );
     const netContent = netContentForOffSubmit(
-      this.isVariableWeight() ? null : this.netContentValue(),
-      this.unitBase(),
-      defaults.netContentValue,
+      {
+        netContentValue: this.isVariableWeight() ? null : this.netContentValue(),
+        netContentUom: this.netContentUom(),
+      },
+      defaults,
     );
     return this.productService.createProductFromOff({
       code: candidate.code,

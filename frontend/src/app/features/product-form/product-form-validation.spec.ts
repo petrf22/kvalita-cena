@@ -5,10 +5,13 @@ import {
   changedNames,
   changedFromOff,
   codeMatchesOffCandidate,
-  impliedNetContentUom,
+  defaultNetContentUom,
   isProductFormValid,
+  netContentBase,
   netContentForOffSubmit,
   netContentForUpdateSubmit,
+  netContentUomFor,
+  netContentUomOptions,
   offCandidateDefaults,
   pendingPhotoUploads,
   previewUnitPrice,
@@ -28,48 +31,90 @@ describe('isProductFormValid', () => {
   });
 });
 
-describe('impliedNetContentUom', () => {
-  it('maps unit base to the server convention', () => {
-    expect(impliedNetContentUom('MASS')).toBe('KG');
-    expect(impliedNetContentUom('VOLUME')).toBe('L');
-    expect(impliedNetContentUom('COUNT')).toBe('PCS');
+describe('netContentUomOptions', () => {
+  /** Nabídnout u hmotnosti litry by skončilo chybou UOM_MISMATCH až při uložení. */
+  it('offers only units the server accepts for the given unit base', () => {
+    expect(netContentUomOptions('MASS')).toEqual(['G', 'KG']);
+    expect(netContentUomOptions('VOLUME')).toEqual(['ML', 'L']);
+    expect(netContentUomOptions('COUNT')).toEqual(['PCS']);
+  });
+
+  it('defaults to the smaller unit, the one usually printed on the package', () => {
+    expect(defaultNetContentUom('MASS')).toBe('G');
+    expect(defaultNetContentUom('VOLUME')).toBe('ML');
+    expect(defaultNetContentUom('COUNT')).toBe('PCS');
+  });
+});
+
+describe('netContentUomFor', () => {
+  it('keeps the current choice while it still fits the unit base', () => {
+    expect(netContentUomFor('MASS', 'KG')).toBe('KG');
+    expect(netContentUomFor('VOLUME', 'ML')).toBe('ML');
+  });
+
+  it('falls back to the default when the unit base changed under it', () => {
+    expect(netContentUomFor('VOLUME', 'G')).toBe('ML');
+    expect(netContentUomFor('MASS', null)).toBe('G');
+    expect(netContentUomFor('COUNT', 'KG')).toBe('PCS');
+  });
+});
+
+describe('netContentBase', () => {
+  /** Zrcadlo NetContentCalculator na serveru — 60 g uložených jako 0,06 kg. */
+  it('converts grams and millilitres to the base unit', () => {
+    expect(netContentBase(60, 'G')).toBeCloseTo(0.06, 6);
+    expect(netContentBase(330, 'ML')).toBeCloseTo(0.33, 6);
+  });
+
+  it('leaves base units alone', () => {
+    expect(netContentBase(1.5, 'KG')).toBe(1.5);
+    expect(netContentBase(0.5, 'L')).toBe(0.5);
+    expect(netContentBase(6, 'PCS')).toBe(6);
+  });
+
+  it('is null without both the value and the unit', () => {
+    expect(netContentBase(null, 'G')).toBeNull();
+    expect(netContentBase(60, null)).toBeNull();
   });
 });
 
 describe('previewUnitPrice', () => {
-  it('divides price by net content value', () => {
-    expect(previewUnitPrice(42, 1.2, false)).toBeCloseTo(35, 5);
+  it('divides price by net content converted to the base unit', () => {
+    expect(previewUnitPrice(42, 1.2, 'KG', false)).toBeCloseTo(35, 5);
+    // 60 g za 12 Kč je 200 Kč/kg — bez převodu by vyšlo 0,2.
+    expect(previewUnitPrice(12, 60, 'G', false)).toBeCloseTo(200, 5);
   });
 
   it('returns the price itself for variable-weight goods (already priced per kg/l)', () => {
-    expect(previewUnitPrice(199, null, true)).toBe(199);
+    expect(previewUnitPrice(199, null, 'KG', true)).toBe(199);
   });
 
   it('is null without a positive price', () => {
-    expect(previewUnitPrice(null, 1, false)).toBeNull();
-    expect(previewUnitPrice(0, 1, false)).toBeNull();
+    expect(previewUnitPrice(null, 1, 'KG', false)).toBeNull();
+    expect(previewUnitPrice(0, 1, 'KG', false)).toBeNull();
   });
 
   it('is null without a positive net content value for non-variable-weight goods', () => {
-    expect(previewUnitPrice(42, null, false)).toBeNull();
-    expect(previewUnitPrice(42, 0, false)).toBeNull();
+    expect(previewUnitPrice(42, null, 'KG', false)).toBeNull();
+    expect(previewUnitPrice(42, 0, 'KG', false)).toBeNull();
   });
 });
 
 describe('offCandidateDefaults', () => {
-  it('converts grams and millilitres to the form units (kg/l)', () => {
+  /** Uživatel má vidět „250 g" jako na obale, ne přepočtené „0,25 kg". */
+  it('keeps the quantity in the unit OFF stores it in', () => {
     expect(
       offCandidateDefaults({ netContentValue: 250, netContentUom: 'G', unitBase: 'MASS' }, 'cs'),
-    ).toMatchObject({ netContentValue: 0.25, unitBase: 'MASS' });
+    ).toMatchObject({ netContentValue: 250, netContentUom: 'G', unitBase: 'MASS' });
     expect(
       offCandidateDefaults({ netContentValue: 500, netContentUom: 'ML', unitBase: 'VOLUME' }, 'cs'),
-    ).toMatchObject({ netContentValue: 0.5, unitBase: 'VOLUME' });
+    ).toMatchObject({ netContentValue: 500, netContentUom: 'ML', unitBase: 'VOLUME' });
   });
 
-  it('leaves kg/l values unchanged', () => {
+  it('keeps kg/l values in kg/l', () => {
     expect(
       offCandidateDefaults({ netContentValue: 1.5, netContentUom: 'KG', unitBase: 'MASS' }, 'cs'),
-    ).toMatchObject({ netContentValue: 1.5 });
+    ).toMatchObject({ netContentValue: 1.5, netContentUom: 'KG' });
   });
 
   it('is null without a parseable quantity', () => {
@@ -136,7 +181,8 @@ describe('changedFromOff', () => {
     brandName: 'Rama',
     categoryId: '4',
     unitBase: 'MASS' as const,
-    netContentValue: 0.25,
+    netContentValue: 250,
+    netContentUom: 'G' as const,
   };
 
   it('nulls fields that still match the OFF default', () => {
@@ -153,32 +199,50 @@ describe('changedFromOff', () => {
 });
 
 describe('netContentForOffSubmit', () => {
+  const offDefaults = { netContentValue: 250, netContentUom: 'G' as const };
+
   it('nulls both value and unit when unchanged from the OFF default', () => {
-    expect(netContentForOffSubmit(0.25, 'MASS', 0.25)).toEqual({
-      netContentValue: null,
-      netContentUom: null,
-    });
+    expect(
+      netContentForOffSubmit({ netContentValue: 250, netContentUom: 'G' }, offDefaults),
+    ).toEqual({ netContentValue: null, netContentUom: null });
   });
 
-  it('sends both value and unit together when the user changed it', () => {
-    expect(netContentForOffSubmit(0.3, 'MASS', 0.25)).toEqual({
-      netContentValue: 0.3,
-      netContentUom: 'KG',
-    });
+  it('sends both value and unit together when the user changed the number', () => {
+    expect(
+      netContentForOffSubmit({ netContentValue: 300, netContentUom: 'G' }, offDefaults),
+    ).toEqual({ netContentValue: 300, netContentUom: 'G' });
+  });
+
+  /** Přepnutí jednotky mění význam čísla — 0,25 kg vs. 250 g je stejná hmotnost, ale server
+   *  by ke staré OFF hodnotě 250 přiřadil kg a spočítal 1000× víc. */
+  it('sends both when the user switched the unit', () => {
+    expect(
+      netContentForOffSubmit({ netContentValue: 0.25, netContentUom: 'KG' }, offDefaults),
+    ).toEqual({ netContentValue: 0.25, netContentUom: 'KG' });
   });
 
   it('sends both when OFF had no default at all', () => {
-    expect(netContentForOffSubmit(0.5, 'VOLUME', null)).toEqual({
-      netContentValue: 0.5,
-      netContentUom: 'L',
-    });
+    expect(
+      netContentForOffSubmit(
+        { netContentValue: 500, netContentUom: 'ML' },
+        {
+          netContentValue: null,
+          netContentUom: null,
+        },
+      ),
+    ).toEqual({ netContentValue: 500, netContentUom: 'ML' });
   });
 
   it('nulls both when nothing was entered and OFF had no default', () => {
-    expect(netContentForOffSubmit(null, 'MASS', null)).toEqual({
-      netContentValue: null,
-      netContentUom: null,
-    });
+    expect(
+      netContentForOffSubmit(
+        { netContentValue: null, netContentUom: 'G' },
+        {
+          netContentValue: null,
+          netContentUom: null,
+        },
+      ),
+    ).toEqual({ netContentValue: null, netContentUom: null });
   });
 });
 
@@ -194,7 +258,7 @@ describe('codeMatchesOffCandidate', () => {
 });
 
 describe('productFormDefaults', () => {
-  it('converts grams/millilitres to form units (kg/l), same as OFF candidates', () => {
+  it('keeps the stored quantity and its unit, same as OFF candidates', () => {
     const product = {
       name: 'Rama Klasik',
       names: [{ lang: 'cs', name: 'Rama Klasik' }],
@@ -210,7 +274,8 @@ describe('productFormDefaults', () => {
       name: 'Rama Klasik',
       brandName: 'Rama',
       categoryId: '4',
-      netContentValue: 0.25,
+      netContentValue: 250,
+      netContentUom: 'G',
     });
   });
 
@@ -237,7 +302,8 @@ describe('netContentForUpdateSubmit', () => {
     brandName: 'Rama',
     categoryId: '4',
     unitBase: 'MASS' as const,
-    netContentValue: 0.25,
+    netContentValue: 250,
+    netContentUom: 'G' as const,
     piecesInPack: null,
     isVariableWeight: false,
   };
@@ -245,7 +311,7 @@ describe('netContentForUpdateSubmit', () => {
   it('nulls both when nothing about the quantity changed', () => {
     expect(
       netContentForUpdateSubmit(
-        { netContentValue: 0.25, unitBase: 'MASS', isVariableWeight: false },
+        { netContentValue: 250, netContentUom: 'G', unitBase: 'MASS', isVariableWeight: false },
         defaults,
       ),
     ).toEqual({ netContentValue: null, netContentUom: null });
@@ -254,28 +320,38 @@ describe('netContentForUpdateSubmit', () => {
   it('sends both when only the unit base changed, not the number', () => {
     expect(
       netContentForUpdateSubmit(
-        { netContentValue: 0.25, unitBase: 'VOLUME', isVariableWeight: false },
+        { netContentValue: 250, netContentUom: 'ML', unitBase: 'VOLUME', isVariableWeight: false },
         defaults,
       ),
-    ).toEqual({ netContentValue: 0.25, netContentUom: 'L' });
+    ).toEqual({ netContentValue: 250, netContentUom: 'ML' });
+  });
+
+  /** Stejné číslo v jiné jednotce je jiná hmotnost — bez tohohle by se 250 kg uložilo jako 250 g. */
+  it('sends both when only the unit changed, not the number', () => {
+    expect(
+      netContentForUpdateSubmit(
+        { netContentValue: 250, netContentUom: 'KG', unitBase: 'MASS', isVariableWeight: false },
+        defaults,
+      ),
+    ).toEqual({ netContentValue: 250, netContentUom: 'KG' });
   });
 
   it('sends both when the value itself changed', () => {
     expect(
       netContentForUpdateSubmit(
-        { netContentValue: 0.3, unitBase: 'MASS', isVariableWeight: false },
+        { netContentValue: 300, netContentUom: 'G', unitBase: 'MASS', isVariableWeight: false },
         defaults,
       ),
-    ).toEqual({ netContentValue: 0.3, netContentUom: 'KG' });
+    ).toEqual({ netContentValue: 300, netContentUom: 'G' });
   });
 
-  it('sends null value when switching to variable weight', () => {
+  it('sends null value but a valid unit when switching to variable weight', () => {
     expect(
       netContentForUpdateSubmit(
-        { netContentValue: null, unitBase: 'MASS', isVariableWeight: true },
+        { netContentValue: null, netContentUom: 'G', unitBase: 'MASS', isVariableWeight: true },
         defaults,
       ),
-    ).toEqual({ netContentValue: null, netContentUom: 'KG' });
+    ).toEqual({ netContentValue: null, netContentUom: 'G' });
   });
 });
 
@@ -287,7 +363,8 @@ describe('buildUpdateProductInput', () => {
     brandName: 'Rama',
     categoryId: '4',
     unitBase: 'MASS' as const,
-    netContentValue: 0.25,
+    netContentValue: 250,
+    netContentUom: 'G' as const,
     piecesInPack: 1,
     isVariableWeight: false,
   };
