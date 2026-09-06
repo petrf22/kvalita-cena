@@ -153,7 +153,7 @@
       <nz-form-control>
         <nz-radio-group
           [ngModel]="unitBase()"
-          (ngModelChange)="unitBase.set($event)"
+          (ngModelChange)="onUnitBaseChange($event)"
           name="unitBase"
         >
           @for (value of unitBaseOrder; track value) {
@@ -181,16 +181,34 @@
             unitBase() === 'MASS' ? t('product-form.massLabel') : t('product-form.volumeLabel')
           }}</nz-form-label>
           <nz-form-control>
-            <nz-input-number
-              [ngModel]="netContentValue()"
-              (ngModelChange)="netContentValue.set($event)"
-              name="netContentValue"
-              [nzMin]="0"
-              [nzStep]="0.05"
-              [nzFormatter]="format.numberFormatter"
-              [nzParser]="format.numberParser"
-              style="width: 100%"
-            />
+            <!--
+              Jednotka jde PŘED číslo, protože se v tom pořadí i zadává: uživatel vybere „g" a
+              opíše z obalu 60. Přepočet na kg/l dělá server (net_content_base), do formuláře
+              se nikdy nevrací přepočtená hodnota.
+            -->
+            <div class="net-content-row">
+              <nz-select
+                [ngModel]="netContentUom()"
+                (ngModelChange)="netContentUom.set($event)"
+                name="netContentUom"
+                class="net-content-uom"
+                [attr.aria-label]="t('product-form.netContentUomLabel')"
+              >
+                @for (uom of netContentUomChoices(); track uom) {
+                  <nz-option [nzValue]="uom" [nzLabel]="netContentUomKeys[uom] | transloco" />
+                }
+              </nz-select>
+              <nz-input-number
+                [ngModel]="netContentValue()"
+                (ngModelChange)="netContentValue.set($event)"
+                name="netContentValue"
+                class="net-content-value"
+                [nzMin]="0"
+                [nzStep]="netContentStep()"
+                [nzFormatter]="format.numberFormatter"
+                [nzParser]="format.numberParser"
+              />
+            </div>
           </nz-form-control>
         </nz-form-item>
       }

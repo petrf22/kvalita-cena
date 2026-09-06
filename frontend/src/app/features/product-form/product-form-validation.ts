@@ -60,32 +60,83 @@ export function isProductFormValid(
   return name.trim().length > 0 && !!categoryId && !!unitBase;
 }
 
-/** Server implied UOM konvence (docs/datovy-model.md): MASS→kg, VOLUME→l, COUNT→ks. */
-export function impliedNetContentUom(unitBase: UnitBase): 'KG' | 'L' | 'PCS' {
+/** Jednotka, ve které uživatel zadává gramáž/objem — to, co je na obalu. */
+export type NetContentUomChoice = 'G' | 'KG' | 'ML' | 'L' | 'PCS';
+
+/**
+ * Jednotky nabídnuté ve formuláři pro danou základní jednotku, v pořadí nabídky. Množina musí
+ * sedět na `NetContentCalculator.validateUomMatchesUnitBase` na serveru — nabídnout u MASS
+ * litry by znamenalo UOM_MISMATCH až při uložení.
+ */
+export function netContentUomOptions(unitBase: UnitBase): readonly NetContentUomChoice[] {
   switch (unitBase) {
     case 'MASS':
-      return 'KG';
+      return ['G', 'KG'];
     case 'VOLUME':
-      return 'L';
+      return ['ML', 'L'];
     case 'COUNT':
-      return 'PCS';
+      return ['PCS'];
+  }
+}
+
+/**
+ * První z nabídky, tedy menší jednotka (g/ml) — většina obalů nese „60 g“ nebo „330 ml“ a
+ * uživatel má opisovat, ne přepočítávat. Kilogramy/litry jsou pak jedno kliknutí vedle.
+ */
+export function defaultNetContentUom(unitBase: UnitBase): NetContentUomChoice {
+  return netContentUomOptions(unitBase)[0];
+}
+
+/**
+ * Jednotka po přepnutí základní jednotky — současnou volbu nechá být, dokud pro nový `unitBase`
+ * dává smysl (MASS→VOLUME musí překlopit g na ml), jinak spadne na výchozí.
+ */
+export function netContentUomFor(
+  unitBase: UnitBase,
+  current: NetContentUomChoice | null,
+): NetContentUomChoice {
+  const options = netContentUomOptions(unitBase);
+  return current != null && options.includes(current) ? current : options[0];
+}
+
+/**
+ * Přepočet na základní jednotku (kg/l/ks) — zrcadlo `NetContentCalculator` na serveru, který
+ * je pro `net_content_base` jediný zdroj pravdy. Appka ho potřebuje jen na náhled jednotkové
+ * ceny, nikdy neposlá přepočtenou hodnotu místo zadané.
+ */
+export function netContentBase(
+  value: number | null,
+  uom: NetContentUomChoice | null,
+): number | null {
+  if (value == null || uom == null) return null;
+  switch (uom) {
+    case 'G':
+    case 'ML':
+      return value / 1000;
+    case 'KG':
+    case 'L':
+    case 'PCS':
+      return value;
   }
 }
 
 /**
  * Náhled jednotkové ceny pro uživatele (server ji stejně dopočítá znovu z GENERATED sloupce) —
  * null, pokud gramáž není zadaná/kladná nebo se položka prodává jako váhové zboží (tam je
- * netContentBase vždy 1, cena na cedulce už je za kg/l).
+ * netContentBase vždy 1, cena na cedulce už je za kg/l). Gramáž chodí v jednotce z formuláře
+ * (60 g), jednotková cena je ale vždy za kg/l — proto `netContentBase` uprostřed.
  */
 export function previewUnitPrice(
   priceAmount: number | null,
   netContentValue: number | null,
+  netContentUom: NetContentUomChoice | null,
   isVariableWeight: boolean,
 ): number | null {
   if (priceAmount == null || priceAmount <= 0) return null;
   if (isVariableWeight) return priceAmount;
-  if (netContentValue == null || netContentValue <= 0) return null;
-  return priceAmount / netContentValue;
+  const base = netContentBase(netContentValue, netContentUom);
+  if (base == null || base <= 0) return null;
+  return priceAmount / base;
 }
 
 /** Minimální tvar OFF kandidáta, který formulář potřebuje — místo generovaného
@@ -109,13 +160,16 @@ export interface OffCandidateDefaults {
   categoryId: string | null;
   unitBase: UnitBase | null;
   netContentValue: number | null;
+  /** Jednotka, ve které gramáž drží OFF — formulář ji přebírá, ať uživatel vidí „250 g" tak,
+   *  jak je na obale, a ne přepočtené „0,25 kg". */
+  netContentUom: NetContentUomChoice | null;
 }
 
 /**
- * Výchozí hodnoty formuláře z OFF kandidáta pro předvyplnění. Gramáž/objem OFF nese v G/ML
- * (OffNetContentConverter na backendu), formulář vždy v kg/l (impliedNetContentUom výš) — proto
- * dělení 1000. Tenhle převedený snímek appka drží stranou (`offDefaults`) a při submitu ho
- * používá k rozhodnutí, které pole poslat serveru (CLAUDE.md, past OFF kandidáta).
+ * Výchozí hodnoty formuláře z OFF kandidáta pro předvyplnění. Gramáž/objem se přebírá i s
+ * jednotkou, jak ji OFF nese (typicky G/ML, `OffNetContentConverter` na backendu) — nic se
+ * nepřepočítává. Tenhle snímek appka drží stranou (`offDefaults`) a při submitu ho používá
+ * k rozhodnutí, které pole poslat serveru (CLAUDE.md, past OFF kandidáta).
  */
 export function offCandidateDefaults(
   candidate: OffCandidateShape,
@@ -131,27 +185,28 @@ export function offCandidateDefaults(
     brandName: candidate.brandName ?? null,
     categoryId: candidate.category?.id ?? null,
     unitBase: candidate.unitBase ?? null,
-    netContentValue: toFormNetContentValue(candidate.netContentValue, candidate.netContentUom),
+    ...toFormNetContent(candidate.netContentValue, candidate.netContentUom),
   };
 }
 
-/** Server nese gramáž/objem v G/ML (OffNetContentConverter), formulář vždy v kg/l — sdílí ji
- *  prefill z OFF kandidáta i prefill z existujícího zboží (editace). */
-export function toFormNetContentValue(
+export interface FormNetContent {
+  netContentValue: number | null;
+  netContentUom: NetContentUomChoice | null;
+}
+
+/**
+ * Gramáž/objem ze serveru do polí formuláře — beze změny čísla, jen s jednotkou vedle. Sdílí ji
+ * prefill z OFF kandidáta i prefill z existujícího zboží (editace). Kusy do pole gramáže
+ * nepatří (formulář ho u COUNT vůbec neukazuje), proto u PCS nechá obojí prázdné.
+ */
+export function toFormNetContent(
   value: number | null | undefined,
   uom: NetContentUom | null | undefined,
-): number | null {
-  if (value == null || uom == null) return null;
-  switch (uom) {
-    case 'G':
-    case 'ML':
-      return value / 1000;
-    case 'KG':
-    case 'L':
-      return value;
-    case 'PCS':
-      return null;
+): FormNetContent {
+  if (value == null || uom == null || uom === 'PCS') {
+    return { netContentValue: null, netContentUom: null };
   }
+  return { netContentValue: value, netContentUom: uom };
 }
 
 export interface OffTextFieldsSubmit {
@@ -182,26 +237,30 @@ function sameOrNull(value: string | null, defaultValue: string | null): string |
 
 export interface OffNetContentSubmit {
   netContentValue: number | null;
-  netContentUom: 'KG' | 'L' | 'PCS' | null;
+  netContentUom: NetContentUomChoice | null;
 }
 
 /**
  * Gramáž/objem pro CreateProductFromOffInput — hodnota a jednotka se MUSÍ posílat vždy jako
  * dvojice, nikdy jen jedna z nich (CLAUDE.md, past OFF kandidáta): server bez shody by spočítal
  * netContentBase ze staré OFF hodnoty (product.getNetContentValue()) spárované s novou jednotkou
- * z formuláře — u OFF gramáže v gramech vs. formuláře v kg by to dalo číslo 1000× větší. Shoda
- * s převedeným OFF defaultem (nebo nic nezadáno) → obojí `null`, ať hodnotu dál dodává OFF;
- * jinak (uživatel opravil, nebo OFF žádnou gramáž nedal) obojí z formuláře.
+ * z formuláře — 250 g vs. 0,25 kg by dalo číslo 1000× větší. Shoda s OFF defaultem v hodnotě
+ * I jednotce (nebo nic nezadáno) → obojí `null`, ať hodnotu dál dodává OFF; jinak (uživatel
+ * opravil číslo nebo přepnul jednotku, nebo OFF žádnou gramáž nedal) obojí z formuláře.
  */
 export function netContentForOffSubmit(
-  currentValue: number | null,
-  unitBase: UnitBase,
-  defaultValue: number | null,
+  current: FormNetContent,
+  defaults: FormNetContent,
 ): OffNetContentSubmit {
+  if (current.netContentValue == null || current.netContentUom == null) {
+    return { netContentValue: null, netContentUom: null };
+  }
   const changed =
-    currentValue != null && (defaultValue == null || Math.abs(currentValue - defaultValue) >= 1e-9);
+    defaults.netContentValue == null ||
+    current.netContentUom !== defaults.netContentUom ||
+    Math.abs(current.netContentValue - defaults.netContentValue) >= 1e-9;
   if (!changed) return { netContentValue: null, netContentUom: null };
-  return { netContentValue: currentValue, netContentUom: impliedNetContentUom(unitBase) };
+  return { netContentValue: current.netContentValue, netContentUom: current.netContentUom };
 }
 
 /**
@@ -222,15 +281,16 @@ export interface ProductFormDefaults {
   categoryId: string | null;
   unitBase: UnitBase;
   netContentValue: number | null;
+  netContentUom: NetContentUomChoice | null;
   piecesInPack: number | null;
   isVariableWeight: boolean;
 }
 
 /**
  * Prefill formuláře v režimu editace existujícího zboží — zrcadlo `offCandidateDefaults`, jen
- * zdroj je `Product` (z detailu), ne OFF kandidát. Gramáž/objem produkt nese v `netContentUom`
- * (KG/L/PCS), přesto se pro jistotu žene přes stejný převod jako OFF (past OFF kandidáta platí
- * i tady, kdyby server někdy vrátil G/ML).
+ * zdroj je `Product` (z detailu), ne OFF kandidát. Gramáž/objem se přebírá i s uloženou
+ * jednotkou (u zboží založeného před volbou jednotky to bude KG/L, u novějšího G/ML) — příště
+ * ji uživatel vidí přesně tak, jak ji zadal.
  */
 export function productFormDefaults(product: Product, lang: string): ProductFormDefaults {
   const names = namesByLang(product.names);
@@ -242,7 +302,7 @@ export function productFormDefaults(product: Product, lang: string): ProductForm
     brandName: product.brand?.name ?? '',
     categoryId: product.category?.id ?? null,
     unitBase: product.unitBase,
-    netContentValue: toFormNetContentValue(product.netContentValue, product.netContentUom),
+    ...toFormNetContent(product.netContentValue, product.netContentUom),
     piecesInPack: product.piecesInPack ?? null,
     isVariableWeight: product.isVariableWeight,
   };
@@ -250,7 +310,7 @@ export function productFormDefaults(product: Product, lang: string): ProductForm
 
 export interface NetContentUpdateSubmit {
   netContentValue: number | null;
-  netContentUom: 'KG' | 'L' | 'PCS' | null;
+  netContentUom: NetContentUomChoice | null;
 }
 
 /**
@@ -262,12 +322,18 @@ export interface NetContentUpdateSubmit {
  * zbytečný patch; jinak (cokoli z trojice se změnilo) obojí z formuláře.
  */
 export function netContentForUpdateSubmit(
-  current: { netContentValue: number | null; unitBase: UnitBase; isVariableWeight: boolean },
+  current: {
+    netContentValue: number | null;
+    netContentUom: NetContentUomChoice | null;
+    unitBase: UnitBase;
+    isVariableWeight: boolean;
+  },
   defaults: ProductFormDefaults,
 ): NetContentUpdateSubmit {
   const changed =
     current.unitBase !== defaults.unitBase ||
     current.isVariableWeight !== defaults.isVariableWeight ||
+    current.netContentUom !== defaults.netContentUom ||
     (current.netContentValue == null) !== (defaults.netContentValue == null) ||
     (current.netContentValue != null &&
       defaults.netContentValue != null &&
@@ -275,7 +341,9 @@ export function netContentForUpdateSubmit(
   if (!changed) return { netContentValue: null, netContentUom: null };
   return {
     netContentValue: current.isVariableWeight ? null : current.netContentValue,
-    netContentUom: impliedNetContentUom(current.unitBase),
+    // Jednotka musí dorazit i u váhového zboží (hodnota je tam null) — server podle ní ověřuje
+    // shodu se základní jednotkou a bez ní by netContentBase nepřepočítal.
+    netContentUom: netContentUomFor(current.unitBase, current.netContentUom),
   };
 }
 
@@ -289,6 +357,7 @@ export interface ProductFormState {
   categoryId: string | null;
   unitBase: UnitBase;
   netContentValue: number | null;
+  netContentUom: NetContentUomChoice | null;
   piecesInPack: number | null;
   isVariableWeight: boolean;
 }
