@@ -7,7 +7,7 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
-## [Nezveřejněno]
+## [0.7.1] – 2026-09-06
 
 ### Opraveno
 - Změna balení na kusové zboží při úpravě položky už neuloží starou gramáž jako počet kusů (250 g → 250 ks) (server, web, mobil)

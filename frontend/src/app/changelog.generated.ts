@@ -20,6 +20,14 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.7.1", date: "2026-09-06", sections: [
+      { title: "Opraveno", items: [
+        { text: "Změna balení na kusové zboží při úpravě položky už neuloží starou gramáž jako počet kusů (250 g → 250 ks)", parts: ["server", "web", "mobil"] },
+      ] },
+      { title: "Změněno", items: [
+        { text: "Gramáž a objem se zadávají v jednotce z obalu: před číslem se vybere g/kg (u hmotnosti) nebo ml/l (u objemu), takže „60 g\" jde opsat, místo aby se přepočítávalo na 0,06 kg — zvolená jednotka se pak u zboží i zobrazuje", parts: ["web", "mobil"] },
+      ] },
+  ] },
   { version: "0.7.0", date: "2026-09-05", sections: [
       { title: "Přidáno", items: [
         { text: "Varianty názvů bezkódového zboží se učí z úspěšných cenových zápisů a po potvrzení dvěma různými registrovanými uživateli pomáhají s našeptáváním i překlepy", parts: ["server", "web", "mobil"] },
