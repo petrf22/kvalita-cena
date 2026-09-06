@@ -133,9 +133,20 @@ jen z detailu zboží (web `features/product-detail` + `app-product-form` v moda
 volají `updateProduct`. Čárový kód je v editaci jen ke čtení (`UpdateProductInput` ho neumí
 změnit) a fotky/návrhy podobných položek se v editaci skryjí (fotky se spravují v galerii na
 detailu). Gramáž/objem se posílá vždy jako dvojice `netContentValue`/`netContentUom`, i když se
-změnila jen základní jednotka nebo přepínač váhového zboží (`netContentForUpdateSubmit`/
-`buildUpdateProductInput` na webu, `ProductFormValidation.kt` na mobilu) — stejná past jako
-u `createProductFromOff` (`CLAUDE.md`, „Pasti, které z kódu nejsou vidět").
+změnila jen základní jednotka, jednotka gramáže nebo přepínač váhového zboží
+(`netContentForUpdateSubmit`/`buildUpdateProductInput` na webu, `ProductFormValidation.kt` na
+mobilu) — stejná past jako u `createProductFromOff` (`CLAUDE.md`, „Pasti, které z kódu nejsou
+vidět").
+
+**Jednotku gramáže si vybírá uživatel** (od 2026-09): před číselným polem je combobox g/kg
+(u hmotnosti) nebo ml/l (u objemu), `netContentUomOptions`/`netContentUomFor` na obou klientech.
+Motivace je opisování z obalu — „60 g" je snazší a méně chybové než „0,0165 kg". V databázi se
+nic nemění: `core.product.net_content_value`/`net_content_uom` tuhle dvojici uměly od začátku
+a `net_content_base` (kg/l/ks) si z ní server dopočítá sám (`NetContentCalculator`), takže
+jednotková cena i agregáty počítají dál z jednoho čísla. Zvolená jednotka je zároveň ta
+zobrazovaná — detail zboží ukazuje `netContentValue` s jejím popiskem, tedy „60 g", ne „0,06 kg".
+Přepnutí základní jednotky musí překlopit i jednotku gramáže (g→ml), jinak server vrátí
+`UOM_MISMATCH`.
 
 ## Výpis „Moje příspěvky"
 
@@ -371,7 +382,7 @@ a možností uživatelského přepsání. GraphQL API (`productLookupByCode`, `P
 `catalogAttribution`) i mobilní/webový `Dto.kt`/`product-service.ts` jsou hotové a otestované;
 `price-entry-page`/`PriceEntryScreen` na sken/zadání neznámého EANu volají `productLookupByCode`
 a formulář nového zboží (`product-form.ts`/`ProductFormViewModel.kt`) OFF kandidáta předvyplní
-(gramáž převedenou z G/ML na kg/l) a odešle přes `createProductFromOff` — jen pole, která
+(gramáž i s jednotkou, jak ji OFF nese, typicky G/ML) a odešle přes `createProductFromOff` — jen pole, která
 uživatel skutečně změnil oproti OFF defaultu, aby nevznikl zbytečný `core.product_user_edit`
 patch. Detail zboží na obou klientech zobrazuje `catalogAttribution`/`externalImage` (od 2026-09
 vybraný podle jazyka obalu, viz „Vícejazyčný název a fotky zboží" níž). Klientská

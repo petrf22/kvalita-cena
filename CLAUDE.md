@@ -59,16 +59,21 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   do `core.product`, což ODbL share-alike zakazuje (`docs/datovy-model.md`, „Oddělení schémat
   kvůli ODbL"). `OffProductCatalogService.create()` je nechává v `core.product` `NULL`; spojení
   vzniká až čtením v `ProductOverlayService`.
-- `ExternalProductCandidate.netContentValue` chodí v jednotce z OFF (typicky `G`/`ML`,
-  `OffNetContentConverter`), formulář vždy v kg/l — klient MUSÍ gramáž pro zobrazení převést a
-  při submitu poslat `netContentValue`/`netContentUom` vždy jako dvojici (buď obojí `null`, ať
-  hodnotu dál dodává OFF, nebo obojí z formuláře). Poslání převedené hodnoty s jinou jednotkou,
-  než jakou má uložený OFF snapshot, by `CatalogEditService.updateProduct` spočítalo jako úplně
-  jiné číslo (250 g vs. 0,25 kg → 250× větší patch) — viz `netContentForOffSubmit`
-  v `product-form-validation.ts` / `ProductFormViewModel.kt`. Stejné pravidlo platí i pro inline
-  editaci existujícího zboží (`updateProduct`) — tam dvojice musí dorazit i tehdy, když se
-  změnila jen základní jednotka nebo přepínač váhového zboží, ne jen samotné číslo
-  (`netContentForUpdateSubmit`/`buildUpdateProductInput`).
+- **Gramáž/objem se do serveru posílá VŽDY jako dvojice `netContentValue`/`netContentUom`** —
+  nikdy jen jedna z nich. Jednotku si od 2026-09 vybírá uživatel v comboboxu před číslem (g/kg,
+  resp. ml/l — `netContentUomOptions`), takže samotné číslo nic neznamená: 250 spárovaných s `KG`
+  místo `G` je 1000× jiná hmotnost. `CatalogEditService.updateProduct` chybějící půlku doplní ze
+  starého uloženého snapshotu, takže rozpojená dvojice tiše spočítá úplně jiné
+  `net_content_base`. U `createProductFromOff` platí navíc, že se posílá jen skutečně změněná
+  dvojice (jinak obojí `null`, ať hodnotu dál dodává OFF — `netContentForOffSubmit`
+  v `product-form-validation.ts` / `ProductFormViewModel.kt`); u `updateProduct` musí dvojice
+  dorazit i tehdy, když se změnila jen základní jednotka, jednotka gramáže nebo přepínač
+  váhového zboží, ne jen samotné číslo (`netContentForUpdateSubmit`/`buildUpdateProductInput`).
+  `ExternalProductCandidate.netContentValue` chodí v jednotce z OFF (typicky `G`/`ML`,
+  `OffNetContentConverter`) a formulář ji přebírá, jak je — nic se nepřepočítává. Přepnutí
+  základní jednotky musí překlopit i jednotku gramáže (g→ml, `netContentUomFor`), jinak server
+  vrátí `UOM_MISMATCH`. Do kg/l/ks převádí výhradně server (`NetContentCalculator` →
+  `net_content_base`), klient nikdy neposílá přepočtenou hodnotu.
 - **Pole „Název" ve formuláři je VŽDY v jazyce appky** a cizojazyčný název z OFF se do něj
   nikdy nepředvyplňuje (`offCandidateDefaults`/`offNamesFrom` berou jen `names[lang]`) — jinak
   by se němčina uložila jako český název, což je přesně ta chyba, kvůli které vícejazyčnost
