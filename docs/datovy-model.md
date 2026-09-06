@@ -294,6 +294,14 @@ v `docs/lokalizace.md`, „Název zboží po jazycích".
 sloupci) od "uživatel volitelné pole vědomě vymazal" (např. odstranění chybně zadaného IČO)
 — bez něj by šlo pole jen přepsat, nikdy smazat, protože `NULL` už má jiný význam.
 
+Že to není teoretická jemnost, ukázala gramáž: přepnutí balení na kusové zboží posílalo
+`net_content_value: NULL`, server to přečetl jako "nezměněno", sáhl po uložené hodnotě a
+`NetContentCalculator` ji u `COUNT` vzal rovnou jako počet — z 250 g vzniklo balení o 250
+kusech. Gramáž má proto `clearNetContent` v `UpdateProductInput` a `"netContent"`
+v `cleared_fields`, po vzoru `clearBrand`/`clearPiecesInPack`. Zvláštnost oproti ostatním
+mazaným polím: `net_content_base` je `NOT NULL`, takže se neuvolňuje — dopadne na `1`, tedy
+na "cena je za balení".
+
 **Tři nové sloupce na `core.product`/`core.store`** připravují budoucí konsolidační job (jeho
 vyhodnocovací pravidlo zatím není známé, proto se zatím nepíše, jen datový model pro něj):
 
