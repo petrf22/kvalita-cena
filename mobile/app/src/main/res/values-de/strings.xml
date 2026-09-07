@@ -261,9 +261,6 @@
     <string name="quantity_basis_per_l">Pro Liter</string>
     <string name="quantity_basis_per_piece">Pro Stück</string>
 
-    <string name="unit_base_count">Stück</string>
-    <string name="unit_base_mass">Gewicht</string>
-    <string name="unit_base_volume">Volumen</string>
 
     <string name="sort_report_count">Nach Meldeanzahl</string>
     <string name="sort_price_asc">Nach Preis</string>
@@ -357,10 +354,11 @@
     <string name="product_form_category_label">Kategorie</string>
     <string name="product_form_category_placeholder">Kategorie auswählen</string>
     <string name="product_form_brand_label">Marke (optional)</string>
-    <string name="product_form_unit_base_label">Grundeinheit</string>
-    <string name="product_form_variable_weight_label">Wiegeware (Preis immer pro kg/l, ohne feste Füllmenge)</string>
-    <string name="product_form_mass_label">Packungsgewicht</string>
-    <string name="product_form_volume_label">Packungsvolumen</string>
+    <string name="product_form_variable_weight_label">Wird nach Gewicht verkauft</string>
+    <string name="product_form_variable_weight_hint">Der Preis am Regal gilt pro kg/l. Ob pro Kilo, Liter oder Stück, wird erst bei der Preiseingabe gewählt.</string>
+    <string name="product_form_net_content_label">Gewicht / Volumen der Packung</string>
+    <string name="product_form_net_content_uom_none">nicht angegeben</string>
+    <string name="product_form_net_content_none_hint">Ohne Einheit gilt der Preis für die ganze Packung.</string>
     <string name="product_form_net_content_uom_label">Einheit laut Verpackung</string>
     <string name="net_content_uom_g">g</string>
     <string name="net_content_uom_kg">kg</string>

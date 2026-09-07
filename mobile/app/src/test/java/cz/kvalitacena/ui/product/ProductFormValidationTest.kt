@@ -30,38 +30,46 @@ class ProductFormValidationTest {
     )
   }
 
-  /** Nabídnout u hmotnosti litry by skončilo chybou UOM_MISMATCH až při uložení. */
+  /**
+   * Inverze `NetContentCalculator.validateUomMatchesUnitBase` — jiné odvození by skončilo
+   * chybou UOM_MISMATCH až při uložení. „Jednotka nevyplněná" je jediný způsob, jak říct „cena
+   * platí za balení"; dřív to byla volba „Kus", která se ptala na nezodpověditelné (rohlík:
+   * kus, nebo hmotnost?).
+   */
   @Test
-  fun offersOnlyUnitsTheServerAcceptsForTheGivenUnitBase() {
-    assertEquals(listOf("G", "KG"), netContentUomOptions("MASS"))
-    assertEquals(listOf("ML", "L"), netContentUomOptions("VOLUME"))
-    assertEquals(listOf("PCS"), netContentUomOptions("COUNT"))
+  fun derivesTheUnitBaseTheServerAcceptsForTheChosenUnit() {
+    assertEquals("MASS", unitBaseForUom("G"))
+    assertEquals("MASS", unitBaseForUom("KG"))
+    assertEquals("VOLUME", unitBaseForUom("ML"))
+    assertEquals("VOLUME", unitBaseForUom("L"))
+    assertEquals("COUNT", unitBaseForUom(null))
   }
 
-  /** Výchozí je menší jednotka — na obalu bývá „60 g", ne „0,06 kg". */
+  /** Past: pole gramáže je bez vybrané jednotky skryté, ale stav si drží, co uživatel zadal
+   *  předtím. 60 s PCS uloží balení o 60 kusech, net_content_base má zůstat 1. */
   @Test
-  fun keepsTheCurrentUnitWhileItFitsAndFallsBackToTheSmallerOne() {
-    assertEquals("KG", netContentUomFor("MASS", "KG"))
-    assertEquals("ML", netContentUomFor("VOLUME", "G"))
-    assertEquals("G", netContentUomFor("MASS", null))
-    assertEquals("PCS", netContentUomFor("COUNT", "KG"))
-  }
-
-  /** Past: pole gramáže je u kusového zboží skryté, ale stav si drží, co uživatel zadal ještě
-   *  u hmotnosti. 60 s PCS uloží balení o 60 kusech, net_content_base má zůstat 1. */
-  @Test
-  fun dropsQuantityLeftOverFromBeforeTheSwitchToPieceGoods() {
+  fun dropsQuantityLeftOverFromBeforeTheUnitWasCleared() {
     assertEquals(
-      VisibleNetContent(null, "PCS", false),
-      visibleNetContent("COUNT", 60.0, "G", isVariableWeight = true),
+      VisibleNetContent("COUNT", null, "PCS", false),
+      visibleNetContent(60.0, null, isVariableWeight = false),
     )
   }
 
   @Test
-  fun dropsQuantityForVariableWeightGoodsButKeepsTheUnit() {
+  fun dropsQuantityForVariableWeightGoodsAndSendsTheBaseUnit() {
     assertEquals(
-      VisibleNetContent(null, "G", true),
-      visibleNetContent("MASS", 60.0, "G", isVariableWeight = true),
+      VisibleNetContent("MASS", null, "KG", true),
+      visibleNetContent(60.0, "G", isVariableWeight = true),
+    )
+  }
+
+  /** Formulář u váhového zboží jednotku neukazuje, takže rozlévané víno se nesmí při každé
+   *  úpravě tiše překlopit z objemu na hmotnost. */
+  @Test
+  fun keepsAStoredVolumeBaseForVariableWeightGoods() {
+    assertEquals(
+      VisibleNetContent("VOLUME", null, "L", true),
+      visibleNetContent(null, null, isVariableWeight = true, storedUnitBase = "VOLUME"),
     )
   }
 
@@ -77,27 +85,30 @@ class ProductFormValidationTest {
       categoryId = "4", unitBase = "MASS", netContentValue = 250.0, netContentUom = "G",
       piecesInPack = null, isVariableWeight = false,
     )
-    fun clearFor(value: Double?, uom: String?, unitBase: String, defs: ProductFormDefaults) =
+    fun clearFor(value: Double?, uom: String?, defs: ProductFormDefaults) =
       buildUpdateProductInput(
         name = defs.name, nameLang = "cs", names = emptyList(), brandName = defs.brandName,
-        categoryId = "4", unitBase = unitBase, netContentValue = value, netContentUom = uom,
-        piecesInPack = null, isVariableWeight = false, defaults = defs,
+        categoryId = "4",
+        netContent = visibleNetContent(value, uom, isVariableWeight = false),
+        piecesInPack = null, defaults = defs,
       ).clearNetContent
 
-    assertTrue(clearFor(null, "PCS", "COUNT", defaults))
-    assertFalse(clearFor(300.0, "G", "MASS", defaults))
-    assertFalse(clearFor(null, null, "MASS", defaults.copy(netContentValue = null, netContentUom = null)))
+    assertTrue(clearFor(null, null, defaults))
+    assertFalse(clearFor(300.0, "G", defaults))
+    assertFalse(clearFor(null, null, defaults.copy(
+      unitBase = "COUNT", netContentValue = null, netContentUom = null,
+    )))
   }
 
   @Test
-  fun passesVisibleQuantityThroughUntouchedAndRepairsAStaleUnit() {
+  fun derivesTheUnitBaseAndPassesAVisibleQuantityThrough() {
     assertEquals(
-      VisibleNetContent(60.0, "G", false),
-      visibleNetContent("MASS", 60.0, "G", isVariableWeight = false),
+      VisibleNetContent("MASS", 60.0, "G", false),
+      visibleNetContent(60.0, "G", isVariableWeight = false),
     )
     assertEquals(
-      VisibleNetContent(500.0, "ML", false),
-      visibleNetContent("VOLUME", 500.0, "G", isVariableWeight = false),
+      VisibleNetContent("VOLUME", 500.0, "ML", false),
+      visibleNetContent(500.0, "ML", isVariableWeight = false),
     )
   }
 }

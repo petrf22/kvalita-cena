@@ -148,15 +148,17 @@ class ProductFormViewModel(
   }
 
   var brandName by mutableStateOf("")
-  var unitBase by mutableStateOf("COUNT")
-    private set
   var netContentValue by mutableStateOf("")
   /**
    * Jednotka, ve které uživatel gramáž/objem zadává — vybírá se PŘED číslem, ať jde opsat
    * „60 g" z obalu místo přepočítávání na 0,06 kg. Do serveru jde v páru s hodnotou,
    * net_content_base (kg/l) si z dvojice dopočítá sám.
+   *
+   * null je „—", tedy gramáž nevyplněná = cena platí za balení. Zároveň je to jediný vstup,
+   * ze kterého vzniká základní jednotka ([unitBaseForUom]) — formulář se na ni od 2026-09
+   * neptá zvlášť, viz [visibleNetContent].
    */
-  var netContentUom by mutableStateOf(netContentUomFor("COUNT", null))
+  var netContentUom by mutableStateOf<String?>(null)
   var piecesInPack by mutableStateOf("")
   var isVariableWeight by mutableStateOf(false)
   var code by mutableStateOf(barcode.orEmpty())
@@ -238,8 +240,7 @@ class ProductFormViewModel(
           otherNames = defaults.names
           name = defaults.name
           brandName = defaults.brandName
-          unitBase = defaults.unitBase
-          netContentUom = netContentUomFor(defaults.unitBase, defaults.netContentUom)
+          netContentUom = defaults.netContentUom
           netContentValue = defaults.netContentValue?.toString().orEmpty()
           piecesInPack = defaults.piecesInPack?.toString().orEmpty()
           isVariableWeight = defaults.isVariableWeight
@@ -296,20 +297,12 @@ class ProductFormViewModel(
     // místo toho ukázala hlavně prázdná pole jazyků, které nikdo nevyplní.
     defaults.name?.let { name = it }
     defaults.brandName?.let { brandName = it }
-    defaults.unitBase?.let { unitBase = it }
     defaults.netContentValue?.let { netContentValue = it.toString() }
-    netContentUom = netContentUomFor(defaults.unitBase ?: unitBase, defaults.netContentUom)
+    defaults.netContentUom?.let { netContentUom = it }
     defaults.categoryId?.let { id ->
       val category = categories.find { it.id == id }
       if (category != null) onCategorySelected(category) else pendingCategoryId = id
     }
-  }
-
-  /** Přepnutí hmotnost/objem/kusy musí překlopit i jednotku gramáže (g→ml), jinak by server
-   *  vrátil UOM_MISMATCH. Zadané číslo zůstává — uživatel opravuje jednotku, ne hodnotu. */
-  fun onUnitBaseChange(value: String) {
-    unitBase = value
-    netContentUom = netContentUomFor(value, netContentUom)
   }
 
   fun onOtherNameChange(lang: String, value: String) {
@@ -455,7 +448,9 @@ class ProductFormViewModel(
               names = changedNames(otherNames, sourceNames, nameLang),
               brandName = brandName.trim().ifBlank { null },
               categoryId = categoryId,
-              unitBase = unitBase,
+              // unitBase odvozuje visibleNetContent z vybrané jednotky — formulář se na něj
+              // neptá vlastní otázkou.
+              unitBase = visible.unitBase,
               netContentValue = visible.netContentValue,
               netContentUom = visible.netContentUom,
               piecesInPack = piecesInPack.toIntOrNull(),
@@ -496,11 +491,8 @@ class ProductFormViewModel(
           names = changedNames(otherNames, sourceNames, nameLang),
           brandName = brandName,
           categoryId = categoryId,
-          unitBase = unitBase,
-          netContentValue = visible.netContentValue,
-          netContentUom = visible.netContentUom,
+          netContent = visible,
           piecesInPack = piecesInPack.toIntOrNull(),
-          isVariableWeight = visible.isVariableWeight,
           defaults = defaults,
         )
         created = graphQlClient.updateProduct(id, input)
@@ -553,7 +545,7 @@ class ProductFormViewModel(
       names = changedNames(otherNames, sourceNames, nameLang),
       brandName = if (trimmedBrand == defaults.brandName) null else trimmedBrand,
       categoryId = if (categoryId == defaults.categoryId) null else categoryId,
-      unitBase = unitBase,
+      unitBase = visible.unitBase,
       netContentValue = offNetContentValue,
       netContentUom = offNetContentUom,
       piecesInPack = piecesInPack.toIntOrNull(),
@@ -567,10 +559,12 @@ class ProductFormViewModel(
    * submitu chodí; sáhnout na stav přímo by propustilo hodnotu zbylou po přepnutí jednotky.
    */
   private fun submittedNetContent(): VisibleNetContent = visibleNetContent(
-    unitBase = unitBase,
     netContentValue = netContentValue.replace(',', '.').toDoubleOrNull(),
     netContentUom = netContentUom,
     isVariableWeight = isVariableWeight,
+    // U váhového zboží formulář jednotku neukazuje, takže hmotnost/objem se u editace musí
+    // vzít z uloženého zboží — jinak by se rozlévané víno tiše překlopilo na hmotnost.
+    storedUnitBase = editDefaults?.unitBase,
   )
 
   /**

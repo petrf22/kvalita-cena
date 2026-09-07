@@ -259,9 +259,6 @@
     <string name="quantity_basis_per_l">Per litre</string>
     <string name="quantity_basis_per_piece">Per piece</string>
 
-    <string name="unit_base_count">Piece</string>
-    <string name="unit_base_mass">Weight</string>
-    <string name="unit_base_volume">Volume</string>
 
     <string name="sort_report_count">By number of reports</string>
     <string name="sort_price_asc">By price</string>
@@ -355,10 +352,11 @@
     <string name="product_form_category_label">Category</string>
     <string name="product_form_category_placeholder">Pick a category</string>
     <string name="product_form_brand_label">Brand (optional)</string>
-    <string name="product_form_unit_base_label">Base unit</string>
-    <string name="product_form_variable_weight_label">Sold by weight (price always per kg/l, no fixed net content)</string>
-    <string name="product_form_mass_label">Package weight</string>
-    <string name="product_form_volume_label">Package volume</string>
+    <string name="product_form_variable_weight_label">Sold by weight</string>
+    <string name="product_form_variable_weight_hint">The shelf price is per kg/l. Whether it is per kilo, litre or piece is chosen when submitting the price.</string>
+    <string name="product_form_net_content_label">Package weight / volume</string>
+    <string name="product_form_net_content_uom_none">not filled in</string>
+    <string name="product_form_net_content_none_hint">Without a unit the price applies to the whole package.</string>
     <string name="product_form_net_content_uom_label">Unit as on the package</string>
     <string name="net_content_uom_g">g</string>
     <string name="net_content_uom_kg">kg</string>

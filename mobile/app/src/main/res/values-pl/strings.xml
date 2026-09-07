@@ -259,9 +259,6 @@
     <string name="quantity_basis_per_l">Za litr</string>
     <string name="quantity_basis_per_piece">Za sztukę</string>
 
-    <string name="unit_base_count">Sztuka</string>
-    <string name="unit_base_mass">Waga</string>
-    <string name="unit_base_volume">Objętość</string>
 
     <string name="sort_report_count">Według liczby zgłoszeń</string>
     <string name="sort_price_asc">Według ceny</string>
@@ -355,10 +352,11 @@
     <string name="product_form_category_label">Kategoria</string>
     <string name="product_form_category_placeholder">Wybierz kategorię</string>
     <string name="product_form_brand_label">Marka (opcjonalnie)</string>
-    <string name="product_form_unit_base_label">Jednostka podstawowa</string>
-    <string name="product_form_variable_weight_label">Towar na wagę (cena zawsze za kg/l, bez stałej gramatury)</string>
-    <string name="product_form_mass_label">Waga opakowania</string>
-    <string name="product_form_volume_label">Objętość opakowania</string>
+    <string name="product_form_variable_weight_label">Sprzedawany na wagę</string>
+    <string name="product_form_variable_weight_hint">Cena na etykiecie jest za kg/l. Czy za kilogram, litr, czy sztukę, wybiera się dopiero przy zapisie ceny.</string>
+    <string name="product_form_net_content_label">Waga / objętość opakowania</string>
+    <string name="product_form_net_content_uom_none">nie podano</string>
+    <string name="product_form_net_content_none_hint">Bez jednostki cena dotyczy całego opakowania.</string>
     <string name="product_form_net_content_uom_label">Jednostka według opakowania</string>
     <string name="net_content_uom_g">g</string>
     <string name="net_content_uom_kg">kg</string>
