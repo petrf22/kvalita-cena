@@ -127,7 +127,7 @@ fun ProductFormScreen(
   }
 
   val context = LocalContext.current
-  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
+  val isLoggedIn by AppContainer.authRepository.isLoggedIn.collectAsState()
 
   LaunchedEffect(Unit) {
     NavigationResults.newStore?.let {
@@ -161,7 +161,7 @@ fun ProductFormScreen(
         selectedStoreId = viewModel.selectedStore?.id,
         onSelect = { formDirty = true; viewModel.onStoreSelected(it) },
         onAddNew = onAddStore,
-        isLoggedIn = accessToken != null,
+        isLoggedIn = isLoggedIn,
         homeCountry = AppContainer.countryStore.country,
         modifier = Modifier.fillMaxWidth(),
       )

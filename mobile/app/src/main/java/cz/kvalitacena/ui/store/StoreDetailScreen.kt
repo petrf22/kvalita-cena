@@ -50,8 +50,7 @@ fun StoreDetailScreen(storeId: String, onEditStore: (String) -> Unit) {
     factory = viewModelFactory { initializer { StoreDetailViewModel(AppContainer.graphQlClient, storeId) } },
   )
   val context = LocalContext.current
-  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
-  val isLoggedIn = accessToken != null
+  val isLoggedIn by AppContainer.authRepository.isLoggedIn.collectAsState()
 
   // Po návratu z editace (StoreFormScreen storeId != null) vyzvedne výsledek stejným vzorem
   // jako PriceEntryScreen NavigationResults.newStore/newProduct.

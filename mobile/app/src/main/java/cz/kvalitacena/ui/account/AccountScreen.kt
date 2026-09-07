@@ -24,14 +24,16 @@ import androidx.compose.ui.unit.dp
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.network.Viewer
+import cz.kvalitacena.ui.common.UiText
+import cz.kvalitacena.ui.common.toUiText
 import cz.kvalitacena.ui.login.LoginScreen
 import kotlinx.coroutines.launch
 
 /**
  * Záložka "Účet" — nepřihlášený vidí dnešní [LoginScreen] jako obsah, přihlášený veřejnou
- * identitu (`me`), odkaz na editaci profilu a odhlášení. Po přihlášení se záložka sama
- * překreslí (accessToken je StateFlow), žádná ruční navigace pryč — to bylo dřív křehké
- * (popBackStack na sken natvrdo).
+ * identitu (`me`), odkaz na editaci profilu a odhlášení. Po přihlášení (i po odhlášení, které
+ * si vynutí server) se záložka sama překreslí (`isLoggedIn` je StateFlow), žádná ruční
+ * navigace pryč — to bylo dřív křehké (popBackStack na sken natvrdo).
  */
 @Composable
 fun AccountScreen(
@@ -40,9 +42,9 @@ fun AccountScreen(
   onOpenTerms: () -> Unit = {},
   onOpenPrivacy: () -> Unit = {},
 ) {
-  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
+  val isLoggedIn by AppContainer.authRepository.isLoggedIn.collectAsState()
 
-  if (accessToken == null) {
+  if (!isLoggedIn) {
     LoginScreen(onLoggedIn = {}, onOpenTerms = onOpenTerms, onOpenPrivacy = onOpenPrivacy)
   } else {
     LoggedInContent(onEditProfile, onOpenMyContributions)
@@ -54,9 +56,18 @@ private fun LoggedInContent(onEditProfile: () -> Unit, onOpenMyContributions: ()
   val scope = rememberCoroutineScope()
   var viewer by remember { mutableStateOf<Viewer?>(null) }
   var loading by remember { mutableStateOf(true) }
+  var loadError by remember { mutableStateOf<UiText?>(null) }
 
   LaunchedEffect(Unit) {
-    viewer = runCatching { AppContainer.graphQlClient.me() }.getOrNull()
+    // Opakovat dotaz tady není potřeba — `GraphQlClient.me()` si odmítnutý token vyřeší sám
+    // (obnova + druhý pokus) a když ani ta neprojde, session zanikne a rodičovská záložka
+    // překreslí přihlašovací obrazovku. Chybu sítě ale neschovávat za fallback "Přihlášen":
+    // vypadala pak stejně jako odpověď serveru, který nás nezná, i když dotaz vůbec neodešel.
+    try {
+      viewer = AppContainer.graphQlClient.me()
+    } catch (e: Exception) {
+      loadError = e.toUiText()
+    }
     loading = false
   }
 
@@ -72,6 +83,13 @@ private fun LoggedInContent(onEditProfile: () -> Unit, onOpenMyContributions: ()
         style = MaterialTheme.typography.titleMedium,
       )
       viewer?.displayName?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+      loadError?.let {
+        Text(
+          it.asString(),
+          style = MaterialTheme.typography.bodyMedium,
+          color = MaterialTheme.colorScheme.error,
+        )
+      }
     }
 
     Spacer(Modifier.height(24.dp))

@@ -117,8 +117,7 @@ fun PriceEntryScreen(
   )
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
-  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
-  val isLoggedIn = accessToken != null
+  val isLoggedIn by AppContainer.authRepository.isLoggedIn.collectAsState()
   val exitGuard = LocalNavigationExitGuard.current
   val hasUnsavedChanges = viewModel.selectedStore != null || viewModel.observedAt.isNotBlank() ||
     viewModel.quantityBasis != "PACKAGE" || viewModel.priceRows.size > 1 ||
