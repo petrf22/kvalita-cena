@@ -1,5 +1,63 @@
 [
   {
+    "version": "0.7.2",
+    "date": "2026-09-07",
+    "sections": [
+      {
+        "title": "Změněno",
+        "items": [
+          {
+            "text": "Formulář zboží se neptá na základní jednotku „Kus / Hmotnost / Objem\": vybírá se rovnou jednotka (g/kg/ml/l) a číslo vedle ní, prázdná jednotka znamená „cena platí za celé balení\" — u rohlíku ani u lahve mléka tak není co rozhodovat",
+            "parts": [
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Přepínač „Prodává se na váhu\" je nově vidět vždy a po zapnutí schová gramáž celou — u váhového zboží ji server stejně nepoužije a za kg, litr, nebo kus se cena označuje až při zápisu ceny",
+            "parts": [
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Sekce „Názvy v jiných jazycích\" se už sama nerozbaluje u zboží, které Open Food Facts zná jen cizojazyčně, a po rozkliknutí nabídne nejdřív jazyk zvolené země (Země „Slovensko\" → slovensky); zbylé jazyky jsou za „Další jazyky\"",
+            "parts": [
+              "web",
+              "mobil"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Opraveno",
+        "items": [
+          {
+            "text": "Access token se obnovuje podle skutečné expirace, ne až po chybě: dřív appka po pár minutách nečinnosti tiše vypadala odhlášená (chybějící profil, zamlčené vlastní příspěvky), i když uživatel zůstal přihlášen",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Uložení profilu už nesmaže dřív nastavenou přezdívku, pokud se zároveň ukládá jiná změna",
+            "parts": [
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Appka po startu na mobilu už chvíli neukazuje přihlašovací formulář přihlášenému uživateli",
+            "parts": [
+              "mobil"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "0.7.1",
     "date": "2026-09-06",
     "sections": [

@@ -7,12 +7,17 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
-## [Nevydáno]
+## [0.7.2] – 2026-09-07
 
 ### Změněno
 - Formulář zboží se neptá na základní jednotku „Kus / Hmotnost / Objem": vybírá se rovnou jednotka (g/kg/ml/l) a číslo vedle ní, prázdná jednotka znamená „cena platí za celé balení" — u rohlíku ani u lahve mléka tak není co rozhodovat (web, mobil)
 - Přepínač „Prodává se na váhu" je nově vidět vždy a po zapnutí schová gramáž celou — u váhového zboží ji server stejně nepoužije a za kg, litr, nebo kus se cena označuje až při zápisu ceny (web, mobil)
 - Sekce „Názvy v jiných jazycích" se už sama nerozbaluje u zboží, které Open Food Facts zná jen cizojazyčně, a po rozkliknutí nabídne nejdřív jazyk zvolené země (Země „Slovensko" → slovensky); zbylé jazyky jsou za „Další jazyky" (web, mobil)
+
+### Opraveno
+- Access token se obnovuje podle skutečné expirace, ne až po chybě: dřív appka po pár minutách nečinnosti tiše vypadala odhlášená (chybějící profil, zamlčené vlastní příspěvky), i když uživatel zůstal přihlášen (server, web, mobil)
+- Uložení profilu už nesmaže dřív nastavenou přezdívku, pokud se zároveň ukládá jiná změna (web, mobil)
+- Appka po startu na mobilu už chvíli neukazuje přihlašovací formulář přihlášenému uživateli (mobil)
 
 ## [0.7.1] – 2026-09-06
 
