@@ -79,7 +79,6 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
       initializer {
         SearchViewModel(
           AppContainer.graphQlClient,
-          AppContainer.authRepository,
           AppContainer.countryStore,
           AppContainer.searchFilterStore,
         )
@@ -96,8 +95,7 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
     }
   }
 
-  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
-  val isLoggedIn = accessToken != null
+  val isLoggedIn by AppContainer.authRepository.isLoggedIn.collectAsState()
   var filtersExpanded by rememberSaveable { mutableStateOf(false) }
 
   Column(modifier = Modifier.fillMaxSize()) {

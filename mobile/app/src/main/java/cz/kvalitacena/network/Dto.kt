@@ -20,8 +20,20 @@ data class OtpVerifyBody(val challengeUid: String, val code: String, val email: 
 @Serializable
 data class RefreshBody(val refreshToken: String? = null)
 
+/**
+ * [expiresInSec] je životnost PŘILOŽENÉHO access tokenu (server `TokenResponse`), ne refresh
+ * tokenu — appka podle ní obnovuje preventivně, viz `AuthRepository.validAccessToken`. Výchozí
+ * hodnota drží appku funkční proti serveru, který pole ještě neposílá (jen lokální vývoj —
+ * v produkci `ClientVersionFilter` starou kombinaci nepustí); odpovídá výchozímu
+ * `app.jwt.access-token-ttl: PT10M`.
+ */
 @Serializable
-data class TokenResponse(val accessToken: String, val refreshToken: String? = null, val newUser: Boolean = false)
+data class TokenResponse(
+  val accessToken: String,
+  val refreshToken: String? = null,
+  val newUser: Boolean = false,
+  val expiresInSec: Long = 600,
+)
 
 @Serializable
 data class Brand(val id: String, val name: String, val slug: String)

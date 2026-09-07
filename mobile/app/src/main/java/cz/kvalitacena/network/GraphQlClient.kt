@@ -352,9 +352,22 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
       .deleteProductReviewText
   }
 
-  /** Veřejná identita přihlášeného uživatele — null pro anonyma. */
+  /**
+   * Veřejná identita přihlášeného uživatele — null pro anonyma.
+   *
+   * `me` je jediný dotaz, kde odmítnutý token NENÍ k rozeznání od anonyma: server vrátí prostě
+   * `null` bez `errors` (`ViewerGraphQlController.me`), takže obecná obnova v [executeAttempt]
+   * se na něm nikdy nechytí. Když jsme se ptali S tokenem a přišlo `null`, token tedy server
+   * neuznal — jednou zkusíme obnovu a dotaz zopakujeme. Když je `null` i podruhé, session je
+   * opravdu pryč a [AuthRepository.recoverFromUnauthorized] ji už zrušila; appka tak spadne
+   * na přihlašovací obrazovku místo aby dál tvrdila "Přihlášen" bez jména.
+   */
   suspend fun me(): Viewer? {
     val gql = "{ me { $VIEWER_FIELDS } }"
+    val token = authRepository.validAccessToken()
+    val viewer = execute(gql, buildJsonObject {}, GraphQlResponse.serializer(MeData.serializer())).me
+    if (viewer != null || token == null) return viewer
+    if (!authRepository.recoverFromUnauthorized(token)) return null
     return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(MeData.serializer())).me
   }
 
@@ -810,11 +823,13 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     responseSerializer: KSerializer<GraphQlResponse<T>>,
     allowRecovery: Boolean,
   ): T {
-    val hadToken = authRepository.accessToken.value != null
+    // validAccessToken() token podle potřeby rovnou obnoví — čekat s obnovou na chybu ze
+    // serveru nejde, prošlý token odbaví server jako anonyma bez jediné chyby (viz tam).
+    val token = authRepository.validAccessToken()
     val requestBody = json.encodeToString(GraphQlRequest(query, variables)).toRequestBody(jsonMediaType)
 
     val builder = Request.Builder().url("${ApiConfig.BASE_URL}/graphql").post(requestBody)
-    authRepository.accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
+    token?.let { builder.header("Authorization", "Bearer $it") }
 
     client.newCall(builder.build()).execute().use { response ->
       if (!response.isSuccessful) {
@@ -826,8 +841,8 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
         // Vypršelý/neplatný access token vypadá pro server stejně jako "nikdy nepřihlášen"
         // (JwtAuthenticationFilter) — reagujeme proto na klasifikaci chyby, ne na konkrétní
         // *_REQUIRES_LOGIN kód, aby recovery fungovala pro libovolný chráněný dotaz.
-        if (hadToken && allowRecovery && first.extensions?.classification == "UNAUTHORIZED"
-          && authRepository.recoverFromUnauthorized()
+        if (token != null && allowRecovery && first.extensions?.classification == "UNAUTHORIZED"
+          && authRepository.recoverFromUnauthorized(token)
         ) {
           return executeAttempt(query, variables, responseSerializer, allowRecovery = false)
         }

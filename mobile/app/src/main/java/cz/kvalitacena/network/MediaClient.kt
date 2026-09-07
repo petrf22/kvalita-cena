@@ -98,9 +98,9 @@ class MediaClient(private val authRepository: AuthRepository, private val client
     fallbackAction: String,
     allowRecovery: Boolean,
   ): Photo {
-    val hadToken = authRepository.accessToken.value != null
+    val token = authRepository.validAccessToken()
     val builder = Request.Builder().url(url).post(multipartBody)
-    authRepository.accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
+    token?.let { builder.header("Authorization", "Bearer $it") }
 
     client.newCall(builder.build()).execute().use { response ->
       val bodyString = response.body?.string().orEmpty()
@@ -108,7 +108,9 @@ class MediaClient(private val authRepository: AuthRepository, private val client
         // Vypršelý/neplatný access token se serveru tváří jako "nikdy nepřihlášen" a vrátí
         // stejné PHOTO_*_REQUIRES_LOGIN (401) jako skutečný anonym — proto zkoušíme tichý
         // refresh na libovolné 401, ne jen na konkrétní kód.
-        if (hadToken && allowRecovery && response.code == 401 && authRepository.recoverFromUnauthorized()) {
+        if (token != null && allowRecovery && response.code == 401
+          && authRepository.recoverFromUnauthorized(token)
+        ) {
           return uploadAttempt(url, multipartBody, fallbackAction, allowRecovery = false)
         }
         throw errorFor(response, bodyString, fallbackAction)
