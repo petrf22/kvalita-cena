@@ -107,9 +107,14 @@ public class AuthController {
           .build();
       return ResponseEntity.ok()
           .header(HttpHeaders.SET_COOKIE, cookie.toString())
-          .body(new TokenResponse(accessToken, null, newUser));
+          .body(new TokenResponse(accessToken, null, newUser, accessTokenTtlSec()));
     }
-    return ResponseEntity.ok(new TokenResponse(accessToken, refreshToken, newUser));
+    return ResponseEntity.ok(new TokenResponse(accessToken, refreshToken, newUser, accessTokenTtlSec()));
+  }
+
+  /** Životnost access tokenu, ať ji klient nemusí luštit z JWT — viz {@link TokenResponse}. */
+  private long accessTokenTtlSec() {
+    return jwtService.getAccessTokenTtl().toSeconds();
   }
 
   private ResponseCookie expiredCookie() {
