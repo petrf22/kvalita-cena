@@ -286,14 +286,20 @@ fun ProductFormScreen(
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
-      viewModel.otherLangs.forEach { lang ->
-        OutlinedTextField(
-          value = viewModel.otherNames[lang].orEmpty(),
-          onValueChange = { formDirty = true; viewModel.onOtherNameChange(lang, it) },
-          label = { Text(langName(lang)) },
-          singleLine = true,
-          modifier = Modifier.fillMaxWidth(),
+      // Jazyk zvolené země jde první a sám o sobě — kdo má appku česky a nakupuje na Slovensku,
+      // opisuje z obalu slovenský název. Zbylé jazyky jsou za druhým rozkliknutím, ať formulář
+      // nezačíná čtyřmi prázdnými poli, která nikdo nevyplní.
+      viewModel.countryLang?.let { lang -> OtherNameField(viewModel, lang) { formDirty = true } }
+      TextButton(onClick = { viewModel.toggleMoreLangs() }) {
+        Text(
+          stringResource(
+            if (viewModel.moreLangsExpanded) R.string.product_form_other_names_more_hide
+            else R.string.product_form_other_names_more_show,
+          ),
         )
+      }
+      if (viewModel.moreLangsExpanded) {
+        viewModel.moreLangs.forEach { lang -> OtherNameField(viewModel, lang) { formDirty = true } }
       }
     }
     Gap()
@@ -478,6 +484,18 @@ fun ProductFormScreen(
 @Composable
 private fun Gap() {
   androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+}
+
+/** Jedno pole názvu v dalším jazyce — stejné pro jazyk země i pro jazyky za „Další jazyky". */
+@Composable
+private fun OtherNameField(viewModel: ProductFormViewModel, lang: String, onEdit: () -> Unit) {
+  OutlinedTextField(
+    value = viewModel.otherNames[lang].orEmpty(),
+    onValueChange = { onEdit(); viewModel.onOtherNameChange(lang, it) },
+    label = { Text(langName(lang)) },
+    singleLine = true,
+    modifier = Modifier.fillMaxWidth(),
+  )
 }
 
 /**

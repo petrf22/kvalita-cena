@@ -71,7 +71,12 @@
       </button>
       @if (otherNamesExpanded()) {
         <p class="other-names-hint">{{ t('product-form.otherNamesHint') }}</p>
-        @for (lang of otherLangs(); track lang) {
+        <!--
+          Jazyk zvolené země jde první a sám o sobě — kdo má appku česky a nakupuje na
+          Slovensku, opisuje z obalu slovenský název. Zbylé jazyky jsou za druhým rozkliknutím,
+          ať formulář nezačíná čtyřmi prázdnými poli, která nikdo nevyplní.
+        -->
+        @if (countryLang(); as lang) {
           <nz-form-item>
             <nz-form-label>{{ t('product-form.lang.' + lang) }}</nz-form-label>
             <nz-form-control>
@@ -83,6 +88,28 @@
               />
             </nz-form-control>
           </nz-form-item>
+        }
+        <button nz-button nzType="link" type="button" (click)="toggleMoreLangs()">
+          {{
+            moreLangsExpanded()
+              ? t('product-form.otherNamesMoreHide')
+              : t('product-form.otherNamesMoreShow')
+          }}
+        </button>
+        @if (moreLangsExpanded()) {
+          @for (lang of moreLangs(); track lang) {
+          <nz-form-item>
+            <nz-form-label>{{ t('product-form.lang.' + lang) }}</nz-form-label>
+            <nz-form-control>
+              <input
+                nz-input
+                [name]="'name-' + lang"
+                [ngModel]="otherName(lang)"
+                (ngModelChange)="onOtherNameChange(lang, $event)"
+              />
+            </nz-form-control>
+          </nz-form-item>
+          }
         }
       }
     </div>

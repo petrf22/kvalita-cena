@@ -486,6 +486,8 @@
     <string name="product_form_foreign_name_warning">This item only has a name %1$s so far: “%2$s”. Please add one in your language — the existing version will not be lost.</string>
     <string name="product_form_other_names_show">Names in other languages</string>
     <string name="product_form_other_names_hide">Hide other languages</string>
+    <string name="product_form_other_names_more_show">More languages</string>
+    <string name="product_form_other_names_more_hide">Hide more languages</string>
     <string name="product_form_other_names_hint">Optional. A language the item does not have yet becomes visible to everyone; overwriting an existing name applies only to you.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>

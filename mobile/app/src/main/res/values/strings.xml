@@ -571,6 +571,8 @@
     <string name="product_form_foreign_name_warning">Zboží zatím má název jen %1$s: „%2$s“. Doplň prosím název ve svém jazyce — cizojazyčná verze se nikam neztratí.</string>
     <string name="product_form_other_names_show">Názvy v jiných jazycích</string>
     <string name="product_form_other_names_hide">Skrýt jiné jazyky</string>
+    <string name="product_form_other_names_more_show">Další jazyky</string>
+    <string name="product_form_other_names_more_hide">Skrýt další jazyky</string>
     <string name="product_form_other_names_hint">Volitelné. Vyplněný jazyk, který zboží zatím nemá, uvidí všichni; přepsání existujícího názvu platí jen pro tebe.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>

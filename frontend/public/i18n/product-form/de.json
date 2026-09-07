@@ -10,6 +10,8 @@
   "foreignNameWarning": "Der Artikel hat bisher nur einen Namen {{lang}}: „{{name}}“. Bitte ergänze einen in deiner Sprache — die vorhandene Fassung geht nicht verloren.",
   "otherNamesShow": "Namen in anderen Sprachen",
   "otherNamesHide": "Andere Sprachen ausblenden",
+  "otherNamesMoreShow": "Weitere Sprachen",
+  "otherNamesMoreHide": "Weitere Sprachen ausblenden",
   "otherNamesHint": "Optional. Eine Sprache, die der Artikel noch nicht hat, sehen alle; das Überschreiben eines vorhandenen Namens gilt nur für dich.",
   "suggestionsWarning": "Ist es nicht schon eine dieser Positionen?",
   "genericTag": "generische Position",

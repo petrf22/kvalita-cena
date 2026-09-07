@@ -10,6 +10,8 @@
   "foreignNameWarning": "Produkt ma na razie nazwę tylko {{lang}}: „{{name}}”. Dodaj proszę nazwę w swoim języku — dotychczasowa wersja nie zniknie.",
   "otherNamesShow": "Nazwy w innych językach",
   "otherNamesHide": "Ukryj inne języki",
+  "otherNamesMoreShow": "Kolejne języki",
+  "otherNamesMoreHide": "Ukryj kolejne języki",
   "otherNamesHint": "Opcjonalne. Uzupełniony język, którego produkt jeszcze nie ma, zobaczą wszyscy; nadpisanie istniejącej nazwy dotyczy tylko Ciebie.",
   "suggestionsWarning": "Czy nie chodzi o jedną z tych pozycji?",
   "genericTag": "pozycja rodzajowa",

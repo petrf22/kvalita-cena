@@ -61,7 +61,12 @@ fun SettingsScreen(
   LaunchedEffect(Unit) {
     // Číselník je jen doplněk pro select options — výpadek appku nesmí zablokovat, zůstane
     // statický fallback KNOWN_COUNTRIES.
-    runCatching { AppContainer.graphQlClient.countries() }.onSuccess { countryOptions = it }
+    runCatching { AppContainer.graphQlClient.countries() }.onSuccess {
+      countryOptions = it
+      // Číselník nese i výchozí jazyk země (app.i18n.country-locale) — formulář zboží podle
+      // něj nabízí druhý jazyk názvu, takže si ho CountryStore odloží do prefs.
+      AppContainer.countryStore.applyCountries(it)
+    }
   }
 
   Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
@@ -81,6 +86,7 @@ fun SettingsScreen(
       options = availableCountries,
       onSelect = { code ->
         countryStore.select(code)
+        countryStore.applyCountries(countryOptions)
         // Push na server je jen pro asynchronní OTP e-mail (docs/lokalizace.md) — appka je
         // sama o sobě autoritativní i bez něj, chyba requestu tady nesmí nic zablokovat.
         if (isLoggedIn) {

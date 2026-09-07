@@ -73,10 +73,28 @@ class ProductFormViewModel(
    */
   val nameLang: String = AppLang.entries.firstOrNull { it.tag == Locale.getDefault().language }?.tag
     ?: AppLang.CS.tag
-  val otherLangs: List<String> = AppLang.entries.map { it.tag }.filter { it != nameLang }
+
+  /**
+   * Jazyk zvolené ZEMĚ, když se liší od jazyka appky — jediný další jazyk, který formulář
+   * nabízí sám. Kdo má appku česky a nakupuje na Slovensku, opisuje z obalu slovenský název;
+   * angličtina/polština/němčina jsou v takové chvíli šum a schovají se za „Další jazyky".
+   * Zdroj je `CountryInfo.defaultLocale` ze serveru (app.i18n.country-locale) přes
+   * [CountryStore], ne vlastní kopie mapy — dokud ji appka nestáhla, je null.
+   */
+  val countryLang: String?
+    get() = countryStore.countryLocale
+      ?.takeIf { it != nameLang && AppLang.entries.any { lang -> lang.tag == it } }
+
+  /** Zbylé jazyky za druhým rozkliknutím — jazyk appky ani jazyk země mezi nimi znovu nejsou. */
+  val moreLangs: List<String>
+    get() = AppLang.entries.map { it.tag }.filter { it != nameLang && it != countryLang }
+
+  private val otherLangs: List<String> = AppLang.entries.map { it.tag }.filter { it != nameLang }
   var otherNames by mutableStateOf<Map<String, String>>(emptyMap())
     private set
   var otherNamesExpanded by mutableStateOf(false)
+    private set
+  var moreLangsExpanded by mutableStateOf(false)
     private set
   private var sourceNames: Map<String, String> = emptyMap()
 
@@ -184,6 +202,12 @@ class ProductFormViewModel(
         // uložit (kategorie je povinná), chyba se ukáže při pokusu o odeslání.
       }
     }
+    viewModelScope.launch {
+      // Jazyk zvolené země pro nabídku druhého názvu ([countryLang]). Stahuje se i tady, ne jen
+      // v Nastavení — kdo tam nikdy nebyl, by druhý jazyk jinak nikdy neuviděl. Výpadek je
+      // tichý, poslední známá hodnota v prefs platí dál.
+      runCatching { graphQlClient.countries() }.onSuccess(countryStore::applyCountries)
+    }
     if (editingProductId != null) {
       loadExisting(editingProductId)
     } else if (barcode != null) {
@@ -267,9 +291,9 @@ class ProductFormViewModel(
     offDefaults = defaults
     sourceNames = offNamesFrom(candidate)
     otherNames = sourceNames
-    // Cizojazyčný název sekci sám rozbalí — uživatel má hned vidět, co o zboží víme,
-    // i když do pole "Název" musí češtinu doplnit sám.
-    if (defaults.name == null && sourceNames.isNotEmpty()) otherNamesExpanded = true
+    // Sekce ostatních jazyků se ZÁMĚRNĚ nerozbaluje sama, ani když OFF zná zboží jen
+    // cizojazyčně — ten název je vidět v upozornění pod polem "Název" a rozbalená sekce by
+    // místo toho ukázala hlavně prázdná pole jazyků, které nikdo nevyplní.
     defaults.name?.let { name = it }
     defaults.brandName?.let { brandName = it }
     defaults.unitBase?.let { unitBase = it }
@@ -294,6 +318,10 @@ class ProductFormViewModel(
 
   fun toggleOtherNames() {
     otherNamesExpanded = !otherNamesExpanded
+  }
+
+  fun toggleMoreLangs() {
+    moreLangsExpanded = !moreLangsExpanded
   }
 
   fun onNameChange(value: String) {
