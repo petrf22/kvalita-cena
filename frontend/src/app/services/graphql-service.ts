@@ -71,38 +71,44 @@ export class GraphQlService {
     variables: TVariables | undefined,
     allowRecovery: boolean,
   ): Observable<TResult> {
-    // Token zachycený PŘED odesláním: když ho mezitím obnovil jiný souběžný požadavek,
-    // `recoverFromUnauthorized` to pozná a zbytečnou další rotaci refresh tokenu neudělá.
-    const tokenBefore = this.authService.accessToken();
-    return this.http
-      .post<GraphQlResponse<TResult>>('/graphql', { query: document.toString(), variables })
-      .pipe(
-        switchMap((response) => {
-          if (response.errors?.length) {
-            const first = response.errors[0];
-            // Vypršelý/neplatný access token vypadá pro server stejně jako "nikdy nepřihlášen"
-            // — reagujeme proto na klasifikaci chyby, ne na konkrétní *_REQUIRES_LOGIN kód, aby
-            // recovery fungovala pro libovolný chráněný dotaz.
-            if (
-              tokenBefore !== null &&
-              allowRecovery &&
-              first.extensions?.classification === 'UNAUTHORIZED'
-            ) {
-              return this.authService
-                .recoverFromUnauthorized(tokenBefore)
-                .pipe(
-                  switchMap((recovered) =>
-                    recovered
-                      ? this.executeAttempt(document, variables, false)
-                      : throwError(() => this.toAppError(response.errors!)),
-                  ),
-                );
-            }
-            return throwError(() => this.toAppError(response.errors!));
-          }
-          return of(response.data as TResult);
-        }),
-      );
+    // Token se vyzvedne TADY, ne až v `tokenInterceptor`, aby `usedToken` níž byl opravdu ten,
+    // který request nesl. Kdyby se četl ze signálu předem, interceptor by ho mezitím mohl
+    // obnovit a `recoverFromUnauthorized` by pak podle nesouhlasu usoudila "obnovil to někdo
+    // jiný", vrátila true bez obnovy a nechala mrtvou session žít dál. Interceptor si o token
+    // řekne znovu, ale to už je jen čtení platné hodnoty, žádná druhá rotace.
+    return this.authService.validAccessToken().pipe(
+      switchMap((usedToken) =>
+        this.http
+          .post<GraphQlResponse<TResult>>('/graphql', { query: document.toString(), variables })
+          .pipe(
+            switchMap((response) => {
+              if (response.errors?.length) {
+                const first = response.errors[0];
+                // Vypršelý/neplatný access token vypadá pro server stejně jako "nikdy
+                // nepřihlášen" — reagujeme proto na klasifikaci chyby, ne na konkrétní
+                // *_REQUIRES_LOGIN kód, aby recovery fungovala pro libovolný chráněný dotaz.
+                if (
+                  usedToken !== null &&
+                  allowRecovery &&
+                  first.extensions?.classification === 'UNAUTHORIZED'
+                ) {
+                  return this.authService
+                    .recoverFromUnauthorized(usedToken)
+                    .pipe(
+                      switchMap((recovered) =>
+                        recovered
+                          ? this.executeAttempt(document, variables, false)
+                          : throwError(() => this.toAppError(response.errors!)),
+                      ),
+                    );
+                }
+                return throwError(() => this.toAppError(response.errors!));
+              }
+              return of(response.data as TResult);
+            }),
+          ),
+      ),
+    );
   }
 
   private toAppError(errors: GraphQlError[]): GraphQlAppError {

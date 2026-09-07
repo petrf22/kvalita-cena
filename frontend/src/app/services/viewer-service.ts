@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { defer, map, of, switchMap } from 'rxjs';
+import { map, of, switchMap } from 'rxjs';
 import { AuthService } from './auth-service';
 import { GraphQlService } from './graphql-service';
 import { graphql } from '../models/generated';
@@ -38,17 +38,20 @@ export class ViewerService {
       }
     `);
     const query = () => this.graphQl.execute(document).pipe(map((data) => data.me));
-    return defer(() => {
-      const tokenBefore = this.auth.accessToken();
-      return query().pipe(
-        switchMap((viewer) => {
-          if (viewer || tokenBefore === null) return of(viewer);
-          return this.auth
-            .recoverFromUnauthorized(tokenBefore)
-            .pipe(switchMap((recovered) => (recovered ? query() : of(null))));
-        }),
-      );
-    });
+    // `validAccessToken()` tady, ne čtení signálu — jinak by `usedToken` nebyl ten, se kterým
+    // se šlo na server, a `recoverFromUnauthorized` by obnovu omylem přeskočila (viz tam).
+    return this.auth.validAccessToken().pipe(
+      switchMap((usedToken) =>
+        query().pipe(
+          switchMap((viewer) => {
+            if (viewer || usedToken === null) return of(viewer);
+            return this.auth
+              .recoverFromUnauthorized(usedToken)
+              .pipe(switchMap((recovered) => (recovered ? query() : of(null))));
+          }),
+        ),
+      ),
+    );
   }
 
   /**
