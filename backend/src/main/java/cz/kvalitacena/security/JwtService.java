@@ -38,6 +38,11 @@ public class JwtService {
     secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secretBase64));
   }
 
+  /** Klient obnovuje access token preventivně podle téhle hodnoty, viz {@link TokenResponse}. */
+  public Duration getAccessTokenTtl() {
+    return accessTokenTtl;
+  }
+
   public String issueAccessToken(AppUser user) {
     Instant now = Instant.now();
     return Jwts.builder()
