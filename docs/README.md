@@ -22,7 +22,7 @@ sufixem jako „MVP“) — to je u dokumentů níž vyznačené.
 | [`reputace.md`](reputace.md) | rozhodnutí + cílový stav | **všechny vzorce a prahy** reputace/vah — nikde jinde v kódu nemají žít jako konstanty |
 | [`soukromi.md`](soukromi.md) | rozhodnutí | pravidla privacy-by-design a jejich vědomé výjimky |
 | [`lokalizace.md`](lokalizace.md) | rozhodnutí + živý stav | jazyky, mapa země→měna→locale, kontrakt chyb |
-| [`ai.md`](ai.md) | rozhodnutí + plán | lokální AI — žádný kód zatím neexistuje |
+| [`ai.md`](ai.md) | rozhodnutí + plán | lokální AI — hotové je zatím jen vytěžení účtenky (OCR běží mimo server), zbytek je rozhodnutí bez kódu |
 | [`branding.md`](branding.md) | reference | vizuální identita, `tools/icons/generate.py` |
 | [`rozvoj.md`](rozvoj.md) | plán / backlog | nápady mimo aktuální stadium, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ |
 | [`vydani.md`](vydani.md) | runbook + historie | postup mobilního vydání, podpisový klíč, Play Console |

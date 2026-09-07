@@ -16,6 +16,9 @@ osm    souřadnice provozoven z OpenStreetMap — schéma zatím nemá jedinou t
        zvolený geokódovaný výsledek uložený do core.store, viz níž
 fx     kurzovní lístek ČNB (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna") —
        na rozdíl od off/osm sem appka sama PÍŠE, denně (ExchangeRateSyncService, hotovo)
+ai     strojově vytěžená data (docs/ai.md) — dnes účtenky, ai.receipt/ai.receipt_line.
+       Oddělené z JINÉHO důvodu než off/osm: ne kvůli licenci, ale aby čistý export vlastních
+       dat neobsahoval strojové odhady, které se můžou přepočítat jindy jinak
 ```
 
 Open Food Facts **i OpenStreetMap** jsou pod licencí ODbL se share-alike podmínkou. ODbL
@@ -87,6 +90,22 @@ buňky (raději akci zobrazit o něco déle než skrýt ještě platnou) — `Pr
 ho jen dopočítává, samotné vyřazení vypršelé akce z `Product.prices` dělá až
 `ProductGraphQlController` při čtení. Žádný noční job, žádný přepočet navíc: historie v
 `agg.price_daily` a počet přispěvatelů ve `ProductStats` se vypršením akce nemění.
+
+**Zdroj a důkaz jsou DVĚ osy, ne jedna.** `source` (`MOBILE`/`WEB`/`IMPORT`) říká, kdo záznam
+poslal — odvozuje ho server z hlavičky `X-Client-Kind`, u importu z účtenky ho nastavuje
+`ReceiptLineImporter`. `evidence_kind` (`NONE`/`PRICE_TAG_PHOTO`/`RECEIPT_OCR`,
+`2026-09-07/03-observation-evidence-kind.yaml`) říká, na čem cena stojí. Jedna osa by nestačila:
+účtenka vyfocená telefonem je obojí naráz. Obě hodnoty plní VÝHRADNĚ server — `evidence_kind`
+je povinný parametr `PriceObservationService.submit`, ne pole vstupu, protože `f_evid` je
+násobič reputační váhy (`docs/reputace.md`) a sebedeklarovaný důkaz by nebyl zobrazovací údaj,
+ale reputační útok. Číst zatím neumí ani jednu z nich nikdo — `PriceAggregationService.weightFor()`
+počítá jen složku `L` (`docs/rozvoj.md`, „Zdroj ceny: kanál klienta vs. druh důkazu").
+
+**Účtenka je výjimka z „dávka = jedna cenovka".** Ta sémantika (kolize shodí celou dávku)
+vychází z toho, že uživatel má jeden formulář. Účtenka je ale čtyřicet položek a stačí, aby
+jednu z nich týž člověk týž den zapsal ručně. Import proto volá `submit` **po řádcích**, každý
+ve vlastní transakci (`ReceiptLineImporter`, `REQUIRES_NEW`), a duplicitu přeskočí a nahlásí —
+viz `docs/stav-implementace.md`, „Import účtenek".
 
 ### Vnitroobchodní kódy vs. globální EAN
 
@@ -208,8 +227,24 @@ Po prahu `app.catalog.alias-confirmations` (výchozí 2) se alias aktivuje pro v
 jej ve výsledcích vidí jen jeho potvrzovatel. `user_id` potvrzení je po 180 dnech nebo při
 smazání účtu nulováno, alias i jeho už získaný stav ale zůstávají komunitním údajem.
 
+**Označení z účtenky je jiná tabulka, ne další význam aliasu**: `core.product_store_label`
+(+ `core.product_store_label_confirmation`, `2026-09-07/02-product-store-label.yaml`) mapuje
+to, jak zboží TISKNE obchod (`ROHLÍK43GR`), na katalogovou položku. Tři rozdíly proti aliasu,
+z nichž každý sám o sobě stačí, aby to nešlo naroubovat na `core.product_alias`: má **rozsah**
+(právě jeden z `chain_id`/`store_id`, vzorem `chk_product_catalog_scope`), **nemíří do
+veřejného našeptávače** (interní zkratka jednoho řetězce není nic, co by kdokoli psal do
+hledání) a hlavně má **opačný směr unikátu** — párování jde označení → zboží, takže jedno
+označení smí v jednom rozsahu ukazovat nejvýš na jednu položku
+(`uq_product_store_label_scope` nad `core.norm_text(label)` + `COALESCE`). Dvě položky
+hlásící se ke stejné zkratce v témže řetězci nejsou legitimní stav, ale případ pro moderaci.
+Zbytek je shodný s aliasem: `status` `PENDING`/`ACTIVE`, práh `app.catalog.label-confirmations`,
+vzniká jen se skutečným zápisem ceny, `user_id` se po 180 dnech nuluje. Navíc nese
+`last_seen_at` — bez něj nejde poznat mrtvé mapování (řetězec zboží přejmenoval) od živého.
+Podrobně `docs/rozvoj.md`, „Mapování obchodního označení zboží na katalogovou položku".
+
 Moderátorské `mergeProducts(sourceId, targetId)` je transakční konsolidace dvou druhových
-položek. Ověří rozsah cíle, přesune observace, recenze, média, patche, kódy i aliasy, vyřeší
+položek. Ověří rozsah cíle, přesune observace, recenze, média, patche, kódy, aliasy
+i mapování obchodních označení, vyřeší
 unikátní kolize ve prospěch cíle, smaže staré agregáty a zařadí přepočet cílových buněk.
 Zdroj zůstane jako `MERGED` s `merged_into_id`; přímé čtení starého ID vrátí kanonický cíl.
 Původní název zdroje se aktivuje jako alias, takže sloučení nezhorší našeptávání.

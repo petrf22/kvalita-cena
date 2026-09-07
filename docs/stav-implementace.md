@@ -27,6 +27,7 @@ v příslušné sekci pod ní.
 | [Open Food Facts — základní integrace](#open-food-facts) | hotovo | hotovo | hotovo | HOTOVO |
 | [Aditiva (E-čka) z OFF](#aditiva-e-čka-z-off) | hotovo | hotovo (beze změny) | hotovo (beze změny) | HOTOVO |
 | [Vícejazyčný název a fotky zboží](#vícejazyčný-název-a-fotky-zboží) | hotovo | hotovo | hotovo | HOTOVO |
+| [Import účtenek](#import-účtenek) | hotovo | — (zatím CLI + GraphiQL) | — (zatím CLI + GraphiQL) | ČÁSTEČNĚ |
 | Neimplementováno | — | — | — | viz [„Neimplementováno"](#neimplementováno) níž |
 
 ## Passwordless auth a GraphQL základ
@@ -426,6 +427,70 @@ písmeny jako label, max 5, `ProductGraphQlController.externalLinksFor`) — či
 beze změny klientů, karta odkazy renderuje generickým cyklem. Zbytek údajů z etikety (nutriční
 tabulka, složení, alergeny, vlastní zadání) je rozvojový nápad v `docs/rozvoj.md`.
 
+## Import účtenek
+
+`docs/rozvoj.md`, „Načtení celé účtenky" a „Mapování obchodního označení zboží na katalogovou
+položku"; `docs/ai.md`, „Dočasná odchylka: OCR účtenek běží mimo server"; `docs/soukromi.md`,
+„Účtenka"; prahy v `app.receipt.*` a `app.catalog.label-confirmations`.
+
+**Od 2026-09-07** jde z účtenky dostat ceny do databáze. Řetěz je obrázek → text → normalizovaný
+dokument → import → návrh k potvrzení → `core.price_observation`. Vytěžení samo cenu nikdy
+nezakládá (`docs/ai.md`, „AI nikdy nerozhoduje").
+
+**Lokální nástroj `tools/uctenky/`** (Python 3, jen standardní knihovna, vlastní
+[README](../tools/uctenky/README.md)): `ocr.py` dávkově volá lokální Ollamu (`glm-ocr:bf16`,
+licence MIT, ~8 s na účtenku), `normalize.py`/`lines.py`/`profiles/` převedou text na strukturu
+**deterministicky regexy**, `parse.py` zkontroluje součet a zapíše `receipt-v1`, `upload.py`
+pošle na server. Profil je zatím jeden (`albert`); přidat další znamená tři funkce
+(`matches`, `read_header`, `split_body`), skládání řádků je společné.
+
+Dvě věci, které z kódu nejsou vidět a stály za experimentem:
+
+- **Normalizace textu nesmí jít přes jazykový model.** Druhý průchod přes
+  `qwen2.5:14b-instruct` na reálné účtence Penny zahodil řádek `3.000 ks x 36.90 Kč /ks`
+  a nechal jen zaplacených 110,70 — trojnásobek ceny z regálu. Jinde tentýž model přejmenoval
+  zboží, což součet nezachytí vůbec. Model dělá výhradně obrázek → text.
+- **Kontrolní součet je brána kvality.** Σ(položky + slevy) sedí na vytištěné „Celkem" na haléř,
+  takže rozsypané OCR se pozná spolehlivě: `parse.py` skončí nenulově, `upload.py` účtenku
+  neodešle a `confirmReceipt` ji odmítne (`RECEIPT_TOTAL_MISMATCH`).
+
+**Server**: schéma `ai` (mimo `core`/`agg`, aby čistý export neobsahoval strojové odhady),
+`ai.receipt` + `ai.receipt_line` (`2026-09-07/01-ai-schema-receipt.yaml`), REST
+`POST /api/receipts` (`ReceiptController` — třetí místo mimo GraphQL vedle `AuthController`
+a `MediaController`; dokument posílá skript z příkazové řádky, ne appka), čtení a potvrzování
+přes GraphQL (`myReceipts`, `receipt`, `matchReceiptLine`, `skipReceiptLine`,
+`setReceiptStore`, `confirmReceipt`). Import je **idempotentní** podle otisku dokumentu
+a **součet si server počítá znovu** — klientova hodnota je jen kontrola.
+
+**Párování řádku na katalogovou položku** (`ReceiptLineMatchingService`, kaskáda z
+`docs/rozvoj.md`): vnitroobchodní kód → přesná shoda označení v rozsahu → `pg_trgm` podobnost →
+nic. První dva kroky jsou `MATCHED`, třetí jen `SUGGESTED` — návrh se bez potvrzení člověkem
+nezapíše. Mapování žije v nové `core.product_store_label`
+(`2026-09-07/02-product-store-label.yaml`) a **učí se jen z řádku, který skutečně vedl k ceně**,
+stejné podmínky jako u aliasu; do `mergeProducts` přibylo `mergeStoreLabels`. Směr unikátu je
+OPAČNÝ než u `core.product_alias`: jedno označení smí v jednom rozsahu ukazovat nejvýš na
+jednu položku.
+
+**Tři pasti, které stojí za vypíchnutí:**
+
+- **U váhového zboží se zapisuje cena za kg/l, ne zaplacená částka.** `0,302 kg × 289,00 Kč/kg
+  = 87,30` znamená `quantityBasis = PER_KG` a `priceAmount = 289,00`. Zápis 87,30 by byl tichá
+  chyba bez jediné výjimky.
+- **Účtenka není atomická dávka.** `ReceiptConfirmService` volá `PriceObservationService.submit`
+  **po řádcích** přes `ReceiptLineImporter` (`REQUIRES_NEW`), takže jedna duplicita
+  (`uq_price_observation_submitter_kind_per_day`) se přeskočí a nahlásí místo shození celého
+  importu. Výjimku přitom **nesmí chytat sama transakční metoda** — odchycení uvnitř transakci
+  neodznačí a spadne její vlastní commit; chytá ji až `ReceiptConfirmService` vně hranice.
+- **Druh důkazu určuje server.** `core.price_observation.evidence_kind`
+  (`NONE`/`PRICE_TAG_PHOTO`/`RECEIPT_OCR`) je povinný parametr
+  `PriceObservationService.submit`, ne pole v inputu — `f_evid` je násobič váhy, takže
+  sebedeklarovaný důkaz by byl reputační útok. Do vah zatím nevstupuje.
+
+**Neimplementováno**: webové ani mobilní UI (potvrzuje se zatím přes GraphiQL nebo CLI),
+sběr snímků na mobilu (capture pipeline z `docs/rozvoj.md`), pull worker s frontou snímků na
+serveru, ukládání obrázku účtenky, odvození `PROMO`/`MULTIBUY` ze slevových řádků, profily
+jiných řetězců než Albert.
+
 ## Neimplementováno
 
 Jemnější viditelnost recenzí `PUBLIC`/`GROUPS`/`PRIVATE` a `ViewerContext` (textové recenze
@@ -438,15 +503,16 @@ jednorázové geokódování adresy,
 nad globálními daty" výš), fotka jako důkaz ceny
 (`core.price_observation`, `f_evid` v `docs/reputace.md` — fotky zatím váží jen na katalogový
 záznam, ne na cenový zápis), další jazyky appky nad `de` (viz „Lokalizace" výš), lokální AI
-(`docs/ai.md` — čtení čísel z fotek, kontrola textů, předfiltr moderace; zatím jen rozhodnutí
-v docs, žádný kód — výjimkou je předfiltr fotek pro moderaci, který podle `docs/ai.md` patří
-před spuštění veřejného provozu, ne až za MVP) — viz `docs/reputace.md` pro poznámku o
+(`docs/ai.md` — kontrola textů recenzí, detekce anomálií, předfiltr moderace; vytěžení účtenky
+je od 2026-09-07 hotové, viz „Import účtenek" výš, zbytek jsou zatím jen rozhodnutí v docs —
+a předfiltr fotek pro moderaci podle `docs/ai.md` patří před spuštění veřejného provozu, ne až
+za MVP) — viz `docs/reputace.md` pro poznámku o
 hodnocení kvality vs. dodavatelích.
 
 Další rozvojové nápady mimo MVP (nezávazné, k realizaci až přijde řada, se stavem
 NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `docs/rozvoj.md`: pojmenování slevové karty podle
-obchodu, ceny předem z akčního letáku, načtení celé účtenky, mapování obchodního označení
-zboží na katalogovou položku (párování řádků účtenky/letáku), zdroj ceny a druh důkazu
+obchodu, ceny předem z akčního letáku, zbytek načtení celé účtenky a mapování obchodního
+označení (jádro obojího už hotové je, viz „Import účtenek" výš), zdroj ceny a druh důkazu
 (`core.price_observation.source` dnes existuje, ale nikdo ho nečte), nákup podle receptu nebo
 seznamu, údaje z etikety (nutriční hodnoty, složení, alergeny — aditiva/E-čka jako odkazy z OFF už
 hotová jsou, viz výš).

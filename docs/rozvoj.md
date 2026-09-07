@@ -93,7 +93,15 @@ Souvislost s lokálními dodavateli (`core.supplier`/`core.supplier_offer`,
 tenhle případ. Až se bude navrhovat jedno nebo druhé, řešit oba nápady společně, ať nevznikají
 dvě podobné datové struktury vedle sebe.
 
-## Načtení celé účtenky (ROZHODNOUT)
+## Načtení celé účtenky (ČÁSTEČNĚ)
+
+**Stav (2026-09-07):** serverová část je hotová — schéma `ai`, `ai.receipt`/`ai.receipt_line`,
+REST import formátu `receipt-v1`, kaskáda párování a potvrzování řádků člověkem
+(`docs/stav-implementace.md`, „Import účtenek"). OCR a normalizaci zatím dělá lokální nástroj
+`tools/uctenky` u provozovatele, ne pull worker (`docs/ai.md`, „Dočasná odchylka"), a klientská
+capture pipeline (níž) neexistuje vůbec — účtenky se skenují běžným skenerem/fotoaparátem.
+Rozhodnuté a napsané je tedy jádro, otevřený zůstává sběr snímků na mobilu a to, co je
+v „Co zbývá" na konci tohohle oddílu.
 
 **Zadání:** naskenovat celou účtenku z obchodu a vytěžit z ní názvy zboží, ceny, slevy,
 vnitroobchodní kódy, počty kusů, případně obchod a datum. Dvojí přínos: hromadné zadání/
@@ -156,7 +164,13 @@ Konkrétní mechanismus (oříznutí podle pozice v obraze, ruční vymezení ob
 worker, který citlivé řádky rozpozná a zahodí ještě před uložením) není rozhodnutý — k dořešení
 spolu s oddílem v `docs/soukromi.md` zmíněným výš.
 
-## Mapování obchodního označení zboží na katalogovou položku (ROZHODNOUT)
+## Mapování obchodního označení zboží na katalogovou položku (ČÁSTEČNĚ)
+
+**Stav (2026-09-07):** `core.product_store_label` + `core.product_store_label_confirmation`
+existují přesně v tvaru navrženém níž, kaskáda párování běží v `ReceiptLineMatchingService`
+a mapování se učí jen z řádku, který vedl k ceně (`ProductStoreLabelService`). Otevřené
+zůstávají obě otázky na konci oddílu (leták vs. účtenka jako zdroj označení, kdo smí
+mapování opravit) a rozšíření na letáky.
 
 **Zadání:** účtenka i akční leták mluví názvoslovím obchodu, ne katalogu — na účtence je
 `ROHLIK TUZ 43G`, ne EAN a ne „Rohlík tukový 43 g". EAN na účtence prakticky nikdy není, takže
@@ -221,20 +235,32 @@ obrázku.
 - `mergeProducts` dnes přesouvá observace, recenze, média, patche, kódy i aliasy
   (`docs/datovy-model.md`) — mapování musí do stejného výčtu, včetně řešení unikátní kolize ve
   prospěch cíle. Bez toho by sloučení duplicity rozbilo párování, které předtím fungovalo.
+  *(Hotovo — `ProductMergeService.mergeStoreLabels`.)*
 - **Dávková sémantika `submitObservations` na účtenku nesedí.** Dnes kolize jediného druhu ceny
   shodí celou dávku, protože dávka = jedna cenovka a uživatel má jeden formulář
   (`docs/datovy-model.md`). Účtenka je ale čtyřicet položek a stačí, aby jednu z nich týž člověk
   týž den zapsal ručně, a `uq_price_observation_submitter_kind_per_day` shodí celý import.
   Rozhodnout, jestli import z účtenky duplicitní řádky přeskočí a nahlásí (doporučení), nebo
-  půjdou řádky jako samostatné dávky.
+  půjdou řádky jako samostatné dávky. *(Rozhodnuto: obojí. Každý řádek jde jako samostatná
+  jednoprvková dávka ve vlastní transakci — `ReceiptLineImporter` s `REQUIRES_NEW` — a duplicita
+  se přeskočí a nahlásí ve výsledku `confirmReceipt`. Past, na kterou se přišlo až za běhu:
+  výjimku nesmí chytat sama transakční metoda, jinak spadne její vlastní commit na
+  `UnexpectedRollbackException`; chytá ji až `ReceiptConfirmService` vně hranice.)*
 - **Množství na účtence není gramáž balení.** `net_content_base` je snapshot z katalogu
   (`docs/datovy-model.md`), kdežto `0,432 kg × 89,90 = 38,84` na řádku váhového zboží říká,
   kolik toho člověk koupil. Zapsat se má jednotková cena (`quantityBasis = PER_KG`), nikdy
   zaplacená částka jako cena zboží — nejpravděpodobnější tichá chyba celé funkce.
+  *(Ošetřeno v parseru i v modelu; hlídá to `WeightedGoodsTest` v `tools/uctenky/test_parse.py`
+  a `ReceiptImportServiceTest`.)*
 - **Druh ceny je na účtence rozhozený přes víc řádků** — sleva bývá vlastní řádek pod položkou
   a klubová cena je klubová jen tehdy, když u nákupu byla použita karta. Mapování řádků na
   `price_kind` je součást vytěžení, ne až zápisu, a je zároveň soukromostní vstup (že u nákupu
   byla karta, je údaj o člověku — `docs/soukromi.md` a „záměrně částečný sken" výš).
+  *(Zatím nevyřešené: parser slevu rozpozná jako vlastní řádek `DISCOUNT` navázaný na položku,
+  ale import z ní žádný `price_kind` neodvozuje — zapíše `REGULAR` za NEdiskontovanou
+  jednotkovou cenu, což je cena z regálu a je správně. Jestli k tomu patří ještě `PROMO`
+  nebo `MULTIBUY`, stroj z účtenky spolehlivě nepozná; rozhodnout, až bude dost dat z víc
+  řetězců.)*
 
 **Otevřené otázky:** rozlišovat u označení, odkud se naučilo (účtenka vs. leták)? Zkratky
 z účtenky a marketingové názvy z letáku jsou jiný slovník a jeden jmenný prostor pro obojí může
@@ -261,13 +287,21 @@ nedoporučují** — zdroj má i dál vyplňovat server:
 - číselník roste líp než API: přidat hodnotu do enumu je migrace, přidat mutaci je změna
   kontraktu pro oba klienty i pro `graphql-codegen`.
 
-**Co doplnit místo toho: druhou osu, ne další hodnoty do jedné.** „Z mobilu" a „z účtenky"
+**Co doplnit místo toho: druhou osu, ne další hodnoty do jedné.** *(Hotovo 2026-09-07 —
+`core.price_observation.evidence_kind`, viz níž. `source` se pořád nečte.)* „Z mobilu" a „z účtenky"
 nejsou alternativy — účtenka vyfocená telefonem je obojí. Kdyby `RECEIPT` přibylo do
 `ObservationSource`, přestala by jít hodnota odvodit z hlavičky a ztratila by se informace,
 který klient zápis poslal:
 
-- `source` = **kanál** (`MOBILE`/`WEB`/`IMPORT`) — kdo záznam poslal; odvozuje server, beze změny,
-- `evidence_kind` = **na čem cena stojí** (`NONE`/`PRICE_TAG_PHOTO`/`RECEIPT_OCR`/`LEAFLET`).
+- `source` = **kanál** (`MOBILE`/`WEB`/`IMPORT`) — kdo záznam poslal; odvozuje server, beze změny.
+  Hodnota `IMPORT` od 2026-09-07 skutečně vzniká: nastavuje ji `ReceiptLineImporter` u cen
+  potvrzených z účtenky. Číst ji pořád nikdo nečte.
+- `evidence_kind` = **na čem cena stojí** — implementováno jako `NONE`/`PRICE_TAG_PHOTO`/
+  `RECEIPT_OCR` (`2026-09-07/03-observation-evidence-kind.yaml`). `LEAFLET` se záměrně
+  nepřidal, viz níž. Zapisuje ho server (`PriceObservationService.submit` má `evidenceKind`
+  jako povinný parametr, ne výchozí hodnotu schovanou v přetížení — rozhodnutí tak musí padnout
+  ve volajícím kódu). Do vah zatím nevstupuje: `f_evid` v `PriceAggregationService.weightFor()`
+  není.
 
 Druhá osa není nový nápad — je to přesně ten sloupec, který si `docs/ai.md` („Vazba na
 `f_evid`") rezervuje a který `f_evid` (1,30 účtenka+OCR / 1,15 foto cedulky / 1,00 bez důkazu,
