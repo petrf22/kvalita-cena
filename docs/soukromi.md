@@ -331,6 +331,19 @@ Krátká životnost → žádný revokační seznam; okamžité globální odhl�
 nekoná, ale např. podezření na krádež) se řeší inkrementem `token_version`, který se do
 `JwtAuthenticationFilter` promítne nejpozději za 60 s (Caffeine cache).
 
+**Klient obnovuje access token PREVENTIVNĚ podle expirace, ne až po chybě.** Server posílá
+životnost v `TokenResponse.expiresInSec` (aby klient nemusel rozebírat JWT) a web i mobil
+si token obnoví, jakmile mu zbývá míň než 30 s — `AuthService.validAccessToken` /
+`AuthRepository.validAccessToken` jsou jediné místo, odkud se token pro request bere.
+Čekat na chybu totiž NEJDE: prošlý token `JwtAuthenticationFilter` mlčky zahodí a request
+doběhne jako anonymní (HTTP 200, žádné `errors`), takže dotaz s anonymní variantou —
+typicky `me`, které vrátí prostě `null` — vypadá jako normální odpověď. Appka pak tvrdila
+„Přihlášen“ a přitom byla serveru cizí, dokud na to náhodou nenarazil dotaz vyžadující
+přihlášení. `me` má proto navíc vlastní pojistku (obnova + druhý pokus, pak zánik session)
+a obnova běží vždy jen jednou naráz (single-flight) — refresh token rotuje a jeho souběžné
+použití mimo grace okno by revokovalo celou rodinu. HTTP 401 z obnovy session ruší, výpadek
+sítě ji nechává být.
+
 ## GDPR
 
 Export a výmaz (`AccountService`, `AccountController`) jsou hotové — REST tok jako

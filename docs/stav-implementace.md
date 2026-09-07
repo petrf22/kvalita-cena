@@ -32,7 +32,9 @@ v příslušné sekci pod ní.
 ## Passwordless auth a GraphQL základ
 
 Hotovo a ověřeno end-to-end (backend přes curl, web i mobil živě v prohlížeči/emulátoru):
-passwordless auth (OTP + refresh rotace), GraphQL `searchProducts` (filtr obchod/město/kategorie,
+passwordless auth (OTP + refresh rotace; klient si access token obnovuje preventivně podle
+`TokenResponse.expiresInSec`, viz `docs/soukromi.md` — čekat na chybu nejde, prošlý token server
+tiše odbaví jako anonyma), GraphQL `searchProducts` (filtr obchod/město/kategorie,
 hledání i v číselníku kategorií, řazení, stránkování, agregáty v `ProductSearchItem`) /
 `searchFacets` / `product` / `productByCode` /
 `nearbyStores` / `priceHistory` / `me` / `submitObservations` / `rateProduct`, vážený medián

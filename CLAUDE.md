@@ -91,6 +91,18 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   do serveru se z ní posílá jen to, co uživatel změnil (`changedNames`), protože poslat zpátky
   nezměněnou hodnotu z OFF by znamenalo zapsat cizí data do `core.product_name` (ODbL). Pořadí
   vrstev a fallback napříč jazyky: `docs/lokalizace.md`, „Název zboží po jazycích".
+- **Prošlý access token není chyba, kterou by šlo počkat** — `JwtAuthenticationFilter` ho mlčky
+  zahodí a request doběhne jako ANONYMNÍ (HTTP 200, žádné `errors`), takže dotaz s anonymní
+  variantou (`me` vrátí `null`, hledání zamlčí vlastní DRAFTy, graf zkrátí okno) vypadá jako
+  normální odpověď a reaktivní obnova na `classification: UNAUTHORIZED` se na něm NIKDY nechytí.
+  Token se proto hlídá podle expirace (`TokenResponse.expiresInSec`) a pro request se bere
+  VÝHRADNĚ přes `AuthRepository.validAccessToken` (mobil) / `AuthService.validAccessToken`
+  (web) — nikdy ne z uloženého pole. Obnova smí běžet jen jedna naráz (refresh token rotuje,
+  souběžné použití mimo 30s grace okno revokuje celou rodinu tokenů) a session ruší jen HTTP
+  401, ne výpadek sítě. Podrobně `docs/soukromi.md`, „Passwordless auth".
+- **Stav přihlášení na mobilu je `AuthRepository.isLoggedIn`, ne přítomnost access tokenu** —
+  ten po startu procesu chybí, dokud nedoběhne obnova, takže by appka přihlášenému ukázala
+  přihlašovací formulář. Zdroj pravdy je uložený refresh token.
 - Klientský překlad chyb podle `code` na mobilu chybí — appka ukáže `serverMessage`, protože
   `network/Dto.kt` negeneruje typy ze schématu jako web (`docs/lokalizace.md`, „Co zbývá").
 - Geometrie ikon (favicon, PWA manifest, Android launcher) žije v `tools/icons/generate.py`,
