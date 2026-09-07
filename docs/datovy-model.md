@@ -302,6 +302,16 @@ v `cleared_fields`, po vzoru `clearBrand`/`clearPiecesInPack`. Zvláštnost opro
 mazaným polím: `net_content_base` je `NOT NULL`, takže se neuvolňuje — dopadne na `1`, tedy
 na "cena je za balení".
 
+Že `unit_base = COUNT` a "gramáž nevyplněná" jsou totéž, je dnes vidět i v UI: formulář se od
+2026-09 na základní jednotku neptá vlastní otázkou, odvozuje ji z vybrané jednotky gramáže
+(`unitBaseForUom` na obou klientech) a prázdná volba znamená právě `COUNT`. `net_content_uom =
+PCS` tak z formuláře nikdy nepřijde s hodnotou — kusová gramáž existuje jen v datovém modelu,
+pro případný import; počet kusů v balení je vlastní sloupec `pieces_in_pack`.
+`is_variable_weight` je na téže ose ještě o krok dál: `NetContentCalculator` u něj vrací `1`
+ještě před kontrolou jednotky, takže gramáž váhového zboží se nikam nepromítne a formulář ji
+neukazuje. Za kg / za l / za kus se cena označuje až u observace (`QuantityBasis`), ne
+u produktu.
+
 **Tři nové sloupce na `core.product`/`core.store`** připravují budoucí konsolidační job (jeho
 vyhodnocovací pravidlo zatím není známé, proto se zatím nepíše, jen datový model pro něj):
 

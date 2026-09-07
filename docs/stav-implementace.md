@@ -133,20 +133,28 @@ jen z detailu zboží (web `features/product-detail` + `app-product-form` v moda
 volají `updateProduct`. Čárový kód je v editaci jen ke čtení (`UpdateProductInput` ho neumí
 změnit) a fotky/návrhy podobných položek se v editaci skryjí (fotky se spravují v galerii na
 detailu). Gramáž/objem se posílá vždy jako dvojice `netContentValue`/`netContentUom`, i když se
-změnila jen základní jednotka, jednotka gramáže nebo přepínač váhového zboží
+změnila jen jednotka gramáže nebo přepínač váhového zboží
 (`netContentForUpdateSubmit`/`buildUpdateProductInput` na webu, `ProductFormValidation.kt` na
 mobilu) — stejná past jako u `createProductFromOff` (`CLAUDE.md`, „Pasti, které z kódu nejsou
 vidět").
 
-**Jednotku gramáže si vybírá uživatel** (od 2026-09): před číselným polem je combobox g/kg
-(u hmotnosti) nebo ml/l (u objemu), `netContentUomOptions`/`netContentUomFor` na obou klientech.
-Motivace je opisování z obalu — „60 g" je snazší a méně chybové než „0,0165 kg". V databázi se
-nic nemění: `core.product.net_content_value`/`net_content_uom` tuhle dvojici uměly od začátku
+**Jednotku gramáže si vybírá uživatel** (od 2026-09): před číselným polem je combobox
+`NET_CONTENT_UOM_CHOICES` (g/kg/ml/l) na obou klientech. Motivace je opisování z obalu — „60 g"
+je snazší a méně chybové než „0,0165 kg". V databázi se nic nemění:
+`core.product.net_content_value`/`net_content_uom` tuhle dvojici uměly od začátku
 a `net_content_base` (kg/l/ks) si z ní server dopočítá sám (`NetContentCalculator`), takže
 jednotková cena i agregáty počítají dál z jednoho čísla. Zvolená jednotka je zároveň ta
 zobrazovaná — detail zboží ukazuje `netContentValue` s jejím popiskem, tedy „60 g", ne „0,06 kg".
-Přepnutí základní jednotky musí překlopit i jednotku gramáže (g→ml), jinak server vrátí
-`UOM_MISMATCH`.
+
+**Základní jednotka se z formuláře jako otázka ZMIZELA** (2026-09, druhá vlna): combobox
+jednotky ji odvodí (`unitBaseForUom`) a prázdná volba „—" znamená `COUNT`, tedy „cena platí za
+balení". Dřívější radio „Kus / Hmotnost / Objem" nutilo odpovědět na nezodpověditelné (rohlík:
+kus, nebo hmotnost?) a přitom `COUNT` znamenal přesně totéž co nevyplněná gramáž — kusovou
+hodnotu formulář poslat nikdy neuměl, `visibleNetContent` ji u `COUNT` vždy zahodila. Počet
+kusů v balení zůstává vlastním volitelným polem (`piecesInPack`), to je jiná informace.
+Přepínač váhového zboží se tím osamostatnil: stojí nad blokem gramáže, je vidět vždy a zapnutý
+blok celý skryje, protože server u váhového zboží gramáž ignoruje (`net_content_base` = 1) a za
+kg/l/kus se cena označuje až při zápisu ceny (`QuantityBasis`).
 
 ## Výpis „Moje příspěvky"
 

@@ -278,6 +278,19 @@ v `docs/datovy-model.md`, „Uživatelská vrstva nad globálními daty". Práh 
 Práh by ho navíc zavřel právě těm, kdo na cizojazyčné zboží narážejí nejčastěji — novým
 uživatelům. Obrana je stejná jako u zbytku katalogu: nahlášení a moderace.
 
+**Formulář nabízí jazyk appky a jazyk ZEMĚ, zbytek až na vyžádání.** Pole „Název" je vždy
+v jazyce appky; sekce „Názvy v jiných jazycích" je sbalená a **nerozbaluje se sama ani tehdy,
+když OFF zná zboží jen cizojazyčně** — ten název je vidět v upozornění pod polem a rozbalená
+sekce by místo něj ukázala hlavně prázdná pole. Po rozkliknutí je první (a jediné) pole jazyka
+zvolené země podle `CountryInfo.defaultLocale` (`app.i18n.country-locale`), pokud se od jazyka
+appky liší; ostatní jazyky jsou za druhým rozkliknutím „Další jazyky". Motivace: kdo má appku
+česky a nakupuje na Slovensku, opisuje z obalu slovenský název — angličtina, polština a němčina
+jsou v tu chvíli šum. Země tím **nepřebírá roli jazyka**: `defaultLocale` je tu jen nápověda,
+který další jazyk nabídnout, volba jazyka UI zůstává čistě na klientovi (viz „Volba jazyka je
+na klientovi" výš). Klienti si hodnotu berou z už existujícího `Query.countries`
+(`CountryService.countries()` na webu, `CountryStore.countryLocale` na mobilu), ne z vlastní
+kopie mapy.
+
 **Hledání matchuje napříč VŠEMI jazyky**, ne jen tím zobrazovaným — kdo v české appce napíše
 „Magnesia", musí zboží najít, i když ho uvidí pod českým názvem. `ProductSearchRepositoryImpl`
 má proto v UNIONu `candidate` větev pro `core.product_name` i `off.product_name` bez filtru na
