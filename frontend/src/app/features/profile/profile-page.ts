@@ -139,13 +139,24 @@ export class ProfilePage {
           this.loadError.set(this.transloco.translate('profile.loadFailed'));
           return;
         }
-        this.applyProfile(viewer.profile);
+        this.applyViewer(viewer);
       },
       error: () => {
         this.loading.set(false);
         this.loadError.set(this.transloco.translate('profile.loadFailed'));
       },
     });
+  }
+
+  /**
+   * Přezdívka sedí na `Viewer`, ne na `Profile` — formulář ji proto musí plnit odsud, jinak by
+   * v něm zůstala prázdná a `save` by ji poslala jako `clearDisplayName: true`, tzn. uložení
+   * jakékoli jiné změny profilu by uživateli přezdívku SMAZALO. Mobilní protějšek:
+   * `ProfileViewModel.applyViewer`.
+   */
+  private applyViewer(viewer: { displayName: string | null; profile: Profile }): void {
+    this.displayName.set(viewer.displayName ?? '');
+    this.applyProfile(viewer.profile);
   }
 
   private applyProfile(profile: Profile): void {
@@ -212,7 +223,7 @@ export class ProfilePage {
     this.viewerService.updateProfile(input).subscribe({
       next: (viewer) => {
         this.saving.set(false);
-        this.applyProfile(viewer.profile);
+        this.applyViewer(viewer);
         this.saveMessage.set(this.transloco.translate('profile.save.success'));
       },
       error: (err) => {

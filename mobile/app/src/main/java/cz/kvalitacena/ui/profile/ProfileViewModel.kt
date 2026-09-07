@@ -16,6 +16,7 @@ import cz.kvalitacena.network.Photo
 import cz.kvalitacena.network.Profile
 import cz.kvalitacena.network.ProfileFieldAudience
 import cz.kvalitacena.network.UpdateProfileInput
+import cz.kvalitacena.network.Viewer
 import cz.kvalitacena.ui.common.ALLOWED_PHOTO_MIME_TYPES
 import cz.kvalitacena.ui.common.MAX_PHOTO_BYTES
 import cz.kvalitacena.ui.common.UiText
@@ -111,7 +112,7 @@ class ProfileViewModel(
         // obstará sám (`AuthRepository.validAccessToken`), včetně toho, že počká na obnovu,
         // která zrovna běží. Anonymní chod appky (T0) tím pořád není podmíněný.
         val viewer = graphQlClient.me()
-        viewer?.profile?.let { applyProfile(it) }
+        viewer?.let { applyViewer(it) }
         if (viewer?.profile == null) loadError = UiText.Res(R.string.profile_load_failed)
       } catch (e: Exception) {
         loadError = e.toUiText()
@@ -119,6 +120,16 @@ class ProfileViewModel(
         loading = false
       }
     }
+  }
+
+  /**
+   * Přezdívka sedí na [Viewer], ne na [Profile] — formulář ji proto musí plnit odsud, jinak by
+   * v něm zůstala prázdná a [save] by ji poslala jako `clearDisplayName = true`, tzn. uložení
+   * jakékoli jiné změny profilu by uživateli přezdívku SMAZALO.
+   */
+  private fun applyViewer(viewer: Viewer) {
+    displayName = viewer.displayName.orEmpty()
+    viewer.profile?.let { applyProfile(it) }
   }
 
   private fun applyProfile(profile: Profile) {
@@ -167,7 +178,7 @@ class ProfileViewModel(
     viewModelScope.launch {
       try {
         val viewer = graphQlClient.updateProfile(input)
-        viewer.profile?.let { applyProfile(it) }
+        applyViewer(viewer)
         saveSuccess = true
       } catch (e: Exception) {
         saveError = e.toUiText()
