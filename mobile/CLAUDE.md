@@ -25,7 +25,22 @@ build-tools) při buildu sám dostáhne.
 Emulátor (AVD `Medium_Phone`) je vyzkoušený a funkční — `~/Android/Sdk/emulator/emulator -avd
 Medium_Phone -no-snapshot -no-boot-anim -gpu swiftshader_indirect` (Mesa/X11 GPU passthrough
 v tomto stroji párkrát spadl s X errorem, `swiftshader_indirect` /software renderování/ je
-spolehlivější). Instalace/spuštění: `adb install -r app/build/outputs/apk/debug/app-debug.apk`
+spolehlivější). Založení AVD na novém stroji (aby byla na všech vývojových strojích stejná —
+profil `medium_phone` zná až moderní `cmdline-tools`, ne staré `tools/`, jejichž `avdmanager`
+na dnešním JDK ani nenaběhne):
+
+```bash
+sdkmanager "system-images;android-36;google_apis;x86_64"   # targetSdk projektu, BEZ Play Store
+avdmanager create avd -n Medium_Phone -k "system-images;android-36;google_apis;x86_64" -d medium_phone
+sed -i '/^disk\.dataPartition\.path=<temp>$/d;s/^disk\.dataPartition\.size=.*/disk.dataPartition.size=6G/;s/^hw\.ramSize=.*/hw.ramSize=4096M/' \
+  ~/.android/avd/Medium_Phone.avd/config.ini
+```
+
+Obraz je záměrně `google_apis`, ne `google_apis_playstore` — appka má běžet i bez GMS (viz
+Konvence níž), na Play obrazu by se to neověřilo. `sed` je nutný: výchozí datový oddíl je
+`<temp>` (po vypnutí by zahodil nainstalované appky) a 800 MB s 1,5 GB RAM.
+
+Instalace/spuštění: `adb install -r app/build/outputs/apk/debug/app-debug.apk`
 + `adb shell am start -n cz.kvalitacena/.MainActivity`. Emulátor vidí hostitelský backend na
 `10.0.2.2:8080` (viz `network/ApiConfig.kt` a `network_security_config.xml`, který tam
 cleartext HTTP výslovně povoluje jen pro dev). `../start-dev.sh` z kořenu repa udělá build,
