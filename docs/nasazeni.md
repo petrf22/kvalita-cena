@@ -238,6 +238,14 @@ domény na server (krok 4) — build appky na serveru je nejpravděpodobnější
    do `trap ... EXIT`, ať doběhne i při selhání dřívějšího kroku, a doplněna o desktopovou
    notifikaci (`notify-send`) při selhání nebo zálohy starší 2 dnů — viz `ops/README.md`,
    „Vyhrazený klíč pro pull-backup.sh" a „Hlášení selhání a zastaralé zálohy".
+7. [x] **Odlišit prompt na serveru od lokálního** — hotovo 2026-09-07. Terminál přes ssh vypadal
+   stejně jako lokální (obojí výchozí Ubuntu prompt), takže nebylo na první pohled poznat, kde
+   příkaz doopravdy poběží — a tady jsou příkazy, které jinde nevadí a tady jsou nevratné (`down
+   -v` v kroku 5 výš). `ops/prod-prompt.sh` (viz `ops/README.md`) dává promptu i titulku okna
+   bílý štítek `PRODUKCE` na červeném pozadí; na server se kopíruje jako `~/.prod-prompt.sh`
+   a sourcuje z konce `~/.bashrc` uživatele `kvalitacena`. Ověřeno: prompt červený, `ssh
+   <server> 'echo ok'` i `scp` beze změny (skript se uplatní jen v interaktivním shellu, jinak
+   by se rozbil cron záloh a `ops/pull-backup.sh`).
 
 ## 3. SMTP pro OTP e-maily — Gigaserver (rozhodnuto 2026-08-22)
 
