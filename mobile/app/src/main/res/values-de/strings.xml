@@ -488,6 +488,8 @@
     <string name="product_form_foreign_name_warning">Der Artikel hat bisher nur einen Namen %1$s: „%2$s“. Bitte ergänze einen in deiner Sprache — die vorhandene Fassung geht nicht verloren.</string>
     <string name="product_form_other_names_show">Namen in anderen Sprachen</string>
     <string name="product_form_other_names_hide">Andere Sprachen ausblenden</string>
+    <string name="product_form_other_names_more_show">Weitere Sprachen</string>
+    <string name="product_form_other_names_more_hide">Weitere Sprachen ausblenden</string>
     <string name="product_form_other_names_hint">Optional. Eine Sprache, die der Artikel noch nicht hat, sehen alle; das Überschreiben eines vorhandenen Namens gilt nur für dich.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>

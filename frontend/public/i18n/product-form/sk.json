@@ -10,6 +10,8 @@
   "foreignNameWarning": "Tovar má zatiaľ názov len {{lang}}: „{{name}}“. Doplň prosím názov vo svojom jazyku — cudzojazyčná verzia sa nikam nestratí.",
   "otherNamesShow": "Názvy v iných jazykoch",
   "otherNamesHide": "Skryť iné jazyky",
+  "otherNamesMoreShow": "Ďalšie jazyky",
+  "otherNamesMoreHide": "Skryť ďalšie jazyky",
   "otherNamesHint": "Voliteľné. Vyplnený jazyk, ktorý tovar zatiaľ nemá, uvidia všetci; prepísanie existujúceho názvu platí len pre teba.",
   "suggestionsWarning": "Nemyslíš skôr niektorú z týchto položiek?",
   "genericTag": "druhová položka",

@@ -35,8 +35,14 @@ import {
   UnitBase,
 } from '../../models/catalog';
 import type { CategoriesQuery } from '../../models/generated/graphql';
+import { CountryService } from '../../services/country-service';
 import { FormatService } from '../../services/format-service';
-import { AVAILABLE_LANGS, INTL_TAGS, LanguageService } from '../../services/language-service';
+import {
+  AVAILABLE_LANGS,
+  INTL_TAGS,
+  LanguageService,
+  isAppLang,
+} from '../../services/language-service';
 import { MediaService } from '../../services/media-service';
 import { ProductService } from '../../services/product-service';
 import { buildCategoryTree, categoryBreadcrumb } from '../../shared/category-tree';
@@ -115,6 +121,7 @@ export class ProductForm {
   protected readonly format = inject(FormatService);
   private readonly transloco = inject(TranslocoService);
   private readonly language = inject(LanguageService);
+  private readonly country = inject(CountryService);
 
   /**
    * Naskenovaný/zadaný kód, který se v katalogu nenašel — předvyplní pole kódu a zkusí, jestli
@@ -156,11 +163,30 @@ export class ProductForm {
    * (u OFF hodnot je to podmínka ODbL, ne úspora — viz `changedNames`).
    */
   protected readonly nameLang = computed(() => this.language.lang());
-  protected readonly otherLangs = computed(() =>
+
+  /**
+   * Jazyk zvolené ZEMĚ, když se liší od jazyka appky — jediný další jazyk, který formulář
+   * nabízí sám. Kdo má appku česky a nakupuje na Slovensku, opisuje z obalu slovenský název;
+   * angličtina/polština/němčina jsou v takové chvíli šum a schovají se za „Další jazyky".
+   * Zdroj je `CountryInfo.defaultLocale` ze serveru (`app.i18n.country-locale`), ne vlastní
+   * kopie mapy — než dotaz doběhne, je `null` a sekce se chová jako dřív.
+   */
+  protected readonly countryLang = computed(() => {
+    const lang = this.country
+      .countries()
+      .find((c) => c.code === this.country.country())?.defaultLocale;
+    return lang && lang !== this.nameLang() && isAppLang(lang) ? lang : null;
+  });
+  /** Zbylé jazyky za druhým rozkliknutím — jazyk appky ani jazyk země mezi nimi znovu nejsou. */
+  protected readonly moreLangs = computed(() =>
+    AVAILABLE_LANGS.filter((l) => l !== this.nameLang() && l !== this.countryLang()),
+  );
+  private readonly otherLangs = computed(() =>
     AVAILABLE_LANGS.filter((l) => l !== this.nameLang()),
   );
   protected readonly otherNames = signal<Record<string, string>>({});
   protected readonly otherNamesExpanded = signal(false);
+  protected readonly moreLangsExpanded = signal(false);
   private sourceNames: Record<string, string> = {};
 
   /** Název, který zboží zatím má jen v cizím jazyce — podklad pro upozornění nad formulářem. */
@@ -271,6 +297,10 @@ export class ProductForm {
     this.otherNamesExpanded.update((expanded) => !expanded);
   }
 
+  toggleMoreLangs(): void {
+    this.moreLangsExpanded.update((expanded) => !expanded);
+  }
+
   onNameChange(value: string): void {
     this.name.set(value);
     clearTimeout(this.suggestionsTimer);
@@ -301,9 +331,9 @@ export class ProductForm {
     this.offDefaults = defaults;
     this.sourceNames = defaults.names;
     this.otherNames.set({ ...defaults.names });
-    // Cizojazyčný název sám sekci rozbalí — uživatel má hned vidět, co o zboží víme,
-    // i když do pole "Název" musí češtinu doplnit sám.
-    if (!defaults.name && Object.keys(defaults.names).length > 0) this.otherNamesExpanded.set(true);
+    // Sekce ostatních jazyků se ZÁMĚRNĚ nerozbaluje sama, ani když OFF zná zboží jen
+    // cizojazyčně — ten název je vidět v upozornění pod polem „Název" a rozbalená sekce by
+    // místo toho ukázala hlavně prázdná pole jazyků, které nikdo nevyplní.
     if (defaults.name) this.name.set(defaults.name);
     if (defaults.brandName) this.brandName.set(defaults.brandName);
     if (defaults.categoryId) this.selectedCategoryId.set(defaults.categoryId);

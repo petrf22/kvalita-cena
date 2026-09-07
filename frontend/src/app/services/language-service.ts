@@ -51,7 +51,8 @@ export const DATE_INPUT_FORMATS: Record<AppLang, string> = {
 
 const STORAGE_KEY = 'kac.lang';
 
-function isAppLang(value: string): value is AppLang {
+/** Je to jazyk, který appka umí? Zúží `string` ze serveru/localStorage na `AppLang`. */
+export function isAppLang(value: string): value is AppLang {
   return (AVAILABLE_LANGS as readonly string[]).includes(value);
 }
 

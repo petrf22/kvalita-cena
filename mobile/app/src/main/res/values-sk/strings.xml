@@ -486,6 +486,8 @@
     <string name="product_form_foreign_name_warning">Tovar má zatiaľ názov len %1$s: „%2$s“. Doplň prosím názov vo svojom jazyku — cudzojazyčná verzia sa nikam nestratí.</string>
     <string name="product_form_other_names_show">Názvy v iných jazykoch</string>
     <string name="product_form_other_names_hide">Skryť iné jazyky</string>
+    <string name="product_form_other_names_more_show">Ďalšie jazyky</string>
+    <string name="product_form_other_names_more_hide">Skryť ďalšie jazyky</string>
     <string name="product_form_other_names_hint">Voliteľné. Vyplnený jazyk, ktorý tovar zatiaľ nemá, uvidia všetci; prepísanie existujúceho názvu platí len pre teba.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
