@@ -9,10 +9,15 @@ export interface OtpRequestResponse {
   resendAfterSec: number;
 }
 
+/**
+ * `expiresInSec` je životnost PŘILOŽENÉHO access tokenu (server `TokenResponse`), ne refresh
+ * cookie — appka podle ní obnovuje preventivně, viz `AuthService.validAccessToken`.
+ */
 export interface TokenResponse {
   accessToken: string;
   refreshToken: string | null;
   newUser: boolean;
+  expiresInSec: number;
 }
 
 /**

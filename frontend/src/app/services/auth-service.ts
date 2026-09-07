@@ -1,6 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, catchError, map, of, tap } from 'rxjs';
+import { Observable, catchError, finalize, map, of, shareReplay, tap } from 'rxjs';
 import {
   AccountDeleteRequestResponse,
   EmailChangeRequestResponse,
@@ -17,11 +17,86 @@ import {
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  /**
+   * Rezerva před vypršením: token, kterému zbývá míň, se považuje za neplatný a obnoví se dřív,
+   * než se s ním vyrazí na server — jinak by stihl vypršet cestou tam a server by request tiše
+   * odbavil jako ANONYMNÍ. Mobilní protějšek: `auth/AccessTokenExpiry.kt`.
+   */
+  private static readonly REFRESH_MARGIN_MS = 30_000;
+
   private readonly http = inject(HttpClient);
   private readonly accessTokenSignal = signal<string | null>(null);
+  /** `performance.now()`, ne `Date.now()` — životnost tokenu je doba, ne okamžik, takže
+   *  přenastavení systémových hodin nesmí platný token prohlásit za prošlý ani naopak. */
+  private readonly expiresAtSignal = signal<number | null>(null);
+  private refreshInFlight: Observable<string | null> | null = null;
 
   readonly accessToken = this.accessTokenSignal.asReadonly();
   readonly isLoggedIn = computed(() => this.accessTokenSignal() !== null);
+
+  /**
+   * Jediný způsob, jak se dostat k access tokenu pro request — vrátí ho, dokud je JEŠTĚ platný,
+   * jinak ho tiše obnoví z refresh cookie.
+   *
+   * Čekat s obnovou na chybu ze serveru nejde: prošlý access token `JwtAuthenticationFilter`
+   * mlčky zahodí a request doběhne jako ANONYMNÍ (HTTP 200, žádné `errors`), takže dotaz
+   * s anonymní variantou — `me`, hledání s vlastními DRAFTy, okno grafu — vrátí normální, jen
+   * ochuzenou odpověď. Appka pak tvrdila "přihlášen" a přitom serveru byla cizí (záložka
+   * nechaná otevřená přes 10 minut). Mobilní protějšek: `AuthRepository.validAccessToken`.
+   */
+  validAccessToken(): Observable<string | null> {
+    const usable = this.usableAccessToken();
+    if (usable !== null) return of(usable);
+    // Anonym nemá co obnovovat — refresh cookie je httpOnly, takže "nemáme token" je jediné,
+    // co o tom appka ví, a je to totéž kritérium jako `isLoggedIn`.
+    if (this.accessTokenSignal() === null) return of(null);
+    return this.sharedRefresh();
+  }
+
+  private usableAccessToken(): string | null {
+    const token = this.accessTokenSignal();
+    const expiresAt = this.expiresAtSignal();
+    if (token === null || expiresAt === null) return null;
+    return performance.now() < expiresAt - AuthService.REFRESH_MARGIN_MS ? token : null;
+  }
+
+  /**
+   * Obnova běží vždy jen jednou (single-flight) a ostatní na ni počkají — refresh token na
+   * serveru ROTUJE a jeho znovupoužití mimo 30s grace okno revokuje celou rodinu tokenů
+   * (`RefreshTokenService.rotate`), takže dva souběžné požadavky by uživatele odhlásily
+   * "kvůli podezření na krádež".
+   */
+  private sharedRefresh(): Observable<string | null> {
+    if (this.refreshInFlight) return this.refreshInFlight;
+    const inFlight: Observable<string | null> = this.refresh().pipe(
+      map(() => this.accessTokenSignal()),
+      catchError((error: unknown) => {
+        // 401 znamená neplatnou/prošlou/revokovanou refresh cookie (`SESSION_EXPIRED`) —
+        // session je fakticky pryč a musí zmizet i z appky, ať `isLoggedIn` nelže. Cokoli
+        // jiného (výpadek sítě, chyba serveru) session NECHÁVÁ být: odhlásit člověka kvůli
+        // vypadlému wi-fi by ho připravilo o přihlášení pro nic.
+        if (error instanceof HttpErrorResponse && error.status === 401) this.clearSession();
+        return of(null);
+      }),
+      finalize(() => {
+        if (this.refreshInFlight === inFlight) this.refreshInFlight = null;
+      }),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    this.refreshInFlight = inFlight;
+    return inFlight;
+  }
+
+  private applyToken(token: TokenResponse): void {
+    this.accessTokenSignal.set(token.accessToken);
+    this.expiresAtSignal.set(performance.now() + token.expiresInSec * 1000);
+  }
+
+  /** Konec session — ať `isLoggedIn` (a všechno na něm založené) napříč appkou nelže. */
+  private clearSession(): void {
+    this.accessTokenSignal.set(null);
+    this.expiresAtSignal.set(null);
+  }
 
   requestOtp(email: string): Observable<OtpRequestResponse> {
     return this.http.post<OtpRequestResponse>('/api/auth/otp/request', { email });
@@ -43,38 +118,35 @@ export class AuthService {
         { challengeUid, code, email, termsAccepted },
         { withCredentials: true },
       )
-      .pipe(tap((token) => this.accessTokenSignal.set(token.accessToken)));
+      .pipe(tap((token) => this.applyToken(token)));
   }
 
   /** Zkusí obnovit přihlášení z httpOnly cookie (volá se při startu appky). */
   refresh(): Observable<TokenResponse> {
     return this.http
       .post<TokenResponse>('/api/auth/refresh', {}, { withCredentials: true })
-      .pipe(tap((token) => this.accessTokenSignal.set(token.accessToken)));
+      .pipe(tap((token) => this.applyToken(token)));
   }
 
   /**
-   * Přístupový token vypršel/je neplatný — server to od "nikdy nepřihlášen" nerozezná
-   * (mobilní protějšek: `AuthRepository.recoverFromUnauthorized` v `auth/AuthRepository.kt`).
-   * Nejdřív zkusí tichý refresh (httpOnly cookie s refresh tokenem bývá pořád platná); až
-   * když selže i ten, `accessToken` signál se vyčistí, ať `isLoggedIn` (na něm založené)
-   * přestane napříč appkou lhát — jinak zůstávala appka v nekonzistentním stavu: jedna
-   * obrazovka dál hlásila "Přihlášen", zatímco jiná ukazovala "vyžaduje přihlášení".
+   * Server odmítl token, který appka považovala za platný — vypršet neměl (`validAccessToken`
+   * ho hlídá), takže jde o důvod na straně serveru: inkrement `token_version` (globální
+   * odhlášení), pozastavený účet, restart backendu s jiným `JWT_SECRET`. Mobilní protějšek:
+   * `AuthRepository.recoverFromUnauthorized` v `auth/AuthRepository.kt`.
+   *
+   * `usedToken` je token, se kterým volající narazil — když mezitím obnovu udělal jiný
+   * souběžný požadavek, další rotace se nekoná.
    */
-  recoverFromUnauthorized(): Observable<boolean> {
-    return this.refresh().pipe(
-      map(() => true),
-      catchError(() => {
-        this.accessTokenSignal.set(null);
-        return of(false);
-      }),
-    );
+  recoverFromUnauthorized(usedToken: string | null): Observable<boolean> {
+    const current = this.usableAccessToken();
+    if (current !== null && current !== usedToken) return of(true);
+    return this.sharedRefresh().pipe(map((token) => token !== null));
   }
 
   logout(): Observable<void> {
     return this.http
       .post<void>('/api/auth/logout', {}, { withCredentials: true })
-      .pipe(tap(() => this.accessTokenSignal.set(null)));
+      .pipe(tap(() => this.clearSession()));
   }
 
   /**
@@ -108,6 +180,6 @@ export class AuthService {
   confirmAccountDelete(challengeUid: string, code: string): Observable<void> {
     return this.http
       .post<void>('/api/me/delete/confirm', { challengeUid, code })
-      .pipe(tap(() => this.accessTokenSignal.set(null)));
+      .pipe(tap(() => this.clearSession()));
   }
 }

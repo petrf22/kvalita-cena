@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { map } from 'rxjs';
+import { defer, map, of, switchMap } from 'rxjs';
+import { AuthService } from './auth-service';
 import { GraphQlService } from './graphql-service';
 import { graphql } from '../models/generated';
 import type { UpdateProfileInput } from '../models/generated/graphql';
@@ -7,8 +8,18 @@ import type { UpdateProfileInput } from '../models/generated/graphql';
 @Injectable({ providedIn: 'root' })
 export class ViewerService {
   private readonly graphQl = inject(GraphQlService);
+  private readonly auth = inject(AuthService);
 
-  /** Veřejná identita přihlášeného uživatele — null pro anonyma. */
+  /**
+   * Veřejná identita přihlášeného uživatele — null pro anonyma.
+   *
+   * `me` je jediný dotaz, kde odmítnutý token NENÍ k rozeznání od anonyma: server vrátí prostě
+   * `null` bez `errors` (`ViewerGraphQlController.me`), takže obecná recovery v `GraphQlService`
+   * se na něm nikdy nechytí. Když jsme se ptali S tokenem a přišlo `null`, token tedy server
+   * neuznal — jednou zkusíme obnovu a dotaz zopakujeme; když je `null` i podruhé, session je
+   * opravdu pryč a `recoverFromUnauthorized` ji už zrušila. Mobilní protějšek:
+   * `GraphQlClient.me()`.
+   */
   me() {
     const document = graphql(`
       query Me {
@@ -26,7 +37,18 @@ export class ViewerService {
         }
       }
     `);
-    return this.graphQl.execute(document).pipe(map((data) => data.me));
+    const query = () => this.graphQl.execute(document).pipe(map((data) => data.me));
+    return defer(() => {
+      const tokenBefore = this.auth.accessToken();
+      return query().pipe(
+        switchMap((viewer) => {
+          if (viewer || tokenBefore === null) return of(viewer);
+          return this.auth
+            .recoverFromUnauthorized(tokenBefore)
+            .pipe(switchMap((recovered) => (recovered ? query() : of(null))));
+        }),
+      );
+    });
   }
 
   /**
