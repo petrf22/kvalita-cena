@@ -33,6 +33,13 @@ public class CatalogProperties {
   /** Kolik různých účtů musí variantu názvu použít s cenou, než vstoupí do veřejného hledání. */
   private int aliasConfirmations;
   /**
+   * Kolik různých účtů musí mapování obchodního označení na zboží (core.product_store_label)
+   * potvrdit zápisem ceny, než se začne používat k automatickému párování řádků účtenky.
+   * Vlastní práh, ne sdílený s {@link #aliasConfirmations}: alias jen doplňuje našeptávač,
+   * kdežto špatné mapování tiše přiřadí cenu jinému zboží (docs/rozvoj.md).
+   */
+  private int labelConfirmations;
+  /**
    * Práh podobnosti názvu pro našeptávač a kontrolu duplicit (pg_trgm, 0–1). Nižší číslo
    * nabídne víc a riskuje šum, vyšší nechá vzniknout duplicitu — proto konfigurace, ne
    * konstanta v dotazu.

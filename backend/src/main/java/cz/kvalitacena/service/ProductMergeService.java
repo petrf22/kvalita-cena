@@ -63,6 +63,7 @@ public class ProductMergeService {
     mergeReviews(sourceId, targetId, moderatorUserId);
     mergeUserEdits(sourceId, targetId);
     mergeAliases(source, target);
+    mergeStoreLabels(sourceId, targetId);
     mergeObservations(sourceId, targetId);
 
     // Staré agregáty zdroje už nesmějí nikde přežít. Cíl se přepočítá z právě sjednocených
@@ -211,6 +212,48 @@ public class ProductMergeService {
           SELECT count(DISTINCT user_id) FROM core.product_alias_confirmation WHERE alias_id = alias.id
         ) >= ?
         """, target.getId(), catalogProperties.getAliasConfirmations());
+  }
+
+  /**
+   * Mapování obchodních označení (core.product_store_label) musí do sloučení stejně jako kódy
+   * a aliasy — bez toho by sloučení duplicity rozbilo párování řádků účtenky, které předtím
+   * fungovalo (docs/rozvoj.md).
+   *
+   * <p>Unikát je na označení v ROZSAHU, ne na dvojici (označení, zboží): když se obě položky
+   * hlásí k téže zkratce v témže řetězci, kolize se řeší ve prospěch cíle a řádek zdroje se
+   * zahodí i s hlasy, protože cíl už tutéž zkratku má.
+   */
+  private void mergeStoreLabels(Long sourceId, Long targetId) {
+    jdbcTemplate.update("""
+        INSERT INTO core.product_store_label_confirmation(label_id, user_id, created_at)
+        SELECT target.id, confirmation.user_id, confirmation.created_at
+        FROM core.product_store_label source
+        JOIN core.product_store_label target ON target.product_id = ?
+          AND core.norm_text(target.label) = core.norm_text(source.label)
+          AND COALESCE(target.chain_id, 0) = COALESCE(source.chain_id, 0)
+          AND COALESCE(target.store_id, 0) = COALESCE(source.store_id, 0)
+        JOIN core.product_store_label_confirmation confirmation ON confirmation.label_id = source.id
+        WHERE source.product_id = ? AND confirmation.user_id IS NOT NULL
+        ON CONFLICT (label_id, user_id) WHERE user_id IS NOT NULL DO NOTHING
+        """, targetId, sourceId);
+    jdbcTemplate.update("""
+        DELETE FROM core.product_store_label source
+        USING core.product_store_label target
+        WHERE source.product_id = ? AND target.product_id = ?
+          AND core.norm_text(source.label) = core.norm_text(target.label)
+          AND COALESCE(source.chain_id, 0) = COALESCE(target.chain_id, 0)
+          AND COALESCE(source.store_id, 0) = COALESCE(target.store_id, 0)
+        """, sourceId, targetId);
+    jdbcTemplate.update("UPDATE core.product_store_label SET product_id = ? WHERE product_id = ?",
+        targetId, sourceId);
+    jdbcTemplate.update("""
+        UPDATE core.product_store_label label SET status = 'ACTIVE',
+          activated_at = COALESCE(activated_at, CURRENT_TIMESTAMP)
+        WHERE label.product_id = ? AND label.status = 'PENDING' AND (
+          SELECT count(DISTINCT user_id) FROM core.product_store_label_confirmation
+          WHERE label_id = label.id
+        ) >= ?
+        """, targetId, catalogProperties.getLabelConfirmations());
   }
 
   private void mergeObservations(Long sourceId, Long targetId) {

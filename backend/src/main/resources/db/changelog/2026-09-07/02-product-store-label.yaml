@@ -1,0 +1,161 @@
+# 02-product-store-label.yaml — most mezi označením zboží na účtence a katalogovou položkou.
+#
+# Účtenka mluví názvoslovím obchodu, ne katalogu: "ROHLÍK43GR", ne EAN a ne "Rohlík tukový
+# 43 g". Bez tohohle mostu se z vytěžené účtenky nedá udělat cenový zápis (docs/rozvoj.md,
+# "Mapování obchodního označení zboží na katalogovou položku").
+#
+# Proč ne core.product_alias, který vypadá podobně:
+#   - alias je GLOBÁLNÍ pro produkt a bez rozsahu, tohle je vázané na řetězec/provozovnu,
+#   - alias míří do veřejného našeptávače; interní zkratky jednoho řetězce tam nepatří,
+#   - unikátnost aliasu je (product_id, name) — tady je směr OPAČNÝ: párování jde
+#     označení -> zboží, takže jedno označení smí v jednom rozsahu ukazovat nejvýš na jednu
+#     položku. Dvě položky se stejnou zkratkou v témže řetězci nejsou legitimní stav, ale
+#     případ pro moderaci (typicky duplicita ke sloučení).
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-07-02-product-store-label
+      author: Petr F.
+      changes:
+        - createTable:
+            schemaName: core
+            tableName: product_store_label
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: product_id
+                  type: BIGINT
+                  remarks: >
+                    FK na katalogovou položku, ne na kód — EAN je jen jeden z identifikátorů
+                    zboží a mapování musí přežít mergeProducts.
+                  constraints: { nullable: false }
+              - column:
+                  name: label
+                  type: VARCHAR(200)
+                  constraints: { nullable: false }
+              - column:
+                  name: chain_id
+                  type: BIGINT
+              - column:
+                  name: store_id
+                  type: BIGINT
+              - column:
+                  name: status
+                  type: VARCHAR(10)
+                  defaultValue: PENDING
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints: { nullable: false }
+              - column:
+                  name: activated_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: last_seen_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  remarks: >
+                    Když řetězec zboží přejmenuje, staré označení nezmizí, jen přestane chodit —
+                    bez téhle značky nejde poznat mrtvé mapování od živého.
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_product_store_label_product
+            baseTableSchemaName: core
+            baseTableName: product_store_label
+            baseColumnNames: product_id
+            referencedTableSchemaName: core
+            referencedTableName: product
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_product_store_label_chain
+            baseTableSchemaName: core
+            baseTableName: product_store_label
+            baseColumnNames: chain_id
+            referencedTableSchemaName: core
+            referencedTableName: retail_chain
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_product_store_label_store
+            baseTableSchemaName: core
+            baseTableName: product_store_label
+            baseColumnNames: store_id
+            referencedTableSchemaName: core
+            referencedTableName: store
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createTable:
+            schemaName: core
+            tableName: product_store_label_confirmation
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: label_id
+                  type: BIGINT
+                  constraints: { nullable: false }
+              - column:
+                  name: user_id
+                  type: BIGINT
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints: { nullable: false }
+        - addForeignKeyConstraint:
+            constraintName: fk_product_store_label_confirmation_label
+            baseTableSchemaName: core
+            baseTableName: product_store_label_confirmation
+            baseColumnNames: label_id
+            referencedTableSchemaName: core
+            referencedTableName: product_store_label
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_product_store_label_confirmation_user
+            baseTableSchemaName: core
+            baseTableName: product_store_label_confirmation
+            baseColumnNames: user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - sql:
+            sql: |
+              ALTER TABLE core.product_store_label
+                ADD CONSTRAINT chk_product_store_label_status
+                  CHECK (status IN ('PENDING', 'ACTIVE')),
+                ADD CONSTRAINT chk_product_store_label_length
+                  CHECK (char_length(btrim(label)) BETWEEN 2 AND 200),
+                -- Rozsah přesně vzorem chk_product_catalog_scope: řetězec tiskne stejné
+                -- zkratky ve všech provozovnách, nezávislý obchod potřebuje vlastní.
+                ADD CONSTRAINT chk_product_store_label_scope
+                  CHECK ((chain_id IS NOT NULL) <> (store_id IS NOT NULL));
+
+              -- COALESCE ze stejného důvodu jako u uq_product_code_code_type_chain:
+              -- NULL v unikátním indexu jinak kolizi nezachytí.
+              CREATE UNIQUE INDEX uq_product_store_label_scope ON core.product_store_label
+                (core.norm_text(label), COALESCE(chain_id, 0), COALESCE(store_id, 0));
+              CREATE INDEX idx_product_store_label_trgm ON core.product_store_label
+                USING gin (core.norm_text(label) gin_trgm_ops);
+              CREATE INDEX idx_product_store_label_product
+                ON core.product_store_label (product_id);
+
+              CREATE UNIQUE INDEX uq_product_store_label_confirmation_user
+                ON core.product_store_label_confirmation (label_id, user_id)
+                WHERE user_id IS NOT NULL;
+              CREATE INDEX idx_product_store_label_confirmation_user
+                ON core.product_store_label_confirmation (user_id, created_at)
+                WHERE user_id IS NOT NULL;
+      rollback:
+        - dropTable: { schemaName: core, tableName: product_store_label_confirmation }
+        - dropTable: { schemaName: core, tableName: product_store_label }
