@@ -64,12 +64,6 @@ import cz.kvalitacena.ui.common.rememberMoneyFormatter
 import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
 import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
 
-private val UNIT_BASE_LABEL_RES = mapOf(
-  "COUNT" to R.string.unit_base_count,
-  "MASS" to R.string.unit_base_mass,
-  "VOLUME" to R.string.unit_base_volume,
-)
-
 /** Zkratky jednotek gramáže/objemu — protějšek `enum.netContentUom.*` na webu. */
 private val NET_CONTENT_UOM_LABEL_RES = mapOf(
   "G" to R.string.net_content_uom_g,
@@ -329,53 +323,56 @@ fun ProductFormScreen(
     )
     Gap()
 
-    Text(stringResource(R.string.product_form_unit_base_label), style = MaterialTheme.typography.titleMedium)
-    Row {
-      UNIT_BASE_LABEL_RES.forEach { (value, labelRes) ->
-        FilterChip(
-          selected = viewModel.unitBase == value,
-          onClick = { formDirty = true; viewModel.onUnitBaseChange(value) },
-          label = { Text(stringResource(labelRes)) },
-          modifier = Modifier.padding(end = 8.dp),
-        )
-      }
+    // Váhové zboží stojí NAD gramáží a skryje ji celou: server u něj net_content_base vždy
+    // nastaví na 1 (NetContentCalculator vrací 1 ještě před kontrolou jednotky) a za kg/l/kus se
+    // cena označuje až při zápisu ceny (QuantityBasis). Ptát se tu na jednotku i číslo by byly
+    // dvě otázky, na jejichž odpovědi se nikdo nikdy nepodívá.
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+      Text(
+        stringResource(R.string.product_form_variable_weight_label),
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.weight(1f),
+      )
+      Switch(checked = viewModel.isVariableWeight, onCheckedChange = { formDirty = true; viewModel.isVariableWeight = it })
     }
+    Text(
+      stringResource(R.string.product_form_variable_weight_hint),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     Gap()
 
-    if (viewModel.unitBase != "COUNT") {
-      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Text(
-          stringResource(R.string.product_form_variable_weight_label),
-          style = MaterialTheme.typography.bodyMedium,
-          modifier = Modifier.weight(1f),
+    if (!viewModel.isVariableWeight) {
+      // Jednotka jde PŘED číslo, protože se v tom pořadí i zadává: uživatel vybere „g" a opíše
+      // z obalu 60. Prázdná volba („—") je zároveň jediný způsob, jak říct „cena platí za celé
+      // balení" — dřívější volba Kus/Hmotnost/Objem byla jen jiný převlek téhož a nutila
+      // odpovídat na otázku, na kterou u rohlíku odpověď není. Přepočet na kg/l dělá server
+      // (net_content_base), do formuláře se nikdy nevrací přepočtená hodnota.
+      Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
+        NetContentUomDropdown(
+          selected = viewModel.netContentUom,
+          onSelect = { formDirty = true; viewModel.netContentUom = it },
+          // Širší než jen na „g"/„ml" — vejde se i popisek prázdné volby („nevyplněno").
+          modifier = Modifier.width(160.dp),
         )
-        Switch(checked = viewModel.isVariableWeight, onCheckedChange = { formDirty = true; viewModel.isVariableWeight = it })
-      }
-      Gap()
-
-      if (!viewModel.isVariableWeight) {
-        // Jednotka jde PŘED číslo, protože se v tom pořadí i zadává: uživatel vybere „g" a
-        // opíše z obalu 60. Přepočet na kg/l dělá server (net_content_base), do formuláře se
-        // nikdy nevrací přepočtená hodnota.
-        Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
-          NetContentUomDropdown(
-            selected = viewModel.netContentUom,
-            options = netContentUomOptions(viewModel.unitBase),
-            onSelect = { formDirty = true; viewModel.netContentUom = it },
-            modifier = Modifier.width(120.dp),
-          )
+        if (viewModel.netContentUom != null) {
           SingleLineTextField(
             value = viewModel.netContentValue,
             onValueChange = { input -> if (input.matches(Regex("^\\d*[.,]?\\d*$"))) { formDirty = true; viewModel.netContentValue = input } },
-            label = stringResource(
-              if (viewModel.unitBase == "MASS") R.string.product_form_mass_label else R.string.product_form_volume_label,
-            ),
+            label = stringResource(R.string.product_form_net_content_label),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.padding(start = 8.dp).weight(1f),
           )
         }
-        Gap()
       }
+      if (viewModel.netContentUom == null) {
+        Text(
+          stringResource(R.string.product_form_net_content_none_hint),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+      Gap()
     }
 
     SingleLineTextField(
@@ -499,16 +496,16 @@ private fun OtherNameField(viewModel: ProductFormViewModel, lang: String, onEdit
 }
 
 /**
- * Jednotka, ve které se zadává gramáž/objem — g/kg u hmotnosti, ml/l u objemu. Nabídka musí
- * sedět na serverovém `NetContentCalculator` ([netContentUomOptions]), jinak by uložení
- * skončilo chybou UOM_MISMATCH.
+ * Jednotka, ve které se zadává gramáž/objem, a zároveň jediná otázka na základní jednotku:
+ * z g/kg vyjde MASS, z ml/l VOLUME ([unitBaseForUom]) a prázdná volba znamená „cena platí za
+ * balení". Nabídka musí sedět na serverovém `NetContentCalculator`, jinak by uložení skončilo
+ * chybou UOM_MISMATCH.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NetContentUomDropdown(
-  selected: String,
-  options: List<String>,
-  onSelect: (String) -> Unit,
+  selected: String?,
+  onSelect: (String?) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   var expanded by remember { mutableStateOf(false) }
@@ -527,7 +524,7 @@ private fun NetContentUomDropdown(
       modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
     )
     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-      options.forEach { value ->
+      (listOf(null) + NET_CONTENT_UOM_CHOICES).forEach { value ->
         DropdownMenuItem(
           text = { Text(netContentUomLabel(value)) },
           onClick = {
@@ -541,8 +538,10 @@ private fun NetContentUomDropdown(
 }
 
 @Composable
-private fun netContentUomLabel(uom: String): String =
-  NET_CONTENT_UOM_LABEL_RES[uom]?.let { stringResource(it) } ?: uom
+private fun netContentUomLabel(uom: String?): String = when (uom) {
+  null -> stringResource(R.string.product_form_net_content_uom_none)
+  else -> NET_CONTENT_UOM_LABEL_RES[uom]?.let { stringResource(it) } ?: uom
+}
 
 /**
  * Jméno jazyka pro popisky a upozornění ("česky", "německy") — přes `values/` resources, takže

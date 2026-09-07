@@ -259,9 +259,6 @@
     <string name="quantity_basis_per_l">Za liter</string>
     <string name="quantity_basis_per_piece">Za kus</string>
 
-    <string name="unit_base_count">Kus</string>
-    <string name="unit_base_mass">Hmotnosť</string>
-    <string name="unit_base_volume">Objem</string>
 
     <string name="sort_report_count">Podľa počtu hlásení</string>
     <string name="sort_price_asc">Podľa ceny</string>
@@ -355,10 +352,11 @@
     <string name="product_form_category_label">Kategória</string>
     <string name="product_form_category_placeholder">Vyber kategóriu</string>
     <string name="product_form_brand_label">Značka (voliteľné)</string>
-    <string name="product_form_unit_base_label">Základná jednotka</string>
-    <string name="product_form_variable_weight_label">Váhový tovar (cena vždy za kg/l, bez pevnej gramáže)</string>
-    <string name="product_form_mass_label">Hmotnosť balenia</string>
-    <string name="product_form_volume_label">Objem balenia</string>
+    <string name="product_form_variable_weight_label">Predáva sa na váhu</string>
+    <string name="product_form_variable_weight_hint">Cena na cenovke je za kg/l. Či je za kilo, liter, alebo kus, sa vyberá až pri zápise ceny.</string>
+    <string name="product_form_net_content_label">Hmotnosť / objem balenia</string>
+    <string name="product_form_net_content_uom_none">nevyplnené</string>
+    <string name="product_form_net_content_none_hint">Bez jednotky platí cena za celé balenie.</string>
     <string name="product_form_net_content_uom_label">Jednotka podľa obalu</string>
     <string name="net_content_uom_g">g</string>
     <string name="net_content_uom_kg">kg</string>

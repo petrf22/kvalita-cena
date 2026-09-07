@@ -48,54 +48,66 @@ data class ProductFormDefaults(
 )
 
 /**
- * Jednotky nabídnuté ve formuláři pro danou základní jednotku, v pořadí nabídky. Množina musí
- * sedět na `NetContentCalculator.validateUomMatchesUnitBase` na serveru — nabídnout u MASS
- * litry by znamenalo UOM_MISMATCH až při uložení. První v pořadí (tedy g/ml) je výchozí:
- * většina obalů nese „60 g" nebo „330 ml" a uživatel má opisovat, ne přepočítávat.
+ * Jednotky nabídnuté ve formuláři, v pořadí nabídky. `PCS` mezi nimi schválně NENÍ: kusová
+ * gramáž se nikdy nezadávala (u COUNT se hodnota vždy zahodila, viz [visibleNetContent]) a
+ * „balení bez gramáže" se vyjadřuje prázdnou volbou, ne jednotkou „ks". Menší jednotky (g/ml)
+ * jdou první — většina obalů nese „60 g" nebo „330 ml" a uživatel má opisovat, ne přepočítávat.
  */
-fun netContentUomOptions(unitBase: String): List<String> = when (unitBase) {
-  "MASS" -> listOf("G", "KG")
-  "VOLUME" -> listOf("ML", "L")
-  else -> listOf("PCS")
-}
+val NET_CONTENT_UOM_CHOICES: List<String> = listOf("G", "KG", "ML", "L")
 
 /**
- * Jednotka po přepnutí základní jednotky — současnou volbu nechá být, dokud pro nový [unitBase]
- * dává smysl (MASS→VOLUME musí překlopit g na ml), jinak spadne na výchozí.
+ * Základní jednotka odvozená z toho, co uživatel vybral v comboboxu jednotky — jediné místo,
+ * kde unitBase vzniká. Formulář se na něj od 2026-09 neptá vlastní otázkou („Kus / Hmotnost /
+ * Objem"): na „je rohlík kus, nebo hmotnost?" správná odpověď neexistuje a COUNT stejně
+ * znamenalo přesně totéž co nevyplněná gramáž (net_content_base = 1, cena za balení).
+ *
+ * Mapa je inverzí `NetContentCalculator.validateUomMatchesUnitBase` na serveru — odvodit u „G"
+ * cokoli jiného než MASS by skončilo chybou UOM_MISMATCH až při uložení.
  */
-fun netContentUomFor(unitBase: String, current: String?): String {
-  val options = netContentUomOptions(unitBase)
-  return if (current != null && current in options) current else options.first()
+fun unitBaseForUom(uom: String?): String = when (uom) {
+  "G", "KG" -> "MASS"
+  "ML", "L" -> "VOLUME"
+  else -> "COUNT"
 }
 
 data class VisibleNetContent(
+  val unitBase: String,
   val netContentValue: Double?,
   val netContentUom: String,
   val isVariableWeight: Boolean,
 )
 
 /**
- * Gramáž/objem a příznak váhového zboží očištěné o to, co formulář právě neukazuje — jediná
- * cesta, kterou tahle trojice smí odejít do serveru.
+ * Gramáž/objem, základní jednotka a příznak váhového zboží očištěné o to, co formulář právě
+ * neukazuje — jediná cesta, kterou tahle čtveřice smí odejít do serveru, a jediné místo, kde
+ * unitBase vzniká.
  *
- * Pole se totiž skrývají (u kusového zboží obojí, u váhového číslo), ale stav ViewModelu si
- * hodnotu drží dál. Bez tohohle by do serveru dorazilo číslo, které uživatel zadal ještě
- * u hmotnosti a pak přepnul na kusy: 60 spárovaných s PCS uloží balení o 60 kusech, protože
+ * Pole se totiž skrývají (u váhového zboží celý blok, bez vybrané jednotky číslo), ale stav
+ * ViewModelu si hodnotu drží dál. Bez tohohle by do serveru dorazilo číslo, které uživatel
+ * zadal a pak jednotku vrátil na „—": 60 spárovaných s PCS uloží balení o 60 kusech, protože
  * NetContentCalculator u COUNT bere hodnotu rovnou jako počet — místo aby net_content_base
- * zůstalo 1. Váhové zboží se stejným způsobem drží na prázdné gramáži (cena je za kg/l).
+ * zůstalo 1.
+ *
+ * Pořadí větví je podstatné: váhové zboží se rozhoduje PRVNÍ, protože u něj server gramáž
+ * ignoruje úplně (NetContentCalculator vrací 1 ještě před kontrolou jednotky) a za kg/l/kus se
+ * cena označuje až při zápisu ceny (QuantityBasis). [storedUnitBase] je základní jednotka už
+ * uloženého zboží — u váhového formulář jednotku neukazuje, takže bez ní by se objemové váhové
+ * zboží (rozlévané víno) při každé úpravě tiše překlopilo na hmotnost.
  */
 fun visibleNetContent(
-  unitBase: String,
   netContentValue: Double?,
-  netContentUom: String,
+  netContentUom: String?,
   isVariableWeight: Boolean,
+  storedUnitBase: String? = null,
 ): VisibleNetContent {
-  if (unitBase == "COUNT") return VisibleNetContent(null, "PCS", false)
-  return VisibleNetContent(
-    netContentValue = if (isVariableWeight) null else netContentValue,
-    netContentUom = netContentUomFor(unitBase, netContentUom),
-    isVariableWeight = isVariableWeight,
-  )
+  if (isVariableWeight) {
+    val unitBase = if (storedUnitBase == "VOLUME") "VOLUME" else "MASS"
+    // Jednotka je u váhového zboží jen formalita (server ji nepoužije), ale dvojice
+    // hodnota+jednotka musí odejít celá — proto základní jednotka, ne g/ml.
+    return VisibleNetContent(unitBase, null, if (unitBase == "VOLUME") "L" else "KG", true)
+  }
+  if (netContentUom == null) return VisibleNetContent("COUNT", null, "PCS", false)
+  return VisibleNetContent(unitBaseForUom(netContentUom), netContentValue, netContentUom, false)
 }
 
 /** Gramáž/objem ze serveru do pole formuláře — beze změny čísla, jen s jednotkou vedle. Kusy
@@ -159,23 +171,19 @@ fun offNamesFrom(candidate: ExternalProductCandidate): Map<String, String> =
  * než v g. Shoda s prefillem (nebo nic nezadáno) → obojí null; jinak obojí z formuláře.
  */
 private fun netContentForUpdateSubmit(
-  netContentValue: Double?,
-  netContentUom: String?,
-  unitBase: String,
-  isVariableWeight: Boolean,
+  visible: VisibleNetContent,
   defaults: ProductFormDefaults,
 ): Pair<Double?, String?> {
-  val changed = unitBase != defaults.unitBase ||
-    isVariableWeight != defaults.isVariableWeight ||
-    netContentUom != defaults.netContentUom ||
-    (netContentValue == null) != (defaults.netContentValue == null) ||
-    (netContentValue != null && defaults.netContentValue != null &&
-      kotlin.math.abs(netContentValue - defaults.netContentValue) >= 1e-9)
+  val changed = visible.unitBase != defaults.unitBase ||
+    visible.isVariableWeight != defaults.isVariableWeight ||
+    visible.netContentUom != (defaults.netContentUom ?: "PCS") ||
+    (visible.netContentValue == null) != (defaults.netContentValue == null) ||
+    (visible.netContentValue != null && defaults.netContentValue != null &&
+      kotlin.math.abs(visible.netContentValue - defaults.netContentValue) >= 1e-9)
   if (!changed) return null to null
   // Jednotka musí dorazit i u váhového zboží (hodnota je tam null) — server podle ní ověřuje
   // shodu se základní jednotkou a bez ní by netContentBase nepřepočítal.
-  return (if (isVariableWeight) null else netContentValue) to
-    netContentUomFor(unitBase, netContentUom)
+  return visible.netContentValue to visible.netContentUom
 }
 
 /**
@@ -189,17 +197,13 @@ fun buildUpdateProductInput(
   names: List<ProductNameInput>,
   brandName: String,
   categoryId: String,
-  unitBase: String,
-  netContentValue: Double?,
-  netContentUom: String?,
+  netContent: VisibleNetContent,
   piecesInPack: Int?,
-  isVariableWeight: Boolean,
   defaults: ProductFormDefaults,
 ): UpdateProductInput {
   val trimmedName = name.trim()
   val trimmedBrand = brandName.trim()
-  val (submitValue, submitUom) =
-    netContentForUpdateSubmit(netContentValue, netContentUom, unitBase, isVariableWeight, defaults)
+  val (submitValue, submitUom) = netContentForUpdateSubmit(netContent, defaults)
   return UpdateProductInput(
     name = if (trimmedName == defaults.name) null else trimmedName,
     nameLang = nameLang,
@@ -207,14 +211,15 @@ fun buildUpdateProductInput(
     brandName = if (trimmedBrand.isEmpty() || trimmedBrand == defaults.brandName) null else trimmedBrand,
     clearBrand = trimmedBrand.isEmpty() && defaults.brandName.isNotEmpty(),
     categoryId = if (categoryId == defaults.categoryId) null else categoryId,
-    unitBase = if (unitBase == defaults.unitBase) null else unitBase,
+    unitBase = if (netContent.unitBase == defaults.unitBase) null else netContent.unitBase,
     netContentValue = submitValue,
     netContentUom = submitUom,
     // Vyprázdnění gramáže se netContentValue = null vyjádřit nedá (v patchi to znamená
     // "nezměněno") — server by sáhl po staré hodnotě a u kusového zboží ji spočítal jako počet.
-    clearNetContent = netContentValue == null && defaults.netContentValue != null,
+    clearNetContent = netContent.netContentValue == null && defaults.netContentValue != null,
     piecesInPack = if (piecesInPack == defaults.piecesInPack) null else piecesInPack,
     clearPiecesInPack = piecesInPack == null && defaults.piecesInPack != null,
-    isVariableWeight = if (isVariableWeight == defaults.isVariableWeight) null else isVariableWeight,
+    isVariableWeight =
+      if (netContent.isVariableWeight == defaults.isVariableWeight) null else netContent.isVariableWeight,
   )
 }

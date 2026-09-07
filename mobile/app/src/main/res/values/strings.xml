@@ -344,9 +344,6 @@
     <string name="quantity_basis_per_l">Za litr</string>
     <string name="quantity_basis_per_piece">Za kus</string>
 
-    <string name="unit_base_count">Kus</string>
-    <string name="unit_base_mass">Hmotnost</string>
-    <string name="unit_base_volume">Objem</string>
 
     <string name="sort_report_count">Podle počtu hlášení</string>
     <string name="sort_price_asc">Podle ceny</string>
@@ -440,10 +437,11 @@
     <string name="product_form_category_label">Kategorie</string>
     <string name="product_form_category_placeholder">Vyber kategorii</string>
     <string name="product_form_brand_label">Značka (volitelné)</string>
-    <string name="product_form_unit_base_label">Základní jednotka</string>
-    <string name="product_form_variable_weight_label">Váhové zboží (cena vždy za kg/l, bez pevné gramáže)</string>
-    <string name="product_form_mass_label">Hmotnost balení</string>
-    <string name="product_form_volume_label">Objem balení</string>
+    <string name="product_form_variable_weight_label">Prodává se na váhu</string>
+    <string name="product_form_variable_weight_hint">Cena na cedulce je za kg/l. Jestli je za kilo, litr, nebo kus, se vybírá až u zápisu ceny.</string>
+    <string name="product_form_net_content_label">Hmotnost / objem balení</string>
+    <string name="product_form_net_content_uom_none">nevyplněno</string>
+    <string name="product_form_net_content_none_hint">Bez jednotky platí cena za celé balení.</string>
     <string name="product_form_net_content_uom_label">Jednotka podle obalu</string>
     <string name="net_content_uom_g">g</string>
     <string name="net_content_uom_kg">kg</string>
