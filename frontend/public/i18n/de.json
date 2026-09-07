@@ -147,11 +147,6 @@
       "PER_L": "Pro Liter",
       "PER_PIECE": "Pro Stück"
     },
-    "unitBase": {
-      "MASS": "Gewicht",
-      "VOLUME": "Volumen",
-      "COUNT": "Stück"
-    },
     "productSort": {
       "REPORT_COUNT": "Nach Meldeanzahl",
       "PRICE_ASC": "Nach Preis",

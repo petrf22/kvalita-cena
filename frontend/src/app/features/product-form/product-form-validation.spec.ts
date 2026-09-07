@@ -5,13 +5,11 @@ import {
   changedNames,
   changedFromOff,
   codeMatchesOffCandidate,
-  defaultNetContentUom,
   isProductFormValid,
   netContentBase,
   netContentForOffSubmit,
   netContentForUpdateSubmit,
-  netContentUomFor,
-  netContentUomOptions,
+  unitBaseForUom,
   visibleNetContent,
   offCandidateDefaults,
   pendingPhotoUploads,
@@ -20,43 +18,31 @@ import {
 } from './product-form-validation';
 
 describe('isProductFormValid', () => {
-  it('requires name, category and unit base', () => {
-    expect(isProductFormValid('Chléb', '4', 'MASS')).toBe(true);
-    expect(isProductFormValid('', '4', 'MASS')).toBe(false);
-    expect(isProductFormValid('Chléb', null, 'MASS')).toBe(false);
-    expect(isProductFormValid('Chléb', '4', null)).toBe(false);
+  it('requires a name and a category', () => {
+    expect(isProductFormValid('Chléb', '4')).toBe(true);
+    expect(isProductFormValid('', '4')).toBe(false);
+    expect(isProductFormValid('Chléb', null)).toBe(false);
   });
 
   it('treats whitespace-only name as invalid', () => {
-    expect(isProductFormValid('   ', '4', 'MASS')).toBe(false);
+    expect(isProductFormValid('   ', '4')).toBe(false);
   });
 });
 
-describe('netContentUomOptions', () => {
-  /** Nabídnout u hmotnosti litry by skončilo chybou UOM_MISMATCH až při uložení. */
-  it('offers only units the server accepts for the given unit base', () => {
-    expect(netContentUomOptions('MASS')).toEqual(['G', 'KG']);
-    expect(netContentUomOptions('VOLUME')).toEqual(['ML', 'L']);
-    expect(netContentUomOptions('COUNT')).toEqual(['PCS']);
+describe('unitBaseForUom', () => {
+  /** Inverze NetContentCalculator.validateUomMatchesUnitBase — jiné odvození by skončilo
+   *  chybou UOM_MISMATCH až při uložení. */
+  it('derives the unit base the server accepts for the chosen unit', () => {
+    expect(unitBaseForUom('G')).toBe('MASS');
+    expect(unitBaseForUom('KG')).toBe('MASS');
+    expect(unitBaseForUom('ML')).toBe('VOLUME');
+    expect(unitBaseForUom('L')).toBe('VOLUME');
   });
 
-  it('defaults to the smaller unit, the one usually printed on the package', () => {
-    expect(defaultNetContentUom('MASS')).toBe('G');
-    expect(defaultNetContentUom('VOLUME')).toBe('ML');
-    expect(defaultNetContentUom('COUNT')).toBe('PCS');
-  });
-});
-
-describe('netContentUomFor', () => {
-  it('keeps the current choice while it still fits the unit base', () => {
-    expect(netContentUomFor('MASS', 'KG')).toBe('KG');
-    expect(netContentUomFor('VOLUME', 'ML')).toBe('ML');
-  });
-
-  it('falls back to the default when the unit base changed under it', () => {
-    expect(netContentUomFor('VOLUME', 'G')).toBe('ML');
-    expect(netContentUomFor('MASS', null)).toBe('G');
-    expect(netContentUomFor('COUNT', 'KG')).toBe('PCS');
+  /** „Jednotka nevyplněná" je jediný způsob, jak říct „cena platí za balení" — dřív to bylo
+   *  radio „Kus", které se ptalo na nezodpověditelné (rohlík: kus, nebo hmotnost?). */
+  it('falls back to COUNT when no unit was picked', () => {
+    expect(unitBaseForUom(null)).toBe('COUNT');
   });
 });
 
@@ -80,51 +66,81 @@ describe('netContentBase', () => {
 });
 
 describe('visibleNetContent', () => {
-  /** Past: pole gramáže je u kusového zboží skryté, ale signál si drží, co uživatel zadal
-   *  ještě u hmotnosti. 60 s PCS uloží balení o 60 kusech, net_content_base má zůstat 1. */
-  it('drops a quantity left over from before the switch to piece goods', () => {
+  /** Past: pole gramáže je bez vybrané jednotky skryté, ale signál si drží, co uživatel zadal
+   *  předtím. 60 s PCS uloží balení o 60 kusech, net_content_base má zůstat 1. */
+  it('drops a quantity left over from before the unit was cleared', () => {
     expect(
       visibleNetContent({
-        unitBase: 'COUNT',
         netContentValue: 60,
-        netContentUom: 'G',
-        isVariableWeight: true,
+        netContentUom: null,
+        isVariableWeight: false,
       }),
-    ).toEqual({ netContentValue: null, netContentUom: 'PCS', isVariableWeight: false });
+    ).toEqual({
+      unitBase: 'COUNT',
+      netContentValue: null,
+      netContentUom: 'PCS',
+      isVariableWeight: false,
+    });
   });
 
   it('drops the quantity for variable-weight goods (price is already per kg/l)', () => {
     expect(
       visibleNetContent({
-        unitBase: 'MASS',
         netContentValue: 60,
         netContentUom: 'G',
         isVariableWeight: true,
       }),
-    ).toEqual({ netContentValue: null, netContentUom: 'G', isVariableWeight: true });
+    ).toEqual({
+      unitBase: 'MASS',
+      netContentValue: null,
+      netContentUom: 'KG',
+      isVariableWeight: true,
+    });
   });
 
-  it('passes a visible quantity through untouched', () => {
+  /** Formulář u váhového zboží jednotku neukazuje, takže rozlévané víno se nesmí při každé
+   *  úpravě tiše překlopit z objemu na hmotnost. */
+  it('keeps a stored volume base for variable-weight goods', () => {
     expect(
       visibleNetContent({
-        unitBase: 'MASS',
+        netContentValue: null,
+        netContentUom: null,
+        isVariableWeight: true,
+        storedUnitBase: 'VOLUME',
+      }),
+    ).toEqual({
+      unitBase: 'VOLUME',
+      netContentValue: null,
+      netContentUom: 'L',
+      isVariableWeight: true,
+    });
+  });
+
+  it('derives the unit base from the chosen unit and passes the quantity through', () => {
+    expect(
+      visibleNetContent({
         netContentValue: 60,
         netContentUom: 'G',
         isVariableWeight: false,
       }),
-    ).toEqual({ netContentValue: 60, netContentUom: 'G', isVariableWeight: false });
-  });
-
-  /** Jednotka se dorovná i tehdy, když ji přepnutí základní jednotky nestihlo překlopit. */
-  it('repairs a unit that no longer fits the unit base', () => {
+    ).toEqual({
+      unitBase: 'MASS',
+      netContentValue: 60,
+      netContentUom: 'G',
+      isVariableWeight: false,
+    });
     expect(
       visibleNetContent({
-        unitBase: 'VOLUME',
         netContentValue: 500,
-        netContentUom: 'G',
+        netContentUom: 'ML',
         isVariableWeight: false,
       }),
-    ).toEqual({ netContentValue: 500, netContentUom: 'ML', isVariableWeight: false });
+    ).toEqual({
+      unitBase: 'VOLUME',
+      netContentValue: 500,
+      netContentUom: 'ML',
+      isVariableWeight: false,
+    });
   });
 });
 
@@ -395,13 +411,26 @@ describe('netContentForUpdateSubmit', () => {
     ).toEqual({ netContentValue: 300, netContentUom: 'G' });
   });
 
+  /** Vstup sem chodí výhradně z `visibleNetContent`, takže u váhového zboží je to už dvojice
+   *  „prázdná hodnota + základní jednotka" — server podle jednotky ověřuje shodu s unitBase. */
   it('sends null value but a valid unit when switching to variable weight', () => {
     expect(
       netContentForUpdateSubmit(
-        { netContentValue: null, netContentUom: 'G', unitBase: 'MASS', isVariableWeight: true },
+        { netContentValue: null, netContentUom: 'KG', unitBase: 'MASS', isVariableWeight: true },
         defaults,
       ),
-    ).toEqual({ netContentValue: null, netContentUom: 'G' });
+    ).toEqual({ netContentValue: null, netContentUom: 'KG' });
+  });
+
+  /** Vyprázdnění jednotky na „—" je vyjádření „cena platí za balení" — dvojice musí odejít,
+   *  jinak server sáhne po staré gramáži a u COUNT ji spočítá jako počet kusů (250 g → 250 ks). */
+  it('sends both when the unit was cleared', () => {
+    expect(
+      netContentForUpdateSubmit(
+        { netContentValue: null, netContentUom: 'PCS', unitBase: 'COUNT', isVariableWeight: false },
+        defaults,
+      ),
+    ).toEqual({ netContentValue: null, netContentUom: 'PCS' });
   });
 });
 
@@ -456,8 +485,13 @@ describe('buildUpdateProductInput', () => {
   });
 
   it('does not clear when the quantity was empty all along', () => {
-    const emptyDefaults = { ...defaults, netContentValue: null, netContentUom: null };
-    const form = { ...emptyDefaults, names: [] };
+    const emptyDefaults = {
+      ...defaults,
+      unitBase: 'COUNT' as const,
+      netContentValue: null,
+      netContentUom: null,
+    };
+    const form = { ...emptyDefaults, names: [], netContentUom: 'PCS' as const };
     expect(buildUpdateProductInput(form, emptyDefaults).clearNetContent).toBe(false);
   });
 

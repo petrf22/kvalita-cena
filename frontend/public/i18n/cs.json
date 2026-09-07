@@ -147,11 +147,6 @@
       "PER_L": "Za litr",
       "PER_PIECE": "Za kus"
     },
-    "unitBase": {
-      "MASS": "Hmotnost",
-      "VOLUME": "Objem",
-      "COUNT": "Kus"
-    },
     "productSort": {
       "REPORT_COUNT": "Podle počtu hlášení",
       "PRICE_ASC": "Podle ceny",

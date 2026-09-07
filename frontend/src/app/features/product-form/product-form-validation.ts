@@ -52,51 +52,41 @@ export function changedNames(
  * co se uloží, ne aby počítala něco jiného.
  */
 
-export function isProductFormValid(
-  name: string,
-  categoryId: string | null,
-  unitBase: string | null,
-): boolean {
-  return name.trim().length > 0 && !!categoryId && !!unitBase;
+export function isProductFormValid(name: string, categoryId: string | null): boolean {
+  return name.trim().length > 0 && !!categoryId;
 }
 
 /** Jednotka, ve které uživatel zadává gramáž/objem — to, co je na obalu. */
 export type NetContentUomChoice = 'G' | 'KG' | 'ML' | 'L' | 'PCS';
 
 /**
- * Jednotky nabídnuté ve formuláři pro danou základní jednotku, v pořadí nabídky. Množina musí
- * sedět na `NetContentCalculator.validateUomMatchesUnitBase` na serveru — nabídnout u MASS
- * litry by znamenalo UOM_MISMATCH až při uložení.
+ * Jednotky nabídnuté ve formuláři, v pořadí nabídky. `PCS` mezi nimi schválně NENÍ: kusová
+ * gramáž se nikdy nezadávala (u COUNT se hodnota vždy zahodila, viz `visibleNetContent`) a
+ * „balení bez gramáže" se vyjadřuje prázdnou volbou, ne jednotkou „ks“. Menší jednotky (g/ml)
+ * jdou první — většina obalů nese „60 g“ nebo „330 ml“ a uživatel má opisovat, ne přepočítávat.
  */
-export function netContentUomOptions(unitBase: UnitBase): readonly NetContentUomChoice[] {
-  switch (unitBase) {
-    case 'MASS':
-      return ['G', 'KG'];
-    case 'VOLUME':
-      return ['ML', 'L'];
-    case 'COUNT':
-      return ['PCS'];
+export const NET_CONTENT_UOM_CHOICES: readonly NetContentUomChoice[] = ['G', 'KG', 'ML', 'L'];
+
+/**
+ * Základní jednotka odvozená z toho, co uživatel vybral v comboboxu jednotky — jediné místo,
+ * kde `unitBase` vzniká. Formulář se na něj od 2026-09 neptá vlastní otázkou („Kus / Hmotnost /
+ * Objem“): na „je rohlík kus, nebo hmotnost?“ správná odpověď neexistuje a `COUNT` stejně
+ * znamenalo přesně totéž co nevyplněná gramáž (`net_content_base = 1`, cena za balení).
+ *
+ * Mapa je inverzí `NetContentCalculator.validateUomMatchesUnitBase` na serveru — odvodit u `G`
+ * cokoli jiného než `MASS` by skončilo chybou UOM_MISMATCH až při uložení.
+ */
+export function unitBaseForUom(uom: NetContentUomChoice | null): UnitBase {
+  switch (uom) {
+    case 'G':
+    case 'KG':
+      return 'MASS';
+    case 'ML':
+    case 'L':
+      return 'VOLUME';
+    default:
+      return 'COUNT';
   }
-}
-
-/**
- * První z nabídky, tedy menší jednotka (g/ml) — většina obalů nese „60 g“ nebo „330 ml“ a
- * uživatel má opisovat, ne přepočítávat. Kilogramy/litry jsou pak jedno kliknutí vedle.
- */
-export function defaultNetContentUom(unitBase: UnitBase): NetContentUomChoice {
-  return netContentUomOptions(unitBase)[0];
-}
-
-/**
- * Jednotka po přepnutí základní jednotky — současnou volbu nechá být, dokud pro nový `unitBase`
- * dává smysl (MASS→VOLUME musí překlopit g na ml), jinak spadne na výchozí.
- */
-export function netContentUomFor(
-  unitBase: UnitBase,
-  current: NetContentUomChoice | null,
-): NetContentUomChoice {
-  const options = netContentUomOptions(unitBase);
-  return current != null && options.includes(current) ? current : options[0];
 }
 
 /**
@@ -121,36 +111,65 @@ export function netContentBase(
 }
 
 export interface NetContentFormState {
+  /** Volba v comboboxu jednotky; `null` = „—“, tedy gramáž nevyplněná (cena za balení). */
+  netContentUom: NetContentUomChoice | null;
+  netContentValue: number | null;
+  isVariableWeight: boolean;
+  /**
+   * Základní jednotka už uloženého zboží, jen pro editaci váhového zboží — u něj formulář
+   * jednotku vůbec neukazuje, takže bez tohohle by se objemové váhové zboží (rozlévané víno)
+   * při každé úpravě tiše překlopilo na hmotnost. U nového zboží `null`.
+   */
+  storedUnitBase?: UnitBase | null;
+}
+
+export interface VisibleNetContent {
   unitBase: UnitBase;
   netContentValue: number | null;
   netContentUom: NetContentUomChoice;
   isVariableWeight: boolean;
 }
 
-export interface VisibleNetContent {
-  netContentValue: number | null;
-  netContentUom: NetContentUomChoice;
-  isVariableWeight: boolean;
-}
-
 /**
- * Gramáž/objem a příznak váhového zboží očištěné o to, co formulář právě neukazuje — jediná
- * cesta, kterou tahle trojice smí odejít do serveru.
+ * Gramáž/objem, základní jednotka a příznak váhového zboží očištěné o to, co formulář právě
+ * neukazuje — jediná cesta, kterou tahle čtveřice smí odejít do serveru, a jediné místo, kde
+ * `unitBase` vzniká.
  *
- * Pole se totiž skrývají (u kusového zboží obojí, u váhového číslo), ale signály si hodnotu
- * drží dál. Bez tohohle by do serveru dorazilo číslo, které uživatel zadal ještě u hmotnosti
- * a pak přepnul na kusy: 60 spárovaných s `PCS` uloží balení o 60 kusech, protože
+ * Pole se totiž skrývají (u váhového zboží celý blok, bez vybrané jednotky číslo), ale signály
+ * si hodnotu drží dál. Bez tohohle by do serveru dorazilo číslo, které uživatel zadal a pak
+ * jednotku vrátil na „—“: 60 spárovaných s `PCS` uloží balení o 60 kusech, protože
  * `NetContentCalculator` u COUNT bere hodnotu rovnou jako počet — místo aby `net_content_base`
- * zůstalo 1. Váhové zboží se stejným způsobem drží na prázdné gramáži (cena je za kg/l).
+ * zůstalo 1.
+ *
+ * Pořadí větví je podstatné: váhové zboží se rozhoduje PRVNÍ, protože u něj server gramáž
+ * ignoruje úplně (`NetContentCalculator` vrací 1 ještě před kontrolou jednotky) a za kg/l/kus
+ * se cena označuje až při zápisu ceny (`QuantityBasis`).
  */
 export function visibleNetContent(state: NetContentFormState): VisibleNetContent {
-  if (state.unitBase === 'COUNT') {
-    return { netContentValue: null, netContentUom: 'PCS', isVariableWeight: false };
+  if (state.isVariableWeight) {
+    const unitBase: UnitBase = state.storedUnitBase === 'VOLUME' ? 'VOLUME' : 'MASS';
+    return {
+      unitBase,
+      netContentValue: null,
+      // Jednotka je u váhového zboží jen formalita (server ji nepoužije), ale dvojice
+      // hodnota+jednotka musí odejít celá — proto základní jednotka, ne g/ml.
+      netContentUom: unitBase === 'VOLUME' ? 'L' : 'KG',
+      isVariableWeight: true,
+    };
+  }
+  if (state.netContentUom == null) {
+    return {
+      unitBase: 'COUNT',
+      netContentValue: null,
+      netContentUom: 'PCS',
+      isVariableWeight: false,
+    };
   }
   return {
-    netContentValue: state.isVariableWeight ? null : state.netContentValue,
-    netContentUom: netContentUomFor(state.unitBase, state.netContentUom),
-    isVariableWeight: state.isVariableWeight,
+    unitBase: unitBaseForUom(state.netContentUom),
+    netContentValue: state.netContentValue,
+    netContentUom: state.netContentUom,
+    isVariableWeight: false,
   };
 }
 
@@ -356,32 +375,27 @@ export interface NetContentUpdateSubmit {
  * zbytečný patch; jinak (cokoli z trojice se změnilo) obojí z formuláře.
  */
 export function netContentForUpdateSubmit(
-  current: {
-    netContentValue: number | null;
-    netContentUom: NetContentUomChoice | null;
-    unitBase: UnitBase;
-    isVariableWeight: boolean;
-  },
+  current: VisibleNetContent,
   defaults: ProductFormDefaults,
 ): NetContentUpdateSubmit {
   const changed =
     current.unitBase !== defaults.unitBase ||
     current.isVariableWeight !== defaults.isVariableWeight ||
-    current.netContentUom !== defaults.netContentUom ||
+    current.netContentUom !== (defaults.netContentUom ?? 'PCS') ||
     (current.netContentValue == null) !== (defaults.netContentValue == null) ||
     (current.netContentValue != null &&
       defaults.netContentValue != null &&
       Math.abs(current.netContentValue - defaults.netContentValue) >= 1e-9);
   if (!changed) return { netContentValue: null, netContentUom: null };
   return {
-    netContentValue: current.isVariableWeight ? null : current.netContentValue,
+    netContentValue: current.netContentValue,
     // Jednotka musí dorazit i u váhového zboží (hodnota je tam null) — server podle ní ověřuje
     // shodu se základní jednotkou a bez ní by netContentBase nepřepočítal.
-    netContentUom: netContentUomFor(current.unitBase, current.netContentUom),
+    netContentUom: current.netContentUom,
   };
 }
 
-export interface ProductFormState {
+export interface ProductFormState extends VisibleNetContent {
   name: string;
   /** Jazyk pole „Název" — vždy jazyk appky, server ho nikdy nehádá z textu. */
   nameLang: string;
@@ -389,11 +403,7 @@ export interface ProductFormState {
   names: ProductNameSubmit[];
   brandName: string;
   categoryId: string | null;
-  unitBase: UnitBase;
-  netContentValue: number | null;
-  netContentUom: NetContentUomChoice | null;
   piecesInPack: number | null;
-  isVariableWeight: boolean;
 }
 
 /**

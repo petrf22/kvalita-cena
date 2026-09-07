@@ -147,11 +147,6 @@
       "PER_L": "Per litre",
       "PER_PIECE": "Per piece"
     },
-    "unitBase": {
-      "MASS": "Weight",
-      "VOLUME": "Volume",
-      "COUNT": "Piece"
-    },
     "productSort": {
       "REPORT_COUNT": "By number of reports",
       "PRICE_ASC": "By price",

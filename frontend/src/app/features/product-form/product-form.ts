@@ -23,17 +23,10 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
-import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTreeSelectModule } from 'ng-zorro-antd/tree-select';
-import {
-  ExternalProductCandidate,
-  Product,
-  ProductSummary,
-  Store,
-  UnitBase,
-} from '../../models/catalog';
+import { ExternalProductCandidate, Product, ProductSummary, Store } from '../../models/catalog';
 import type { CategoriesQuery } from '../../models/generated/graphql';
 import { CountryService } from '../../services/country-service';
 import { FormatService } from '../../services/format-service';
@@ -47,9 +40,10 @@ import { MediaService } from '../../services/media-service';
 import { ProductService } from '../../services/product-service';
 import { buildCategoryTree, categoryBreadcrumb } from '../../shared/category-tree';
 import { translateError } from '../../shared/error-message';
-import { NET_CONTENT_UOM_KEYS, UNIT_BASE_KEYS } from '../../shared/enum-labels';
+import { NET_CONTENT_UOM_KEYS } from '../../shared/enum-labels';
 import { PhotoSlot } from '../../shared/photo-slot';
 import {
+  NET_CONTENT_UOM_CHOICES,
   NetContentUomChoice,
   OffCandidateDefaults,
   VisibleNetContent,
@@ -58,11 +52,8 @@ import {
   changedFromOff,
   changedNames,
   codeMatchesOffCandidate,
-  defaultNetContentUom,
   isProductFormValid,
   netContentForOffSubmit,
-  netContentUomFor,
-  netContentUomOptions,
   offCandidateDefaults,
   pendingPhotoUploads,
   productFormDefaults,
@@ -77,9 +68,6 @@ export interface ExistingProductMatch {
   product: Product;
   alias: string;
 }
-
-/** Pořadí ve formuláři — popisky drží UNIT_BASE_KEYS, jediný zdroj pravdy (docs/lokalizace.md). */
-const UNIT_BASE_ORDER: readonly UnitBase[] = ['COUNT', 'MASS', 'VOLUME'];
 
 /**
  * Založení zboží — s naskenovaným EANem i bez něj. Bezkódové zboží (žádný kód na obalu, jen
@@ -102,7 +90,6 @@ const UNIT_BASE_ORDER: readonly UnitBase[] = ['COUNT', 'MASS', 'VOLUME'];
     NzInputModule,
     NzInputNumberModule,
     NzTreeSelectModule,
-    NzRadioModule,
     NzSelectModule,
     NzSwitchModule,
     NzButtonModule,
@@ -150,9 +137,6 @@ export class ProductForm {
   @Output() readonly created = new EventEmitter<Product>();
   @Output() readonly existingMatched = new EventEmitter<ExistingProductMatch>();
   @Output() readonly cancelled = new EventEmitter<void>();
-
-  protected readonly unitBaseOrder = UNIT_BASE_ORDER;
-  protected readonly unitBaseKeys = UNIT_BASE_KEYS;
 
   protected readonly name = signal('');
 
@@ -217,16 +201,19 @@ export class ProductForm {
     categoryBreadcrumb(node.key, this.categories());
 
   protected readonly brandName = signal('');
-  protected readonly unitBase = signal<UnitBase>('COUNT');
   protected readonly netContentValue = signal<number | null>(null);
   /**
    * Jednotka, ve které uživatel gramáž/objem zadává — vybírá se z comboboxu PŘED číslem, ať jde
    * opsat „60 g" z obalu místo přepočítávání na 0,06 kg. Do serveru jde v páru s hodnotou,
    * `net_content_base` (kg/l) si z dvojice dopočítá sám.
+   *
+   * `null` je „—", tedy gramáž nevyplněná = cena platí za balení. Zároveň je to jediný vstup,
+   * ze kterého vzniká základní jednotka (`unitBaseForUom`) — formulář se na ni od 2026-09
+   * neptá zvlášť, viz `visibleNetContent`.
    */
-  protected readonly netContentUom = signal<NetContentUomChoice>(defaultNetContentUom('COUNT'));
+  protected readonly netContentUom = signal<NetContentUomChoice | null>(null);
   protected readonly netContentUomKeys = NET_CONTENT_UOM_KEYS;
-  protected readonly netContentUomChoices = computed(() => netContentUomOptions(this.unitBase()));
+  protected readonly netContentUomChoices = NET_CONTENT_UOM_CHOICES;
   /** Krok šipek podle jednotky — v gramech/mililitrech se zadávají celá čísla (60 g, 330 ml),
    *  v kilogramech/litrech desetiny (0,5 kg). */
   protected readonly netContentStep = computed(() =>
@@ -269,20 +256,12 @@ export class ProductForm {
       this.name.set(defaults.name);
       this.brandName.set(defaults.brandName);
       this.selectedCategoryId.set(defaults.categoryId);
-      this.unitBase.set(defaults.unitBase);
       this.netContentValue.set(defaults.netContentValue);
-      this.netContentUom.set(netContentUomFor(defaults.unitBase, defaults.netContentUom));
+      this.netContentUom.set(defaults.netContentUom);
       this.piecesInPack.set(defaults.piecesInPack);
       this.isVariableWeight.set(defaults.isVariableWeight);
       this.code.set(product.gtin ?? '');
     });
-  }
-
-  /** Přepnutí hmotnost/objem/kusy musí překlopit i jednotku gramáže (g→ml), jinak by server
-   *  vrátil UOM_MISMATCH. Zadané číslo zůstává — uživatel opravuje jednotku, ne hodnotu. */
-  protected onUnitBaseChange(value: UnitBase): void {
-    this.unitBase.set(value);
-    this.netContentUom.set(netContentUomFor(value, this.netContentUom()));
   }
 
   onOtherNameChange(lang: string, value: string): void {
@@ -337,11 +316,8 @@ export class ProductForm {
     if (defaults.name) this.name.set(defaults.name);
     if (defaults.brandName) this.brandName.set(defaults.brandName);
     if (defaults.categoryId) this.selectedCategoryId.set(defaults.categoryId);
-    if (defaults.unitBase) this.unitBase.set(defaults.unitBase);
     if (defaults.netContentValue != null) this.netContentValue.set(defaults.netContentValue);
-    this.netContentUom.set(
-      netContentUomFor(defaults.unitBase ?? this.unitBase(), defaults.netContentUom),
-    );
+    if (defaults.netContentUom) this.netContentUom.set(defaults.netContentUom);
   }
 
   /** Uživatel si vybral existující nabídnutou položku místo založení nové (docs/reputace.md). */
@@ -362,7 +338,7 @@ export class ProductForm {
 
   isValid(): boolean {
     return (
-      isProductFormValid(this.name(), this.selectedCategoryId(), this.unitBase()) &&
+      isProductFormValid(this.name(), this.selectedCategoryId()) &&
       (this.product() != null || this.code().trim().length > 0 || this.store() != null)
     );
   }
@@ -404,7 +380,8 @@ export class ProductForm {
             names: changedNames(this.otherNames(), this.sourceNames, this.nameLang()),
             brandName: this.brandName().trim() || null,
             categoryId,
-            unitBase: this.unitBase(),
+            // unitBase chodí ze `submittedNetContent()` — odvozuje se z vybrané jednotky,
+            // formulář se na něj neptá vlastní otázkou.
             ...this.submittedNetContent(),
             piecesInPack: this.piecesInPack(),
             storeId: this.store()?.id ?? null,
@@ -442,7 +419,6 @@ export class ProductForm {
         names: changedNames(this.otherNames(), this.sourceNames, this.nameLang()),
         brandName: this.brandName(),
         categoryId,
-        unitBase: this.unitBase(),
         ...this.submittedNetContent(),
         piecesInPack: this.piecesInPack(),
       },
@@ -515,7 +491,7 @@ export class ProductForm {
       names: changedNames(this.otherNames(), this.sourceNames, this.nameLang()),
       brandName: text.brandName,
       categoryId: text.categoryId,
-      unitBase: this.unitBase(),
+      unitBase: visible.unitBase,
       netContentValue: netContent.netContentValue,
       netContentUom: netContent.netContentUom,
       piecesInPack: this.piecesInPack(),
@@ -530,10 +506,12 @@ export class ProductForm {
    */
   private submittedNetContent(): VisibleNetContent {
     return visibleNetContent({
-      unitBase: this.unitBase(),
       netContentValue: this.netContentValue(),
       netContentUom: this.netContentUom(),
       isVariableWeight: this.isVariableWeight(),
+      // U váhového zboží formulář jednotku neukazuje, takže hmotnost/objem se u editace musí
+      // vzít z uloženého zboží — jinak by se rozlévané víno tiše překlopilo na hmotnost.
+      storedUnitBase: this.editDefaults?.unitBase ?? null,
     });
   }
 }

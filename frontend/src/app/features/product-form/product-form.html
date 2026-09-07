@@ -98,17 +98,17 @@
         </button>
         @if (moreLangsExpanded()) {
           @for (lang of moreLangs(); track lang) {
-          <nz-form-item>
-            <nz-form-label>{{ t('product-form.lang.' + lang) }}</nz-form-label>
-            <nz-form-control>
-              <input
-                nz-input
-                [name]="'name-' + lang"
-                [ngModel]="otherName(lang)"
-                (ngModelChange)="onOtherNameChange(lang, $event)"
-              />
-            </nz-form-control>
-          </nz-form-item>
+            <nz-form-item>
+              <nz-form-label>{{ t('product-form.lang.' + lang) }}</nz-form-label>
+              <nz-form-control>
+                <input
+                  nz-input
+                  [name]="'name-' + lang"
+                  [ngModel]="otherName(lang)"
+                  (ngModelChange)="onOtherNameChange(lang, $event)"
+                />
+              </nz-form-control>
+            </nz-form-item>
           }
         }
       }
@@ -175,56 +175,56 @@
       </nz-form-control>
     </nz-form-item>
 
+    <!--
+      Váhové zboží stojí NAD gramáží a skryje ji celou: server u něj net_content_base vždy
+      nastaví na 1 (NetContentCalculator vrací 1 ještě před kontrolou jednotky) a za kg/l/kus
+      se cena označuje až při zápisu ceny (QuantityBasis). Ptát se tu na jednotku i číslo by
+      byly dvě otázky, na jejichž odpovědi se nikdo nikdy nepodívá.
+    -->
     <nz-form-item>
-      <nz-form-label>{{ t('product-form.unitBaseLabel') }}</nz-form-label>
+      <nz-form-label>{{ t('product-form.variableWeightLabel') }}</nz-form-label>
       <nz-form-control>
-        <nz-radio-group
-          [ngModel]="unitBase()"
-          (ngModelChange)="onUnitBaseChange($event)"
-          name="unitBase"
-        >
-          @for (value of unitBaseOrder; track value) {
-            <label nz-radio [nzValue]="value">{{ unitBaseKeys[value] | transloco }}</label>
-          }
-        </nz-radio-group>
+        <nz-switch
+          [ngModel]="isVariableWeight()"
+          (ngModelChange)="isVariableWeight.set($event)"
+          name="isVariableWeight"
+        />
+        <p class="field-hint">{{ t('product-form.variableWeightHint') }}</p>
       </nz-form-control>
     </nz-form-item>
 
-    @if (unitBase() !== 'COUNT') {
+    @if (!isVariableWeight()) {
       <nz-form-item>
-        <nz-form-label>{{ t('product-form.variableWeightLabel') }}</nz-form-label>
+        <nz-form-label>{{ t('product-form.netContentLabel') }}</nz-form-label>
         <nz-form-control>
-          <nz-switch
-            [ngModel]="isVariableWeight()"
-            (ngModelChange)="isVariableWeight.set($event)"
-            name="isVariableWeight"
-          />
-        </nz-form-control>
-      </nz-form-item>
-
-      @if (!isVariableWeight()) {
-        <nz-form-item>
-          <nz-form-label>{{
-            unitBase() === 'MASS' ? t('product-form.massLabel') : t('product-form.volumeLabel')
-          }}</nz-form-label>
-          <nz-form-control>
-            <!--
-              Jednotka jde PŘED číslo, protože se v tom pořadí i zadává: uživatel vybere „g" a
-              opíše z obalu 60. Přepočet na kg/l dělá server (net_content_base), do formuláře
-              se nikdy nevrací přepočtená hodnota.
-            -->
-            <div class="net-content-row">
-              <nz-select
-                [ngModel]="netContentUom()"
-                (ngModelChange)="netContentUom.set($event)"
-                name="netContentUom"
-                class="net-content-uom"
-                [attr.aria-label]="t('product-form.netContentUomLabel')"
-              >
-                @for (uom of netContentUomChoices(); track uom) {
-                  <nz-option [nzValue]="uom" [nzLabel]="netContentUomKeys[uom] | transloco" />
-                }
-              </nz-select>
+          <!--
+            Jednotka jde PŘED číslo, protože se v tom pořadí i zadává: uživatel vybere „g" a
+            opíše z obalu 60. Prázdná volba („—") je zároveň jediný způsob, jak říct „cena
+            platí za celé balení" — dřívější radio Kus/Hmotnost/Objem bylo jen jiný převlek
+            téhož a nutilo odpovídat na otázku, na kterou u rohlíku odpověď není. Přepočet na
+            kg/l dělá server (net_content_base), do formuláře se nikdy nevrací přepočtená
+            hodnota.
+          -->
+          <div class="net-content-row">
+            <nz-select
+              [ngModel]="netContentUom()"
+              (ngModelChange)="netContentUom.set($event)"
+              name="netContentUom"
+              class="net-content-uom"
+              [attr.aria-label]="t('product-form.netContentUomLabel')"
+              [nzPlaceHolder]="t('product-form.netContentUomNone')"
+            >
+              <!--
+                Prázdná volba potřebuje placeholder I vlastní nz-option: option je jediná cesta,
+                jak se k „nevyplněno" vrátit, ale po skrytí a zobrazení bloku (přepínač váhového
+                zboží) se `null` zapíše dřív, než se options zaregistrují, a popisek by zmizel.
+              -->
+              <nz-option [nzValue]="null" [nzLabel]="t('product-form.netContentUomNone')" />
+              @for (uom of netContentUomChoices; track uom) {
+                <nz-option [nzValue]="uom" [nzLabel]="netContentUomKeys[uom] | transloco" />
+              }
+            </nz-select>
+            @if (netContentUom()) {
               <nz-input-number
                 [ngModel]="netContentValue()"
                 (ngModelChange)="netContentValue.set($event)"
@@ -235,10 +235,13 @@
                 [nzFormatter]="format.numberFormatter"
                 [nzParser]="format.numberParser"
               />
-            </div>
-          </nz-form-control>
-        </nz-form-item>
-      }
+            }
+          </div>
+          @if (!netContentUom()) {
+            <p class="field-hint">{{ t('product-form.netContentNoneHint') }}</p>
+          }
+        </nz-form-control>
+      </nz-form-item>
     }
 
     <nz-form-item>
@@ -249,6 +252,8 @@
           (ngModelChange)="piecesInPack.set($event)"
           name="piecesInPack"
           [nzMin]="1"
+          [nzFormatter]="format.numberFormatter"
+          [nzParser]="format.numberParser"
           style="width: 100%"
         />
       </nz-form-control>
