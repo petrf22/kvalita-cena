@@ -51,9 +51,17 @@ public class PriceObservationService {
   private final ProductAliasService productAliasService;
   private final EntityManager entityManager;
 
+  /**
+   * @param source kanál, kterým zápis přišel — odvozuje ho server z hlavičky, ne klient
+   * @param evidenceKind na čem cena stojí; druhá OSA vedle {@code source} (docs/rozvoj.md).
+   *     Určuje ho VÝHRADNĚ volající na serveru podle skutečně připojeného artefaktu, nikdy
+   *     klient v inputu — důkaz je násobič reputační váhy ({@code f_evid}, docs/reputace.md),
+   *     takže sebedeklarace by byla reputační útok. Parametr je povinný záměrně: výchozí
+   *     hodnota schovaná v přetížení by tohle rozhodnutí odsunula mimo volající kód.
+   */
   @Transactional
   public List<PriceObservation> submit(SubmitObservationsInput input, UUID authenticatedPublicUid,
-      ObservationSource source) {
+      ObservationSource source, EvidenceKind evidenceKind) {
     List<ObservationPriceInput> prices = input.prices();
     if (prices == null || prices.isEmpty()) {
       throw new ValidationException(ErrorCode.OBSERVATION_PRICES_REQUIRED);
@@ -142,6 +150,7 @@ public class PriceObservationService {
           .submitter(submitter)
           .submitterKind(submitter != null ? SubmitterKind.REGISTERED : SubmitterKind.ANONYMOUS)
           .source(source)
+          .evidenceKind(evidenceKind)
           .build());
     }
 

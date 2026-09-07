@@ -1,5 +1,6 @@
 package cz.kvalitacena.controller;
 
+import cz.kvalitacena.db.entity.EvidenceKind;
 import cz.kvalitacena.db.entity.ObservationSource;
 import cz.kvalitacena.db.entity.PriceObservation;
 import cz.kvalitacena.db.entity.Product;
@@ -38,7 +39,10 @@ public class ObservationGraphQlController {
     UUID publicUid = authentication != null && authentication.getPrincipal() instanceof UUID uid
         ? uid
         : null;
-    return priceObservationService.submit(input, publicUid, resolveSource());
+    // Zápis z formuláře nemá k sobě žádný artefakt — fotka jako důkaz ceny je nedodělek MVP
+    // (docs/reputace.md, f_evid). Až bude, určí druh důkazu server podle připojené fotky,
+    // nikdy klient v inputu (docs/rozvoj.md, "Zdroj ceny: kanál klienta vs. druh důkazu").
+    return priceObservationService.submit(input, publicUid, resolveSource(), EvidenceKind.NONE);
   }
 
   /**

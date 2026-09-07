@@ -108,6 +108,13 @@ public class PriceObservation implements Persistable<Long> {
   @Column(name = "source", nullable = false, length = 10)
   private ObservationSource source;
 
+  // Druhá osa vedle source: kanál říká, KDO záznam poslal, tohle ČÍM je podložený
+  // (docs/rozvoj.md). Nastavuje ho výhradně server podle skutečně připojeného artefaktu.
+  @Enumerated(EnumType.STRING)
+  @Column(name = "evidence_kind", nullable = false, length = 20)
+  @Builder.Default
+  private EvidenceKind evidenceKind = EvidenceKind.NONE;
+
   @PrePersist
   protected void onCreate() {
     createdAt = OffsetDateTime.now();

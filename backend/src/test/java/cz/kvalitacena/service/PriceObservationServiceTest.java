@@ -117,7 +117,7 @@ class PriceObservationServiceTest {
   }
 
   private AppException submitAndCaptureError(SubmitObservationsInput submitInput) {
-    return catchAppException(() -> service.submit(submitInput, PUBLIC_UID, ObservationSource.WEB));
+    return catchAppException(() -> service.submit(submitInput, PUBLIC_UID, ObservationSource.WEB, EvidenceKind.NONE));
   }
 
   private static AppException catchAppException(Runnable action) {
@@ -132,7 +132,7 @@ class PriceObservationServiceTest {
   @Test
   void singlePriceIsStoredAndEnqueuedOnce() {
     List<PriceObservation> result = service.submit(input(List.of(price(PriceKind.REGULAR, "29.90"))),
-        PUBLIC_UID, ObservationSource.WEB);
+        PUBLIC_UID, ObservationSource.WEB, EvidenceKind.NONE);
 
     assertThat(result).hasSize(1);
     verify(priceAggregationService, times(1)).enqueueRecompute(PRODUCT_ID, STORE_ID, RecomputeReason.NEW_OBS);
@@ -143,7 +143,7 @@ class PriceObservationServiceTest {
     service.submit(input(List.of(
         price(PriceKind.REGULAR, "29.90"),
         price(PriceKind.CLUB_CARD, "24.90"),
-        price(PriceKind.PROMO, "19.90"))), PUBLIC_UID, ObservationSource.WEB);
+        price(PriceKind.PROMO, "19.90"))), PUBLIC_UID, ObservationSource.WEB, EvidenceKind.NONE);
 
     verify(priceObservationRepository).saveAllAndFlush(savedCaptor.capture());
     assertThat(savedCaptor.getValue()).extracting(PriceObservation::getPriceKind)
@@ -156,7 +156,7 @@ class PriceObservationServiceTest {
     service.submit(input(List.of(
         price(PriceKind.REGULAR, "29.90"),
         price(PriceKind.CLUB_CARD, "24.90"),
-        price(PriceKind.PROMO, "19.90"))), PUBLIC_UID, ObservationSource.WEB);
+        price(PriceKind.PROMO, "19.90"))), PUBLIC_UID, ObservationSource.WEB, EvidenceKind.NONE);
 
     assertThat(submitter.getObservationCount()).isEqualTo(1);
     verify(appUserRepository, times(1)).save(submitter);
@@ -169,7 +169,7 @@ class PriceObservationServiceTest {
 
     service.submit(input(List.of(
         price(PriceKind.REGULAR, "29.90"),
-        price(PriceKind.CLUB_CARD, "24.90"))), PUBLIC_UID, ObservationSource.WEB);
+        price(PriceKind.CLUB_CARD, "24.90"))), PUBLIC_UID, ObservationSource.WEB, EvidenceKind.NONE);
 
     verify(productCatalogService, times(1)).promoteIfConfirmed(PRODUCT_ID);
     verify(storeService, times(1)).promoteIfConfirmed(STORE_ID);
@@ -224,7 +224,7 @@ class PriceObservationServiceTest {
 
   @Test
   void anonymousSubmitterSkipsTodayCheckAndCounter() {
-    service.submit(input(List.of(price(PriceKind.REGULAR, "29.90"))), null, ObservationSource.WEB);
+    service.submit(input(List.of(price(PriceKind.REGULAR, "29.90"))), null, ObservationSource.WEB, EvidenceKind.NONE);
 
     verify(priceObservationRepository, never()).findPriceKindsBySubmitterOnDay(any(), any(), any(), any());
     verify(appUserRepository, never()).save(any());
@@ -234,7 +234,7 @@ class PriceObservationServiceTest {
   void multibuyMultipliesNetContentAndUsesTotalAsPrice() {
     product.setNetContentBase(new BigDecimal("0.5"));
 
-    service.submit(input(List.of(multibuy(3, "50"))), PUBLIC_UID, ObservationSource.WEB);
+    service.submit(input(List.of(multibuy(3, "50"))), PUBLIC_UID, ObservationSource.WEB, EvidenceKind.NONE);
 
     verify(priceObservationRepository).saveAllAndFlush(savedCaptor.capture());
     PriceObservation saved = savedCaptor.getValue().get(0);
@@ -247,7 +247,7 @@ class PriceObservationServiceTest {
     LocalDate from = LocalDate.now().minusDays(2);
     LocalDate to = LocalDate.now().plusDays(5);
 
-    service.submit(input(List.of(promo("19.90", from, to))), PUBLIC_UID, ObservationSource.WEB);
+    service.submit(input(List.of(promo("19.90", from, to))), PUBLIC_UID, ObservationSource.WEB, EvidenceKind.NONE);
 
     verify(priceObservationRepository).saveAllAndFlush(savedCaptor.capture());
     PriceObservation saved = savedCaptor.getValue().get(0);
@@ -290,7 +290,7 @@ class PriceObservationServiceTest {
     product.setNetContentBase(new BigDecimal("0.5"));
 
     service.submit(input(List.of(price(PriceKind.REGULAR, "29.90"), multibuy(3, "50"))),
-        PUBLIC_UID, ObservationSource.WEB);
+        PUBLIC_UID, ObservationSource.WEB, EvidenceKind.NONE);
 
     verify(priceObservationRepository).saveAllAndFlush(savedCaptor.capture());
     PriceObservation regular = savedCaptor.getValue().stream()
@@ -304,7 +304,7 @@ class PriceObservationServiceTest {
 
     service.submit(inputWithBasis(QuantityBasis.PER_KG, List.of(
         price(PriceKind.REGULAR, "29.90"), price(PriceKind.CLUB_CARD, "24.90"))),
-        PUBLIC_UID, ObservationSource.WEB);
+        PUBLIC_UID, ObservationSource.WEB, EvidenceKind.NONE);
 
     verify(priceObservationRepository).saveAllAndFlush(savedCaptor.capture());
     assertThat(savedCaptor.getValue()).extracting(PriceObservation::getNetContentBase)
@@ -354,7 +354,7 @@ class PriceObservationServiceTest {
         new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, null, "XYZ", null,
             List.of(price(PriceKind.REGULAR, "29.90"), price(PriceKind.CLUB_CARD, "24.90")));
 
-    service.submit(unsupportedCurrencyInput, PUBLIC_UID, ObservationSource.WEB);
+    service.submit(unsupportedCurrencyInput, PUBLIC_UID, ObservationSource.WEB, EvidenceKind.NONE);
 
     verify(priceObservationRepository).saveAllAndFlush(savedCaptor.capture());
     assertThat(savedCaptor.getValue()).extracting(PriceObservation::getCurrency)
@@ -366,7 +366,7 @@ class PriceObservationServiceTest {
     SubmitObservationsInput withAlias = new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, null, null,
         "třicátník", List.of(price(PriceKind.REGULAR, "29.90")));
 
-    service.submit(withAlias, PUBLIC_UID, ObservationSource.WEB);
+    service.submit(withAlias, PUBLIC_UID, ObservationSource.WEB, EvidenceKind.NONE);
 
     verify(productAliasService).confirmFromObservation(product, submitter, "třicátník");
   }
@@ -377,7 +377,7 @@ class PriceObservationServiceTest {
     SubmitObservationsInput submitInput = new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, observedAt, null, null,
         List.of(price(PriceKind.REGULAR, "29.90"), price(PriceKind.CLUB_CARD, "24.90")));
 
-    service.submit(submitInput, PUBLIC_UID, ObservationSource.WEB);
+    service.submit(submitInput, PUBLIC_UID, ObservationSource.WEB, EvidenceKind.NONE);
 
     verify(priceObservationRepository).saveAllAndFlush(savedCaptor.capture());
     assertThat(savedCaptor.getValue()).extracting(PriceObservation::getObservedAt)
