@@ -60,27 +60,37 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   kvůli ODbL"). `OffProductCatalogService.create()` je nechává v `core.product` `NULL`; spojení
   vzniká až čtením v `ProductOverlayService`.
 - **Gramáž/objem se do serveru posílá VŽDY jako dvojice `netContentValue`/`netContentUom`** —
-  nikdy jen jedna z nich. Jednotku si od 2026-09 vybírá uživatel v comboboxu před číslem (g/kg,
-  resp. ml/l — `netContentUomOptions`), takže samotné číslo nic neznamená: 250 spárovaných s `KG`
-  místo `G` je 1000× jiná hmotnost. `CatalogEditService.updateProduct` chybějící půlku doplní ze
-  starého uloženého snapshotu, takže rozpojená dvojice tiše spočítá úplně jiné
+  nikdy jen jedna z nich. Jednotku si od 2026-09 vybírá uživatel v comboboxu před číslem
+  (`NET_CONTENT_UOM_CHOICES`: g/kg/ml/l), takže samotné číslo nic neznamená: 250 spárovaných
+  s `KG` místo `G` je 1000× jiná hmotnost. `CatalogEditService.updateProduct` chybějící půlku
+  doplní ze starého uloženého snapshotu, takže rozpojená dvojice tiše spočítá úplně jiné
   `net_content_base`. U `createProductFromOff` platí navíc, že se posílá jen skutečně změněná
   dvojice (jinak obojí `null`, ať hodnotu dál dodává OFF — `netContentForOffSubmit`
   v `product-form-validation.ts` / `ProductFormViewModel.kt`); u `updateProduct` musí dvojice
-  dorazit i tehdy, když se změnila jen základní jednotka, jednotka gramáže nebo přepínač
-  váhového zboží, ne jen samotné číslo (`netContentForUpdateSubmit`/`buildUpdateProductInput`).
+  dorazit i tehdy, když se změnila jen jednotka gramáže nebo přepínač váhového zboží, ne jen
+  samotné číslo (`netContentForUpdateSubmit`/`buildUpdateProductInput`).
   `ExternalProductCandidate.netContentValue` chodí v jednotce z OFF (typicky `G`/`ML`,
-  `OffNetContentConverter`) a formulář ji přebírá, jak je — nic se nepřepočítává. Přepnutí
-  základní jednotky musí překlopit i jednotku gramáže (g→ml, `netContentUomFor`), jinak server
-  vrátí `UOM_MISMATCH`. Do kg/l/ks převádí výhradně server (`NetContentCalculator` →
-  `net_content_base`), klient nikdy neposílá přepočtenou hodnotu.
+  `OffNetContentConverter`) a formulář ji přebírá, jak je — nic se nepřepočítává. Do kg/l/ks
+  převádí výhradně server (`NetContentCalculator` → `net_content_base`), klient nikdy neposílá
+  přepočtenou hodnotu.
+- **`unitBase` se od 2026-09 ODVOZUJE z vybrané jednotky, formulář se na něj neptá**
+  (`unitBaseForUom`: g/kg→`MASS`, ml/l→`VOLUME`, nevybráno→`COUNT`) a do serveru chodí výhradně
+  z `visibleNetContent` — jediného místa, kde vzniká, spolu s očištěnou gramáží a příznakem
+  váhového zboží. Dřívější volba „Kus / Hmotnost / Objem" zmizela, protože `COUNT` znamenal
+  přesně totéž co nevyplněná gramáž (`net_content_base = 1`, cena za balení — kusovou hodnotu
+  formulář nikdy poslat neuměl) a nutil odpovídat na otázku, na kterou u rohlíku odpověď není.
+  **Váhové zboží gramáž ignoruje úplně** (`NetContentCalculator` vrací 1 ještě před kontrolou
+  jednotky a `PriceObservationService` bere základ z `QuantityBasis` u zápisu ceny), takže
+  formulář po zapnutí přepínače celý blok skryje; `visibleNetContent` proto váhové zboží řeší
+  jako PRVNÍ větev a `storedUnitBase` mu drží `VOLUME` u zboží, které ho už má.
 - **Pole „Název" ve formuláři je VŽDY v jazyce appky** a cizojazyčný název z OFF se do něj
   nikdy nepředvyplňuje (`offCandidateDefaults`/`offNamesFrom` berou jen `names[lang]`) — jinak
   by se němčina uložila jako český název, což je přesně ta chyba, kvůli které vícejazyčnost
-  vznikla. Cizojazyčná varianta se ukáže v upozornění a v sekci ostatních jazyků; do serveru
-  se z ní posílá jen to, co uživatel změnil (`changedNames`), protože poslat zpátky nezměněnou
-  hodnotu z OFF by znamenalo zapsat cizí data do `core.product_name` (ODbL). Pořadí vrstev
-  a fallback napříč jazyky: `docs/lokalizace.md`, „Název zboží po jazycích".
+  vznikla. Cizojazyčná varianta se ukáže v upozornění a v sekci ostatních jazyků (ta se
+  ZÁMĚRNĚ nerozbaluje sama a nabízí nejdřív jen jazyk zvolené země, `CountryInfo.defaultLocale`);
+  do serveru se z ní posílá jen to, co uživatel změnil (`changedNames`), protože poslat zpátky
+  nezměněnou hodnotu z OFF by znamenalo zapsat cizí data do `core.product_name` (ODbL). Pořadí
+  vrstev a fallback napříč jazyky: `docs/lokalizace.md`, „Název zboží po jazycích".
 - Klientský překlad chyb podle `code` na mobilu chybí — appka ukáže `serverMessage`, protože
   `network/Dto.kt` negeneruje typy ze schématu jako web (`docs/lokalizace.md`, „Co zbývá").
 - Geometrie ikon (favicon, PWA manifest, Android launcher) žije v `tools/icons/generate.py`,
