@@ -1,6 +1,8 @@
 package cz.kvalitacena.auth
 
 import android.content.Context
+import android.os.SystemClock
+import cz.kvalitacena.crash.AppLog
 import cz.kvalitacena.network.AccountDeleteConfirmBody
 import cz.kvalitacena.network.ApiConfig
 import cz.kvalitacena.network.EmailChangeConfirmBody
@@ -12,10 +14,11 @@ import cz.kvalitacena.network.OtpVerifyBody
 import cz.kvalitacena.network.RefreshBody
 import cz.kvalitacena.network.TokenResponse
 import cz.kvalitacena.network.TransportException
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -39,15 +42,75 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
   private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
   private val _accessToken = MutableStateFlow<String?>(null)
-  val accessToken: StateFlow<String?> = _accessToken
 
-  // MainActivity odpaluje refresh() při startu bez čekání (T0 anonymní chod appky tím není
-  // podmíněný), takže obrazovka, která vyžaduje přihlášení (např. profil), se může vykreslit
-  // dřív, než refresh doběhne, a omylem se zeptá jako anonym. awaitInitialRefresh() jí dá
-  // možnost počkat na výsledek prvního pokusu, ať se nezeptá předčasně.
-  private val initialRefreshDone = CompletableDeferred<Unit>()
+  /** Monotonní čas (`SystemClock.elapsedRealtime`), dokdy platí token v [_accessToken]. */
+  private var accessTokenExpiresAt: Long? = null
 
-  suspend fun awaitInitialRefresh() = initialRefreshDone.await()
+  /**
+   * Refresh token na serveru ROTUJE a jeho znovupoužití mimo 30s grace okno revokuje celou
+   * rodinu tokenů (`RefreshTokenService.rotate`) — pro appku by to znamenalo tiché odhlášení
+   * "kvůli podezření na krádež". Souběžné dotazy proto nesmí spustit dvě rotace naráz; obnova
+   * běží vždy jen jednou (single-flight) a ostatní počkají na její výsledek.
+   */
+  private val refreshMutex = Mutex()
+
+  /**
+   * Je uživatel přihlášený — POZOR, ne "máme v paměti access token". Ten po startu procesu
+   * chybí, dokud nedoběhne první obnova, a odvozovat z něj stav přihlášení znamenalo ukázat
+   * přihlašovací formulář někomu, kdo přihlášený je. Zdroj pravdy je přítomnost refresh tokenu
+   * v [TokenStore], protože jen jeho ztráta/odmítnutí je skutečné odhlášení.
+   */
+  private val _isLoggedIn = MutableStateFlow(false)
+  val isLoggedIn: StateFlow<Boolean> = _isLoggedIn
+
+  /**
+   * Jediný způsob, jak se v appce dostat k access tokenu — nikdy nečíst uložený token přímo.
+   * Vrátí token, který je JEŠTĚ platný; jinak ho tiše obnoví z refresh tokenu.
+   *
+   * Čekat s obnovou na chybu ze serveru nejde: prošlý access token `JwtAuthenticationFilter`
+   * mlčky zahodí a request doběhne jako ANONYMNÍ (HTTP 200, žádné `errors`), takže dotaz
+   * s anonymní variantou — `me`, `searchProducts` s vlastními DRAFTy, okno grafu — vrátí
+   * normální, jen ochuzenou odpověď. Appka pak tvrdila "Přihlášen" a přitom serveru byla cizí,
+   * dokud na to náhodou nenarazil dotaz, který přihlášení vyžaduje (`Moje příspěvky`).
+   *
+   * `null` znamená skutečného anonyma (žádný refresh token) — ten se nezdržuje ani jedním
+   * requestem navíc, anonymní chod appky (T0) je plnohodnotný.
+   */
+  suspend fun validAccessToken(): String? = withContext(Dispatchers.IO) {
+    usableAccessToken()?.let { return@withContext it }
+    if (tokenStore.getRefreshToken() == null) {
+      _isLoggedIn.value = false
+      return@withContext null
+    }
+    refreshMutex.withLock {
+      // Mezitím mohl token obnovit jiný souběžný dotaz — pak není co rotovat.
+      usableAccessToken() ?: run {
+        refreshLocked()
+        // Čerstvě vydaný token se použije, i kdyby mu do rezervy zbývalo míň — rezerva
+        // rozhoduje, KDY obnovit, ne co se smí použít. Server smí mít TTL kratší než rezerva
+        // (v testovacím prostředí běžné) a appka by se s `usableAccessToken()` na tomhle řádku
+        // zacyklila do trvalé anonymity: každý token by rovnou zahodila jako "skoro prošlý".
+        _accessToken.value
+      }
+    }
+  }
+
+  /**
+   * Obnova při startu appky. Stav přihlášení nastaví hned z uloženého refresh tokenu (ať
+   * obrazovky nečekají na síť), token obnoví jen tehdy, když v paměti žádný platný není —
+   * jinak by každé znovuvytvoření Activity (třeba po přepnutí jazyka) zbytečně rotovalo
+   * refresh token proti 30s grace oknu.
+   */
+  suspend fun restoreSession() = withContext(Dispatchers.IO) {
+    _isLoggedIn.value = tokenStore.getRefreshToken() != null
+    validAccessToken()
+    Unit
+  }
+
+  private fun usableAccessToken(): String? {
+    val token = _accessToken.value ?: return null
+    return token.takeIf { isAccessTokenUsable(accessTokenExpiresAt, SystemClock.elapsedRealtime()) }
+  }
 
   suspend fun requestOtp(email: String): OtpRequestResponse = withContext(Dispatchers.IO) {
     val body = json.encodeToString(OtpRequestBody(email)).toRequestBody(jsonMediaType)
@@ -84,51 +147,73 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
       }
     }
 
-  /** Zkusí obnovit přihlášení z uloženého refresh tokenu (volá se při startu appky). */
-  suspend fun refresh(): Boolean = withContext(Dispatchers.IO) {
-    try {
-      val refreshToken = tokenStore.getRefreshToken() ?: return@withContext false
-      val body = json.encodeToString(RefreshBody(refreshToken)).toRequestBody(jsonMediaType)
-      val request = Request.Builder()
-        .url("${ApiConfig.BASE_URL}/api/auth/refresh")
-        .header("X-Client-Kind", "ANDROID")
-        .post(body)
-        .build()
+  /**
+   * Vlastní síťová obnova. Volat VÝHRADNĚ se zamčeným [refreshMutex] — kvůli rotaci refresh
+   * tokenu (viz tam) nesmí běžet dvakrát naráz.
+   *
+   * Rozlišuje odmítnutí od nedostupnosti, protože důsledek je opačný: HTTP 401 znamená, že
+   * refresh token je neplatný, vypršelý nebo revokovaný (`SESSION_EXPIRED`) — session je
+   * fakticky pryč a musí zmizet i z appky, ať `isLoggedIn` nelže. Cokoli jiného (výpadek sítě,
+   * chyba serveru) session NECHÁVÁ být: odhlásit člověka za to, že projel tunelem, by ho
+   * připravilo o přihlášení kvůli ničemu.
+   */
+  private suspend fun refreshLocked(): Boolean {
+    val refreshToken = tokenStore.getRefreshToken() ?: run {
+      clearSession()
+      return false
+    }
+    val body = json.encodeToString(RefreshBody(refreshToken)).toRequestBody(jsonMediaType)
+    val request = Request.Builder()
+      .url("${ApiConfig.BASE_URL}/api/auth/refresh")
+      .header("X-Client-Kind", "ANDROID")
+      .post(body)
+      .build()
 
+    return try {
       client.newCall(request).execute().use { response ->
-        if (!response.isSuccessful) return@use false
-        applyToken(json.decodeFromString<TokenResponse>(response.body!!.string()))
-        true
+        when {
+          response.code == 401 -> {
+            AppLog.e("Obnova přihlášení odmítnuta (401) — session se ruší.")
+            clearSession()
+            false
+          }
+          !response.isSuccessful -> {
+            AppLog.e("Obnova přihlášení selhala (${response.code}) — session zůstává.")
+            false
+          }
+          else -> {
+            applyToken(json.decodeFromString<TokenResponse>(response.body!!.string()))
+            true
+          }
+        }
       }
     } catch (e: Exception) {
+      AppLog.e("Obnova přihlášení se nezdařila: ${e::class.simpleName} — session zůstává.", e)
       false
-    } finally {
-      initialRefreshDone.complete(Unit)
     }
   }
 
   /**
-   * Přístupový token vypršel (10min TTL, `app.jwt.access-token-ttl`) nebo appka o restartu
-   * backendu neví — serveru to od "nikdy nepřihlášen" nejde rozeznat
-   * (`JwtAuthenticationFilter` neplatný/prošlý token bez chyby přeskočí, request pokračuje jako
-   * anonymní), takže na to appka reaguje sama, jakmile narazí na chybu s klasifikací
-   * `UNAUTHORIZED` (viz `GraphQlClient`/`MediaClient`). Nejdřív zkusí tichý refresh (refresh
-   * token pořád platný, jen access token dosloužil); až když selže i ten, `accessToken` se
-   * vyčistí, ať `isLoggedIn` (na něm založené) přestane napříč appkou lhát — dřív zůstávala
-   * appka v nekonzistentním stavu: záložka Účet dál hlásila "Přihlášen", zatímco jiné obrazovky
-   * ukazovaly "vyžaduje přihlášení".
+   * Server odmítl token, který appka považovala za platný — vypršelý být neměl
+   * ([validAccessToken] ho hlídá), takže jde o důvod na straně serveru: inkrement
+   * `token_version` (globální odhlášení), pozastavený účet, restart backendu s jiným
+   * `JWT_SECRET`. Zkusí se jedna obnova; když neprojde kvůli 401, [refreshLocked] session
+   * rovnou zruší.
+   *
+   * [usedToken] je token, se kterým volající narazil — když mezitím jiný souběžný dotaz
+   * obnovu už udělal, nová rotace se nekoná a volající jen dostane čerstvý token.
    */
-  suspend fun recoverFromUnauthorized(): Boolean {
-    if (refresh()) return true
-    _accessToken.value = null
-    tokenStore.clear()
-    return false
+  suspend fun recoverFromUnauthorized(usedToken: String?): Boolean = withContext(Dispatchers.IO) {
+    refreshMutex.withLock {
+      val current = usableAccessToken()
+      if (current != null && current != usedToken) return@withLock true
+      refreshLocked()
+    }
   }
 
   suspend fun logout() = withContext(Dispatchers.IO) {
     val refreshToken = tokenStore.getRefreshToken()
-    _accessToken.value = null
-    tokenStore.clear()
+    clearSession()
     if (refreshToken != null) {
       val body = json.encodeToString(RefreshBody(refreshToken)).toRequestBody(jsonMediaType)
       val request = Request.Builder()
@@ -156,7 +241,7 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
       .url("${ApiConfig.BASE_URL}/api/auth/email/change/request")
       .header("X-Client-Kind", "ANDROID")
       .post(body)
-    _accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
+    validAccessToken()?.let { builder.header("Authorization", "Bearer $it") }
 
     client.newCall(builder.build()).execute().use { response ->
       if (!response.isSuccessful) throw TransportException("Odeslání kódu selhalo (${response.code})")
@@ -177,12 +262,12 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
         .url("${ApiConfig.BASE_URL}/api/auth/email/change/confirm")
         .header("X-Client-Kind", "ANDROID")
         .post(body)
-      _accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
+      validAccessToken()?.let { builder.header("Authorization", "Bearer $it") }
 
       client.newCall(builder.build()).execute().use { response ->
         if (!response.isSuccessful) throw TransportException("Změna e-mailu selhala (${response.code})")
       }
-      refresh()
+      recoverFromUnauthorized(_accessToken.value)
     }
 
   /** Výmaz účtu (docs/soukromi.md, "GDPR") — dvoukrokový OTP tok jako změna e-mailu, jen na
@@ -193,7 +278,7 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
       .url("${ApiConfig.BASE_URL}/api/me/delete/request")
       .header("X-Client-Kind", "ANDROID")
       .post("".toRequestBody(jsonMediaType))
-    _accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
+    validAccessToken()?.let { builder.header("Authorization", "Bearer $it") }
 
     client.newCall(builder.build()).execute().use { response ->
       if (!response.isSuccessful) throw errorFor(response, "Odeslání kódu selhalo")
@@ -208,13 +293,12 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
       .url("${ApiConfig.BASE_URL}/api/me/delete/confirm")
       .header("X-Client-Kind", "ANDROID")
       .post(body)
-    _accessToken.value?.let { builder.header("Authorization", "Bearer $it") }
+    validAccessToken()?.let { builder.header("Authorization", "Bearer $it") }
 
     client.newCall(builder.build()).execute().use { response ->
       if (!response.isSuccessful) throw errorFor(response, "Smazání účtu selhalo")
     }
-    _accessToken.value = null
-    tokenStore.clear()
+    clearSession()
   }
 
   /** RFC 7807 `ProblemDetail` tvar — jen pole, která appka umí zobrazit (viz backend `GlobalExceptionHandler`). */
@@ -240,6 +324,16 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
 
   private fun applyToken(token: TokenResponse) {
     _accessToken.value = token.accessToken
+    accessTokenExpiresAt = accessTokenExpiresAt(SystemClock.elapsedRealtime(), token.expiresInSec)
     token.refreshToken?.let { tokenStore.saveRefreshToken(it) }
+    _isLoggedIn.value = true
+  }
+
+  /** Konec session — v paměti i na disku, ať `isLoggedIn` napříč appkou nelže. */
+  private fun clearSession() {
+    _accessToken.value = null
+    accessTokenExpiresAt = null
+    tokenStore.clear()
+    _isLoggedIn.value = false
   }
 }

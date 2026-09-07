@@ -7,7 +7,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.kvalitacena.R
-import cz.kvalitacena.auth.AuthRepository
 import cz.kvalitacena.network.Category
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.ProductSearchItem
@@ -37,7 +36,6 @@ private const val PAGE_SIZE = 20
 
 class SearchViewModel(
   private val graphQlClient: GraphQlClient,
-  private val authRepository: AuthRepository,
   private val countryStore: CountryStore,
   private val filterStore: SearchFilterStore,
 ) : ViewModel() {
@@ -119,10 +117,9 @@ class SearchViewModel(
     errorMessage = null
     viewModelScope.launch {
       try {
-        // Vlastní nepotvrzené (DRAFT) zboží uvidí ve výsledcích jen přihlášený autor — appka
-        // odpaluje obnovení přihlášení při startu bez čekání (MainActivity.kt), takže dotaz
-        // hned po startu appky by se bez tohohle čekání mohl zeptat ještě jako anonym.
-        authRepository.awaitInitialRefresh()
+        // Vlastní nepotvrzené (DRAFT) zboží uvidí ve výsledcích jen přihlášený autor. Že se
+        // dotaz nezeptá omylem jako anonym, hlídá `AuthRepository.validAccessToken` v síťové
+        // vrstvě — čekat tu na obnovu po startu appky (ani hlídat vypršení) není potřeba.
         val result = graphQlClient.searchProducts(
           query = query.trim(),
           storeId = selectedStoreId,

@@ -107,10 +107,9 @@ class ProfileViewModel(
   private fun load() {
     viewModelScope.launch {
       try {
-        // Appka odpaluje obnovení přihlášení při startu bez čekání (T0 anonymní chod tím
-        // není podmíněný, viz MainActivity.kt) — profil ale přihlášení vždy vyžaduje, takže
-        // by se bez tohohle čekání mohl zeptat jako anonym dřív, než refresh doběhne.
-        authRepository.awaitInitialRefresh()
+        // Na obnovu přihlášení po startu appky se tu nečeká — `me()` si platný access token
+        // obstará sám (`AuthRepository.validAccessToken`), včetně toho, že počká na obnovu,
+        // která zrovna běží. Anonymní chod appky (T0) tím pořád není podmíněný.
         val viewer = graphQlClient.me()
         viewer?.profile?.let { applyProfile(it) }
         if (viewer?.profile == null) loadError = UiText.Res(R.string.profile_load_failed)
