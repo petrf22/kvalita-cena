@@ -86,8 +86,7 @@ fun ProductDetailScreen(
     factory = viewModelFactory { initializer { ProductDetailViewModel(AppContainer.graphQlClient, productId) } },
   )
   val context = LocalContext.current
-  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
-  val isLoggedIn = accessToken != null
+  val isLoggedIn by AppContainer.authRepository.isLoggedIn.collectAsState()
   var productActionsExpanded by remember { mutableStateOf(false) }
   ReportUnsavedChanges(viewModel.reviewModalVisible && reviewTextDirty(viewModel))
 

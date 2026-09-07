@@ -47,8 +47,7 @@ fun PhotoSlot(
   var uri by remember { mutableStateOf<Uri?>(null) }
   var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
   var error by remember { mutableStateOf<UiText?>(null) }
-  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
-  val isLoggedIn = accessToken != null
+  val isLoggedIn by AppContainer.authRepository.isLoggedIn.collectAsState()
 
   fun setUri(value: Uri?) {
     uri = value

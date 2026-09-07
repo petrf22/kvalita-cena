@@ -55,8 +55,7 @@ fun SettingsScreen(
   onOpenPrivacy: () -> Unit = {},
 ) {
   val scope = rememberCoroutineScope()
-  val accessToken by AppContainer.authRepository.accessToken.collectAsState()
-  val isLoggedIn = accessToken != null
+  val isLoggedIn by AppContainer.authRepository.isLoggedIn.collectAsState()
   var countryOptions by remember { mutableStateOf<List<CountryInfo>>(emptyList()) }
   LaunchedEffect(Unit) {
     // Číselník je jen doplněk pro select options — výpadek appku nesmí zablokovat, zůstane

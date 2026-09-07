@@ -100,7 +100,9 @@ class MainActivity : AppCompatActivity() {
 
     // Zkusí obnovit přihlášení z uloženého refresh tokenu — stejný princip jako
     // frontend/src/app/func/auth-initializer.ts. Anonymní chod appky (T0) tím není podmíněný.
-    lifecycleScope.launch { AppContainer.authRepository.refresh() }
+    // Obrazovky na to nečekají: stav přihlášení je znát z uloženého refresh tokenu hned
+    // (`isLoggedIn`) a každý dotaz si platný access token obstará sám (`validAccessToken`).
+    lifecycleScope.launch { AppContainer.authRepository.restoreSession() }
 
     setContent {
       KvalitaACenaTheme {
