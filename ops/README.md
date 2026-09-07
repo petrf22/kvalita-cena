@@ -19,6 +19,34 @@ Spustit z checkoutu repa na serveru:
 ./ops/deploy.sh 0.3.0
 ```
 
+## `prod-prompt.sh`
+
+Prompt serveru s bílým štítkem `PRODUKCE` na červeném pozadí, ať v terminálu nejde zaměnit
+relace na produkci s lokálním PC (lokální Ubuntu prompt je zelený `user@host` + modrá cesta,
+přes ssh vypadal server dřív stejně). Stejný štítek jde i do titulku okna/záložky. Na rozdíl
+od ostatních skriptů tady se **sourcuje**, nespouští — proto nemá `+x` ani `set -euo pipefail`
+(v interaktivním shellu by `set -e` zavřel okno při každém neúspěšném příkazu).
+
+Instalace, jednorázově:
+
+```bash
+scp ops/prod-prompt.sh kvalitacena@<server>:~/.prod-prompt.sh
+ssh kvalitacena@<server>
+printf '\n# Prompt produkčního serveru (zdroj: ops/prod-prompt.sh v repu)\n[ -f ~/.prod-prompt.sh ] && . ~/.prod-prompt.sh\n' >> ~/.bashrc
+```
+
+**Na KONEC `~/.bashrc`** — výchozí Ubuntu blok si `PS1` nastavuje sám, takže dřívější řádek by
+přepsal zpátky.
+
+**Proč se soubor kopíruje a nesourcuje rovnou z checkoutu repa na serveru**: `deploy.sh` dělá
+`git checkout vX.Y.Z`, takže repo na serveru stojí na vydaném tagu — nový soubor by se tam
+objevil až s příštím vydáním a při každém nasazení by se měnil pod běžící relací. Kopie
+v domovském adresáři je na vydání nezávislá; zdroj pravdy zůstává tenhle soubor v repu, po
+jeho úpravě se `scp` zopakuje.
+
+Prompt se uplatní jen v interaktivním shellu (`case $- in *i*`), aby se nerozbil neinteraktivní
+výstup, na kterém stojí cron zálohy a `pull-backup.sh` (`rsync` přes ssh).
+
 ## `backup.sh`
 
 Zálohuje databázi (`pg_dump`) a adresář médií (Docker volume `kvalita-a-cena-media-prod`) do
