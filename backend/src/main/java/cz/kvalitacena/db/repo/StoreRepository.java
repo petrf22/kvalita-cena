@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface StoreRepository extends JpaRepository<Store, Long> {
 
@@ -21,6 +22,20 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
    * (docs/soukromi.md). Viditelnost pod prahem důvěry: PENDING provozovnu vidí jen autor
    * (docs/reputace.md).
    */
+  /**
+   * Provozovna podle hlavičky účtenky — řetězec + město, volitelně upřesněné ulicí.
+   * Slouží jako NÁVRH při importu, nikdy k automatickému zakládání obchodu (docs/reputace.md
+   * má na zakládání vlastní limity a práh potvrzení, hlavička účtenky na ně není důkaz).
+   * Jen ACTIVE a neskryté: PENDING provozovnu by import cizího uživatele neměl vidět.
+   */
+  @Query(value = "SELECT * FROM core.store s WHERE s.status = 'ACTIVE' AND s.hidden_at IS NULL "
+      + "AND s.chain_id = :chainId AND s.country = :country "
+      + "AND core.norm_text(s.city) = core.norm_text(:city) "
+      + "AND (:street IS NULL OR core.norm_text(s.street) = core.norm_text(:street)) "
+      + "ORDER BY CASE WHEN :street IS NULL THEN 1 ELSE 0 END, s.id LIMIT 1", nativeQuery = true)
+  Optional<Store> findByChainCityAndStreet(@Param("chainId") Long chainId,
+      @Param("country") String country, @Param("city") String city, @Param("street") String street);
+
   @Query(value = "SELECT * FROM core.store s WHERE "
       + "(s.status = 'ACTIVE' OR (s.status = 'PENDING' AND s.created_by_user_id = CAST(:viewerId AS BIGINT))) "
       + "AND s.hidden_at IS NULL "

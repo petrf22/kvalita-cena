@@ -1,0 +1,282 @@
+# 01-ai-schema-receipt.yaml — schéma `ai` a vytěžená účtenka jako NÁVRH cen k potvrzení.
+#
+# Proč vlastní schéma a ne core: docs/ai.md — čistý export vlastních dat
+# (pg_dump --schema=core --schema=agg) nemá obsahovat strojové odhady, které se můžou
+# přepočítat jindy jinak. Stejný důvod jako u oddělení off/osm.
+#
+# Účtenka NIKDY nezakládá cenu sama (docs/ai.md, "AI nikdy nerozhoduje") — řádek dostane
+# návrh katalogové položky a teprve potvrzení člověkem z něj udělá core.price_observation.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-07-01-create-ai-schema
+      author: Petr F.
+      changes:
+        - sql:
+            comment: Schéma pro strojově vytěžená data (docs/ai.md)
+            sql: |
+              CREATE SCHEMA IF NOT EXISTS ai;
+      rollback:
+        - sql:
+            sql: DROP SCHEMA IF EXISTS ai CASCADE;
+
+  - changeSet:
+      id: 2026-09-07-01-receipt
+      author: Petr F.
+      comment: >
+        Hlavička účtenky. Z patičky se ukládá JEN datum nákupu a celková částka — číslo karty,
+        SEQ ID, autorizační kód, čísla pokladny a věrnostní údaje zahazuje už klientský parser
+        (tools/uctenky, docs/soukromi.md — "Účtenka"). chain_id/store_id jsou návrh dohledaný
+        podle hlavičky, ne automaticky založená provozovna.
+      changes:
+        - createTable:
+            schemaName: ai
+            tableName: receipt
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: uploaded_by_user_id
+                  type: BIGINT
+                  constraints: { nullable: false }
+              - column:
+                  name: payload_sha256
+                  type: BYTEA
+                  remarks: Otisk normalizovaného dokumentu — idempotence opakovaného nahrání.
+                  constraints: { nullable: false }
+              - column:
+                  name: schema_version
+                  type: INT
+                  constraints: { nullable: false }
+              - column:
+                  name: profile
+                  type: VARCHAR(40)
+                  constraints: { nullable: false }
+              - column:
+                  name: ocr_model
+                  type: VARCHAR(100)
+              - column:
+                  name: image_sha256
+                  type: VARCHAR(64)
+                  remarks: Otisk zdrojového obrázku. Obrázek sám na serveru zatím není.
+              - column:
+                  name: raw_merchant_name
+                  type: VARCHAR(200)
+              - column:
+                  name: raw_street
+                  type: VARCHAR(200)
+              - column:
+                  name: raw_city
+                  type: VARCHAR(200)
+              - column:
+                  name: chain_id
+                  type: BIGINT
+              - column:
+                  name: store_id
+                  type: BIGINT
+              - column:
+                  name: purchased_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: currency
+                  type: VARCHAR(3)
+                  constraints: { nullable: false }
+              - column:
+                  name: printed_total
+                  type: NUMERIC(12, 2)
+              - column:
+                  name: computed_total
+                  type: NUMERIC(12, 2)
+                  constraints: { nullable: false }
+              - column:
+                  name: total_matches
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints: { nullable: false }
+              - column:
+                  name: status
+                  type: VARCHAR(12)
+                  defaultValue: IMPORTED
+                  constraints: { nullable: false }
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints: { nullable: false }
+              - column:
+                  name: confirmed_at
+                  type: TIMESTAMPTZ
+        - addForeignKeyConstraint:
+            constraintName: fk_receipt_user
+            baseTableSchemaName: ai
+            baseTableName: receipt
+            baseColumnNames: uploaded_by_user_id
+            referencedTableSchemaName: auth
+            referencedTableName: app_user
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_receipt_chain
+            baseTableSchemaName: ai
+            baseTableName: receipt
+            baseColumnNames: chain_id
+            referencedTableSchemaName: core
+            referencedTableName: retail_chain
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            constraintName: fk_receipt_store
+            baseTableSchemaName: ai
+            baseTableName: receipt
+            baseColumnNames: store_id
+            referencedTableSchemaName: core
+            referencedTableName: store
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - sql:
+            sql: |
+              ALTER TABLE ai.receipt
+                ADD CONSTRAINT chk_receipt_status
+                  CHECK (status IN ('IMPORTED', 'MATCHED', 'CONFIRMED', 'DISCARDED')),
+                ADD CONSTRAINT chk_receipt_currency CHECK (currency ~ '^[A-Z]{3}$');
+
+              -- Idempotence importu: tentýž dokument nahraný dvakrát je jedna účtenka.
+              -- Otisk je unikátní na uživatele, ne globálně — dva lidé můžou nakoupit totéž.
+              CREATE UNIQUE INDEX uq_receipt_payload
+                ON ai.receipt (uploaded_by_user_id, payload_sha256);
+              CREATE INDEX idx_receipt_owner_created
+                ON ai.receipt (uploaded_by_user_id, created_at DESC);
+      rollback:
+        - dropTable: { schemaName: ai, tableName: receipt }
+
+  - changeSet:
+      id: 2026-09-07-01-receipt-line
+      author: Petr F.
+      comment: >
+        Řádek účtenky. unit_price je u váhového zboží cena za kg/l (289,00 Kč/kg), NIKDY
+        zaplacená částka za nakoupené množství (87,30) — docs/rozvoj.md o tom mluví jako
+        o nejpravděpodobnější tiché chybě celé funkce. quantity říká, kolik toho člověk
+        koupil, a do ceny nevstupuje.
+      changes:
+        - createTable:
+            schemaName: ai
+            tableName: receipt_line
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints: { primaryKey: true, nullable: false }
+              - column:
+                  name: receipt_id
+                  type: BIGINT
+                  constraints: { nullable: false }
+              - column:
+                  name: line_no
+                  type: INT
+                  constraints: { nullable: false }
+              - column:
+                  name: kind
+                  type: VARCHAR(10)
+                  constraints: { nullable: false }
+              - column:
+                  name: raw_label
+                  type: VARCHAR(200)
+                  constraints: { nullable: false }
+              - column:
+                  name: raw_code
+                  type: VARCHAR(60)
+                  remarks: >
+                    Vnitroobchodní kód, pokud ho účtenka tiskne (Albert ne). Je to první a
+                    jediný jistý krok kaskády párování, proto je v datech od začátku —
+                    docs/ai.md varuje před dopisováním rozlišení pozdější migrací.
+              - column:
+                  name: quantity
+                  type: NUMERIC(12, 3)
+              - column:
+                  name: quantity_basis
+                  type: VARCHAR(12)
+              - column:
+                  name: unit_price
+                  type: NUMERIC(12, 2)
+              - column:
+                  name: line_total
+                  type: NUMERIC(12, 2)
+              - column:
+                  name: vat_code
+                  type: VARCHAR(2)
+              - column:
+                  name: applies_to_line_no
+                  type: INT
+              - column:
+                  name: match_status
+                  type: VARCHAR(12)
+                  defaultValue: UNMATCHED
+                  constraints: { nullable: false }
+              - column:
+                  name: matched_product_id
+                  type: BIGINT
+              - column:
+                  name: match_source
+                  type: VARCHAR(12)
+              - column:
+                  name: match_score
+                  type: NUMERIC(4, 3)
+              - column:
+                  name: observation_id
+                  type: BIGINT
+              - column:
+                  name: note
+                  type: VARCHAR(500)
+        - addForeignKeyConstraint:
+            constraintName: fk_receipt_line_receipt
+            baseTableSchemaName: ai
+            baseTableName: receipt_line
+            baseColumnNames: receipt_id
+            referencedTableSchemaName: ai
+            referencedTableName: receipt
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            constraintName: fk_receipt_line_product
+            baseTableSchemaName: ai
+            baseTableName: receipt_line
+            baseColumnNames: matched_product_id
+            referencedTableSchemaName: core
+            referencedTableName: product
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            constraintName: fk_receipt_line_observation
+            baseTableSchemaName: ai
+            baseTableName: receipt_line
+            baseColumnNames: observation_id
+            referencedTableSchemaName: core
+            referencedTableName: price_observation
+            referencedColumnNames: id
+            onDelete: SET NULL
+        - sql:
+            sql: |
+              ALTER TABLE ai.receipt_line
+                ADD CONSTRAINT chk_receipt_line_kind
+                  CHECK (kind IN ('ITEM', 'DISCOUNT', 'UNKNOWN')),
+                ADD CONSTRAINT chk_receipt_line_match_status
+                  CHECK (match_status IN ('UNMATCHED', 'SUGGESTED', 'MATCHED', 'SKIPPED', 'IMPORTED')),
+                ADD CONSTRAINT chk_receipt_line_match_source
+                  CHECK (match_source IS NULL
+                    OR match_source IN ('CODE', 'LABEL', 'SIMILARITY', 'MANUAL')),
+                ADD CONSTRAINT chk_receipt_line_quantity_basis
+                  CHECK (quantity_basis IS NULL
+                    OR quantity_basis IN ('PACKAGE', 'PER_KG', 'PER_L', 'PER_PIECE')),
+                -- Spárovaný řádek musí vědět, odkud se to ví; nespárovaný nesmí mít zboží.
+                ADD CONSTRAINT chk_receipt_line_match_pair
+                  CHECK ((matched_product_id IS NULL) = (match_source IS NULL));
+
+              CREATE UNIQUE INDEX uq_receipt_line_no ON ai.receipt_line (receipt_id, line_no);
+              CREATE INDEX idx_receipt_line_pending
+                ON ai.receipt_line (receipt_id)
+                WHERE match_status IN ('UNMATCHED', 'SUGGESTED');
+      rollback:
+        - dropTable: { schemaName: ai, tableName: receipt_line }

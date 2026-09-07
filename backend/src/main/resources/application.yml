@@ -194,6 +194,17 @@ app:
     spam:
       quarantine-threshold: 50
       max-links: 2
+  receipt:
+    # Import účtenek (docs/rozvoj.md, "Načtení celé účtenky"). Ve fázi lokálního OCR nahrává
+    # účtenky jen provozovatel vlastním nástrojem z tools/uctenky, limity jsou proto velkorysé
+    # jako zbytek MVP.
+    max-lines-per-receipt: 300
+    max-per-day: 50
+    # Σ(položky + slevy) sedí na reálných účtenkách na haléř — tohle je pojistka na jeden
+    # zaokrouhlovací řádek, ne prostor pro rozsypané OCR.
+    total-tolerance: 0.02
+    # docs/soukromi.md, "Účtenka" — účtenka se po roce maže celá, nepseudonymizuje.
+    retention-days: 365
   media:
     # Adresář na disku mimo pg_dump (docs/datovy-model.md) — v produkci mimo repozitář,
     # zálohuje se nezávisle na databázi.
