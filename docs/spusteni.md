@@ -240,10 +240,10 @@ cd mobile
 ./gradlew :app:assembleDebug        # sestaví app-debug.apk
 ```
 
-Emulátor (ověřený AVD `Pixel_6_API_30`; `adb`/`emulator` nejsou v PATH, proto plná cesta):
+Emulátor (ověřený AVD `Medium_Phone`; `adb`/`emulator` nejsou v PATH, proto plná cesta):
 
 ```bash
-~/Android/Sdk/emulator/emulator -avd Pixel_6_API_30 -no-snapshot -no-boot-anim -gpu swiftshader_indirect
+~/Android/Sdk/emulator/emulator -avd Medium_Phone -no-snapshot -no-boot-anim -gpu swiftshader_indirect
 ~/Android/Sdk/platform-tools/adb install -r app/build/outputs/apk/debug/app-debug.apk
 ~/Android/Sdk/platform-tools/adb shell am start -n cz.kvalitacena/.MainActivity
 ```
