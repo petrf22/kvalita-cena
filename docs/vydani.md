@@ -324,13 +324,36 @@ Appka verzi čte takto — beze změny, jen doplněno o odkaz na seznam změn:
 Trunk-based — `main` je vždy vydatelná, žádné dlouhé větve (dependabot PR se merguje rovnou do
 `main`). Vydání = anotovaný git tag `vX.Y.Z` na `main`.
 
+Od 2026-09-04 je `main` chráněná GitHub rulesetem „Ochrana main": zápis jde jen přes pull
+request se všemi 5 povinnými status checky zelenými (Backend, Frontend, Mobile, Dokumentace,
+Verze a changelog) — bez výjimky, i admin má `bypass: never`. I release commit „Vydat X.Y.Z"
+proto jde přes krátkodobou větev a PR, ne přímým pushem na `main` (`Postup vydání` níž).
+
+**Tag se zakládá až PO mergi PR, nikdy před ním.** GitHub umí commitu při mergi dát nový hash i
+u čistě dopředného sloučení jediného commitu (ověřeno v praxi na vydání 0.7.2 — metoda „Create
+a merge commit" nad rychle-přetočitelnou větví přesto vytvořila nový hash se stejným obsahem,
+místo aby dvouprocesový merge commit nebo beze změny protáhla původní). Tag založený před mergí
+by tak ukazoval na commit mimo historii `main` a musel by se znovu zakládat a force-pushovat
+(přesně to se u 0.7.2 stalo). Založení tagu až na skutečném tipu `origin/main` po mergi je
+navíc jediný způsob, jak umožnit rebase/fixup PR před schválením bez dopadu na tag.
+
 ### Postup vydání
 
 1. Doplnit položky do `## [Nezveřejněno]` v `CHANGELOG.md`, přejmenovat na
    `## [X.Y.Z] – <datum>`.
 2. Zapsat `X.Y.Z` do `VERSION`.
 3. `node tools/version/sync.mjs` — přepíše všech pět generovaných výstupů.
-4. Commit „Vydat X.Y.Z" + `git tag -a vX.Y.Z -m 'Verze X.Y.Z'` + `git push --follow-tags`.
+4. Založit větev `release/X.Y.Z` z `main`, commit „Vydat X.Y.Z", push, otevřít PR (`gh pr
+   create`) — **ne** commit/tag/push přímo na `main`, ruleset by ho stejně odmítl.
+5. Počkat na všech 5 CI checků a PR smergovat (metoda mergnutí je jedno — squash, merge i
+   rebase mohou dát commitu nový hash, řeší se dál).
+6. `git fetch origin main`, ověřit, že tip `origin/main` je skutečně commit „Vydat X.Y.Z", a
+   teprve na něj založit tag: `git tag -a vX.Y.Z <sha-z-origin/main> -m 'Verze X.Y.Z'` +
+   `git push origin vX.Y.Z`.
+7. Lokální `main` dorovnat na `origin/main` (`git merge --ff-only`, případně `git reset --hard
+   origin/main`, pokud commit z kroku 4 zůstal i na lokální `main` s jiným hashem než po
+   mergi). Dočasnou větev `release/X.Y.Z` smazat lokálně — na originu ji GitHub smaže sám
+   (`delete_branch_on_merge`).
 
 ### Z čeho stavět
 
