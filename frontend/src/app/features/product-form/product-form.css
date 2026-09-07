@@ -74,8 +74,9 @@
   gap: 8px;
 }
 
+/* Širší než jen na „g"/„ml" — vejde se i popisek prázdné volby („nevyplněno"). */
 .net-content-uom {
-  width: 6rem;
+  width: 9rem;
   flex-shrink: 0;
 }
 

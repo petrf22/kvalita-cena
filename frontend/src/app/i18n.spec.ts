@@ -12,7 +12,6 @@ import {
   PRODUCT_SORT_KEYS,
   QUANTITY_BASIS_KEYS,
   RECORD_TYPE_KEYS,
-  UNIT_BASE_KEYS,
 } from './shared/enum-labels';
 
 /**
@@ -105,7 +104,6 @@ describe('enum-labels.ts keys exist in every language bundle', () => {
   const allKeyRecords = {
     PRICE_KIND_KEYS,
     QUANTITY_BASIS_KEYS,
-    UNIT_BASE_KEYS,
     PRODUCT_SORT_KEYS,
     CONFIDENCE_KEYS,
     NET_CONTENT_UOM_KEYS,

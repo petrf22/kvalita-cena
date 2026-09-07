@@ -147,11 +147,6 @@
       "PER_L": "Za litr",
       "PER_PIECE": "Za sztukę"
     },
-    "unitBase": {
-      "MASS": "Waga",
-      "VOLUME": "Objętość",
-      "COUNT": "Sztuka"
-    },
     "productSort": {
       "REPORT_COUNT": "Według liczby zgłoszeń",
       "PRICE_ASC": "Według ceny",

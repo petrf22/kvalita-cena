@@ -9,7 +9,6 @@ import {
   ProductSort,
   QuantityBasis,
   RecordType,
-  UnitBase,
 } from '../models/catalog';
 import { ErrorCode } from '../models/generated/enums';
 
@@ -33,12 +32,6 @@ export const QUANTITY_BASIS_KEYS: Record<QuantityBasis, string> = {
   [QuantityBasis.PerKg]: 'enum.quantityBasis.PER_KG',
   [QuantityBasis.PerL]: 'enum.quantityBasis.PER_L',
   [QuantityBasis.PerPiece]: 'enum.quantityBasis.PER_PIECE',
-};
-
-export const UNIT_BASE_KEYS: Record<UnitBase, string> = {
-  [UnitBase.Mass]: 'enum.unitBase.MASS',
-  [UnitBase.Volume]: 'enum.unitBase.VOLUME',
-  [UnitBase.Count]: 'enum.unitBase.COUNT',
 };
 
 export const PRODUCT_SORT_KEYS: Record<ProductSort, string> = {
