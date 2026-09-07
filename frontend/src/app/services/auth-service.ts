@@ -24,10 +24,20 @@ export class AuthService {
    */
   private static readonly REFRESH_MARGIN_MS = 30_000;
 
+  /** Záloha pro server, který `expiresInSec` ještě neposílá — výchozí `app.jwt.access-token-ttl`
+   *  (mobilní protějšek: výchozí hodnota v `network/Dto.kt`). */
+  private static readonly FALLBACK_EXPIRES_IN_SEC = 600;
+
   private readonly http = inject(HttpClient);
   private readonly accessTokenSignal = signal<string | null>(null);
-  /** `performance.now()`, ne `Date.now()` — životnost tokenu je doba, ne okamžik, takže
-   *  přenastavení systémových hodin nesmí platný token prohlásit za prošlý ani naopak. */
+  /**
+   * `Date.now()`, NE `performance.now()`: monotonní hodiny prohlížeče se během uspání stroje
+   * nehýbou, takže zavřené a po půl hodině otevřené víko by nechalo appku považovat dávno
+   * prošlý token (TTL 10 min) za platný — přesně ten případ, kvůli kterému tohle vzniklo.
+   * Riziko opačným směrem (ruční přenastavení systémových hodin) je proti tomu okrajové.
+   * Android tenhle kompromis dělat nemusí, `SystemClock.elapsedRealtime()` hluboký spánek
+   * počítá (`auth/AccessTokenExpiry.kt`).
+   */
   private readonly expiresAtSignal = signal<number | null>(null);
   private refreshInFlight: Observable<string | null> | null = null;
 
@@ -57,7 +67,7 @@ export class AuthService {
     const token = this.accessTokenSignal();
     const expiresAt = this.expiresAtSignal();
     if (token === null || expiresAt === null) return null;
-    return performance.now() < expiresAt - AuthService.REFRESH_MARGIN_MS ? token : null;
+    return Date.now() < expiresAt - AuthService.REFRESH_MARGIN_MS ? token : null;
   }
 
   /**
@@ -89,7 +99,13 @@ export class AuthService {
 
   private applyToken(token: TokenResponse): void {
     this.accessTokenSignal.set(token.accessToken);
-    this.expiresAtSignal.set(performance.now() + token.expiresInSec * 1000);
+    // Server, který pole ještě neposílá (rolling deploy), by jinak dal NaN — a NaN je v každém
+    // srovnání false, takže by se token tvářil jako věčně prošlý a KAŽDÝ request by rotoval
+    // refresh token. Souběžné rotace mimo grace okno = revokace celé rodiny, tzn. odhlášení.
+    const expiresInSec = Number.isFinite(token.expiresInSec)
+      ? token.expiresInSec
+      : AuthService.FALLBACK_EXPIRES_IN_SEC;
+    this.expiresAtSignal.set(Date.now() + expiresInSec * 1000);
   }
 
   /** Konec session — ať `isLoggedIn` (a všechno na něm založené) napříč appkou nelže. */

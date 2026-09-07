@@ -1,5 +1,6 @@
 package cz.kvalitacena.ui.account
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -42,9 +44,17 @@ fun AccountScreen(
   onOpenTerms: () -> Unit = {},
   onOpenPrivacy: () -> Unit = {},
 ) {
+  val sessionKnown by AppContainer.authRepository.sessionKnown.collectAsState()
   val isLoggedIn by AppContainer.authRepository.isLoggedIn.collectAsState()
 
-  if (!isLoggedIn) {
+  // Dokud se nepřečte uložený refresh token (Keystore, desítky ms — na hlavní vlákno při startu
+  // nepatří), není `isLoggedIn = false` odpověď, ale "ještě nevím". Bez tohohle čekání by
+  // přihlášenému problikl přihlašovací formulář.
+  if (!sessionKnown) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+      CircularProgressIndicator()
+    }
+  } else if (!isLoggedIn) {
     LoginScreen(onLoggedIn = {}, onOpenTerms = onOpenTerms, onOpenPrivacy = onOpenPrivacy)
   } else {
     LoggedInContent(onEditProfile, onOpenMyContributions)

@@ -64,6 +64,16 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
   val isLoggedIn: StateFlow<Boolean> = _isLoggedIn
 
   /**
+   * Ví už appka, jestli je uživatel přihlášený? Čtení [TokenStore] jde přes Android Keystore
+   * (desítky ms) a na hlavní vlákno při startu nepatří, takže [isLoggedIn] je do té doby
+   * `false` jen proto, že se ještě nezjistilo — ne proto, že by uživatel byl anonym.
+   * Obrazovka, která podle toho PŘEPÍNÁ obsah (Účet mezi přihlášením a účtem), musí počkat,
+   * jinak přihlášenému na okamžik problikne přihlašovací formulář.
+   */
+  private val _sessionKnown = MutableStateFlow(false)
+  val sessionKnown: StateFlow<Boolean> = _sessionKnown
+
+  /**
    * Jediný způsob, jak se v appce dostat k access tokenu — nikdy nečíst uložený token přímo.
    * Vrátí token, který je JEŠTĚ platný; jinak ho tiše obnoví z refresh tokenu.
    *
@@ -79,18 +89,22 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
   suspend fun validAccessToken(): String? = withContext(Dispatchers.IO) {
     usableAccessToken()?.let { return@withContext it }
     if (tokenStore.getRefreshToken() == null) {
-      _isLoggedIn.value = false
+      markSession(loggedIn = false)
       return@withContext null
     }
     refreshMutex.withLock {
       // Mezitím mohl token obnovit jiný souběžný dotaz — pak není co rotovat.
       usableAccessToken() ?: run {
-        refreshLocked()
         // Čerstvě vydaný token se použije, i kdyby mu do rezervy zbývalo míň — rezerva
         // rozhoduje, KDY obnovit, ne co se smí použít. Server smí mít TTL kratší než rezerva
         // (v testovacím prostředí běžné) a appka by se s `usableAccessToken()` na tomhle řádku
         // zacyklila do trvalé anonymity: každý token by rovnou zahodila jako "skoro prošlý".
-        _accessToken.value
+        //
+        // Když ale obnova NEPROJDE, prošlý token se poslat nesmí: server ho tiše zahodí a
+        // request odbaví jako anonymní (HTTP 200) — přesně ta tichá degradace, kvůli které
+        // tahle metoda vznikla. Další request obnovu stejně zkusí znovu (hned na začátku),
+        // takže se tím o nic nepřipravíme.
+        if (refreshLocked()) _accessToken.value else null
       }
     }
   }
@@ -102,7 +116,7 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
    * refresh token proti 30s grace oknu.
    */
   suspend fun restoreSession() = withContext(Dispatchers.IO) {
-    _isLoggedIn.value = tokenStore.getRefreshToken() != null
+    markSession(loggedIn = tokenStore.getRefreshToken() != null)
     validAccessToken()
     Unit
   }
@@ -211,9 +225,18 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
     }
   }
 
+  /**
+   * Odhlášení musí zrušit session POD [refreshMutex] — jinak by obnova, která zrovna běží,
+   * doběhla až po vyčištění a [applyToken] by uživatele mlčky přihlásila zpátky (a nechala mu
+   * na disku použitelný refresh token). Dřív šla obnova jen při startu a po 401, takže okno
+   * bylo úzké; teď se obnovuje na expiraci, tedy kdykoli.
+   */
   suspend fun logout() = withContext(Dispatchers.IO) {
-    val refreshToken = tokenStore.getRefreshToken()
-    clearSession()
+    val refreshToken = refreshMutex.withLock {
+      val token = tokenStore.getRefreshToken()
+      clearSession()
+      token
+    }
     if (refreshToken != null) {
       val body = json.encodeToString(RefreshBody(refreshToken)).toRequestBody(jsonMediaType)
       val request = Request.Builder()
@@ -298,7 +321,8 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
     client.newCall(builder.build()).execute().use { response ->
       if (!response.isSuccessful) throw errorFor(response, "Smazání účtu selhalo")
     }
-    clearSession()
+    // Pod zámkem ze stejného důvodu jako logout() — souběžná obnova by session vzkřísila.
+    refreshMutex.withLock { clearSession() }
   }
 
   /** RFC 7807 `ProblemDetail` tvar — jen pole, která appka umí zobrazit (viz backend `GlobalExceptionHandler`). */
@@ -326,7 +350,7 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
     _accessToken.value = token.accessToken
     accessTokenExpiresAt = accessTokenExpiresAt(SystemClock.elapsedRealtime(), token.expiresInSec)
     token.refreshToken?.let { tokenStore.saveRefreshToken(it) }
-    _isLoggedIn.value = true
+    markSession(loggedIn = true)
   }
 
   /** Konec session — v paměti i na disku, ať `isLoggedIn` napříč appkou nelže. */
@@ -334,6 +358,11 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
     _accessToken.value = null
     accessTokenExpiresAt = null
     tokenStore.clear()
-    _isLoggedIn.value = false
+    markSession(loggedIn = false)
+  }
+
+  private fun markSession(loggedIn: Boolean) {
+    _isLoggedIn.value = loggedIn
+    _sessionKnown.value = true
   }
 }

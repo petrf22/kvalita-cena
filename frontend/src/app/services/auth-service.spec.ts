@@ -30,7 +30,7 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     now = 1_000_000;
-    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
@@ -104,6 +104,31 @@ describe('AuthService', () => {
 
     await expect(result).resolves.toBeNull();
     expect(service.isLoggedIn()).toBe(true);
+  });
+
+  /**
+   * Uspání stroje: `Date.now()` se posune, `performance.now()` ne. Kdyby se expirace počítala
+   * z monotonních hodin prohlížeče, zavřené a po půl hodině otevřené víko by nechalo appku
+   * poslat dávno prošlý token a server by ji odbavil jako anonyma.
+   */
+  it('po uspání stroje pozná, že token mezitím vypršel', async () => {
+    login('token-1', 600);
+    now += 30 * 60 * 1000;
+
+    const result = firstValue(service.validAccessToken());
+    http.expectOne('/api/auth/refresh').flush(tokenResponse('token-2'));
+    await expect(result).resolves.toBe('token-2');
+  });
+
+  /** Server, který pole ještě neposílá (rolling deploy), nesmí shodit expiraci na NaN —
+   *  jinak by KAŽDÝ request rotoval refresh token a souběžné rotace odhlásí uživatele. */
+  it('server bez expiresInSec nezpůsobí obnovu při každém požadavku', async () => {
+    service.refresh().subscribe();
+    http
+      .expectOne('/api/auth/refresh')
+      .flush({ accessToken: 'token-1', refreshToken: null, newUser: false });
+
+    await expect(firstValue(service.validAccessToken())).resolves.toBe('token-1');
   });
 
   it('nerotuje znovu, když token mezitím obnovil jiný požadavek', async () => {
