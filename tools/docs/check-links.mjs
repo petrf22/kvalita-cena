@@ -42,8 +42,11 @@ const TARGET_FILES = [
 
 const MARKDOWN_LINK = /\]\(([^)]+)\)/g;
 // `docs/neco.md` nebo `neco.md` — jen markdown soubory, ne libovolná cesta v backtičkách
-// (ty jsou většinou kódové identifikátory/třídy, ne odkazy).
-const BACKTICK_MD_REF = /`((?:\.\.\/)*(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.md)`/g;
+// (ty jsou většinou kódové identifikátory/třídy, ne odkazy). Poslední segment proto musí být
+// buď samá malá písmena (`datovy-model.md`), nebo samá velká (`README.md`) — tak se jmenují
+// všechny dokumenty v repu. CamelCase je kódový identifikátor, ne soubor: `Spacing.md`
+// v `docs/design.md` je designový token (md = medium), ne odkaz na dokumentaci.
+const BACKTICK_MD_REF = /`((?:\.\.\/)*(?:[a-zA-Z0-9_-]+\/)*(?:[a-z0-9_-]+|[A-Z0-9_]+)\.md)`/g;
 const HEADING = /^(#{1,6})\s+(.+?)\s*$/gm;
 
 /**
