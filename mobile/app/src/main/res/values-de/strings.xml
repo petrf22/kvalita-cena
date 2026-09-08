@@ -225,6 +225,8 @@
     <string name="photo_take_picture">Foto aufnehmen</string>
     <string name="photo_pick_from_gallery">Aus der Galerie wählen</string>
     <string name="photo_remove">Entfernen</string>
+    <string name="photo_close">Schließen</string>
+    <string name="photo_source_off">Open Food Facts</string>
 
     <string name="quality_not_rated">Qualität: noch nicht bewertet</string>
     <string name="quality_rated">Qualität %1$.1f/5</string>
