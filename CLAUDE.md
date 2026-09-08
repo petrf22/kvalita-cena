@@ -234,6 +234,16 @@ Dvě věci, které z kódu nejsou vidět: **nová obrazovka není hotová, dokud
 bez signálu), a **tmavý režim má mobil, web ne** (`ng-zorro-antd.min.css` je světlá
 předkompilovaná varianta; je to vědomá hranice, ne opomenutí).
 
+### Agenti pro Claude Code
+
+`.claude/agents/` (commituje se, stejně jako `.claude/commands/`) drží rozdělení práce mezi
+modely, aby se `/model` a `/effort` nemusely přenastavovat ručně: **`ui-web`/`ui-mobil`** (Opus,
+`effort: xhigh` — u UI se kvalita rodí při psaní kódu, ne v plánu, takže sem plánovací režim
+s implementací slabším modelem nepatří), **`testy`**/**`revizor-docs`** (Sonnet),
+**`pruzkumnik`**/**`logy`** (Haiku — mechanické úlohy, kde náklad je objem vstupu, ne úvaha).
+
+Nenastavuj `CLAUDE_CODE_SUBAGENT_MODEL` — přebilo by `model:` ve všech definicích.
+
 ## Konvence
 
 - `group = 'cz.kvalitacena'`/`applicationId`, package `cz.kvalitacena.*` napříč backendem i
