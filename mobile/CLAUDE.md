@@ -97,4 +97,9 @@ Na co se naráží:
   formulářů, výpočty pro graf, i18n kontrakty) vytažená do vlastního souboru — ta JUnit testy
   má (`src/test/java/cz/kvalitacena/`, přes deset souborů dnes) a při přidání dalšího nápadu
   na testovatelnou logiku je žádoucí ji stejně vytáhnout a otestovat.
+- **UI hodnoty** (rozestupy, hierarchie typografie, barvy) ber z `../docs/design.md`:
+  rozestupy přes `Spacing.*` (`ui/theme/Spacing.kt`), písmo výhradně přes
+  `MaterialTheme.typography.*` (hardcoded `.sp` appka nemá ani jednou), barvy přes
+  `MaterialTheme.colorScheme`. Nová obrazovka musí obsloužit čtyři stavy: načítání,
+  prázdný, chyba, offline — a ověřit se ve světlém i tmavém režimu
 - Odsazení 4 mezery (na rozdíl od zbytku monorepa) — viz `.editorconfig`

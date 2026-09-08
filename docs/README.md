@@ -24,6 +24,7 @@ sufixem jako „MVP“) — to je u dokumentů níž vyznačené.
 | [`lokalizace.md`](lokalizace.md) | rozhodnutí + živý stav | jazyky, mapa země→měna→locale, kontrakt chyb |
 | [`ai.md`](ai.md) | rozhodnutí + plán | lokální AI — žádný kód zatím neexistuje |
 | [`branding.md`](branding.md) | reference | vizuální identita, `tools/icons/generate.py` |
+| [`design.md`](design.md) | reference + rozhodnutí | rozestupy, typografie, barevné tokeny, čtyři stavy obrazovky |
 | [`rozvoj.md`](rozvoj.md) | plán / backlog | nápady mimo aktuální stadium, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ |
 | [`vydani.md`](vydani.md) | runbook + historie | postup mobilního vydání, podpisový klíč, Play Console |
 | [`nasazeni.md`](nasazeni.md) | runbook (checklist) | produkční hosting backendu a webu |
