@@ -180,7 +180,7 @@ private fun AppScaffold() {
       val route = DebugRouteIntent.consume() ?: return@LaunchedEffect
       // Překlep v trase nesmí shodit appku — navigate() na neznámou trasu hází výjimku.
       runCatching { navController.navigate(route) }
-        .onFailure { Log.w("DebugRouteIntent", "Neznámá trasa: $route", it) }
+        .onFailure { Log.w("DebugRouteIntent", "Unknown route: $route", it) }
     }
   }
 
