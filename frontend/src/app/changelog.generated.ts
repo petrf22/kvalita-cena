@@ -20,6 +20,12 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.8.0", date: "2026-09-08", sections: [
+      { title: "Přidáno", items: [
+        { text: "Fotky zboží jdou na mobilu otevřít přes celou obrazovku a přiblížit prsty, takže je na etiketě vidět složení i drobný text", parts: ["mobil"] },
+        { text: "Gramáž a objem jsou na mobilu vidět rovnou v seznamech zboží, na detailu i mezi vlastními příspěvky, ne až ve formuláři", parts: ["mobil"] },
+      ] },
+  ] },
   { version: "0.7.2", date: "2026-09-07", sections: [
       { title: "Změněno", items: [
         { text: "Formulář zboží se neptá na základní jednotku „Kus / Hmotnost / Objem\": vybírá se rovnou jednotka (g/kg/ml/l) a číslo vedle ní, prázdná jednotka znamená „cena platí za celé balení\" — u rohlíku ani u lahve mléka tak není co rozhodovat", parts: ["web", "mobil"] },
