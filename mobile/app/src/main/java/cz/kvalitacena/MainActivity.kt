@@ -1,6 +1,8 @@
 package cz.kvalitacena
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.BackHandler
@@ -20,8 +22,10 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -97,6 +101,7 @@ class MainActivity : AppCompatActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
+    DebugRouteIntent.accept(intent)
 
     // Zkusí obnovit přihlášení z uloženého refresh tokenu — stejný princip jako
     // frontend/src/app/func/auth-initializer.ts. Anonymní chod appky (T0) tím není podmíněný.
@@ -110,6 +115,43 @@ class MainActivity : AppCompatActivity() {
       }
     }
   }
+
+  // `ui.py open` posílá intent s --activity-single-top, takže běžící appka ho dostane sem
+  // (jinak by se aktivita se standardním launchMode zakládala znovu a přišla o stav).
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    DebugRouteIntent.accept(intent)
+  }
+}
+
+/**
+ * Skok na obrazovku poslaný z ADB (`tools/mobile/ui.py open <route>`, tedy
+ * `am start -n cz.kvalitacena/.MainActivity --activity-single-top -e route "product/<id>"`) —
+ * díky němu jde appka ladit textově, bez screenshotů (`mobile/CLAUDE.md`, "Ladění
+ * v emulátoru"); jinak by se ke každé vnitřní obrazovce muselo proklikat.
+ *
+ * Záměrně NE `navDeepLink` u každého `composable` s `VIEW` intent-filtrem: tohle je jeden blok
+ * navíc místo deseti, funguje pro libovolnou trasu z `AppDestinations.kt` včetně query
+ * parametrů, a hlavně ho `BuildConfig.DEBUG` v release buildu vypne úplně — MainActivity je
+ * sice exportovaná (LAUNCHER), ale vydaná appka si extra `route` ani nepřečte a manifest se
+ * kvůli ladění nemění.
+ */
+private object DebugRouteIntent {
+  private const val EXTRA = "route"
+
+  var pending by mutableStateOf<String?>(null)
+    private set
+
+  /** Přečte trasu z intentu a z intentu ji SMAŽE, ať se skok neopakuje při obnově aktivity. */
+  fun accept(intent: Intent?) {
+    if (!BuildConfig.DEBUG) return
+    val route = intent?.getStringExtra(EXTRA)?.takeIf { it.isNotBlank() } ?: return
+    intent.removeExtra(EXTRA)
+    pending = route
+  }
+
+  fun consume(): String? = pending?.also { pending = null }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -129,6 +171,14 @@ private fun AppScaffold() {
   val exitGuard = remember { NavigationExitGuardState() }
 
   LaunchedEffect(currentEntry?.id) { exitGuard.clear() }
+
+  val debugRoute = DebugRouteIntent.pending
+  LaunchedEffect(debugRoute) {
+    val route = DebugRouteIntent.consume() ?: return@LaunchedEffect
+    // Překlep v trase nesmí shodit appku — navigate() na neznámou trasu hází výjimku.
+    runCatching { navController.navigate(route) }
+      .onFailure { Log.w("DebugRouteIntent", "Neznámá trasa: $route", it) }
+  }
 
   fun navigateBack() {
     if (!navController.navigateUp()) {

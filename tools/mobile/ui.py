@@ -27,9 +27,9 @@ Omezení, na která se naráží v praxi:
 
   * `adb shell input text` NEUMÍ diakritiku — pošle místo znaku nesmysl. Skript na ne-ASCII
     vstup upozorní; testovací data volit v ASCII (e-maily, EANy, ceny jimi jsou beztak).
-  * `uiautomator dump` selhává hláškou „could not get idle state" tam, kde běží nekonečná
-    animace — u téhle appky hlavně ScanScreen (náhled kamery) a průběžné indikátory. Skript
-    dump opakuje; když ani pak neprojde, pomůže `ui.py setup` (vynuluje animation scales).
+  * `uiautomator dump` umí selhat hláškou „could not get idle state" tam, kde běží nekonečná
+    animace (náhled kamery na ScanScreen, průběžné indikátory). Skript proto dump opakuje;
+    hlavní pojistka je ale `ui.py setup` — po vynulování animation scales prošel i sken.
   * `resource-id` je u Compose skoro vždy prázdný (musel by se zapnout `testTagsAsResourceId`
     a rozdat `testTag`). Proto se prvky hledají podle textu a `contentDescription`, kterých má
     appka dost.
@@ -137,6 +137,10 @@ class Node:
         self.enabled = attrib.get("enabled") != "false"
         bounds = re.findall(r"-?\d+", attrib.get("bounds") or "")
         self.bounds = tuple(int(value) for value in bounds) if len(bounds) == 4 else None
+        self.children = []
+        # Kam klepnout: u popisku vyzvednutého z klikatelného rodiče je to střed RODIČE
+        # (tlačítko), ne středu textu — viz flatten().
+        self.tap = None
 
     @property
     def label(self):
@@ -146,6 +150,10 @@ class Node:
     def center(self):
         x1, y1, x2, y2 = self.bounds
         return (x1 + x2) // 2, (y1 + y2) // 2
+
+    @property
+    def point(self):
+        return self.tap or self.center
 
     @property
     def area(self):
@@ -172,7 +180,7 @@ class Node:
         if self.resource_id:
             label += " #" + self.resource_id
         line = "%s  %s  @(%d,%d)" % (label, CLASS_SHORT.get(self.cls, self.cls.split(".")[-1].lower()),
-                                     self.center[0], self.center[1])
+                                     self.point[0], self.point[1])
         return line + ("  " + " ".join(flags) if flags else "")
 
 
@@ -205,7 +213,63 @@ def dump_xml(device=None, retries=3):
         "animace (ScanScreen/průběžný indikátor)? Zkus `ui.py setup`." % (retries, last_output.strip()))
 
 
+def build_tree(xml):
+    def walk(element):
+        node = Node(element.attrib)
+        node.children = [walk(child) for child in element if child.tag == "node"]
+        return node
+    return [walk(element) for element in ET.fromstring(xml) if element.tag == "node"]
+
+
+def descendants(node):
+    for child in node.children:
+        yield child
+        for grandchild in descendants(child):
+            yield grandchild
+
+
+# Kolik popisků smí klikatelný kontejner "vyzvednout". Řádek seznamu (název + cena + obchod)
+# ano, obal celé obrazovky ne — jinak by se klikatelnost rozlila po všem, co je pod ním.
+HOIST_LIMIT = 3
+
+
+def flatten(node, out, tap=None, clickable=False):
+    """Uzly k vypsání. Compose dává klikatelný kontejner a jeho text zvlášť — tady se spojí
+    do jednoho řádku (popisek z textu, souřadnice z kontejneru), a kontejnery, které po
+    spojení nic nenesou, vypadnou. Právě tím vzniká úspora oproti syrovému XML."""
+    if not node.bounds or node.area <= 0:
+        return
+    if node.label:
+        node.tap = tap or node.center
+        node.clickable = node.clickable or clickable
+        out.append(node)
+        for child in node.children:
+            flatten(child, out)
+        return
+    if node.clickable:
+        labeled = [item for item in descendants(node) if item.label]
+        if 1 <= len(labeled) <= HOIST_LIMIT:
+            for child in node.children:
+                flatten(child, out, tap=node.center, clickable=True)
+            return
+        out.append(node)  # bez popisku, ale souřadnice se hodí (ikona, prázdné pole)
+        for child in node.children:
+            flatten(child, out)
+        return
+    if node.scrollable:
+        out.append(node)
+    for child in node.children:
+        flatten(child, out, tap, clickable)
+
+
 def parse_nodes(xml):
+    out = []
+    for root in build_tree(xml):
+        flatten(root, out)
+    return out
+
+
+def all_nodes(xml):
     nodes = []
     for element in ET.fromstring(xml).iter("node"):
         node = Node(element.attrib)
@@ -214,22 +278,14 @@ def parse_nodes(xml):
     return nodes
 
 
-def interesting(node):
-    """Kontejnery bez popisku jsou šum — právě jejich vyhozením vzniká úspora oproti XML."""
-    return bool(node.label) or bool(node.resource_id) or node.clickable or node.scrollable
-
-
-def dump_lines(nodes, show_all=False):
+def dump_lines(nodes):
     lines = []
     seen = set()
     for node in nodes:
-        if not show_all and not interesting(node):
-            continue
         line = node.render()
-        if line in seen:
-            continue
-        seen.add(line)
-        lines.append(line)
+        if line not in seen:
+            seen.add(line)
+            lines.append(line)
     return lines
 
 
@@ -269,7 +325,7 @@ def resolve_target(nodes, query, nth=None):
     found.sort(key=lambda node: node.area)
     unique = []
     for node in found:
-        if not any(abs(node.center[0] - other.center[0]) < 8 and abs(node.center[1] - other.center[1]) < 8
+        if not any(abs(node.point[0] - other.point[0]) < 8 and abs(node.point[1] - other.point[1]) < 8
                    for other in unique):
             unique.append(node)
     if len(unique) > 1 and nth is None:
@@ -288,13 +344,13 @@ def cmd_dump(args):
     if args.raw:
         print(xml)
         return
-    lines = dump_lines(parse_nodes(xml), show_all=args.all)
+    lines = dump_lines(all_nodes(xml) if args.all else parse_nodes(xml))
     print("\n".join(lines) if lines else "(prázdná obrazovka)")
 
 
 def cmd_tap(args):
     node = resolve_target(parse_nodes(dump_xml(args.device)), args.text, args.nth)
-    x, y = node.center
+    x, y = node.point
     adb_shell(["input", "tap", str(x), str(y)], args.device)
     print("tap @(%d,%d) — %s" % (x, y, node.render()))
 
@@ -304,11 +360,34 @@ def cmd_tap_xy(args):
     print("tap @(%d,%d)" % (args.x, args.y))
 
 
+def focused_field(device):
+    for node in parse_nodes(dump_xml(device)):
+        if node.focused:
+            return node
+    return None
+
+
 def cmd_text(args):
     if any(ord(char) > 127 for char in args.value):
         print("Pozor: `input text` neumí diakritiku, text dorazí zkomolený. Zvol ASCII data.",
               file=sys.stderr)
+    if args.clear:
+        current = focused_field(args.device)
+        length = len(current.text) if current else 0
+        if length:
+            adb_shell(["input", "keyevent", "KEYCODE_MOVE_END"], args.device)
+            adb_shell(["input", "keyevent"] + ["KEYCODE_DEL"] * length, args.device)
     adb_shell(["input", "text", args.value.replace(" ", "%s")], args.device)
+    # Ověřit, co v poli doopravdy skončilo: `input text` občas závodí se zaostřením pole a
+    # zdvojí první znak. Tiše zkomolený vstup je přesně ta chyba, kterou dřív odhalil až
+    # screenshot — tady musí být hlasitá.
+    if not args.no_verify:
+        field = focused_field(args.device)
+        if field is None:
+            print("Pozor: zapsaná hodnota nešla ověřit (žádné zaostřené pole).", file=sys.stderr)
+        elif args.value not in field.text:
+            die("V poli je %r, ne %r — zkus `text --clear` (nebo `--no-verify`, jde-li "
+                "o diakritiku či maskované pole)." % (field.text, args.value))
     print("napsáno: %s" % args.value)
 
 
@@ -401,7 +480,7 @@ def main():
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     dump = subparsers.add_parser("dump", help="vypíše viditelné prvky obrazovky")
-    dump.add_argument("--all", action="store_true", help="i kontejnery bez popisku")
+    dump.add_argument("--all", action="store_true", help="všechny uzly, bez slučování a filtrace")
     dump.add_argument("--raw", action="store_true", help="původní XML (velké!)")
     dump.set_defaults(func=cmd_dump)
 
@@ -417,6 +496,8 @@ def main():
 
     text = subparsers.add_parser("text", help="napíše text do zaostřeného pole (jen ASCII)")
     text.add_argument("value")
+    text.add_argument("--clear", action="store_true", help="nejdřív vyprázdnit pole")
+    text.add_argument("--no-verify", action="store_true", help="nekontrolovat, co v poli skončilo")
     text.set_defaults(func=cmd_text)
 
     key = subparsers.add_parser("key", help="pošle klávesu (back/enter/del/…)")
