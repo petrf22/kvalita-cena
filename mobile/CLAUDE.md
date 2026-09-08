@@ -102,4 +102,6 @@ Na co se naráží:
   `MaterialTheme.typography.*` (hardcoded `.sp` appka nemá ani jednou), barvy přes
   `MaterialTheme.colorScheme`. Nová obrazovka musí obsloužit čtyři stavy: načítání,
   prázdný, chyba, offline — a ověřit se ve světlém i tmavém režimu
-- Odsazení 4 mezery (na rozdíl od zbytku monorepa) — viz `.editorconfig`
+- Odsazení **2 mezery** v `.kt` jako zbytek monorepa; 4 mezery mají jen Gradle skripty
+  (`*.kts`) — viz `.editorconfig`. Dřív tu stálo, že celý mobil je na 4, což neodpovídalo
+  ani jednomu ze 119 zdrojových souborů

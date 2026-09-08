@@ -45,8 +45,7 @@ Platí `mobile/CLAUDE.md` — jeden Activity + Compose Navigation (`ui/<feature>
 + `XxxViewModel.kt`), ruční DI přes `AppContainer`, žádný Hilt. Appka musí běžet i bez Google
 Play Services. Řetězce patří do `values/` (**čeština je zdroj i fallback**, ne angličtina).
 
-Odsazení: piš 2 mezery jako zbytek Kotlin kódu v repu — `.editorconfig` sice u `.kt` udává 4,
-ale reálný kód je psaný na 2 a konzistence se sousedním souborem má přednost.
+Odsazení: 2 mezery v `.kt`, 4 jen v Gradle skriptech (`*.kts`) — viz `.editorconfig`.
 
 ## Pravidlo doteku
 
