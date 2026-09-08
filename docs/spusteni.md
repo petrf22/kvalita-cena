@@ -263,6 +263,22 @@ Flow v appce: sken (kamera + ZXing) → zadání ceny a typu → výběr provozo
 stav) má tlačítko "Moje příspěvky" (`ui/contributions/MyContributionsScreen.kt`) — čtyři
 záložky Zboží/Obchody/Ceny/Úpravy se stejným stavem zveřejnění jako na webu.
 
+### Ladění appky bez screenshotů
+
+Stav obrazovky se dá přečíst textem místo obrázku — `tools/mobile/ui.py` vypíše viditelné
+prvky, klepe na ně podle popisku a umí skočit rovnou na obrazovku, která se testuje
+(`ui.py open` posílá `MainActivity` extra `route`, kterou čte **jen debug build**). Podrobnosti
+a omezení jsou v [`mobile/CLAUDE.md`](../mobile/CLAUDE.md), „Ladění v emulátoru".
+
+```bash
+python3 tools/mobile/ui.py setup                      # jednorázově: vypnout animace
+python3 tools/mobile/ui.py open "price_entry?barcode=8594001234585"
+python3 tools/mobile/ui.py wait "Zapsat cenu"
+python3 tools/mobile/ui.py dump                       # co je na obrazovce
+python3 tools/mobile/ui.py tap "Vybrat obchod"
+python3 tools/mobile/ui.py log                        # logcat jen z procesu appky
+```
+
 ## 8. Testy
 
 ```bash
