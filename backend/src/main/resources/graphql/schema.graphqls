@@ -249,6 +249,16 @@ type Query {
   FeedbackInput spolu s token beze změny.
   """
   feedbackChallenge: FeedbackChallenge!
+
+  """
+  Moje nahrané účtenky (ai.receipt, docs/rozvoj.md "Načtení celé účtenky"). Účtenka je vidět
+  JEN svému majiteli — je to přehled cizího nákupu, ne veřejná data (docs/soukromi.md,
+  "Účtenka"). Cizí ani neexistující id vrací null, nikdy chybu o oprávnění.
+  """
+  myReceipts(first: Int = 20): [Receipt!]!
+
+  "Jedna účtenka i s řádky a návrhy párování. Jen vlastní."
+  receipt(id: ID!): Receipt
 }
 
 type Mutation {
@@ -397,6 +407,32 @@ type Mutation {
   moderátor.
   """
   setUserSuspended(publicUid: ID!, suspended: Boolean!, reason: String): Boolean!
+
+  """
+  Ruční přiřazení řádku účtenky ke katalogové položce — přebíjí to, co našla kaskáda párování.
+  Návrh (SUGGESTED) se bez tohohle potvrzení do cen NEZAPÍŠE: stroj nikdy nepotvrzuje sám
+  (docs/ai.md, "AI nikdy nerozhoduje").
+  """
+  matchReceiptLine(lineId: ID!, productId: ID!): ReceiptLine!
+
+  "Vyřazení řádku z importu (nečitelný, nezajímavý, není to cena zboží)."
+  skipReceiptLine(lineId: ID!): ReceiptLine!
+
+  """
+  Provozovna, ke které účtenka patří. Import ji podle hlavičky jen DOHLEDÁVÁ, nikdy nezakládá
+  (zakládání obchodu má vlastní limity a práh potvrzení, docs/reputace.md), takže když se
+  nenajde, vybere ji člověk tímhle. Změna obchodu pustí kaskádu párování znovu — ručně
+  přiřazené a přeskočené řádky zůstanou.
+  """
+  setReceiptStore(receiptId: ID!, storeId: ID!): Receipt!
+
+  """
+  Potvrzení účtenky: ze spárovaných řádků vzniknou cenové zápisy. NENÍ to atomická dávka —
+  každý řádek se zapisuje sám za sebe, takže jedna duplicita (tentýž druh ceny už dnes zapsaný)
+  zbytek nákupu neshodí, jen se přeskočí a nahlásí ve výsledku (docs/rozvoj.md). Účtenka,
+  jejíž součet položek nesedí na vytištěnou částku, se nepotvrzuje vůbec.
+  """
+  confirmReceipt(id: ID!): ReceiptConfirmResult!
 }
 
 enum RecordType {
@@ -1614,6 +1650,19 @@ enum ErrorCode {
   OBSERVATION_PROMO_VALIDITY_NOT_ALLOWED
   OBSERVATION_PROMO_VALIDITY_RANGE_INVALID
   OBSERVATION_PROMO_VALID_FROM_IN_FUTURE
+  RECEIPT_NOT_FOUND
+  RECEIPT_LINE_NOT_FOUND
+  RECEIPT_SCHEMA_VERSION_UNSUPPORTED
+  RECEIPT_LINES_REQUIRED
+  RECEIPT_TOO_MANY_LINES
+  RECEIPT_CURRENCY_UNSUPPORTED
+  RECEIPT_PURCHASED_AT_IN_FUTURE
+  RECEIPT_PURCHASED_AT_REQUIRED
+  RECEIPT_DAILY_LIMIT_REACHED
+  RECEIPT_STORE_REQUIRED
+  RECEIPT_TOTAL_MISMATCH
+  RECEIPT_ALREADY_CONFIRMED
+  RECEIPT_REQUIRES_LOGIN
   QUALITY_REQUIRES_LOGIN
   QUALITY_STARS_OUT_OF_RANGE
   REVIEW_REQUIRES_LOGIN
@@ -1660,4 +1709,133 @@ enum ErrorCode {
   UOM_MISMATCH
   VALIDATION_FAILED
   CLIENT_VERSION_TOO_OLD
+}
+
+"""
+Vytěžená účtenka (ai.receipt) — NÁVRH cen k potvrzení, ne ceny samotné. Vzniká nahráním
+normalizovaného dokumentu receipt-v1 přes REST POST /api/receipts (dávkový nástroj
+tools/uctenky), čte a potvrzuje se odsud.
+
+Co tu ZÁMĚRNĚ není: cokoli z patičky účtenky kromě data a celkové částky. Číslo karty, SEQ ID,
+autorizační kód, čísla pokladny a věrnostní údaje zahazuje už klientský parser, takže se na
+server vůbec nedostanou (docs/soukromi.md, "Účtenka").
+"""
+type Receipt {
+  id: ID!
+  status: ReceiptStatus!
+  "Provozovna dohledaná podle hlavičky, nebo ručně vybraná přes setReceiptStore."
+  store: Store
+  "Kdy uživatel ceny viděl — vstupuje do zápisů jako observedAt."
+  purchasedAt: DateTime
+  currency: String!
+  "Částka vytištěná na účtence."
+  printedTotal: BigDecimal
+  "Součet položek a slev, přepočítaný serverem."
+  computedTotal: BigDecimal!
+  """
+  Součet sedí na vytištěnou částku (v toleranci app.receipt.total-tolerance). Na reálných
+  účtenkách sedí na haléř, takže je to spolehlivá brána kvality: účtenka, která nesedí, se
+  do cen nezapisuje a confirmReceipt ji odmítne (RECEIPT_TOTAL_MISMATCH).
+  """
+  totalMatches: Boolean!
+  "Název řetězce/adresa tak, jak je OCR přečetlo z hlavičky."
+  rawMerchantName: String
+  rawStreet: String
+  rawCity: String
+  "Model, kterým proběhlo OCR — kvůli dohledatelnosti, když se rozbije rozpoznávání."
+  ocrModel: String
+  createdAt: DateTime!
+  confirmedAt: DateTime
+  lines: [ReceiptLine!]!
+}
+
+enum ReceiptStatus {
+  "Nahraná a rozebraná, párování na katalog ještě neproběhlo."
+  IMPORTED
+  "Kaskáda párování doběhla; řádky čekají na potvrzení člověkem."
+  MATCHED
+  "Potvrzená — z potvrzených řádků vznikly cenové zápisy."
+  CONFIRMED
+  "Zahozená (rozsypané OCR, omyl)."
+  DISCARDED
+}
+
+"""
+Jeden řádek účtenky.
+
+POZOR: unitPrice je u váhového zboží cena za kg/l (289,00 Kč/kg), NIKDY zaplacená částka za
+nakoupené množství (87,30 Kč za 0,302 kg) — docs/rozvoj.md o záměně mluví jako o
+nejpravděpodobnější tiché chybě celé funkce. quantity říká, kolik toho člověk koupil, a do
+ceny nevstupuje.
+"""
+type ReceiptLine {
+  id: ID!
+  lineNo: Int!
+  kind: ReceiptLineKind!
+  "Označení tak, jak ho obchod vytiskl (ROHLÍK43GR)."
+  rawLabel: String!
+  quantity: BigDecimal
+  quantityBasis: QuantityBasis
+  unitPrice: BigDecimal
+  lineTotal: BigDecimal
+  "Číslo řádku položky, ke které se váže sleva (jen u kind = DISCOUNT)."
+  appliesToLineNo: Int
+  matchStatus: ReceiptLineMatchStatus!
+  "Katalogová položka — u SUGGESTED je to NÁVRH, ne potvrzená shoda."
+  matchedProduct: Product
+  matchSource: ReceiptMatchSource
+  "Skóre podobnosti u SIMILARITY (0-1), jinak null."
+  matchScore: BigDecimal
+  note: String
+}
+
+enum ReceiptLineKind {
+  ITEM
+  "Sleva — na účtence vlastní řádek pod položkou, které se týká."
+  DISCOUNT
+  "Řádek, kterému parser nerozuměl. Nese jen text, aby se ztráta nedala přehlédnout."
+  UNKNOWN
+}
+
+enum ReceiptLineMatchStatus {
+  UNMATCHED
+  "Návrh k potvrzení — bez matchReceiptLine se do cen nezapíše."
+  SUGGESTED
+  "Strojově jistá shoda (kód nebo přesné označení), nebo ruční volba člověka."
+  MATCHED
+  "Člověk řádek vyřadil z importu."
+  SKIPPED
+  "Z řádku už vznikl cenový zápis."
+  IMPORTED
+}
+
+"Čím se párování podepřelo — kaskáda z docs/rozvoj.md."
+enum ReceiptMatchSource {
+  "Vnitroobchodní kód (core.product_code, STORE_INTERNAL + chain_id) — jistota."
+  CODE
+  "Přesná shoda označení v rozsahu (core.product_store_label) — jistota."
+  LABEL
+  "Podobnost přes pg_trgm — jen návrh."
+  SIMILARITY
+  "Ruční volba člověka."
+  MANUAL
+}
+
+"Výsledek potvrzení účtenky — souhrn a co se stalo s každým řádkem."
+type ReceiptConfirmResult {
+  receiptId: ID!
+  writtenCount: Int!
+  skippedCount: Int!
+  failedCount: Int!
+  lines: [ReceiptLineResult!]!
+}
+
+type ReceiptLineResult {
+  lineId: ID!
+  lineNo: Int!
+  rawLabel: String!
+  "WRITTEN / SKIPPED_DUPLICATE / SKIPPED_UNMATCHED / SKIPPED_BY_USER / FAILED"
+  outcome: String!
+  "Kód chyby u FAILED, jinak null."
+  errorCode: ErrorCode
 }

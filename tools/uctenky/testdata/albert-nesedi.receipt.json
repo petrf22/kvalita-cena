@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "profile": "albert",
+  "ocr": {},
+  "merchant": {
+    "rawName": "albert",
+    "chainSlug": "albert",
+    "country": "CZ",
+    "street": "Nádražní 1",
+    "postalCode": "100 00",
+    "city": "Vzorov"
+  },
+  "purchasedAt": "2026-09-07T10:15:00+02:00",
+  "currency": "CZK",
+  "printedTotal": "200.00",
+  "computedTotal": "148.90",
+  "totalMatches": false,
+  "lines": [
+    {
+      "lineNo": 1,
+      "kind": "ITEM",
+      "rawLabel": "GRAN MORAV.STR.100G",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "59.90",
+      "lineTotal": "59.90",
+      "vatCode": "A"
+    },
+    {
+      "lineNo": 2,
+      "kind": "UNKNOWN",
+      "rawLabel": "ROZMAZANÝ ŘÁDEK BEZ CENY"
+    },
+    {
+      "lineNo": 3,
+      "kind": "ITEM",
+      "rawLabel": "TAPAS BIO GOUDA 120G",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "89.00",
+      "lineTotal": "89.00",
+      "vatCode": "A"
+    }
+  ],
+  "warnings": [
+    "nerozpoznaný tvar řádku: 'ROZMAZANÝ ŘÁDEK BEZ CENY'",
+    "součet položek 148.90 neodpovídá vytištěné částce 200.00"
+  ]
+}

@@ -99,6 +99,23 @@ public enum ErrorCode {
   OBSERVATION_PROMO_VALIDITY_RANGE_INVALID("error.observation.promoValidityRangeInvalid"),
   OBSERVATION_PROMO_VALID_FROM_IN_FUTURE("error.observation.promoValidFromInFuture"),
 
+  // --- import účtenky (ai.receipt, docs/rozvoj.md "Načtení celé účtenky")
+  RECEIPT_NOT_FOUND("error.receipt.notFound"),
+  RECEIPT_LINE_NOT_FOUND("error.receipt.lineNotFound"),
+  // {0} = poslaná verze formátu receipt-v1
+  RECEIPT_SCHEMA_VERSION_UNSUPPORTED("error.receipt.schemaVersionUnsupported"),
+  RECEIPT_LINES_REQUIRED("error.receipt.linesRequired"),
+  RECEIPT_TOO_MANY_LINES("error.receipt.tooManyLines"),           // {0} = strop
+  RECEIPT_CURRENCY_UNSUPPORTED("error.receipt.currencyUnsupported"), // {0} = poslaná měna
+  RECEIPT_PURCHASED_AT_IN_FUTURE("error.receipt.purchasedAtInFuture"),
+  RECEIPT_PURCHASED_AT_REQUIRED("error.receipt.purchasedAtRequired"),
+  RECEIPT_DAILY_LIMIT_REACHED("error.receipt.dailyLimitReached"),
+  RECEIPT_STORE_REQUIRED("error.receipt.storeRequired"),
+  // Součet položek nesedí na vytištěnou částku — rozsypané OCR, do cen se nezapisuje.
+  RECEIPT_TOTAL_MISMATCH("error.receipt.totalMismatch"),
+  RECEIPT_ALREADY_CONFIRMED("error.receipt.alreadyConfirmed"),
+  RECEIPT_REQUIRES_LOGIN("error.receipt.requiresLogin"),
+
   // --- kvalita
   QUALITY_REQUIRES_LOGIN("error.quality.requiresLogin"),
   QUALITY_STARS_OUT_OF_RANGE("error.quality.starsOutOfRange"),   // {0} = min, {1} = max

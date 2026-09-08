@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "profile": "albert",
+  "ocr": {},
+  "merchant": {
+    "rawName": "albert",
+    "chainSlug": "albert",
+    "country": "CZ",
+    "street": "Nádražní 1",
+    "postalCode": "100 00",
+    "city": "Vzorov"
+  },
+  "purchasedAt": "2026-09-07T10:15:00+02:00",
+  "currency": "CZK",
+  "printedTotal": "387.45",
+  "computedTotal": "387.45",
+  "totalMatches": true,
+  "lines": [
+    {
+      "lineNo": 1,
+      "kind": "ITEM",
+      "rawLabel": "ROHLÍK43GR",
+      "quantity": "5",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "2.90",
+      "lineTotal": "14.50",
+      "vatCode": "A"
+    },
+    {
+      "lineNo": 2,
+      "kind": "ITEM",
+      "rawLabel": "GRAN MORAV.STR.100G",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "59.90",
+      "lineTotal": "59.90",
+      "vatCode": "A"
+    },
+    {
+      "lineNo": 3,
+      "kind": "ITEM",
+      "rawLabel": "TAPAS SPIAN.ROM.70G",
+      "quantity": "2",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "79.00",
+      "lineTotal": "158.00",
+      "vatCode": "A"
+    },
+    {
+      "lineNo": 4,
+      "kind": "DISCOUNT",
+      "rawLabel": "Tapas 2+1 zdarma",
+      "lineTotal": "-79.00",
+      "appliesToLineNo": 3
+    },
+    {
+      "lineNo": 5,
+      "kind": "ITEM",
+      "rawLabel": "LOSOS FILET ASC",
+      "quantity": "0.302",
+      "quantityBasis": "PER_KG",
+      "unitPrice": "289.00",
+      "lineTotal": "87.30",
+      "vatCode": "A"
+    },
+    {
+      "lineNo": 6,
+      "kind": "ITEM",
+      "rawLabel": "SÝR VÁŽENÝ",
+      "quantity": "0.25",
+      "quantityBasis": "PER_KG",
+      "unitPrice": "320.00",
+      "lineTotal": "80.00",
+      "vatCode": "A",
+      "note": "množství v g, cena za kg — přepočteno"
+    },
+    {
+      "lineNo": 7,
+      "kind": "ITEM",
+      "rawLabel": "OLEJ STÁČENÝ",
+      "quantity": "0.750",
+      "quantityBasis": "PER_L",
+      "unitPrice": "89.00",
+      "lineTotal": "66.75",
+      "vatCode": "A"
+    }
+  ],
+  "warnings": []
+}

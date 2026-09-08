@@ -1,0 +1,44 @@
+# 03-observation-evidence-kind.yaml — druh důkazu, na kterém cena stojí.
+#
+# Druhá OSA vedle core.price_observation.source, ne další hodnoty do jedné (docs/rozvoj.md,
+# "Zdroj ceny: kanál klienta vs. druh důkazu"):
+#   source        = kanál  (MOBILE/WEB/IMPORT) — kdo záznam poslal,
+#   evidence_kind = důkaz  (NONE/PRICE_TAG_PHOTO/RECEIPT_OCR) — na čem cena stojí.
+# "Z mobilu" a "z účtenky" nejsou alternativy — účtenka vyfocená telefonem je obojí.
+#
+# Sloupec vzniká teď, i když f_evid (1,30 účtenka+OCR / 1,15 foto cedulky / 1,00 bez důkazu,
+# docs/reputace.md) ještě není v PriceAggregationService.weightFor() implementovaný —
+# docs/ai.md ("Vazba na f_evid") varuje přesně před opačným postupem, tedy dopisováním
+# rozlišení pozdější migrací.
+#
+# Hodnotu určuje VÝHRADNĚ server podle skutečně připojeného artefaktu, nikdy klient v inputu:
+# důkaz je násobič váhy, takže klient, který si napíše RECEIPT_OCR bez účtenky, by si sám
+# zvedal váhu vlastních zápisů. To není zobrazovací údaj, ale reputační útok.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-07-03-observation-evidence-kind
+      author: Petr F.
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: price_observation
+            columns:
+              - column:
+                  name: evidence_kind
+                  type: VARCHAR(20)
+                  defaultValue: NONE
+                  constraints: { nullable: false }
+        - sql:
+            sql: |
+              ALTER TABLE core.price_observation
+                ADD CONSTRAINT chk_price_observation_evidence_kind
+                  CHECK (evidence_kind IN ('NONE', 'PRICE_TAG_PHOTO', 'RECEIPT_OCR'));
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE core.price_observation
+                DROP CONSTRAINT IF EXISTS chk_price_observation_evidence_kind;
+        - dropColumn:
+            schemaName: core
+            tableName: price_observation
+            columnName: evidence_kind

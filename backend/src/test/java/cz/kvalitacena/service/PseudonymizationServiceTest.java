@@ -1,8 +1,11 @@
 package cz.kvalitacena.service;
 
 import cz.kvalitacena.config.PrivacyProperties;
+import cz.kvalitacena.config.ReceiptProperties;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductAliasConfirmationRepository;
+import cz.kvalitacena.db.repo.ProductStoreLabelConfirmationRepository;
+import cz.kvalitacena.db.repo.ReceiptRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -30,27 +33,54 @@ class PseudonymizationServiceTest {
   private PriceObservationRepository priceObservationRepository;
   @Mock
   private ProductAliasConfirmationRepository aliasConfirmationRepository;
+  @Mock
+  private ProductStoreLabelConfirmationRepository labelConfirmationRepository;
+  @Mock
+  private ReceiptRepository receiptRepository;
 
   private final PrivacyProperties privacyProperties = new PrivacyProperties();
+  private final ReceiptProperties receiptProperties = new ReceiptProperties();
 
   {
     privacyProperties.setPseudonymizationDays(180);
+    receiptProperties.setRetentionDays(365);
   }
 
   @Test
   void pseudonymizesObservationsOlderThanConfiguredWindow() {
     when(priceObservationRepository.pseudonymizeObservationsBefore(any())).thenReturn(3);
     PseudonymizationService service = new PseudonymizationService(
-        priceObservationRepository, aliasConfirmationRepository, privacyProperties);
+        priceObservationRepository, aliasConfirmationRepository, labelConfirmationRepository,
+        receiptRepository, privacyProperties, receiptProperties);
 
     service.pseudonymizeOldObservations();
 
     ArgumentCaptor<OffsetDateTime> cutoffCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
     verify(priceObservationRepository).pseudonymizeObservationsBefore(cutoffCaptor.capture());
     verify(aliasConfirmationRepository).pseudonymizeBefore(any());
+    verify(labelConfirmationRepository).pseudonymizeBefore(any());
     verifyNoMoreInteractions(priceObservationRepository);
     assertThat(cutoffCaptor.getValue())
         .isCloseTo(OffsetDateTime.now().minusDays(180), within(5, ChronoUnit.SECONDS));
+  }
+
+  /**
+   * Účtenka se nepseudonymizuje, ale maže — a to podle VLASTNÍ lhůty, ne podle okna vazby
+   * na účet (docs/soukromi.md, „Účtenka").
+   */
+  @Test
+  void deletesReceiptsByTheirOwnRetentionWindow() {
+    when(priceObservationRepository.pseudonymizeObservationsBefore(any())).thenReturn(0);
+    PseudonymizationService service = new PseudonymizationService(
+        priceObservationRepository, aliasConfirmationRepository, labelConfirmationRepository,
+        receiptRepository, privacyProperties, receiptProperties);
+
+    service.pseudonymizeOldObservations();
+
+    ArgumentCaptor<OffsetDateTime> cutoffCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
+    verify(receiptRepository).deleteOlderThan(cutoffCaptor.capture());
+    assertThat(cutoffCaptor.getValue())
+        .isCloseTo(OffsetDateTime.now().minusDays(365), within(5, ChronoUnit.SECONDS));
   }
 
   @Test
@@ -58,7 +88,8 @@ class PseudonymizationServiceTest {
     privacyProperties.setPseudonymizationDays(30);
     when(priceObservationRepository.pseudonymizeObservationsBefore(any())).thenReturn(0);
     PseudonymizationService service = new PseudonymizationService(
-        priceObservationRepository, aliasConfirmationRepository, privacyProperties);
+        priceObservationRepository, aliasConfirmationRepository, labelConfirmationRepository,
+        receiptRepository, privacyProperties, receiptProperties);
 
     service.pseudonymizeOldObservations();
 

@@ -30,6 +30,10 @@ model, reputace, soukromí, AI, vydání — jeden zdroj pravdy pro vzorce a pra
 příkazy specifické pro jednu aplikaci jsou v jejím `CLAUDE.md` (`backend/CLAUDE.md`,
 `frontend/CLAUDE.md`, `mobile/CLAUDE.md`) — načtou se jen při práci v daném adresáři.
 
+Vedle nich `tools/uctenky/` — lokální nástroj pro import účtenek (OCR přes Ollamu, normalizace,
+nahrání na server), popsaný ve vlastním `tools/uctenky/README.md`. Data (skeny) zůstávají mimo
+git v `uctenky/`.
+
 Sdílený mezi aplikacemi je kontrakt API (GraphQL schéma
 `backend/src/main/resources/graphql/schema.graphqls`). Frontend z něj přes `graphql-codegen`
 (`frontend/codegen.ts`) generuje TypeScript typy a konstanty enumů do
@@ -105,6 +109,23 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   přihlašovací formulář. Zdroj pravdy je uložený refresh token.
 - Klientský překlad chyb podle `code` na mobilu chybí — appka ukáže `serverMessage`, protože
   `network/Dto.kt` negeneruje typy ze schématu jako web (`docs/lokalizace.md`, „Co zbývá").
+- **Z účtenky se u váhového zboží zapisuje cena za kg/l, NIKDY zaplacená částka.** Řádek
+  `0,302 kg x 289,00 Kč/kg  87,30` znamená `quantityBasis = PER_KG` a `priceAmount = 289,00`;
+  87,30 je jen kolik ten člověk zaplatil za to, co si nabral, a do ceny nepatří vůbec. Nemá to
+  jedinou výjimku a spletení nikde nespadne — jen tiše uloží desetinásobně jinou cenu
+  (`docs/rozvoj.md`, „Mapování obchodního označení"). Podobně `n x cena` (`5 x 2,90 Kč 14,50`)
+  je cena za JEDNO balení, ne za nákup.
+- **Normalizace OCR textu z účtenky je regex, ne druhý průchod modelem.** Ověřeno na reálných
+  datech: `qwen2.5:14b-instruct` nad výstupem OCR zahodil řádek `3.000 ks x 36.90 Kč /ks`
+  a nechal jen zaplacených 110,70 (trojnásobek ceny z regálu), jinde přejmenoval zboží. Model
+  dělá výhradně obrázek → text (`tools/uctenky`, `docs/ai.md`). Kvalitu hlídá kontrolní součet
+  Σ(položky + slevy) proti vytištěné „Celkem" — ten ale chytí jen chyby v číslech, ne
+  přejmenované zboží.
+- **`core.price_observation.evidence_kind` nastavuje výhradně server**, klient ho v žádném
+  inputu neposílá — `f_evid` je násobič reputační váhy, takže sebedeklarovaný důkaz není
+  zobrazovací údaj, ale reputační útok. `PriceObservationService.submit` ho proto bere jako
+  povinný parametr, ne jako výchozí hodnotu schovanou v přetížení (`docs/rozvoj.md`,
+  „Zdroj ceny: kanál klienta vs. druh důkazu").
 - Geometrie ikon (favicon, PWA manifest, Android launcher) žije v `tools/icons/generate.py`,
   zdroj pravdy `docs/branding.md` — po každé úpravě kresby spustit `python3
   tools/icons/generate.py`.
@@ -131,7 +152,9 @@ změnou v daných oblastech.
 PostgreSQL schémata: **`core`** (vlastní data), **`auth`**, **`agg`** (agregáty pro grafy),
 **`off`** (Open Food Facts), **`osm`** (souřadnice provozoven z OpenStreetMap — schéma zatím
 nemá jedinou tabulku, je to rezervace pro budoucí synchronizaci), **`fx`** (kurzovní lístek ČNB,
-`docs/lokalizace.md` — na rozdíl od `off`/`osm` sem appka sama píše, hotovo).
+`docs/lokalizace.md` — na rozdíl od `off`/`osm` sem appka sama píše, hotovo), **`ai`** (strojově
+vytěžená data, dnes účtenky — `docs/ai.md`; oddělené ze stejného důvodu jako `off`/`osm`, aby
+čistý export vlastních dat neobsahoval strojové odhady).
 
 Open Food Facts **i OpenStreetMap** jsou pod ODbL se share-alike podmínkou. Oddělení schémat je
 **projektová bezpečnostní politika zvolená vědomě přísněji, než ODbL vyžaduje** (ta rozlišuje

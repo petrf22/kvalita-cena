@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface RetailChainRepository extends JpaRepository<RetailChain, Long> {
 
@@ -20,4 +21,10 @@ public interface RetailChainRepository extends JpaRepository<RetailChain, Long> 
       + "ORDER BY c.name LIMIT :limit", nativeQuery = true)
   List<RetailChain> searchByText(@Param("query") String query, @Param("country") String country,
       @Param("limit") int limit);
+
+  /**
+   * Řetězec podle slugu z hlavičky účtenky. Vždy se zemí — unikát je {@code (country, slug)},
+   * protože tentýž slug může v cílových 16 zemích (docs/lokalizace.md) patřit jinému subjektu.
+   */
+  Optional<RetailChain> findFirstBySlugAndCountry(String slug, String country);
 }

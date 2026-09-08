@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kvalitacena.cz/schema/receipt-v1.json",
+  "title": "receipt-v1",
+  "description": "Normalizovaná účtenka posílaná na POST /api/receipts. Kontrakt je sdílený s backendem (cz.kvalitacena.controller.ReceiptDocument); peněžní hodnoty jsou řetězce, aby se cestou nerozbily na float.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "profile",
+    "currency",
+    "lines"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "profile": {
+      "type": "string",
+      "description": "Profil řetězce, který účtenku rozebral (albert).",
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "ocr": {
+      "type": "object",
+      "description": "Jen tenhle výřez metadat OCR. Prompt, trvání ani název místního souboru se neposílají.",
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "imageSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "ocrAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "merchant": {
+      "type": "object",
+      "description": "Hlavička účtenky — podklad pro dohledání provozovny v katalogu, ne pro její automatické založení.",
+      "additionalProperties": false,
+      "properties": {
+        "rawName": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "chainSlug": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "country": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$",
+          "description": "Země provozovny. Řetězec se dohledává vždy dvojicí (country, slug) — unikát v core.retail_chain."
+        },
+        "street": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "postalCode": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "city": {
+          "type": "string",
+          "maxLength": 200
+        }
+      }
+    },
+    "purchasedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time",
+      "description": "Kdy uživatel cenu viděl (observed_at). Nikdy v budoucnu."
+    },
+    "currency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "printedTotal": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^-?[0-9]+\\.[0-9]{2}$"
+    },
+    "computedTotal": {
+      "type": "string",
+      "pattern": "^-?[0-9]+\\.[0-9]{2}$"
+    },
+    "totalMatches": {
+      "type": "boolean",
+      "description": "Součet položek a slev odpovídá vytištěné částce. Server si ho počítá znovu, klientova hodnota je jen kontrola."
+    },
+    "lines": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "$ref": "#/$defs/line"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 500
+      }
+    }
+  },
+  "$defs": {
+    "line": {
+      "type": "object",
+      "required": [
+        "lineNo",
+        "kind",
+        "rawLabel"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "lineNo": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "kind": {
+          "enum": [
+            "ITEM",
+            "DISCOUNT",
+            "UNKNOWN"
+          ],
+          "description": "DISCOUNT je sleva pod položkou, UNKNOWN řádek, kterému parser nerozuměl."
+        },
+        "rawLabel": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Označení tak, jak ho obchod vytiskl (ROHLÍK43GR). Podklad pro core.product_store_label."
+        },
+        "rawCode": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "Vnitroobchodní kód, pokud ho účtenka tiskne. Albert ho netiskne, profil ho nechává nevyplněný."
+        },
+        "quantity": {
+          "type": "string",
+          "pattern": "^-?[0-9]+(\\.[0-9]+)?$"
+        },
+        "quantityBasis": {
+          "enum": [
+            "PACKAGE",
+            "PER_KG",
+            "PER_L",
+            "PER_PIECE"
+          ],
+          "description": "Odpovídá db/entity/QuantityBasis.java."
+        },
+        "unitPrice": {
+          "type": "string",
+          "pattern": "^-?[0-9]+\\.[0-9]{2}$",
+          "description": "U váhového zboží cena za kg/l (289.00), NIKDY zaplacená částka za nakoupené množství."
+        },
+        "lineTotal": {
+          "type": "string",
+          "pattern": "^-?[0-9]+\\.[0-9]{2}$"
+        },
+        "vatCode": {
+          "type": "string",
+          "maxLength": 2
+        },
+        "appliesToLineNo": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    }
+  }
+}

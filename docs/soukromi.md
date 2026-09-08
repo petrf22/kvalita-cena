@@ -172,6 +172,59 @@ gramáž, adresa) — patch by se přestal zobrazovat, protože ho backend neum�
 - Až vznikne skutečný GDPR export/výmaz (níže), vlastní patche do něj patří stejně jako
   cenové záznamy a hodnocení kvality.
 
+## Účtenka: nejcitlivější kategorie dat, jakou appka drží
+
+Účtenka nese čas, místo a **celý obsah jednoho nákupu konkrétního člověka** — mnohem víc než
+fotka regálu, ze které `ImageProcessingService` navíc strhává EXIF (výš). Adresa provozovny
+a přesný čas nákupu zákazníka prakticky identifikují, k tomu účtenka běžně tiskne poslední
+čtyřčíslí platební karty, číslo věrnostní karty a autorizační kód. Proto má vlastní oddíl
+a vlastní pravidla — nestačilo by ji vést jako „další fotku".
+
+**Obrana je v pořadí, ve kterém data vznikají, ne až v API.** Nejsilnější krok je první:
+
+1. **Patičku zahazuje už klientský parser** (`tools/uctenky`, `docs/rozvoj.md` — „záměrně
+   částečný sken"). Z bloku pod „Celkem" se do formátu `receipt-v1` dostane **jen datum, čas
+   a celková částka**. Číslo karty, SEQ ID, autorizační kód, čísla pokladny a obsluhy,
+   věrnostní body ani čárový kód účtenky se na server nikdy neodešlou. Hlídá to test
+   (`PrivacyTest` v `tools/uctenky/test_parse.py`), ne jen tenhle odstavec.
+2. **Obrázek účtenky se ve fázi lokálního OCR na server neposílá vůbec** — rozpoznávání běží
+   u provozovatele, na server jde jen normalizovaný dokument. Až OCR převezme pull worker
+   (`docs/ai.md`), bude uložení snímku samostatné rozhodnutí, ne vedlejší efekt.
+3. **Účtenka je viditelná jen svému majiteli.** `Query.myReceipts`/`Query.receipt` filtrují
+   podle vlastníka a cizí účtenka se tváří jako **neexistující, nikdy jako zakázaná** — jinak
+   by z odpovědi šlo odvodit, že daný nákup někdo nahrál (stejné pravidlo jako u skrytých
+   fotek a recenzí). Moderátorský pohled na účtenky **neexistuje**: moderuje se cena, která
+   z ní vznikla, ne nákupní seznam.
+4. **Z účtenky se neučí názvové aliasy.** `ROHLÍK43GR` je interní zkratka řetězce, ne název,
+   který by kdokoli psal do hledání — míří do `core.product_store_label` (párování), ne do
+   `core.product_alias` (veřejný našeptávač). Nákupní zvyklosti jednoho člověka se tím
+   nedostanou do veřejného slovníku.
+
+### Retence: účtenka se nepseudonymizuje, MAŽE se celá
+
+Tady se pravidlo z „Retence vazby observace → uživatel" vědomě NEpoužívá. U cenového zápisu
+dává smysl utnout vazbu na účet a záznam nechat — cena je společné dobro. Účtenka bez majitele
+ale není k ničemu: ceny z ní už dávno žijí ve vlastních `core.price_observation`, a co zbývá,
+je seznam cizího nákupu. Proto `ai.receipt` po `app.receipt.retention-days` (výchozí 365)
+**mizí celá i s řádky** (`ON DELETE CASCADE`), stejným denním jobem
+(`PseudonymizationService`). Smazání účtu ji odstraní hned (`ON DELETE CASCADE` na
+`uploaded_by_user_id`).
+
+Vlastní lhůta, ne `app.privacy.pseudonymization-days`: tamto je délka vazby na účet, tohle
+retence obsahu. Splynutí obou čísel by znamenalo, že změna jednoho tiše mění druhé.
+
+`core.product_store_label_confirmation.user_id` se naopak chová přesně jako potvrzení aliasu
+— po 180 dnech se nuluje, samotné mapování zůstává jako sdílený katalogový údaj.
+
+### Co zůstává rozhodnout
+
+Účtenky dnes nahrává jen provozovatel vlastním nástrojem z příkazové řádky. Než se funkce
+otevře uživatelům, je potřeba rozhodnout: jestli se snímek účtenky na server vůbec dostane,
+jestli si účtenku bude moct člověk zobrazit jako „můj nákup" (a co to udělá s retencí výš),
+a jak se sbírá jen blok položek bez hlavičky a patičky přímo v kameře (`docs/rozvoj.md`,
+capture pipeline). Do té doby platí nejpřísnější varianta: bez obrázku, jen vlastní účtenky,
+mazání po roce.
+
 ## Identita bez osobních údajů
 
 `auth.app_user` samo nemá pole pro jméno, adresu ani telefon — je to vždy "identita bez

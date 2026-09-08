@@ -47,3 +47,6 @@ databaseChangeLog:
   - include: { file: 2026-09-05/01-off-product-i18n.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-09-05/02-product-name-i18n.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-09-05/03-media-lang.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-09-07/01-ai-schema-receipt.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-09-07/02-product-store-label.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-09-07/03-observation-evidence-kind.yaml, relativeToChangelogFile: true }

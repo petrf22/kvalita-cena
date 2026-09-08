@@ -51,6 +51,9 @@ public class SecurityConfig {
             // stejně jako EmailChangeController — permitAll tu neznamená "bez přihlášení",
             // jen že se to nekontroluje blokováním URL (viz komentáře výš).
             .requestMatchers("/api/me/**").permitAll()
+            // Import účtenky — permitAll jen na úrovni URL, přihlášení a vlastnictví hlídá
+            // ReceiptController/ReceiptConfirmService nad Authentication (viz komentáře výš).
+            .requestMatchers("/api/receipts/**").permitAll()
             .requestMatchers("/actuator/health/**", "/actuator/info/**").permitAll()
             // GraphQL běží na jednom endpointu pro anonymní (T0) i přihlášené uživatele —
             // odstupňování přístupu (docs/reputace.md) řeší predikáty v resolverech/ViewerContext,
