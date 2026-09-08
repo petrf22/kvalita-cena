@@ -72,3 +72,6 @@ mail.txt
 # Offline zálohy produkčního .env a dalších tajemství (docs/nasazeni.md) — nikdy do repa,
 # odsud se dál zálohuje na externí disk a NAS.
 /backup/
+
+# Sezení Kotlin kompilátoru (vzniká při každém Gradle buildu mobilu)
+mobile/.kotlin/
