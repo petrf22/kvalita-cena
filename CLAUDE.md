@@ -222,6 +222,10 @@ vlastního záznamu uživatele), jinak si osamělý přispěvatel vždy "potvrd�
 - `group = 'cz.kvalitacena'`/`applicationId`, package `cz.kvalitacena.*` napříč backendem i
   mobilem
 - **Komentáře, commit zprávy a dokumentace česky**, identifikátory v kódu anglicky
+- **Každá nová úprava = nová větev** (`git checkout -b`), nikdy práce rovnou na `main` — ten má
+  na GitHubu ruleset „změny jen přes pull request", takže přímý push stejně skončí na
+  `GH013: Repository rule violations`. Commitovat průběžně a tematicky (jedna ucelená změna =
+  jeden commit), ne jedním velkým commitem na konci. Výjimka jen po výslovné domluvě.
 - Pouze svobodné licence knihoven (MIT/Apache-2.0/BSD/EPL) — žádné knihovny s rizikem budoucí
   placené licence (proto např. ZXing místo ML Kit pro skenování, `cube`/`earthdistance` místo
   PostGIS)
