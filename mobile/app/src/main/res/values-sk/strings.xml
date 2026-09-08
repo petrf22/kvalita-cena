@@ -363,6 +363,7 @@
     <string name="net_content_uom_ml">ml</string>
     <string name="net_content_uom_l">l</string>
     <string name="net_content_uom_pcs">ks</string>
+    <string name="net_content_variable_weight">na váhu</string>
     <string name="product_form_pieces_in_pack_label">Kusov v balení (voliteľné)</string>
     <string name="product_form_code_label">Čiarový kód (voliteľné)</string>
     <string name="product_form_code_hint">Bez kódu vznikne druhová položka (napr. „pečivo za %1$s“ z účtenky) — s nižšou dôveryhodnosťou dát, ale zapísať sa dá aj tak.</string>

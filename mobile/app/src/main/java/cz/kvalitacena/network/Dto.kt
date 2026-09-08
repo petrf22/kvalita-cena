@@ -252,6 +252,12 @@ data class ProductSummary(
   val name: String,
   val brand: Brand? = null,
   val category: Category,
+  // Gramáž/objem do řádku seznamu — z fotky ani z názvu nejde poznat 0,5 l od 1,5 l
+  // (ui/common/NetContent.kt). Vždycky dvojice hodnota+jednotka, samotné číslo nic neznamená
+  // (kořenový CLAUDE.md); u váhového zboží se místo ní ukáže "na váhu".
+  val netContentValue: Double? = null,
+  val netContentUom: String? = null,
+  val isVariableWeight: Boolean = false,
   val isGeneric: Boolean = false,
   // Nepotvrzená (DRAFT) položka se v nabídce ukáže, ale označená a až za potvrzenými —
   // docs/reputace.md, "Zboží bez čárového kódu".

@@ -56,6 +56,7 @@ import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.ProductImagePreview
 import cz.kvalitacena.ui.common.SELECTABLE_PRICE_KINDS
 import cz.kvalitacena.ui.common.formatShortDate
+import cz.kvalitacena.ui.common.netContentLabel
 import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.productImageUrl
 import cz.kvalitacena.ui.common.SingleLineTextField
@@ -255,7 +256,11 @@ fun PriceEntryScreen(
           if (productImageUrl(product.photos, product.externalImage, full = true) != null) Gap()
 
           Text(product.name, style = MaterialTheme.typography.headlineSmall)
-          val subtitle = listOfNotNull(product.brand?.name, product.category.name).joinToString(" · ")
+          val subtitle = listOfNotNull(
+          product.brand?.name,
+          product.category.name,
+          netContentLabel(product.netContentValue, product.netContentUom, product.isVariableWeight),
+        ).joinToString(" · ")
           Text(subtitle, style = MaterialTheme.typography.bodyMedium)
           Gap()
 

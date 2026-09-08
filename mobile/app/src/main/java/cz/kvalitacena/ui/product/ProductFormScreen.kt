@@ -59,19 +59,12 @@ import cz.kvalitacena.ui.common.SearchableDropdown
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.StorePicker
 import cz.kvalitacena.ui.common.categoryChoicesFor
+import cz.kvalitacena.ui.common.netContentUomLabel
 import cz.kvalitacena.ui.common.openUrl
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
+import cz.kvalitacena.ui.common.rememberNetContentLabeler
 import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
 import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
-
-/** Zkratky jednotek gramáže/objemu — protějšek `enum.netContentUom.*` na webu. */
-private val NET_CONTENT_UOM_LABEL_RES = mapOf(
-  "G" to R.string.net_content_uom_g,
-  "KG" to R.string.net_content_uom_kg,
-  "ML" to R.string.net_content_uom_ml,
-  "L" to R.string.net_content_uom_l,
-  "PCS" to R.string.net_content_uom_pcs,
-)
 
 /**
  * Založení zboží — nejdřív nabídne podobné existující položky (i bezkódové druhové, viz
@@ -201,16 +194,24 @@ fun ProductFormScreen(
     val unconfirmedTag = stringResource(R.string.product_form_unconfirmed_tag)
     val chainScope = stringResource(R.string.product_form_chain_scope)
     val storeScope = stringResource(R.string.product_form_store_scope)
+    // Gramáž patří i sem: duplicity u bezkódového zboží vznikají hlavně tím, že v nabídce
+    // podobných položek nejde 0,5 l odlišit od 1,5 l (ui/common/NetContent.kt).
+    val netContentLabeler = rememberNetContentLabeler()
     val summaryLabel: (ProductSummary) -> String = { summary ->
       val kind = if (summary.isGeneric) " ($genericTag)" else ""
       val unconfirmed = if (summary.status == "DRAFT") " ($unconfirmedTag)" else ""
       val brand = summary.brand?.name?.let { "$it · " } ?: ""
+      val netContent = netContentLabeler(
+        summary.netContentValue,
+        summary.netContentUom,
+        summary.isVariableWeight,
+      )?.let { " · $it" }.orEmpty()
       val scope = when (summary.catalogScope) {
         "CHAIN" -> summary.scopeChain?.name?.let { " · $chainScope: $it" }.orEmpty()
         "STORE" -> summary.scopeStore?.name?.let { " · $storeScope: $it" }.orEmpty()
         else -> ""
       }
-      "${summary.name}$kind$unconfirmed — $brand${summary.category.name}$scope"
+      "${summary.name}$kind$unconfirmed — $brand${summary.category.name}$netContent$scope"
     }
 
     // Nabídka obchodu se ukáže JEŠTĚ NEŽ uživatel začne psát — u bezkódového zboží vznikají
@@ -535,12 +536,6 @@ private fun NetContentUomDropdown(
       }
     }
   }
-}
-
-@Composable
-private fun netContentUomLabel(uom: String?): String = when (uom) {
-  null -> stringResource(R.string.product_form_net_content_uom_none)
-  else -> NET_CONTENT_UOM_LABEL_RES[uom]?.let { stringResource(it) } ?: uom
 }
 
 /**

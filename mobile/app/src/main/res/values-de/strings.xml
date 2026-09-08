@@ -365,6 +365,7 @@
     <string name="net_content_uom_ml">ml</string>
     <string name="net_content_uom_l">l</string>
     <string name="net_content_uom_pcs">St.</string>
+    <string name="net_content_variable_weight">nach Gewicht</string>
     <string name="product_form_pieces_in_pack_label">Stück pro Packung (optional)</string>
     <string name="product_form_code_label">Strichcode (optional)</string>
     <string name="product_form_code_hint">Ohne Code entsteht eine generische Position (z. B. „Gebäck für %1$s“ vom Kassenbon) — mit geringerer Datenzuverlässigkeit, kann aber trotzdem gespeichert werden.</string>
