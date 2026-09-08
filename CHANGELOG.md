@@ -7,6 +7,12 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [0.8.0] – 2026-09-08
+
+### Přidáno
+- Fotky zboží jdou na mobilu otevřít přes celou obrazovku a přiblížit prsty, takže je na etiketě vidět složení i drobný text (mobil)
+- Gramáž a objem jsou na mobilu vidět rovnou v seznamech zboží, na detailu i mezi vlastními příspěvky, ne až ve formuláři (mobil)
+
 ## [0.7.2] – 2026-09-07
 
 ### Změněno
