@@ -172,12 +172,16 @@ private fun AppScaffold() {
 
   LaunchedEffect(currentEntry?.id) { exitGuard.clear() }
 
-  val debugRoute = DebugRouteIntent.pending
-  LaunchedEffect(debugRoute) {
-    val route = DebugRouteIntent.consume() ?: return@LaunchedEffect
-    // Překlep v trase nesmí shodit appku — navigate() na neznámou trasu hází výjimku.
-    runCatching { navController.navigate(route) }
-      .onFailure { Log.w("DebugRouteIntent", "Neznámá trasa: $route", it) }
+  // Konstantní podmínka záměrně: takhle R8 vyhodí z release buildu i tenhle blok, ne jen
+  // samotný DebugRouteIntent (ověřeno na classes.dex vydaného APK).
+  if (BuildConfig.DEBUG) {
+    val debugRoute = DebugRouteIntent.pending
+    LaunchedEffect(debugRoute) {
+      val route = DebugRouteIntent.consume() ?: return@LaunchedEffect
+      // Překlep v trase nesmí shodit appku — navigate() na neznámou trasu hází výjimku.
+      runCatching { navController.navigate(route) }
+        .onFailure { Log.w("DebugRouteIntent", "Neznámá trasa: $route", it) }
+    }
   }
 
   fun navigateBack() {
