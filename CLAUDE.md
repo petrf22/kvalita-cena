@@ -105,6 +105,12 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   přihlašovací formulář. Zdroj pravdy je uložený refresh token.
 - Klientský překlad chyb podle `code` na mobilu chybí — appka ukáže `serverMessage`, protože
   `network/Dto.kt` negeneruje typy ze schématu jako web (`docs/lokalizace.md`, „Co zbývá").
+- **Stav appky v Android emulátoru se čte textově, ne ze screenshotu** — `python3
+  tools/mobile/ui.py dump` vypíše prvky obrazovky (~330 B proti 16 kB syrového `uiautomator
+  dump` a proti ceně obrázku), `tap`/`text`/`wait`/`open` ji ovládají. Screenshot patří jen
+  tam, kde si o něj uživatel výslovně řekne. Podrobně `mobile/CLAUDE.md`, „Ladění
+  v emulátoru"; skok na obrazovku obstarává `DebugRouteIntent` v `MainActivity.kt`, čtený
+  jen v debug buildu.
 - Geometrie ikon (favicon, PWA manifest, Android launcher) žije v `tools/icons/generate.py`,
   zdroj pravdy `docs/branding.md` — po každé úpravě kresby spustit `python3
   tools/icons/generate.py`.
