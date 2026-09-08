@@ -307,6 +307,8 @@
     <string name="photo_take_picture">Vyfotit</string>
     <string name="photo_pick_from_gallery">Vybrat z galerie</string>
     <string name="photo_remove">Odebrat</string>
+    <string name="photo_close">Zavřít</string>
+    <string name="photo_source_off">Open Food Facts</string>
 
     <string name="quality_not_rated">Kvalita: zatím nehodnoceno</string>
     <string name="quality_rated">Kvalita %1$.1f/5</string>

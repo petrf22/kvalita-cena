@@ -246,6 +246,13 @@ vlastní fotky a nahlášením cizí, na detailu zboží i obchodu. Fotka nese i
 dva nepovinné sloty (fotka zboží, fotka etikety) — appka nahraje soubor až po založení produktu
 (`shared/photo-slot.ts` na webu, `ui/common/PhotoSlot.kt` na mobilu).
 
+Mobil má navíc prohlížeč přes celou obrazovku (`ui/common/ZoomableImage.kt` v `PhotoGallery.kt`):
+listování prstem, zvětšení dvěma prsty i dvojklikem, posun tažením, ruční implementace bez další
+knihovny. Řadí za vlastní fotky i obrázky obalu a etikety z Open Food Facts
+(`Product.externalImages`, atribuce u každého snímku i na náhledu v pásu) — dřív se z nich na
+detailu zboží zobrazovala jen neklikatelná miniatura u atribuce. Web obojí (zatím) nemá,
+`shared/photo-gallery.ts` je pořád modál pevné šířky s prev/next.
+
 ## Profil uživatele a viditelnost
 
 `docs/soukromi.md`, „Profil uživatele a viditelnost"; datový tvar v `docs/datovy-model.md` pod
