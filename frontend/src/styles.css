@@ -1,1 +1,37 @@
-/* You can add global styles to this file, and also import other style files */
+/*
+ * Designové tokeny — zdroj pravdy pro hodnoty je ../../docs/design.md, ne tenhle soubor.
+ * Nová hodnota se nejdřív zapíše tam, teprve pak sem.
+ *
+ * Soubor je v angular.json uvedený ZA ng-zorro-antd.min.css, takže tokeny platí globálně
+ * (včetně inline `styles:` v komponentách) a v případě potřeby ng-zorro přebijí.
+ *
+ * Tokeny jsou pojmenované rolí (--kc-text-muted), ne hodnotou (--kc-black-45), aby pozdější
+ * doplnění tmavého režimu znamenalo přepis :root, ne zásah do dvaceti CSS souborů.
+ * Web tmavý režim zatím nemá — viz docs/design.md, „Tmavý režim".
+ */
+:root {
+  /* Rozestupy — jediná povolená řada, shodná s mobilním Spacing.kt */
+  --kc-space-1: 4px;
+  --kc-space-2: 8px;
+  --kc-space-3: 12px;
+  --kc-space-4: 16px;
+  --kc-space-5: 24px;
+  --kc-space-6: 32px;
+
+  /* Velikosti písma — role odpovídají MaterialTheme.typography na mobilu */
+  --kc-font-xs: 12px; /* labelSmall — popisky pod poli, hinty, metadata */
+  --kc-font-sm: 13px; /* bodySmall — sekundární text, patička */
+  --kc-font-md: 14px; /* bodyMedium — běžný text, výchozí velikost ng-zorro */
+  --kc-font-lg: 16px; /* titleSmall — zvýrazněná hodnota, cena */
+  --kc-font-xl: 18px; /* titleMedium — nadpis sekce */
+
+  /* Barvy — odstín textu se zapisuje VŽDY tokenem, nikdy číselně */
+  --kc-brand: #1677ff; /* značková modrá, docs/branding.md */
+  --kc-text: rgba(0, 0, 0, 0.88);
+  --kc-text-secondary: rgba(0, 0, 0, 0.65);
+  --kc-text-muted: rgba(0, 0, 0, 0.45);
+  --kc-border: #d9d9d9; /* okraj vstupního pole */
+  --kc-border-split: #f0f0f0; /* dělicí linka, okraj karty */
+  --kc-bg-subtle: #fafafa;
+  --kc-danger: #ff4d4f;
+}
