@@ -363,6 +363,7 @@
     <string name="net_content_uom_ml">ml</string>
     <string name="net_content_uom_l">l</string>
     <string name="net_content_uom_pcs">szt.</string>
+    <string name="net_content_variable_weight">na wagę</string>
     <string name="product_form_pieces_in_pack_label">Sztuk w opakowaniu (opcjonalnie)</string>
     <string name="product_form_code_label">Kod kreskowy (opcjonalnie)</string>
     <string name="product_form_code_hint">Bez kodu powstanie pozycja rodzajowa (np. „pieczywo za %1$s” z paragonu) — z niższą wiarygodnością danych, ale zapisać i tak można.</string>

@@ -62,6 +62,7 @@ import cz.kvalitacena.ui.common.QualityBadge
 import cz.kvalitacena.ui.common.StarRatingDisplay
 import cz.kvalitacena.ui.common.StarRatingInput
 import cz.kvalitacena.ui.common.formatRelativeDate
+import cz.kvalitacena.ui.common.netContentLabel
 import cz.kvalitacena.ui.common.openUrl
 import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
@@ -155,7 +156,11 @@ fun ProductDetailScreen(
           Gap()
         }
 
-        val subtitle = listOfNotNull(product.brand?.name, product.category.name).joinToString(" · ")
+        val subtitle = listOfNotNull(
+          product.brand?.name,
+          product.category.name,
+          netContentLabel(product.netContentValue, product.netContentUom, product.isVariableWeight),
+        ).joinToString(" · ")
         if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodyMedium)
 
         // --- Štítky uživatelské vrstvy (docs/datovy-model.md) + nahlášení ---

@@ -41,10 +41,12 @@ import cz.kvalitacena.network.MyObservationItem
 import cz.kvalitacena.network.MyProductItem
 import cz.kvalitacena.network.MyReviewItem
 import cz.kvalitacena.network.MyStoreItem
+import cz.kvalitacena.network.ProductSummary
 import cz.kvalitacena.network.PublicationStatus
 import cz.kvalitacena.ui.common.LabelValueRow
 import cz.kvalitacena.ui.common.StarRatingDisplay
 import cz.kvalitacena.ui.common.formatRelativeDate
+import cz.kvalitacena.ui.common.netContentLabel
 import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 import kotlin.math.ceil
@@ -143,7 +145,7 @@ private fun ProductsTab(viewModel: MyContributionsViewModel, onProductClick: (St
         .clickable { onProductClick(item.product.id) }
         .padding(vertical = 8.dp),
     ) {
-      Text(item.product.name, style = MaterialTheme.typography.titleSmall)
+      Text(productLabel(item.product), style = MaterialTheme.typography.titleSmall)
       Text(
         "${stringResource(R.string.my_contributions_created_at_label)} ${formatRelativeDate(item.createdAt)}",
         style = MaterialTheme.typography.bodySmall,
@@ -204,7 +206,7 @@ private fun ObservationsTab(viewModel: MyContributionsViewModel, onProductClick:
           // Jen produkt je proklik (stejně jako na webu) — cena patří k dvojici produkt+obchod,
           // samotný obchod tu proklik nemá.
           Text(
-            "${item.product.name} — ${item.store.name} — ${priceKindLabel(item.priceKind)}",
+            "${productLabel(item.product)} — ${item.store.name} — ${priceKindLabel(item.priceKind)}",
             modifier = Modifier.clickable { onProductClick(item.product.id) },
           )
         },
@@ -250,7 +252,7 @@ private fun EditsTab(
       } else {
         R.string.my_contributions_record_type_store
       }
-      val recordName = item.product?.name ?: item.store?.name ?: ""
+      val recordName = item.product?.let { productLabel(it) } ?: item.store?.name ?: ""
       Text(
         "${stringResource(recordLabelRes)}: $recordName",
         style = MaterialTheme.typography.titleSmall,
@@ -297,7 +299,7 @@ private fun ReviewsTab(viewModel: MyContributionsViewModel, onProductClick: (Str
         .clickable { onProductClick(item.product.id) }
         .padding(vertical = 8.dp),
     ) {
-      Text(item.product.name, style = MaterialTheme.typography.titleSmall)
+      Text(productLabel(item.product), style = MaterialTheme.typography.titleSmall)
       Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StarRatingDisplay(average = item.stars.toDouble(), starSize = 14.dp)
         if (item.hidden) {
@@ -443,3 +445,13 @@ private fun PaginationBar(
     }
   }
 }
+
+/**
+ * Název zboží i s gramáží („Sprite · 0,5 l") — seznamy příspěvků nemají fotku ani kategorii,
+ * takže bez ní nejde poznat, které varianty se záznam týká (ui/common/NetContent.kt).
+ */
+@Composable
+private fun productLabel(product: ProductSummary): String = listOfNotNull(
+  product.name,
+  netContentLabel(product.netContentValue, product.netContentUom, product.isVariableWeight),
+).joinToString(" · ")

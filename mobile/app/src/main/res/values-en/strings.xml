@@ -363,6 +363,7 @@
     <string name="net_content_uom_ml">ml</string>
     <string name="net_content_uom_l">l</string>
     <string name="net_content_uom_pcs">pcs</string>
+    <string name="net_content_variable_weight">by weight</string>
     <string name="product_form_pieces_in_pack_label">Pieces per pack (optional)</string>
     <string name="product_form_code_label">Barcode (optional)</string>
     <string name="product_form_code_hint">Without a code, a generic item is created (e.g. \"bread for %1$s\" from a receipt) — with lower data confidence, but it can still be recorded.</string>

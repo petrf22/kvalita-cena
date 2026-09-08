@@ -63,6 +63,7 @@ import cz.kvalitacena.ui.common.SearchableDropdown
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.categoryChoicesFor
 import cz.kvalitacena.ui.common.formatRelativeDate
+import cz.kvalitacena.ui.common.netContentLabel
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 import cz.kvalitacena.ui.common.storeLabel
 
@@ -310,7 +311,15 @@ private fun SearchResultCard(item: ProductSearchItem, onClick: () -> Unit) {
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
           )
-          val subtitle = listOfNotNull(item.product.brand?.name, item.product.category.name).joinToString(" · ")
+          val subtitle = listOfNotNull(
+            item.product.brand?.name,
+            item.product.category.name,
+            netContentLabel(
+              item.product.netContentValue,
+              item.product.netContentUom,
+              item.product.isVariableWeight,
+            ),
+          ).joinToString(" · ")
           if (subtitle.isNotBlank()) {
             Text(
               subtitle,
