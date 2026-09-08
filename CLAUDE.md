@@ -217,6 +217,23 @@ prahy patří do `docs/reputace.md`, ne rozeseté po kódu jako vlastní konstan
 Klíčové už teď: souhlas (až bude implementovaný) se musí počítat **leave-one-out** (medián bez
 vlastního záznamu uživatele), jinak si osamělý přispěvatel vždy "potvrdí sám sebe".
 
+### UI: rozestupy, typografie a barvy jsou jen v `docs/design.md`
+
+Web i mobil stály do 2026-09 na výchozím vzhledu ng-zorro / Material 3 a hodnoty se psaly
+ad-hoc do CSS a Compose (54× `rgba(0, 0, 0, 0.45)` napříč 1489 řádky CSS). Od té revize je
+zdroj pravdy [`docs/design.md`](docs/design.md) — **hodnota, která není tam, do kódu nepatří**,
+stejné pravidlo jako u prahů v `docs/reputace.md`.
+
+Tokeny: `--kc-space-*`/`--kc-font-*`/`--kc-text-*` ve `frontend/src/styles.css` (načtené za
+ng-zorro CSS, takže platí i pro inline `styles:` v komponentách) a `Spacing.*`
+v `mobile/.../ui/theme/Spacing.kt`. Existující kód se **nepřepisuje plošně** — narovnává se při
+doteku souboru.
+
+Dvě věci, které z kódu nejsou vidět: **nová obrazovka není hotová, dokud neobslouží čtyři stavy**
+(načítání, prázdný, chyba, offline — offline je tady věcný požadavek, ceny se zapisují v obchodě
+bez signálu), a **tmavý režim má mobil, web ne** (`ng-zorro-antd.min.css` je světlá
+předkompilovaná varianta; je to vědomá hranice, ne opomenutí).
+
 ## Konvence
 
 - `group = 'cz.kvalitacena'`/`applicationId`, package `cz.kvalitacena.*` napříč backendem i

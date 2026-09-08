@@ -40,4 +40,7 @@ kontrola i běhový match spadnou.
   jednou při bootstrapu a měna přichází z dat, ne z locale); routy jsou anglické a jazykově
   neutrální, české cesty jsou jen redirecty; pole `ico` v GraphQL je název z historie (nese IČO
   i NIP), validace i popisek jdou per `country`
+- **UI hodnoty** (rozestupy, velikosti písma, barvy) ber z `../docs/design.md` a tokenů
+  `--kc-*` ve `src/styles.css` — ne z hlavy. Nová obrazovka musí obsloužit čtyři stavy:
+  načítání, prázdný, chyba, offline
 - Odsazení 2 mezery — viz `.editorconfig`
