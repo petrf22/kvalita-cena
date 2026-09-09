@@ -458,6 +458,12 @@ Nákupní seznam je záměr konkrétního uživatele, ne veřejný fakt o ceně 
 uživatele (výchozí neveřejné), nikdy do veřejné vrstvy nad katalogem; při návrhu ověřit proti
 `docs/soukromi.md`.
 
+Souběh se „Strojovým přístupem k datům přes MCP server" níž: párování obecné ingredience na
+konkrétní zboží a výběr nejlevnějšího obchodu je přesně to, co by přes MCP zvládl asistent
+u uživatele, aniž by v appce vznikla doména receptů. Není to náhrada téhle položky — appka
+by pořád neuměla nákupní seznam sama — ale je to levnější první ověření, jestli o funkci
+vůbec někdo stojí.
+
 ## Nápověda k polím při zadání nového zboží (PLÁNOVÁNO)
 
 **Zadání:** popsat, co konkrétně patřit do jednotlivých políček formuláře zadání nového zboží —
@@ -513,3 +519,86 @@ cenu vždy v korunách bez ohledu na zvolenou zemi/zobrazovací měnu (`docs/lok
 jediná drobnost, kde appka měnu nedomýšlí z kontextu jako všude jinde. Oprava je triviální
 (`currencyForCountry`/`CountryService.country()` už existují a používají se vedle), jen to
 nesouviselo s kalendářem/posunem dne, který se právě opravoval, proto zůstalo stranou.
+
+## Strojový přístup k datům přes MCP server (ROZHODNOUT)
+
+**Zadání:** vystavit veřejně čitelná data appky — ceny, katalog zboží, provozovny, vývoj ceny
+v čase — jako **MCP server** (Model Context Protocol), aby se uživatel mohl zeptat svého
+asistenta („kde koupím máslo nejlevněji", „zlevnilo za poslední měsíc máslo?") místo otevírání
+webu. Výhradně čtení; zápis je z rozsahu vyloučený natrvalo, viz níž.
+
+Dnes o tomhle nemluví žádný dokument ani řádek kódu — jediný výskyt MCP v repu je tranzitivní
+`@modelcontextprotocol/sdk` z `@angular/cli` ve `frontend/package-lock.json` (vestavěné
+`ng mcp`, nástroj pro vývoj Angularu, nic vlastního). Položka vzniká proto, aby otázka měla
+odpověď zapsanou dřív, než ji někdo bude potřebovat (`docs/README.md`, „Zdroj rozhodnutí, které
+v repu nejsou").
+
+**Proč to není proti misi projektu.** Tři důvody, které z kódu nejsou vidět:
+
+- Faktická data jsou už dnes pod **ODbL** a `docs/podminky-uziti.md` („Licence k vloženému
+  obsahu") slibuje, že appka „tenhle princip dodržuje i navenek" a agregovaná data nabízí dál
+  za stejných podmínek, se stejným požadavkem na uvedení zdroje. Strojový odběr je tedy naplnění
+  toho slibu, ne ústupek z něj. Odpovědi MCP serveru musí nést atribuci a licenci stejně jako UI.
+- Kontrakt na to už existuje. `backend/src/main/resources/graphql/schema.graphqls` má dnes
+  dvanáct anonymně čitelných dotazů, které dávají jako MCP nástroj smysl skoro 1:1 —
+  `searchProducts`, `searchFacets`, `productByCode`, `productLookupByCode`, `product`,
+  `priceHistory`, `searchStores`, `nearbyStores`, `chains`, `categories`, `fxInfo`, `countries`.
+  Je to tenká adaptérová vrstva nad hotovým API, ne nová doména.
+- Licence knihoven vyhovují pravidlu „pouze svobodné licence" (`CLAUDE.md`, „Konvence") —
+  oficiální MCP Java SDK i startery Spring AI jsou Apache-2.0, referenční TypeScript SDK je MIT.
+  Není tu tedy riziko jako u Bucket4j nebo ML Kit.
+
+**Čtyři překážky — a je to důvod stavu ROZHODNOUT, ne PLÁNOVÁNO:**
+
+1. **Kolize s odstupňováním T0–T4.** `docs/reputace.md` („Odstupňování přístupu") stojí na větě
+   *„anonym vidí hodnotu, ne objem"* a `PriceHistoryService` spolu s
+   `config/PriceHistoryProperties.java` (`app.history.anonymous-max-days`) ji už implementují.
+   MCP klient bez tokenu je z definice T0 a z definice se ptá na objem. **Otevřená otázka:**
+   dostane MCP server přesně T0 rozsah jako anonymní návštěvník webu (konzistentní a
+   obhajitelné — nedává nic, co by web nedal), nebo se autentizuje jménem uživatele a dědí jeho
+   úroveň? Druhá varianta visí na bodu 4 níž.
+2. **Podmínky užití to dnes zakazují.** `docs/podminky-uziti.md`, bod 4 zakazuje „pokoušet se
+   o automatizovaný hromadný sběr dat z appky (scraping) mimo rozumnou míru". MCP server je
+   přesně takový kanál, jen posvěcený. **Otevřená otázka:** bez výslovné výjimky v bodu 4 by si
+   projekt protiřečil — a je to změna právního textu, tedy s datem účinnosti a novou verzí
+   podmínek, ne úprava odstavce.
+3. **`/graphql` nemá žádnou ochranu proti objemu.** `config/GraphQlConfig.java` registruje jen
+   scalary — žádný globální rate limit, žádné omezení hloubky ani složitosti dotazu. Rate
+   limitery existují pouze pro OTP (`security/OtpRateLimiter.java`), zakládání katalogu
+   (`security/CatalogRateLimiter.java`) a zpětnou vazbu (`security/FeedbackRateLimiter.java`).
+   **Otevřená otázka:** limit na `/graphql` je předpoklad MCP serveru, ne jeho součást — a bude
+   potřeba stejně tak před veřejnou betou, nezávisle na tomhle nápadu.
+4. **Neexistuje strojový přístup (M2M).** Access token má TTL 10 minut
+   (`app.jwt.access-token-ttl`) a jedinou cestou k němu je OTP na e-mail
+   (`controller/AuthController.java`, `POST /api/auth/otp/verify`) — žádný API klíč, žádný
+   technický účet. **Otevřená otázka:** autentizovaná varianta znamená nový typ přihlašovacích
+   údajů, což je samostatné rozhodnutí s vlastními důsledky pro reputaci a moderaci, ne detail
+   MCP serveru.
+
+**Co je z rozsahu vyloučené natrvalo, ne jen pro první verzi.** Zápis ceny. Reputační model
+stojí na tom, že cenu vidí člověk u regálu — váhy podle přispěvatele i detekce zneužití
+(`BIASED`/`IMPOSSIBLE`/`TELEPORT`/`BURST`/`CLUSTER`/`COMMERCIAL`, `docs/reputace.md`) tenhle
+předpoklad používají. Agent volající `submitObservations` jde proti němu i tehdy, když je
+autentizovaný. Stejně tak ven nesmí nic, co `docs/soukromi.md` drží uvnitř: `user_id` čehokoli,
+kdo záznam nahlásil, `source` observace ani databázová `id` (ven jde výhradně `public_uid`).
+Texty recenzí jsou T1, takže anonymní MCP server je nedostane — `ProductReviewService.reviewsFor`
+to řeší už dnes (`loginRequired: true`, prázdné `items`, reálný `totalCount`).
+
+**Vztah k `docs/ai.md`.** Ten dokument („Proč lokálně") odmítá posílat uživatelský obsah
+hostovaným AI API a jmenuje přitom fotky provozoven a texty uživatelů. MCP server je opačný
+směr toku: data si tahá klient, kterého si zvolil sám uživatel, a jde o veřejná ODbL data, ne
+o fotky a texty. Není to tedy porušení toho rozhodnutí — ale je to dost blízko, aby to bylo
+napsané výslovně, ať se obojí později nesplete.
+
+**Kdy na to má dojít řada: ne dřív než po veřejné betě.** Nejde o pracnost, ale o data —
+`docs/nasazeni.md` („Zbývá") má otevřené blokátory ještě před uzavřenou betou a
+`frontend/public/robots.txt` je dnes `Disallow: /`. MCP server nad prázdnou databází aktivně
+škodí: asistent odpoví „nic nevím", což je horší první dojem než žádná integrace.
+
+**Návrh řešení, až přijde řada.** Začít **lokálním stdio MCP serverem v `tools/`** nad veřejným
+GraphQL API — nulová změna backendu, žádný hosting, žádná nová auth, jde vyzkoušet proti
+lokálnímu backendu a zahodit, když se neosvědčí. Teprve když se ukáže, že o to někdo stojí, a až
+budou zodpovězené otázky 1–3, má smysl vzdálený endpoint přímo v backendu (starter Spring AI,
+Streamable HTTP na `/mcp`, vedle dnešního `/graphql` v `frontend/Caddyfile`). Pozor na jednu
+past: v produkci je introspekce GraphQL vypnutá (`application-prod.yml`), takže klient si schéma
+nevytáhne za běhu a musí vycházet ze `schema.graphqls` v repu.
