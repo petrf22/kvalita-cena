@@ -257,8 +257,12 @@ adresu (`network_security_config.xml`), appka jinak vyžaduje HTTPS. Pro test na
 by bylo potřeba změnit `ApiConfig.BASE_URL` na IP hostitele v lokální síti a přidat ji do
 `network_security_config.xml`.
 
-Flow v appce: sken (kamera + ZXing) → zadání ceny a typu → výběr provozovny podle polohy
-(`LocationManager`, COARSE) → odeslání. Naskenuj EAN ze seedu (např. `8594001234585` = Máslo
+Flow v appce: sken (kamera + ZXing) → zadání ceny a typu → výběr provozovny → odeslání.
+Obchody v okolí appka hledá sama hned po rozbalení zápisu ceny a ukáže je jako seznam se
+vzdáleností; okruh se volí v Nastavení (200 m – 5 km) a dá se z obrazovky rozšířit. Když
+v okolí nic svého nezná, nabídne provozovny z OpenStreetMap (`nearbyOsmStores`). Poloha jde
+přes `LocationManager` a appka žádá o FINE i COARSE — s pouze přibližnou polohou je bod až
+o kilometry vedle, takže v malém okruhu nemá co najít (`docs/soukromi.md`). Naskenuj EAN ze seedu (např. `8594001234585` = Máslo
 čerstvé) nebo si ho zobraz jako čárový kód na jiném displeji/vytiskni. Záložka Účet (přihlášený
 stav) má tlačítko "Moje příspěvky" (`ui/contributions/MyContributionsScreen.kt`) — čtyři
 záložky Zboží/Obchody/Ceny/Úpravy se stejným stavem zveřejnění jako na webu.

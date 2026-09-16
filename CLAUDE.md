@@ -154,10 +154,14 @@ Open Food Facts **i OpenStreetMap** jsou pod ODbL se share-alike podmínkou. Odd
 **projektová bezpečnostní politika zvolená vědomě přísněji, než ODbL vyžaduje** (ta rozlišuje
 odvozenou a kolektivní databázi; podrobné odůvodnění a odkazy na ODbL 1.0/OSMF guideline jsou
 v `docs/datovy-model.md`, „Oddělení schémat kvůli ODbL") — žádný hromadný ani podstatný výřez
-`off.*`/`osm.*` se nekopíruje do `core.*`; jednotlivě zvolený geokódovaný výsledek (lat/lon +
-`osm_ref`) se do `core.store` uložit smí, s `geo_source` jako značkou původu. UI vždy uvede
-zdroj. Čistý export vlastních dat je `pg_dump --schema=core --schema=agg`. Aplikační DB
-uživatel má na `off`/`osm` jen `SELECT`, zapisuje jen synchronizační job.
+`off.*`/`osm.*` se nekopíruje do `core.*`. Dvě výjimky, obě omezené na jeden záznam, který si
+člověk vybral a potvrdil: jednotlivě zvolený geokódovaný výsledek (lat/lon + `osm_ref`) se do
+`core.store` uložit smí s `geo_source` jako značkou původu (`data_origin` zůstává `OWN` — odtud
+je jen BOD), a jednotlivě potvrzená provozovna z nabídky `nearbyOsmStores` smí přinést i název
+a adresu, ty se ale značí `core.store.data_origin = 'OSM_DERIVED'` a vypadávají z čistého
+exportu. UI vždy uvede zdroj. Čistý export vlastních dat je `pg_dump --schema=core
+--schema=agg`, z něj musí vypadnout řádky s `data_origin <> 'OWN'`. Aplikační DB uživatel má na
+`off`/`osm` jen `SELECT`, zapisuje jen synchronizační job.
 
 ### `core.price_observation` je jádro aplikace
 
