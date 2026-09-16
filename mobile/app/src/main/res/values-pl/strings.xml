@@ -420,7 +420,7 @@
     <string name="store_picker_osm_none">Nawet OpenStreetMap nie zna tu żadnego sklepu.</string>
     <string name="store_picker_add_new_action">Nie ma tu tego sklepu — dodaj nowy</string>
     <string name="store_picker_add_new">+ Dodaj nowy sklep</string>
-    <string name="store_picker_hint_anonymous">Wpisz nazwę lub miasto sklepu, albo dotknij „Znajdź w okolicy” — dodanie nowego sklepu wymaga zalogowania.</string>
+    <string name="store_picker_hint_anonymous">Wpisz nazwę lub miasto sklepu — dodanie nowego sklepu wymaga zalogowania.</string>
 
     <string name="store_form_create_title">Nowy sklep</string>
     <string name="store_form_edit_title">Edytuj sklep</string>

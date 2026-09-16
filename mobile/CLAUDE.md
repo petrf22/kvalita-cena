@@ -91,7 +91,12 @@ Na co se naráží:
   DI přes `AppContainer` (bez Hiltu — appka je malá), skener schovaný za
   `scanner/BarcodeScanner.kt` rozhraní (implementace `ZxingBarcodeScanner`), refresh token jen
   v `EncryptedSharedPreferences` (`auth/TokenStore.kt`), poloha přes obyčejný `LocationManager`
-  (`location/LocationHelper.kt`), ne Play Services Fused Location — appka má běžet i bez GMS
+  (`location/LocationHelper.kt`), ne Play Services Fused Location — appka má běžet i bez GMS.
+  **Poloha se žádá jako dvojice FINE+COARSE** (`location/LocationPermissions.kt`): přibližnou
+  polohu Android snapuje na mřížku o hraně kolem 2 km, takže s ní nejde najít obchod v okruhu
+  pár set metrů ani nastavit souřadnice provozovny (`../docs/soukromi.md`). `getCurrentLocation`
+  vrací `LocationResult`, kde `ProvidersDisabled` a `Timeout` jsou ODLIŠENÉ — každý se v UI řeší
+  jinou radou, sloučit je do jednoho „nepodařilo se" znamená neporadit nic
 - **ViewModely a obrazovky se automatizovaně netestují** — appka se v nich testuje ručně,
   checklistem co odklikat. Výjimka je čistá logika bez závislosti na Androidu (validace
   formulářů, výpočty pro graf, i18n kontrakty) vytažená do vlastního souboru — ta JUnit testy

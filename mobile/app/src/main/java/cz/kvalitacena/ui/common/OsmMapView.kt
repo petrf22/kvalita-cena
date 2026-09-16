@@ -90,7 +90,7 @@ fun MapLifecycleEffect(mapView: MapView) {
 /**
  * Tlačítko "Na mou polohu" — jednorázový [getCurrentLocation] (LocationManager, ne průběžný
  * odběr přes MyLocationNewOverlay, viz docs/soukromi.md), stejný vzor jako "Použít mou polohu"
- * ve StoreFormScreen/"Najít v okolí" v PriceEntryScreen. Volající si polohu vycentruje sám
+ * ve StoreFormScreen i pro hledání obchodů v okolí. Volající si polohu vycentruje sám
  * (`onLocationResolved`), tahle komponenta jen řeší oprávnění a načtení.
  */
 @Composable

@@ -422,7 +422,7 @@
     <string name="store_picker_osm_none">Auch OpenStreetMap kennt hier kein Geschäft.</string>
     <string name="store_picker_add_new_action">Das Geschäft fehlt hier — neues hinzufügen</string>
     <string name="store_picker_add_new">+ Neues Geschäft hinzufügen</string>
-    <string name="store_picker_hint_anonymous">Gib den Namen oder die Stadt des Geschäfts ein, oder tippe auf „In der Umgebung finden“ — das Anlegen eines neuen Geschäfts erfordert eine Anmeldung.</string>
+    <string name="store_picker_hint_anonymous">Gib Namen oder Stadt des Geschäfts ein — ein neues Geschäft anzulegen erfordert eine Anmeldung.</string>
 
     <string name="store_form_create_title">Neues Geschäft</string>
     <string name="store_form_edit_title">Geschäft bearbeiten</string>

@@ -54,9 +54,9 @@ class PriceEntryViewModel(
   var priceEntryExpanded by mutableStateOf(visibilityStore.expandedByDefault)
     private set
 
-  // Obchod se dá vybrat třemi cestami — napsat název/město (storeQuery → searchStores),
-  // "Najít v okolí" (nearbyStores, dosavadní chování) nebo založit nový. Všechny tři plní
-  // stejný `storeSuggestions`, ať má obrazovka jeden zdroj pravdy pro nabídku (StorePicker).
+  // Obchod se dá vybrat třemi cestami — automatickým hledáním v okolí (nearbyStores), napsáním
+  // názvu/města (storeQuery → searchStores) nebo založením nového. Všechny tři plní stejný
+  // `storeSuggestions`, ať má obrazovka jeden zdroj pravdy pro nabídku i mapu (StorePicker).
   var storeQuery by mutableStateOf("")
   var storeSuggestions by mutableStateOf<List<Store>>(emptyList())
     private set
@@ -280,7 +280,7 @@ class PriceEntryViewModel(
       try {
         storeSuggestions = graphQlClient.searchStores(query = query).items
       } catch (e: Exception) {
-        // Chyba našeptávače nesmí blokovat zápis — "Najít v okolí" a ruční výběr fungují dál.
+        // Chyba našeptávače nesmí blokovat zápis — seznam z okolí a ruční výběr fungují dál.
       } finally {
         storeSearching = false
       }

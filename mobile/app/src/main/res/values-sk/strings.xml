@@ -420,7 +420,7 @@
     <string name="store_picker_osm_none">Ani OpenStreetMap tu žiadny obchod nepozná.</string>
     <string name="store_picker_add_new_action">Obchod tu nie je — pridať nový</string>
     <string name="store_picker_add_new">+ Pridať nový obchod</string>
-    <string name="store_picker_hint_anonymous">Napíš názov alebo mesto obchodu, alebo stlač „Nájsť v okolí“ — založenie nového obchodu vyžaduje prihlásenie.</string>
+    <string name="store_picker_hint_anonymous">Napíš názov alebo mesto obchodu — založenie nového obchodu vyžaduje prihlásenie.</string>
 
     <string name="store_form_create_title">Nový obchod</string>
     <string name="store_form_edit_title">Upraviť obchod</string>

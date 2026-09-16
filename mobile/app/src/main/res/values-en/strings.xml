@@ -420,7 +420,7 @@
     <string name="store_picker_osm_none">Not even OpenStreetMap knows a store here.</string>
     <string name="store_picker_add_new_action">The store is not here — add a new one</string>
     <string name="store_picker_add_new">+ Add new store</string>
-    <string name="store_picker_hint_anonymous">Type a store name or city, or tap \"Find nearby\" — creating a new store requires signing in.</string>
+    <string name="store_picker_hint_anonymous">Type the store name or city — adding a new store requires signing in.</string>
 
     <string name="store_form_create_title">New store</string>
     <string name="store_form_edit_title">Edit store</string>

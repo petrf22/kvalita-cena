@@ -111,6 +111,17 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   tam, kde si o něj uživatel výslovně řekne. Podrobně `mobile/CLAUDE.md`, „Ladění
   v emulátoru"; skok na obrazovku obstarává `DebugRouteIntent` v `MainActivity.kt`, čtený
   jen v debug buildu.
+- **Nabídka obchodů z OpenStreetMap se ptá Overpassu, ne Nominatimu** (`OverpassPoiService`) —
+  Nominatimova usage policy hledání POI podle kategorie zakazuje. Výpadek se hlásí jako
+  `status: UNAVAILABLE`, nikdy jako prázdný seznam, jinak by uživatel při nedostupnosti zakládal
+  duplicity; selhání se proto NEcachuje (na rozdíl od `GeocodingService`, kde prázdný výsledek
+  do cache jde). Potvrzený kandidát se ukládá s `core.store.data_origin = 'OSM_DERIVED'` —
+  `geo_source` na to nestačí, ta odpovídá na jinou otázku: `geo_source` je původ BODU,
+  `data_origin` původ TEXTU (`docs/datovy-model.md`, pravidlo 1).
+- **Vzdálenost obchodu počítá KLIENT, ne server** (`ui/common/GeoDistance.kt`) — serveru se
+  posílá poloha zaokrouhlená na ~110 m a `nearbyStores` hledá s okruhem zvětšeným o tuhle chybu
+  (`ROUNDING_SLACK_M`), takže dofiltrovat a seřadit podle skutečné vzdálenosti umí jen zařízení,
+  které zná přesnou polohu (`docs/soukromi.md`).
 - Geometrie ikon (favicon, PWA manifest, Android launcher) žije v `tools/icons/generate.py`,
   zdroj pravdy `docs/branding.md` — po každé úpravě kresby spustit `python3
   tools/icons/generate.py`.

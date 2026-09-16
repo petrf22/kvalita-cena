@@ -25,9 +25,9 @@ import org.osmdroid.views.overlay.Marker
 private const val SINGLE_STORE_ZOOM = 15.0
 
 /**
- * Mapa se značkami obchodů — doplněk k [StorePicker] (SearchableDropdown + "Najít v okolí"),
- * které dosud jediné umožňovaly obchod vybrat (docs/stav-implementace.md, "Adresa/mapa
- * provozovny" — mapa předtím uměla jen zadání/náhled JEDNOHO bodu, viz [LocationMap]). Souřadnice
+ * Mapa se značkami obchodů — doplněk k seznamu v [StorePicker] pro toho, kdo se v adresách
+ * neorientuje (docs/stav-implementace.md, "Adresa/mapa provozovny" — mapa předtím uměla jen
+ * zadání/náhled JEDNOHO bodu, viz [LocationMap]). Souřadnice
  * UŽIVATELE se do mapy vůbec nedostávají — appka jen ukáže obchody, které už zná
  * (searchStores/nearbyStores), výřez je z jejich bounding boxu, žádná vlastní poloha
  * (docs/soukromi.md). Stejné vrátkování "Zobrazit mapu" jako [LocationMap] — dlaždice se
@@ -75,7 +75,7 @@ private fun MapContent(
       mapView
     },
     update = { view ->
-      // Nabídka obchodů se může mezi kompozicemi změnit (nové "Najít v okolí", psaní do
+      // Nabídka obchodů se může mezi kompozicemi změnit (nové hledání v okolí, psaní do
       // našeptávače) — přestav značky, výřez nech beze změny, appka do něj sama nezasahuje
       // (na rozdíl od LocationMap appka tady žádný jeden bod zvenčí neposílá).
       rebuildMarkers(view, stores, selectedStoreId, homeCountry, onSelect)
