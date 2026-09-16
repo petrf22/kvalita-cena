@@ -60,6 +60,14 @@ public class Store implements Persistable<Long> {
   @Column(name = "osm_ref", length = 32)
   private String osmRef;
 
+  // Původ názvu a adresy kvůli ODbL (docs/datovy-model.md, pravidla 2 a 3). OSM_DERIVED nese
+  // provozovna založená z potvrzeného kandidáta z OpenStreetMap (nearbyOsmStores) — na rozdíl
+  // od pouhého geokódování adresy, kde z OSM pochází jen bod, ne text, a značka se nedává.
+  @Enumerated(EnumType.STRING)
+  @Column(name = "data_origin", nullable = false, length = 20)
+  @Builder.Default
+  private DataOrigin dataOrigin = DataOrigin.OWN;
+
   // Odkaz na stránku provozovny u řetězce — jako street/city/postalCode jde skutečná hodnota
   // vždy přes uživatelskou vrstvu (StoreUserEdit, StoreOverlayService), tenhle sloupec je
   // globální fakt, který přepíše až konsolidace (docs/datovy-model.md).

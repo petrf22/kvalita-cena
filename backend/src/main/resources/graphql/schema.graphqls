@@ -709,8 +709,26 @@ input CreateStoreInput {
   lon: Float
   geoSource: GeoSource
   osmRef: String
+  """
+  OSM_DERIVED patří provozovně založené z potvrzeného kandidáta nearbyOsmStores — tedy když
+  z OpenStreetMap pochází i název a adresa, ne jen souřadnice. Vyžaduje neprázdný osmRef
+  a vynutí geoSource = OSM. Bez zadání OWN. Samotné geokódování adresy (geocodeAddress)
+  OSM_DERIVED NENÍ: odtamtud je jen bod, ne text (docs/datovy-model.md, pravidlo 1).
+  """
+  dataOrigin: DataOrigin
   "Odkaz na stránku provozovny (u řetězce) — jako street/city jde přes core.store_user_edit."
   url: String
+}
+
+"""
+Původ dat záznamu kvůli ODbL (docs/datovy-model.md) — co není OWN, vypadává z „čistého"
+exportu vlastních dat. Každá tabulka používá jen svou dvojici: zboží OWN/OFF_DERIVED,
+provozovna OWN/OSM_DERIVED.
+"""
+enum DataOrigin {
+  OWN
+  OFF_DERIVED
+  OSM_DERIVED
 }
 
 """

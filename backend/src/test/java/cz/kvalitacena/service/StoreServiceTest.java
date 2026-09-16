@@ -4,6 +4,7 @@ import cz.kvalitacena.config.CatalogProperties;
 import cz.kvalitacena.config.I18nProperties;
 import cz.kvalitacena.controller.CreateStoreInput;
 import cz.kvalitacena.db.entity.AppUser;
+import cz.kvalitacena.db.entity.DataOrigin;
 import cz.kvalitacena.db.entity.GeoSource;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.entity.StoreStatus;
@@ -78,7 +79,51 @@ class StoreServiceTest {
 
   private CreateStoreInput input(String name, String city) {
     return new CreateStoreInput(name, null, "Hlavní 1", city, "60200", "CZ", null,
-        new BigDecimal("49.2"), new BigDecimal("16.6"), null, null, null);
+        new BigDecimal("49.2"), new BigDecimal("16.6"), null, null, null, null);
+  }
+
+  @Test
+  void osmDerivedStoreIsRejectedWithoutOsmRef() {
+    givenLoggedInUser();
+    // "Název a adresa jsou z OpenStreetMap" se bez odkazu na konkrétní záznam nedá tvrdit
+    // (docs/datovy-model.md, pravidlo 1) — a bez něj by šlo značku původu nastavit komukoli.
+    CreateStoreInput bad = new CreateStoreInput("Obchod", null, null, "Brno", null, "CZ",
+        null, null, null, null, null, DataOrigin.OSM_DERIVED, null);
+
+    assertThatThrownBy(() -> service().create(bad, PUBLIC_UID))
+        .isInstanceOf(ValidationException.class);
+  }
+
+  @Test
+  void osmDerivedStoreForcesOsmGeoSource() {
+    givenLoggedInUser();
+    when(catalogRateLimiter.tryAcquireStoreCreation(PUBLIC_UID)).thenReturn(true);
+    when(trustLevelService.isTrusted(any())).thenReturn(true);
+    when(storeRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    CreateStoreInput input = new CreateStoreInput("Obchod", null, null, "Brno", null, "CZ",
+        null, null, null, null, "way/123456", DataOrigin.OSM_DERIVED, null);
+    Store saved = service().create(input, PUBLIC_UID);
+
+    assertThat(saved.getDataOrigin()).isEqualTo(DataOrigin.OSM_DERIVED);
+    assertThat(saved.getGeoSource()).isEqualTo(GeoSource.OSM);
+  }
+
+  @Test
+  void geocodedCoordinatesAloneDoNotMakeTheStoreOsmDerived() {
+    givenLoggedInUser();
+    when(catalogRateLimiter.tryAcquireStoreCreation(PUBLIC_UID)).thenReturn(true);
+    when(trustLevelService.isTrusted(any())).thenReturn(true);
+    when(storeRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    // Uživatel napsal adresu sám a jen si nechal dohledat souřadnice — z OSM je bod, ne text,
+    // takže obchod zůstává vlastní data (docs/datovy-model.md, pravidlo 1, dosavadní výjimka).
+    CreateStoreInput input = new CreateStoreInput("Obchod", null, null, "Brno", null, "CZ",
+        null, new BigDecimal("49.2"), new BigDecimal("16.6"), GeoSource.OSM, "way/123456", null, null);
+    Store saved = service().create(input, PUBLIC_UID);
+
+    assertThat(saved.getDataOrigin()).isEqualTo(DataOrigin.OWN);
+    assertThat(saved.getGeoSource()).isEqualTo(GeoSource.OSM);
   }
 
   @Test
@@ -105,7 +150,7 @@ class StoreServiceTest {
   void malformedIcoIsRejected() {
     givenLoggedInUser();
     CreateStoreInput bad = new CreateStoreInput("Obchod", null, null, "Brno", null, "CZ",
-        "123", null, null, null, null, null);
+        "123", null, null, null, null, null, null);
     assertThatThrownBy(() -> service().create(bad, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
   }
@@ -114,7 +159,7 @@ class StoreServiceTest {
   void malformedUrlIsRejected() {
     givenLoggedInUser();
     CreateStoreInput bad = new CreateStoreInput("Obchod", null, null, "Brno", null, "CZ",
-        null, null, null, null, null, "not-a-url");
+        null, null, null, null, null, null, "not-a-url");
     assertThatThrownBy(() -> service().create(bad, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
   }
@@ -127,7 +172,7 @@ class StoreServiceTest {
     when(storeRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
     CreateStoreInput input = new CreateStoreInput("Obchod", null, null, "Brno", null, "CZ",
-        null, null, null, null, null, "https://www.example.cz/prodejna");
+        null, null, null, null, null, null, "https://www.example.cz/prodejna");
     Store saved = service().create(input, PUBLIC_UID);
 
     assertThat(saved.getUrl()).isEqualTo("https://www.example.cz/prodejna");
@@ -213,7 +258,7 @@ class StoreServiceTest {
     when(storeRepository.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
     CreateStoreInput input = new CreateStoreInput("Obchod", null, null, "Bratislava", null, null,
-        null, null, null, null, null, null);
+        null, null, null, null, null, null, null);
     Store saved = service().create(input, PUBLIC_UID);
 
     // CountryResolver.resolve: chybějící explicitní country -> app_user.country (SK), nikdy
@@ -225,7 +270,7 @@ class StoreServiceTest {
   void unsupportedCountryIsRejected() {
     givenLoggedInUser();
     CreateStoreInput input = new CreateStoreInput("Obchod", null, null, "Brno", null, "AT",
-        null, null, null, null, null, null);
+        null, null, null, null, null, null, null);
     assertThatThrownBy(() -> service().create(input, PUBLIC_UID))
         .isInstanceOf(ValidationException.class);
   }

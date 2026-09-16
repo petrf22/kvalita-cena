@@ -3,6 +3,7 @@ package cz.kvalitacena.service;
 import cz.kvalitacena.config.CatalogProperties;
 import cz.kvalitacena.controller.CreateStoreInput;
 import cz.kvalitacena.db.entity.AppUser;
+import cz.kvalitacena.db.entity.DataOrigin;
 import cz.kvalitacena.db.entity.GeoSource;
 import cz.kvalitacena.db.entity.RetailChain;
 import cz.kvalitacena.db.entity.Store;
@@ -78,6 +79,19 @@ public class StoreService {
     if (url != null && !UrlValidation.isValidStoreUrl(url)) {
       throw new ValidationException(ErrorCode.STORE_URL_INVALID);
     }
+
+    // Původ dat (docs/datovy-model.md, pravidlo 1): OSM_DERIVED znamená "název a adresa jsou
+    // z OpenStreetMap", a to se bez odkazu na konkrétní záznam nedá tvrdit. Samotné
+    // geokódování adresy OSM_DERIVED není — odtamtud je jen bod, ne text, proto se u něj
+    // geoSource=OSM a data_origin=OWN nevylučují.
+    DataOrigin dataOrigin = input.dataOrigin() != null ? input.dataOrigin() : DataOrigin.OWN;
+    if (dataOrigin == DataOrigin.OSM_DERIVED && (input.osmRef() == null || input.osmRef().isBlank())) {
+      throw new ValidationException(ErrorCode.STORE_OSM_ORIGIN_REQUIRES_REF);
+    }
+    GeoSource geoSource = dataOrigin == DataOrigin.OSM_DERIVED
+        ? GeoSource.OSM
+        : input.geoSource() != null ? input.geoSource() : GeoSource.COMMUNITY;
+
     if (!catalogRateLimiter.tryAcquireStoreCreation(viewerPublicUid)) {
       throw new TooManyRequestsException();
     }
@@ -105,8 +119,9 @@ public class StoreService {
         .ico(ico)
         .lat(input.lat())
         .lon(input.lon())
-        .geoSource(input.geoSource() != null ? input.geoSource() : GeoSource.COMMUNITY)
+        .geoSource(geoSource)
         .osmRef(input.osmRef())
+        .dataOrigin(dataOrigin)
         .url(url)
         .status(status)
         .createdByUserId(user.getId())

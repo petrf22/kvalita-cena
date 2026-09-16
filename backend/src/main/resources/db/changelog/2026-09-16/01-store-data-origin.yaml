@@ -1,0 +1,36 @@
+# 01-store-data-origin.yaml — původ dat provozovny (core.store.data_origin).
+#
+# Appka nově nabízí provozovny z OpenStreetMap (Overpass, nearbyOsmStores) a potvrzený
+# kandidát předvyplní celý formulář — tedy i název a adresu, ne jen souřadnice, jak to
+# dosud platilo pro geokódovaného kandidáta. Takový řádek nese cizí ODbL data a musí být
+# rozpoznatelný, aby vypadl z "čistého" exportu vlastních dat (docs/datovy-model.md,
+# pravidla 2 a 3).
+#
+# Přesná obdoba core.product.data_origin (2026-07-26/03-catalog.yaml), včetně toho, že
+# povolené hodnoty hlídá CHECK v databázi — enum DataOrigin je v Javě sdílený, ale každá
+# tabulka z něj smí použít jen svou dvojici.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-16-01-store-data-origin
+      author: Petr F.
+      comment: >
+        DEFAULT 'OWN' je pro všechny dosavadní řádky pravdivý — do teď se do core.store
+        z OSM dostávaly jen souřadnice a osm_ref, což pravidlo 1 povoluje bez značky původu.
+      changes:
+        - addColumn:
+            schemaName: core
+            tableName: store
+            columns:
+              - column:
+                  # OWN | OSM_DERIVED — viz docs/datovy-model.md, oddělení ODbL dat.
+                  name: data_origin
+                  type: VARCHAR(20)
+                  defaultValue: OWN
+                  constraints:
+                    nullable: false
+        - sql:
+            sql: |
+              ALTER TABLE core.store
+                ADD CONSTRAINT chk_store_data_origin CHECK (data_origin IN ('OWN', 'OSM_DERIVED'));
+            rollback: |
+              ALTER TABLE core.store DROP CONSTRAINT chk_store_data_origin;

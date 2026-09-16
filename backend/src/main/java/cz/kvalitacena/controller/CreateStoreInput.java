@@ -1,5 +1,6 @@
 package cz.kvalitacena.controller;
 
+import cz.kvalitacena.db.entity.DataOrigin;
 import cz.kvalitacena.db.entity.GeoSource;
 
 import java.math.BigDecimal;
@@ -16,5 +17,6 @@ public record CreateStoreInput(
     BigDecimal lon,
     GeoSource geoSource,
     String osmRef,
+    DataOrigin dataOrigin,
     String url) {
 }

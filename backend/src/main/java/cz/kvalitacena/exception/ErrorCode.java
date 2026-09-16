@@ -63,6 +63,9 @@ public enum ErrorCode {
   DUPLICATE_GENERIC_PRODUCT("error.duplicate.genericProduct"),
   DUPLICATE_STORE("error.duplicate.store"),
 
+  // --- katalog: původ dat (ODbL)
+  STORE_OSM_ORIGIN_REQUIRES_REF("error.store.osmOriginRequiresRef"),
+
   // --- fotky
   PHOTO_UPLOAD_REQUIRES_LOGIN("error.photo.uploadRequiresLogin"),
   PHOTO_ACTION_REQUIRES_LOGIN("error.photo.actionRequiresLogin"),
