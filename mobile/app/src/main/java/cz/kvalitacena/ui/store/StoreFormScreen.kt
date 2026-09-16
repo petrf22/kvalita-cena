@@ -4,6 +4,9 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +30,10 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import cz.kvalitacena.ui.theme.Spacing
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -81,7 +88,17 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
   )
   val context = LocalContext.current
   val scope = rememberCoroutineScope()
+  val keyboard = LocalSoftwareKeyboardController.current
+  val detailsRequester = remember { BringIntoViewRequester() }
+  val geocodeRequester = remember { BringIntoViewRequester() }
+  LaunchedEffect(viewModel.manualFormVisible) {
+    if (viewModel.manualFormVisible && !viewModel.isEditing) detailsRequester.bringIntoView()
+  }
+  LaunchedEffect(viewModel.geocodeMessage) {
+    if (viewModel.geocodeMessage != null) geocodeRequester.bringIntoView()
+  }
   var formDirty by rememberSaveable { mutableStateOf(false) }
+  var optionalExpanded by rememberSaveable { mutableStateOf(storeId != null) }
   val exitGuard = LocalNavigationExitGuard.current
   ReportUnsavedChanges(formDirty && viewModel.created == null)
 
@@ -97,13 +114,15 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     ActivityResultContracts.RequestPermission(),
   ) { granted ->
     if (granted) {
+      viewModel.startLocating()
       scope.launch {
-        getCurrentLocation(context)?.let {
+        val location = getCurrentLocation(context)
+        if (location != null) {
           formDirty = true
-          viewModel.useMyLocation(it.latitude, it.longitude)
-        }
+          viewModel.useMyLocation(location.latitude, location.longitude)
+        } else viewModel.onLocationUnavailable()
       }
-    }
+    } else viewModel.onLocationUnavailable()
   }
 
   fun useMyLocation() {
@@ -115,11 +134,13 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
       return
     }
+    viewModel.startLocating()
     scope.launch {
-      getCurrentLocation(context)?.let {
+      val location = getCurrentLocation(context)
+      if (location != null) {
         formDirty = true
-        viewModel.useMyLocation(it.latitude, it.longitude)
-      }
+        viewModel.useMyLocation(location.latitude, location.longitude)
+      } else viewModel.onLocationUnavailable()
     }
   }
 
@@ -128,193 +149,256 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     return
   }
 
-  Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+  Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.lg)) {
     Text(
       stringResource(if (viewModel.isEditing) R.string.store_form_edit_title else R.string.store_form_create_title),
       style = MaterialTheme.typography.headlineSmall,
     )
     Gap()
 
-    SearchableDropdown(
-      query = viewModel.chainQuery,
-      onQueryChange = { formDirty = true; viewModel.onChainQueryChange(it) },
-      suggestions = viewModel.chainSuggestions,
-      onSelect = { formDirty = true; viewModel.onChainSelect(it) },
-      itemLabel = { it.name },
-      label = stringResource(R.string.store_form_chain_label),
-      loading = viewModel.chainSearching,
-      modifier = Modifier.fillMaxWidth(),
-    )
+    CountryDropdown(selected = viewModel.country, onSelect = { formDirty = true; viewModel.onCountryChange(it) })
     Gap()
 
-    SingleLineTextField(
-      value = viewModel.name,
-      onValueChange = { formDirty = true; viewModel.onNameChange(it) },
-      label = stringResource(R.string.store_form_name_label),
-      modifier = Modifier.fillMaxWidth(),
-    )
-    Gap()
-    SingleLineTextField(
-      value = viewModel.street,
-      onValueChange = { formDirty = true; viewModel.street = it },
-      label = stringResource(R.string.store_form_street_label),
-      modifier = Modifier.fillMaxWidth(),
-    )
-    Gap()
-    SingleLineTextField(
-      value = viewModel.city,
-      onValueChange = { formDirty = true; viewModel.onCityChange(it) },
-      label = stringResource(R.string.store_form_city_label),
-      modifier = Modifier.fillMaxWidth(),
-    )
-    Gap()
-    SingleLineTextField(
-      value = viewModel.postalCode,
-      onValueChange = { formDirty = true; viewModel.postalCode = it },
-      label = stringResource(R.string.store_form_postal_code_label),
-      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-      modifier = Modifier.fillMaxWidth(),
-    )
-    Gap()
-    SingleLineTextField(
-      value = viewModel.url,
-      onValueChange = { formDirty = true; viewModel.url = it },
-      label = stringResource(R.string.store_form_url_label),
-      isError = viewModel.url.isNotBlank() && !isUrlShapeValid(viewModel.url),
-      supportingText = if (viewModel.url.isNotBlank() && !isUrlShapeValid(viewModel.url)) {
-        { Text(stringResource(R.string.store_form_url_invalid)) }
-      } else null,
-      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-      modifier = Modifier.fillMaxWidth(),
-    )
-    Gap()
+    if (!viewModel.isEditing) {
+      Text(stringResource(R.string.osm_search_title), style = MaterialTheme.typography.titleMedium)
+      Text(stringResource(R.string.osm_search_hint), style = MaterialTheme.typography.bodySmall)
+      SingleLineTextField(
+        value = viewModel.osmQuery,
+        onValueChange = viewModel::onOsmQueryChange,
+        label = stringResource(R.string.osm_search_label),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { viewModel.searchOsm() }),
+        modifier = Modifier.fillMaxWidth(),
+      )
+      Button(
+        onClick = { keyboard?.hide(); viewModel.searchOsm() },
+        enabled = viewModel.osmQuery.trim().length >= 3 && !viewModel.osmSearching,
+        modifier = Modifier.fillMaxWidth(),
+      ) {
+        if (viewModel.osmSearching) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+        else Text(stringResource(R.string.osm_search_action))
+      }
+      viewModel.osmError?.let {
+        Text(it.asString(), color = MaterialTheme.colorScheme.error)
+        Text(stringResource(R.string.osm_retry_hint), style = MaterialTheme.typography.bodySmall)
+      }
+      if (viewModel.osmSearched && viewModel.osmCandidates.isEmpty() && viewModel.osmError == null) {
+        Text(stringResource(R.string.osm_search_empty))
+      }
+      viewModel.osmCandidates.forEach { candidate ->
+        OutlinedButton(
+          onClick = { keyboard?.hide(); formDirty = true; viewModel.selectOsmStore(candidate) },
+          modifier = Modifier.fillMaxWidth(),
+        ) { Text(candidate.displayName) }
+      }
+      viewModel.osmAttribution?.let {
+        Text(it, style = MaterialTheme.typography.bodySmall)
+      }
+      if (!viewModel.manualFormVisible) {
+        TextButton(onClick = { viewModel.showManualForm() }) { Text(stringResource(R.string.store_manual_entry)) }
+        OutlinedButton(onClick = { exitGuard.requestNavigation(onDone) }, modifier = Modifier.fillMaxWidth()) {
+          Text(stringResource(R.string.common_cancel))
+        }
+      }
+      Gap()
+    }
 
-    CountryDropdown(selected = viewModel.country, onSelect = { formDirty = true; viewModel.country = it })
-    Gap()
+    if (viewModel.manualFormVisible) {
+      if (!viewModel.isEditing) {
+        Text(stringResource(R.string.store_review_details), style = MaterialTheme.typography.titleMedium,
+          modifier = Modifier.bringIntoViewRequester(detailsRequester))
+        Gap()
+      }
+      SingleLineTextField(
+        value = viewModel.name,
+        onValueChange = { formDirty = true; viewModel.onNameChange(it) },
+        label = stringResource(R.string.store_form_name_label),
+        modifier = Modifier.fillMaxWidth(),
+      )
+      Gap()
+      SingleLineTextField(
+        value = viewModel.street,
+        onValueChange = { formDirty = true; viewModel.onStreetChange(it) },
+        label = stringResource(R.string.store_form_street_label),
+        modifier = Modifier.fillMaxWidth(),
+      )
+      Gap()
+      SingleLineTextField(
+        value = viewModel.city,
+        onValueChange = { formDirty = true; viewModel.onCityChange(it) },
+        label = stringResource(R.string.store_form_city_label),
+        modifier = Modifier.fillMaxWidth(),
+      )
+      Gap()
+      SingleLineTextField(
+        value = viewModel.postalCode,
+        onValueChange = { formDirty = true; viewModel.onPostalCodeChange(it) },
+        label = stringResource(R.string.store_form_postal_code_label),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        modifier = Modifier.fillMaxWidth(),
+      )
+      Gap()
 
-    if (viewModel.similarStores.isNotEmpty()) {
-      Text(stringResource(R.string.store_form_similar_warning), style = MaterialTheme.typography.bodyMedium)
-      viewModel.similarStores.forEach { store ->
+      if (viewModel.similarStores.isNotEmpty()) {
+        Text(stringResource(R.string.store_form_similar_warning), style = MaterialTheme.typography.bodyMedium)
+        viewModel.similarStores.forEach { store ->
+          OutlinedButton(onClick = { viewModel.useExisting(store) }, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.store_use_existing, store.name, store.city, store.street.orEmpty()))
+          }
+        }
+        Gap()
+      }
+
+      HorizontalDivider()
+      Gap()
+
+      TextButton(onClick = { optionalExpanded = !optionalExpanded }) {
+        Text(stringResource(if (optionalExpanded) R.string.store_optional_hide else R.string.store_optional_show))
+      }
+      if (optionalExpanded) {
+        SearchableDropdown(
+          query = viewModel.chainQuery,
+          onQueryChange = { formDirty = true; viewModel.onChainQueryChange(it) },
+          suggestions = viewModel.chainSuggestions,
+          onSelect = { formDirty = true; viewModel.onChainSelect(it) },
+          itemLabel = { it.name },
+          label = stringResource(R.string.store_form_chain_label),
+          loading = viewModel.chainSearching,
+          modifier = Modifier.fillMaxWidth(),
+        )
+        Gap()
+
+        SingleLineTextField(
+          value = viewModel.url,
+          onValueChange = { formDirty = true; viewModel.url = it },
+          label = stringResource(R.string.store_form_url_label),
+          isError = viewModel.url.isNotBlank() && !isUrlShapeValid(viewModel.url),
+          supportingText = if (viewModel.url.isNotBlank() && !isUrlShapeValid(viewModel.url)) {
+            { Text(stringResource(R.string.store_form_url_invalid)) }
+          } else null,
+          keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+          modifier = Modifier.fillMaxWidth(),
+        )
+        Gap()
+
+        val companyIdLabel = stringResource(companyIdLabelRes(viewModel.country))
         Text(
-          "${store.name} — ${store.city}${store.street?.let { ", $it" } ?: ""}",
+          stringResource(R.string.store_company_id_section_title, companyIdLabel),
+          style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+          stringResource(R.string.store_company_id_hint),
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-      }
-      Gap()
-    }
-
-    HorizontalDivider()
-    Gap()
-
-    val companyIdLabel = stringResource(companyIdLabelRes(viewModel.country))
-    Text(
-      stringResource(R.string.store_company_id_section_title, companyIdLabel),
-      style = MaterialTheme.typography.titleMedium,
-    )
-    Text(
-      stringResource(R.string.store_company_id_hint),
-      style = MaterialTheme.typography.bodySmall,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Gap()
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      SingleLineTextField(
-        value = viewModel.ico,
-        onValueChange = { formDirty = true; viewModel.ico = it },
-        label = companyIdLabel,
-        isError = viewModel.ico.isNotBlank() && !isIcoShapeValid(viewModel.ico, viewModel.country),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = Modifier.weight(1f),
-      )
-      if (hasCompanyRegistry(viewModel.country)) {
-        Button(onClick = { viewModel.lookupIco(onFound = { formDirty = true }) }, enabled = !viewModel.icoLookupLoading) {
-          if (viewModel.icoLookupLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-          else Text(stringResource(R.string.store_company_id_load_from_registry))
+        Gap()
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          SingleLineTextField(
+            value = viewModel.ico,
+            onValueChange = { formDirty = true; viewModel.ico = it },
+            label = companyIdLabel,
+            isError = viewModel.ico.isNotBlank() && !isIcoShapeValid(viewModel.ico, viewModel.country),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.weight(1f),
+          )
+          if (hasCompanyRegistry(viewModel.country)) {
+            Button(onClick = { viewModel.lookupIco(onFound = { formDirty = true }) }, enabled = !viewModel.icoLookupLoading) {
+              if (viewModel.icoLookupLoading) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+              else Text(stringResource(R.string.store_company_id_load_from_registry))
+            }
+          }
         }
+        viewModel.icoLookupError?.let {
+          Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
+        Gap()
+        HorizontalDivider()
+        Gap()
       }
-    }
-    viewModel.icoLookupError?.let {
-      Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-    }
-    Gap()
 
-    HorizontalDivider()
-    Gap()
-
-    Text(stringResource(R.string.store_location_section_title), style = MaterialTheme.typography.titleMedium)
-    Text(
-      stringResource(R.string.store_location_hint),
-      style = MaterialTheme.typography.bodySmall,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Gap()
-    Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-      OutlinedButton(onClick = { viewModel.geocode() }, enabled = viewModel.city.isNotBlank() && !viewModel.geocoding) {
-        if (viewModel.geocoding) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-        else Text(stringResource(R.string.store_location_find_coordinates))
-      }
-      OutlinedButton(onClick = { useMyLocation() }, enabled = !viewModel.locating) {
-        if (viewModel.locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-        else Text(stringResource(R.string.store_location_use_my_location))
-      }
-    }
-    Gap()
-
-    if (viewModel.geocodeCandidates.isNotEmpty()) {
-      viewModel.geocodeCandidates.forEach { candidate ->
-        CandidateRow(
-          candidate = candidate,
-          selected = viewModel.selectedCandidate == candidate,
-          onSelect = { formDirty = true; viewModel.selectCandidate(candidate) },
-        )
-      }
-      viewModel.geocodeAttribution?.let {
-        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-      }
-      Gap()
-    }
-
-    if (viewModel.manualLat != null && viewModel.manualLon != null && viewModel.selectedCandidate == null) {
+      Text(stringResource(R.string.store_location_section_title), style = MaterialTheme.typography.titleMedium)
       Text(
-        stringResource(R.string.store_location_will_use_map_position),
+        stringResource(R.string.store_location_hint),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
       Gap()
-    }
-
-    LocationMap(
-      lat = viewModel.selectedCandidate?.lat ?: viewModel.manualLat,
-      lon = viewModel.selectedCandidate?.lon ?: viewModel.manualLon,
-      editable = true,
-      onPointSelected = { lat, lon -> formDirty = true; viewModel.onMapPointSelected(lat, lon) },
-      modifier = Modifier.fillMaxWidth(),
-    )
-    Gap()
-
-    viewModel.saveError?.let {
-      Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+      Column {
+        OutlinedButton(onClick = { viewModel.geocode() }, enabled = viewModel.city.isNotBlank() && !viewModel.geocoding) {
+          if (viewModel.geocoding) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+          else Text(stringResource(R.string.store_location_find_coordinates))
+        }
+        OutlinedButton(onClick = { useMyLocation() }, enabled = !viewModel.locating) {
+          if (viewModel.locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+          else Text(stringResource(R.string.store_location_use_my_location))
+        }
+      }
       Gap()
-    }
 
-    Button(
-      onClick = { viewModel.submit() },
-      enabled = isStoreFormValid(viewModel.name, viewModel.city) &&
-        isIcoShapeValid(viewModel.ico, viewModel.country) &&
-        isUrlShapeValid(viewModel.url) && !viewModel.saving,
-      modifier = Modifier.fillMaxWidth(),
-    ) {
-      if (viewModel.saving) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-      else Text(stringResource(if (viewModel.isEditing) R.string.store_form_save_changes else R.string.store_form_create))
-    }
-    Gap()
-    OutlinedButton(
-      onClick = { exitGuard.requestNavigation(onDone) },
-      enabled = !viewModel.saving,
-      modifier = Modifier.fillMaxWidth(),
-    ) {
-      Text(stringResource(if (viewModel.isEditing) R.string.common_cancel else R.string.store_form_back_without_creating))
+      viewModel.geocodeMessage?.let {
+        Text(it.asString(), style = MaterialTheme.typography.bodyMedium,
+          modifier = Modifier.bringIntoViewRequester(geocodeRequester))
+      }
+      if (viewModel.geocodeCandidates.isNotEmpty()) {
+        viewModel.geocodeCandidates.forEach { candidate ->
+          CandidateRow(
+            candidate = candidate,
+            selected = viewModel.selectedCandidate == candidate,
+            onSelect = { formDirty = true; viewModel.selectCandidate(candidate) },
+          )
+        }
+        Gap()
+      }
+      viewModel.geocodeAttribution?.let {
+        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+      }
+
+      if (viewModel.manualLat != null && viewModel.manualLon != null && viewModel.selectedCandidate == null) {
+        Text(
+          stringResource(R.string.store_location_will_use_map_position),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Gap()
+      }
+
+      LocationMap(
+        lat = viewModel.selectedCandidate?.lat ?: viewModel.manualLat,
+        lon = viewModel.selectedCandidate?.lon ?: viewModel.manualLon,
+        editable = true,
+        onPointSelected = { lat, lon -> formDirty = true; viewModel.onMapPointSelected(lat, lon) },
+        modifier = Modifier.fillMaxWidth(),
+      )
+      Gap()
+
+      viewModel.saveError?.let {
+        Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        Gap()
+      }
+
+      Button(
+        onClick = { keyboard?.hide(); viewModel.submit() },
+        enabled = isStoreFormValid(viewModel.name, viewModel.city) &&
+          isIcoShapeValid(viewModel.ico, viewModel.country) &&
+          isUrlShapeValid(viewModel.url) && !viewModel.saving && !viewModel.geocoding && !viewModel.locating,
+        modifier = Modifier.fillMaxWidth(),
+      ) {
+        if (viewModel.saving) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+        else Text(stringResource(if (viewModel.isEditing) R.string.store_form_save_changes else R.string.store_form_create))
+      }
+      if (!viewModel.isEditing && viewModel.geocodeAttempted && viewModel.selectedCandidate == null && viewModel.manualLat == null) {
+        TextButton(onClick = { viewModel.submit(withoutCoordinates = true) }, enabled = !viewModel.saving && !viewModel.geocoding) {
+          Text(stringResource(R.string.store_save_without_coordinates))
+        }
+      }
+      Gap()
+      OutlinedButton(
+        onClick = { exitGuard.requestNavigation(onDone) },
+        enabled = !viewModel.saving,
+        modifier = Modifier.fillMaxWidth(),
+      ) {
+        Text(stringResource(if (viewModel.isEditing) R.string.common_cancel else R.string.store_form_back_without_creating))
+      }
     }
   }
 }
@@ -325,7 +409,7 @@ private fun CandidateRow(candidate: GeocodeCandidate, selected: Boolean, onSelec
     modifier = Modifier
       .fillMaxWidth()
       .selectable(selected = selected, onClick = onSelect)
-      .padding(vertical = 4.dp),
+      .padding(vertical = Spacing.xs),
     verticalAlignment = Alignment.CenterVertically,
   ) {
     RadioButton(selected = selected, onClick = onSelect)
@@ -335,7 +419,7 @@ private fun CandidateRow(candidate: GeocodeCandidate, selected: Boolean, onSelec
 
 @Composable
 private fun Gap() {
-  androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+  androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(Spacing.md))
 }
 
 /**

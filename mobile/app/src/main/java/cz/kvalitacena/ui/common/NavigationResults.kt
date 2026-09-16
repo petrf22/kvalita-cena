@@ -14,6 +14,8 @@ import cz.kvalitacena.network.Store
  */
 object NavigationResults {
   var newStore: Store? = null
+  /** Rozepsaný dotaz předaný do hledání v OSM; při otevření formuláře se spotřebuje. */
+  var storeSearchQuery: String? = null
   var newProduct: Product? = null
   /** Napsaný název, kterým uživatel našel existující lokální položku; odešle se až s cenou. */
   var productAlias: String? = null

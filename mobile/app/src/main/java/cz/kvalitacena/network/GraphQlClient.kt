@@ -491,10 +491,10 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
    * Geokódování adresy přes server (nikdy přímo z appky, viz docs/soukromi.md). Chyba/výpadek
    * na backendu se vždy projeví jako prázdný seznam kandidátů, ne jako výjimka.
    */
-  suspend fun geocodeAddress(street: String?, city: String, postalCode: String?): GeocodeResult {
+  suspend fun geocodeAddress(street: String?, city: String, postalCode: String?, country: String): GeocodeResult {
     val gql = """
-      query(${'$'}street: String, ${'$'}city: String!, ${'$'}postalCode: String) {
-        geocodeAddress(street: ${'$'}street, city: ${'$'}city, postalCode: ${'$'}postalCode) {
+      query(${'$'}street: String, ${'$'}city: String!, ${'$'}postalCode: String, ${'$'}country: String) {
+        geocodeAddress(street: ${'$'}street, city: ${'$'}city, postalCode: ${'$'}postalCode, country: ${'$'}country) {
           attribution
           candidates { lat lon displayName osmRef }
         }
@@ -504,8 +504,25 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
       put("street", street)
       put("city", city)
       put("postalCode", postalCode)
+      put("country", country)
     }
     return execute(gql, variables, GraphQlResponse.serializer(GeocodeAddressData.serializer())).geocodeAddress
+  }
+
+  suspend fun searchOsmStores(query: String, country: String): OsmStoreSearchResult {
+    val gql = """
+      query(${'$'}query: String!, ${'$'}country: String) {
+        searchOsmStores(query: ${'$'}query, country: ${'$'}country) {
+          available attribution
+          candidates { name street city postalCode country lat lon osmRef displayName }
+        }
+      }
+    """
+    val variables = buildJsonObject {
+      put("query", query)
+      put("country", country)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(OsmStoreSearchData.serializer())).searchOsmStores
   }
 
   /** Předvyplnění formuláře obchodu z veřejného rejstříku ARES — null, když IČO neexistuje nebo je ARES nedostupný. */

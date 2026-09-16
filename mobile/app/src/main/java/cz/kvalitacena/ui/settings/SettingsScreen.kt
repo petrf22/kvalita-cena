@@ -1,6 +1,13 @@
 package cz.kvalitacena.ui.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.saveable.rememberSaveable
+import cz.kvalitacena.ui.theme.Spacing
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -68,7 +75,7 @@ fun SettingsScreen(
     }
   }
 
-  Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+  Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.lg)) {
     Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineSmall)
     Spacer()
 
@@ -116,6 +123,38 @@ fun SettingsScreen(
     HorizontalDivider()
     Spacer()
 
+    val nearby = AppContainer.nearbySettings
+    var radiusInput by rememberSaveable { mutableStateOf(nearby.radiusMeters.toString()) }
+    val parsedRadius = parseNearbyRadius(radiusInput)
+    Text(stringResource(R.string.nearby_settings_title), style = MaterialTheme.typography.titleMedium)
+    Spacer()
+    SingleLineTextField(
+      value = radiusInput,
+      onValueChange = { radiusInput = it },
+      label = stringResource(R.string.nearby_radius_label),
+      keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+      isError = parsedRadius == null,
+      supportingText = { Text(stringResource(R.string.nearby_radius_hint)) },
+      modifier = Modifier.fillMaxWidth(),
+    )
+    TextButton(
+      onClick = { parsedRadius?.let(nearby::setRadius) },
+      enabled = parsedRadius != null && parsedRadius != nearby.radiusMeters,
+    ) { Text(stringResource(R.string.nearby_radius_save)) }
+    Text(stringResource(R.string.nearby_radius_current, nearby.radiusMeters))
+    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+      Text(stringResource(R.string.nearby_use_location), modifier = Modifier.weight(1f))
+      Switch(checked = nearby.useLocation, onCheckedChange = nearby::setLocationEnabled)
+    }
+    Text(
+      stringResource(R.string.nearby_settings_hint),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer()
+    HorizontalDivider()
+    Spacer()
+
     Text(
       stringResource(R.string.settings_about_link),
       style = MaterialTheme.typography.bodyMedium,
@@ -153,7 +192,7 @@ fun SettingsScreen(
 
 @Composable
 private fun Spacer() {
-  androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+  androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(Spacing.md))
 }
 
 /**

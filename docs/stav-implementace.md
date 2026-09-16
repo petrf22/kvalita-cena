@@ -100,6 +100,20 @@ Sekce „Zadat cenu" na `PriceEntryScreen` je schovaná za tlačítkem, dokud u�
 úspěšně nezapíše cenu (`ui/settings/PriceEntryVisibilityStore.kt`) — appka tak stejně dobře
 slouží lidem, co jen hledají ceny poblíž.
 
+Výběr obchodu při zápisu ceny nabízí okolí automaticky, pokud už uživatel povolil polohu.
+`NearbySettings` uchovává okruh v metrech (výchozí 500, rozsah 100–25 000) a možnost polohu
+nepoužívat. Seznam je přímo ve formuláři; nulový nález nabízí hledání v OSM / ruční přidání.
+Textové `searchStores` hledá všechna slova napříč názvem, městem a ulicí. Psaní jiného
+obchodu ruší původní výběr i rozpracovaný dotaz. Poslední obchod zůstává dostupný bez GPS,
+ale pokud leží mimo nalezené okolí, automaticky vybraný nezůstane.
+
+Nový `searchOsmStores` používá serverový Nominatim pouze po odeslání hledání tlačítkem,
+se sdíleným limitem a cache. Výběr jednotlivého obchodu předvyplní název, dostupnou adresu
+a souřadnice; uložení vyžaduje potvrzení. Ruční zadání adresy při prvním uložení vyvolá
+geokódování a nabídne potvrzení bodu nebo výslovné uložení bez polohy. Existující podobný
+obchod lze rovnou použít. IČO/web/řetězec jsou v rozbalovací sekci. Výpadek OSM se
+odlišuje od prázdného výsledku; ruční formulář je dostupný v obou případech.
+
 ## Uživatelská vrstva nad globálními daty
 
 `docs/datovy-model.md`, „Uživatelská vrstva nad globálními daty"; práh důvěry a nahlašování

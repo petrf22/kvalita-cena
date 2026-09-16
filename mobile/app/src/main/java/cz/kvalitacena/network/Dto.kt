@@ -982,3 +982,26 @@ data class GraphQlRequest(val query: String, val variables: JsonObject)
 
 @Serializable
 data class GraphQlResponse<T>(val data: T? = null, val errors: List<GraphQlError>? = null)
+
+@Serializable
+data class OsmStoreCandidate(
+  val name: String,
+  val street: String? = null,
+  val city: String? = null,
+  val postalCode: String? = null,
+  val country: String? = null,
+  val lat: Double,
+  val lon: Double,
+  val osmRef: String,
+  val displayName: String,
+)
+
+@Serializable
+data class OsmStoreSearchResult(
+  val candidates: List<OsmStoreCandidate> = emptyList(),
+  val attribution: String,
+  val available: Boolean,
+)
+
+@Serializable
+data class OsmStoreSearchData(val searchOsmStores: OsmStoreSearchResult)

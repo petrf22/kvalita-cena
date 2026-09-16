@@ -492,4 +492,40 @@
     <string name="product_form_other_names_hint">Optional. A language the item does not have yet becomes visible to everyone; overwriting an existing name applies only to you.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
+
+    <!-- Výběr obchodu a nastavení okolí. -->
+    <string name="nearby_settings_title">Nearby stores</string>
+    <string name="nearby_radius_label">Radius in metres</string>
+    <string name="nearby_radius_hint">Enter 100 to 25,000 metres, for example 500.</string>
+    <string name="nearby_radius_save">Save radius</string>
+    <string name="nearby_radius_current">Current radius: %1$d m</string>
+    <string name="nearby_use_location">Suggest stores using my location</string>
+    <string name="nearby_settings_hint">When entering a price, we use your location once if permission is granted. We do not store it. Distances are approximate and depend on location accuracy. Without location, search by name and town.</string>
+    <string name="nearby_without_location">Enter a store name and town, for example “Lidl Brno”. For nearby suggestions, allow location access and turn on device location.</string>
+    <string name="store_picker_search_label">Store name or town</string>
+    <string name="store_picker_search_hint">Find another store by entering its name, town or street.</string>
+    <string name="nearby_loading">Finding nearby stores…</string>
+    <string name="store_picker_searching">Searching stores…</string>
+    <string name="store_picker_selected">Selected store for this price</string>
+    <string name="nearby_results_title">Stores within %1$d m</string>
+    <string name="nearby_empty_help">No stores are saved in this radius yet. Try a name and town, find a store in OpenStreetMap or add it manually. You can change the radius in Settings.</string>
+    <string name="store_picker_empty_help">We do not know this store yet. Find it in OpenStreetMap or add it manually.</string>
+    <string name="nearby_refresh">Use location · radius %1$d m</string>
+    <string name="store_picker_find_or_add">Find in OpenStreetMap / add store</string>
+    <string name="store_picker_login_to_add">To add a missing store, sign in on the Account tab.</string>
+    <string name="osm_search_title">Find a store in OpenStreetMap</string>
+    <string name="osm_search_hint">Enter a name and town, optionally a street. Selecting a result fills in its available address and location. Nothing is saved until you confirm the details.</string>
+    <string name="osm_search_label">E.g. Lidl, Brno, Vídeňská</string>
+    <string name="osm_search_action">Search OpenStreetMap</string>
+    <string name="osm_unavailable">OpenStreetMap is currently unavailable.</string>
+    <string name="osm_retry_hint">Retry when your connection returns, or enter the store manually.</string>
+    <string name="osm_search_empty">No matching store. Add a town or street, or continue manually.</string>
+    <string name="store_manual_entry">Enter store manually</string>
+    <string name="store_review_details">Review store details</string>
+    <string name="store_optional_show">More details (chain, website, company ID)</string>
+    <string name="store_optional_hide">Hide extra details</string>
+    <string name="store_use_existing">Use existing: %1$s · %2$s · %3$s</string>
+    <string name="store_geocode_empty">Could not locate the address. Refine it, select a point on the map or save without location.</string>
+    <string name="store_geocode_choose">Select the correct address location and confirm saving the store.</string>
+    <string name="store_save_without_coordinates">Save without location</string>
 </resources>

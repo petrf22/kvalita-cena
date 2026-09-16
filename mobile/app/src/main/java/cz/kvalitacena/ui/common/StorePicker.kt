@@ -2,30 +2,26 @@ package cz.kvalitacena.ui.common
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import cz.kvalitacena.R
 import cz.kvalitacena.network.Store
+import cz.kvalitacena.ui.theme.Spacing
 
-/**
- * Výběr obchodu při zápisu ceny — kombinuje tři cesty, jak se k obchodu dostat, aby fungoval
- * i doma bez sdílené polohy nebo zpětného zápisu (docs/datovy-model.md, "Identita provozovny"):
- * napsat název/město (searchStores), stisknout "Najít v okolí" (nearbyStores, dosavadní
- * chování beze změny) nebo založit nový obchod. Nahrazuje dřívější read-only StoreDropdown
- * v PriceEntryScreen, který byl prázdný, dokud nikdo nestiskl "Najít v okolí".
- */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Výsledky jsou přímo ve formuláři, včetně cesty z prázdného seznamu. */
 @Composable
 fun StorePicker(
   query: String,
@@ -40,63 +36,70 @@ fun StorePicker(
   isLoggedIn: Boolean,
   homeCountry: String?,
   modifier: Modifier = Modifier,
-  // Otevře nabídku i bez psaní po "Najít v okolí" (viz SearchableDropdown.expandSignal) —
-  // hodnota, která se mění při každém úspěšném nálezu (PriceEntryViewModel.nearbyStoresSignal).
-  expandSignal: Any? = null,
+  searchCompleted: Boolean = false,
+  nearbyResults: Boolean = false,
+  radiusMeters: Int = 500,
 ) {
   Column(modifier = modifier) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      SearchableDropdown(
-        query = query,
-        onQueryChange = onQueryChange,
-        suggestions = suggestions,
-        onSelect = onSelect,
-        itemLabel = { store -> storeLabel(store, homeCountry) },
-        label = stringResource(R.string.store_picker_label),
-        loading = searching,
-        modifier = Modifier.weight(1f),
-        // Založení nového obchodu vyžaduje přihlášení (docs/reputace.md, T1) — anonymovi se
-        // nabídne jen napovídání a "Najít v okolí", ne slepá ulička formuláře skončící UNAUTHORIZED.
-        footer = if (isLoggedIn) {
-          {
-            DropdownMenuItem(
-              text = { Text(stringResource(R.string.store_picker_add_new)) },
-              onClick = onAddNew,
-            )
-          }
-        } else {
-          null
-        },
-        expandSignal = expandSignal,
-      )
-      if (onFindNearby != null) {
-        Button(onClick = onFindNearby) {
-          if (locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-          else Text(stringResource(R.string.store_picker_find_nearby))
-        }
+    SingleLineTextField(
+      value = query,
+      onValueChange = onQueryChange,
+      label = stringResource(R.string.store_picker_search_label),
+      supportingText = { Text(stringResource(R.string.store_picker_search_hint)) },
+      modifier = Modifier.fillMaxWidth(),
+    )
+    if (locating || searching) {
+      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = Spacing.sm)) {
+        CircularProgressIndicator(modifier = Modifier.size(20.dp))
+        Text(
+          stringResource(if (locating) R.string.nearby_loading else R.string.store_picker_searching),
+          modifier = Modifier.padding(start = Spacing.sm),
+        )
       }
     }
-    if (selectedStoreId == null && query.isBlank() && suggestions.isEmpty()) {
-      val hint = if (isLoggedIn) {
-        stringResource(R.string.store_picker_hint_logged_in)
-      } else {
-        stringResource(R.string.store_picker_hint_anonymous)
-      }
+    if (selectedStoreId != null) {
+      Text(stringResource(R.string.store_picker_selected), color = MaterialTheme.colorScheme.primary)
+    }
+    if (nearbyResults && !locating && !searching) {
+      Text(stringResource(R.string.nearby_results_title, radiusMeters), style = MaterialTheme.typography.titleSmall)
+    }
+    if (selectedStoreId == null && searchCompleted && suggestions.isEmpty() && !locating && !searching) {
       Text(
-        hint,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 4.dp),
+        stringResource(if (nearbyResults) R.string.nearby_empty_help else R.string.store_picker_empty_help),
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(vertical = Spacing.sm),
       )
     }
-    // Mapa se sama schová, když v suggestions není obchod se souřadnicemi (StoreMap.stores.isEmpty()).
+    suggestions.forEach { store ->
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+          .selectable(selected = selectedStoreId == store.id, role = Role.RadioButton, onClick = { onSelect(store) })
+          .padding(vertical = Spacing.xs),
+      ) {
+        RadioButton(selected = selectedStoreId == store.id, onClick = null)
+        Text(storeLabel(store, homeCountry), modifier = Modifier.padding(start = Spacing.sm))
+      }
+    }
+    if (onFindNearby != null) {
+      OutlinedButton(onClick = onFindNearby, enabled = !locating, modifier = Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.nearby_refresh, radiusMeters))
+      }
+    }
+    if (isLoggedIn) {
+      OutlinedButton(onClick = onAddNew, modifier = Modifier.fillMaxWidth()) {
+        Text(stringResource(R.string.store_picker_find_or_add))
+      }
+    } else if (selectedStoreId == null && searchCompleted && suggestions.isEmpty()) {
+      Text(stringResource(R.string.store_picker_login_to_add), style = MaterialTheme.typography.bodySmall)
+    }
     if (suggestions.isNotEmpty()) {
       StoreMap(
         stores = suggestions,
         selectedStoreId = selectedStoreId,
         onSelect = onSelect,
         homeCountry = homeCountry,
-        modifier = Modifier.padding(top = 8.dp),
+        modifier = Modifier.padding(top = Spacing.sm),
       )
     }
   }

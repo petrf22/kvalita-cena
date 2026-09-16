@@ -577,4 +577,40 @@
     <string name="product_form_other_names_hint">Volitelné. Vyplněný jazyk, který zboží zatím nemá, uvidí všichni; přepsání existujícího názvu platí jen pro tebe.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
+
+    <!-- Výběr obchodu a nastavení okolí. -->
+    <string name="nearby_settings_title">Obchody v okolí</string>
+    <string name="nearby_radius_label">Okruh v metrech</string>
+    <string name="nearby_radius_hint">Zadejte 100 až 25 000 metrů, například 500.</string>
+    <string name="nearby_radius_save">Uložit okruh</string>
+    <string name="nearby_radius_current">Používaný okruh: %1$d m</string>
+    <string name="nearby_use_location">Nabízet obchody podle mé polohy</string>
+    <string name="nearby_settings_hint">Při zadávání ceny použijeme jednorázově polohu, pokud ji telefonu povolíte. Polohu neukládáme. Vzdálenost je přibližná a závisí na přesnosti polohy telefonu. Bez polohy hledejte názvem a městem.</string>
+    <string name="nearby_without_location">Zadejte název obchodu a město, například „Lidl Brno“. Pro nabídku okolí povolte polohu aplikaci a zapněte polohu telefonu.</string>
+    <string name="store_picker_search_label">Název obchodu nebo město</string>
+    <string name="store_picker_search_hint">Jiný obchod najdete zadáním názvu, města nebo ulice.</string>
+    <string name="nearby_loading">Hledáme obchody v okolí…</string>
+    <string name="store_picker_searching">Hledáme obchody…</string>
+    <string name="store_picker_selected">Vybraný obchod pro tuto cenu</string>
+    <string name="nearby_results_title">Obchody do %1$d m</string>
+    <string name="nearby_empty_help">V tomto okruhu zatím nemáme uložený obchod. Zkuste název a město, vyhledejte obchod v OpenStreetMap nebo ho přidejte ručně. Okruh lze změnit v Nastavení.</string>
+    <string name="store_picker_empty_help">Tento obchod zatím neznáme. Vyhledejte ho v OpenStreetMap nebo ho přidejte ručně.</string>
+    <string name="nearby_refresh">Použít polohu · okruh %1$d m</string>
+    <string name="store_picker_find_or_add">Najít v OpenStreetMap / přidat obchod</string>
+    <string name="store_picker_login_to_add">Pro přidání chybějícího obchodu se přihlaste v záložce Účet.</string>
+    <string name="osm_search_title">Najděte obchod v OpenStreetMap</string>
+    <string name="osm_search_hint">Zadejte název a město, případně ulici. Výběrem výsledku doplníte dostupnou adresu i polohu. Nic se neuloží, dokud údaje nepotvrdíte.</string>
+    <string name="osm_search_label">Např. Lidl, Brno, Vídeňská</string>
+    <string name="osm_search_action">Vyhledat v OpenStreetMap</string>
+    <string name="osm_unavailable">OpenStreetMap je teď nedostupné.</string>
+    <string name="osm_retry_hint">Zkuste hledání znovu po obnovení připojení, nebo vyplňte obchod ručně.</string>
+    <string name="osm_search_empty">Žádný odpovídající obchod. Upřesněte město či ulici, nebo pokračujte ručně.</string>
+    <string name="store_manual_entry">Vyplnit obchod ručně</string>
+    <string name="store_review_details">Zkontrolujte údaje obchodu</string>
+    <string name="store_optional_show">Další údaje (řetězec, web, IČO)</string>
+    <string name="store_optional_hide">Skrýt další údaje</string>
+    <string name="store_use_existing">Použít existující: %1$s · %2$s · %3$s</string>
+    <string name="store_geocode_empty">Polohu adresy se nepodařilo dohledat. Upřesněte adresu, vyberte bod na mapě nebo uložte obchod bez polohy.</string>
+    <string name="store_geocode_choose">Vyberte odpovídající polohu adresy a potvrďte uložení obchodu.</string>
+    <string name="store_save_without_coordinates">Uložit bez polohy</string>
 </resources>

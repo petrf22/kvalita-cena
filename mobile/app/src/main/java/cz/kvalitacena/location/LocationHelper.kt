@@ -23,6 +23,10 @@ private const val FRESH_LOCATION_MAX_AGE_MS = 5 * 60_000L
 suspend fun getCurrentLocation(context: Context): Location? {
   val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
+  // Vypnutá poloha nesmí vrátit starý fix a tvářit se jako aktuální okolí.
+  if (!listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+      .any { runCatching { locationManager.isProviderEnabled(it) }.getOrDefault(false) }) return null
+
   // Rychlá cesta — čerstvý poslední fix appka rovnou vrátí, místo aby čekala až
   // LOCATION_TIMEOUT_MS na nový (requestSingleUpdate níž typicky trvá vteřiny až desítky
   // vteřin i s enabled providerem).

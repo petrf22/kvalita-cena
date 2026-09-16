@@ -492,4 +492,40 @@
     <string name="product_form_other_names_hint">Opcjonalne. Uzupełniony język, którego produkt jeszcze nie ma, zobaczą wszyscy; nadpisanie istniejącej nazwy dotyczy tylko Ciebie.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
+
+    <!-- Výběr obchodu a nastavení okolí. -->
+    <string name="nearby_settings_title">Sklepy w pobliżu</string>
+    <string name="nearby_radius_label">Promień w metrach</string>
+    <string name="nearby_radius_hint">Wpisz od 100 do 25 000 metrów, na przykład 500.</string>
+    <string name="nearby_radius_save">Zapisz promień</string>
+    <string name="nearby_radius_current">Aktualny promień: %1$d m</string>
+    <string name="nearby_use_location">Sugeruj sklepy na podstawie mojej lokalizacji</string>
+    <string name="nearby_settings_hint">Przy wpisywaniu ceny jednorazowo użyjemy lokalizacji, jeśli na to zezwolisz. Nie zapisujemy jej. Odległość jest przybliżona i zależy od dokładności lokalizacji. Bez lokalizacji szukaj według nazwy i miasta.</string>
+    <string name="nearby_without_location">Wpisz nazwę sklepu i miasto, np. „Lidl Kraków”. Aby zobaczyć pobliskie sklepy, zezwól aplikacji na lokalizację i włącz ją w telefonie.</string>
+    <string name="store_picker_search_label">Nazwa sklepu lub miasto</string>
+    <string name="store_picker_search_hint">Znajdź inny sklep, wpisując nazwę, miasto lub ulicę.</string>
+    <string name="nearby_loading">Szukamy pobliskich sklepów…</string>
+    <string name="store_picker_searching">Szukamy sklepów…</string>
+    <string name="store_picker_selected">Wybrany sklep dla tej ceny</string>
+    <string name="nearby_results_title">Sklepy w promieniu %1$d m</string>
+    <string name="nearby_empty_help">Nie mamy jeszcze sklepów w tym promieniu. Wpisz nazwę i miasto, znajdź sklep w OpenStreetMap lub dodaj go ręcznie. Promień zmienisz w Ustawieniach.</string>
+    <string name="store_picker_empty_help">Nie znamy jeszcze tego sklepu. Znajdź go w OpenStreetMap lub dodaj ręcznie.</string>
+    <string name="nearby_refresh">Użyj lokalizacji · promień %1$d m</string>
+    <string name="store_picker_find_or_add">Znajdź w OpenStreetMap / dodaj sklep</string>
+    <string name="store_picker_login_to_add">Aby dodać brakujący sklep, zaloguj się na karcie Konto.</string>
+    <string name="osm_search_title">Znajdź sklep w OpenStreetMap</string>
+    <string name="osm_search_hint">Wpisz nazwę i miasto, ewentualnie ulicę. Wybór wyniku uzupełni dostępną adresę i lokalizację. Dane zostaną zapisane dopiero po potwierdzeniu.</string>
+    <string name="osm_search_label">Np. Lidl, Kraków, Wielicka</string>
+    <string name="osm_search_action">Szukaj w OpenStreetMap</string>
+    <string name="osm_unavailable">OpenStreetMap jest teraz niedostępne.</string>
+    <string name="osm_retry_hint">Spróbuj ponownie po przywróceniu połączenia lub wpisz dane sklepu ręcznie.</string>
+    <string name="osm_search_empty">Brak pasującego sklepu. Dodaj miasto lub ulicę albo kontynuuj ręcznie.</string>
+    <string name="store_manual_entry">Wpisz sklep ręcznie</string>
+    <string name="store_review_details">Sprawdź dane sklepu</string>
+    <string name="store_optional_show">Więcej danych (sieć, strona, NIP)</string>
+    <string name="store_optional_hide">Ukryj dodatkowe dane</string>
+    <string name="store_use_existing">Użyj istniejącego: %1$s · %2$s · %3$s</string>
+    <string name="store_geocode_empty">Nie udało się ustalić lokalizacji adresu. Doprecyzuj adres, wybierz punkt na mapie lub zapisz bez lokalizacji.</string>
+    <string name="store_geocode_choose">Wybierz właściwą lokalizację adresu i potwierdź zapis sklepu.</string>
+    <string name="store_save_without_coordinates">Zapisz bez lokalizacji</string>
 </resources>

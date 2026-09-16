@@ -16,6 +16,8 @@ import cz.kvalitacena.ui.common.toUiText
 import cz.kvalitacena.ui.settings.CountryStore
 import cz.kvalitacena.ui.settings.LastStoreStore
 import cz.kvalitacena.ui.settings.PriceEntryVisibilityStore
+import cz.kvalitacena.ui.settings.NearbySettings
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -29,6 +31,7 @@ class PriceEntryViewModel(
   private val countryStore: CountryStore,
   private val visibilityStore: PriceEntryVisibilityStore,
   private val lastStoreStore: LastStoreStore,
+  private val nearbySettings: NearbySettings,
 ) : ViewModel() {
 
   var loading by mutableStateOf(true)
@@ -48,10 +51,10 @@ class PriceEntryViewModel(
   var priceEntryExpanded by mutableStateOf(visibilityStore.expandedByDefault)
     private set
 
-  // Obchod se dá vybrat třemi cestami — napsat název/město (storeQuery → searchStores),
-  // "Najít v okolí" (nearbyStores, dosavadní chování) nebo založit nový. Všechny tři plní
-  // stejný `storeSuggestions`, ať má obrazovka jeden zdroj pravdy pro nabídku (StorePicker).
+  // Automatická nabídka okolí i ruční hledání plní stejný seznam. Psaní ruší předchozí
+  // výběr i probíhající hledání, aby se cena neposlala do jiné prodejny.
   var storeQuery by mutableStateOf("")
+    private set
   var storeSuggestions by mutableStateOf<List<Store>>(emptyList())
     private set
   var storeSearching by mutableStateOf(false)
@@ -71,11 +74,16 @@ class PriceEntryViewModel(
   var locationError by mutableStateOf<UiText?>(null)
     private set
 
-  // Roste při každém úspěšném "Najít v okolí" — StorePicker/SearchableDropdown ho použije jako
-  // expandSignal, aby nabídku otevřel i bez psaní (dřív appka nabídku potichu naplnila a sama
-  // vybrala první obchod, viz onLocationResolved níž).
-  var nearbyStoresSignal by mutableStateOf(0)
+  var rememberedStoreLoaded by mutableStateOf(false)
     private set
+  var nearbyAttempted = false
+    private set
+  var storeSearchCompleted by mutableStateOf(false)
+    private set
+  var nearbyResults by mutableStateOf(false)
+    private set
+  private var selectionRevision = 0
+  private var nearbyJob: Job? = null
 
   // Seznam řádků "(druh ceny, částka)" — u regálu bývá cena napsaná i dvakrát/třikrát (běžná,
   // klubová, množstevní), viz PriceRow. Vždy aspoň jeden řádek (removePriceRow ho neodebere).
@@ -183,14 +191,21 @@ class PriceEntryViewModel(
   }
 
   private fun loadRememberedStore() {
-    val id = lastStoreStore.rememberedId() ?: return
+    val id = lastStoreStore.rememberedId()
+    if (id == null) {
+      rememberedStoreLoaded = true
+      return
+    }
+    val revision = selectionRevision
     viewModelScope.launch {
       try {
         graphQlClient.storeById(id)?.let { store ->
-          if (product == null || productAvailableAtStore(product!!, store)) selectStore(store)
+          if (revision == selectionRevision && (product == null || productAvailableAtStore(product!!, store))) selectStore(store)
         } ?: lastStoreStore.clear()
       } catch (e: Exception) {
         // Výpadek načtení posledního obchodu nesmí blokovat ruční výběr.
+      } finally {
+        rememberedStoreLoaded = true
       }
     }
   }
@@ -212,26 +227,42 @@ class PriceEntryViewModel(
   }
 
   fun onStoreQueryChange(query: String) {
+    selectionRevision++
     storeQuery = query
+    selectedStore = null
+    storeScopeMismatch = false
     storeSearchJob?.cancel()
-    if (query.isBlank()) {
-      storeSuggestions = emptyList()
-      return
-    }
+    nearbyJob?.cancel()
+    locating = false
+    nearbyResults = false
+    locationError = null
+    storeSuggestions = emptyList()
+    storeSearchCompleted = false
+    storeSearching = query.isNotBlank()
+    if (query.isBlank()) return
+    val revision = selectionRevision
     storeSearchJob = viewModelScope.launch {
-      delay(STORE_SEARCH_DEBOUNCE_MS)
-      storeSearching = true
       try {
-        storeSuggestions = graphQlClient.searchStores(query = query).items
+        delay(STORE_SEARCH_DEBOUNCE_MS)
+        storeSuggestions = graphQlClient.searchStores(query = query.trim()).items
+        storeSearchCompleted = true
+      } catch (e: CancellationException) {
+        throw e
       } catch (e: Exception) {
-        // Chyba našeptávače nesmí blokovat zápis — "Najít v okolí" a ruční výběr fungují dál.
+        locationError = e.toUiText()
       } finally {
-        storeSearching = false
+        if (revision == selectionRevision) storeSearching = false
       }
     }
   }
 
   fun onStoreSelected(store: Store) {
+    selectionRevision++
+    storeSearchJob?.cancel()
+    nearbyJob?.cancel()
+    storeSearching = false
+    locating = false
+    locationError = null
     selectStore(store)
     // Nekompatibilní obchod se rovnou neschová (na rozdíl od discardIncompatibleStore při
     // změně produktu) — uživatel ho právě vybral ručně, appka jen zablokuje odeslání a napíše
@@ -249,46 +280,59 @@ class PriceEntryViewModel(
   fun onNewStoreCreated(store: Store) {
     onStoreSelected(store)
     storeSuggestions = emptyList()
+    storeSearchCompleted = false
+    nearbyResults = false
   }
 
-  fun onLocationResolved(lat: Double, lon: Double) {
-    locating = true
+  fun onLocationResolved(lat: Double, lon: Double, revision: Int) {
+    if (revision != selectionRevision) return
     locationError = null
-    viewModelScope.launch {
+    nearbyJob = viewModelScope.launch {
       try {
-        val stores = graphQlClient.nearbyStores(lat, lon)
-        storeSuggestions = stores
-        if (stores.isEmpty()) {
-          locationError = UiText.Res(R.string.store_picker_no_nearby_stores)
-        } else {
-          // Dřív appka potichu vybrala stores.first() — uživatel viděl výsledek "Najít v
-          // okolí" jen jako vybraný obchod, ostatní nálezy nešly vidět/zvolit (viz plán
-          // projektu, "nefunguje mi výběr obchodu z mapy"). Teď appka jen otevře nabídku
-          // (a mapu, StorePicker.StoreMap) a výběr nechá na uživateli.
-          nearbyStoresSignal++
+        storeSuggestions = graphQlClient.nearbyStores(lat, lon, nearbySettings.radiusMeters / 1000.0)
+        // Zapamatovanou vzdálenou prodejnu nepotvrzovat jako dnešní místo nákupu.
+        if (selectedStore != null && storeSuggestions.none { it.id == selectedStore?.id }) {
+          selectedStore = null
+          storeQuery = ""
+          storeScopeMismatch = false
         }
+        storeSearchCompleted = true
+        nearbyResults = true
+      } catch (e: CancellationException) {
+        throw e
       } catch (e: Exception) {
         locationError = e.toUiText()
       } finally {
-        locating = false
+        if (revision == selectionRevision) locating = false
       }
     }
   }
 
-  fun onLocationUnavailable() {
+  fun onLocationUnavailable(revision: Int? = null) {
+    if (revision != null && revision != selectionRevision) return
     locating = false
-    locationError = UiText.Res(R.string.price_entry_location_unavailable)
+    locationError = UiText.Res(R.string.nearby_without_location)
   }
 
-  fun startLocating() {
+  fun shouldFindNearbyAutomatically(): Boolean = !nearbyAttempted && selectionRevision == 0
+
+  fun startLocating(): Int {
+    nearbyAttempted = true
+    selectionRevision++
+    storeSearchJob?.cancel()
+    nearbyJob?.cancel()
+    storeSearching = false
+    storeSearchCompleted = false
+    storeSuggestions = emptyList()
     locating = true
     locationError = null
+    return selectionRevision
   }
 
   fun submit() {
     val currentProduct = product ?: return
     val storeId = selectedStore?.id ?: return
-    if (!arePriceRowsValid(priceRows)) return
+    if (!canSubmit) return
 
     submitting = true
     submitError = null

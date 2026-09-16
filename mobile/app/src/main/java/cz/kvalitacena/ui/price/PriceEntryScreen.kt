@@ -112,6 +112,7 @@ fun PriceEntryScreen(
           AppContainer.countryStore,
           AppContainer.priceEntryVisibilityStore,
           AppContainer.lastStoreStore,
+          AppContainer.nearbySettings,
         )
       }
     },
@@ -148,11 +149,11 @@ fun PriceEntryScreen(
     ActivityResultContracts.RequestPermission(),
   ) { granted ->
     if (granted) {
-      viewModel.startLocating()
+      val revision = viewModel.startLocating()
       scope.launch {
         val location = getCurrentLocation(context)
-        if (location != null) viewModel.onLocationResolved(location.latitude, location.longitude)
-        else viewModel.onLocationUnavailable()
+        if (location != null) viewModel.onLocationResolved(location.latitude, location.longitude, revision)
+        else viewModel.onLocationUnavailable(revision)
       }
     } else {
       viewModel.onLocationUnavailable()
@@ -169,10 +170,20 @@ fun PriceEntryScreen(
       locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
       return
     }
-    viewModel.startLocating()
+    val revision = viewModel.startLocating()
     scope.launch {
       val location = getCurrentLocation(context)
-      if (location != null) viewModel.onLocationResolved(location.latitude, location.longitude)
+      if (location != null) viewModel.onLocationResolved(location.latitude, location.longitude, revision)
+      else viewModel.onLocationUnavailable(revision)
+    }
+  }
+
+  LaunchedEffect(viewModel.priceEntryExpanded, viewModel.loading, viewModel.rememberedStoreLoaded, viewModel.notFound) {
+    if (viewModel.priceEntryExpanded && !viewModel.loading && viewModel.rememberedStoreLoaded &&
+      !viewModel.notFound && viewModel.shouldFindNearbyAutomatically()) {
+      val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+        PackageManager.PERMISSION_GRANTED
+      if (AppContainer.nearbySettings.useLocation && hasPermission) findNearbyStores()
       else viewModel.onLocationUnavailable()
     }
   }
@@ -324,7 +335,7 @@ fun PriceEntryScreen(
             Gap()
 
             viewModel.locationError?.let {
-              Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+              Text(it.asString(), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
               Gap()
             }
             viewModel.submitError?.let {
@@ -339,13 +350,18 @@ fun PriceEntryScreen(
               searching = viewModel.storeSearching,
               selectedStoreId = viewModel.selectedStore?.id,
               onSelect = viewModel::onStoreSelected,
-              onFindNearby = { findNearbyStores() },
+              onFindNearby = if (AppContainer.nearbySettings.useLocation) ({ findNearbyStores() }) else null,
               locating = viewModel.locating,
-              onAddNew = onAddStore,
+              onAddNew = {
+                NavigationResults.storeSearchQuery = if (viewModel.selectedStore == null) viewModel.storeQuery else ""
+                onAddStore()
+              },
               isLoggedIn = isLoggedIn,
               homeCountry = AppContainer.countryStore.country,
               modifier = Modifier.fillMaxWidth(),
-              expandSignal = viewModel.nearbyStoresSignal,
+              searchCompleted = viewModel.storeSearchCompleted,
+              nearbyResults = viewModel.nearbyResults,
+              radiusMeters = AppContainer.nearbySettings.radiusMeters,
             )
             if (viewModel.storeScopeMismatch) {
               Text(

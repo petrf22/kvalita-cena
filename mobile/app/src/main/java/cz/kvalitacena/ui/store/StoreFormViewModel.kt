@@ -9,6 +9,9 @@ import cz.kvalitacena.R
 import cz.kvalitacena.network.CreateStoreInput
 import cz.kvalitacena.network.GeocodeCandidate
 import cz.kvalitacena.network.GraphQlClient
+import cz.kvalitacena.network.OsmStoreCandidate
+import cz.kvalitacena.ui.common.NavigationResults
+import kotlinx.coroutines.CancellationException
 import cz.kvalitacena.network.RetailChain
 import cz.kvalitacena.network.Store
 import cz.kvalitacena.network.UpdateStoreInput
@@ -46,6 +49,28 @@ class StoreFormViewModel(
   val isEditing: Boolean get() = editingStoreId != null
 
   var name by mutableStateOf("")
+  var osmQuery by mutableStateOf("")
+  var osmCandidates by mutableStateOf<List<OsmStoreCandidate>>(emptyList())
+    private set
+  var osmSearching by mutableStateOf(false)
+    private set
+  var osmSearched by mutableStateOf(false)
+    private set
+  var osmError by mutableStateOf<UiText?>(null)
+    private set
+  var osmAttribution by mutableStateOf<String?>(null)
+    private set
+  var manualFormVisible by mutableStateOf(isEditing)
+    private set
+  private var osmJob: Job? = null
+  private var geocodeJob: Job? = null
+  private var geocodeRevision = 0
+  private var osmRevision = 0
+  var geocodeAttempted by mutableStateOf(false)
+    private set
+  var geocodeMessage by mutableStateOf<UiText?>(null)
+    private set
+
 
   /**
    * Číselník řetězců pro našeptávání (docs/stav-implementace.md). Výběr předvyplní [name], ale
@@ -116,6 +141,108 @@ class StoreFormViewModel(
 
   init {
     if (editingStoreId != null) loadExisting(editingStoreId)
+    else {
+      osmQuery = NavigationResults.storeSearchQuery.orEmpty()
+      NavigationResults.storeSearchQuery = null
+    }
+  }
+
+  fun showManualForm() {
+    manualFormVisible = true
+  }
+
+  fun onOsmQueryChange(value: String) {
+    osmRevision++
+    osmJob?.cancel()
+    osmQuery = value
+    osmSearching = false
+    osmCandidates = emptyList()
+    osmError = null
+    osmSearched = false
+  }
+
+  fun searchOsm() {
+    if (osmQuery.trim().length < 3 || osmSearching) return
+    osmSearching = true
+    osmError = null
+    osmSearched = false
+    osmCandidates = emptyList()
+    val revision = ++osmRevision
+    val query = osmQuery.trim()
+    val searchCountry = country
+    osmJob = viewModelScope.launch {
+      try {
+        val result = graphQlClient.searchOsmStores(query, searchCountry)
+        osmAttribution = result.attribution
+        osmCandidates = result.candidates
+        osmSearched = true
+        if (!result.available) osmError = UiText.Res(R.string.osm_unavailable)
+      } catch (e: CancellationException) {
+        throw e
+      } catch (e: Exception) {
+        osmError = e.toUiText()
+      } finally {
+        if (revision == osmRevision) osmSearching = false
+      }
+    }
+  }
+
+  fun selectOsmStore(candidate: OsmStoreCandidate) {
+    invalidateCoordinates()
+    name = candidate.name
+    street = candidate.street.orEmpty()
+    city = candidate.city.orEmpty()
+    postalCode = candidate.postalCode.orEmpty()
+    candidate.country?.takeIf { it in KNOWN_COUNTRIES }?.let { country = it }
+    chainId = null
+    chainQuery = ""
+    selectedCandidate = GeocodeCandidate(candidate.lat, candidate.lon, candidate.displayName, candidate.osmRef)
+    geocodeAttribution = osmAttribution
+    manualFormVisible = true
+    scheduleSimilarCheck()
+  }
+
+  fun onStreetChange(value: String) {
+    street = value
+    invalidateCoordinates()
+  }
+
+  fun onPostalCodeChange(value: String) {
+    postalCode = value
+    invalidateCoordinates()
+  }
+
+  fun onCountryChange(value: String) {
+    if (country == value) return
+    country = value
+    onOsmQueryChange(osmQuery)
+    invalidateCoordinates()
+  }
+
+  private fun invalidateCoordinates() {
+    geocodeRevision++
+    geocodeJob?.cancel()
+    geocoding = false
+    geocodeAttempted = false
+    geocodeMessage = null
+    geocodeCandidates = emptyList()
+    selectedCandidate = null
+    manualLat = null
+    manualLon = null
+  }
+
+  fun useExisting(store: Store) {
+    created = store
+  }
+
+  fun startLocating() {
+    locating = true
+    geocodeMessage = null
+  }
+
+  fun onLocationUnavailable() {
+    locating = false
+    geocodeMessage = UiText.Res(R.string.nearby_without_location)
   }
 
   private fun loadExisting(id: String) {
@@ -181,6 +308,7 @@ class StoreFormViewModel(
 
   fun onCityChange(value: String) {
     city = value
+    invalidateCoordinates()
     scheduleSimilarCheck()
   }
 
@@ -235,38 +363,54 @@ class StoreFormViewModel(
   }
 
   fun geocode() {
-    if (city.isBlank()) return
+    if (city.isBlank() || geocoding) return
     geocoding = true
-    manualLat = null
-    manualLon = null
-    selectedCandidate = null
-    viewModelScope.launch {
+    geocodeMessage = null
+    val revision = ++geocodeRevision
+    val address = listOf(street, city, postalCode, country)
+    geocodeJob = viewModelScope.launch {
       try {
-        val result = graphQlClient.geocodeAddress(street.trim().ifBlank { null }, city.trim(), postalCode.trim().ifBlank { null })
+        val result = graphQlClient.geocodeAddress(
+          address[0].trim().ifBlank { null }, address[1].trim(), address[2].trim().ifBlank { null }, address[3],
+        )
         geocodeCandidates = result.candidates
         geocodeAttribution = result.attribution
+        geocodeAttempted = true
+        // Výsledek ukážeme k potvrzení; ani jediný nález nemusí být správná pobočka.
+        geocodeMessage = UiText.Res(
+          if (result.candidates.isEmpty()) R.string.store_geocode_empty else R.string.store_geocode_choose,
+        )
+      } catch (e: CancellationException) {
+        throw e
       } catch (e: Exception) {
-        geocodeCandidates = emptyList()
+        geocodeAttempted = true
+        geocodeMessage = e.toUiText()
       } finally {
-        geocoding = false
+        if (revision == geocodeRevision) geocoding = false
       }
     }
   }
 
   fun selectCandidate(candidate: GeocodeCandidate) {
     selectedCandidate = candidate
+    geocodeMessage = null
     manualLat = null
     manualLon = null
   }
 
   /** Klik/přetažení značky na mapě (LocationMap, editable) — ruční bod, ne kandidát z geokódování. */
   fun onMapPointSelected(lat: Double, lon: Double) {
+    geocodeRevision++
+    geocodeJob?.cancel()
+    geocoding = false
+    geocodeMessage = null
     selectedCandidate = null
     manualLat = lat
     manualLon = lon
   }
 
   fun useMyLocation(lat: Double, lon: Double) {
+    invalidateCoordinates()
     // Syrová hodnota schválně: manualLat/Lon je souřadnice PROVOZOVNY (uloží se do
     // core.store), zaokrouhlení by ji degradovalo. Pro Nominatim zaokrouhluje server
     // (GeocodingService.reverseGeocode, docs/soukromi.md).
@@ -295,8 +439,14 @@ class StoreFormViewModel(
     }
   }
 
-  fun submit() {
+  fun submit(withoutCoordinates: Boolean = false) {
+    if (saving || geocoding) return
     if (!isStoreFormValid(name, city) || !isIcoShapeValid(ico, country) || !isUrlShapeValid(url)) return
+    // Adresu dohledáme i bez návštěvy sekce mapy; nejednoznačný bod musí potvrdit uživatel.
+    if (selectedCandidate == null && manualLat == null && !withoutCoordinates && !isEditing) {
+      geocode()
+      return
+    }
     saving = true
     saveError = null
     val lat = selectedCandidate?.lat ?: manualLat

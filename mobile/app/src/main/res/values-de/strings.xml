@@ -494,4 +494,40 @@
     <string name="product_form_other_names_hint">Optional. Eine Sprache, die der Artikel noch nicht hat, sehen alle; das Überschreiben eines vorhandenen Namens gilt nur für dich.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
+
+    <!-- Výběr obchodu a nastavení okolí. -->
+    <string name="nearby_settings_title">Geschäfte in der Nähe</string>
+    <string name="nearby_radius_label">Umkreis in Metern</string>
+    <string name="nearby_radius_hint">100 bis 25.000 Meter eingeben, zum Beispiel 500.</string>
+    <string name="nearby_radius_save">Umkreis speichern</string>
+    <string name="nearby_radius_current">Aktueller Umkreis: %1$d m</string>
+    <string name="nearby_use_location">Geschäfte anhand meines Standorts vorschlagen</string>
+    <string name="nearby_settings_hint">Bei der Preiseingabe verwenden wir den Standort einmalig, sofern erlaubt. Wir speichern ihn nicht. Entfernungen sind je nach Standortgenauigkeit ungefähr. Ohne Standort nach Name und Ort suchen.</string>
+    <string name="nearby_without_location">Name und Ort eingeben, etwa „Lidl Berlin“. Für Vorschläge in der Nähe Standortzugriff erlauben und den Gerätestandort aktivieren.</string>
+    <string name="store_picker_search_label">Geschäftsname oder Ort</string>
+    <string name="store_picker_search_hint">Anderes Geschäft über Name, Ort oder Straße finden.</string>
+    <string name="nearby_loading">Geschäfte in der Nähe werden gesucht…</string>
+    <string name="store_picker_searching">Geschäfte werden gesucht…</string>
+    <string name="store_picker_selected">Ausgewähltes Geschäft für diesen Preis</string>
+    <string name="nearby_results_title">Geschäfte im Umkreis von %1$d m</string>
+    <string name="nearby_empty_help">In diesem Umkreis sind noch keine Geschäfte gespeichert. Name und Ort eingeben, in OpenStreetMap suchen oder manuell hinzufügen. Den Umkreis können Sie in den Einstellungen ändern.</string>
+    <string name="store_picker_empty_help">Dieses Geschäft ist noch unbekannt. In OpenStreetMap suchen oder manuell hinzufügen.</string>
+    <string name="nearby_refresh">Standort verwenden · Umkreis %1$d m</string>
+    <string name="store_picker_find_or_add">In OpenStreetMap suchen / Geschäft hinzufügen</string>
+    <string name="store_picker_login_to_add">Zum Hinzufügen eines Geschäfts unter Konto anmelden.</string>
+    <string name="osm_search_title">Geschäft in OpenStreetMap finden</string>
+    <string name="osm_search_hint">Name und Ort, gegebenenfalls Straße eingeben. Ein Ergebnis übernimmt die verfügbare Adresse und Position. Gespeichert wird erst nach Ihrer Bestätigung.</string>
+    <string name="osm_search_label">Z. B. Lidl, Berlin, Hauptstraße</string>
+    <string name="osm_search_action">In OpenStreetMap suchen</string>
+    <string name="osm_unavailable">OpenStreetMap ist derzeit nicht verfügbar.</string>
+    <string name="osm_retry_hint">Nach Wiederherstellung der Verbindung erneut suchen oder das Geschäft manuell eingeben.</string>
+    <string name="osm_search_empty">Kein passendes Geschäft. Ort oder Straße ergänzen oder manuell fortfahren.</string>
+    <string name="store_manual_entry">Geschäft manuell eingeben</string>
+    <string name="store_review_details">Geschäftsdaten prüfen</string>
+    <string name="store_optional_show">Weitere Angaben (Kette, Website, Firmen-ID)</string>
+    <string name="store_optional_hide">Weitere Angaben ausblenden</string>
+    <string name="store_use_existing">Vorhandenes verwenden: %1$s · %2$s · %3$s</string>
+    <string name="store_geocode_empty">Adresse konnte nicht gefunden werden. Adresse präzisieren, Kartenpunkt wählen oder ohne Position speichern.</string>
+    <string name="store_geocode_choose">Passende Position der Adresse wählen und das Speichern bestätigen.</string>
+    <string name="store_save_without_coordinates">Ohne Position speichern</string>
 </resources>

@@ -11,6 +11,7 @@ import cz.kvalitacena.network.MediaClient
 import cz.kvalitacena.ui.settings.CountryStore
 import cz.kvalitacena.ui.settings.DisplayCurrencyStore
 import cz.kvalitacena.ui.settings.LastStoreStore
+import cz.kvalitacena.ui.settings.NearbySettings
 import cz.kvalitacena.ui.settings.PriceEntryVisibilityStore
 import cz.kvalitacena.ui.settings.SearchFilterStore
 import okhttp3.OkHttpClient
@@ -45,6 +46,9 @@ object AppContainer {
   lateinit var lastStoreStore: LastStoreStore
     private set
 
+  lateinit var nearbySettings: NearbySettings
+    private set
+
   fun init(context: Context) {
     if (::authRepository.isInitialized) return
     displayCurrencyStore = DisplayCurrencyStore(context.applicationContext)
@@ -52,6 +56,7 @@ object AppContainer {
     priceEntryVisibilityStore = PriceEntryVisibilityStore(context.applicationContext)
     searchFilterStore = SearchFilterStore(context.applicationContext)
     lastStoreStore = LastStoreStore(context.applicationContext)
+    nearbySettings = NearbySettings(context.applicationContext)
     // Jeden sdílený klient pro GraphQL/REST/Coil místo tří samostatných OkHttpClient()
     // instancí — sdílí connection pool a všude jde stejný Accept-Language i X-Display-Currency
     // (docs/lokalizace.md).
