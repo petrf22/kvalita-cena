@@ -344,7 +344,6 @@
     <string name="price_entry_submit">Record price</string>
     <string name="price_entry_back_without_price">Back without recording a price</string>
     <string name="price_entry_submit_success">Price recorded, thanks!</string>
-    <string name="price_entry_location_unavailable">We couldn\'t determine your location — pick a store once data is available.</string>
     <string name="price_entry_store_not_available">This local item doesn\'t belong to the selected store — pick a different store or item.</string>
 
     <string name="product_form_title">New product</string>
@@ -398,11 +397,29 @@
     <string name="store_report_hidden">Thanks for reporting — the store is now hidden and awaiting review.</string>
 
     <string name="store_picker_label">Store</string>
+    <string name="store_picker_distance_m">%1$d m</string>
+    <string name="store_picker_distance_km">%1$.1f km</string>
+    <string name="store_picker_nearby_title">Stores nearby</string>
+    <string name="store_picker_searching_nearby">Looking for stores nearby…</string>
+    <string name="store_picker_permission_needed">You will see stores around you once you allow the app to access your location. Without it, you can still find a store by typing its name or city.</string>
+    <string name="store_picker_permission_grant">Allow location</string>
+    <string name="store_picker_location_disabled">Location is turned off on your phone. Turn it on in system settings, or find the store by typing its name or city.</string>
+    <string name="store_picker_open_location_settings">Turn on location</string>
+    <string name="store_picker_location_timeout">Could not determine your location — indoors it takes a while.</string>
+    <string name="store_picker_retry">Try again</string>
+    <string name="store_picker_none_nearby_title">We do not know any store around here yet</string>
+    <string name="store_picker_none_nearby_hint">The store catalogue grows with its users — you are probably the first one here. Adding it takes a few taps.</string>
+    <string name="store_picker_wider_radius">Search a wider area (%1$s)</string>
+    <string name="store_picker_show_more">Show more (%1$d)</string>
+    <string name="store_picker_pending_confirmation">awaiting confirmation</string>
+    <string name="store_picker_use_last_store">Last used: %1$s</string>
+    <string name="store_picker_osm_title">Stores according to OpenStreetMap</string>
+    <string name="store_picker_osm_search">Try stores from OpenStreetMap</string>
+    <string name="store_picker_osm_unavailable">OpenStreetMap is unavailable right now, so we know nothing about this area. Try again in a moment, or enter the store yourself.</string>
+    <string name="store_picker_osm_none">Not even OpenStreetMap knows a store here.</string>
+    <string name="store_picker_add_new_action">The store is not here — add a new one</string>
     <string name="store_picker_add_new">+ Add new store</string>
-    <string name="store_picker_find_nearby">Find nearby</string>
-    <string name="store_picker_hint_logged_in">Type a store name or city, tap \"Find nearby\", or create a store directly.</string>
     <string name="store_picker_hint_anonymous">Type a store name or city, or tap \"Find nearby\" — creating a new store requires signing in.</string>
-    <string name="store_picker_no_nearby_stores">We didn\'t find any store nearby.</string>
 
     <string name="store_form_create_title">New store</string>
     <string name="store_form_edit_title">Edit store</string>
@@ -427,8 +444,12 @@
 
     <string name="store_location_section_title">Coordinates (optional)</string>
     <string name="store_location_hint">Without coordinates the store won\'t show up in \"Find nearby\", only in name search — they can be added later too.</string>
-    <string name="store_location_find_coordinates">Find coordinates</string>
     <string name="store_location_use_my_location">Use my location</string>
+    <string name="store_form_prefilled_from_osm">Prefilled from OpenStreetMap — check the details and correct them if needed.</string>
+    <string name="store_form_use_existing_store">We already know this store — use it</string>
+    <string name="store_location_searching">Looking up coordinates from the address…</string>
+    <string name="store_location_found_from_address">Coordinates were found from the address. If they point elsewhere, move the marker on the map.</string>
+    <string name="store_location_search_again">Try looking up again</string>
     <string name="store_location_will_use_map_position">The position from the map below / your current location will be used.</string>
 
     <!-- "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty"; prahy v docs/reputace.md) -->

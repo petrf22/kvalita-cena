@@ -48,6 +48,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
+import cz.kvalitacena.location.LocationResult
 import cz.kvalitacena.location.getCurrentLocation
 import cz.kvalitacena.network.GeocodeCandidate
 import cz.kvalitacena.ui.common.KNOWN_COUNTRIES
@@ -85,6 +86,17 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
   val exitGuard = LocalNavigationExitGuard.current
   ReportUnsavedChanges(formDirty && viewModel.created == null)
 
+  // Kandidát z nabídky OpenStreetMap (StorePicker) — vyzvedne se stejně jako newStore/newProduct
+  // na PriceEntryScreen, jen opačným směrem: tenhle jde DO formuláře.
+  LaunchedEffect(Unit) {
+    NavigationResults.osmStoreCandidate?.let { candidate ->
+      formDirty = true
+      viewModel.applyOsmCandidate(candidate, NavigationResults.osmStoreAttribution)
+      NavigationResults.osmStoreCandidate = null
+      NavigationResults.osmStoreAttribution = null
+    }
+  }
+
   LaunchedEffect(viewModel.created) {
     viewModel.created?.let {
       formDirty = false
@@ -97,12 +109,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     ActivityResultContracts.RequestPermission(),
   ) { granted ->
     if (granted) {
-      scope.launch {
-        getCurrentLocation(context)?.let {
-          formDirty = true
-          viewModel.useMyLocation(it.latitude, it.longitude)
-        }
-      }
+      scope.launch { useResolvedLocation(context, viewModel) { formDirty = true } }
     }
   }
 
@@ -115,12 +122,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
       return
     }
-    scope.launch {
-      getCurrentLocation(context)?.let {
-        formDirty = true
-        viewModel.useMyLocation(it.latitude, it.longitude)
-      }
-    }
+    scope.launch { useResolvedLocation(context, viewModel) { formDirty = true } }
   }
 
   if (viewModel.loadingExisting) {
@@ -134,6 +136,20 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       style = MaterialTheme.typography.headlineSmall,
     )
     Gap()
+
+    // ODbL vyžaduje, aby appka u převzatých dat vždy uvedla zdroj (docs/datovy-model.md).
+    // Text chodí ze serveru, protože je lokalizovaný (docs/lokalizace.md).
+    viewModel.osmCandidate?.let {
+      Text(stringResource(R.string.store_form_prefilled_from_osm), style = MaterialTheme.typography.bodyMedium)
+      viewModel.osmAttribution?.let { attribution ->
+        Text(
+          attribution,
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+      Gap()
+    }
 
     SearchableDropdown(
       query = viewModel.chainQuery,
@@ -156,7 +172,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     Gap()
     SingleLineTextField(
       value = viewModel.street,
-      onValueChange = { formDirty = true; viewModel.street = it },
+      onValueChange = { formDirty = true; viewModel.onStreetChange(it) },
       label = stringResource(R.string.store_form_street_label),
       modifier = Modifier.fillMaxWidth(),
     )
@@ -170,7 +186,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     Gap()
     SingleLineTextField(
       value = viewModel.postalCode,
-      onValueChange = { formDirty = true; viewModel.postalCode = it },
+      onValueChange = { formDirty = true; viewModel.onPostalCodeChange(it) },
       label = stringResource(R.string.store_form_postal_code_label),
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
       modifier = Modifier.fillMaxWidth(),
@@ -189,7 +205,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     )
     Gap()
 
-    CountryDropdown(selected = viewModel.country, onSelect = { formDirty = true; viewModel.country = it })
+    CountryDropdown(selected = viewModel.country, onSelect = { formDirty = true; viewModel.onCountryChange(it) })
     Gap()
 
     if (viewModel.similarStores.isNotEmpty()) {
@@ -249,10 +265,33 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Gap()
+    if (viewModel.geocoding) {
+      Text(
+        stringResource(R.string.store_location_searching),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      Gap()
+    }
+    // Jediný nález se použije sám (StoreFormViewModel.geocode) — uživatel se nemá co ptát,
+    // jen se mu řekne, co se stalo, a smí to přebít klepnutím do mapy.
+    if (!viewModel.geocoding && viewModel.selectedCandidate != null && viewModel.geocodeCandidates.isEmpty()) {
+      Text(
+        stringResource(R.string.store_location_found_from_address),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      viewModel.geocodeAttribution?.let {
+        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+      }
+      Gap()
+    }
     Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+      // Dohledání běží samo po vyplnění adresy — tohle je jen ruční zopakování, když tiše
+      // selhalo (docs/design.md: chybový stav musí jít zopakovat).
       OutlinedButton(onClick = { viewModel.geocode() }, enabled = viewModel.city.isNotBlank() && !viewModel.geocoding) {
         if (viewModel.geocoding) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-        else Text(stringResource(R.string.store_location_find_coordinates))
+        else Text(stringResource(R.string.store_location_search_again))
       }
       OutlinedButton(onClick = { useMyLocation() }, enabled = !viewModel.locating) {
         if (viewModel.locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -295,6 +334,17 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
 
     viewModel.saveError?.let {
       Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+      // Duplicita není slepá ulička — obchod, se kterým se ten nový srazil, jde rovnou použít.
+      if (viewModel.duplicateStoreId != null) {
+        OutlinedButton(
+          onClick = { viewModel.useDuplicateStore() },
+          enabled = !viewModel.loadingDuplicate,
+          modifier = Modifier.fillMaxWidth(),
+        ) {
+          if (viewModel.loadingDuplicate) CircularProgressIndicator(modifier = Modifier.size(20.dp))
+          else Text(stringResource(R.string.store_form_use_existing_store))
+        }
+      }
       Gap()
     }
 
@@ -370,5 +420,22 @@ private fun CountryDropdown(selected: String, onSelect: (String) -> Unit) {
         )
       }
     }
+  }
+}
+
+/**
+ * Nedostupná poloha se ve formuláři ignoruje potichu — bod si uživatel může dát klepnutím do
+ * mapy a adresu vyplnit ručně, takže hláška by tu jen překážela. (Ve výběru obchodu je to
+ * naopak, tam bez polohy není co nabídnout — viz StorePicker/NearbyState.)
+ */
+private suspend fun useResolvedLocation(
+  context: android.content.Context,
+  viewModel: StoreFormViewModel,
+  onFound: () -> Unit,
+) {
+  val result = getCurrentLocation(context)
+  if (result is LocationResult.Found) {
+    onFound()
+    viewModel.useMyLocation(result.lat, result.lon)
   }
 }

@@ -14,13 +14,45 @@ private const val LOCATION_TIMEOUT_MS = 15_000L
 private const val FRESH_LOCATION_MAX_AGE_MS = 5 * 60_000L
 
 /**
+ * Proč appka polohu nemá. Dřív se všechny tři případy slily do jednoho `null` a uživatel dostal
+ * jedinou hlášku "Polohu se nepodařilo zjistit" — přitom u [ProvidersDisabled] stačí polohu
+ * zapnout, zatímco u [Timeout] pomůže leda počkat a zkusit to znovu. Bez rozlišení nemá UI co
+ * uživateli poradit (docs/design.md, "Čtyři stavy každé obrazovky": prázdný stav musí říct,
+ * proč je prázdno a co s tím).
+ */
+sealed interface LocationResult {
+  data class Found(val lat: Double, val lon: Double) : LocationResult
+  /** Poloha je v telefonu vypnutá — ani GPS, ani síťový provider nejsou zapnuté. */
+  data object ProvidersDisabled : LocationResult
+  /** Providery běží, ale fix nedorazil včas (typicky uvnitř budovy). */
+  data object Timeout : LocationResult
+}
+
+/**
  * Obyčejný LocationManager, ne Play Services Fused Location — appka má běžet i bez Google
  * Play Services (stejný důvod jako ZXing místo ML Kit, CLAUDE.md, "Konvence"). Poloha se použije
  * jen jako parametr dotazu na nejbližší obchody a nikam se neukládá (docs/soukromi.md
  * v backendu) — volající si výsledek (seznam obchodů) uloží, souřadnice zahodí.
  */
 @SuppressLint("MissingPermission") // volající musí mít ACCESS_COARSE_LOCATION už povolené
-suspend fun getCurrentLocation(context: Context): Location? {
+suspend fun getCurrentLocation(context: Context): LocationResult {
+  val location = currentLocationOrNull(context)
+  return when {
+    location != null -> LocationResult.Found(location.latitude, location.longitude)
+    !anyProviderEnabled(context) -> LocationResult.ProvidersDisabled
+    else -> LocationResult.Timeout
+  }
+}
+
+@SuppressLint("MissingPermission")
+private fun anyProviderEnabled(context: Context): Boolean {
+  val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+  return listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+    .any { runCatching { locationManager.isProviderEnabled(it) }.getOrDefault(false) }
+}
+
+@SuppressLint("MissingPermission") // volající musí mít ACCESS_COARSE_LOCATION už povolené
+private suspend fun currentLocationOrNull(context: Context): Location? {
   val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
   // Rychlá cesta — čerstvý poslední fix appka rovnou vrátí, místo aby čekala až

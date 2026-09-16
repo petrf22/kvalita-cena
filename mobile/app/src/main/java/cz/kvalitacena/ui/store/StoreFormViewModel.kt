@@ -8,7 +8,9 @@ import androidx.lifecycle.viewModelScope
 import cz.kvalitacena.R
 import cz.kvalitacena.network.CreateStoreInput
 import cz.kvalitacena.network.GeocodeCandidate
+import cz.kvalitacena.network.GraphQlAppException
 import cz.kvalitacena.network.GraphQlClient
+import cz.kvalitacena.network.OsmStoreCandidate
 import cz.kvalitacena.network.RetailChain
 import cz.kvalitacena.network.Store
 import cz.kvalitacena.network.UpdateStoreInput
@@ -24,6 +26,10 @@ import kotlinx.coroutines.launch
 
 private const val SIMILAR_CHECK_DEBOUNCE_MS = 400L
 private const val CHAIN_SEARCH_DEBOUNCE_MS = 300L
+
+// Delší než kontrola podobných obchodů — geokódování jde na rate-limitovanou třetí stranu
+// (Nominatim, nejvýš 1 dotaz/s napříč celou appkou), takže se nesmí spouštět po každém písmenu.
+private const val GEOCODE_DEBOUNCE_MS = 800L
 
 /**
  * Založení provozovny mimo skenování/GPS — pro zápis ceny bez sdílení polohy nebo zpětně
@@ -100,6 +106,16 @@ class StoreFormViewModel(
   var selectedCandidate by mutableStateOf<GeocodeCandidate?>(null)
     private set
 
+  /**
+   * Provozovna převzatá z nabídky OpenStreetMap — na rozdíl od [selectedCandidate]
+   * (geokódovaná adresa, tedy pouhý BOD) odtud pochází i název a adresa, takže se obchod uloží
+   * s `dataOrigin = OSM_DERIVED` (docs/datovy-model.md, pravidla 1 a 2).
+   */
+  var osmCandidate by mutableStateOf<OsmStoreCandidate?>(null)
+    private set
+  var osmAttribution by mutableStateOf<String?>(null)
+    private set
+
   var manualLat by mutableStateOf<Double?>(null)
     private set
   var manualLon by mutableStateOf<Double?>(null)
@@ -113,6 +129,18 @@ class StoreFormViewModel(
     private set
   var created by mutableStateOf<Store?>(null)
     private set
+
+  /**
+   * Id obchodu, se kterým se ten zakládaný srazil (`DUPLICATE_STORE`,
+   * `extensions.existingId`) — formulář z toho udělá nabídku "tenhle obchod už známe, použij
+   * ho" místo chybové hlášky, která by byla slepá ulička.
+   */
+  var duplicateStoreId by mutableStateOf<String?>(null)
+    private set
+  var loadingDuplicate by mutableStateOf(false)
+    private set
+
+  private var geocodeJob: Job? = null
 
   init {
     if (editingStoreId != null) loadExisting(editingStoreId)
@@ -146,9 +174,50 @@ class StoreFormViewModel(
     }
   }
 
+  /**
+   * Předvyplnění z kandidáta vybraného v nabídce OpenStreetMap. Uživatel může cokoli přepsat —
+   * značka původu zůstává, protože jde o to, ODKUD data pocházejí, ne jestli je pak ještě někdo
+   * upravil.
+   */
+  fun applyOsmCandidate(candidate: OsmStoreCandidate, attribution: String?) {
+    if (osmCandidate?.osmRef == candidate.osmRef) return
+    osmCandidate = candidate
+    osmAttribution = attribution
+    name = candidate.name
+    street = candidate.street.orEmpty()
+    city = candidate.city.orEmpty()
+    postalCode = candidate.postalCode.orEmpty()
+    // Appka umí jen CZ/SK/PL; addr:country v OSM navíc často chybí. Neznámá země se ignoruje
+    // a zůstane viewerova volba z Nastavení (docs/lokalizace.md).
+    if (candidate.country in KNOWN_COUNTRIES) country = candidate.country!!
+    manualLat = candidate.lat
+    manualLon = candidate.lon
+    selectedCandidate = null
+    geocodeCandidates = emptyList()
+    // Značka/provozovatel z OSM jen NAŠEPTÁ řetězec z vlastního číselníku — nový řetězec se
+    // z ní nikdy nezakládá (core.retail_chain je kurátorský, docs/stav-implementace.md).
+    candidate.brand?.takeIf { it.isNotBlank() }?.let { onChainQueryChange(it) }
+    scheduleSimilarCheck()
+  }
+
   fun onNameChange(value: String) {
     name = value
     scheduleSimilarCheck()
+  }
+
+  fun onStreetChange(value: String) {
+    street = value
+    scheduleGeocode()
+  }
+
+  fun onPostalCodeChange(value: String) {
+    postalCode = value
+    scheduleGeocode()
+  }
+
+  fun onCountryChange(value: String) {
+    country = value
+    scheduleGeocode()
   }
 
   fun onChainQueryChange(value: String) {
@@ -182,7 +251,28 @@ class StoreFormViewModel(
   fun onCityChange(value: String) {
     city = value
     scheduleSimilarCheck()
+    scheduleGeocode()
   }
+
+  /**
+   * Souřadnice se dohledají SAMY z vyplněné adresy — dřív na to bylo tlačítko "Najít
+   * souřadnice", které uživatel nenašel, takže obchody vznikaly bez polohy a v okolí je pak
+   * nikdo nenajde (`StoreRepository.findNearby` filtruje `lat IS NOT NULL`).
+   *
+   * Nikdy nepřepíše bod, který už obchod má — ať z mapy, z "Použít mou polohu", nebo z OSM
+   * kandidáta. Stejný princip "doplň jen prázdné" jako u [useMyLocation] a [lookupIco].
+   */
+  private fun scheduleGeocode() {
+    geocodeJob?.cancel()
+    if (city.isBlank() || hasCoordinates()) return
+    geocodeJob = viewModelScope.launch {
+      delay(GEOCODE_DEBOUNCE_MS)
+      geocode()
+    }
+  }
+
+  private fun hasCoordinates(): Boolean =
+    selectedCandidate != null || osmCandidate != null || (manualLat != null && manualLon != null)
 
   private fun scheduleSimilarCheck() {
     similarCheckJob?.cancel()
@@ -234,6 +324,11 @@ class StoreFormViewModel(
     }
   }
 
+  /**
+   * Ruční zopakování — automaticky to dělá [scheduleGeocode]. Tlačítko zůstává kvůli tomu, že
+   * dohledání může tiše selhat (Nominatim blokuje datacentrové IP, docs/spusteni.md), a chybový
+   * stav musí jít zopakovat (docs/design.md).
+   */
   fun geocode() {
     if (city.isBlank()) return
     geocoding = true
@@ -243,8 +338,16 @@ class StoreFormViewModel(
     viewModelScope.launch {
       try {
         val result = graphQlClient.geocodeAddress(street.trim().ifBlank { null }, city.trim(), postalCode.trim().ifBlank { null })
-        geocodeCandidates = result.candidates
         geocodeAttribution = result.attribution
+        // Jediný nález není co vybírat — formulář ho rovnou použije a jen to oznámí. Víc
+        // kandidátů zůstává na uživateli (CandidateRow), prázdný výsledek je TICHÝ: obchod
+        // jde uložit i bez souřadnic (docs/datovy-model.md), takže to není chyba.
+        if (result.candidates.size == 1) {
+          geocodeCandidates = emptyList()
+          selectedCandidate = result.candidates.first()
+        } else {
+          geocodeCandidates = result.candidates
+        }
       } catch (e: Exception) {
         geocodeCandidates = emptyList()
       } finally {
@@ -299,10 +402,14 @@ class StoreFormViewModel(
     if (!isStoreFormValid(name, city) || !isIcoShapeValid(ico, country) || !isUrlShapeValid(url)) return
     saving = true
     saveError = null
+    duplicateStoreId = null
     val lat = selectedCandidate?.lat ?: manualLat
     val lon = selectedCandidate?.lon ?: manualLon
-    val geoSource = if (selectedCandidate != null) "OSM" else if (lat != null) "COMMUNITY" else null
-    val osmRef = selectedCandidate?.osmRef
+    val geoSource = if (selectedCandidate != null || osmCandidate != null) "OSM" else if (lat != null) "COMMUNITY" else null
+    val osmRef = selectedCandidate?.osmRef ?: osmCandidate?.osmRef
+    // OSM_DERIVED jen u provozovny převzaté z nabídky — u pouhého geokódování adresy pochází
+    // z OpenStreetMap bod, ne text, a značka původu se nedává (docs/datovy-model.md, pravidlo 1).
+    val dataOrigin = if (osmCandidate != null) "OSM_DERIVED" else null
 
     viewModelScope.launch {
       try {
@@ -343,14 +450,37 @@ class StoreFormViewModel(
             lon = lon,
             geoSource = geoSource,
             osmRef = osmRef,
+            dataOrigin = dataOrigin,
             url = url.trim().ifBlank { null },
           )
           graphQlClient.createStore(input)
         }
       } catch (e: Exception) {
         saveError = e.toUiText()
+        // Sražený obchod v katalogu už je — nabídnout ho je užitečnější než chybová hláška,
+        // po které uživatel neví, co dál (server ho posílá v extensions.existingId).
+        duplicateStoreId = (e as? GraphQlAppException)?.takeIf { it.code == "DUPLICATE_STORE" }?.existingId
       } finally {
         saving = false
+      }
+    }
+  }
+
+  /** "Tenhle obchod už známe — použít ho": načte existující provozovnu a vrátí ji volajícímu. */
+  fun useDuplicateStore() {
+    val id = duplicateStoreId ?: return
+    loadingDuplicate = true
+    viewModelScope.launch {
+      try {
+        graphQlClient.storeById(id)?.let { existing ->
+          saveError = null
+          duplicateStoreId = null
+          created = existing
+        }
+      } catch (e: Exception) {
+        saveError = e.toUiText()
+      } finally {
+        loadingDuplicate = false
       }
     }
   }

@@ -346,7 +346,6 @@
     <string name="price_entry_submit">Preis speichern</string>
     <string name="price_entry_back_without_price">Zurück ohne Preis einzugeben</string>
     <string name="price_entry_submit_success">Der Preis wurde gespeichert, danke!</string>
-    <string name="price_entry_location_unavailable">Der Standort konnte nicht ermittelt werden — wähle ein Geschäft, sobald Daten verfügbar sind.</string>
     <string name="price_entry_store_not_available">Dieses lokale Produkt gehört nicht zum gewählten Geschäft — wähle ein anderes Geschäft oder Produkt.</string>
 
     <string name="product_form_title">Neue Ware</string>
@@ -400,11 +399,29 @@
     <string name="store_report_hidden">Danke für die Meldung — das Geschäft ist jetzt ausgeblendet und wird überprüft.</string>
 
     <string name="store_picker_label">Geschäft</string>
+    <string name="store_picker_distance_m">%1$d m</string>
+    <string name="store_picker_distance_km">%1$.1f km</string>
+    <string name="store_picker_nearby_title">Geschäfte in der Nähe</string>
+    <string name="store_picker_searching_nearby">Suche Geschäfte in der Nähe…</string>
+    <string name="store_picker_permission_needed">Geschäfte in deiner Umgebung siehst du, sobald du der App Zugriff auf den Standort erlaubst. Ohne das findest du ein Geschäft, indem du Namen oder Stadt eingibst.</string>
+    <string name="store_picker_permission_grant">Standort erlauben</string>
+    <string name="store_picker_location_disabled">Der Standort ist am Telefon ausgeschaltet. Schalte ihn in den Systemeinstellungen ein oder finde das Geschäft über Namen oder Stadt.</string>
+    <string name="store_picker_open_location_settings">Standort einschalten</string>
+    <string name="store_picker_location_timeout">Der Standort konnte nicht ermittelt werden — in Gebäuden dauert das eine Weile.</string>
+    <string name="store_picker_retry">Erneut versuchen</string>
+    <string name="store_picker_none_nearby_title">Hier kennen wir noch kein Geschäft</string>
+    <string name="store_picker_none_nearby_hint">Der Geschäftskatalog wächst mit seinen Nutzern — du bist hier wahrscheinlich die erste Person. Das Anlegen dauert ein paar Tipps.</string>
+    <string name="store_picker_wider_radius">Im größeren Umkreis suchen (%1$s)</string>
+    <string name="store_picker_show_more">Weitere anzeigen (%1$d)</string>
+    <string name="store_picker_pending_confirmation">wartet auf Bestätigung</string>
+    <string name="store_picker_use_last_store">Zuletzt: %1$s</string>
+    <string name="store_picker_osm_title">Geschäfte laut OpenStreetMap</string>
+    <string name="store_picker_osm_search">Geschäfte aus OpenStreetMap versuchen</string>
+    <string name="store_picker_osm_unavailable">OpenStreetMap ist gerade nicht erreichbar, wir wissen über diese Umgebung also nichts. Versuche es gleich noch einmal oder gib das Geschäft selbst ein.</string>
+    <string name="store_picker_osm_none">Auch OpenStreetMap kennt hier kein Geschäft.</string>
+    <string name="store_picker_add_new_action">Das Geschäft fehlt hier — neues hinzufügen</string>
     <string name="store_picker_add_new">+ Neues Geschäft hinzufügen</string>
-    <string name="store_picker_find_nearby">In der Umgebung finden</string>
-    <string name="store_picker_hint_logged_in">Gib den Namen oder die Stadt des Geschäfts ein, tippe auf „In der Umgebung finden“, oder lege das Geschäft direkt an.</string>
     <string name="store_picker_hint_anonymous">Gib den Namen oder die Stadt des Geschäfts ein, oder tippe auf „In der Umgebung finden“ — das Anlegen eines neuen Geschäfts erfordert eine Anmeldung.</string>
-    <string name="store_picker_no_nearby_stores">In der Umgebung haben wir kein Geschäft gefunden.</string>
 
     <string name="store_form_create_title">Neues Geschäft</string>
     <string name="store_form_edit_title">Geschäft bearbeiten</string>
@@ -429,8 +446,12 @@
 
     <string name="store_location_section_title">Koordinaten (optional)</string>
     <string name="store_location_hint">Ohne Koordinaten findet „In der Umgebung finden“ das Geschäft nicht, nur die Suche nach Namen — sie können auch später ergänzt werden.</string>
-    <string name="store_location_find_coordinates">Koordinaten finden</string>
     <string name="store_location_use_my_location">Meinen Standort verwenden</string>
+    <string name="store_form_prefilled_from_osm">Aus OpenStreetMap vorausgefüllt — prüfe die Angaben und korrigiere sie gegebenenfalls.</string>
+    <string name="store_form_use_existing_store">Dieses Geschäft kennen wir schon — verwenden</string>
+    <string name="store_location_searching">Suche Koordinaten anhand der Adresse…</string>
+    <string name="store_location_found_from_address">Die Koordinaten wurden anhand der Adresse gefunden. Zeigen sie woandershin, verschiebe die Markierung auf der Karte.</string>
+    <string name="store_location_search_again">Erneut suchen</string>
     <string name="store_location_will_use_map_position">Es wird die Position von der Karte unten / dein aktueller Standort verwendet.</string>
 
     <!-- "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty"; prahy v docs/reputace.md) -->

@@ -29,6 +29,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import cz.kvalitacena.R
+import cz.kvalitacena.location.LocationResult
 import cz.kvalitacena.location.getCurrentLocation
 import kotlinx.coroutines.launch
 import org.osmdroid.views.MapView
@@ -103,9 +104,13 @@ fun MyLocationButton(onLocationResolved: (Double, Double) -> Unit, modifier: Mod
     locating = true
     unavailable = false
     scope.launch {
-      val location = getCurrentLocation(context)
-      if (location != null) onLocationResolved(location.latitude, location.longitude)
-      else unavailable = true
+      // Tlačítko v mapě rozlišení důvodu nepotřebuje — hlášku "polohu se nepodařilo zjistit"
+      // ukazuje u mapy, kde si uživatel bod stejně může dát klepnutím (na rozdíl od výběru
+      // obchodu, kde bez polohy není co nabídnout, viz StorePicker/NearbyState).
+      when (val result = getCurrentLocation(context)) {
+        is LocationResult.Found -> onLocationResolved(result.lat, result.lon)
+        else -> unavailable = true
+      }
       locating = false
     }
   }
