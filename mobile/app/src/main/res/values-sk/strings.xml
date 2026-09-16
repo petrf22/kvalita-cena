@@ -407,12 +407,13 @@
     <string name="store_picker_open_location_settings">Zapnúť polohu</string>
     <string name="store_picker_location_timeout">Polohu sa nepodarilo zistiť — vnútri budovy to chvíľu trvá.</string>
     <string name="store_picker_retry">Skúsiť znova</string>
+    <string name="store_picker_nearby_failed">Obchody v okolí sa nepodarilo načítať — bez pripojenia appka pozná len naposledy použitý obchod.</string>
     <string name="store_picker_none_nearby_title">V okolí zatiaľ žiadny obchod nepoznáme</string>
     <string name="store_picker_none_nearby_hint">Katalóg obchodov rastie s používateľmi — tento si tu asi prvý. Založiť ho je otázka pár klepnutí.</string>
+    <string name="store_picker_approximate_location">Máš povolenú len približnú polohu, ktorú systém posúva až o kilometre — obchod v okruhu pár sto metrov sa tak nájsť nedá. Povoľ appke presnú polohu v nastaveniach systému, alebo hľadaj v širšom okolí.</string>
     <string name="store_picker_wider_radius">Hľadať v širšom okolí (%1$s)</string>
     <string name="store_picker_show_more">Zobraziť ďalšie (%1$d)</string>
     <string name="store_picker_pending_confirmation">čaká na potvrdenie</string>
-    <string name="store_picker_use_last_store">Naposledy: %1$s</string>
     <string name="store_picker_osm_title">Obchody podľa OpenStreetMap</string>
     <string name="store_picker_osm_search">Skúsiť obchody z OpenStreetMap</string>
     <string name="store_picker_osm_unavailable">OpenStreetMap je teraz nedostupná, o okolí teda nič nevieme. Skús to o chvíľu, alebo obchod zadaj sám.</string>
@@ -442,9 +443,10 @@
     <string name="store_company_id_shape_invalid">%1$s musí mať %2$d číslic.</string>
     <string name="store_company_id_not_found_in_registry">V ARES sme toto IČO nenašli.</string>
 
-    <string name="store_location_section_title">Súradnice (voliteľné)</string>
-    <string name="store_location_hint">Bez súradníc obchod nenájde „Nájsť v okolí“, len ručné hľadanie podľa názvu — dajú sa doplniť aj neskôr.</string>
+    <string name="store_location_section_title">Súradnice</string>
+    <string name="store_location_hint">Dohľadajú sa samy z vyplnenej adresy. Bez nich obchod nenájde hľadanie v okolí, len ručné hľadanie podľa názvu — doplniť ich možno aj neskôr.</string>
     <string name="store_location_use_my_location">Použiť moju polohu</string>
+    <string name="store_location_approximate_warning">Poloha je povolená len približne, takže bod bude o kilometre vedľa — presnú polohu povoľ v nastaveniach systému, alebo značku rovno umiestni klepnutím do mapy.</string>
     <string name="store_form_prefilled_from_osm">Predvyplnené z OpenStreetMap — údaje skontroluj a prípadne oprav.</string>
     <string name="store_form_use_existing_store">Tento obchod už poznáme — použiť ho</string>
     <string name="store_location_searching">Hľadám súradnice podľa adresy…</string>

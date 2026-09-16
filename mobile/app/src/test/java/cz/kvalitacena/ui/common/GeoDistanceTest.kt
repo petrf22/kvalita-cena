@@ -25,7 +25,9 @@ class GeoDistanceTest {
   fun popisekPodKilometrJeVMetrechZaokrouhlenyNaDesitky() {
     // Zaokrouhluje se schválně hrubě — "137 m" by předstíralo přesnost, kterou mobilní fix nemá.
     assertEquals(UiText.Res(R.string.store_picker_distance_m, listOf(140)), distanceLabel(137.0))
-    assertEquals(UiText.Res(R.string.store_picker_distance_m, listOf(0)), distanceLabel(4.0))
+    // Nikdy "0 m" — u obchodu, ve kterém člověk stojí, by to vypadalo jako chybějící údaj.
+    assertEquals(UiText.Res(R.string.store_picker_distance_m, listOf(10)), distanceLabel(4.0))
+    assertEquals(UiText.Res(R.string.store_picker_distance_m, listOf(10)), distanceLabel(0.0))
   }
 
   @Test

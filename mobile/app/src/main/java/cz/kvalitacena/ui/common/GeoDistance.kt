@@ -39,7 +39,9 @@ fun distanceMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Doub
  * desetinná čárka v češtině, tečka v angličtině), proto UiText s argumentem, ne hotový string.
  */
 fun distanceLabel(meters: Double): UiText = when {
-  meters < 1000 -> UiText.Res(R.string.store_picker_distance_m, listOf((meters / 10).roundToInt() * 10))
+  // Spodní hranice 10 m: "0 m" u obchodu, ve kterém člověk stojí, vypadá jako chybějící údaj,
+  // a přesnost mobilního fixu je stejně horší.
+  meters < 1000 -> UiText.Res(R.string.store_picker_distance_m, listOf(maxOf(10, (meters / 10).roundToInt() * 10)))
   else -> UiText.Res(R.string.store_picker_distance_km, listOf(roundToOneDecimal(meters / 1000)))
 }
 

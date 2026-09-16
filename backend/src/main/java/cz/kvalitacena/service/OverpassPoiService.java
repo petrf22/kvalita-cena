@@ -50,6 +50,11 @@ public class OverpassPoiService {
    * `core.store` nepoužitelný (STORE_NAME_REQUIRED, `uq_store_identity` stojí na názvu)
    * a jen by zvětšoval odpověď.
    *
+   * <p>Vyloučené hodnoty `shop` jsou čisté SLUŽBY (prádelna, kadeřnictví, autoservis) — appka
+   * je o cenách zboží, takže by v nabídce byly jen šum; seznam je vědomě krátký a spíš pustí
+   * něco navíc, než aby zamlčel obchod, ve kterém člověk právě stojí. Rozšiřovat ho podle
+   * toho, co se v nabídce reálně objevuje.
+   *
    * <p>`nwr` (node+way+relation jedním výrazem), ne tři samostatné řádky na značku: měřeno
    * proti veřejné instanci je rozepsaná varianta násobně dražší a u zatížené instance spadne
    * na timeout, zatímco `nwr` projde. `out center` doplní `way`/`relation` těžiště, protože
@@ -58,12 +63,18 @@ public class OverpassPoiService {
   private static final String QUERY_TEMPLATE = """
       [out:json][timeout:%d];
       (
-        nwr["shop"]["name"](around:%.1f,%.6f,%.6f);
+        nwr["shop"]["name"]["shop"!~"^(laundry|dry_cleaning|hairdresser|beauty|massage|tattoo|nail|car_repair|car|motorcycle|tyres|travel_agency|funeral_directors|estate_agent|insurance|copyshop|locksmith|storage_rental|pawnbroker|bookmaker|money_lender|vacant)$"](around:%.1f,%.6f,%.6f);
         nwr["amenity"="marketplace"]["name"](around:%.1f,%.6f,%.6f);
       );
       out center tags %d;
       """;
 
+  /**
+   * Throttle i HTTP timeout jsou schválně krátké: tenhle dotaz visí na interaktivní obrazovce
+   * a klient má vlastní HTTP timeout (mobil 10 s). Server musí stihnout odpovědět
+   * {@code UNAVAILABLE} dřív, než to klient vzdá — jinak uživatel místo srozumitelné hlášky
+   * dostane obecnou chybu sítě.
+   */
   private final OverpassProperties overpassProperties;
   private final Messages messages;
 

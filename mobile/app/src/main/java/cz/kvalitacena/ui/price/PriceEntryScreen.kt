@@ -1,8 +1,6 @@
 package cz.kvalitacena.ui.price
 
-import android.Manifest
 import android.app.DatePickerDialog
-import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,14 +43,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
+import cz.kvalitacena.location.LOCATION_PERMISSIONS
 import cz.kvalitacena.location.LocationResult
 import cz.kvalitacena.location.getCurrentLocation
+import cz.kvalitacena.location.hasAnyLocationPermission
+import cz.kvalitacena.location.hasOnlyApproximateLocation
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.ProductImagePreview
 import cz.kvalitacena.ui.common.SELECTABLE_PRICE_KINDS
@@ -147,11 +147,6 @@ fun PriceEntryScreen(
     }
   }
 
-  fun hasLocationPermission() = ContextCompat.checkSelfPermission(
-    context,
-    Manifest.permission.ACCESS_COARSE_LOCATION,
-  ) == PackageManager.PERMISSION_GRANTED
-
   fun locateAndLoadNearby() {
     viewModel.startLocating()
     scope.launch {
@@ -165,10 +160,12 @@ fun PriceEntryScreen(
     }
   }
 
+  // O obě oprávnění naráz — jinak Android nenabídne volbu "Přesná"/"Přibližná"
+  // (location/LocationPermissions.kt, proč na přibližné polohu malý okruh nefunguje).
   val locationPermissionLauncher = rememberLauncherForActivityResult(
-    ActivityResultContracts.RequestPermission(),
-  ) { granted ->
-    if (granted) locateAndLoadNearby() else viewModel.onLocationPermissionMissing()
+    ActivityResultContracts.RequestMultiplePermissions(),
+  ) { result ->
+    if (result.values.any { it }) locateAndLoadNearby() else viewModel.onLocationPermissionMissing()
   }
 
   /**
@@ -178,8 +175,8 @@ fun PriceEntryScreen(
    * vyvolá až tlačítko.
    */
   fun findNearbyStores(userAsked: Boolean) {
-    if (hasLocationPermission()) locateAndLoadNearby()
-    else if (userAsked) locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+    if (hasAnyLocationPermission(context)) locateAndLoadNearby()
+    else if (userAsked) locationPermissionLauncher.launch(LOCATION_PERMISSIONS)
     else viewModel.onLocationPermissionMissing()
   }
 
@@ -364,6 +361,9 @@ fun PriceEntryScreen(
                 NavigationResults.osmStoreAttribution = viewModel.osmAttribution()
                 onAddStore()
               },
+              // Přibližná poloha je od systému mimo až o kilometry — bez vysvětlení by prázdný
+              // výsledek v okruhu 500 m vypadal jako chyba appky.
+              approximateLocation = hasOnlyApproximateLocation(context),
               isLoggedIn = isLoggedIn,
               homeCountry = AppContainer.countryStore.country,
               modifier = Modifier.fillMaxWidth(),

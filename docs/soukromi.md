@@ -25,6 +25,16 @@ si spočítá sám (`ui/common/GeoDistance.kt`). Přesná poloha tedy dál neopo
 vidí pořád jen zaokrouhlený bod, a přitom nic nevypadne. Vzdálenost u položek v seznamu proto
 počítá výhradně klient — kdyby ji počítal server, byla by o desítky metrů vedle.
 
+**Proč appka od 2026-09 žádá i o přesnou polohu.** Do té doby měla jen `ACCESS_COARSE_LOCATION`
+jako vědomé omezení. Měřením v emulátoru se ukázalo, že Android přibližnou polohu snapuje na
+mřížku o hraně kolem dvou kilometrů — appka dostávala bod **1,5 km vedle**. To neznesnadňovalo
+jen hledání v malém okruhu; stejně tak byly o kilometr vedle souřadnice PROVOZOVNY nastavené
+tlačítkem „Použít mou polohu", tedy trvalý údaj pro celou komunitu. `ACCESS_FINE_LOCATION` je
+proto v manifestu vedle coarse a systémový dialog nechá uživatele vybrat „Přesná"/„Přibližná".
+Na pravidlech výš to nemění nic: poloha se dál nikam neukládá, serveru se posílá zaokrouhlená
+a přesná hodnota nikdy neopustí zařízení. Kdo povolí jen přibližnou polohu, appku používá dál —
+jen mu řekne, proč v okruhu pár set metrů nic nenašla, a doporučí širší okruh.
+
 Mobil si přesnou polohu drží **jen v paměti ViewModelu** po dobu zobrazeného výběru
 (`PriceEntryViewModel`) — potřebuje ji pro „hledat v širším okolí" a pro nabídku z OSM, aby se
 nečekalo na další GPS fix. Do `SharedPreferences` ani nikam jinam se nezapisuje.

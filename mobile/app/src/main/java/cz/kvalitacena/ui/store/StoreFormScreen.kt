@@ -1,7 +1,5 @@
 package cz.kvalitacena.ui.store
 
-import android.Manifest
-import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -42,14 +40,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
+import cz.kvalitacena.location.LOCATION_PERMISSIONS
 import cz.kvalitacena.location.LocationResult
 import cz.kvalitacena.location.getCurrentLocation
+import cz.kvalitacena.location.hasAnyLocationPermission
+import cz.kvalitacena.location.hasOnlyApproximateLocation
 import cz.kvalitacena.network.GeocodeCandidate
 import cz.kvalitacena.ui.common.KNOWN_COUNTRIES
 import cz.kvalitacena.ui.common.LocationMap
@@ -105,21 +105,19 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     }
   }
 
+  // Obě oprávnění naráz — souřadnice PROVOZOVNY nastavené z přibližné polohy by byly
+  // o kilometry vedle (location/LocationPermissions.kt).
   val locationPermissionLauncher = rememberLauncherForActivityResult(
-    ActivityResultContracts.RequestPermission(),
-  ) { granted ->
-    if (granted) {
+    ActivityResultContracts.RequestMultiplePermissions(),
+  ) { result ->
+    if (result.values.any { it }) {
       scope.launch { useResolvedLocation(context, viewModel) { formDirty = true } }
     }
   }
 
   fun useMyLocation() {
-    val hasPermission = ContextCompat.checkSelfPermission(
-      context,
-      Manifest.permission.ACCESS_COARSE_LOCATION,
-    ) == PackageManager.PERMISSION_GRANTED
-    if (!hasPermission) {
-      locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+    if (!hasAnyLocationPermission(context)) {
+      locationPermissionLauncher.launch(LOCATION_PERMISSIONS)
       return
     }
     scope.launch { useResolvedLocation(context, viewModel) { formDirty = true } }
@@ -298,6 +296,15 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
         else Text(stringResource(R.string.store_location_use_my_location))
       }
     }
+    // Souřadnice provozovny jsou trvalý údaj pro celou komunitu — uložit sem bod posunutý
+    // systémem o kilometry je horší než ho nemít vůbec.
+    if (hasOnlyApproximateLocation(context)) {
+      Text(
+        stringResource(R.string.store_location_approximate_warning),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+    }
     Gap()
 
     if (viewModel.geocodeCandidates.isNotEmpty()) {
@@ -314,7 +321,10 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       Gap()
     }
 
-    if (viewModel.manualLat != null && viewModel.manualLon != null && viewModel.selectedCandidate == null) {
+    // U bodu z OSM kandidáta se nevypisuje — o jeho původu mluví už hlavička formuláře.
+    if (viewModel.manualLat != null && viewModel.manualLon != null &&
+      viewModel.selectedCandidate == null && viewModel.osmCandidate == null
+    ) {
       Text(
         stringResource(R.string.store_location_will_use_map_position),
         style = MaterialTheme.typography.bodySmall,

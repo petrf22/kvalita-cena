@@ -241,14 +241,21 @@ app:
       base-url: https://overpass-api.de/api/interpreter
       # V produkci nahradit reálným kontaktním e-mailem (stejně jako u Nominatimu).
       user-agent: "KvalitaACena/0.1 (dev@example.com)"
-      timeout: PT12S
+      # MUSÍ zůstat pod HTTP timeoutem klientů (mobil má readTimeout 10 s, AppContainer) —
+      # server má stihnout odpovědět "UNAVAILABLE" dřív, než to klient vzdá. Jinak uživatel
+      # místo srozumitelné hlášky uvidí obecnou chybu sítě.
+      timeout: PT7S
       # Jde do [timeout:N] v samotném dotazu — Overpass si smí dotaz zabít dřív než my.
-      query-timeout: PT15S
+      query-timeout: PT10S
       # POI se nestěhují; cache je hlavní ochrana kvóty cizí služby.
       cache-ttl: PT6H
       # Strop okruhu a počtu není jen ochrana kvóty, ale i hranice proti "substantial part"
       # cizí ODbL databáze — nabídka je vždy hrst záznamů kolem jednoho bodu.
-      max-radius-km: 5
+      # Cena dotazu roste s poloměrem rychle a veřejné instance Overpassu bývají vytížené
+      # (naměřeno: 150 m projde v jednotkách sekund, 500 m na téže instanci o pár minut
+      # později spadne na timeout). Dva kilometry jsou strop i věcně — je to nabídka obchodu,
+      # ve kterém člověk stojí, ne průzkum města.
+      max-radius-km: 2
       max-results: 40
       # Kill switch bez redeploye — vypnuté vrací rovnou UNAVAILABLE.
       enabled: true

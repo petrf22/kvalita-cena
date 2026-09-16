@@ -70,6 +70,8 @@ fun StorePicker(
   widerRadiusLabel: String? = null,
   onSearchOsm: () -> Unit = {},
   onSelectOsmCandidate: (NearbyOsmStore) -> Unit = {},
+  /** Systém dává jen zaokrouhlenou polohu — v malém okruhu pak nemá co najít, viz [EmptyNearby]. */
+  approximateLocation: Boolean = false,
   isLoggedIn: Boolean,
   homeCountry: String?,
   modifier: Modifier = Modifier,
@@ -109,15 +111,17 @@ fun StorePicker(
         onAction = onRetryNearby,
       )
 
+      // Vlastní text místo obecné chyby ze sítě: reálný důvod je tady skoro vždy chybějící
+      // signál v obchodě, a uživateli je užitečnější vědět, co mu zbývá, než že "se něco
+      // pokazilo". Zápis ceny sítí projít musí, takže se neslibuje, že půjde všechno.
       is NearbyState.Failed -> ExplainedAction(
-        text = nearbyState.message.asString(),
+        text = stringResource(R.string.store_picker_nearby_failed),
         actionLabel = stringResource(R.string.store_picker_retry),
         onAction = onRetryNearby,
-        error = true,
       )
 
       is NearbyState.Loaded -> if (nearbyState.stores.isEmpty()) {
-        EmptyNearby()
+        EmptyNearby(approximateLocation = approximateLocation)
       } else {
         NearbyList(
           stores = nearbyState.stores,
@@ -144,7 +148,9 @@ fun StorePicker(
     // položka rozbalovací nabídky byla přesně ta slepá ulička, kvůli které se tenhle výběr
     // předělával.
     Actions(
-      onWiderRadius = onWiderRadius,
+      // Širší okolí má smysl nabídnout jen tam, kde se vůbec hledalo — bez polohy by to bylo
+      // tlačítko, po kterém se nic nestane.
+      onWiderRadius = onWiderRadius.takeIf { nearbyState is NearbyState.Loaded },
       widerRadiusLabel = widerRadiusLabel,
       onAddNew = onAddNew,
       isLoggedIn = isLoggedIn,
@@ -236,7 +242,7 @@ private fun NearbyRow(
 }
 
 @Composable
-private fun EmptyNearby() {
+private fun EmptyNearby(approximateLocation: Boolean) {
   Column(modifier = Modifier.padding(top = Spacing.sm)) {
     Text(
       stringResource(R.string.store_picker_none_nearby_title),
@@ -247,6 +253,16 @@ private fun EmptyNearby() {
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+    // Jinak by to vypadalo, že appka neumí hledat — přitom jí systém dal polohu o kilometry
+    // vedle. Doporučit širší okruh je tady užitečnější rada než "zkus to znovu".
+    if (approximateLocation) {
+      Text(
+        stringResource(R.string.store_picker_approximate_location),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = Spacing.xs),
+      )
+    }
   }
 }
 
@@ -292,7 +308,11 @@ private fun OsmSection(
           style = MaterialTheme.typography.titleSmall,
           modifier = Modifier.padding(top = Spacing.sm),
         )
-        state.candidates.forEach { candidate ->
+        // Stejné vrátkování jako u vlastních obchodů — v hustém centru jich Overpass vrátí
+        // klidně čtyřicet a formulář by se v rolování ztratil.
+        var showAllOsm by remember(state.candidates) { mutableStateOf(false) }
+        val visibleOsm = if (showAllOsm) state.candidates else state.candidates.take(VISIBLE_NEARBY_COUNT)
+        visibleOsm.forEach { candidate ->
           NearbyRow(
             label = osmCandidateLabel(candidate),
             distance = distanceLabel(candidate.distanceMeters).asString(),
@@ -300,6 +320,11 @@ private fun OsmSection(
             selected = false,
             onClick = { onSelectCandidate(candidate) },
           )
+        }
+        if (!showAllOsm && state.candidates.size > VISIBLE_NEARBY_COUNT) {
+          TextButton(onClick = { showAllOsm = true }) {
+            Text(stringResource(R.string.store_picker_show_more, state.candidates.size - VISIBLE_NEARBY_COUNT))
+          }
         }
         // Atribuce je podle ODbL povinná a text chodí ze serveru (je lokalizovaný,
         // docs/lokalizace.md) — nikdy se nezadrátovává do appky.
@@ -363,12 +388,14 @@ private fun StatusLine(text: String, loading: Boolean) {
 
 /** Text, který říká, PROČ to nejde, a tlačítko, kterým to jde spravit. */
 @Composable
-private fun ExplainedAction(text: String, actionLabel: String, onAction: () -> Unit, error: Boolean = false) {
+private fun ExplainedAction(text: String, actionLabel: String, onAction: () -> Unit) {
   Column(modifier = Modifier.padding(top = Spacing.sm)) {
+    // Nikdy chybovou barvou — chybějící poloha ani signál není chyba uživatele a červený text
+    // by u zápisu ceny vypadal jako by se něco pokazilo nenávratně.
     Text(
       text,
       style = MaterialTheme.typography.bodySmall,
-      color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     TextButton(onClick = onAction) { Text(actionLabel) }
   }

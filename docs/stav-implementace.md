@@ -311,6 +311,10 @@ katalog v okolí nic nemá; vybraný kandidát předvyplní formulář a obchod 
 s `data_origin = 'OSM_DERIVED'` (`docs/datovy-model.md`). Čistá logika je v
 `ui/price/StorePickerLogic.kt` a `ui/common/GeoDistance.kt`, obojí s JUnit testy.
 
+Zapamatovaný obchod se od 2026-09 ukládá celý (`LastStoreStore` drží snapshot DTO, ne jen id),
+takže v obchodě bez signálu je předvybraný bez jediného dotazu na server — dřív se detail vždy
+dotahoval přes `storeById` a offline nebyl k dispozici ani on.
+
 **Neimplementováno na webu** — `shared/store-picker.ts` má pořád tlačítko „Najít v okolí",
 pevný okruh a žádnou nabídku z OSM. Backend je připravený (dotazy jsou aditivní), chybí jen
 frontend.

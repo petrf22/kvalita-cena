@@ -407,12 +407,13 @@
     <string name="store_picker_open_location_settings">Włącz lokalizację</string>
     <string name="store_picker_location_timeout">Nie udało się ustalić lokalizacji — w budynku chwilę to trwa.</string>
     <string name="store_picker_retry">Spróbuj ponownie</string>
+    <string name="store_picker_nearby_failed">Nie udało się wczytać sklepów w okolicy — bez połączenia aplikacja zna tylko ostatnio użyty sklep.</string>
     <string name="store_picker_none_nearby_title">W okolicy nie znamy jeszcze żadnego sklepu</string>
     <string name="store_picker_none_nearby_hint">Katalog sklepów rośnie wraz z użytkownikami — jesteś tu prawdopodobnie pierwszy. Dodanie sklepu to kwestia kilku dotknięć.</string>
+    <string name="store_picker_approximate_location">Masz przyznaną tylko przybliżoną lokalizację, którą system przesuwa nawet o kilometry — sklepu w promieniu kilkuset metrów tak nie znajdziemy. Zezwól aplikacji na dokładną lokalizację w ustawieniach systemu albo szukaj w szerszej okolicy.</string>
     <string name="store_picker_wider_radius">Szukaj w szerszej okolicy (%1$s)</string>
     <string name="store_picker_show_more">Pokaż kolejne (%1$d)</string>
     <string name="store_picker_pending_confirmation">czeka na potwierdzenie</string>
-    <string name="store_picker_use_last_store">Ostatnio: %1$s</string>
     <string name="store_picker_osm_title">Sklepy według OpenStreetMap</string>
     <string name="store_picker_osm_search">Spróbuj sklepów z OpenStreetMap</string>
     <string name="store_picker_osm_unavailable">OpenStreetMap jest teraz niedostępna, więc nic nie wiemy o tej okolicy. Spróbuj za chwilę albo wpisz sklep samodzielnie.</string>
@@ -442,9 +443,10 @@
     <string name="store_company_id_shape_invalid">%1$s musi mieć %2$d cyfr.</string>
     <string name="store_company_id_not_found_in_registry">Nie znaleźliśmy tego numeru w rejestrze.</string>
 
-    <string name="store_location_section_title">Współrzędne (opcjonalnie)</string>
-    <string name="store_location_hint">Bez współrzędnych sklep nie pojawi się w „Znajdź w okolicy”, tylko w wyszukiwaniu po nazwie — można je dodać też później.</string>
+    <string name="store_location_section_title">Współrzędne</string>
+    <string name="store_location_hint">Zostaną wyszukane automatycznie na podstawie wpisanego adresu. Bez nich sklep nie pojawi się w wyszukiwaniu w okolicy, tylko w wyszukiwaniu po nazwie — można je dodać później.</string>
     <string name="store_location_use_my_location">Użyj mojej lokalizacji</string>
+    <string name="store_location_approximate_warning">Lokalizacja jest przyznana tylko przybliżona, więc punkt będzie oddalony o kilometry — zezwól na dokładną lokalizację w ustawieniach systemu albo ustaw znacznik, dotykając mapy.</string>
     <string name="store_form_prefilled_from_osm">Wypełnione wstępnie z OpenStreetMap — sprawdź dane i w razie potrzeby popraw.</string>
     <string name="store_form_use_existing_store">Ten sklep już znamy — użyj go</string>
     <string name="store_location_searching">Szukam współrzędnych według adresu…</string>

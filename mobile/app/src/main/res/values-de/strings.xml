@@ -409,12 +409,13 @@
     <string name="store_picker_open_location_settings">Standort einschalten</string>
     <string name="store_picker_location_timeout">Der Standort konnte nicht ermittelt werden — in Gebäuden dauert das eine Weile.</string>
     <string name="store_picker_retry">Erneut versuchen</string>
+    <string name="store_picker_nearby_failed">Geschäfte in der Nähe konnten nicht geladen werden — ohne Verbindung kennt die App nur das zuletzt verwendete Geschäft.</string>
     <string name="store_picker_none_nearby_title">Hier kennen wir noch kein Geschäft</string>
     <string name="store_picker_none_nearby_hint">Der Geschäftskatalog wächst mit seinen Nutzern — du bist hier wahrscheinlich die erste Person. Das Anlegen dauert ein paar Tipps.</string>
+    <string name="store_picker_approximate_location">Du hast nur den ungefähren Standort erlaubt, den das System um bis zu mehrere Kilometer verschiebt — ein Geschäft im Umkreis von ein paar hundert Metern lässt sich so nicht finden. Erlaube den genauen Standort in den Systemeinstellungen oder suche im größeren Umkreis.</string>
     <string name="store_picker_wider_radius">Im größeren Umkreis suchen (%1$s)</string>
     <string name="store_picker_show_more">Weitere anzeigen (%1$d)</string>
     <string name="store_picker_pending_confirmation">wartet auf Bestätigung</string>
-    <string name="store_picker_use_last_store">Zuletzt: %1$s</string>
     <string name="store_picker_osm_title">Geschäfte laut OpenStreetMap</string>
     <string name="store_picker_osm_search">Geschäfte aus OpenStreetMap versuchen</string>
     <string name="store_picker_osm_unavailable">OpenStreetMap ist gerade nicht erreichbar, wir wissen über diese Umgebung also nichts. Versuche es gleich noch einmal oder gib das Geschäft selbst ein.</string>
@@ -444,9 +445,10 @@
     <string name="store_company_id_shape_invalid">%1$s muss %2$d Ziffern haben.</string>
     <string name="store_company_id_not_found_in_registry">Diese Firmennummer haben wir in ARES nicht gefunden.</string>
 
-    <string name="store_location_section_title">Koordinaten (optional)</string>
-    <string name="store_location_hint">Ohne Koordinaten findet „In der Umgebung finden“ das Geschäft nicht, nur die Suche nach Namen — sie können auch später ergänzt werden.</string>
+    <string name="store_location_section_title">Koordinaten</string>
+    <string name="store_location_hint">Sie werden automatisch anhand der eingegebenen Adresse ermittelt. Ohne sie erscheint das Geschäft nicht in der Umgebungssuche, nur in der Suche nach Namen — sie lassen sich später ergänzen.</string>
     <string name="store_location_use_my_location">Meinen Standort verwenden</string>
+    <string name="store_location_approximate_warning">Der Standort ist nur ungefähr erlaubt, der Punkt liegt also um Kilometer daneben — erlaube den genauen Standort in den Systemeinstellungen oder setze die Markierung per Tippen auf die Karte.</string>
     <string name="store_form_prefilled_from_osm">Aus OpenStreetMap vorausgefüllt — prüfe die Angaben und korrigiere sie gegebenenfalls.</string>
     <string name="store_form_use_existing_store">Dieses Geschäft kennen wir schon — verwenden</string>
     <string name="store_location_searching">Suche Koordinaten anhand der Adresse…</string>

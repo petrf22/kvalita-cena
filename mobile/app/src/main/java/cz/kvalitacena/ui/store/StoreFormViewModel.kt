@@ -194,10 +194,27 @@ class StoreFormViewModel(
     manualLon = candidate.lon
     selectedCandidate = null
     geocodeCandidates = emptyList()
-    // Značka/provozovatel z OSM jen NAŠEPTÁ řetězec z vlastního číselníku — nový řetězec se
-    // z ní nikdy nezakládá (core.retail_chain je kurátorský, docs/stav-implementace.md).
-    candidate.brand?.takeIf { it.isNotBlank() }?.let { onChainQueryChange(it) }
+    prefillChainFromBrand(candidate.brand)
     scheduleSimilarCheck()
+  }
+
+  /**
+   * Značka z OSM se do pole řetězce dostane, JEN když jí odpovídá položka vlastního číselníku
+   * (`core.retail_chain` je kurátorský, nový řetězec z OSM nevzniká). U nezávislého obchodu
+   * bývá `brand` totéž co název — předvyplnit ho natvrdo by znamenalo ukázat vyplněný řetězec,
+   * který na nic neodkazuje.
+   */
+  private fun prefillChainFromBrand(brand: String?) {
+    val query = brand?.trim()?.takeIf { it.isNotBlank() } ?: return
+    viewModelScope.launch {
+      try {
+        val match = graphQlClient.chains(query = query, country = country)
+          .firstOrNull { it.name.equals(query, ignoreCase = true) } ?: return@launch
+        onChainSelect(match)
+      } catch (e: Exception) {
+        // Našeptávač je jen doporučující — chyba dotazu nesmí blokovat založení obchodu.
+      }
+    }
   }
 
   fun onNameChange(value: String) {

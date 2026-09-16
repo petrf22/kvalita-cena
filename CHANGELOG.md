@@ -21,6 +21,8 @@ za jednoduchost skriptu.
 ### Opraveno
 - Když poloha chybí, appka řekne proč a co s tím — jinak se zachová u nepovoleného přístupu, vypnuté polohy a nezdařeného zaměření; dřív z toho byla jediná hláška bez rady (mobil)
 - Obchod ve vzdálenosti kolem 200 m už z okolí nevypadne kvůli zaokrouhlení polohy, které appka posílá serveru kvůli soukromí (server, mobil)
+- Appka umí požádat o přesnou polohu: s přibližnou ji systém posouval až o 1,5 km, takže obchod v okolí nenašla a souřadnice nově zakládané provozovny byly o kilometr vedle (mobil)
+- Naposledy použitý obchod je předvybraný i bez signálu — appka si ho pamatuje celý, ne jen jeho id (mobil)
 - Pokus o založení obchodu, který už v katalogu je, nabídne ten existující místo pouhé chybové hlášky (mobil)
 
 ## [0.8.0] – 2026-09-08

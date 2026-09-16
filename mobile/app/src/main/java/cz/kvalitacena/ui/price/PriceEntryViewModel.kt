@@ -219,6 +219,12 @@ class PriceEntryViewModel(
    * (nepovolená, vypnutá, offline) vyhraje zapamatovaný obchod stejně jako dřív.
    */
   private fun loadRememberedStore() {
+    // Snapshot ze SharedPreferences je k dispozici hned a bez sítě — teprve díky tomu jde
+    // zapsat cenu v obchodě bez signálu, kde `storeById` selže (docs/design.md, čtvrtý stav).
+    lastStoreStore.remembered()?.let {
+      rememberedStore = it
+      applyPreselection()
+    }
     val id = lastStoreStore.rememberedId() ?: return
     viewModelScope.launch {
       try {
@@ -227,7 +233,7 @@ class PriceEntryViewModel(
           applyPreselection()
         } ?: lastStoreStore.clear()
       } catch (e: Exception) {
-        // Výpadek načtení posledního obchodu nesmí blokovat ruční výběr.
+        // Výpadek načtení posledního obchodu nesmí blokovat ruční výběr — snapshot výš platí dál.
       }
     }
   }
@@ -287,7 +293,7 @@ class PriceEntryViewModel(
     // změně produktu) — uživatel ho právě vybral ručně, appka jen zablokuje odeslání a napíše
     // proč, ať mu výběr nezmizí beze stopy.
     storeScopeMismatch = product?.let { !productAvailableAtStore(it, store) } ?: false
-    if (!storeScopeMismatch) lastStoreStore.remember(store.id)
+    if (!storeScopeMismatch) lastStoreStore.remember(store)
   }
 
   private fun selectStore(store: Store) {
@@ -299,6 +305,9 @@ class PriceEntryViewModel(
   fun onNewStoreCreated(store: Store) {
     onStoreSelected(store)
     storeSuggestions = emptyList()
+    // Nabídka z OSM je po založení zastaralá — obsahuje i obchod, který právě vznikl, a jeho
+    // dalším klepnutím by uživatel mířil na duplicitu. Načte se znovu, až si o ni řekne.
+    osmState = OsmState.Idle
   }
 
   /**

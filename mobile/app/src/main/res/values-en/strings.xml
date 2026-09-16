@@ -407,12 +407,13 @@
     <string name="store_picker_open_location_settings">Turn on location</string>
     <string name="store_picker_location_timeout">Could not determine your location — indoors it takes a while.</string>
     <string name="store_picker_retry">Try again</string>
+    <string name="store_picker_nearby_failed">Nearby stores could not be loaded — without a connection the app only knows the store you used last.</string>
     <string name="store_picker_none_nearby_title">We do not know any store around here yet</string>
     <string name="store_picker_none_nearby_hint">The store catalogue grows with its users — you are probably the first one here. Adding it takes a few taps.</string>
+    <string name="store_picker_approximate_location">You have only granted approximate location, which the system shifts by up to kilometres — a store within a few hundred metres cannot be found that way. Allow precise location in system settings, or search a wider area.</string>
     <string name="store_picker_wider_radius">Search a wider area (%1$s)</string>
     <string name="store_picker_show_more">Show more (%1$d)</string>
     <string name="store_picker_pending_confirmation">awaiting confirmation</string>
-    <string name="store_picker_use_last_store">Last used: %1$s</string>
     <string name="store_picker_osm_title">Stores according to OpenStreetMap</string>
     <string name="store_picker_osm_search">Try stores from OpenStreetMap</string>
     <string name="store_picker_osm_unavailable">OpenStreetMap is unavailable right now, so we know nothing about this area. Try again in a moment, or enter the store yourself.</string>
@@ -442,9 +443,10 @@
     <string name="store_company_id_shape_invalid">%1$s must have %2$d digits.</string>
     <string name="store_company_id_not_found_in_registry">We couldn\'t find this ID in the registry.</string>
 
-    <string name="store_location_section_title">Coordinates (optional)</string>
-    <string name="store_location_hint">Without coordinates the store won\'t show up in \"Find nearby\", only in name search — they can be added later too.</string>
+    <string name="store_location_section_title">Coordinates</string>
+    <string name="store_location_hint">They are looked up automatically from the address you fill in. Without them the store will not show up in nearby search, only in search by name — they can be added later.</string>
     <string name="store_location_use_my_location">Use my location</string>
+    <string name="store_location_approximate_warning">Location is granted only approximately, so the point will be off by kilometres — allow precise location in system settings, or place the marker by tapping the map.</string>
     <string name="store_form_prefilled_from_osm">Prefilled from OpenStreetMap — check the details and correct them if needed.</string>
     <string name="store_form_use_existing_store">We already know this store — use it</string>
     <string name="store_location_searching">Looking up coordinates from the address…</string>
