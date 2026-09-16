@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 import java.time.Duration;
 
 /**
- * OpenStreetMap Nominatim — jen geokódování adresy na souřadnice, žádný import POI (viz plán
- * projektu). Usage policy Nominatimu (https://operations.osmfoundation.org/policies/nominatim/)
+ * OpenStreetMap Nominatim — geokódování a explicitní hledání jednotlivého obchodu,
+ * bez autocomplete a hromadného importu POI. Usage policy Nominatimu (https://operations.osmfoundation.org/policies/nominatim/)
  * vyžaduje identifikovatelný User-Agent a nejvýš 1 dotaz/s — GeocodingService obojí dodržuje.
  * Volá se VÝHRADNĚ ze serveru, nikdy z mobilu/prohlížeče (docs/soukromi.md — jinak by šla na
  * Nominatim přímo IP uživatele).

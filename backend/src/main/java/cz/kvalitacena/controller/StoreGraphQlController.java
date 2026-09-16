@@ -50,13 +50,13 @@ public class StoreGraphQlController {
   @QueryMapping
   public List<Store> nearbyStores(@Argument double lat, @Argument double lon, @Argument Double radiusKm,
       Authentication authentication) {
-    double radius = Math.min(radiusKm == null ? 3 : radiusKm, MAX_RADIUS_KM);
+    double radius = Math.max(0.1, Math.min(radiusKm == null ? 3 : radiusKm, MAX_RADIUS_KM));
     Long viewerId = viewerContextResolver.resolve(authentication).userId();
-    // Zaokrouhlení na 3 desetinná místa (~110 m, docs/soukromi.md — dřív dokumentované, ale
-    // nikde neimplementované) — při rádiusu 3–25 km je to pod rozlišovací schopnost výsledku,
-    // ale snižuje přesnost polohy, která skončí v logu requestu/dotazu.
-    double roundedLat = Coordinates.round(lat, 3);
-    double roundedLon = Coordinates.round(lon, 3);
+    // U malého okruhu nesmí zaokrouhlení posunout střed až o desítky metrů.
+    // Souřadnice dál slouží jen k dotazu, nikam se neukládají.
+    int decimals = radius <= 1 ? 4 : 3;
+    double roundedLat = Coordinates.round(lat, decimals);
+    double roundedLon = Coordinates.round(lon, decimals);
     return storeOverlayService.applyOverlay(
         storeRepository.findNearby(roundedLat, roundedLon, radius * 1000, viewerId), viewerId);
   }
@@ -121,6 +121,13 @@ public class StoreGraphQlController {
       @Argument String postalCode, @Argument String country, Authentication authentication) {
     Long viewerId = viewerContextResolver.resolve(authentication).userId();
     return geocodingService.geocode(street, city, postalCode, countryResolver.resolve(country, viewerId));
+  }
+
+  @QueryMapping
+  public OsmStoreSearchResult searchOsmStores(@Argument String query, @Argument String country,
+      Authentication authentication) {
+    Long viewerId = viewerContextResolver.resolve(authentication).userId();
+    return geocodingService.searchStores(query, countryResolver.resolve(country, viewerId));
   }
 
   @QueryMapping

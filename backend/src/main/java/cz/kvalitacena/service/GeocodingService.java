@@ -5,6 +5,8 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import cz.kvalitacena.config.NominatimProperties;
 import cz.kvalitacena.controller.GeocodeCandidate;
+import cz.kvalitacena.controller.OsmStoreCandidate;
+import cz.kvalitacena.controller.OsmStoreSearchResult;
 import cz.kvalitacena.controller.GeocodeResult;
 import cz.kvalitacena.controller.ReverseGeocodeResult;
 import lombok.RequiredArgsConstructor;
@@ -20,10 +22,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Geokódování adresy přes OpenStreetMap Nominatim — VÝHRADNĚ tady na serveru (docs/soukromi.md:
- * dotaz z mobilu/prohlížeče by prozradil Nominatimu přímo IP uživatele). Žádný import POI, jen
- * "adresa → souřadnice". Výsledek se necachuje do core.* ani osm.* — do
- * core.store se dostane jen lat/lon a osm_ref VYBRANÉHO kandidáta, teprve když ho uživatel
- * potvrdí ve StoreService.create().
+ * dotaz z mobilu/prohlížeče by prozradil Nominatimu přímo IP uživatele). Vedle adres umožňuje
+ * explicitní hledání obchodu; nikdy našeptávání OSM při psaní ani hromadný import POI. Výsledek se necachuje do core.* ani osm.* — do
+ * core.store se dostane bod a případně název/adresa jednotlivě VYBRANÉHO kandidáta,
+ * teprve když ho uživatel potvrdí ve StoreService.create().
  *
  * <p>Usage policy Nominatimu (https://operations.osmfoundation.org/policies/nominatim/)
  * vyžaduje identifikovatelný User-Agent a nejvýš 1 dotaz/s — {@link #throttle()} to vynucuje
@@ -48,6 +50,7 @@ public class GeocodingService {
   private volatile RestClient restClient;
   private volatile Cache<String, List<GeocodeCandidate>> cache;
   private volatile Cache<String, ReverseGeocodeResult> reverseCache;
+  private volatile Cache<String, List<OsmStoreCandidate>> storeCache;
 
   private final AtomicLong lastRequestAtMs = new AtomicLong(0);
 
@@ -85,6 +88,63 @@ public class GeocodingService {
           .build();
     }
     return reverseCache;
+  }
+
+  private synchronized Cache<String, List<OsmStoreCandidate>> storeCache() {
+    if (storeCache == null) {
+      storeCache = Caffeine.newBuilder().expireAfterWrite(nominatimProperties.getCacheTtl())
+          .maximumSize(1000).build();
+    }
+    return storeCache;
+  }
+
+  /** Jen explicitní hledání názvu a místa. Nominatim nesmí sloužit jako autocomplete. */
+  public OsmStoreSearchResult searchStores(String query, String country) {
+    if (query == null || query.trim().length() < 3 || query.length() > 200) {
+      return new OsmStoreSearchResult(List.of(), attribution(), true);
+    }
+    try {
+      var candidates = storeCache().get(n(query) + "|" + n(country), key -> fetchStores(query.trim(), country));
+      return new OsmStoreSearchResult(candidates, attribution(), true);
+    } catch (RuntimeException e) {
+      // Neukládat výpadek do cache a neprozradit hledanou adresu v logu URL výjimky.
+      log.warn("Hledání obchodu v Nominatimu je nedostupné");
+      return new OsmStoreSearchResult(List.of(), attribution(), false);
+    }
+  }
+
+  private List<OsmStoreCandidate> fetchStores(String query, String country) {
+    try {
+      throttle();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException(e);
+    }
+    NominatimStoreResult[] results = restClient().get()
+        .uri(builder -> builder.path("/search").queryParam("format", "jsonv2")
+            .queryParam("addressdetails", 1).queryParam("limit", 8)
+            .queryParam("q", "{query}")
+            .queryParam("countrycodes", country.toLowerCase(Locale.ROOT)).build(query))
+        .retrieve().body(NominatimStoreResult[].class);
+    if (results == null) return List.of();
+    return java.util.Arrays.stream(results).map(this::toStoreCandidate)
+        .filter(java.util.Objects::nonNull).toList();
+  }
+
+  private OsmStoreCandidate toStoreCandidate(NominatimStoreResult result) {
+    // Ulice či obec z textového hledání není obchod a nemá se nabízet k převzetí názvu.
+    if (!"shop".equals(result.category()) || result.name() == null || result.name().isBlank()
+        || result.osmType() == null || result.osmId() == null || result.address() == null) return null;
+    try {
+      double lat = Double.parseDouble(result.lat());
+      double lon = Double.parseDouble(result.lon());
+      if (!Double.isFinite(lat) || !Double.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return null;
+      var address = toReverseResult(new NominatimReverseResult(result.osmType(), result.osmId(), result.address()));
+      return new OsmStoreCandidate(result.name(), address.street(), address.city(), address.postalCode(),
+          address.country(), lat, lon, address.osmRef(), result.displayName());
+    } catch (NumberFormatException | NullPointerException e) {
+      return null;
+    }
   }
 
   public GeocodeResult geocode(String street, String city, String postalCode, String country) {
@@ -247,6 +307,14 @@ public class GeocodingService {
       @JsonProperty("display_name") String displayName,
       @JsonProperty("osm_type") String osmType,
       @JsonProperty("osm_id") Long osmId) {
+  }
+
+  private record NominatimStoreResult(
+      String lat, String lon, String name, String category,
+      @JsonProperty("display_name") String displayName,
+      @JsonProperty("osm_type") String osmType,
+      @JsonProperty("osm_id") Long osmId,
+      NominatimAddress address) {
   }
 
   /** Tvar odpovědi Nominatim /reverse — viz https://nominatim.org/release-docs/latest/api/Reverse/. */

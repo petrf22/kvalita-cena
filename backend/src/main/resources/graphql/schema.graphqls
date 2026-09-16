@@ -100,6 +100,9 @@ type Query {
   """
   categories: [Category!]!
 
+  "Explicitní hledání obchodu v OSM podle názvu a místa, bez autocomplete. Výpadek rozlišuje available."
+  searchOsmStores(query: String!, country: String): OsmStoreSearchResult!
+
   """
   Souřadnice k zadané adrese přes OpenStreetMap Nominatim. Dotaz jde VŽDY ze serveru, nikdy
   z klienta (docs/soukromi.md — jinak by šla přímo IP uživatele) a odpověď se necachuje do
@@ -1660,4 +1663,23 @@ enum ErrorCode {
   UOM_MISMATCH
   VALIDATION_FAILED
   CLIENT_VERSION_TOO_OLD
+}
+
+"Jednotlivý obchod z OSM. Uživatel údaje zkontroluje před založením provozovny."
+type OsmStoreCandidate {
+  name: String!
+  street: String
+  city: String
+  postalCode: String
+  country: String
+  lat: Float!
+  lon: Float!
+  osmRef: String!
+  displayName: String!
+}
+
+type OsmStoreSearchResult {
+  candidates: [OsmStoreCandidate!]!
+  attribution: String!
+  available: Boolean!
 }

@@ -8,9 +8,12 @@ uživatel. Tento dokument shrnuje, jak se ten rozpor řeší v datovém modelu, 
 
 Mobil zjistí polohu lokálně a pošle **dotaz** `nearbyStores(lat, lon, radius)` — GraphQL
 query, ne mutace. Klient posílá syrovou hodnotu z geolokace; **zaokrouhlení na 3 desetinná
-místa (~110 m) dělá server** (`StoreGraphQlController.nearbyStores`, `Coordinates.round`) —
-při rádiusu 3–25 km je to pod rozlišovací schopnost výsledku. Server odpoví seznamem
-provozoven a **souřadnice nikam nezapisuje** — ani do access logu (GraphQL má vše v POST
+místa (~110 m), u okruhu do 1 km na 4 místa (~11 m), dělá server**
+(`StoreGraphQlController.nearbyStores`, `Coordinates.round`). Mobil má nastavitelný okruh
+100–25 000 m (výchozí 500 m); povolená poloha se při otevření zadávání ceny použije jednorázově.
+Přepínač v Nastavení může automatické použití polohy vypnout. Systémové oprávnění k přibližné
+poloze se vyžádá až po klepnutí na „Použít polohu“. Přesnost výsledků závisí na fixu telefonu.
+Server odpoví seznamem provozoven a **souřadnice nikam nezapisuje** — ani do access logu (GraphQL má vše v POST
 body, to se neloguje). S cenovým záznamem (`price_observation`) odchází jen `store_id`.
 
 Souřadnice **provozovny** (`core.store.lat/lon`) jsou veřejný fakt, ne osobní údaj —
@@ -23,6 +26,14 @@ z mobilu nebo z prohlížeče — kdyby appka volala Nominatim přímo z klienta
 IP uživatele (a u mobilu i síťové metadata operátora), přesně to, čemu se `nearbyStores`
 výše vyhýbá. Odpověď se do `core.store` nekopíruje celá — jen lat/lon a `osm_ref`
 **zvoleného** kandidáta, s `geo_source = 'OSM'` jako značkou původu.
+
+**Vyhledání obchodu (`searchOsmStores`)** jde stejnou serverovou cestou. Uživatel odešle
+název a místo tlačítkem, nikdy se neodesílá každé rozepsané písmeno (Nominatim zakazuje
+autocomplete). Výsledek je krátká nabídka, ne import okolí. Do formuláře se po výběru
+jednotlivého nálezu převezme dostupný název, adresa a bod. Teprve potvrzení formuláře
+uloží tyto údaje s `osm_ref` a `geo_source = 'OSM'`. Zdroj je zobrazen vedle nabídky.
+Dotazy sdílejí cache a limit Nominatimu s geokódováním; výpadek se rozlišuje od prázdného
+výsledku a uživatel může pokračovat ručně.
 
 **Opačný směr (`reverseGeocode`, tlačítko „Použít mou polohu" při editaci obchodu) platí
 stejně** — parametrem je tady rovnou poloha UŽIVATELE, ne adresa obchodu, takže je pravidlo

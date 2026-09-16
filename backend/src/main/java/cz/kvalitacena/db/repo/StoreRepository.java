@@ -33,19 +33,16 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
       @Param("radiusMeters") double radiusMeters, @Param("viewerId") Long viewerId);
 
   /**
-   * Našeptávač obchodů podle názvu NEBO města (idx_store_name_trgm/idx_store_city_trgm) —
-   * doplněk k {@link #findNearby}, pro zápis ceny bez sdílení polohy nebo zpětně z domova
-   * (docs/datovy-model.md, "Identita provozovny"). Jedno textové pole v UI musí najít obchod
-   * napsáním buď jeho jména, nebo města, proto {@code query} matchuje OBOJÍ (ne jen název) —
-   * {@code city} zůstává samostatný nepovinný přesný filtr navíc, kdyby ho někdy klient chtěl
-   * poslat odděleně (v etapě 1 to žádný klient nedělá, oba parametry se prostě neuplatní,
-   * když jsou null).
+   * Jedno pole přijímá název, město i ulici v libovolném pořadí (např. „Lidl Brno“).
+   * Každé slovo musí být v některé části identity; normalizace sjednotí diakritiku.
+   * Stejný predikát musí platit pro seznam i počet. Samostatné city zůstává přesný filtr.
    */
   @Query(value = "SELECT * FROM core.store s WHERE "
       + "(s.status = 'ACTIVE' OR (s.status = 'PENDING' AND s.created_by_user_id = CAST(:viewerId AS BIGINT))) "
       + "AND s.hidden_at IS NULL "
-      + "AND (:query IS NULL OR core.norm_text(s.name) LIKE '%' || core.norm_text(:query) || '%' "
-      + "     OR core.norm_text(s.city) LIKE '%' || core.norm_text(:query) || '%') "
+      + "AND (:query IS NULL OR NOT EXISTS (SELECT 1 FROM "
+      + "unnest(regexp_split_to_array(core.norm_text(CAST(:query AS text)), '[[:space:],]+')) AS term(word) "
+      + "WHERE position(term.word IN core.norm_text(concat_ws(' ', s.name, s.city, s.street))) = 0)) "
       + "AND (:city IS NULL OR core.norm_text(s.city) = core.norm_text(:city)) "
       + "ORDER BY CASE WHEN :query IS NULL THEN 0 ELSE "
       + "  GREATEST(similarity(core.norm_text(s.name), core.norm_text(:query)), "
@@ -59,8 +56,9 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
   @Query(value = "SELECT count(*) FROM core.store s WHERE "
       + "(s.status = 'ACTIVE' OR (s.status = 'PENDING' AND s.created_by_user_id = CAST(:viewerId AS BIGINT))) "
       + "AND s.hidden_at IS NULL "
-      + "AND (:query IS NULL OR core.norm_text(s.name) LIKE '%' || core.norm_text(:query) || '%' "
-      + "     OR core.norm_text(s.city) LIKE '%' || core.norm_text(:query) || '%') "
+      + "AND (:query IS NULL OR NOT EXISTS (SELECT 1 FROM "
+      + "unnest(regexp_split_to_array(core.norm_text(CAST(:query AS text)), '[[:space:],]+')) AS term(word) "
+      + "WHERE position(term.word IN core.norm_text(concat_ws(' ', s.name, s.city, s.street))) = 0)) "
       + "AND (:city IS NULL OR core.norm_text(s.city) = core.norm_text(:city))",
       nativeQuery = true)
   long countByText(@Param("query") String query, @Param("city") String city, @Param("viewerId") Long viewerId);

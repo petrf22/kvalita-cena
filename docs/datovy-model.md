@@ -31,7 +31,8 @@ Pravidla, která to drží čisté:
 
 1. Žádný **hromadný ani podstatný výřez** `off.*`/`osm.*` se nekopíruje do `core.*`. Spojení
    vzniká až při čtení v service vrstvě; UI vždy uvede zdroj a licenci. Výjimka: jednotlivě
-   zvolený geokódovaný výsledek (lat/lon + `osm_ref` konkrétního kandidáta) se uložit smí,
+   zvolený výsledek (lat/lon + `osm_ref` konkrétního kandidáta, u `searchOsmStores` také
+   uživatelem potvrzený název a adresa jedné provozovny) se uložit smí,
    s `geo_source` jako značkou původu — viz `core.store.geo_source` níž.
 2. Pokud uživatel ručně opíše údaj z OFF do `core.product`, nastaví se
    `data_origin = 'OFF_DERIVED'` a tenhle produkt se vyloučí z "čistého" exportu.
@@ -226,9 +227,15 @@ ne celá odpověď ARES.
 serveru, nikdy z klienta** (`docs/soukromi.md` — jinak by šla Nominatimu přímo IP uživatele).
 Nominatimova usage policy vyžaduje identifikovatelný `User-Agent` a nejvýš 1 dotaz/s —
 `GeocodingService` obojí vynucuje. Do `core.store` se z odpovědi dostane jen lat/lon a
-`osm_ref` **zvoleného** kandidáta s `geo_source = 'OSM'`, nic dalšího — žádný import POI,
-žádná surová kopie odpovědi. Výpadek/timeout Nominatimu se projeví jako prázdný seznam
-kandidátů, nikdy jako chyba: založení obchodu bez souřadnic musí projít i tak.
+`osm_ref` **zvoleného** kandidáta s `geo_source = 'OSM'`. Mobilní `searchOsmStores` navíc
+umožňuje převzít a potvrdit název a adresu jednotlivě vybraného obchodu. Jde o rozšíření
+výjimky pro jednotlivý nález podle zadání mobilního výběru obchodu, nikoli hromadný import
+POI nebo ukládání surové odpovědi. Cache zůstává pouze v paměti serveru. Původ převzaté
+provozovny drží `osm_ref` a `geo_source`, atribuce se ukazuje v UI. Hledání v OSM je pouze
+na explicitní odeslání dotazu, bez autocomplete; platí
+[pravidla Nominatimu](https://operations.osmfoundation.org/policies/nominatim/).
+Výpadek geokódování vrací prázdný seznam; u `searchOsmStores` navíc `available = false`,
+aby UI nezaměňovalo výpadek za neexistující obchod. Ruční založení zůstává dostupné.
 
 ## Hodnocení kvality a text recenze — jeden záznam, ne dvě entity
 
