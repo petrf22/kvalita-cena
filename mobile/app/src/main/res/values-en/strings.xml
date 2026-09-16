@@ -173,7 +173,7 @@
     <string name="about_what_it_is_not_text">The app isn\'t a price comparison service with guaranteed accuracy, nor a source for making purchase decisions on the spot — prices are entered by volunteers and may be outdated, wrong, or have changed in the store since. Before you buy based on a price from the app, check it in the store.</string>
     <string name="about_data_sources_title">Where the data comes from</string>
     <string name="about_data_sources_text">Prices and quality ratings are our own community data. Links to Open Food Facts follow the ODbL (Open Database License) — no data is copied, the app only links to the source.</string>
-    <string name="about_osm_attribution">Store coordinates are based on OpenStreetMap © OpenStreetMap contributors, ODbL license.</string>
+    <string name="about_osm_attribution">Store coordinates — and for stores taken from the OpenStreetMap suggestions also their name and address — are based on OpenStreetMap © OpenStreetMap contributors, ODbL license.</string>
     <string name="about_data_sources_other">The app also uses ARES to verify a store\'s company ID and an email service provider to send login codes — neither is stored as the app\'s own data.</string>
     <string name="about_fx_attribution">Exchange rates come from the Czech National Bank\'s daily rate list.</string>
     <string name="about_open_source_title">Open source</string>

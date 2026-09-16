@@ -8,10 +8,26 @@ uživatel. Tento dokument shrnuje, jak se ten rozpor řeší v datovém modelu, 
 
 Mobil zjistí polohu lokálně a pošle **dotaz** `nearbyStores(lat, lon, radius)` — GraphQL
 query, ne mutace. Klient posílá syrovou hodnotu z geolokace; **zaokrouhlení na 3 desetinná
-místa (~110 m) dělá server** (`StoreGraphQlController.nearbyStores`, `Coordinates.round`) —
-při rádiusu 3–25 km je to pod rozlišovací schopnost výsledku. Server odpoví seznamem
-provozoven a **souřadnice nikam nezapisuje** — ani do access logu (GraphQL má vše v POST
-body, to se neloguje). S cenovým záznamem (`price_observation`) odchází jen `store_id`.
+místa (~110 m) dělá server** (`StoreGraphQlController.nearbyStores`, `Coordinates.round`).
+Server odpoví seznamem provozoven a **souřadnice nikam nezapisuje** — ani do access logu
+(GraphQL má vše v POST body, to se neloguje). S cenovým záznamem (`price_observation`) odchází
+jen `store_id`.
+
+**Malý okruh a zaokrouhlení: proč se to nebije.** Dřív tu stálo, že zaokrouhlení je „při
+rádiusu 3–25 km pod rozlišovací schopnost výsledku". Od 2026-09 si okruh volí uživatel
+v Nastavení už od 200 m (`NearbyRadiusStore`), a tam to neplatí: mřížka 0,001° je 111 m na
+šířce a ~71 m na délce (50° s. š.), takže se střed hledání může posunout až o ~66 m — u okruhu
+200 m třetina poloměru, a uživateli by mohl vypadnout obchod, ve kterém právě stojí.
+
+Řešení **nezeslabuje zaokrouhlení**: server hledá v okruhu zvětšeném o tuhle chybu
+(`ROUNDING_SLACK_M`) a klient pak seznam dofiltruje a seřadí podle SKUTEČNÉ vzdálenosti, kterou
+si spočítá sám (`ui/common/GeoDistance.kt`). Přesná poloha tedy dál neopouští zařízení, server
+vidí pořád jen zaokrouhlený bod, a přitom nic nevypadne. Vzdálenost u položek v seznamu proto
+počítá výhradně klient — kdyby ji počítal server, byla by o desítky metrů vedle.
+
+Mobil si přesnou polohu drží **jen v paměti ViewModelu** po dobu zobrazeného výběru
+(`PriceEntryViewModel`) — potřebuje ji pro „hledat v širším okolí" a pro nabídku z OSM, aby se
+nečekalo na další GPS fix. Do `SharedPreferences` ani nikam jinam se nezapisuje.
 
 Souřadnice **provozovny** (`core.store.lat/lon`) jsou veřejný fakt, ne osobní údaj —
 je to totéž, co je na ceduli u vchodu. Osobní údaj by vznikl teprve spojením souřadnic
@@ -23,6 +39,12 @@ z mobilu nebo z prohlížeče — kdyby appka volala Nominatim přímo z klienta
 IP uživatele (a u mobilu i síťové metadata operátora), přesně to, čemu se `nearbyStores`
 výše vyhýbá. Odpověď se do `core.store` nekopíruje celá — jen lat/lon a `osm_ref`
 **zvoleného** kandidáta, s `geo_source = 'OSM'` jako značkou původu.
+
+**Nabídka provozoven z OpenStreetMap (`nearbyOsmStores`, `OverpassPoiService`) podléhá témuž
+pravidlu** — dotaz na Overpass jde výhradně ze serveru a se souřadnicemi zaokrouhlenými na
+3 desetinná místa, stejně jako `nearbyStores`. Zaokrouhlená poloha je zároveň klíč cache, takže
+ven jde přesně to, co se cachuje. Odpověď se nikam neukládá; do `core.store` se dostane až to,
+co uživatel potvrdí ve formuláři (`docs/datovy-model.md`, pravidlo 1).
 
 **Opačný směr (`reverseGeocode`, tlačítko „Použít mou polohu" při editaci obchodu) platí
 stejně** — parametrem je tady rovnou poloha UŽIVATELE, ne adresa obchodu, takže je pravidlo

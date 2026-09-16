@@ -179,7 +179,7 @@
     <string name="about_what_it_is_not_text">Appka není cenovým srovnávačem s garantovanou přesností ani zdrojem k okamžitému uzavírání nákupů — ceny zapisují dobrovolníci, mohou být neaktuální, chybné nebo se mezitím v obchodě změnit. Než uskutečníš nákup na základě ceny z appky, ověř si ji v obchodě.</string>
     <string name="about_data_sources_title">Odkud se berou data</string>
     <string name="about_data_sources_text">Ceny a hodnocení kvality jsou vlastní komunitní data. Odkazy do Open Food Facts jsou podle licence ODbL (Open Database License) — data se nikam nekopírují, appka jen odkazuje na zdroj.</string>
-    <string name="about_osm_attribution">Souřadnice provozoven vycházejí z OpenStreetMap © přispěvatelé OpenStreetMap, licence ODbL.</string>
+    <string name="about_osm_attribution">Souřadnice provozoven, a u obchodů převzatých z nabídky OpenStreetMap i jejich název a adresa, vycházejí z OpenStreetMap © přispěvatelé OpenStreetMap, licence ODbL.</string>
     <string name="about_data_sources_other">Appka dál používá ARES k ověření IČO provozovny a poskytovatele e-mailových služeb k odeslání přihlašovacích kódů — ani jedno se neukládá jako appčina vlastní data.</string>
     <string name="about_fx_attribution">Kurzy měn vycházejí z kurzovního lístku České národní banky.</string>
     <string name="about_open_source_title">Otevřený kód</string>

@@ -7,6 +7,22 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [Nezveřejněno]
+
+### Přidáno
+- Obchody v okolí appka při zápisu ceny hledá sama hned po otevření a ukáže je jako seznam se vzdáleností — tlačítko „Najít v okolí" tím zmizelo (mobil)
+- Když v okolí žádný známý obchod není, appka nabídne provozovny z OpenStreetMap a vybraná z nich předvyplní celý formulář nového obchodu včetně adresy (server, mobil)
+- V Nastavení jde zvolit, co znamená „v okolí" — 200 m až 5 km, výchozích 500 m; ze seznamu jde jedním klepnutím hledat i v širším okruhu (mobil)
+
+### Změněno
+- Souřadnice nového obchodu se dohledají samy z vyplněné adresy, tlačítko „Najít souřadnice" zůstalo jen jako ruční zopakování (mobil)
+- „Přidat nový obchod" je vidět jako tlačítko pod seznamem, ne až jako poslední položka rozbalovací nabídky (mobil)
+
+### Opraveno
+- Když poloha chybí, appka řekne proč a co s tím — jinak se zachová u nepovoleného přístupu, vypnuté polohy a nezdařeného zaměření; dřív z toho byla jediná hláška bez rady (mobil)
+- Obchod ve vzdálenosti kolem 200 m už z okolí nevypadne kvůli zaokrouhlení polohy, které appka posílá serveru kvůli soukromí (server, mobil)
+- Pokus o založení obchodu, který už v katalogu je, nabídne ten existující místo pouhé chybové hlášky (mobil)
+
 ## [0.8.0] – 2026-09-08
 
 ### Přidáno

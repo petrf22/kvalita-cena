@@ -277,6 +277,11 @@ provoz — výměna je naplánovaná do „Před Fází 3" níž.
 - [x] Doplnit `NOMINATIM_USER_AGENT` do `.env` s reálným kontaktem (`kontakt@kvalitacena.cz`) —
   vyžaduje to usage policy OpenStreetMap Nominatim, jinak riziko zablokování IP serveru. Ověřeno
   2026-08-28: `.env` má `NOMINATIM_USER_AGENT="KvalitaACena/0.1 (kontakt@kvalitacena.cz)"`.
+- [ ] Doplnit `OVERPASS_USER_AGENT` do `.env` (stejný tvar a stejný důvod jako
+  `NOMINATIM_USER_AGENT` — Overpass má vlastní usage policy s týmž požadavkem na
+  identifikovatelný kontakt). Volitelně `OVERPASS_BASE_URL`, až veřejná instance přestane
+  stačit; kdyby zlobila, `app.external.overpass.enabled: false` je kill switch bez redeploye
+  a nabídka obchodů z OSM se prostě přestane zobrazovat.
 - [x] Restartovat appku (`docker compose -f compose.prod.yaml up -d`), ověřit doručení testovacím
   přihlášením na **externí** schránku (Gmail apod., ne `@kvalitacena.cz` — zbytečná komplikace
   při DMARC/loop detekci), a že zpráva skončí v doručené poště, ne ve spamu. Potvrzeno uživatelem
@@ -350,6 +355,15 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   naostro postavit `osm.*` schéma se sync jobem (čtení spojené s `core.*` až za běhu, stejný
   princip jako appka má pro Open Food Facts) — samostatná vícedenní architektonická práce, ne
   krok téhle bety.
+
+  **Od 2026-09 to neznamená, že appka o OSM neví.** Zakázaný zůstává **hromadný** import;
+  `nearbyOsmStores` (Overpass) je něco jiného: nabídne hrst provozoven kolem jednoho bodu,
+  uživatel si z ní jednu vybere a tou si předvyplní formulář. Jeden záznam na jedno lidské
+  potvrzení, stropy okruhu i počtu v konfiguraci (`app.external.overpass.max-radius-km`,
+  `max-results`), žádná perzistence odpovědi a značka původu `data_origin = 'OSM_DERIVED'`
+  u uloženého obchodu. Odůvodnění hranice je v `docs/datovy-model.md`, pravidlo 1. Studený
+  start to neřeší předpřipravenými daty — jen prvnímu uživateli v lokalitě ušetří ruční
+  přepisování adresy.
 
   Tohle se **netýká** číselníku samotných **řetězců** (`core.retail_chain`) pro našeptávání
   při zakládání obchodu — ruční seznam ~30 značek (`2026-08-29/03-retail-chain-seed.yaml`) není
