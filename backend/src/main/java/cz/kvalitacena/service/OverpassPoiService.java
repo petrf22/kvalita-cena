@@ -49,15 +49,17 @@ public class OverpassPoiService {
    * (kořenový CLAUDE.md). Bezejmenný POI se filtruje už v dotazu — bez názvu je pro
    * `core.store` nepoužitelný (STORE_NAME_REQUIRED, `uq_store_identity` stojí na názvu)
    * a jen by zvětšoval odpověď.
+   *
+   * <p>`nwr` (node+way+relation jedním výrazem), ne tři samostatné řádky na značku: měřeno
+   * proti veřejné instanci je rozepsaná varianta násobně dražší a u zatížené instance spadne
+   * na timeout, zatímco `nwr` projde. `out center` doplní `way`/`relation` těžiště, protože
+   * appka potřebuje jeden bod, ne geometrii.
    */
   private static final String QUERY_TEMPLATE = """
       [out:json][timeout:%d];
       (
-        node["shop"]["name"](around:%.1f,%.6f,%.6f);
-        way["shop"]["name"](around:%.1f,%.6f,%.6f);
-        relation["shop"]["name"](around:%.1f,%.6f,%.6f);
-        node["amenity"="marketplace"]["name"](around:%.1f,%.6f,%.6f);
-        way["amenity"="marketplace"]["name"](around:%.1f,%.6f,%.6f);
+        nwr["shop"]["name"](around:%.1f,%.6f,%.6f);
+        nwr["amenity"="marketplace"]["name"](around:%.1f,%.6f,%.6f);
       );
       out center tags %d;
       """;
@@ -150,9 +152,6 @@ public class OverpassPoiService {
     long queryTimeoutSec = overpassProperties.getQueryTimeout().toSeconds();
     return String.format(Locale.ROOT, QUERY_TEMPLATE,
         queryTimeoutSec,
-        radiusM, lat, lon,
-        radiusM, lat, lon,
-        radiusM, lat, lon,
         radiusM, lat, lon,
         radiusM, lat, lon,
         overpassProperties.getMaxResults());
