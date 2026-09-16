@@ -153,6 +153,13 @@
     <string name="settings_currency">Waluta wyświetlania</string>
     <string name="settings_currency_store_default">Waluta sklepu (domyślnie)</string>
     <string name="settings_currency_note">Przeliczenie służy tylko do porównania — cenę zawsze zgłaszasz w walucie sklepu, to tylko zmienia sposób jej wyświetlania.</string>
+    <string name="settings_nearby_radius">Okolica do wyszukiwania sklepów</string>
+    <string name="settings_nearby_radius_note">Jak daleko wokół siebie aplikacja szuka sklepów, gdy zgłaszasz cenę. Domyślne 500 m odpowiada sklepowi, w którym właśnie stoisz.</string>
+    <string name="settings_nearby_radius_200m">200 m</string>
+    <string name="settings_nearby_radius_500m">500 m</string>
+    <string name="settings_nearby_radius_1km">1 km</string>
+    <string name="settings_nearby_radius_3km">3 km</string>
+    <string name="settings_nearby_radius_5km">5 km</string>
     <string name="settings_about_link">Co robi aplikacja, skąd pochodzą dane i kto ją prowadzi</string>
     <string name="settings_feedback_link">Wyślij opinię o aplikacji</string>
     <string name="settings_legal_title">Dokumenty prawne</string>

@@ -153,6 +153,13 @@
     <string name="settings_currency">Zobrazovacia mena</string>
     <string name="settings_currency_store_default">Mena obchodu (predvolené)</string>
     <string name="settings_currency_note">Prepočet slúži len na porovnanie — cenu vždy hlásite v mene obchodu, toto len mení, ako sa zobrazuje.</string>
+    <string name="settings_nearby_radius">Okolie na hľadanie obchodov</string>
+    <string name="settings_nearby_radius_note">Koľko okolo seba appka hľadá obchody, keď zapisuješ cenu. Predvolených 500 m zodpovedá obchodu, v ktorom práve stojíš.</string>
+    <string name="settings_nearby_radius_200m">200 m</string>
+    <string name="settings_nearby_radius_500m">500 m</string>
+    <string name="settings_nearby_radius_1km">1 km</string>
+    <string name="settings_nearby_radius_3km">3 km</string>
+    <string name="settings_nearby_radius_5km">5 km</string>
     <string name="settings_about_link">Čo appka robí, odkiaľ berie dáta a kto ju prevádzkuje</string>
     <string name="settings_feedback_link">Napísať spätnú väzbu appke</string>
     <string name="settings_legal_title">Právne dokumenty</string>

@@ -153,6 +153,13 @@
     <string name="settings_currency">Display currency</string>
     <string name="settings_currency_store_default">Store currency (default)</string>
     <string name="settings_currency_note">The conversion is only for comparison — you always report a price in the store\'s currency, this just changes how it\'s displayed.</string>
+    <string name="settings_nearby_radius">Search radius for stores</string>
+    <string name="settings_nearby_radius_note">How far around you the app looks for stores when you report a price. The default 500 m matches the store you are standing in.</string>
+    <string name="settings_nearby_radius_200m">200 m</string>
+    <string name="settings_nearby_radius_500m">500 m</string>
+    <string name="settings_nearby_radius_1km">1 km</string>
+    <string name="settings_nearby_radius_3km">3 km</string>
+    <string name="settings_nearby_radius_5km">5 km</string>
     <string name="settings_about_link">What the app does, where the data comes from, and who runs it</string>
     <string name="settings_feedback_link">Send feedback about the app</string>
     <string name="settings_legal_title">Legal documents</string>

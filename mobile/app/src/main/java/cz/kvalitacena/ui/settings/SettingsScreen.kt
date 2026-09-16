@@ -116,6 +116,18 @@ fun SettingsScreen(
     HorizontalDivider()
     Spacer()
 
+    val radiusStore = AppContainer.nearbyRadiusStore
+    NearbyRadiusDropdown(selected = radiusStore.radius, onSelect = { radiusStore.select(it) })
+    Spacer()
+    Text(
+      stringResource(R.string.settings_nearby_radius_note),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer()
+    HorizontalDivider()
+    Spacer()
+
     Text(
       stringResource(R.string.settings_about_link),
       style = MaterialTheme.typography.bodyMedium,
@@ -246,6 +258,39 @@ private fun CurrencyDropdown(selected: DisplayCurrency?, onSelect: (DisplayCurre
           text = { Text(currency.code) },
           onClick = {
             onSelect(currency)
+            expanded = false
+          },
+        )
+      }
+    }
+  }
+}
+
+/**
+ * Okruh hledání obchodů v okolí ([NearbyRadiusStore]) — od 2026-09 se obchody v okolí hledají
+ * samy při otevření zápisu ceny, takže "okolí" musí jít nastavit; dřív to byla natvrdo
+ * pětikilometrová konstanta v GraphQlClient, o které uživatel nevěděl.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NearbyRadiusDropdown(selected: NearbyRadius, onSelect: (NearbyRadius) -> Unit) {
+  var expanded by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+    SingleLineTextField(
+      value = stringResource(selected.labelRes),
+      onValueChange = {},
+      readOnly = true,
+      label = stringResource(R.string.settings_nearby_radius),
+      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+      modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+    )
+    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+      NearbyRadius.entries.forEach { option ->
+        DropdownMenuItem(
+          text = { Text(stringResource(option.labelRes)) },
+          onClick = {
+            onSelect(option)
             expanded = false
           },
         )

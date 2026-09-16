@@ -153,6 +153,13 @@
     <string name="settings_currency">Anzeigewährung</string>
     <string name="settings_currency_store_default">Währung des Geschäfts (Standard)</string>
     <string name="settings_currency_note">Die Umrechnung dient nur zum Vergleich — den Preis meldest du immer in der Währung des Geschäfts, dies ändert nur die Anzeige.</string>
+    <string name="settings_nearby_radius">Umkreis für die Geschäftssuche</string>
+    <string name="settings_nearby_radius_note">Wie weit die App beim Melden eines Preises nach Geschäften sucht. Die voreingestellten 500 m entsprechen dem Geschäft, in dem du gerade stehst.</string>
+    <string name="settings_nearby_radius_200m">200 m</string>
+    <string name="settings_nearby_radius_500m">500 m</string>
+    <string name="settings_nearby_radius_1km">1 km</string>
+    <string name="settings_nearby_radius_3km">3 km</string>
+    <string name="settings_nearby_radius_5km">5 km</string>
     <string name="settings_about_link">Was die App macht, woher die Daten stammen und wer sie betreibt</string>
     <string name="settings_feedback_link">Feedback zur App senden</string>
     <string name="settings_legal_title">Rechtliche Dokumente</string>
