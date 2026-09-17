@@ -4,7 +4,8 @@
 # Android emulátor a logcat appky — každé v popředí s živými logy, počká až všechny
 # naběhnou, nainstaluje a spustí appku v emulátoru, otevře prohlížeč na frontendu a pak
 # čeká na stisk klávesy. Po stisku korektně ukončí všechny procesy, včetně zastavení DB
-# kontejneru a emulátoru (data ve volume DB zůstávají).
+# kontejneru a emulátoru (data ve volume DB zůstávají). Běžící emulátor bez okna (spuštěný
+# třeba agentem s -no-window) vypne a spustí místo něj nový s oknem.
 #
 # Použití:
 #   ./start-dev.sh [--no-seed] [--no-open] [--no-mobile]
@@ -145,6 +146,13 @@ emulator_running() {
   "$ADB" devices 2>/dev/null | grep -q "^emulator-"
 }
 
+# Běží emulátor bez okna? Agenti ho spouští s -no-window, což vede na headless variantu qemu.
+# Skript by ho jinak přes emulator_running tiše převzal a uživatel by žádný mobil neviděl.
+# Vzor je ukotvený na začátek příkazové řádky, ať nechytí shell, v jehož příkazu jen je text.
+emulator_headless() {
+  pgrep -f '^[^ ]*qemu-system-[^ ]*-headless ' >/dev/null
+}
+
 # Čeká na dokončení bootu emulátoru — použití: wait_for "..." <timeout> "boot_completed".
 boot_completed() {
   [ "$("$ADB" -e shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]
@@ -229,6 +237,15 @@ fi
 # --- 4. mobil: emulátor + APK + instalace, 5. logcat ---
 MOBILE_STARTED=0
 if [ "$MOBILE" -eq 1 ]; then
+  if emulator_running && emulator_headless; then
+    echo "Běží emulátor bez okna (spuštěný mimo tento skript, třeba agentem) — vypínám ho" \
+         "a spouštím nový s oknem."
+    "$ADB" -e emu kill >/dev/null 2>&1 || true
+    if ! wait_for "vypnutí emulátoru bez okna" 60 "! emulator_running && ! emulator_headless"; then
+      pkill -KILL -f '^[^ ]*qemu-system-[^ ]*-headless ' || true
+      wait_for "ukončení procesu emulátoru" 15 "! emulator_running && ! emulator_headless" || true
+    fi
+  fi
   if emulator_running; then
     echo "Emulátor už běží — nový nespouštím, používám ten stávající. Toto okno ho po" \
          "ukončení skriptem nezastaví."
