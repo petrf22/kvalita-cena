@@ -127,6 +127,19 @@ za skutečně spočítanou verzi (krok 1) — dosaď ji, než příkaz spustíš
     - jestli `app.client.min-android-version` potřebuje bump na nový `versionCode`,
     - že server (`./ops/deploy.sh X.Y.Z`) tenhle příkaz nespouští — to je samostatný krok.
 
+    Shrnutí vždy končí textem z kroku 15.
+
+15. **Poznámky k vydání pro Google Play.** Na úplný konec shrnutí napiš hotový text do pole
+    „Poznámky k vydání" v Play Console, ať ho uživatel nemusí vymýšlet:
+    - zdroj je `CHANGELOG.md` od poslední verze nahrané do Play — typicky jen sekce právě
+      vydané `X.Y.Z`; pokud některá předchozí verze do Play nešla, zahrň i její sekci,
+    - jen to, co pozná uživatel mobilní appky (položky se suffixem obsahujícím `mobil`;
+      serverové a webové jen tehdy, když se projeví přímo v appce),
+    - česky, srozumitelně pro běžného uživatele, bez vývojářské terminologie, krátké odrážky,
+    - limit Play Console je 500 znaků na jazyk — spočítej je a počet uveď pod textem,
+    - text obal do `<cs-CZ>` … `</cs-CZ>` a dej ho do bloku kódu, ať jde vložit rovnou,
+    - když se appky nic viditelného netýká, stačí „Drobné opravy a vylepšení."
+
 ## Co tenhle příkaz neřeší
 
 Hotfix už vydané starší verze (`docs/vydani.md`, „Hotfix už vydané verze" — větev
