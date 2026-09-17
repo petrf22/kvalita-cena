@@ -135,10 +135,17 @@ za skutečně spočítanou verzi (krok 1) — dosaď ji, než příkaz spustíš
       vydané `X.Y.Z`; pokud některá předchozí verze do Play nešla, zahrň i její sekci,
     - jen to, co pozná uživatel mobilní appky (položky se suffixem obsahujícím `mobil`;
       serverové a webové jen tehdy, když se projeví přímo v appce),
-    - česky, srozumitelně pro běžného uživatele, bez vývojářské terminologie, krátké odrážky,
-    - limit Play Console je 500 znaků na jazyk — spočítej je a počet uveď pod textem,
-    - text obal do `<cs-CZ>` … `</cs-CZ>` a dej ho do bloku kódu, ať jde vložit rovnou,
-    - když se appky nic viditelného netýká, stačí „Drobné opravy a vylepšení."
+    - v pěti jazycích appky — čeština, angličtina, slovenština, polština, němčina (stejné
+      jako `values-*` v `mobile/app/src/main/res`); obsah všech verzí stejný, každá psaná
+      přirozeně v daném jazyce, ne doslovný překlad,
+    - srozumitelně pro běžného uživatele, bez vývojářské terminologie, krátké odrážky,
+    - limit Play Console je 500 znaků na jazyk — spočítej je a počty uveď pod textem,
+    - každý jazyk obal do tagu Play Console (`<cs-CZ>`, `<en-US>`, `<sk>`, `<pl-PL>`,
+      `<de-DE>`) a všechny dej do jednoho bloku kódu — Play Console ho přijme najednou
+      a rozdělí podle tagů; tag musí odpovídat jazyku, který má záznam v Play Console
+      přidaný, jinak ho vložení odmítne,
+    - když se appky nic viditelného netýká, stačí obecná věta („Drobné opravy a vylepšení."
+      a její ekvivalent v ostatních jazycích).
 
 ## Co tenhle příkaz neřeší
 
