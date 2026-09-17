@@ -91,7 +91,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      # Výchozí `packages` akce obsahuje i zastaralý balíček `tools`, který runner
+      # s cmdline-tools 20.0 už nezná a sdkmanager na něm spadne.
       - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
       - uses: gradle/actions/setup-gradle@v6
       # testDebugUnitTest/lintDebug dřív běžely jen lokálně — lint teď navíc hlídá
       # MissingTranslation/ExtraTranslation/MissingQuantity (docs/lokalizace.md).
