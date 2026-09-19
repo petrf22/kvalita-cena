@@ -15,6 +15,15 @@ updates:
       androidx:
         patterns:
           - 'androidx.*'
+      # Pluginy compose a serialization musí mít stejnou verzi jako kompilátor Kotlinu —
+      # po jednom by v main zůstala nesourodá dvojice.
+      kotlin:
+        patterns:
+          - 'org.jetbrains.kotlin*'
+      # coil-compose a coil-network-okhttp vycházejí spolu, jinak dvě PR se stejným diffem.
+      coil:
+        patterns:
+          - 'io.coil-kt*'
 
   - package-ecosystem: npm
     directory: /frontend
