@@ -107,6 +107,9 @@ class StoreFormViewModel(
     private set
   var geocodeAttribution by mutableStateOf<String?>(null)
     private set
+  // Dva samostatné joby: fillAddress ruší jen doplňování adresy, ne běžící geokódování, ze
+  // kterého ho jednoznačný kandidát volá (jinak by korutina rušila sama sebe).
+  private var geocodeJob: Job? = null
   private var locationJob: Job? = null
   private var locationRequest = 0
   var locationMessage by mutableStateOf<UiText?>(null)
@@ -255,10 +258,10 @@ class StoreFormViewModel(
     val request = ++locationRequest
     val address = listOf(street, city, postalCode, country)
     geocoding = true
-    locationJob?.cancel()
+    geocodeJob?.cancel()
     locating = false
     locationMessage = null
-    locationJob = viewModelScope.launch {
+    geocodeJob = viewModelScope.launch {
       try {
         val result = graphQlClient.geocodeAddress(street.trim().ifBlank { null }, city.trim(), postalCode.trim().ifBlank { null }, country)
         if (request != locationRequest || address != listOf(street, city, postalCode, country)) return@launch
