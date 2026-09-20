@@ -419,7 +419,7 @@
     <string name="store_company_id_not_found_in_registry">Nie znaleźliśmy tego numeru w rejestrze.</string>
 
     <string name="store_location_section_title">Współrzędne (opcjonalnie)</string>
-    <string name="store_location_hint">Bez współrzędnych sklep nie pojawi się w „Znajdź w okolicy”, tylko w wyszukiwaniu po nazwie — można je dodać też później.</string>
+    <string name="store_location_hint">Wybierz miejsce na mapie, aby uzupełnić dostępny adres. Możesz też wpisać adres i znaleźć go na mapie. Sprawdź uzupełnione dane.</string>
     <string name="store_location_find_coordinates">Znajdź współrzędne</string>
     <string name="store_location_use_my_location">Użyj mojej lokalizacji</string>
     <string name="store_location_will_use_map_position">Zostanie użyta pozycja z mapy poniżej / twoja aktualna lokalizacja.</string>
@@ -492,4 +492,6 @@
     <string name="product_form_other_names_hint">Opcjonalne. Uzupełniony język, którego produkt jeszcze nie ma, zobaczą wszyscy; nadpisanie istniejącej nazwy dotyczy tylko Ciebie.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
+    <string name="store_picker_clear">Wyczyść sklep</string>
+    <string name="store_location_not_found">Nie udało się znaleźć adresu. Sprawdź połączenie lub wpisz go ręcznie; lokalizację możesz wybrać na mapie.</string>
 </resources>

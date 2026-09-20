@@ -419,7 +419,7 @@
     <string name="store_company_id_not_found_in_registry">V ARES sme toto IČO nenašli.</string>
 
     <string name="store_location_section_title">Súradnice (voliteľné)</string>
-    <string name="store_location_hint">Bez súradníc obchod nenájde „Nájsť v okolí“, len ručné hľadanie podľa názvu — dajú sa doplniť aj neskôr.</string>
+    <string name="store_location_hint">Vyber miesto na mape a doplníme dostupnú adresu. Alebo vyplň adresu a nájdi ju na mape. Údaje z mapy skontroluj.</string>
     <string name="store_location_find_coordinates">Nájsť súradnice</string>
     <string name="store_location_use_my_location">Použiť moju polohu</string>
     <string name="store_location_will_use_map_position">Použije sa poloha z mapy nižšie / tvoja aktuálna poloha.</string>
@@ -492,4 +492,6 @@
     <string name="product_form_other_names_hint">Voliteľné. Vyplnený jazyk, ktorý tovar zatiaľ nemá, uvidia všetci; prepísanie existujúceho názvu platí len pre teba.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
+    <string name="store_picker_clear">Vymazať obchod</string>
+    <string name="store_location_not_found">Adresu sa nepodarilo nájsť. Skontroluj pripojenie alebo ju doplň ručne; polohu možno vybrať na mape.</string>
 </resources>

@@ -93,17 +93,25 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     }
   }
 
+  // Lístek si obrazovka bere ještě PŘED zjišťováním polohy — čekání na GPS trvá a uživatel
+  // mezitím může stisknout "Najít souřadnice"; opožděná poloha by jinak novější hledání
+  // přebila (ViewModel.beginLocating).
+  fun fetchLocation() {
+    val request = viewModel.beginLocating()
+    scope.launch {
+      val location = getCurrentLocation(context)
+      if (location == null) viewModel.cancelLocating(request)
+      else {
+        formDirty = true
+        viewModel.useMyLocation(location.latitude, location.longitude, request)
+      }
+    }
+  }
+
   val locationPermissionLauncher = rememberLauncherForActivityResult(
     ActivityResultContracts.RequestPermission(),
   ) { granted ->
-    if (granted) {
-      scope.launch {
-        getCurrentLocation(context)?.let {
-          formDirty = true
-          viewModel.useMyLocation(it.latitude, it.longitude)
-        }
-      }
-    }
+    if (granted) fetchLocation()
   }
 
   fun useMyLocation() {
@@ -115,12 +123,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
       return
     }
-    scope.launch {
-      getCurrentLocation(context)?.let {
-        formDirty = true
-        viewModel.useMyLocation(it.latitude, it.longitude)
-      }
-    }
+    fetchLocation()
   }
 
   if (viewModel.loadingExisting) {
@@ -189,7 +192,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     )
     Gap()
 
-    CountryDropdown(selected = viewModel.country, onSelect = { formDirty = true; viewModel.country = it })
+    CountryDropdown(selected = viewModel.country, onSelect = { formDirty = true; viewModel.onCountryChange(it) })
     Gap()
 
     if (viewModel.similarStores.isNotEmpty()) {
@@ -250,7 +253,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     )
     Gap()
     Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-      OutlinedButton(onClick = { viewModel.geocode() }, enabled = viewModel.city.isNotBlank() && !viewModel.geocoding) {
+      OutlinedButton(onClick = { formDirty = true; viewModel.geocode() }, enabled = viewModel.city.isNotBlank() && !viewModel.geocoding) {
         if (viewModel.geocoding) CircularProgressIndicator(modifier = Modifier.size(20.dp))
         else Text(stringResource(R.string.store_location_find_coordinates))
       }
@@ -269,9 +272,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
           onSelect = { formDirty = true; viewModel.selectCandidate(candidate) },
         )
       }
-      viewModel.geocodeAttribution?.let {
-        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-      }
+
       Gap()
     }
 
@@ -284,7 +285,12 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       Gap()
     }
 
+    viewModel.locationMessage?.let { Text(it.asString(), style = MaterialTheme.typography.bodySmall) }
+    viewModel.geocodeAttribution?.let {
+      Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
     LocationMap(
+      showRequested = viewModel.showMap,
       lat = viewModel.selectedCandidate?.lat ?: viewModel.manualLat,
       lon = viewModel.selectedCandidate?.lon ?: viewModel.manualLon,
       editable = true,

@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.fillMaxWidth
+import cz.kvalitacena.ui.theme.Spacing
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -45,7 +48,7 @@ fun StorePicker(
   expandSignal: Any? = null,
 ) {
   Column(modifier = modifier) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Column {
       SearchableDropdown(
         query = query,
         onQueryChange = onQueryChange,
@@ -54,7 +57,8 @@ fun StorePicker(
         itemLabel = { store -> storeLabel(store, homeCountry) },
         label = stringResource(R.string.store_picker_label),
         loading = searching,
-        modifier = Modifier.weight(1f),
+        modifier = Modifier.fillMaxWidth(),
+        multiline = true,
         // Založení nového obchodu vyžaduje přihlášení (docs/reputace.md, T1) — anonymovi se
         // nabídne jen napovídání a "Najít v okolí", ne slepá ulička formuláře skončící UNAUTHORIZED.
         footer = if (isLoggedIn) {
@@ -69,6 +73,16 @@ fun StorePicker(
         },
         expandSignal = expandSignal,
       )
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        if (query.isNotEmpty() || selectedStoreId != null) {
+          TextButton(onClick = { onQueryChange("") }) {
+            Text(stringResource(R.string.store_picker_clear))
+          }
+        }
+        if (isLoggedIn) {
+          TextButton(onClick = onAddNew) { Text(stringResource(R.string.store_picker_add_new)) }
+        }
+      }
       if (onFindNearby != null) {
         Button(onClick = onFindNearby) {
           if (locating) CircularProgressIndicator(modifier = Modifier.size(20.dp))
@@ -86,7 +100,7 @@ fun StorePicker(
         hint,
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 4.dp),
+        modifier = Modifier.padding(top = Spacing.xs),
       )
     }
     // Mapa se sama schová, když v suggestions není obchod se souřadnicemi (StoreMap.stores.isEmpty()).
@@ -96,7 +110,7 @@ fun StorePicker(
         selectedStoreId = selectedStoreId,
         onSelect = onSelect,
         homeCountry = homeCountry,
-        modifier = Modifier.padding(top = 8.dp),
+        modifier = Modifier.padding(top = Spacing.sm),
       )
     }
   }

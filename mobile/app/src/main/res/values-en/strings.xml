@@ -419,7 +419,7 @@
     <string name="store_company_id_not_found_in_registry">We couldn\'t find this ID in the registry.</string>
 
     <string name="store_location_section_title">Coordinates (optional)</string>
-    <string name="store_location_hint">Without coordinates the store won\'t show up in \"Find nearby\", only in name search — they can be added later too.</string>
+    <string name="store_location_hint">Select a place on the map to fill in the available address. Or enter an address and find it on the map. Check the suggested details.</string>
     <string name="store_location_find_coordinates">Find coordinates</string>
     <string name="store_location_use_my_location">Use my location</string>
     <string name="store_location_will_use_map_position">The position from the map below / your current location will be used.</string>
@@ -492,4 +492,6 @@
     <string name="product_form_other_names_hint">Optional. A language the item does not have yet becomes visible to everyone; overwriting an existing name applies only to you.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
+    <string name="store_picker_clear">Clear store</string>
+    <string name="store_location_not_found">The address could not be found. Check your connection or enter it manually; you can select the location on the map.</string>
 </resources>
