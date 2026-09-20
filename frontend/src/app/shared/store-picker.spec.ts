@@ -55,4 +55,25 @@ describe('StorePicker – zapamatování a vymazání', () => {
     response.error(new Error('offline'));
     expect(last.clear).not.toHaveBeenCalled();
   });
+
+  it('neplatné ID od rodiče nesmaže jiný zapamatovaný obchod', () => {
+    const selected = vi.fn();
+    picker.selectedStoreChange.subscribe(selected);
+    // Vstup od rodiče; input() se mimo fixture nastavit nedá, stačí ale signálová funkce.
+    (picker as unknown as { selectedStoreId: () => string | null }).selectedStoreId = () => '2';
+    picker.ngOnInit();
+    response.next(null);
+    expect(last.clear).not.toHaveBeenCalled();
+    expect(selected).toHaveBeenLastCalledWith(null);
+  });
+
+  it('"Změnit obchod" jen otevře seznam, výběr ani paměť nemaže', () => {
+    picker.ngOnInit();
+    response.next(store);
+    picker['picking'].set(true);
+    expect(picker['selectedStore']()).toEqual(store);
+    expect(last.clear).not.toHaveBeenCalled();
+    picker.onSelectId(store.id);
+    expect(picker['picking']()).toBe(false);
+  });
 });

@@ -78,4 +78,46 @@ describe('StoreForm – propojení adresy a mapy', () => {
     expect(form['selectedCandidateRef']()).toEqual(candidate);
     expect(form['street']()).toBe('Hlavní 12');
   });
+
+  it('nové hledání s víc nálezy zahodí kandidáta z předchozí adresy', () => {
+    service.reverseGeocode.mockReturnValue(of(address('Praha')));
+    form.selectCandidate({ lat: 50, lon: 14.4, displayName: 'Praha 1', osmRef: 'way/1' });
+    expect(form['currentLat']()).toBe(50);
+    form['city'].set('Brno');
+    service.geocode.mockReturnValue(
+      of({
+        candidates: [
+          { lat: 49.2, lon: 16.6, displayName: 'Brno-střed', osmRef: 'way/2' },
+          { lat: 49.3, lon: 16.5, displayName: 'Brno-sever', osmRef: 'way/3' },
+        ],
+        attribution: 'OSM',
+      }),
+    );
+    form.geocode();
+    expect(form['selectedCandidateRef']()).toBeNull();
+    expect(form['currentLat']()).toBeNull();
+  });
+
+  it('ručně zvolená země přežije doplnění adresy z mapy', () => {
+    form.onCountryChange('SK');
+    service.reverseGeocode.mockReturnValue(of(address('Brno')));
+    form.onMapPointSelected({ lat: 49, lon: 15 });
+    expect(form['country']()).toBe('SK');
+  });
+
+  it('výměna bodu smaže ulici, kterou reverzní hledání pro nový bod nevrátilo', () => {
+    service.reverseGeocode.mockReturnValueOnce(of(address('Brno')));
+    form.onMapPointSelected({ lat: 49, lon: 15 });
+    expect(form['street']()).toBe('Hlavní 12');
+    service.reverseGeocode.mockReturnValueOnce(of({ ...address('Ostrava'), street: null }));
+    form.onMapPointSelected({ lat: 50, lon: 16 });
+    expect(form['street']()).toBe('');
+    expect(form['city']()).toBe('Ostrava');
+  });
+
+  it('samotné PSČ za nenalezenou adresu nepovažuje', () => {
+    service.reverseGeocode.mockReturnValue(of({ ...address('Brno'), street: null, city: null }));
+    form.onMapPointSelected({ lat: 49, lon: 15 });
+    expect(form['locationMessage']()).toBeNull();
+  });
 });
