@@ -93,17 +93,25 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     }
   }
 
+  // Lístek si obrazovka bere ještě PŘED zjišťováním polohy — čekání na GPS trvá a uživatel
+  // mezitím může stisknout "Najít souřadnice"; opožděná poloha by jinak novější hledání
+  // přebila (ViewModel.beginLocating).
+  fun fetchLocation() {
+    val request = viewModel.beginLocating()
+    scope.launch {
+      val location = getCurrentLocation(context)
+      if (location == null) viewModel.cancelLocating(request)
+      else {
+        formDirty = true
+        viewModel.useMyLocation(location.latitude, location.longitude, request)
+      }
+    }
+  }
+
   val locationPermissionLauncher = rememberLauncherForActivityResult(
     ActivityResultContracts.RequestPermission(),
   ) { granted ->
-    if (granted) {
-      scope.launch {
-        getCurrentLocation(context)?.let {
-          formDirty = true
-          viewModel.useMyLocation(it.latitude, it.longitude)
-        }
-      }
-    }
+    if (granted) fetchLocation()
   }
 
   fun useMyLocation() {
@@ -115,12 +123,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
       return
     }
-    scope.launch {
-      getCurrentLocation(context)?.let {
-        formDirty = true
-        viewModel.useMyLocation(it.latitude, it.longitude)
-      }
-    }
+    fetchLocation()
   }
 
   if (viewModel.loadingExisting) {

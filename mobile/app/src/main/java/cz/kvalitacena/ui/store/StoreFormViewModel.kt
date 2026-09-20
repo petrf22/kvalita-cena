@@ -296,7 +296,24 @@ class StoreFormViewModel(
     fillAddress(lat, lon, true)
   }
 
-  fun useMyLocation(lat: Double, lon: Double) {
+  /**
+   * Lístek se bere HNED, ne až v [fillAddress] — čekání na GPS trvá a uživatel mezitím může
+   * stisknout "Najít souřadnice"; opožděná poloha by pak novější hledání přebila. Obrazovka
+   * volá [beginLocating] před zjišťováním polohy a číslo předá zpět do [useMyLocation].
+   */
+  fun beginLocating(): Int {
+    locating = true
+    locationMessage = null
+    return ++locationRequest
+  }
+
+  /** Poloha se nezjistila (odmítnuté oprávnění, prázdný fix) — spinner nesmí zůstat viset. */
+  fun cancelLocating(request: Int) {
+    if (request == locationRequest) locating = false
+  }
+
+  fun useMyLocation(lat: Double, lon: Double, request: Int) {
+    if (request != locationRequest) return
     showMap = true
     // Syrová hodnota schválně: manualLat/Lon je souřadnice PROVOZOVNY (uloží se do
     // core.store), zaokrouhlení by ji degradovalo. Pro Nominatim zaokrouhluje server

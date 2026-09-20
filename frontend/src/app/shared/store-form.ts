@@ -381,9 +381,14 @@ export class StoreForm {
 
   useMyLocation(): void {
     if (!navigator.geolocation) return;
+    // Lístek se bere HNED, ne až v fillAddress — čekání na GPS trvá a uživatel mezitím může
+    // stisknout "Najít souřadnice"; opožděná poloha by pak novější hledání přebila.
+    const request = ++this.locationRequest;
     this.locating.set(true);
+    this.locationMessage.set(null);
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        if (request !== this.locationRequest) return;
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
         // Syrová hodnota schválně: manualLat/Lon je souřadnice PROVOZOVNY (uloží se do
@@ -397,7 +402,7 @@ export class StoreForm {
       },
       () => {
         // Odmítnutí přístupu k poloze — obchod jde uložit i bez souřadnic, viz šablona.
-        this.locating.set(false);
+        if (request === this.locationRequest) this.locating.set(false);
       },
     );
   }
