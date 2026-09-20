@@ -92,6 +92,7 @@
     "geoUnsupported": "This browser can't determine your location — pick a store manually.",
     "noNearbyStores": "We didn't find any store nearby.",
     "geoPermissionDenied": "Location access was denied — pick a store manually.",
+    "change": "Change store",
     "clear": "Clear store"
   }
 }

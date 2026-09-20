@@ -92,6 +92,7 @@
     "geoUnsupported": "Ta przeglądarka nie potrafi ustalić lokalizacji — wybierz sklep ręcznie.",
     "noNearbyStores": "Nie znaleźliśmy żadnego sklepu w okolicy.",
     "geoPermissionDenied": "Dostęp do lokalizacji został odrzucony — wybierz sklep ręcznie.",
+    "change": "Zmień sklep",
     "clear": "Wyczyść sklep"
   }
 }

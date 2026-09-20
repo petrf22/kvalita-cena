@@ -92,6 +92,7 @@
     "geoUnsupported": "Dieser Browser kann den Standort nicht ermitteln — wähle das Geschäft manuell aus.",
     "noNearbyStores": "In der Umgebung haben wir kein Geschäft gefunden.",
     "geoPermissionDenied": "Der Zugriff auf den Standort wurde abgelehnt — wähle das Geschäft manuell aus.",
+    "change": "Geschäft ändern",
     "clear": "Geschäft leeren"
   }
 }

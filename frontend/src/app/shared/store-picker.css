@@ -14,8 +14,12 @@
   gap: var(--kc-space-1);
   overflow-wrap: anywhere;
 }
+.selected-store-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kc-space-2);
+}
 .selected-store button {
-  justify-self: start;
   min-height: 44px;
 }
 .store-option {

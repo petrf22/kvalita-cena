@@ -92,6 +92,7 @@
     "geoUnsupported": "Tento prohlížeč neumí zjistit polohu — vyber obchod ručně.",
     "noNearbyStores": "V okolí jsme nenašli žádný obchod.",
     "geoPermissionDenied": "Přístup k poloze byl odmítnut — vyber obchod ručně.",
+    "change": "Změnit obchod",
     "clear": "Vymazat obchod"
   }
 }

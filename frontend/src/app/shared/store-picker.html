@@ -1,13 +1,20 @@
 <ng-container *transloco="let t; scope: 'store'">
   <div class="store-picker">
-    @if (selectedStore() && selectedStoreId() === selectedStore()!.id) {
+    @if (selectedStore() && selectedStoreId() === selectedStore()!.id && !picking()) {
       <div class="selected-store">
         <strong>{{ selectedStore()!.name }}</strong>
-        <span>{{ selectedStore()!.street }}</span>
-        <span>{{ selectedStore()!.city }} · {{ selectedStore()!.country }}</span>
-        <button nz-button type="button" (click)="onSelectId(null)">
-          {{ t('store.picker.clear') }}
-        </button>
+        @if (selectedStore()!.street) {
+          <span>{{ selectedStore()!.street }}</span>
+        }
+        <span>{{ cityLine(selectedStore()!) }}</span>
+        <div class="selected-store-actions">
+          <button nz-button type="button" (click)="picking.set(true)">
+            {{ t('store.picker.change') }}
+          </button>
+          <button nz-button type="button" (click)="onSelectId(null)">
+            {{ t('store.picker.clear') }}
+          </button>
+        </div>
       </div>
     } @else {
       <nz-select
@@ -29,7 +36,7 @@
           >
             <div class="store-option">
               <strong>{{ store.name }}</strong
-              ><br />{{ store.street }} {{ store.city }} · {{ store.country }}
+              ><br />{{ addressLine(store) }}
             </div>
           </nz-option>
         }

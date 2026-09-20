@@ -66,6 +66,12 @@ export class StorePicker implements OnInit {
   protected readonly locating = signal(false);
   protected readonly locationError = signal<string | null>(null);
   protected readonly showAddModal = signal(false);
+  /**
+   * Rozepsaný výběr — karta s vybraným obchodem se schová a vrátí se seznam. Bez toho by po
+   * "Najít v okolí" (vybere první nález) nešlo na zbylé obchody v okolí vůbec dosáhnout jinak
+   * než vymazáním volby. Mobilní protějšek je expandSignal v SearchableDropdown.kt.
+   */
+  protected readonly picking = signal(false);
 
   protected readonly displayOptions = computed(() => {
     const list = [...this.suggestions()];
@@ -74,11 +80,24 @@ export class StorePicker implements OnInit {
     return list;
   });
 
+  /** Město a kód země, ale ten jen když se liší od domácí — stejné pravidlo jako storeLabel. */
+  protected cityLine(store: Store): string {
+    return store.country && store.country !== this.countryService.country()
+      ? `${store.city} · ${store.country}`
+      : store.city;
+  }
+
+  /** Druhý řádek položky v seznamu; ulici obchod mít nemusí. */
+  protected addressLine(store: Store): string {
+    return [store.street, this.cityLine(store)].filter(Boolean).join(' · ');
+  }
+
   private selectionTouched = false;
   private searchTimer?: ReturnType<typeof setTimeout>;
 
   ngOnInit(): void {
-    const id = this.selectedStoreId() ?? this.lastStore.read();
+    const fromParent = this.selectedStoreId();
+    const id = fromParent ?? this.lastStore.read();
     if (!id) return;
     this.searching.set(true);
     this.storeService.getById(id).subscribe({
@@ -88,6 +107,10 @@ export class StorePicker implements OnInit {
         if (store) {
           this.suggestions.set([store]);
           this.onSelectId(store.id);
+        } else if (fromParent) {
+          // ID přišlo od rodiče a nic mu neodpovídá (skrytý/smazaný obchod) — zapamatovaná
+          // volba je něco jiného a mazat se nesmí, jen se rodiči ohlásí prázdný výběr.
+          this.onSelectId(null, false);
         } else {
           this.lastStore.clear();
         }
@@ -118,13 +141,15 @@ export class StorePicker implements OnInit {
     }, SEARCH_DEBOUNCE_MS);
   }
 
-  onSelectId(id: string | null): void {
+  /** `forget` = smazat i zapamatovaný obchod; false znamená "jen ohlaš prázdný výběr rodiči". */
+  onSelectId(id: string | null, forget = true): void {
     this.selectionTouched = true;
+    this.picking.set(false);
     const store = this.displayOptions().find((s) => s.id === id) ?? null;
     this.selectedStore.set(store);
     if (store) this.locationError.set(null);
     if (store) this.lastStore.remember(store.id);
-    else this.lastStore.clear();
+    else if (forget) this.lastStore.clear();
     this.selectedStoreIdChange.emit(id);
     this.selectedStoreChange.emit(store);
   }
@@ -143,6 +168,9 @@ export class StorePicker implements OnInit {
             this.suggestions.set(stores);
             this.locating.set(false);
             if (stores.length > 0) this.onSelectId(stores[0].id);
+            // Nejbližší obchod se pořád předvybere (jeden klik = hotovo), ale u víc nálezů
+            // zůstane seznam otevřený, aby šly zvolit i ty další.
+            if (stores.length > 1) this.picking.set(true);
             else this.locationError.set(this.transloco.translate('store.picker.noNearbyStores'));
           },
           error: (err) => {
