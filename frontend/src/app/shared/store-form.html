@@ -113,32 +113,6 @@
       </ng-template>
     }
 
-    <h4 class="section-title">
-      {{ t('store.companyId.sectionTitle', { label: companyIdLabel() }) }}
-    </h4>
-    <p class="section-hint">{{ t('store.companyId.hint') }}</p>
-    <nz-form-item>
-      <nz-form-control [nzValidateStatus]="isIcoShapeValid() ? '' : 'error'">
-        <div class="ico-row">
-          <input
-            nz-input
-            name="ico"
-            [ngModel]="ico()"
-            (ngModelChange)="ico.set($event)"
-            [placeholder]="t('store.companyId.placeholder', { digits: companyIdDigits() })"
-          />
-          @if (hasCompanyRegistry()) {
-            <button nz-button type="button" [nzLoading]="icoLoading()" (click)="lookupIco()">
-              {{ t('store.companyId.loadFromRegistry') }}
-            </button>
-          }
-        </div>
-        @if (icoError()) {
-          <div class="field-error">{{ icoError() }}</div>
-        }
-      </nz-form-control>
-    </nz-form-item>
-
     <h4 class="section-title">{{ t('store.location.sectionTitle') }}</h4>
     <p class="section-hint">{{ t('store.location.hint') }}</p>
     <div class="geo-actions">
@@ -168,19 +142,50 @@
           <label nz-radio [nzValue]="candidate">{{ candidate.displayName }}</label>
         }
       </nz-radio-group>
-      <p class="attribution">{{ geocodeAttribution() }}</p>
     }
 
     @if (manualLat() != null && !selectedCandidateRef()) {
       <p class="section-hint">{{ t('store.location.willUseMapPosition') }}</p>
     }
 
+    @if (locationMessage()) {
+      <p role="status">{{ locationMessage() }}</p>
+    }
+    @if (geocodeAttribution()) {
+      <p class="attribution">{{ geocodeAttribution() }}</p>
+    }
     <app-location-map
       [lat]="currentLat()"
       [lon]="currentLon()"
       [editable]="true"
       (pointChange)="onMapPointSelected($event)"
     />
+
+    <h4 class="section-title">
+      {{ t('store.companyId.sectionTitle', { label: companyIdLabel() }) }}
+    </h4>
+    <p class="section-hint">{{ t('store.companyId.hint') }}</p>
+    <nz-form-item>
+      <nz-form-control [nzValidateStatus]="isIcoShapeValid() ? '' : 'error'">
+        <div class="ico-row">
+          <input
+            nz-input
+            name="ico"
+            [ngModel]="ico()"
+            (ngModelChange)="ico.set($event)"
+            [placeholder]="t('store.companyId.placeholder', { digits: companyIdDigits() })"
+          />
+          @if (hasCompanyRegistry()) {
+            <button nz-button type="button" [nzLoading]="icoLoading()" (click)="lookupIco()">
+              {{ t('store.companyId.loadFromRegistry') }}
+            </button>
+          }
+        </div>
+        @if (icoError()) {
+          <div class="field-error">{{ icoError() }}</div>
+        }
+      </nz-form-control>
+    </nz-form-item>
 
     @if (saveError()) {
       <nz-alert nzType="error" [nzMessage]="saveError()" nzShowIcon class="form-alert" />

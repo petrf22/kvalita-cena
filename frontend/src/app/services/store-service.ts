@@ -103,10 +103,10 @@ export class StoreService {
    * by šla na Nominatim přímo IP uživatele). Výpadek na backendu se projeví jako prázdný
    * seznam kandidátů, ne jako chyba.
    */
-  geocode(street: string | null, city: string, postalCode: string | null) {
+  geocode(street: string | null, city: string, postalCode: string | null, country: string) {
     const document = graphql(`
-      query GeocodeAddress($street: String, $city: String!, $postalCode: String) {
-        geocodeAddress(street: $street, city: $city, postalCode: $postalCode) {
+      query GeocodeAddress($street: String, $city: String!, $postalCode: String, $country: String) {
+        geocodeAddress(street: $street, city: $city, postalCode: $postalCode, country: $country) {
           attribution
           candidates {
             lat
@@ -118,7 +118,7 @@ export class StoreService {
       }
     `);
     return this.graphQl
-      .execute(document, { street, city, postalCode })
+      .execute(document, { street, city, postalCode, country })
       .pipe(map((data) => data.geocodeAddress));
   }
 

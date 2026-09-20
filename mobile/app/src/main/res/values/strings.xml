@@ -504,7 +504,7 @@
     <string name="store_company_id_not_found_in_registry">V ARES jsme tohle IČO nenašli.</string>
 
     <string name="store_location_section_title">Souřadnice (volitelné)</string>
-    <string name="store_location_hint">Bez souřadnic obchod nenajde „Najít v okolí“, jen ruční hledání podle názvu — dají se doplnit i později.</string>
+    <string name="store_location_hint">Vyber místo na mapě a doplníme dostupnou adresu. Nebo vyplň adresu a najdi ji na mapě. Údaje z mapy zkontroluj.</string>
     <string name="store_location_find_coordinates">Najít souřadnice</string>
     <string name="store_location_use_my_location">Použít mou polohu</string>
     <string name="store_location_will_use_map_position">Použije se poloha z mapy níž / tvoje aktuální poloha.</string>
@@ -577,4 +577,6 @@
     <string name="product_form_other_names_hint">Volitelné. Vyplněný jazyk, který zboží zatím nemá, uvidí všichni; přepsání existujícího názvu platí jen pro tebe.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
+    <string name="store_picker_clear">Vymazat obchod</string>
+    <string name="store_location_not_found">Adresu se nepodařilo dohledat. Zkontroluj připojení nebo ji doplň ručně; polohu lze vybrat na mapě.</string>
 </resources>

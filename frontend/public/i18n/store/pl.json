@@ -60,10 +60,11 @@
   },
   "location": {
     "sectionTitle": "Współrzędne (opcjonalnie)",
-    "hint": "Bez współrzędnych sklep nie pojawi się w wyszukiwaniu w okolicy, tylko w wyszukiwaniu po nazwie — można je dodać też później.",
+    "hint": "Wybierz miejsce na mapie, aby uzupełnić dostępny adres. Możesz też wpisać adres i znaleźć go na mapie. Sprawdź uzupełnione dane.",
     "findCoordinates": "Znajdź współrzędne",
     "useMyLocation": "Użyj mojej lokalizacji",
-    "willUseMapPosition": "Zostanie użyta pozycja z mapy poniżej / twoja aktualna lokalizacja."
+    "willUseMapPosition": "Zostanie użyta pozycja z mapy poniżej / twoja aktualna lokalizacja.",
+    "notFound": "Nie udało się znaleźć adresu. Sprawdź połączenie lub wpisz go ręcznie; lokalizację możesz wybrać na mapie."
   },
   "detail": {
     "backToSearch": "Powrót do wyszukiwania",
@@ -90,6 +91,7 @@
     "newStoreModalTitle": "Nowy sklep",
     "geoUnsupported": "Ta przeglądarka nie potrafi ustalić lokalizacji — wybierz sklep ręcznie.",
     "noNearbyStores": "Nie znaleźliśmy żadnego sklepu w okolicy.",
-    "geoPermissionDenied": "Dostęp do lokalizacji został odrzucony — wybierz sklep ręcznie."
+    "geoPermissionDenied": "Dostęp do lokalizacji został odrzucony — wybierz sklep ręcznie.",
+    "clear": "Wyczyść sklep"
   }
 }

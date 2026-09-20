@@ -74,16 +74,17 @@ export class StorePicker implements OnInit {
     return list;
   });
 
+  private selectionTouched = false;
   private searchTimer?: ReturnType<typeof setTimeout>;
 
   ngOnInit(): void {
-    if (this.selectedStoreId()) return;
-    const id = this.lastStore.read();
+    const id = this.selectedStoreId() ?? this.lastStore.read();
     if (!id) return;
     this.searching.set(true);
     this.storeService.getById(id).subscribe({
       next: (store) => {
         this.searching.set(false);
+        if (this.selectionTouched) return;
         if (store) {
           this.suggestions.set([store]);
           this.onSelectId(store.id);
@@ -93,12 +94,13 @@ export class StorePicker implements OnInit {
       },
       error: () => {
         this.searching.set(false);
-        this.lastStore.clear();
+        // Výpadek sítě nesmí smazat zapamatovaný obchod.
       },
     });
   }
 
   onSearch(query: string): void {
+    if (query.trim()) this.selectionTouched = true;
     clearTimeout(this.searchTimer);
     if (!query.trim()) {
       this.suggestions.set([]);
@@ -117,6 +119,7 @@ export class StorePicker implements OnInit {
   }
 
   onSelectId(id: string | null): void {
+    this.selectionTouched = true;
     const store = this.displayOptions().find((s) => s.id === id) ?? null;
     this.selectedStore.set(store);
     if (store) this.locationError.set(null);

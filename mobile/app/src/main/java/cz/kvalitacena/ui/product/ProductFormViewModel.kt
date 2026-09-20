@@ -369,10 +369,16 @@ class ProductFormViewModel(
     }
   }
 
+  private var storeSelectionTouched = false
+
   fun onStoreQueryChange(query: String) {
+    storeSelectionTouched = true
+    selectedStore = null
+    storeSearching = false
     storeQuery = query
     storeSearchJob?.cancel()
     if (query.isBlank()) {
+      lastStoreStore.clear()
       storeSuggestions = emptyList()
       selectedStore = null
       return
@@ -391,6 +397,9 @@ class ProductFormViewModel(
   }
 
   fun onStoreSelected(store: Store) {
+    storeSelectionTouched = true
+    storeSearchJob?.cancel()
+    storeSearching = false
     selectedStore = store
     storeQuery = storeLabel(store, countryStore.country)
     lastStoreStore.remember(store.id)
@@ -406,7 +415,10 @@ class ProductFormViewModel(
     val id = lastStoreStore.rememberedId() ?: return
     viewModelScope.launch {
       try {
-        graphQlClient.storeById(id)?.let(::onStoreSelected) ?: lastStoreStore.clear()
+        val store = graphQlClient.storeById(id)
+        if (!storeSelectionTouched) {
+          if (store == null) lastStoreStore.clear() else onStoreSelected(store)
+        }
       } catch (e: Exception) {
         // Poslední obchod je jen pohodlný prefill, jeho výpadek formulář neblokuje.
       }

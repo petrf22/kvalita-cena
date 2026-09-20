@@ -60,10 +60,11 @@
   },
   "location": {
     "sectionTitle": "Koordinaten (optional)",
-    "hint": "Ohne Koordinaten erscheint das Geschäft nicht in der Umgebungssuche, nur in der Suche nach Namen — sie können auch später ergänzt werden.",
+    "hint": "Wähle einen Ort auf der Karte, um die verfügbare Adresse auszufüllen. Oder gib eine Adresse ein und suche sie auf der Karte. Prüfe die ergänzten Angaben.",
     "findCoordinates": "Koordinaten finden",
     "useMyLocation": "Meinen Standort verwenden",
-    "willUseMapPosition": "Es wird die Position von der Karte unten / dein aktueller Standort verwendet."
+    "willUseMapPosition": "Es wird die Position von der Karte unten / dein aktueller Standort verwendet.",
+    "notFound": "Die Adresse wurde nicht gefunden. Prüfe die Verbindung oder gib sie manuell ein; den Standort kannst du auf der Karte auswählen."
   },
   "detail": {
     "backToSearch": "Zurück zur Suche",
@@ -90,6 +91,7 @@
     "newStoreModalTitle": "Neues Geschäft",
     "geoUnsupported": "Dieser Browser kann den Standort nicht ermitteln — wähle das Geschäft manuell aus.",
     "noNearbyStores": "In der Umgebung haben wir kein Geschäft gefunden.",
-    "geoPermissionDenied": "Der Zugriff auf den Standort wurde abgelehnt — wähle das Geschäft manuell aus."
+    "geoPermissionDenied": "Der Zugriff auf den Standort wurde abgelehnt — wähle das Geschäft manuell aus.",
+    "clear": "Geschäft leeren"
   }
 }

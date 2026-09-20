@@ -250,7 +250,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     )
     Gap()
     Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
-      OutlinedButton(onClick = { viewModel.geocode() }, enabled = viewModel.city.isNotBlank() && !viewModel.geocoding) {
+      OutlinedButton(onClick = { formDirty = true; viewModel.geocode() }, enabled = viewModel.city.isNotBlank() && !viewModel.geocoding) {
         if (viewModel.geocoding) CircularProgressIndicator(modifier = Modifier.size(20.dp))
         else Text(stringResource(R.string.store_location_find_coordinates))
       }
@@ -269,9 +269,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
           onSelect = { formDirty = true; viewModel.selectCandidate(candidate) },
         )
       }
-      viewModel.geocodeAttribution?.let {
-        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-      }
+
       Gap()
     }
 
@@ -284,7 +282,12 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       Gap()
     }
 
+    viewModel.locationMessage?.let { Text(it.asString(), style = MaterialTheme.typography.bodySmall) }
+    viewModel.geocodeAttribution?.let {
+      Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
     LocationMap(
+      showRequested = viewModel.showMap,
       lat = viewModel.selectedCandidate?.lat ?: viewModel.manualLat,
       lon = viewModel.selectedCandidate?.lon ?: viewModel.manualLon,
       editable = true,

@@ -7,6 +7,7 @@ import {
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -79,6 +80,7 @@ const COUNTRIES_WITH_REGISTRY: readonly string[] = ['CZ'];
   styleUrl: './store-form.css',
 })
 export class StoreForm {
+  private readonly locationMap = viewChild(LocationMap);
   private readonly storeService = inject(StoreService);
   private readonly transloco = inject(TranslocoService);
   protected readonly countryService = inject(CountryService);
@@ -143,6 +145,8 @@ export class StoreForm {
   protected readonly similarStores = signal<Store[]>([]);
   private similarCheckTimer?: ReturnType<typeof setTimeout>;
 
+  private locationRequest = 0;
+  protected readonly locationMessage = signal<string | null>(null);
   protected readonly geocoding = signal(false);
   protected readonly geocodeCandidates = signal<GeocodeCandidate[]>([]);
   protected readonly geocodeAttribution = signal<string | null>(null);
@@ -202,6 +206,7 @@ export class StoreForm {
     this.selectedCandidateRef.set(null);
     this.manualLat.set(point.lat);
     this.manualLon.set(point.lon);
+    this.fillAddress(point.lat, point.lon, true);
   }
 
   onNameOrCityChange(): void {
@@ -281,19 +286,37 @@ export class StoreForm {
 
   geocode(): void {
     if (!this.city().trim()) return;
+    const address = [this.street(), this.city(), this.postalCode(), this.country()].join('|');
     this.geocoding.set(true);
-    this.manualLat.set(null);
-    this.manualLon.set(null);
-    this.selectedCandidateRef.set(null);
+    const request = ++this.locationRequest;
+    this.locating.set(false);
+    this.locationMessage.set(null);
     this.storeService
-      .geocode(this.street().trim() || null, this.city().trim(), this.postalCode().trim() || null)
+      .geocode(
+        this.street().trim() || null,
+        this.city().trim(),
+        this.postalCode().trim() || null,
+        this.country(),
+      )
       .subscribe({
         next: (result) => {
+          if (request !== this.locationRequest) return;
+          if (
+            address !== [this.street(), this.city(), this.postalCode(), this.country()].join('|')
+          ) {
+            this.geocoding.set(false);
+            return;
+          }
           this.geocodeCandidates.set(result.candidates);
           this.geocodeAttribution.set(result.attribution);
           this.geocoding.set(false);
+          if (result.candidates.length === 1) this.selectCandidate(result.candidates[0]);
+          if (!result.candidates.length)
+            this.locationMessage.set(this.transloco.translate('store.location.notFound'));
         },
         error: () => {
+          if (request !== this.locationRequest) return;
+          this.locationMessage.set(this.transloco.translate('store.location.notFound'));
           this.geocodeCandidates.set([]);
           this.geocoding.set(false);
         },
@@ -301,9 +324,50 @@ export class StoreForm {
   }
 
   selectCandidate(candidate: GeocodeCandidate): void {
+    void this.locationMap()?.show();
     this.selectedCandidateRef.set(candidate);
     this.manualLat.set(null);
     this.manualLon.set(null);
+    this.fillAddress(candidate.lat, candidate.lon, false);
+  }
+
+  private fillAddress(lat: number, lon: number, replace: boolean): void {
+    const request = ++this.locationRequest;
+    const before = {
+      street: this.street(),
+      city: this.city(),
+      postalCode: this.postalCode(),
+      country: this.country(),
+    };
+    this.geocoding.set(false);
+    this.locating.set(true);
+    this.locationMessage.set(null);
+    this.storeService.reverseGeocode(lat, lon).subscribe({
+      next: (result) => {
+        if (request !== this.locationRequest) return;
+        this.locating.set(false);
+        this.geocodeAttribution.set(result.attribution);
+        for (const key of ['street', 'city', 'postalCode'] as const) {
+          if (this[key]() === before[key] && (replace || !before[key].trim()) && result[key])
+            this[key].set(result[key]!);
+        }
+        if (
+          !this.store() &&
+          this.country() === before.country &&
+          result.country &&
+          KNOWN_COUNTRIES.includes(result.country)
+        )
+          this.country.set(result.country);
+        if (!result.city && !result.street)
+          this.locationMessage.set(this.transloco.translate('store.location.notFound'));
+        this.onNameOrCityChange();
+      },
+      error: () => {
+        if (request !== this.locationRequest) return;
+        this.locating.set(false);
+        this.locationMessage.set(this.transloco.translate('store.location.notFound'));
+      },
+    });
   }
 
   useMyLocation(): void {
@@ -319,24 +383,8 @@ export class StoreForm {
         this.manualLat.set(lat);
         this.manualLon.set(lon);
         this.selectedCandidateRef.set(null);
-        // Doplní jen PRÁZDNÁ adresní pole — nepřepisuje, co uživatel už vyplnil (docs/soukromi.md:
-        // reverseGeocode jde stejně jako geocodeAddress výhradně ze serveru).
-        this.storeService.reverseGeocode(lat, lon).subscribe({
-          next: (result) => {
-            this.locating.set(false);
-            if (!this.street().trim() && result.street) this.street.set(result.street);
-            if (!this.city().trim() && result.city) this.city.set(result.city);
-            if (!this.postalCode().trim() && result.postalCode)
-              this.postalCode.set(result.postalCode);
-            // Jen při zakládání — editovaná provozovna svou zemi už má a appka ji přepočtem
-            // polohy nepřepisuje (docs/lokalizace.md). Neznámá země (appka umí jen CZ/SK/PL)
-            // se ignoruje, zůstane výchozí CZ.
-            if (!this.store() && result.country && KNOWN_COUNTRIES.includes(result.country)) {
-              this.country.set(result.country);
-            }
-          },
-          error: () => this.locating.set(false),
-        });
+        void this.locationMap()?.show();
+        this.fillAddress(lat, lon, false);
       },
       () => {
         // Odmítnutí přístupu k poloze — obchod jde uložit i bez souřadnic, viz šablona.

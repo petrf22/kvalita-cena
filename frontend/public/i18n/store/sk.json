@@ -60,10 +60,11 @@
   },
   "location": {
     "sectionTitle": "Súradnice (voliteľné)",
-    "hint": "Bez súradníc obchod nenájde vyhľadávanie v okolí, len ručné hľadanie podľa názvu — dajú sa doplniť aj neskôr.",
+    "hint": "Vyber miesto na mape a doplníme dostupnú adresu. Alebo vyplň adresu a nájdi ju na mape. Údaje z mapy skontroluj.",
     "findCoordinates": "Nájsť súradnice",
     "useMyLocation": "Použiť moju polohu",
-    "willUseMapPosition": "Použije sa poloha z mapy nižšie / tvoja aktuálna poloha."
+    "willUseMapPosition": "Použije sa poloha z mapy nižšie / tvoja aktuálna poloha.",
+    "notFound": "Adresu sa nepodarilo nájsť. Skontroluj pripojenie alebo ju doplň ručne; polohu možno vybrať na mape."
   },
   "detail": {
     "backToSearch": "Späť na hľadanie",
@@ -90,6 +91,7 @@
     "newStoreModalTitle": "Nový obchod",
     "geoUnsupported": "Tento prehliadač nevie zistiť polohu — vyber obchod ručne.",
     "noNearbyStores": "V okolí sme nenašli žiadny obchod.",
-    "geoPermissionDenied": "Prístup k polohe bol odmietnutý — vyber obchod ručne."
+    "geoPermissionDenied": "Prístup k polohe bol odmietnutý — vyber obchod ručne.",
+    "clear": "Vymazať obchod"
   }
 }

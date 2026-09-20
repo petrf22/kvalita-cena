@@ -765,6 +765,7 @@ export type GeocodeAddressQueryVariables = Exact<{
   street?: string | null | undefined;
   city: string;
   postalCode?: string | null | undefined;
+  country?: string | null | undefined;
 }>;
 
 
@@ -3719,8 +3720,13 @@ export const FlagStoreDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<FlagStoreMutation, FlagStoreMutationVariables>;
 export const GeocodeAddressDocument = new TypedDocumentString(`
-    query GeocodeAddress($street: String, $city: String!, $postalCode: String) {
-  geocodeAddress(street: $street, city: $city, postalCode: $postalCode) {
+    query GeocodeAddress($street: String, $city: String!, $postalCode: String, $country: String) {
+  geocodeAddress(
+    street: $street
+    city: $city
+    postalCode: $postalCode
+    country: $country
+  ) {
     attribution
     candidates {
       lat

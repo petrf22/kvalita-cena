@@ -8,6 +8,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +37,7 @@ fun <T> SearchableDropdown(
   label: String,
   modifier: Modifier = Modifier,
   loading: Boolean = false,
+  multiline: Boolean = false,
   // Extra položky v patičce nabídky (např. "+ Přidat nový obchod").
   footer: (@Composable () -> Unit)? = null,
   // Změna hodnoty otevře nabídku i BEZ psaní — "Najít v okolí"/nearbyStores dřív naplnily
@@ -51,13 +53,14 @@ fun <T> SearchableDropdown(
   }
 
   ExposedDropdownMenuBox(expanded = showMenu, onExpandedChange = { expanded = it }, modifier = modifier) {
-    SingleLineTextField(
+    OutlinedTextField(
       value = query,
       onValueChange = {
         onQueryChange(it)
         expanded = true
       },
-      label = label,
+      label = { Text(label) },
+      singleLine = !multiline,
       trailingIcon = {
         if (loading) {
           CircularProgressIndicator(modifier = Modifier.size(20.dp))

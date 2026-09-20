@@ -421,7 +421,7 @@
     <string name="store_company_id_not_found_in_registry">Diese Firmennummer haben wir in ARES nicht gefunden.</string>
 
     <string name="store_location_section_title">Koordinaten (optional)</string>
-    <string name="store_location_hint">Ohne Koordinaten findet „In der Umgebung finden“ das Geschäft nicht, nur die Suche nach Namen — sie können auch später ergänzt werden.</string>
+    <string name="store_location_hint">Wähle einen Ort auf der Karte, um die verfügbare Adresse auszufüllen. Oder gib eine Adresse ein und suche sie auf der Karte. Prüfe die ergänzten Angaben.</string>
     <string name="store_location_find_coordinates">Koordinaten finden</string>
     <string name="store_location_use_my_location">Meinen Standort verwenden</string>
     <string name="store_location_will_use_map_position">Es wird die Position von der Karte unten / dein aktueller Standort verwendet.</string>
@@ -494,4 +494,6 @@
     <string name="product_form_other_names_hint">Optional. Eine Sprache, die der Artikel noch nicht hat, sehen alle; das Überschreiben eines vorhandenen Namens gilt nur für dich.</string>
     <string name="product_form_item_photo_label_with_lang">%1$s — %2$s</string>
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
+    <string name="store_picker_clear">Geschäft leeren</string>
+    <string name="store_location_not_found">Die Adresse wurde nicht gefunden. Prüfe die Verbindung oder gib sie manuell ein; den Standort kannst du auf der Karte auswählen.</string>
 </resources>

@@ -60,10 +60,11 @@
   },
   "location": {
     "sectionTitle": "Coordinates (optional)",
-    "hint": "Without coordinates the store won't show up in nearby search, only in name search — they can be added later too.",
+    "hint": "Select a place on the map to fill in the available address. Or enter an address and find it on the map. Check the suggested details.",
     "findCoordinates": "Find coordinates",
     "useMyLocation": "Use my location",
-    "willUseMapPosition": "The position from the map below / your current location will be used."
+    "willUseMapPosition": "The position from the map below / your current location will be used.",
+    "notFound": "The address could not be found. Check your connection or enter it manually; you can select the location on the map."
   },
   "detail": {
     "backToSearch": "Back to search",
@@ -90,6 +91,7 @@
     "newStoreModalTitle": "New store",
     "geoUnsupported": "This browser can't determine your location — pick a store manually.",
     "noNearbyStores": "We didn't find any store nearby.",
-    "geoPermissionDenied": "Location access was denied — pick a store manually."
+    "geoPermissionDenied": "Location access was denied — pick a store manually.",
+    "clear": "Clear store"
   }
 }

@@ -91,9 +91,16 @@ class StoreFormViewModel(
     private set
   private var similarCheckJob: Job? = null
 
+  var showMap by mutableStateOf(false)
+    private set
+
   var geocodeCandidates by mutableStateOf<List<GeocodeCandidate>>(emptyList())
     private set
   var geocodeAttribution by mutableStateOf<String?>(null)
+    private set
+  private var locationJob: Job? = null
+  private var locationRequest = 0
+  var locationMessage by mutableStateOf<UiText?>(null)
     private set
   var geocoding by mutableStateOf(false)
     private set
@@ -236,27 +243,41 @@ class StoreFormViewModel(
 
   fun geocode() {
     if (city.isBlank()) return
+    val request = ++locationRequest
+    val address = listOf(street, city, postalCode, country)
     geocoding = true
-    manualLat = null
-    manualLon = null
-    selectedCandidate = null
-    viewModelScope.launch {
+    locationJob?.cancel()
+    locating = false
+    locationMessage = null
+    locationJob = viewModelScope.launch {
       try {
-        val result = graphQlClient.geocodeAddress(street.trim().ifBlank { null }, city.trim(), postalCode.trim().ifBlank { null })
+        val result = graphQlClient.geocodeAddress(street.trim().ifBlank { null }, city.trim(), postalCode.trim().ifBlank { null }, country)
+        if (request != locationRequest || address != listOf(street, city, postalCode, country)) return@launch
         geocodeCandidates = result.candidates
         geocodeAttribution = result.attribution
+        if (result.candidates.size == 1) {
+          selectCandidate(result.candidates.single())
+        }
+        if (result.candidates.isEmpty()) locationMessage = UiText.Res(R.string.store_location_not_found)
+      } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
       } catch (e: Exception) {
-        geocodeCandidates = emptyList()
+        if (request == locationRequest) {
+          geocodeCandidates = emptyList()
+          locationMessage = UiText.Res(R.string.store_location_not_found)
+        }
       } finally {
-        geocoding = false
+        if (request == locationRequest) geocoding = false
       }
     }
   }
 
   fun selectCandidate(candidate: GeocodeCandidate) {
+    showMap = true
     selectedCandidate = candidate
     manualLat = null
     manualLon = null
+    fillAddress(candidate.lat, candidate.lon, false)
   }
 
   /** Klik/přetažení značky na mapě (LocationMap, editable) — ruční bod, ne kandidát z geokódování. */
@@ -264,33 +285,47 @@ class StoreFormViewModel(
     selectedCandidate = null
     manualLat = lat
     manualLon = lon
+    fillAddress(lat, lon, true)
   }
 
   fun useMyLocation(lat: Double, lon: Double) {
+    showMap = true
     // Syrová hodnota schválně: manualLat/Lon je souřadnice PROVOZOVNY (uloží se do
     // core.store), zaokrouhlení by ji degradovalo. Pro Nominatim zaokrouhluje server
     // (GeocodingService.reverseGeocode, docs/soukromi.md).
     manualLat = lat
     manualLon = lon
     selectedCandidate = null
-    // Doplní jen PRÁZDNÁ adresní pole — nepřepisuje, co uživatel už vyplnil (docs/soukromi.md:
-    // reverseGeocode jde stejně jako geocodeAddress výhradně ze serveru).
+    fillAddress(lat, lon, false)
+  }
+
+  private fun fillAddress(lat: Double, lon: Double, replace: Boolean) {
+    val request = ++locationRequest
+    locationJob?.cancel()
+    val oldStreet = street
+    val oldCity = city
+    val oldPostalCode = postalCode
+    val oldCountry = country
     locating = true
-    viewModelScope.launch {
+    geocoding = false
+    locationMessage = null
+    locationJob = viewModelScope.launch {
       try {
         val result = graphQlClient.reverseGeocode(lat, lon)
-        if (street.isBlank()) result.street?.let { street = it }
-        if (city.isBlank()) result.city?.let { city = it }
-        if (postalCode.isBlank()) result.postalCode?.let { postalCode = it }
-        // Jen při zakládání — editovaná provozovna svou zemi už má (docs/lokalizace.md).
-        // Neznámá země (appka umí jen CZ/SK/PL) se ignoruje, zůstane výchozí CZ.
-        if (!isEditing && result.country in KNOWN_COUNTRIES) {
-          country = result.country!!
-        }
+        if (request != locationRequest) return@launch
+        if (street == oldStreet && (replace || street.isBlank())) result.street?.let { street = it }
+        if (city == oldCity && (replace || city.isBlank())) result.city?.let { city = it }
+        if (postalCode == oldPostalCode && (replace || postalCode.isBlank())) result.postalCode?.let { postalCode = it }
+        if (!isEditing && country == oldCountry && result.country in KNOWN_COUNTRIES) country = result.country!!
+        geocodeAttribution = result.attribution
+        if (result.street == null && result.city == null) locationMessage = UiText.Res(R.string.store_location_not_found)
+        scheduleSimilarCheck()
+      } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
       } catch (e: Exception) {
-        // Fail-soft na backendu i tady — adresa prostě zůstane nedoplněná.
+        if (request == locationRequest) locationMessage = UiText.Res(R.string.store_location_not_found)
       } finally {
-        locating = false
+        if (request == locationRequest) locating = false
       }
     }
   }
