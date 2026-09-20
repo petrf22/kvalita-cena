@@ -15,6 +15,7 @@ Node se neměnil — viz `.bashrc`). `npm start` používá `proxy.conf.json`, k
 ```bash
 npm install
 npm run codegen                      # typy z backend/.../schema.graphqls do models/generated/ (viz codegen.ts)
+npx prettier --write src             # kontrola formátu není v CI, pusť ji před commitem
 npm start                            # dev server na :4200 (s proxy na backend)
 npm test                             # Vitest (Angular 22 default, ne Karma/Jasmine)
 npm run build
@@ -26,6 +27,12 @@ rozejde (`git diff --exit-code`). Pozor na pořadí: `graphql(...)` matchuje dot
 string zachycený při generování, takže Prettier (nebo jakákoli jiná změna whitespace uvnitř
 těch template literálů) musí proběhnout **před** posledním `npm run codegen`, jinak typová
 kontrola i běhový match spadnou.
+
+`overrides["@angular/build"].vitest = "$vitest"` v `package.json` je tam kvůli `npm install`:
+`@angular/build` deklaruje `peerOptional vitest@^4`, projekt jede na `vitest` 5 a bez override
+padá instalace na `ERESOLVE` (`npm ci` z hotového lockfilu to nikdy nezkontroluje, takže se to
+projeví až při přidávání knihovny). `$vitest` znamená „tu verzi, co má projekt v
+`devDependencies`" — až `@angular/build` podporu `vitest` 5 doplní, override zmizí.
 
 ## Konvence
 
