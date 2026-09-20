@@ -35,6 +35,15 @@ updates:
         patterns:
           - '@angular/*'
           - 'ng-zorro-antd'
+      # Každé PR mění package-lock.json, takže po jednom se slučovat nedají (konflikt
+      # a přestavba CI u všech zbylých). Drobné aktualizace proto chodí v jednom PR
+      # týdně; major zůstává samostatně, ten chce posoudit zvlášť.
+      npm-drobne:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
     ignore:
       # @angular/build@22.0.8 vyžaduje peer typescript@">=6.0 <6.1" — TS 7 (nativní přepis
       # kompilátoru) zatím s Angularem 22 nejde, npm ci padá na ERESOLVE. Odemknout, až
