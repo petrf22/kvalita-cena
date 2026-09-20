@@ -20,6 +20,21 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.9.0", date: "2026-09-20", sections: [
+      { title: "Přidáno", items: [
+        { text: "Při zakládání obchodu stačí ukázat místo na mapě a adresa se doplní sama; hledání podle adresy hledá v zemi zvolené ve formuláři a jediný nález rovnou ukáže na mapě", parts: ["web", "mobil"] },
+      ] },
+      { title: "Změněno", items: [
+        { text: "Vybraný obchod je vidět i s adresou a dlouhý název se nezkracuje; vedle něj je „Změnit obchod\" a „Vymazat obchod\", který zruší i zapamatovanou volbu", parts: ["web", "mobil"] },
+      ] },
+      { title: "Opraveno", items: [
+        { text: "Po opravě adresy a novém hledání se k obchodu uloží nově vybrané místo, ne souřadnice z předchozího hledání", parts: ["web", "mobil"] },
+        { text: "Ručně zvolená země obchodu zůstane, i když se pak pohne značkou na mapě — a s ní i měna, ve které se k obchodu zapisují ceny", parts: ["web", "mobil"] },
+        { text: "Adresa se po výběru jiného místa nemíchá s předchozí: ulice, kterou nové místo nemá, zmizí", parts: ["web", "mobil"] },
+        { text: "„Použít mou polohu\" nepřepíše výsledek hledání, o které si uživatel řekl později", parts: ["web", "mobil"] },
+        { text: "Poslední obchod zůstane předvyplněný i po výpadku sítě a hláška o nenalezené adrese se neukáže na místě, které adresu má", parts: ["web", "mobil"] },
+      ] },
+  ] },
   { version: "0.8.0", date: "2026-09-08", sections: [
       { title: "Přidáno", items: [
         { text: "Fotky zboží jdou na mobilu otevřít přes celou obrazovku a přiblížit prsty, takže je na etiketě vidět složení i drobný text", parts: ["mobil"] },
