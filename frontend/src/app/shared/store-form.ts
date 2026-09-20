@@ -310,9 +310,18 @@ export class StoreForm {
           this.geocodeCandidates.set(result.candidates);
           this.geocodeAttribution.set(result.attribution);
           this.geocoding.set(false);
-          if (result.candidates.length === 1) this.selectCandidate(result.candidates[0]);
-          if (!result.candidates.length)
+          if (result.candidates.length === 1) {
+            this.selectCandidate(result.candidates[0]);
+          } else if (result.candidates.length > 1) {
+            // Nový seznam kandidátů znamená novou volbu — dosavadní bod se musí zahodit, jinak
+            // by submit() uložil souřadnice i osmRef kandidáta k PŘEDCHOZÍ adrese. Prázdný
+            // seznam a chyba bod naopak zachovají (docs/overeni-zadavani-obchodu.md).
+            this.selectedCandidateRef.set(null);
+            this.manualLat.set(null);
+            this.manualLon.set(null);
+          } else {
             this.locationMessage.set(this.transloco.translate('store.location.notFound'));
+          }
         },
         error: () => {
           if (request !== this.locationRequest) return;

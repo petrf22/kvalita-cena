@@ -257,8 +257,16 @@ class StoreFormViewModel(
         geocodeAttribution = result.attribution
         if (result.candidates.size == 1) {
           selectCandidate(result.candidates.single())
+        } else if (result.candidates.isNotEmpty()) {
+          // Nový seznam kandidátů znamená novou volbu — dosavadní bod se musí zahodit, jinak
+          // by submit() uložil souřadnice i osmRef kandidáta k PŘEDCHOZÍ adrese. Prázdný
+          // seznam a chyba bod naopak zachovají (docs/overeni-zadavani-obchodu.md).
+          selectedCandidate = null
+          manualLat = null
+          manualLon = null
+        } else {
+          locationMessage = UiText.Res(R.string.store_location_not_found)
         }
-        if (result.candidates.isEmpty()) locationMessage = UiText.Res(R.string.store_location_not_found)
       } catch (e: kotlinx.coroutines.CancellationException) {
         throw e
       } catch (e: Exception) {
