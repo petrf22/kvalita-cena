@@ -1,2 +1,6 @@
 # Generováno graphql-codegen (npm run codegen, viz codegen.ts) — netvarovat ručně.
 src/app/models/generated/
+
+# Generováno tools/version/sync.mjs z kořenového CHANGELOG.md — formát určuje generátor,
+# přeformátování by shodilo CI job „Verze a changelog" (sync.mjs + git diff --exit-code).
+src/app/changelog.generated.ts

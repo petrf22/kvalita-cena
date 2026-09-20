@@ -53,8 +53,7 @@ export const routes: Routes = [
   },
   {
     path: 'changelog',
-    loadComponent: () =>
-      import('./features/changelog/changelog-page').then((m) => m.ChangelogPage),
+    loadComponent: () => import('./features/changelog/changelog-page').then((m) => m.ChangelogPage),
   },
   {
     path: 'feedback',
