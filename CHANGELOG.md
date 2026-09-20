@@ -7,6 +7,21 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [0.9.0] – 2026-09-20
+
+### Přidáno
+- Při zakládání obchodu stačí ukázat místo na mapě a adresa se doplní sama; hledání podle adresy hledá v zemi zvolené ve formuláři a jediný nález rovnou ukáže na mapě (web, mobil)
+
+### Změněno
+- Vybraný obchod je vidět i s adresou a dlouhý název se nezkracuje; vedle něj je „Změnit obchod" a „Vymazat obchod", který zruší i zapamatovanou volbu (web, mobil)
+
+### Opraveno
+- Po opravě adresy a novém hledání se k obchodu uloží nově vybrané místo, ne souřadnice z předchozího hledání (web, mobil)
+- Ručně zvolená země obchodu zůstane, i když se pak pohne značkou na mapě — a s ní i měna, ve které se k obchodu zapisují ceny (web, mobil)
+- Adresa se po výběru jiného místa nemíchá s předchozí: ulice, kterou nové místo nemá, zmizí (web, mobil)
+- „Použít mou polohu" nepřepíše výsledek hledání, o které si uživatel řekl později (web, mobil)
+- Poslední obchod zůstane předvyplněný i po výpadku sítě a hláška o nenalezené adrese se neukáže na místě, které adresu má (web, mobil)
+
 ## [0.8.0] – 2026-09-08
 
 ### Přidáno
