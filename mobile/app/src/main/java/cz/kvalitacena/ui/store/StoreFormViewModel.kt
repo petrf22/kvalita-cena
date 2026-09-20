@@ -75,6 +75,15 @@ class StoreFormViewModel(
    * jde ze store.country, při zakládání z [CountryStore] (viewerova volba v Nastavení).
    */
   var country by mutableStateOf(countryStore.country)
+    private set
+
+  /** Vědomá volba země se nesmí přepsat reverzním geokódováním — u pohraničí mění i měnu zápisu. */
+  private var countryTouched = false
+
+  fun onCountryChange(code: String) {
+    countryTouched = true
+    country = code
+  }
 
   var loadingExisting by mutableStateOf(editingStoreId != null)
     private set
@@ -330,7 +339,6 @@ class StoreFormViewModel(
     val oldStreet = street
     val oldCity = city
     val oldPostalCode = postalCode
-    val oldCountry = country
     locating = true
     geocoding = false
     locationMessage = null
@@ -338,12 +346,22 @@ class StoreFormViewModel(
       try {
         val result = graphQlClient.reverseGeocode(lat, lon)
         if (request != locationRequest) return@launch
-        if (street == oldStreet && (replace || street.isBlank())) result.street?.let { street = it }
-        if (city == oldCity && (replace || city.isBlank())) result.city?.let { city = it }
-        if (postalCode == oldPostalCode && (replace || postalCode.isBlank())) result.postalCode?.let { postalCode = it }
-        if (!isEditing && country == oldCountry && result.country in KNOWN_COUNTRIES) country = result.country!!
+        // Pole, které uživatel mezitím přepsal, zůstává jeho. Při replace (klik do mapy =
+        // celá adresa nového bodu) se chybějící část MAŽE — jinak by po ulici zbyl kus
+        // předchozí adresy a vznikla by smíchaná, ale zdánlivě platná adresa.
+        fun merged(current: String, old: String, incoming: String?): String = when {
+          current != old -> current
+          replace -> incoming.orEmpty()
+          current.isBlank() -> incoming ?: current
+          else -> current
+        }
+        street = merged(street, oldStreet, result.street)
+        city = merged(city, oldCity, result.city)
+        postalCode = merged(postalCode, oldPostalCode, result.postalCode)
+        if (!isEditing && !countryTouched && result.country in KNOWN_COUNTRIES) country = result.country!!
         geocodeAttribution = result.attribution
-        if (result.street == null && result.city == null) locationMessage = UiText.Res(R.string.store_location_not_found)
+        if (result.street.isNullOrBlank() && result.city.isNullOrBlank() && result.postalCode.isNullOrBlank())
+          locationMessage = UiText.Res(R.string.store_location_not_found)
         scheduleSimilarCheck()
       } catch (e: kotlinx.coroutines.CancellationException) {
         throw e

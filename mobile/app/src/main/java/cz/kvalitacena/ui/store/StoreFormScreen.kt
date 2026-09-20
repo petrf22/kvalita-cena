@@ -192,7 +192,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     )
     Gap()
 
-    CountryDropdown(selected = viewModel.country, onSelect = { formDirty = true; viewModel.country = it })
+    CountryDropdown(selected = viewModel.country, onSelect = { formDirty = true; viewModel.onCountryChange(it) })
     Gap()
 
     if (viewModel.similarStores.isNotEmpty()) {

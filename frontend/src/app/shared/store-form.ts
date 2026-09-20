@@ -146,6 +146,8 @@ export class StoreForm {
   private similarCheckTimer?: ReturnType<typeof setTimeout>;
 
   private locationRequest = 0;
+  /** Vědomá volba země se nesmí přepsat reverzním geokódováním — u pohraničí mění i měnu zápisu. */
+  private countryTouched = false;
   protected readonly locationMessage = signal<string | null>(null);
   protected readonly geocoding = signal(false);
   protected readonly geocodeCandidates = signal<GeocodeCandidate[]>([]);
@@ -191,6 +193,11 @@ export class StoreForm {
     const key = `store.form.country.${code}`;
     const translated = this.transloco.translate(key);
     return translated === key ? code : translated;
+  }
+
+  onCountryChange(code: string): void {
+    this.countryTouched = true;
+    this.country.set(code);
   }
 
   /** Aktuálně zvolený bod (kandidát z geokódování, nebo ruční/přenesená poloha) pro mapu. */
@@ -346,7 +353,6 @@ export class StoreForm {
       street: this.street(),
       city: this.city(),
       postalCode: this.postalCode(),
-      country: this.country(),
     };
     this.geocoding.set(false);
     this.locating.set(true);
@@ -357,17 +363,21 @@ export class StoreForm {
         this.locating.set(false);
         this.geocodeAttribution.set(result.attribution);
         for (const key of ['street', 'city', 'postalCode'] as const) {
-          if (this[key]() === before[key] && (replace || !before[key].trim()) && result[key])
-            this[key].set(result[key]!);
+          // Pole, které uživatel mezitím přepsal, zůstává jeho. Při replace (klik do mapy =
+          // celá adresa nového bodu) se chybějící část MAŽE — jinak by po ulici zbyl kus
+          // předchozí adresy a vznikla by smíchaná, ale zdánlivě platná adresa.
+          if (this[key]() !== before[key]) continue;
+          if (replace) this[key].set(result[key] ?? '');
+          else if (!before[key].trim() && result[key]) this[key].set(result[key]!);
         }
         if (
           !this.store() &&
-          this.country() === before.country &&
+          !this.countryTouched &&
           result.country &&
           KNOWN_COUNTRIES.includes(result.country)
         )
           this.country.set(result.country);
-        if (!result.city && !result.street)
+        if (!result.street && !result.city && !result.postalCode)
           this.locationMessage.set(this.transloco.translate('store.location.notFound'));
         this.onNameOrCityChange();
       },
