@@ -1,7 +1,8 @@
 # Ověření zadávání obchodu
 
 Úprava webu i Androidu: výběr obchodu se zalamuje, má tlačítko pro vymazání a dál
-předvyplňuje poslední obchod. Vymazání ruší i uloženou volbu. Výpadek načtení na webu
+předvyplňuje poslední obchod. Vymazání ruší i uloženou volbu; na webu vedle něj stojí
+„Změnit obchod", které jen vrátí seznam (volbu ani paměť nemaže). Výpadek načtení na webu
 už zapamatovaný obchod nemaže a opožděné načtení nepřepisuje ruční výběr.
 
 Výběr bodu na mapě doplní dostupnou adresu přes existující serverové `reverseGeocode`.
@@ -24,6 +25,15 @@ Pravidla: https://operations.osmfoundation.org/policies/nominatim/
 - V novém obchodě vyplnit adresu včetně jiné země a hledat: jediný nález otevře mapu,
   více výsledků nabídne výběr. Vybraný bod se uloží spolu s formulářem.
 - Kliknout na mapu nebo přetáhnout značku: dostupná ulice, město a PSČ se doplní.
+- Vybrat kandidáta, pak přepsat město a hledat znovu: uloží se nově vybraný bod, nikdy
+  souřadnice ani `osm_ref` kandidáta k původní adrese. Neúspěšné hledání bod zachová.
+- Ručně přepnout zemi a pak posunout značku: volba země (a s ní měna zápisu) vydrží.
+- Kliknout na místo, které nemá ulici: ulice z předchozího bodu zmizí, nezůstane smíchaná
+  adresa. Místo se samotným PSČ se za nenalezenou adresu nepovažuje.
+- „Najít v okolí" s víc nálezy: zbylé obchody jsou dosažitelné přes „Změnit obchod",
+  které nemaže zapamatovanou volbu.
+- Stisknout „Použít mou polohu" a během čekání na GPS „Najít souřadnice": platí hledání,
+  opožděná poloha ho nepřepíše.
 - Rychle zvolit dva body: platí poslední. Během dotazu ručně opravit ulici: oprava zůstane.
 - Vypnout síť / vybrat místo bez známé adresy: zobrazí se zpráva, formulář lze doplnit
   ručně a dříve zvolená poloha zůstane zachovaná.
