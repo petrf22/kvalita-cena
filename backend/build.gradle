@@ -56,7 +56,7 @@ dependencies {
 
     // Cache reputačních skóre a throttlingu (in-memory, Apache-2.0 — bez Bucket4j kvůli jeho
     // komerční licenci na části modulů).
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.4'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.3.0'
 
     // Passwordless auth — JWT
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
