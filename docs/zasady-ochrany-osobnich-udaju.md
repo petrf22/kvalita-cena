@@ -1,6 +1,6 @@
 # Zásady ochrany osobních údajů
 
-Platí od 24. srpna 2026. Toto je aktuálně platné znění; předchozí verze viz
+Platí od 30. září 2026. Toto je aktuálně platné znění; předchozí verze viz
 historie tohoto souboru.
 
 ## 1. Kdo je správce
@@ -99,6 +99,27 @@ Fotky se dají kdykoli smazat (vlastní) nebo nahlásit (cizí, pokud jsou nevho
 porušují cizí práva) — nahlášení fotky appka bere obzvlášť vážně, stačí k dočasnému skrytí
 jediné nahlášení, než ho někdo přezkoumá.
 
+### 3.5a Účtenky
+
+Pokud se rozhodneš naskenovat účtenku, appka nahraje její obrázky (případně rozdělené na
+několik částí) a z nich později vytěží obchod, adresu, datum a čas nákupu a seznam zboží
+s cenami. Účtenka je **tvůj soukromý přehled nákupu** — nikdy se nezveřejňuje, nevidí ji
+ostatní uživatelé ani moderátoři, jen ty a zpracování popsané níž.
+
+- **Kdo účtenku zpracuje:** provozovatel appky na svém vlastním počítači (převod obrázku na
+  text), ne cloudová služba třetí strany. Kdyby se to mělo změnit, appka tě požádá o nový
+  souhlas dřív, než by jedinou účtenku poslala jinam.
+- **Zakrytí citlivých údajů:** před odesláním ti appka nabídne zakrýt číslo platební karty,
+  věrnostní karty a další údaje (typicky pod celkovou částkou). Zakrytí proběhne přímo
+  v tvém telefonu nebo prohlížeči, zakrytý obsah na server vůbec neodejde.
+- **Ceny z účtenky** se zapíšou jako tvoje cenové záznamy až poté, co je v appce sám/sama
+  potvrdíš — dál s nimi appka zachází stejně jako s ručně zapsanou cenou (bod 3.3).
+- **Označení zboží z účtenky** (např. „TUK.ROHLIK"), které spojíš se zbožím v katalogu, se stane
+  sdíleným katalogovým údajem, aby se příště spárovalo samo — bez údaje o tom, kdo a kdy zboží
+  koupil.
+- **Volitelně** můžeš provozovateli dovolit, aby si obrázky účtenky ponechal pro zlepšování
+  rozpoznávání. Bez tohoto zaškrtnutí se obrázky po lhůtě v bodě 5 prostě smažou.
+
 ### 3.6 Mapa (vědomá výjimka)
 
 Pokud si na detailu obchodu otevřeš mapu, appka mapové podklady (dlaždice) stahuje přímo
@@ -135,6 +156,9 @@ slouží výhradně ke zlepšování appky.
 - **Souhlas** (čl. 6 odst. 1 písm. a) GDPR) — volitelný profil (jméno, telefon, kontaktní
   e-mail, avatar) a jeho případné zveřejnění; souhlas můžeš kdykoli odvolat smazáním
   příslušného údaje v appce.
+- **Souhlas** (čl. 6 odst. 1 písm. a) GDPR) — zpracování naskenovaných účtenek (bod 3.5a),
+  a zvlášť volitelné ponechání jejich obrázků pro zlepšování rozpoznávání. Souhlas odvoláš
+  smazáním účtenky v appce (Účet → Účtenky); další účtenky bez nového souhlasu appka neodešle.
 
 ## 5. Jak dlouho údaje uchováváme
 
@@ -143,6 +167,8 @@ slouží výhradně ke zlepšování appky.
 | Vazba cenového záznamu na tvůj účet | 180 dní od data ceny, pak automaticky anonymizováno |
 | Samotný cenový záznam (bez vazby na účet) | trvale, jako anonymizovaná statistika ve veřejném zájmu |
 | Hodnocení kvality zboží, vlastní úpravy zboží/obchodu | po dobu trvání účtu, smazáno s účtem |
+| Obrázky naskenované účtenky | 30 dní od zpracování, pak automaticky smazány (s volitelným souhlasem s ponecháním: přesunuty do archivu provozovatele mimo server) |
+| Text účtenky (obchod, datum a čas, položky) | po dobu trvání účtu, dokud ji nesmažeš; smazáno s účtem |
 | Volitelný profil (jméno, telefon, kontaktní e-mail, avatar) | po dobu trvání účtu, smazáno s účtem |
 | Přihlašovací e-mail (hash a šifrovaná podoba) | po dobu trvání účtu |
 | Technická data (IP u přihlašovacích pokusů a odesílání zpětné vazby) | jen v paměti serveru, nejvýš 1 hodina (přihlašovací pokusy) / 1 den (zpětná vazba), zmizí i dřív restartem |
@@ -201,7 +227,10 @@ Podle GDPR máš právo:
 - **na výmaz** — smazat účet přímo v appce (Účet → Profil → Smazat účet, ověřeno kódem
   z e-mailu); tvoje cenové záznamy přitom zůstanou jako anonymizovaná statistika bez vazby na
   tebe — appka je nemaže, jde o sdílená komunitní data, ne o tvůj osobní údaj,
-- **na přenositelnost** — vyžádat si vlastní data ve strojově čitelné podobě,
+- **na přenositelnost** — vyžádat si vlastní data ve strojově čitelné podobě (včetně textu
+  naskenovaných účtenek),
+- **smazat naskenovanou účtenku** — kdykoli přímo v appce (Účet → Účtenky); smaže se obrázek
+  i text, ceny, které jsi z ní už potvrdil(a), zůstanou jako běžné cenové záznamy,
 - **vznést námitku** proti zpracování založenému na oprávněném zájmu,
 - **podat stížnost** u Úřadu pro ochranu osobních údajů (www.uoou.cz), pokud máš pocit, že
   appka s tvými údaji nezachází správně.
@@ -216,12 +245,17 @@ Appka je určená lidem starším 15 let (viz Podmínky užití). Pokud zjistím
 používá dítě mladší 15 let bez souhlasu zákonného zástupce, účet na žádost zákonného
 zástupce smažeme.
 
-## 11. Budoucí strojové zpracování fotek
+## 11. Strojové zpracování fotek a účtenek
 
-Appka do budoucna plánuje automatizovanou předběžnou kontrolu nahraných fotek kvůli
+Převod naskenovaných účtenek na text (bod 3.5a) běží na počítači provozovatele, ne přes
+cloudovou službu třetí strany. Výsledek je vždy jen návrh — cenu zapíše až tvoje potvrzení.
+
+Appka do budoucna plánuje i automatizovanou předběžnou kontrolu nahraných fotek kvůli
 moderaci (např. odhalení zjevně nevhodného obsahu, než ho uvidí člověk). Tohle zpracování
-poběží na počítači provozovatele, ne přes cloudovou službu třetí strany — fotky by tak
-neopustily appku o nic víc, než dnes. Tenhle text aktualizujeme, až se to skutečně zapne.
+poběží stejně na počítači provozovatele — fotky by tak neopustily appku o nic víc, než dnes.
+Tenhle text aktualizujeme, až se to skutečně zapne, a kdyby se kterékoli z těchto zpracování
+mělo přesunout ke třetí straně, oznámíme to předem (bod 12) a u účtenek si vyžádáme nový
+souhlas.
 
 ## 12. Změny těchto zásad
 

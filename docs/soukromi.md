@@ -172,6 +172,51 @@ gramáž, adresa) — patch by se přestal zobrazovat, protože ho backend neum�
 - Až vznikne skutečný GDPR export/výmaz (níže), vlastní patche do něj patří stejně jako
   cenové záznamy a hodnocení kvality.
 
+## Účtenky — soukromý přehled nákupu, ne komunitní obsah
+
+Účtenka (`core.receipt`, `docs/datovy-model.md`, „Účtenky") je jiná liga než fotka regálu:
+nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidla:
+
+- **Nikdy veřejná.** Obrázky účtenky nejsou v `core.media` a nejdou přes veřejné, dlouze
+  cachované `GET /api/media/{id}` — mají vlastní úložiště (`MediaStorage`, prefix
+  `receipts/`) a vlastní endpoint `GET /api/receipts/{id}/images/{seq}`, který obslouží jen
+  vlastníka a stroj zpracovávající účtenky (`Cache-Control: private, no-store`). V GraphQL
+  vidí účtenku a její řádky výhradně vlastník, moderátor ne.
+- **Souhlas před prvním odesláním, verzovaný.** Klient ukáže, že účtenku zpracuje provozovatel
+  appky na svém počítači (`docs/ai.md`, „Kde to běží"), a bez zaškrtnutí nic neodešle. Verze
+  textu (`app.receipt.consent-version`) se ukládá ke každé účtence (`consent_version`) — změna
+  zpracovatele (typicky cloudová AI) znamená novou verzi, nové zaškrtnutí a změnu zásad
+  s předstihem, ne tichou výměnu enginu. Zvlášť a **volitelně** se uživatel rozhoduje, jestli
+  si provozovatel smí obrázky účtenky ponechat pro zlepšení rozpoznávání (`archive_consent`).
+- **Citlivé údaje se zakrývají na zařízení.** Číslo platební karty, věrnostní karta, jméno
+  pokladní — klient před odesláním nabídne zakrytí (výchozí návrh: pás pod celkovou částkou),
+  maska se vypálí do pixelů v telefonu/prohlížeči, na server zakrytý obsah vůbec nedorazí.
+  Server navíc obrázek překreslí z pixelů stejně jako fotky (EXIF výš) a worker řádky
+  s kartou/věrnostním číslem zahodí jako druhou pojistku.
+- **Obrázky mají krátkou retenci, text ne.** Obrázky se mažou `app.receipt.image-retention-days`
+  (30) dní po zpracování (`ReceiptImageRetentionService`, denní job) — u účtenek s
+  `archive_consent` až poté, co si je provozovatel stáhl do lokálního archivu (nejvýš o
+  `archive-grace-days` později). Hlavička a řádky účtenky zůstávají jako vlastní přehled
+  nákupu po dobu života účtu — **třetí výjimka z 180denní pseudonymizace** stejného typu jako
+  `product_review` a `product_user_edit` výš: bez vazby na vlastníka by přehled neměl smysl.
+  Zmírnění stejné: nikdy ven přes API cizímu, `ON DELETE CASCADE`, `pg_dump --schema=core`
+  musí `owner_user_id` vynechat nebo hashovat.
+- **Cenové zápisy z účtenky jsou běžné observace.** Vznikají jen potvrzením vlastníka (`docs/ai.md`,
+  „AI nikdy nerozhoduje"), pseudonymizují se po 180 dnech jako každé jiné a smazání účtenky
+  je nesmaže (stejná úvaha jako výmaz účtu — sdílená komunitní data). `receipt_line_id` na
+  observaci se smazáním účtenky nuluje (`ON DELETE SET NULL`).
+- **Nespárované řádky jiných lidí se nikomu neukazují.** Když se později naučí mapování názvu
+  z účtenky (`core.product_store_label`), server nespárovaný řádek jen přepne na návrh; vlastník
+  dostane upozornění a cenu potvrdí sám. Do sdíleného katalogu jde jen samotné označení
+  obchodu (`ROHLIK TUK 43G` → zboží), ne kdo a kdy ho koupil — `product_store_label_confirmation
+  .user_id` se po 180 dnech nuluje stejně jako u aliasu.
+- **Stroj nemá identitu uživatele.** Worker se přihlašuje strojovým tokenem (`auth.api_token`,
+  scope `RECEIPT_WORKER`, v DB jen SHA-256), ne účtem člověka — vidí obrázky ve frontě
+  a zapisuje vytěžený text, nic víc.
+- **Upozornění o zpracování** chodí jen jako lokální notifikace z telefonu (WorkManager se
+  periodicky ptá serveru), žádný push přes Google ani e-mail — obsah nákupu nejde třetí straně
+  ani do schránky.
+
 ## Identita bez osobních údajů
 
 `auth.app_user` samo nemá pole pro jméno, adresu ani telefon — je to vždy "identita bez
@@ -352,7 +397,8 @@ Export a výmaz (`AccountService`, `AccountController`) jsou hotové — REST to
 - **Export**: `GET /api/me/export` — čitelný výpis vlastní identity (handle, e-mail, datum
   založení), volitelného profilu, cenových záznamů stále navázaných na účet (stejné okno jako
   appka sama ukazuje, tzn. posledních 180 dní — starší jsou pseudonymizované, tudíž v exportu
-  nejsou), hodnocení kvality a vlastních úprav zboží/obchodu. Vyžaduje jen platný access token,
+  nejsou), hodnocení kvality, vlastních úprav zboží/obchodu a účtenek (hlavička a řádky,
+  bez obrázků — ty si vlastník prohlédne přímo v appce, dokud nevyprší retence). Vyžaduje jen platný access token,
   žádné zvláštní potvrzení (na rozdíl od výmazu níž) — čtení vlastních dat nic nevratného
   neriskuje. `user_flag` skórovací systém z původního plánu neexistuje (implementovaná je jen
   složka `L`, viz `docs/reputace.md`) — export ho tedy neobsahuje, není co exportovat.
@@ -368,9 +414,11 @@ Export a výmaz (`AccountService`, `AccountController`) jsou hotové — REST to
   viz `docs/reputace.md`), ne `submitter_id` — observace registrovaného uživatele tak zůstává
   vážená jako registrovaná i po smazání jeho účtu, ne jako anonymní.
 
-  Appka nejdřív smaže SOUBORY fotek z disku (`MediaStorage`, včetně avataru), teprve pak řádek
+  Appka nejdřív smaže SOUBORY fotek z disku (`MediaStorage`, včetně avataru a obrázků
+  účtenek), teprve pak řádek
   `app_user` — ten kaskádou smaže zbytek (`user_profile`, `product_review` — hvězdičky i text,
-  `product_user_edit`/`store_user_edit`, `record_flag`, `media` řádky v DB, `refresh_token`).
+  `product_user_edit`/`store_user_edit`, `record_flag`, `media` řádky v DB, `refresh_token`,
+  `receipt` s obrázky a řádky).
   Katalogová data (zboží, obchod), na která uživatel jen přispěl cenou, samozřejmě zůstávají —
   mažou/anonymizují se jen věci navázané na *jeho* účet.
 - Žádná analytika třetích stran, žádné externí fonty ani CDN. Jediná cookie je `httpOnly`

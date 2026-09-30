@@ -1,7 +1,8 @@
 # Lokální AI
 
-Tento dokument popisuje **cílový stav**, ne implementaci — stejně jako `docs/reputace.md` v částech
-za MVP. Nic z tohohle ještě není napsané: žádná migrace, žádné schéma, žádný worker. Účel
+Tento dokument popisuje hlavně **cílový stav** — stejně jako `docs/reputace.md` v částech za MVP.
+Jako první je napsaná úloha **vytěžení účtenky** (schéma `ai`, fronta, worker
+`tools/receipt-worker/`, oddíl „Účtenky" níž); zbytek zatím ne. Účel
 dokumentu je mít jedno místo, kam patří rozhodnutí o roli AI v appce, než se první úloha vůbec
 začne psát — ať se neroztroušou po kódu jako vlastní konstanty na víc místech (stejný důvod,
 proč jsou vzorce reputace jen v `docs/reputace.md`).
@@ -53,7 +54,8 @@ můžou přepočítat jindy jinak.
 | Úloha | Kdy | Poznámka |
 |---|---|---|
 | Předfiltr fotek pro moderaci | **před spuštěním veřejného provozu** | `core.media` existuje už dnes. Míří přímo na to, co `docs/soukromi.md` („Otevřená rizika") označuje za reálný limit projektu — kapacitu moderace jednoho člověka. Práh `app.moderation.photo-flags-to-hide = 1` funguje jen tehdy, když závadnou fotku někdo uvidí — model ji jen posune ve frontě k přezkumu výš, neskryje ji sám (viz „AI nikdy nerozhoduje" výš). |
-| OCR ceny z fotky | s dodělaným `f_evid` (zbytek MVP — fotka jako důkaz ceny) | `docs/reputace.md` s tím už počítá (`f_evid = 1,30 účtenka+OCR / 1,15 foto cedulky`), ale schéma dnes neukládá druh důkazu, jen že fotka existuje — viz níže. Rozšíření na vytěžení celé účtenky (víc položek najednou, uložení jako přehled nákupu) je rozvojový nápad zapsaný v `docs/rozvoj.md`. |
+| Vytěžení účtenky | **hotovo** (oddíl „Účtenky" níž) | Celá účtenka → obchod, datum a čas, řádky. Výsledek je návrh k potvrzení uživatelem; `core.price_observation.evidence_kind = RECEIPT_OCR` nastaví server u ceny potvrzené z řádku. |
+| OCR ceny z fotky cedulky | s dodělaným `f_evid` (zbytek MVP — fotka jako důkaz ceny) | `docs/reputace.md` s tím už počítá (`f_evid = 1,30 účtenka+OCR / 1,15 foto cedulky`); sloupec `evidence_kind` už existuje (vznikl s účtenkami), chybí jen `PRICE_TAG_PHOTO` cesta. |
 | Kontrola textů recenzí | další rozvoj | `core.product_review.text` (max 1000 znaků) už existuje a jde nahlásit (`RecordType.REVIEW`, `docs/reputace.md`) — chybí jen tenhle strojový předfiltr, nahlašování zatím řeší jen lidský hlas. |
 | Detekce anomálií u cen | další rozvoj, jako doplněk | **Statistická pravidla zůstávají primární** — `BIASED`/`IMPOSSIBLE`/`TELEPORT`/`BURST`/`CLUSTER`/`COMMERCIAL` (`docs/reputace.md`, „Detekce zneužití") jsou deterministická a laditelná, což je u reputační váhy přednost, ne nedostatek. LLM tu má smysl jen na případy, které pravidla nezachytí, a jeho výstup je vždy poradní stejně jako u ostatních úloh výš — nikdy nový vstup do `w`. |
 
@@ -97,6 +99,57 @@ Dvě omezení určují volbu:
   Kandidáti pod Apache-2.0 jsou modely řady Qwen (vision i text) a Mistral 7B.
   **Konkrétní model i jeho aktuální licenci ověřit až ve chvíli implementace** — nabídka se
   mění rychleji než tenhle dokument a licence se liší i mezi velikostmi téže řady.
+
+## Účtenky
+
+Topologie přesně podle „Kde to běží" výš. Datový model `docs/datovy-model.md`, „Účtenky";
+soukromí `docs/soukromi.md`, „Účtenky".
+
+**Worker** (`tools/receipt-worker/`, Python, README tamtéž) běží na domácím PC cyklicky
+(systemd timer / cron), vyzvedne si dávku z `POST /api/worker/receipts/lease`, stáhne obrázky,
+pošle je do Ollamy (vision model, strukturovaný výstup přes JSON schéma ve `format`),
+výstup normalizuje (čísla s čárkou, `0,432 kg x 89,90`, slevové řádky připojené k položce,
+datum a čas, IČO, kontrola součtu, zahození řádků s kartou) a výsledek vrátí přes
+`POST /{id}/result`. Obrázek, který účtenka není, dostane `NOT_A_RECEIPT`; nečitelný
+`UNREADABLE`; chyba workeru `POST /{id}/fail` (po `max-attempts` → `FAILED`). Engine je za
+rozhraním `Extractor` — cloudová služba by šla přidat bez zásahu do zbytku, ale **zapnout ji
+jde jen s novou verzí souhlasu** (`app.receipt.consent-version`) a změnou zásad, viz soukromí.
+
+**Autentizace workeru:** strojový token `auth.api_token` (scope `RECEIPT_WORKER`, prefix
+`kcw_`, v DB jen SHA-256), hlavička `Authorization: Bearer kcw_…`. Vydání tokenu:
+`docs/nasazeni.md`, „Worker účtenek". Token nemá identitu uživatele a na nic mimo
+`/api/worker/receipts/**` a obrázky účtenek ve frontě nedosáhne.
+
+**AI nikdy nerozhoduje ani tady:** výsledek workeru zapíše jen řádky účtenky (návrh).
+Server pak deterministicky spáruje, co jde (vnitroobchodní kód, známé označení z
+`product_store_label`) — takové řádky jsou v UI předem zaškrtnuté, ale cenu zapíše až
+uživatelovo „Potvrdit". Model sám cenu nezakládá.
+
+**Archiv obrázků** pro zlepšování rozpoznávání: `GET /api/worker/receipts/archive-candidates`
+vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DIR` a potvrdí
+`POST /{id}/archived` — teprve pak je denní retenční job smaže ze serveru.
+
+**Prahy a limity** (`app.receipt.*`, `ReceiptProperties`):
+
+| Klíč | Hodnota | Proč |
+|---|---|---|
+| `consent-version` | 1 | zvednout při každé změně zpracovatele nebo účelu |
+| `max-images-per-receipt` | 30 | dlouhá účtenka z OpenCV pipeline = desítky výřezů |
+| `max-receipts-per-day` | 10 | rate limit na uživatele |
+| `max-image-bytes` | 4 MB | výřez je šedotónový JPEG, typicky desítky kB |
+| `max-width` | 1600 px | šířka stačí na čitelnost; výška se neomezuje (jen `media.max-pixels`) |
+| `image-retention-days` | 30 | od zpracování, pak obrázky pryč |
+| `archive-grace-days` | 14 | kolik navíc počkat na stažení do archivu u `archive_consent` |
+| `lease-minutes` | 15 | po vypršení leasu se úloha vrátí do fronty |
+| `max-attempts` | 3 | pak `FAILED` |
+| `label-confirmations` | 1 | aktivace označení; 1, dokud je přispěvatelů málo, pak zvednout na 2 (vzor alias) |
+| `rematch-max-age-days` | 180 | pozdější návrh spárování jen u účtenek mladších než pseudonymizační okno |
+
+**Snímání na klientovi (mobil):** prahy capture pipeline (`ui/receipt/capture/`,
+`docs/rozvoj.md`, „Sběr snímků") — ostrost: Laplacianova variance ≥ 60 (na zmenšeném
+šedotónovém snímku, šířka 480 px); nový výřez při posunu ≥ 60 % výšky proti poslednímu
+uloženému (~40 % překryv). Hodnoty patří sem, v kódu jsou jen jako konstanty s odkazem
+na tenhle dokument.
 
 ## Konfigurace (až přijde čas)
 

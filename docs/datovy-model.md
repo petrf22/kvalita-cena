@@ -16,6 +16,8 @@ osm    souřadnice provozoven z OpenStreetMap — schéma zatím nemá jedinou t
        zvolený geokódovaný výsledek uložený do core.store, viz níž
 fx     kurzovní lístek ČNB (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna") —
        na rozdíl od off/osm sem appka sama PÍŠE, denně (ExchangeRateSyncService, hotovo)
+ai     fronta a syrové výstupy strojového zpracování (docs/ai.md) — dnes ai.receipt_job,
+       vytěžený text účtenek; mimo čistý export, strojový odhad se dá přepočítat jindy jinak
 ```
 
 Open Food Facts **i OpenStreetMap** jsou pod licencí ODbL se share-alike podmínkou. ODbL
@@ -41,6 +43,8 @@ Pravidla, která to drží čisté:
    nepodléhá pseudonymizaci po 180 dnech (na rozdíl od `price_observation.submitter_id`,
    viz `docs/soukromi.md`). Export musí sloupec vynechat nebo hashovat, jinak GDPR záruka
    „starší příspěvky už o mně nikdo nedohledá" pro `pg_dump` ticho neplatí.
+   Totéž platí pro `core.receipt.owner_user_id` — účtenky jsou soukromý přehled nákupu
+   a do čistého exportu nepatří vůbec (`--exclude-table-data='core.receipt*'`).
 4. Aplikační DB uživatel má na `off`/`osm` jen `SELECT` mimo dedikovaný synchronizační job —
    technická pojistka, ne jen dohoda v hlavě. (U `osm` je to dnes bezpředmětné — schéma je
    prázdné.)
@@ -209,7 +213,8 @@ jej ve výsledcích vidí jen jeho potvrzovatel. `user_id` potvrzení je po 180 
 smazání účtu nulováno, alias i jeho už získaný stav ale zůstávají komunitním údajem.
 
 Moderátorské `mergeProducts(sourceId, targetId)` je transakční konsolidace dvou druhových
-položek. Ověří rozsah cíle, přesune observace, recenze, média, patche, kódy i aliasy, vyřeší
+položek. Ověří rozsah cíle, přesune observace, recenze, média, patche, kódy, aliasy,
+označení z účtenek (`product_store_label`) i spárované řádky účtenek, vyřeší
 unikátní kolize ve prospěch cíle, smaže staré agregáty a zařadí přepočet cílových buněk.
 Zdroj zůstane jako `MERGED` s `merged_into_id`; přímé čtení starého ID vrátí kanonický cíl.
 Původní název zdroje se aktivuje jako alias, takže sloučení nezhorší našeptávání.
@@ -508,6 +513,53 @@ Proof-of-work výzvu (`FeedbackChallengeService`, GraphQL `feedbackChallenge`) a
 vůbec — token nese celou výzvu podepsanou HMAC odvozeným z `JWT_SECRET`, jen krátkodobá
 in-memory cache brání přehrání jednou vyřešeného saltu.
 
+## Účtenky
+
+Návrh a odůvodnění: `docs/rozvoj.md`, „Načtení celé účtenky" a „Mapování obchodního označení
+zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; worker a prahy:
+`docs/ai.md`. Migrace `2026-09-30/`.
+
+- **`core.receipt`** — jedna naskenovaná účtenka, vlastník `owner_user_id` (`ON DELETE
+  CASCADE`, výjimka z pseudonymizace, `docs/soukromi.md`). Dvě nezávislé osy stavu:
+  `processing_status` (`QUEUED` → `PROCESSING` → `PROCESSED`/`NOT_A_RECEIPT`/`UNREADABLE`/
+  `FAILED` — co udělal stroj) a `review_status` (`PENDING`/`IN_PROGRESS`/`DONE` — kam došel
+  uživatel s párováním). Vytěžená hlavička je syrový text (`store_name_raw`,
+  `store_address_raw`, `store_ico_raw`) + `purchased_at` (datum A čas nákupu, stává se
+  `observed_at` všech cen z účtenky) + `total_amount`/`currency`; `store_id` je obchod, který
+  uživatel potvrdil (server jen navrhne). `consent_version`/`archive_consent` — viz soukromí.
+  `seen_at` řídí notifikaci/odznak, `images_deleted_at` retenci obrázků.
+- **`core.receipt_image`** — části jedné účtenky v pořadí `seq`. Soubor je v `MediaStorage`
+  pod `receipts/`, **ne** v `core.media` (ta je veřejná a dlouze cachovaná).
+- **`core.receipt_line`** — řádek účtenky: `label_raw` přesně jak ho obchod tiskne,
+  `label_norm` (`core.norm_text`), volitelný `internal_code`, `quantity` + `quantity_unit`
+  (`PCS`/`KG`/`L`), `unit_price`, `line_total`, `discount_amount` (sleva z vlastního řádku
+  pod položkou, worker ji připojí). Stav párování `status`: `UNMATCHED` (nic),
+  `SUGGESTED` (server našel zboží přes kód nebo známé označení — v UI předem zaškrtnuté),
+  `MATCHED` (uživatel potvrdil, `observation_id` ukazuje na vzniklou cenu), `IGNORED`
+  (uživatel párovat nechce). `skip_reason` nese, proč potvrzený řádek cenu nezapsal
+  (typicky `DUPLICATE_SAME_DAY` — kolize s `uq_price_observation_submitter_kind_per_day`
+  nesmí shodit celou účtenku, na rozdíl od `submitObservations`).
+  **`unit_price` u váhového zboží je cena za kg/l, nikdy zaplacená částka** — ta je
+  v `line_total`, zápis ceny bere `unit_price` s `quantityBasis = PER_KG`/`PER_L`.
+- **`core.product_store_label`** + **`core.product_store_label_confirmation`** — „Názvy na
+  účtenkách": označení obchodu → katalogové zboží. Rozsah právě jeden z `chain_id`/`store_id`
+  (řetězec tiskne stejné zkratky ve všech provozovnách, nezávislý obchod vlastní), unikátnost
+  `(label_norm, COALESCE(chain_id,0), COALESCE(store_id,0))` — směr označení → zboží, jedno
+  označení v rozsahu míří nejvýš na jedno zboží. `PENDING` → `ACTIVE` po
+  `app.receipt.label-confirmations` potvrzeních různých uživatelů, vzniká jen s úspěšným zápisem
+  ceny z řádku účtenky (vzor `product_alias`), `user_id` potvrzení se po 180 dnech nuluje.
+  `last_seen_at` odliší mrtvé mapování (řetězec zboží přejmenoval) od živého. Do veřejného
+  našeptávače názvů zboží **nepatří** — zkratky typu `TUK.ROHLIK` nikdo nepíše do hledání.
+- **`core.price_observation.evidence_kind`** (`NONE`/`PRICE_TAG_PHOTO`/`RECEIPT_OCR`) — druhá
+  osa vedle `source` (`docs/rozvoj.md`, „Zdroj ceny"). Nastavuje výhradně server podle
+  skutečně připojeného artefaktu (`receipt_line_id` → řádek zpracované účtenky), nikdy klient
+  v inputu. Do `weightFor()` zatím nevstupuje (`f_evid` je cílový stav, `docs/reputace.md`).
+- **`ai.receipt_job`** — fronta pro pull worker (`docs/ai.md`) s leasem (`lease_until`,
+  `attempts`, `FOR UPDATE SKIP LOCKED`), a syrový výstup modelu (`raw_text`, `extraction`
+  jsonb, `model`). Do `core.receipt_line` jde až normalizovaný návrh.
+- **`auth.api_token`** — strojové tokeny (dnes jen scope `RECEIPT_WORKER`), v DB jen SHA-256,
+  prefix `kcw_`. Stroj nemá `app_user`.
+
 ## Co ještě není implementováno
 
 ### Open Food Facts — zpětné publikování oprav
@@ -528,7 +580,8 @@ jen binární viditelnost textu (přihlášený/anonym, T1 v `docs/reputace.md`)
 neměl co rozlišovat.
 
 Nápady mimo tenhle plán (název věrnostního programu podle obchodu, ceny předem z akčního
-letáku, načtení celé účtenky, nákup podle receptu nebo seznamu) jsou v `docs/rozvoj.md`.
+letáku, nákup podle receptu nebo seznamu) jsou v `docs/rozvoj.md`; načtení účtenky je popsané
+výš v „Účtenky".
 
 **Konsolidační job** (vyhodnocuje `processed_at IS NULL` frontu z "Uživatelská vrstva nad
 globálními daty" výš a rozhoduje, kdy patch/nový záznam povýšit na `verified_at`) taky ještě
