@@ -2,7 +2,7 @@
 
 Tento dokument popisuje hlavně **cílový stav** — stejně jako `docs/reputace.md` v částech za MVP.
 Jako první je napsaná úloha **vytěžení účtenky** (schéma `ai`, fronta, worker
-`tools/receipt-worker/`, oddíl „Účtenky" níž); zbytek zatím ne. Účel
+`tools/uctenky/`, oddíl „Účtenky" níž); zbytek zatím ne. Účel
 dokumentu je mít jedno místo, kam patří rozhodnutí o roli AI v appce, než se první úloha vůbec
 začne psát — ať se neroztroušou po kódu jako vlastní konstanty na víc místech (stejný důvod,
 proč jsou vzorce reputace jen v `docs/reputace.md`).
@@ -83,7 +83,8 @@ výš: rozlišení je v datech od chvíle, kdy funkce vznikla, ne dopisované po
 ## Hardware a volba modelu
 
 Zjištěný stroj (srpen 2026): **NVIDIA RTX 4060 Ti, 8 GB VRAM**, AMD Ryzen 9 7900 (24 vláken),
-61 GB RAM, Ollama 0.6.1 nainstalovaná a spuštěná lokálně.
+61 GB RAM, Ollama nainstalovaná a spuštěná lokálně (2026-09: verze 0.32, `glm-ocr:bf16` pro
+OCR účtenek).
 
 Dvě omezení určují volbu:
 
@@ -105,19 +106,27 @@ Dvě omezení určují volbu:
 Topologie přesně podle „Kde to běží" výš. Datový model `docs/datovy-model.md`, „Účtenky";
 soukromí `docs/soukromi.md`, „Účtenky".
 
-**Worker** (`tools/receipt-worker/`, Python, README tamtéž) běží na domácím PC cyklicky
-(systemd timer / cron), vyzvedne si dávku z `POST /api/worker/receipts/lease`, stáhne obrázky,
-pošle je do Ollamy (vision model, strukturovaný výstup přes JSON schéma ve `format`),
-výstup normalizuje (čísla s čárkou, `0,432 kg x 89,90`, slevové řádky připojené k položce,
-datum a čas, IČO, kontrola součtu, zahození řádků s kartou) a výsledek vrátí přes
-`POST /{id}/result`. Obrázek, který účtenka není, dostane `NOT_A_RECEIPT`; nečitelný
-`UNREADABLE`; chyba workeru `POST /{id}/fail` (po `max-attempts` → `FAILED`). Engine je za
-rozhraním `Extractor` — cloudová služba by šla přidat bez zásahu do zbytku, ale **zapnout ji
-jde jen s novou verzí souhlasu** (`app.receipt.consent-version`) a změnou zásad, viz soukromí.
+**Worker** (`tools/uctenky/`, Python jen se standardní knihovnou, README tamtéž) běží na
+domácím PC cyklicky (smyčka, nebo `--once` z cronu/systemd timeru). Vyzvedne si dávku
+z `POST /api/worker/receipts/lease`, stáhne části účtenky a každou přečte OCR modelem
+(`glm-ocr:bf16`, licence MIT) — **model dělá výhradně obrázek → text**. Části spojí bez řádků
+zopakovaných v překryvu, text rozebere **deterministicky regexy** (profil řetězce, jinak obecný
+profil), zkontroluje součet proti vytištěné částce „Celkem" a výsledek vrátí přes
+`POST /{id}/result`. Obrázek bez částek dostane `NOT_A_RECEIPT`, částky bez položek
+`UNREADABLE`, chyba workeru `POST /{id}/fail` (po `max-attempts` → `FAILED`).
+
+**Proč ne vision model se strukturovaným výstupem:** vyzkoušeno na reálných účtenkách
+(větev `feat/import-uctenek`, 2026-09-07) — jazykový model nad textem účtenky zahodil řádek
+`3.000 ks x 36.90 Kč /ks` (zůstalo zaplacených 110,70 za tři kusy jako cena kusu) a jindy
+přejmenoval zboží, což kontrolní součet nezachytí. Dlouhá účtenka jako jeden obrázek navíc
+OCR modelu padala uprostřed (Billa 940×3430 px → 4 řádky textu); stejná účtenka rozdělená na
+5 dílů s ~40% překryvem (tak ji posílá mobil) prošla se součtem na haléř. OCR engine je za
+rozhraním `Extractor` (`ocr.py`) — jiný model nebo služba jde vyměnit bez zásahu do zbytku,
+ale **cloud jen s novou verzí souhlasu** (`app.receipt.consent-version`) a změnou zásad.
 
 **Autentizace workeru:** strojový token `auth.api_token` (scope `RECEIPT_WORKER`, prefix
 `kcw_`, v DB jen SHA-256), hlavička `Authorization: Bearer kcw_…`. Vydání tokenu:
-`docs/nasazeni.md`, „Worker účtenek". Token nemá identitu uživatele a na nic mimo
+`tools/uctenky/README.md`, „Token" (odkazuje i `docs/nasazeni.md`). Token nemá identitu uživatele a na nic mimo
 `/api/worker/receipts/**` a obrázky účtenek ve frontě nedosáhne.
 
 **AI nikdy nerozhoduje ani tady:** výsledek workeru zapíše jen řádky účtenky (návrh).
