@@ -80,6 +80,23 @@ public enum ErrorCode {
   PHOTO_UNREADABLE("error.photo.unreadable"),
   PHOTO_RESOLUTION_TOO_HIGH("error.photo.resolutionTooHigh"),
 
+  // --- účtenky (docs/datovy-model.md, „Účtenky")
+  RECEIPT_REQUIRES_LOGIN("error.receipt.requiresLogin"),
+  RECEIPT_NOT_FOUND("error.receipt.notFound"),
+  RECEIPT_LINE_NOT_FOUND("error.receipt.lineNotFound"),
+  RECEIPT_CONSENT_REQUIRED("error.receipt.consentRequired"),   // {0} = aktuální verze souhlasu
+  RECEIPT_IMAGES_REQUIRED("error.receipt.imagesRequired"),
+  RECEIPT_TOO_MANY_IMAGES("error.receipt.tooManyImages"),   // {0} = max obrázků
+  RECEIPT_DAILY_LIMIT("error.receipt.dailyLimit"),   // {0} = max účtenek za den
+  RECEIPT_NOT_PROCESSED("error.receipt.notProcessed"),
+  RECEIPT_STORE_REQUIRED("error.receipt.storeRequired"),
+  RECEIPT_PURCHASE_TIME_REQUIRED("error.receipt.purchaseTimeRequired"),
+  RECEIPT_PURCHASE_TIME_IN_FUTURE("error.receipt.purchaseTimeInFuture"),
+  RECEIPT_LINE_PRICE_MISSING("error.receipt.linePriceMissing"),
+  RECEIPT_LINE_NOT_MATCHED("error.receipt.lineNotMatched"),
+  RECEIPT_RESULT_INVALID("error.receipt.resultInvalid"),
+  RECEIPT_LINE_ALREADY_CONFIRMED("error.receipt.lineAlreadyConfirmed"),
+
   // --- cenové observace
   // uq_price_observation_submitter_kind_per_day — 1 záznam/uživatel/produkt/obchod/druh ceny/den
   // (hrubá síla na spamování nefunguje, docs/reputace.md), viz PriceObservationService.submit().

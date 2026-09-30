@@ -212,6 +212,28 @@ type Query {
   myReviews(first: Int = 20, offset: Int = 0): MyReviewResult!
 
   """
+  Vlastní naskenované účtenky, nejnovější první (docs/soukromi.md, „Účtenky" — vidí je jen
+  vlastník). Vyžaduje přihlášení. Nahrání účtenky je REST POST /api/receipts (multipart).
+  """
+  myReceipts(first: Int = 20, offset: Int = 0): ReceiptPage!
+
+  "Jedna vlastní účtenka i s řádky; cizí nebo neexistující = null."
+  receipt(id: ID!): Receipt
+
+  """
+  Pro notifikaci a odznak — kolik účtenek má pro vlastníka něco nového (zpracovaná a neviděná,
+  nebo nový návrh spárování). Mobil se ptá periodicky (WorkManager), žádný push.
+  """
+  receiptSummary: ReceiptSummary!
+
+  """
+  Našeptávač zboží pro řádek účtenky: nejdřív zboží s podobným označením na účtenkách
+  v rozsahu obchodu, pak podobnost názvu jako productSuggestions. Bez query se hledá podle
+  textu z účtenky.
+  """
+  receiptLineSuggestions(lineId: ID!, query: String, first: Int = 10): [Product!]!
+
+  """
   Fronta nahlášených záznamů čekajících na přezkum (docs/reputace.md, "Moderace") — bez
   recordType všechny tři typy najednou. Jen moderátor (T4), jinak MODERATION_REQUIRES_ROLE.
   """
@@ -260,6 +282,40 @@ type Mutation {
   (nižší váha, viz docs/reputace.md). Pořadí výsledku odpovídá pořadí `prices` na vstupu.
   """
   submitObservations(input: SubmitObservationsInput!): [PriceObservation!]!
+
+  """
+  Oprava hlavičky účtenky — obchod (potvrzení návrhu nebo jiný) a datum a čas nákupu. Změna
+  obchodu znovu spustí strojové párování řádků (jiný řetězec = jiné zkratky).
+  """
+  updateReceiptHeader(id: ID!, storeId: ID, purchasedAt: DateTime): Receipt!
+
+  """
+  Spáruje řádek účtenky se zbožím (z našeptávače, nebo právě založeným — newProduct: true).
+  Cenu nezapisuje, jen připraví řádek k potvrzení.
+  """
+  matchReceiptLine(lineId: ID!, productId: ID!, newProduct: Boolean = false): ReceiptLine!
+
+  "Uživatel tenhle řádek párovat nechce."
+  ignoreReceiptLine(lineId: ID!): ReceiptLine!
+
+  "Vrátí řádek do stavu UNMATCHED (zruší ruční párování i ignorování)."
+  unmatchReceiptLine(lineId: ID!): ReceiptLine!
+
+  """
+  Zapíše ceny z vybraných spárovaných řádků (observedAt = datum a čas nákupu, druh důkazu
+  RECEIPT_OCR). Každý řádek zvlášť — kolize jednoho (stejné zboží týž den už zapsané) ostatní
+  neshodí, vrátí se ve skipped se skipReason.
+  """
+  confirmReceiptLines(receiptId: ID!, lineIds: [ID!]!): ConfirmReceiptLinesResult!
+
+  "Vlastník účtenku viděl — zhasne notifikaci/odznak."
+  markReceiptSeen(id: ID!): Receipt!
+
+  """
+  Smaže účtenku včetně obrázků a řádků (GDPR, docs/soukromi.md). Už potvrzené ceny zůstávají
+  jako běžné cenové záznamy.
+  """
+  deleteReceipt(id: ID!): Boolean!
 
   """
   Hodnocení kvality hvězdičkami: 1 nejhorší … 5 nejlepší. Jeden záznam na uživatele a produkt
@@ -852,6 +908,11 @@ enum ProductScope {
 
 type Product {
   id: ID!
+  """
+  Názvy na účtenkách — jak zboží tisknou obchody na účtenku (core.product_store_label).
+  Jen aktivní označení; slouží k párování, ne k hledání.
+  """
+  storeLabels: [ProductStoreLabel!]!
   """
   Název v jazyce requestu (Accept-Language). Když ho zboží v tom jazyce nemá, vrátí se
   nejbližší náhrada (primární název → hlavní jazyk OFF → výchozí jazyk appky → cokoli) —
@@ -1606,6 +1667,21 @@ enum ErrorCode {
   PHOTO_UNSUPPORTED_FORMAT
   PHOTO_UNREADABLE
   PHOTO_RESOLUTION_TOO_HIGH
+  RECEIPT_REQUIRES_LOGIN
+  RECEIPT_NOT_FOUND
+  RECEIPT_LINE_NOT_FOUND
+  RECEIPT_CONSENT_REQUIRED
+  RECEIPT_IMAGES_REQUIRED
+  RECEIPT_TOO_MANY_IMAGES
+  RECEIPT_DAILY_LIMIT
+  RECEIPT_NOT_PROCESSED
+  RECEIPT_STORE_REQUIRED
+  RECEIPT_PURCHASE_TIME_REQUIRED
+  RECEIPT_PURCHASE_TIME_IN_FUTURE
+  RECEIPT_LINE_PRICE_MISSING
+  RECEIPT_LINE_NOT_MATCHED
+  RECEIPT_RESULT_INVALID
+  RECEIPT_LINE_ALREADY_CONFIRMED
   OBSERVATION_ALREADY_SUBMITTED_TODAY
   OBSERVATION_PRICES_REQUIRED
   OBSERVATION_DUPLICATE_PRICE_KIND
@@ -1660,4 +1736,131 @@ enum ErrorCode {
   UOM_MISMATCH
   VALIDATION_FAILED
   CLIENT_VERSION_TOO_OLD
+}
+
+"Stav strojového zpracování účtenky (worker, docs/ai.md)."
+enum ReceiptProcessingStatus {
+  QUEUED
+  PROCESSING
+  PROCESSED
+  "Obrázek účtenka není."
+  NOT_A_RECEIPT
+  "Účtenka, ale nečitelná — nafotit znovu."
+  UNREADABLE
+  FAILED
+}
+
+"Kam došel uživatel s párováním."
+enum ReceiptReviewStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+}
+
+enum ReceiptLineStatus {
+  UNMATCHED
+  "Zboží našel server přes kód nebo známé označení — předem zaškrtnuté, cena ještě nezapsaná."
+  SUGGESTED
+  "Potvrzeno uživatelem (observationId je vyplněné, pokud cena nebyla přeskočena)."
+  MATCHED
+  IGNORED
+}
+
+enum ReceiptMatchSource {
+  CODE
+  LABEL
+  USER
+  NEW_PRODUCT
+}
+
+enum QuantityUnit {
+  PCS
+  KG
+  L
+}
+
+"Naskenovaná účtenka — soukromá, vidí ji jen vlastník (docs/soukromi.md, „Účtenky“)."
+type Receipt {
+  id: ID!
+  processingStatus: ReceiptProcessingStatus!
+  reviewStatus: ReceiptReviewStatus!
+  createdAt: DateTime!
+  processedAt: DateTime
+  "Datum a čas nákupu — stane se datem všech cen z účtenky."
+  purchasedAt: DateTime
+  "Syrový text z hlavičky účtenky, jak ho přečetl stroj."
+  storeNameRaw: String
+  storeAddressRaw: String
+  storeIcoRaw: String
+  totalAmount: BigDecimal
+  currency: String
+  "Obchod potvrzený uživatelem."
+  store: Store
+  "Obchod navržený serverem podle IČO/adresy — uživatel ho potvrdí přes updateReceiptHeader."
+  suggestedStore: Store
+  "Relativní cesty REST GET /api/receipts/{id}/images/{seq} v pořadí; prázdné po uplynutí retence."
+  imagePaths: [String!]!
+  imagesDeletedAt: DateTime
+  "Je pro vlastníka něco nového (zpracováno, nebo nový návrh spárování)."
+  unseen: Boolean!
+  lineCounts: ReceiptLineCounts!
+  lines: [ReceiptLine!]!
+}
+
+type ReceiptLineCounts {
+  total: Int!
+  unmatched: Int!
+  suggested: Int!
+  matched: Int!
+  ignored: Int!
+}
+
+type ReceiptLine {
+  id: ID!
+  lineNo: Int!
+  "Text přesně tak, jak ho obchod tiskne (např. TUK.ROHLIK)."
+  labelRaw: String!
+  internalCode: String
+  quantity: BigDecimal
+  quantityUnit: QuantityUnit!
+  "U váhového zboží cena za kg/l, ne zaplacená částka."
+  unitPrice: BigDecimal
+  lineTotal: BigDecimal
+  discountAmount: BigDecimal
+  priceKind: PriceKind!
+  status: ReceiptLineStatus!
+  matchSource: ReceiptMatchSource
+  product: Product
+  "Vyplněno, když z řádku vznikla cena."
+  observationId: ID
+  "Proč potvrzení cenu nezapsalo — DUPLICATE_SAME_DAY, nebo kód chyby (ErrorCode)."
+  skipReason: String
+}
+
+type ReceiptPage {
+  items: [Receipt!]!
+  totalCount: Int!
+  hasMore: Boolean!
+}
+
+type ReceiptSummary {
+  unseenCount: Int!
+  "Aktuální verze textu souhlasu — klient se starší odsouhlasenou verzí se musí zeptat znovu."
+  consentVersion: Int!
+}
+
+type ConfirmReceiptLinesResult {
+  receipt: Receipt!
+  confirmed: Int!
+  skipped: [ReceiptLine!]!
+}
+
+"Označení zboží na účtenkách jednoho řetězce nebo obchodu."
+type ProductStoreLabel {
+  label: String!
+  "Řetězec, pro který označení platí (null = platí jen pro jeden obchod)."
+  chainName: String
+  "Obchod, pro který označení platí (u nezávislých obchodů)."
+  storeName: String
+  lastSeenAt: DateTime!
 }

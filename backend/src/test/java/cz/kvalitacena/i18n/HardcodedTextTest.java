@@ -33,7 +33,9 @@ class HardcodedTextTest {
       "MediaController.java", // UncheckedIOException při čtení uploadu — technická I/O chyba
       "LocalFileSystemMediaStorage.java", // totéž pro ukládání na disk
       "EmailCipher.java", // hash/šifrování e-mailu selže jen při programátorské/konfigurační chybě
-      "ImageProcessingService.java" // zápis na disk / chybějící SHA-256 — technické, ne doménové
+      "ImageProcessingService.java", // zápis na disk / chybějící SHA-256 — technické, ne doménové
+      "ReceiptController.java", // UncheckedIOException při čtení uploadu účtenky — jako MediaController
+      "ApiTokenAuthenticationFilter.java" // chybějící SHA-256 — konfigurační chyba JVM
   );
 
   private static final Pattern HARDCODED_EXCEPTION_TEXT = Pattern.compile(

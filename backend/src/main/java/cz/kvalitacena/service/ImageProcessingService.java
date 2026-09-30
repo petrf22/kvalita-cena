@@ -51,16 +51,12 @@ public class ImageProcessingService {
   public record ProcessedImage(byte[] full, byte[] thumbnail, int width, int height, byte[] sha256) {
   }
 
-  public ProcessedImage process(byte[] raw) {
-    if (raw.length == 0 || raw.length > mediaProperties.getMaxUploadBytes()) {
-      throw new ValidationException(ErrorCode.PHOTO_TOO_LARGE);
-    }
-    requireKnownFormat(raw);
-    checkPixelBudget(raw);
+  /** Výřez účtenky po zpracování — bez náhledu, jen šedotónový JPEG. */
+  public record ProcessedReceiptImage(byte[] content, int width, int height, byte[] sha256) {
+  }
 
-    BufferedImage decoded = decode(raw);
-    int orientation = readExifOrientation(raw);
-    BufferedImage oriented = applyOrientation(decoded, orientation);
+  public ProcessedImage process(byte[] raw) {
+    BufferedImage oriented = decodeOriented(raw, mediaProperties.getMaxUploadBytes());
 
     BufferedImage full = redrawAndFit(oriented, mediaProperties.getMaxDimension());
     BufferedImage thumbnail = redrawAndFit(oriented, mediaProperties.getThumbnailDimension());
@@ -68,6 +64,42 @@ public class ImageProcessingService {
     byte[] fullBytes = encodeJpeg(full);
     byte[] thumbnailBytes = encodeJpeg(thumbnail);
     return new ProcessedImage(fullBytes, thumbnailBytes, full.getWidth(), full.getHeight(), sha256(raw));
+  }
+
+  /**
+   * Výřez účtenky (docs/soukromi.md, „Účtenky") — stejná záruka překreslení z pixelů jako u
+   * fotek, ale jiný tvar: účtenka je úzká a dlouhá, takže se omezuje jen ŠÍŘKA (výška by
+   * dlouhou účtenku zmenšila do nečitelna) a výsledek je šedotónový — barva k přečtení
+   * termotisku nic nepřidá a soubor je zhruba třetinový.
+   */
+  public ProcessedReceiptImage processReceipt(byte[] raw, long maxBytes, int maxWidth) {
+    BufferedImage oriented = decodeOriented(raw, maxBytes);
+    double scale = Math.min(1.0, (double) maxWidth / oriented.getWidth());
+    int newWidth = Math.max(1, (int) Math.round(oriented.getWidth() * scale));
+    int newHeight = Math.max(1, (int) Math.round(oriented.getHeight() * scale));
+
+    BufferedImage gray = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_BYTE_GRAY);
+    Graphics2D g = gray.createGraphics();
+    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+    g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+    g.setColor(Color.WHITE);
+    g.fillRect(0, 0, newWidth, newHeight);
+    g.drawImage(oriented, 0, 0, newWidth, newHeight, null);
+    g.dispose();
+
+    return new ProcessedReceiptImage(encodeJpeg(gray), newWidth, newHeight, sha256(raw));
+  }
+
+  private BufferedImage decodeOriented(byte[] raw, long maxBytes) {
+    if (raw.length == 0 || raw.length > maxBytes) {
+      throw new ValidationException(ErrorCode.PHOTO_TOO_LARGE);
+    }
+    requireKnownFormat(raw);
+    checkPixelBudget(raw);
+
+    BufferedImage decoded = decode(raw);
+    int orientation = readExifOrientation(raw);
+    return applyOrientation(decoded, orientation);
   }
 
   /** Typ podle magic bytes, ne podle {@code Content-Type} hlavičky — tu klient volně lže. */

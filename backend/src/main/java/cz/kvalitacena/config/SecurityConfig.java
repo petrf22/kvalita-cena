@@ -1,5 +1,6 @@
 package cz.kvalitacena.config;
 
+import cz.kvalitacena.security.ApiTokenAuthenticationFilter;
 import cz.kvalitacena.security.ClientVersionFilter;
 import cz.kvalitacena.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ import java.util.List;
 public class SecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final ApiTokenAuthenticationFilter apiTokenAuthenticationFilter;
   private final ClientVersionFilter clientVersionFilter;
   private final SecurityProperties securityProperties;
 
@@ -51,6 +53,12 @@ public class SecurityConfig {
             // stejně jako EmailChangeController — permitAll tu neznamená "bez přihlášení",
             // jen že se to nekontroluje blokováním URL (viz komentáře výš).
             .requestMatchers("/api/me/**").permitAll()
+            // Účtenky člověka: vlastnictví hlídá ReceiptController/ReceiptService stejně jako
+            // u /api/media — obrázek smí vidět vlastník NEBO worker (docs/soukromi.md, „Účtenky").
+            .requestMatchers("/api/receipts/**").permitAll()
+            // Worker účtenek (docs/ai.md) — jediné místo, kde se blokuje už na URL: strojový
+            // token jinam nepatří a sem nepatří nikdo jiný.
+            .requestMatchers("/api/worker/receipts/**").hasRole("RECEIPT_WORKER")
             .requestMatchers("/actuator/health/**", "/actuator/info/**").permitAll()
             // GraphQL běží na jednom endpointu pro anonymní (T0) i přihlášené uživatele —
             // odstupňování přístupu (docs/reputace.md) řeší predikáty v resolverech/ViewerContext,
@@ -58,6 +66,7 @@ public class SecurityConfig {
             .requestMatchers("/graphql", "/graphiql/**").permitAll()
             .anyRequest().authenticated())
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+        .addFilterBefore(apiTokenAuthenticationFilter, JwtAuthenticationFilter.class)
         .addFilterAfter(clientVersionFilter, JwtAuthenticationFilter.class);
 
     return http.build();

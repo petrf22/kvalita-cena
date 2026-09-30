@@ -7,7 +7,7 @@ public class TooManyRequestsException extends AppException {
   }
 
   /** Strop, u kterého má uživatel vědět, čeho se týká — obecné "moc požadavků" by neporadilo. */
-  public TooManyRequestsException(ErrorCode code) {
-    super(code);
+  public TooManyRequestsException(ErrorCode code, Object... args) {
+    super(code, args);
   }
 }
