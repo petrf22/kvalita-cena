@@ -157,7 +157,9 @@ vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DI
 **Snímání na klientovi (mobil):** prahy capture pipeline (`ui/receipt/capture/`,
 `docs/rozvoj.md`, „Sběr snímků") — ostrost: Laplacianova variance ≥ 60 (na zmenšeném
 šedotónovém snímku, šířka 480 px); nový výřez při posunu ≥ 60 % výšky proti poslednímu
-uloženému (~40 % překryv). Hodnoty patří sem, v kódu jsou jen jako konstanty s odkazem
+uloženému (~40 % překryv). Web (`frontend/.../features/receipts/`) díly nesnímá kamerou, uživatel
+vybírá fotky sám; výchozí maska je spodní pás 20 % výšky poslední části a odesílaná šířka
+je nejvýš 1600 px (stejně jako `max-width` na serveru). Hodnoty patří sem, v kódu jsou jen jako konstanty s odkazem
 na tenhle dokument.
 
 ## Konfigurace (až přijde čas)
