@@ -36,5 +36,16 @@
   "uploadingPhotos": "Uploading photos…",
   "photoUploadFailedWarning": "The product was created, but the photo failed to upload. Try again from its detail page.",
   "submit": "Create product",
-  "submitEdit": "Save changes"
+  "submitEdit": "Save changes",
+  "scan": {
+    "button": "Scan barcode",
+    "title": "Scan barcode",
+    "cameraHint": "Point the camera at the barcode, it is read automatically.",
+    "fromPhoto": "Choose a photo of the code",
+    "denied": "The browser is not allowed to use the camera. Allow it, or choose a photo of the barcode.",
+    "noCamera": "No camera is available. Choose a photo of the barcode.",
+    "notFound": "The barcode could not be read. Try a sharper photo, or type the code.",
+    "existing": "A product with this code is already in the catalogue: {{name}}.",
+    "useExisting": "Use it"
+  }
 }

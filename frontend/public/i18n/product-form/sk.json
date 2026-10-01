@@ -36,5 +36,16 @@
   "uploadingPhotos": "Nahrávam fotky…",
   "photoUploadFailedWarning": "Tovar je založený, ale fotku sa nepodarilo nahrať. Skús to znova na jeho detaile.",
   "submit": "Založiť tovar",
-  "submitEdit": "Uložiť zmeny"
+  "submitEdit": "Uložiť zmeny",
+  "scan": {
+    "button": "Naskenovať čiarový kód",
+    "title": "Naskenovať čiarový kód",
+    "cameraHint": "Namier kameru na čiarový kód, načíta sa sám.",
+    "fromPhoto": "Vybrať fotku kódu",
+    "denied": "Prehliadač nemá povolený prístup ku kamere. Povoľ ho alebo vyber fotku čiarového kódu.",
+    "noCamera": "Kamera nie je k dispozícii. Vyber fotku čiarového kódu.",
+    "notFound": "Čiarový kód sa nepodarilo prečítať. Skús ostrejšiu fotku alebo kód odpíš.",
+    "existing": "Tovar s týmto kódom už v katalógu je: {{name}}.",
+    "useExisting": "Použiť"
+  }
 }
