@@ -8,6 +8,10 @@ import cz.kvalitacena.network.ClientVersionInterceptor
 import cz.kvalitacena.network.DisplayCurrencyInterceptor
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.MediaClient
+import cz.kvalitacena.network.NetworkMonitor
+import cz.kvalitacena.receipt.PendingReceiptStore
+import cz.kvalitacena.receipt.ReceiptDraftStore
+import cz.kvalitacena.receipt.ReceiptPrefs
 import cz.kvalitacena.ui.settings.CountryStore
 import cz.kvalitacena.ui.settings.DisplayCurrencyStore
 import cz.kvalitacena.ui.settings.LastStoreStore
@@ -45,6 +49,20 @@ object AppContainer {
   lateinit var lastStoreStore: LastStoreStore
     private set
 
+  lateinit var networkMonitor: NetworkMonitor
+    private set
+
+  /** Účtenky (docs/soukromi.md, „Účtenky") — souhlas, koncept mezi focením a odesláním, fronta. */
+  lateinit var receiptPrefs: ReceiptPrefs
+    private set
+
+  lateinit var receiptDraft: ReceiptDraftStore
+    private set
+
+  lateinit var pendingReceipts: PendingReceiptStore
+    private set
+
+  @Synchronized
   fun init(context: Context) {
     if (::authRepository.isInitialized) return
     displayCurrencyStore = DisplayCurrencyStore(context.applicationContext)
@@ -52,6 +70,10 @@ object AppContainer {
     priceEntryVisibilityStore = PriceEntryVisibilityStore(context.applicationContext)
     searchFilterStore = SearchFilterStore(context.applicationContext)
     lastStoreStore = LastStoreStore(context.applicationContext)
+    networkMonitor = NetworkMonitor(context.applicationContext)
+    receiptPrefs = ReceiptPrefs(context.applicationContext)
+    receiptDraft = ReceiptDraftStore(context.applicationContext.filesDir)
+    pendingReceipts = PendingReceiptStore(context.applicationContext.filesDir)
     // Jeden sdílený klient pro GraphQL/REST/Coil místo tří samostatných OkHttpClient()
     // instancí — sdílí connection pool a všude jde stejný Accept-Language i X-Display-Currency
     // (docs/lokalizace.md).

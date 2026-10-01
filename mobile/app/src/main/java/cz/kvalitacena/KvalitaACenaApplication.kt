@@ -2,6 +2,8 @@ package cz.kvalitacena
 
 import android.app.Application
 import cz.kvalitacena.crash.CrashReporter
+import cz.kvalitacena.receipt.ReceiptNotifications
+import cz.kvalitacena.receipt.ReceiptWork
 import org.osmdroid.config.Configuration
 
 class KvalitaACenaApplication : Application() {
@@ -11,6 +13,13 @@ class KvalitaACenaApplication : Application() {
     // Bez třetí strany (docs/soukromi.md) — viz CrashReporter. Musí naběhnout co nejdřív, ať
     // zachytí i pády, ke kterým dojde ještě během inicializace zbytku appky.
     CrashReporter.install(this, BuildConfig.VERSION_NAME)
+
+    // Kontrola zpracovaných účtenek jen u toho, kdo je používá (ReceiptWork) — KEEP interval
+    // neresetuje, takže opakovaný start appky nic neposouvá.
+    if (AppContainer.receiptPrefs.receiptsUsed) {
+      ReceiptNotifications.ensureChannel(this)
+      ReceiptWork.schedulePeriodicStatus(this)
+    }
 
     // Cache dlaždic do appce vlastního (scoped) adresáře — bez tohle by osmdroid defaultně
     // sáhl na veřejné externí úložiště a vyžadoval WRITE_EXTERNAL_STORAGE, které appka nemá

@@ -12,6 +12,9 @@ import org.junit.Test
  * nepřekládají), `GraphQlClient.kt`/`MediaClient.kt`/`AuthRepository.kt` mají technické
  * `TransportException` zprávy, které appka nikdy nezobrazí jako lokalizovaný text (mapují se
  * na obecný fallback přes `Throwable.toUiText()`, viz `ui/common/ErrorMessages.kt`).
+ * Totéž platí pro účtenky mimo obrazovky — úložiště a workery (`receipt/`) a zpracování obrazu
+ * (`ui/receipt/capture/` bez obrazovky a ViewModelu): jen logy a `require`/`check` zprávy,
+ * uživatel z nich nic neuvidí (chyby pro něj jdou přes `UiText.Res`).
  */
 class HardcodedTextTest {
 
@@ -22,6 +25,13 @@ class HardcodedTextTest {
     "GraphQlClient.kt",
     "MediaClient.kt",
     "AuthRepository.kt",
+    "ReceiptDraftStore.kt",
+    "PendingReceiptStore.kt",
+    "ReceiptWork.kt",
+    "QuadGeometry.kt",
+    "Sharpness.kt",
+    "ReceiptImageProcessor.kt",
+    "ReceiptFrameAnalyzer.kt",
   )
 
   private val blockComment = Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL)
