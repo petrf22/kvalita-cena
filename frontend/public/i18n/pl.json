@@ -21,6 +21,7 @@
   "nav": {
     "search": "Wyszukiwanie",
     "price": "Dodaj cenę",
+    "receipts": "Paragony",
     "settings": "Ustawienia",
     "account": "Konto",
     "login": "Logowanie"
@@ -78,6 +79,21 @@
     "PHOTO_UNSUPPORTED_FORMAT": "Obsługiwane są tylko zdjęcia JPEG lub PNG",
     "PHOTO_UNREADABLE": "Nie udało się odczytać zdjęcia",
     "PHOTO_RESOLUTION_TOO_HIGH": "Zdjęcie ma zbyt dużą rozdzielczość",
+    "RECEIPT_REQUIRES_LOGIN": "Paragony wymagają zalogowania.",
+    "RECEIPT_NOT_FOUND": "Paragon nie istnieje lub został już usunięty.",
+    "RECEIPT_LINE_NOT_FOUND": "Pozycja paragonu nie istnieje — wczytaj paragon ponownie.",
+    "RECEIPT_CONSENT_REQUIRED": "Treść zgody na przetwarzanie się zmieniła. Przeczytaj ją i zaznacz ponownie.",
+    "RECEIPT_IMAGES_REQUIRED": "Dodaj co najmniej jedno zdjęcie paragonu.",
+    "RECEIPT_TOO_MANY_IMAGES": "Paragon może mieć najwyżej {{p0}} części.",
+    "RECEIPT_DAILY_LIMIT": "Dziennie można wysłać najwyżej {{p0}} paragonów. Spróbuj ponownie jutro.",
+    "RECEIPT_NOT_PROCESSED": "Paragon nie został jeszcze przetworzony.",
+    "RECEIPT_STORE_REQUIRED": "Najpierw potwierdź sklep, w którym były zakupy.",
+    "RECEIPT_PURCHASE_TIME_REQUIRED": "Uzupełnij datę i godzinę zakupu.",
+    "RECEIPT_PURCHASE_TIME_IN_FUTURE": "Data zakupu nie może być w przyszłości.",
+    "RECEIPT_LINE_PRICE_MISSING": "Nie udało się odczytać ceny w tej pozycji.",
+    "RECEIPT_LINE_NOT_MATCHED": "Pozycja nie jest jeszcze powiązana z produktem.",
+    "RECEIPT_RESULT_INVALID": "Wynik przetwarzania paragonu jest nieprawidłowy.",
+    "RECEIPT_LINE_ALREADY_CONFIRMED": "Cena z tej pozycji jest już zapisana.",
     "QUALITY_REQUIRES_LOGIN": "Ocena jakości wymaga zalogowania",
     "QUALITY_STARS_OUT_OF_RANGE": "Ocena musi być w zakresie od {{p0}} do {{p1}} gwiazdek",
     "REVIEW_REQUIRES_LOGIN": "Recenzja wymaga zalogowania",
@@ -189,6 +205,36 @@
     "clientKind": {
       "WEB": "Web",
       "ANDROID": "Aplikacja Android"
+    },
+    "receiptProcessingStatus": {
+      "QUEUED": "Czeka na przetworzenie",
+      "PROCESSING": "Przetwarzanie",
+      "PROCESSED": "Przetworzony",
+      "NOT_A_RECEIPT": "To nie paragon",
+      "UNREADABLE": "Nieczytelny",
+      "FAILED": "Przetwarzanie nie powiodło się"
+    },
+    "receiptReviewStatus": {
+      "PENDING": "Do powiązania",
+      "IN_PROGRESS": "W toku",
+      "DONE": "Gotowe"
+    },
+    "receiptLineStatus": {
+      "UNMATCHED": "Niepowiązane",
+      "SUGGESTED": "Propozycja",
+      "MATCHED": "Powiązane",
+      "IGNORED": "Pominięte"
+    },
+    "receiptMatchSource": {
+      "CODE": "według kodu z paragonu",
+      "LABEL": "według nazwy na paragonie",
+      "USER": "wybrane ręcznie",
+      "NEW_PRODUCT": "nowo dodany produkt"
+    },
+    "quantityUnit": {
+      "PCS": "szt.",
+      "KG": "kg",
+      "L": "l"
     }
   }
 }

@@ -233,6 +233,14 @@ export const productDetailFieldsFragment = graphql(`
     photos {
       ...PhotoFields
     }
+    # Jak zboží tisknou obchody na účtenku (core.product_store_label) — jen aktivní označení,
+    # slouží k párování, ne k hledání. Karta „Názvy na účtenkách" (product-detail/receipt-labels).
+    storeLabels {
+      label
+      chainName
+      storeName
+      lastSeenAt
+    }
   }
 `);
 

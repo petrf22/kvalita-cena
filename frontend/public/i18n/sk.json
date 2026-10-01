@@ -21,6 +21,7 @@
   "nav": {
     "search": "Hľadanie",
     "price": "Zadať cenu",
+    "receipts": "Bločky",
     "settings": "Nastavenia",
     "account": "Účet",
     "login": "Prihlásenie"
@@ -78,6 +79,21 @@
     "PHOTO_UNSUPPORTED_FORMAT": "Podporované sú len fotky JPEG alebo PNG",
     "PHOTO_UNREADABLE": "Fotku sa nepodarilo prečítať",
     "PHOTO_RESOLUTION_TOO_HIGH": "Fotka má príliš veľké rozlíšenie",
+    "RECEIPT_REQUIRES_LOGIN": "Bločky vyžadujú prihlásenie.",
+    "RECEIPT_NOT_FOUND": "Bloček neexistuje alebo je už zmazaný.",
+    "RECEIPT_LINE_NOT_FOUND": "Riadok bločku neexistuje — načítaj bloček znova.",
+    "RECEIPT_CONSENT_REQUIRED": "Text súhlasu so spracovaním sa zmenil. Prečítaj si ho a zaškrtni znova.",
+    "RECEIPT_IMAGES_REQUIRED": "Pridaj aspoň jednu fotku bločku.",
+    "RECEIPT_TOO_MANY_IMAGES": "Bloček smie mať najviac {{p0}} častí.",
+    "RECEIPT_DAILY_LIMIT": "Za deň možno odoslať najviac {{p0}} bločkov. Skús to znova zajtra.",
+    "RECEIPT_NOT_PROCESSED": "Bloček ešte nie je spracovaný.",
+    "RECEIPT_STORE_REQUIRED": "Najprv potvrď obchod, v ktorom nákup prebehol.",
+    "RECEIPT_PURCHASE_TIME_REQUIRED": "Doplň dátum a čas nákupu.",
+    "RECEIPT_PURCHASE_TIME_IN_FUTURE": "Dátum nákupu nesmie byť v budúcnosti.",
+    "RECEIPT_LINE_PRICE_MISSING": "Na riadku sa nepodarilo prečítať cenu.",
+    "RECEIPT_LINE_NOT_MATCHED": "Riadok ešte nie je spárovaný s tovarom.",
+    "RECEIPT_RESULT_INVALID": "Výsledok spracovania bločku je neplatný.",
+    "RECEIPT_LINE_ALREADY_CONFIRMED": "Cena z tohto riadku je už zapísaná.",
     "QUALITY_REQUIRES_LOGIN": "Hodnotenie kvality vyžaduje prihlásenie",
     "QUALITY_STARS_OUT_OF_RANGE": "Hodnotenie musí byť {{p0}} až {{p1}} hviezdičiek",
     "REVIEW_REQUIRES_LOGIN": "Recenzia vyžaduje prihlásenie",
@@ -189,6 +205,36 @@
     "clientKind": {
       "WEB": "Web",
       "ANDROID": "Android appka"
+    },
+    "receiptProcessingStatus": {
+      "QUEUED": "Čaká na spracovanie",
+      "PROCESSING": "Spracováva sa",
+      "PROCESSED": "Spracované",
+      "NOT_A_RECEIPT": "Nie je bloček",
+      "UNREADABLE": "Nečitateľný",
+      "FAILED": "Spracovanie zlyhalo"
+    },
+    "receiptReviewStatus": {
+      "PENDING": "Na párovanie",
+      "IN_PROGRESS": "Rozpracované",
+      "DONE": "Hotovo"
+    },
+    "receiptLineStatus": {
+      "UNMATCHED": "Nespárované",
+      "SUGGESTED": "Návrh",
+      "MATCHED": "Spárované",
+      "IGNORED": "Ignorované"
+    },
+    "receiptMatchSource": {
+      "CODE": "podľa kódu z bločku",
+      "LABEL": "podľa názvu na bločku",
+      "USER": "vybrané ručne",
+      "NEW_PRODUCT": "novo založený tovar"
+    },
+    "quantityUnit": {
+      "PCS": "ks",
+      "KG": "kg",
+      "L": "l"
     }
   }
 }

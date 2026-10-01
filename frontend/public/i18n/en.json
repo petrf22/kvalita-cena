@@ -21,6 +21,7 @@
   "nav": {
     "search": "Search",
     "price": "Add price",
+    "receipts": "Receipts",
     "settings": "Settings",
     "account": "Account",
     "login": "Sign in"
@@ -78,6 +79,21 @@
     "PHOTO_UNSUPPORTED_FORMAT": "Only JPEG or PNG photos are supported",
     "PHOTO_UNREADABLE": "The photo could not be read",
     "PHOTO_RESOLUTION_TOO_HIGH": "The photo's resolution is too high",
+    "RECEIPT_REQUIRES_LOGIN": "Receipts require signing in.",
+    "RECEIPT_NOT_FOUND": "The receipt does not exist or has already been deleted.",
+    "RECEIPT_LINE_NOT_FOUND": "The receipt line does not exist — reload the receipt.",
+    "RECEIPT_CONSENT_REQUIRED": "The processing consent text has changed. Please read it and tick it again.",
+    "RECEIPT_IMAGES_REQUIRED": "Add at least one photo of the receipt.",
+    "RECEIPT_TOO_MANY_IMAGES": "A receipt may have at most {{p0}} parts.",
+    "RECEIPT_DAILY_LIMIT": "You can send at most {{p0}} receipts per day. Please try again tomorrow.",
+    "RECEIPT_NOT_PROCESSED": "The receipt has not been processed yet.",
+    "RECEIPT_STORE_REQUIRED": "First confirm the store where you shopped.",
+    "RECEIPT_PURCHASE_TIME_REQUIRED": "Fill in the date and time of purchase.",
+    "RECEIPT_PURCHASE_TIME_IN_FUTURE": "The purchase date cannot be in the future.",
+    "RECEIPT_LINE_PRICE_MISSING": "The price on this line could not be read.",
+    "RECEIPT_LINE_NOT_MATCHED": "The line is not matched with a product yet.",
+    "RECEIPT_RESULT_INVALID": "The receipt processing result is invalid.",
+    "RECEIPT_LINE_ALREADY_CONFIRMED": "The price from this line has already been recorded.",
     "QUALITY_REQUIRES_LOGIN": "Rating quality requires signing in",
     "QUALITY_STARS_OUT_OF_RANGE": "The rating must be between {{p0}} and {{p1}} stars",
     "REVIEW_REQUIRES_LOGIN": "Writing a review requires signing in",
@@ -189,6 +205,36 @@
     "clientKind": {
       "WEB": "Web",
       "ANDROID": "Android app"
+    },
+    "receiptProcessingStatus": {
+      "QUEUED": "Waiting to be processed",
+      "PROCESSING": "Processing",
+      "PROCESSED": "Processed",
+      "NOT_A_RECEIPT": "Not a receipt",
+      "UNREADABLE": "Unreadable",
+      "FAILED": "Processing failed"
+    },
+    "receiptReviewStatus": {
+      "PENDING": "To match",
+      "IN_PROGRESS": "In progress",
+      "DONE": "Done"
+    },
+    "receiptLineStatus": {
+      "UNMATCHED": "Unmatched",
+      "SUGGESTED": "Suggestion",
+      "MATCHED": "Matched",
+      "IGNORED": "Ignored"
+    },
+    "receiptMatchSource": {
+      "CODE": "by the code on the receipt",
+      "LABEL": "by the name on the receipt",
+      "USER": "chosen by hand",
+      "NEW_PRODUCT": "newly added product"
+    },
+    "quantityUnit": {
+      "PCS": "pcs",
+      "KG": "kg",
+      "L": "l"
     }
   }
 }

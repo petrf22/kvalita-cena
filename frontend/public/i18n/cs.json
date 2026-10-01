@@ -21,6 +21,7 @@
   "nav": {
     "search": "Hledání",
     "price": "Zadat cenu",
+    "receipts": "Účtenky",
     "settings": "Nastavení",
     "account": "Účet",
     "login": "Přihlášení"
@@ -78,6 +79,21 @@
     "PHOTO_UNSUPPORTED_FORMAT": "Podporované jsou jen fotky JPEG nebo PNG",
     "PHOTO_UNREADABLE": "Fotku se nepodařilo přečíst",
     "PHOTO_RESOLUTION_TOO_HIGH": "Fotka má příliš velké rozlišení",
+    "RECEIPT_REQUIRES_LOGIN": "Účtenky vyžadují přihlášení.",
+    "RECEIPT_NOT_FOUND": "Účtenka neexistuje, nebo už je smazaná.",
+    "RECEIPT_LINE_NOT_FOUND": "Řádek účtenky neexistuje — načti účtenku znovu.",
+    "RECEIPT_CONSENT_REQUIRED": "Text souhlasu se zpracováním se změnil. Přečti si ho a zaškrtni znovu.",
+    "RECEIPT_IMAGES_REQUIRED": "Přidej aspoň jednu fotku účtenky.",
+    "RECEIPT_TOO_MANY_IMAGES": "Účtenka smí mít nejvýš {{p0}} částí.",
+    "RECEIPT_DAILY_LIMIT": "Za den jde odeslat nejvýš {{p0}} účtenek. Zkus to zase zítra.",
+    "RECEIPT_NOT_PROCESSED": "Účtenka ještě není zpracovaná.",
+    "RECEIPT_STORE_REQUIRED": "Nejdřív potvrď obchod, ve kterém nákup proběhl.",
+    "RECEIPT_PURCHASE_TIME_REQUIRED": "Doplň datum a čas nákupu.",
+    "RECEIPT_PURCHASE_TIME_IN_FUTURE": "Datum nákupu nesmí být v budoucnu.",
+    "RECEIPT_LINE_PRICE_MISSING": "Na řádku se nepodařilo přečíst cenu.",
+    "RECEIPT_LINE_NOT_MATCHED": "Řádek ještě není spárovaný se zbožím.",
+    "RECEIPT_RESULT_INVALID": "Výsledek zpracování účtenky je neplatný.",
+    "RECEIPT_LINE_ALREADY_CONFIRMED": "Cena z tohohle řádku už je zapsaná.",
     "QUALITY_REQUIRES_LOGIN": "Hodnocení kvality vyžaduje přihlášení",
     "QUALITY_STARS_OUT_OF_RANGE": "Hodnocení musí být {{p0}} až {{p1}} hvězdiček",
     "REVIEW_REQUIRES_LOGIN": "Recenze vyžaduje přihlášení",
@@ -189,6 +205,36 @@
     "clientKind": {
       "WEB": "Web",
       "ANDROID": "Android appka"
+    },
+    "receiptProcessingStatus": {
+      "QUEUED": "Čeká na zpracování",
+      "PROCESSING": "Zpracovává se",
+      "PROCESSED": "Zpracováno",
+      "NOT_A_RECEIPT": "Není účtenka",
+      "UNREADABLE": "Nečitelná",
+      "FAILED": "Zpracování selhalo"
+    },
+    "receiptReviewStatus": {
+      "PENDING": "K párování",
+      "IN_PROGRESS": "Rozpracováno",
+      "DONE": "Hotovo"
+    },
+    "receiptLineStatus": {
+      "UNMATCHED": "Nespárováno",
+      "SUGGESTED": "Návrh",
+      "MATCHED": "Spárováno",
+      "IGNORED": "Ignorováno"
+    },
+    "receiptMatchSource": {
+      "CODE": "podle kódu z účtenky",
+      "LABEL": "podle názvu na účtence",
+      "USER": "vybráno ručně",
+      "NEW_PRODUCT": "nově založené zboží"
+    },
+    "quantityUnit": {
+      "PCS": "ks",
+      "KG": "kg",
+      "L": "l"
     }
   }
 }
