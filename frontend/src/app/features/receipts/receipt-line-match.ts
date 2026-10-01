@@ -16,7 +16,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { Subscription } from 'rxjs';
 import { ProductSummary, ReceiptLine } from '../../models/catalog';
-import { ConnectivityService, isNetworkError } from '../../services/connectivity-service';
+import { isNetworkError } from '../../services/connectivity-service';
 import { ReceiptService } from '../../services/receipt-service';
 import { translateError } from '../../shared/error-message';
 import { ProductThumb, usesExternalImageFallback } from '../../shared/product-thumb';
@@ -46,7 +46,6 @@ const SEARCH_DEBOUNCE_MS = 300;
 export class ReceiptLineMatch implements OnInit {
   private readonly receiptService = inject(ReceiptService);
   private readonly transloco = inject(TranslocoService);
-  private readonly connectivity = inject(ConnectivityService);
 
   readonly line = input.required<ReceiptLine>();
   /** Založit nové zboží jde jen s potvrzeným obchodem (rozsah katalogu bezkódového zboží). */
@@ -87,10 +86,6 @@ export class ReceiptLineMatch implements OnInit {
   protected search(): void {
     clearTimeout(this.timer);
     this.request?.unsubscribe();
-    if (!this.connectivity.online()) {
-      this.state.set('offline');
-      return;
-    }
     this.state.set('loading');
     const query = this.query().trim() || null;
     this.request = this.receiptService.lineSuggestions(this.line().id, query).subscribe({

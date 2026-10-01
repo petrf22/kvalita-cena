@@ -22,6 +22,7 @@
     "search": "Wyszukiwanie",
     "price": "Dodaj cenę",
     "receipts": "Paragony",
+    "receiptsUnseen": "Paragony, {count, plural, one {# z nowościami} few {# z nowościami} many {# z nowościami} other {# z nowościami}}",
     "settings": "Ustawienia",
     "account": "Konto",
     "login": "Logowanie"

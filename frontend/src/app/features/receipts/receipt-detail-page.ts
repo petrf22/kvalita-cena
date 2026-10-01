@@ -199,13 +199,8 @@ export class ReceiptDetailPage {
   }
 
   protected load(silent = false): void {
-    if (!silent) {
-      if (!this.connectivity.online()) {
-        this.state.set('offline');
-        return;
-      }
-      this.state.set('loading');
-    }
+    // Stejně jako seznam: bez sítě požadavek skončí hned a stav určí až odpověď.
+    if (!silent) this.state.set('loading');
     this.receiptService.receipt(this.receiptId).subscribe({
       next: (receipt) => {
         if (!receipt) {

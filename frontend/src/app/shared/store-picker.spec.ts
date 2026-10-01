@@ -67,6 +67,17 @@ describe('StorePicker – zapamatování a vymazání', () => {
     expect(selected).toHaveBeenLastCalledWith(null);
   });
 
+  it('bez obnovy posledního obchodu (účtenka) nic nepředvybere ani nenačte', () => {
+    const selected = vi.fn();
+    picker.selectedStoreChange.subscribe(selected);
+    (picker as unknown as { restoreLast: () => boolean }).restoreLast = () => false;
+    picker.ngOnInit();
+    response.next(store);
+    expect(last.read).not.toHaveBeenCalled();
+    expect(selected).not.toHaveBeenCalled();
+    expect(picker['selectedStore']()).toBeNull();
+  });
+
   it('"Změnit obchod" jen otevře seznam, výběr ani paměť nemaže', () => {
     picker.ngOnInit();
     response.next(store);

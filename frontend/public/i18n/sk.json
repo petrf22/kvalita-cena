@@ -22,6 +22,7 @@
     "search": "Hľadanie",
     "price": "Zadať cenu",
     "receipts": "Bločky",
+    "receiptsUnseen": "Bločky, {count, plural, one {# s novinkou} few {# s novinkou} other {# s novinkou}}",
     "settings": "Nastavenia",
     "account": "Účet",
     "login": "Prihlásenie"

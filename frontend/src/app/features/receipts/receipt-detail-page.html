@@ -129,6 +129,7 @@
                   </div>
                 } @else if (receipt.processingStatus === 'PROCESSED') {
                   <app-store-picker
+                    [restoreLast]="false"
                     [selectedStoreId]="pendingStore()?.id ?? null"
                     (selectedStoreChange)="pendingStore.set($event)"
                   />
@@ -423,55 +424,62 @@
                   <p class="muted small">{{ t('receipts.externalImageNote') }}</p>
                 }
 
-                @if (confirmResult(); as result) {
-                  <nz-alert
-                    [nzType]="result.skipped.length > 0 ? 'warning' : 'success'"
-                    nzShowIcon
-                    nzCloseable
-                    [nzMessage]="
-                      result.confirmed === 0
-                        ? t('receipts.confirm.doneNone')
-                        : t('receipts.confirm.done', { count: result.confirmed })
-                    "
-                    [nzDescription]="result.skipped.length > 0 ? skippedTemplate : null"
-                    (nzOnClose)="confirmResult.set(null)"
-                    class="block"
-                  />
-                  <ng-template #skippedTemplate>
-                    <p class="skipped-title">
-                      {{ t('receipts.confirm.skipped', { count: result.skipped.length }) }}
-                    </p>
-                    <ul class="skipped-list">
-                      @for (line of result.skipped; track line.id) {
-                        <li>
-                          <strong>{{ line.labelRaw }}</strong> —
-                          {{ skipReasonKey(line.skipReason ?? '') | transloco }}
-                        </li>
-                      }
-                    </ul>
-                  </ng-template>
-                }
-                @if (confirmError()) {
-                  <nz-alert nzType="error" nzShowIcon [nzMessage]="confirmError()" class="block" />
-                }
-
+                <!-- Výsledek patří k liště: na širokém displeji je přilepená dole, kde se klikalo. -->
                 <div class="confirm-bar">
-                  <button
-                    nz-button
-                    nzType="primary"
-                    type="button"
-                    [nzLoading]="confirming()"
-                    [disabled]="blocker() !== null || !connectivity.online()"
-                    (click)="confirm()"
-                  >
-                    <span nz-icon nzType="check"></span>
-                    {{ t('receipts.confirm.button', { count: selectedCount() }) }}
-                  </button>
-                  @if (blocker(); as reason) {
-                    <span class="blocker">{{ t('receipts.confirm.blocker.' + reason) }}</span>
-                  } @else {
-                    <span class="blocker">{{ t('receipts.confirm.hint') }}</span>
+                  @if (confirmResult(); as result) {
+                    <nz-alert
+                      [nzType]="result.skipped.length > 0 ? 'warning' : 'success'"
+                      nzShowIcon
+                      nzCloseable
+                      [nzMessage]="
+                        result.confirmed === 0
+                          ? t('receipts.confirm.doneNone')
+                          : t('receipts.confirm.done', { count: result.confirmed })
+                      "
+                      [nzDescription]="result.skipped.length > 0 ? skippedTemplate : null"
+                      (nzOnClose)="confirmResult.set(null)"
+                      class="block"
+                    />
+                    <ng-template #skippedTemplate>
+                      <p class="skipped-title">
+                        {{ t('receipts.confirm.skipped', { count: result.skipped.length }) }}
+                      </p>
+                      <ul class="skipped-list">
+                        @for (line of result.skipped; track line.id) {
+                          <li>
+                            <strong>{{ line.labelRaw }}</strong> —
+                            {{ skipReasonKey(line.skipReason ?? '') | transloco }}
+                          </li>
+                        }
+                      </ul>
+                    </ng-template>
                   }
+                  @if (confirmError()) {
+                    <nz-alert
+                      nzType="error"
+                      nzShowIcon
+                      [nzMessage]="confirmError()"
+                      class="block"
+                    />
+                  }
+                  <div class="confirm-row">
+                    <button
+                      nz-button
+                      nzType="primary"
+                      type="button"
+                      [nzLoading]="confirming()"
+                      [disabled]="blocker() !== null || !connectivity.online()"
+                      (click)="confirm()"
+                    >
+                      <span nz-icon nzType="check"></span>
+                      {{ t('receipts.confirm.button', { count: selectedCount() }) }}
+                    </button>
+                    @if (blocker(); as reason) {
+                      <span class="blocker">{{ t('receipts.confirm.blocker.' + reason) }}</span>
+                    } @else {
+                      <span class="blocker">{{ t('receipts.confirm.hint') }}</span>
+                    }
+                  </div>
                 </div>
               </section>
             }

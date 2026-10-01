@@ -56,6 +56,12 @@ export class StorePicker implements OnInit {
   protected readonly storeLabel = storeLabel;
 
   readonly selectedStoreId = input<string | null>(null);
+  /**
+   * Bez výběru od rodiče obnovit naposledy použitý obchod. U zápisu ceny je to zkratka (člověk
+   * zapisuje v tomtéž obchodě), u účtenky past: účtenka je odjinud a předvybraný obchod by
+   * stačilo omylem uložit (`features/receipts`).
+   */
+  readonly restoreLast = input(true);
   @Output() readonly selectedStoreIdChange = new EventEmitter<string | null>();
   /** Celý objekt vedle ID — price-entry-page ho potřebuje kvůli store.country (měna zápisu). */
   @Output() readonly selectedStoreChange = new EventEmitter<Store | null>();
@@ -97,7 +103,7 @@ export class StorePicker implements OnInit {
 
   ngOnInit(): void {
     const fromParent = this.selectedStoreId();
-    const id = fromParent ?? this.lastStore.read();
+    const id = fromParent ?? (this.restoreLast() ? this.lastStore.read() : null);
     if (!id) return;
     this.searching.set(true);
     this.storeService.getById(id).subscribe({

@@ -2,8 +2,10 @@
   display: block;
 }
 
+/* Rozměr náhledu, ne rozestup: účtenka je úzká, na celé šířce stránky by byla zbytečně vysoká. */
 .mask-stage {
   position: relative;
+  max-width: 560px;
   border: 1px solid var(--kc-border-split);
   background: var(--kc-bg-subtle);
   user-select: none;

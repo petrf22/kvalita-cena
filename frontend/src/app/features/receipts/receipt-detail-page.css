@@ -94,7 +94,7 @@
 
 .actions,
 .date-row,
-.confirm-bar {
+.confirm-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -104,7 +104,7 @@
 
 .actions button,
 .date-row button,
-.confirm-bar button {
+.confirm-row button {
   min-height: 44px;
 }
 

@@ -22,6 +22,7 @@
     "search": "Suche",
     "price": "Preis eingeben",
     "receipts": "Kassenbons",
+    "receiptsUnseen": "Kassenbons, {count, plural, one {# mit Neuigkeiten} other {# mit Neuigkeiten}}",
     "settings": "Einstellungen",
     "account": "Konto",
     "login": "Anmeldung"

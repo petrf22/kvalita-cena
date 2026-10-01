@@ -22,6 +22,7 @@
     "search": "Search",
     "price": "Add price",
     "receipts": "Receipts",
+    "receiptsUnseen": "Receipts, {count, plural, one {# with news} other {# with news}}",
     "settings": "Settings",
     "account": "Account",
     "login": "Sign in"

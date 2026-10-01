@@ -160,11 +160,9 @@ export class ReceiptMaskEditor {
     if (drag.kind !== 'draw') return;
     const rect = this.draft();
     this.draft.set(null);
-    if (rect && isUsableMask(rect)) {
-      const index = this.masks().length;
-      this.masksChange.emit([...this.masks(), rect]);
-      this.selectedIndex.set(index);
-    }
+    // Nový obdélník se nevybírá: řádky účtenky jsou těsně pod sebou a úchyty vybraného
+    // obdélníku (44px plocha) by chytily další tah začínající hned pod ním.
+    if (rect && isUsableMask(rect)) this.masksChange.emit([...this.masks(), rect]);
   }
 
   protected onPointerCancel(): void {

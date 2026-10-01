@@ -21,11 +21,26 @@
       </li>
       <!-- Účtenky jsou soukromé a bez účtu k ničemu — položka jen pro přihlášené. -->
       @if (auth.isLoggedIn()) {
-        <li nz-menu-item routerLink="/receipts" routerLinkActive="ant-menu-item-selected">
+        <!-- nz-badge vykresluje číslo jako rolovací číslice 0–9; čtečce dá počet aria-label. -->
+        <li
+          nz-menu-item
+          routerLink="/receipts"
+          routerLinkActive="ant-menu-item-selected"
+          [attr.aria-label]="
+            receipts.unseenCount() > 0
+              ? ('nav.receiptsUnseen' | transloco: { count: receipts.unseenCount() })
+              : null
+          "
+        >
           <span nz-icon nzType="file-text"></span>
           <span class="app-menu-label">{{ 'nav.receipts' | transloco }}</span>
           @if (receipts.unseenCount() > 0) {
-            <nz-badge nzSize="small" [nzCount]="receipts.unseenCount()" class="app-menu-badge" />
+            <nz-badge
+              nzSize="small"
+              [nzCount]="receipts.unseenCount()"
+              class="app-menu-badge"
+              aria-hidden="true"
+            />
           }
         </li>
       }

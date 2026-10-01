@@ -112,10 +112,9 @@ export class ReceiptsPage {
 
   /** `silent` = obnova na pozadí; nepřepne obrazovku na spinner ani chybu. */
   protected load(silent = false): void {
-    if (!silent) {
-      this.state.set(this.connectivity.online() ? 'loading' : 'offline');
-      if (!this.connectivity.online()) return;
-    }
+    // Bez kontroly signálu online předem: požadavek bez sítě skončí hned (status 0) a ruční
+    // „Zkusit znovu" tak pozná i zastaralý offline stav.
+    if (!silent) this.state.set('loading');
     const offset = (this.pageIndex() - 1) * PAGE_SIZE;
     this.receiptService.myReceipts(PAGE_SIZE, offset).subscribe({
       next: (page) => {
