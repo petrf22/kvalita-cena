@@ -166,7 +166,7 @@
                 @if (receipt.processingStatus === 'PROCESSED') {
                   <div class="date-row">
                     <nz-date-picker
-                      nzShowTime
+                      [nzShowTime]="{ nzFormat: 'HH:mm' }"
                       [nzFormat]="dateTimeInputFormat()"
                       [nzDisabledDate]="isFuture"
                       [nzPlaceHolder]="t('receipts.header.purchasedAtPlaceholder')"
