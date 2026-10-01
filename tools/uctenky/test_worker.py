@@ -140,6 +140,17 @@ class SegmentsTest(unittest.TestCase):
         self.assertEqual(len(document["lines"]), 3)
 
 
+    def test_prekryv_precteny_ocr_trochu_jinak_se_take_pozna(self):
+        first = "BILLA\n251 01 ŘÍCANY U PRAHY\nČF ŽAMPIONY 300G 47,90 B\nORBIT REFRESHER 69,90 B"
+        second = "ČF ZAMPIONY 300G 47,90 B\nORBIT REFRESHER 69,90 B\nPIZZA SE SUNKOU 19,90 B\nCelkem 137,70\n30.08.2026 11:10"
+        document = parse.build_document([first, second])
+        self.assertTrue(document["totalMatches"], document["warnings"])
+
+    def test_ruzna_cena_neni_tentyz_radek(self):
+        merged = parse.merge_segments(["A\nROHLIK 3,90 A", "ROHLIK 4,90 A\nB"])
+        self.assertEqual(merged, ["A", "ROHLIK 3,90 A", "ROHLIK 4,90 A", "B"])
+
+
 class StatusTest(unittest.TestCase):
     def test_obrazek_bez_castek_neni_uctenka(self):
         document = parse.build_document("Kočka na gauči\nnějaký text")

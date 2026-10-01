@@ -8,6 +8,7 @@ dokument, ze kterého worker složí výsledek pro server.
 from __future__ import annotations
 
 from decimal import Decimal
+from difflib import SequenceMatcher
 
 import lines as lines_mod
 import normalize
@@ -19,6 +20,8 @@ from profiles import generic
 TOTAL_TOLERANCE = Decimal("0.02")
 # Kolik řádků se smí opakovat na hranici dvou částí (překryv ~40 % snímku).
 MAX_OVERLAP = 40
+# Podobnost dvou čtení téhož řádku v překryvu (difflib ratio), viz _same_line.
+LINE_SIMILARITY = 0.8
 
 
 def merge_segments(texts: list[str]) -> list[str]:
@@ -33,11 +36,23 @@ def merge_segments(texts: list[str]) -> list[str]:
         current = normalize.clean_lines(text)
         overlap = 0
         for size in range(min(len(merged), len(current), MAX_OVERLAP), 0, -1):
-            if merged[-size:] == current[:size]:
+            if all(_same_line(a, b) for a, b in zip(merged[-size:], current[:size])):
                 overlap = size
                 break
         merged.extend(current[overlap:])
     return merged
+
+
+def _same_line(a: str, b: str) -> bool:
+    """Tentýž řádek přečtený OCR podruhé — v překryvu se čte z jiného snímku a liší se v pár
+    znacích („ŘÍCANY" × „R1CANY"). Přesná shoda by překryv nenašla a položky na hranici by se
+    započítaly dvakrát (ověřeno na Bille: 1526,70 místo 779,30). Částky ale musí sedět přesně
+    — dva různé řádky se stejným názvem a jinou cenou spojit nesmí."""
+    if a == b:
+        return True
+    if normalize.AMOUNT_RE.findall(a) != normalize.AMOUNT_RE.findall(b):
+        return False
+    return SequenceMatcher(None, a, b).ratio() >= LINE_SIMILARITY
 
 
 def build_document(texts: list[str] | str, profile_name: str | None = None) -> dict:
