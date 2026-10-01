@@ -1,0 +1,111 @@
+:host {
+  display: block;
+}
+
+.mask-stage {
+  position: relative;
+  border: 1px solid var(--kc-border-split);
+  background: var(--kc-bg-subtle);
+  user-select: none;
+}
+
+.mask-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+/* Bez režimu kreslení dotyk posouvá stránkou (dlouhá účtenka je vyšší než displej). */
+.mask-layer {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+  touch-action: pan-y;
+}
+
+.mask-layer.drawing {
+  touch-action: none;
+}
+
+/* Barva se bere z MASK_FILL (receipt-image.ts) — přesně ta, která se vypálí do pixelů. */
+.mask {
+  position: absolute;
+  cursor: move;
+  touch-action: none;
+  outline: none;
+}
+
+.mask.selected,
+.mask:focus-visible {
+  box-shadow: 0 0 0 2px var(--kc-brand);
+}
+
+.mask.draft {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Úchyt je vidět malý, ale plocha pro prst má 44 px (docs/design.md, dotykové cíle). */
+.handle {
+  position: absolute;
+  width: var(--kc-space-4);
+  height: var(--kc-space-4);
+  border-radius: 50%;
+  background: var(--kc-brand);
+  touch-action: none;
+  transform: translate(-50%, -50%);
+}
+
+.handle::before {
+  content: '';
+  position: absolute;
+  inset: calc((44px - var(--kc-space-4)) / -2);
+}
+
+.handle-nw {
+  left: 0;
+  top: 0;
+  cursor: nwse-resize;
+}
+
+.handle-ne {
+  left: 100%;
+  top: 0;
+  cursor: nesw-resize;
+}
+
+.handle-sw {
+  left: 0;
+  top: 100%;
+  cursor: nesw-resize;
+}
+
+.handle-se {
+  left: 100%;
+  top: 100%;
+  cursor: nwse-resize;
+}
+
+.mask-remove {
+  position: absolute;
+  top: var(--kc-space-1);
+  right: var(--kc-space-1);
+}
+
+.mask-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kc-space-2);
+  margin-top: var(--kc-space-3);
+}
+
+.mask-tools button {
+  min-height: 44px;
+}
+
+.mask-hint {
+  margin: var(--kc-space-2) 0 0;
+  font-size: var(--kc-font-xs);
+  color: var(--kc-text-muted);
+}

@@ -1,0 +1,535 @@
+<ng-container *transloco="let t; scope: 'receipts'">
+  <a routerLink="/receipts" class="back-link">
+    <span nz-icon nzType="arrow-left"></span>
+    {{ t('receipts.backToList') }}
+  </a>
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="state-block"><nz-spin nzSimple [nzTip]="t('receipts.loading')" /></div>
+    }
+    @case ('offline') {
+      <nz-alert
+        nzType="info"
+        nzShowIcon
+        [nzMessage]="t('receipts.offlineTitle')"
+        [nzDescription]="t('receipts.offlineDetailText')"
+        [nzAction]="retryAction"
+        class="block"
+      />
+    }
+    @case ('error') {
+      <nz-alert
+        nzType="error"
+        nzShowIcon
+        [nzMessage]="t('receipts.detailLoadFailed')"
+        [nzDescription]="errorMessage()"
+        [nzAction]="retryAction"
+        class="block"
+      />
+    }
+    @case ('notFound') {
+      <nz-alert
+        nzType="warning"
+        nzShowIcon
+        [nzMessage]="t('receipts.notFoundTitle')"
+        [nzDescription]="t('receipts.notFoundText')"
+        class="block"
+      />
+    }
+    @default {
+      @if (receipt(); as receipt) {
+        <div class="title-row">
+          <h1 class="page-title">{{ storeName() ?? t('receipts.unknownStore') }}</h1>
+          <nz-tag [nzColor]="statusColor(receipt)">{{ statusKey(receipt) | transloco }}</nz-tag>
+        </div>
+
+        @if (!connectivity.online()) {
+          <nz-alert
+            nzType="info"
+            nzShowIcon
+            [nzMessage]="t('receipts.offlineTitle')"
+            [nzDescription]="t('receipts.offlineEditText')"
+            class="block"
+          />
+        }
+
+        <div class="detail-grid" [class.images-open]="imagesExpanded()">
+          <section class="images-column" [attr.aria-label]="t('receipts.images.title')">
+            <button
+              nz-button
+              type="button"
+              class="images-toggle"
+              [attr.aria-expanded]="imagesExpanded()"
+              (click)="imagesExpanded.set(!imagesExpanded())"
+            >
+              <span nz-icon nzType="picture"></span>
+              {{ imagesExpanded() ? t('receipts.images.hide') : t('receipts.images.show') }}
+            </button>
+            <div class="images-body">
+              <app-receipt-images
+                [paths]="receipt.imagePaths"
+                [deletedAt]="receipt.imagesDeletedAt"
+              />
+            </div>
+          </section>
+
+          <div class="lines-column">
+            <!-- Hlavička: obchod, datum a čas nákupu — z obojího vznikne storeId/observedAt cen. -->
+            <section class="header" [attr.aria-label]="t('receipts.header.title')">
+              <div class="field">
+                <span class="field-label">{{ t('receipts.header.store') }}</span>
+                @if (receipt.store && !editingStore()) {
+                  <div class="field-value">
+                    <a [routerLink]="['/store', receipt.store.id]" class="store-name">{{
+                      receipt.store.name
+                    }}</a>
+                    <span class="muted">{{ storeAddress(receipt.store) }}</span>
+                  </div>
+                  @if (receipt.processingStatus === 'PROCESSED') {
+                    <button
+                      nz-button
+                      nzType="link"
+                      type="button"
+                      class="inline-action"
+                      [disabled]="!connectivity.online()"
+                      (click)="startStoreEdit()"
+                    >
+                      {{ t('receipts.header.changeStore') }}
+                    </button>
+                  }
+                } @else if (receipt.suggestedStore && !editingStore()) {
+                  <div class="suggested">
+                    <p class="suggested-text">
+                      {{ t('receipts.header.suggestedStore') }}
+                      <strong>{{ receipt.suggestedStore.name }}</strong
+                      >, {{ receipt.suggestedStore.city }}
+                    </p>
+                    <div class="actions">
+                      <button
+                        nz-button
+                        nzType="primary"
+                        type="button"
+                        [nzLoading]="savingHeader()"
+                        [disabled]="!connectivity.online()"
+                        (click)="confirmSuggestedStore()"
+                      >
+                        <span nz-icon nzType="check"></span>
+                        {{ t('receipts.header.confirmStore') }}
+                      </button>
+                      <button
+                        nz-button
+                        type="button"
+                        [disabled]="savingHeader()"
+                        (click)="startStoreEdit()"
+                      >
+                        {{ t('receipts.header.otherStore') }}
+                      </button>
+                    </div>
+                  </div>
+                } @else if (receipt.processingStatus === 'PROCESSED') {
+                  <app-store-picker
+                    [selectedStoreId]="pendingStore()?.id ?? null"
+                    (selectedStoreChange)="pendingStore.set($event)"
+                  />
+                  <div class="actions">
+                    <button
+                      nz-button
+                      nzType="primary"
+                      type="button"
+                      [nzLoading]="savingHeader()"
+                      [disabled]="!pendingStore() || !connectivity.online()"
+                      (click)="saveStore()"
+                    >
+                      {{ t('receipts.header.saveStore') }}
+                    </button>
+                    @if (editingStore()) {
+                      <button nz-button type="button" (click)="editingStore.set(false)">
+                        {{ 'common.cancel' | transloco }}
+                      </button>
+                    }
+                  </div>
+                } @else {
+                  <span class="muted">{{ t('receipts.header.storeUnknown') }}</span>
+                }
+                @if (receipt.storeNameRaw || receipt.storeAddressRaw || receipt.storeIcoRaw) {
+                  <p class="raw-hint">
+                    {{ t('receipts.header.rawPrefix') }}
+                    <span class="raw-text">{{ rawHeader(receipt) }}</span>
+                  </p>
+                }
+              </div>
+
+              <div class="field">
+                <span class="field-label">{{ t('receipts.header.purchasedAt') }}</span>
+                @if (receipt.processingStatus === 'PROCESSED') {
+                  <div class="date-row">
+                    <nz-date-picker
+                      nzShowTime
+                      [nzFormat]="dateTimeInputFormat()"
+                      [nzDisabledDate]="isFuture"
+                      [nzPlaceHolder]="t('receipts.header.purchasedAtPlaceholder')"
+                      [ngModel]="purchasedAtDraft()"
+                      (ngModelChange)="purchasedAtDraft.set($event)"
+                      name="purchasedAt"
+                      class="date-input"
+                    />
+                    @if (purchasedAtChanged() && purchasedAtDraft()) {
+                      <button
+                        nz-button
+                        nzType="primary"
+                        type="button"
+                        [nzLoading]="savingHeader()"
+                        [disabled]="!connectivity.online()"
+                        (click)="savePurchasedAt()"
+                      >
+                        {{ t('receipts.header.savePurchasedAt') }}
+                      </button>
+                    }
+                  </div>
+                  @if (!receipt.purchasedAt) {
+                    <p class="field-warning">{{ t('receipts.header.purchasedAtMissing') }}</p>
+                  }
+                } @else {
+                  <span class="field-value">{{
+                    receipt.purchasedAt
+                      ? format.dateTime(receipt.purchasedAt)
+                      : t('receipts.uploadedAt', { date: format.dateTime(receipt.createdAt) })
+                  }}</span>
+                }
+              </div>
+
+              @if (receipt.totalAmount != null) {
+                <div class="field">
+                  <span class="field-label">{{ t('receipts.header.total') }}</span>
+                  <span class="field-value total">{{
+                    receipt.totalAmount | money: receipt.currency
+                  }}</span>
+                </div>
+              }
+
+              @if (headerError()) {
+                <nz-alert nzType="error" nzShowIcon [nzMessage]="headerError()" class="block" />
+              }
+            </section>
+
+            @if (awaiting()) {
+              <nz-alert
+                nzType="info"
+                nzShowIcon
+                [nzMessage]="
+                  receipt.processingStatus === 'QUEUED'
+                    ? t('receipts.status.queuedTitle')
+                    : t('receipts.status.processingTitle')
+                "
+                [nzDescription]="t('receipts.status.pendingText')"
+                class="block"
+              />
+            } @else if (deadEnd()) {
+              <nz-alert
+                [nzType]="receipt.processingStatus === 'FAILED' ? 'error' : 'warning'"
+                nzShowIcon
+                [nzMessage]="t('receipts.status.' + receipt.processingStatus + '.title')"
+                [nzDescription]="t('receipts.status.' + receipt.processingStatus + '.text')"
+                class="block"
+              />
+            } @else {
+              <section class="lines" [attr.aria-label]="t('receipts.lines.title')">
+                <div class="lines-head">
+                  <h2 class="section-title">{{ t('receipts.lines.title') }}</h2>
+                  <span class="muted">
+                    {{ t('receipts.lineCountTotal', { count: summary().total }) }}
+                    @if (summary().open > 0) {
+                      · {{ t('receipts.lineCountOpen', { count: summary().open }) }}
+                    }
+                    @if (summary().ready > 0) {
+                      · {{ t('receipts.lineCountReady', { count: summary().ready }) }}
+                    }
+                    @if (summary().recorded > 0) {
+                      · {{ t('receipts.lineCountRecorded', { count: summary().recorded }) }}
+                    }
+                  </span>
+                </div>
+
+                @if (!receipt.store) {
+                  <nz-alert
+                    nzType="warning"
+                    nzShowIcon
+                    [nzMessage]="t('receipts.lines.storeFirst')"
+                    class="block"
+                  />
+                }
+
+                @if (receipt.lines.length === 0) {
+                  <p class="muted">{{ t('receipts.lines.empty') }}</p>
+                }
+
+                <ol class="line-list">
+                  @for (line of receipt.lines; track line.id) {
+                    <li
+                      class="line"
+                      [class.line-ignored]="line.status === 'IGNORED'"
+                      [class.line-done]="isLocked(line)"
+                    >
+                      <div class="line-check">
+                        @if (isConfirmable(line)) {
+                          <label
+                            nz-checkbox
+                            [ngModel]="selected().has(line.id)"
+                            (ngModelChange)="toggle(line.id, $event)"
+                            [nzDisabled]="confirming()"
+                            [attr.aria-label]="
+                              t('receipts.line.selectLabel', { label: line.labelRaw })
+                            "
+                          ></label>
+                        }
+                      </div>
+                      <div class="line-body">
+                        <div class="line-top">
+                          <span class="line-label">{{ line.labelRaw }}</span>
+                          @if (line.lineTotal != null) {
+                            <span class="line-total">{{
+                              line.lineTotal | money: receipt.currency
+                            }}</span>
+                          }
+                        </div>
+                        <div class="line-meta">
+                          {{ quantityText(line) }}
+                          @if (line.discountAmount) {
+                            <span class="line-discount">{{
+                              t('receipts.line.discount', {
+                                amount: format.money(line.discountAmount, receipt.currency),
+                              })
+                            }}</span>
+                          }
+                        </div>
+                        <div class="line-status">
+                          <nz-tag [nzColor]="lineColor(line)">{{
+                            lineStatusKeys[line.status] | transloco
+                          }}</nz-tag>
+                          @if (line.product; as product) {
+                            <a [routerLink]="['/product', product.id]" class="line-product">
+                              <app-product-thumb
+                                [name]="product.name"
+                                [photos]="product.photos"
+                                [externalImage]="product.externalImage"
+                              />
+                              <span>{{ product.name }}</span>
+                            </a>
+                          }
+                          @if (line.status === 'SUGGESTED' && line.matchSource) {
+                            <span class="muted">{{
+                              matchSourceKeys[line.matchSource] | transloco
+                            }}</span>
+                          }
+                          @if (line.observationId) {
+                            <span class="line-recorded">
+                              <span nz-icon nzType="check-circle"></span>
+                              {{ t('receipts.line.recorded') }}
+                            </span>
+                          }
+                        </div>
+                        @if (line.skipReason) {
+                          <p class="line-skip">{{ skipReasonKey(line.skipReason) | transloco }}</p>
+                        }
+                        @if (lineErrors()[line.id]; as error) {
+                          <p class="line-error" role="alert">{{ error }}</p>
+                        }
+
+                        @if (!isLocked(line)) {
+                          <div class="line-actions">
+                            @if (line.status === 'UNMATCHED' || line.status === 'SUGGESTED') {
+                              <button
+                                nz-button
+                                nzSize="small"
+                                type="button"
+                                [attr.aria-expanded]="matchingLineId() === line.id"
+                                [disabled]="busyLineId() === line.id || !connectivity.online()"
+                                (click)="openMatch(line)"
+                              >
+                                <span nz-icon nzType="search"></span>
+                                {{
+                                  line.status === 'SUGGESTED'
+                                    ? t('receipts.line.changeProduct')
+                                    : t('receipts.line.findProduct')
+                                }}
+                              </button>
+                            }
+                            @if (line.status === 'UNMATCHED') {
+                              <button
+                                nz-button
+                                nzSize="small"
+                                type="button"
+                                [disabled]="
+                                  !receipt.store ||
+                                  busyLineId() === line.id ||
+                                  !connectivity.online()
+                                "
+                                [title]="receipt.store ? '' : t('receipts.line.createNeedsStore')"
+                                (click)="openCreate(line)"
+                              >
+                                <span nz-icon nzType="plus"></span>
+                                {{ t('receipts.line.createProduct') }}
+                              </button>
+                            }
+                            @if (line.status !== 'IGNORED') {
+                              <button
+                                nz-button
+                                nzSize="small"
+                                nzType="text"
+                                type="button"
+                                [nzLoading]="busyLineId() === line.id"
+                                [disabled]="!connectivity.online()"
+                                (click)="ignore(line)"
+                              >
+                                {{ t('receipts.line.ignore') }}
+                              </button>
+                            }
+                            @if (line.status !== 'UNMATCHED') {
+                              <button
+                                nz-button
+                                nzSize="small"
+                                nzType="text"
+                                type="button"
+                                [nzLoading]="busyLineId() === line.id"
+                                [disabled]="!connectivity.online()"
+                                (click)="unmatch(line)"
+                              >
+                                {{
+                                  line.status === 'IGNORED'
+                                    ? t('receipts.line.unignore')
+                                    : t('receipts.line.unmatch')
+                                }}
+                              </button>
+                            }
+                          </div>
+                        }
+
+                        @if (matchingLineId() === line.id) {
+                          <app-receipt-line-match
+                            [line]="line"
+                            [canCreate]="!!receipt.store"
+                            [busy]="busyLineId() === line.id"
+                            (picked)="pickProduct(line, $event)"
+                            (createNew)="openCreate(line)"
+                            (closed)="matchingLineId.set(null)"
+                          />
+                        }
+                      </div>
+                    </li>
+                  }
+                </ol>
+                @if (showExternalImageNote()) {
+                  <p class="muted small">{{ t('receipts.externalImageNote') }}</p>
+                }
+
+                @if (confirmResult(); as result) {
+                  <nz-alert
+                    [nzType]="result.skipped.length > 0 ? 'warning' : 'success'"
+                    nzShowIcon
+                    nzCloseable
+                    [nzMessage]="
+                      result.confirmed === 0
+                        ? t('receipts.confirm.doneNone')
+                        : t('receipts.confirm.done', { count: result.confirmed })
+                    "
+                    [nzDescription]="result.skipped.length > 0 ? skippedTemplate : null"
+                    (nzOnClose)="confirmResult.set(null)"
+                    class="block"
+                  />
+                  <ng-template #skippedTemplate>
+                    <p class="skipped-title">
+                      {{ t('receipts.confirm.skipped', { count: result.skipped.length }) }}
+                    </p>
+                    <ul class="skipped-list">
+                      @for (line of result.skipped; track line.id) {
+                        <li>
+                          <strong>{{ line.labelRaw }}</strong> —
+                          {{ skipReasonKey(line.skipReason ?? '') | transloco }}
+                        </li>
+                      }
+                    </ul>
+                  </ng-template>
+                }
+                @if (confirmError()) {
+                  <nz-alert nzType="error" nzShowIcon [nzMessage]="confirmError()" class="block" />
+                }
+
+                <div class="confirm-bar">
+                  <button
+                    nz-button
+                    nzType="primary"
+                    type="button"
+                    [nzLoading]="confirming()"
+                    [disabled]="blocker() !== null || !connectivity.online()"
+                    (click)="confirm()"
+                  >
+                    <span nz-icon nzType="check"></span>
+                    {{ t('receipts.confirm.button', { count: selectedCount() }) }}
+                  </button>
+                  @if (blocker(); as reason) {
+                    <span class="blocker">{{ t('receipts.confirm.blocker.' + reason) }}</span>
+                  } @else {
+                    <span class="blocker">{{ t('receipts.confirm.hint') }}</span>
+                  }
+                </div>
+              </section>
+            }
+
+            <section class="danger-zone">
+              @if (deleteError()) {
+                <nz-alert nzType="error" nzShowIcon [nzMessage]="deleteError()" class="block" />
+              }
+              <button
+                nz-button
+                nzDanger
+                type="button"
+                nz-popconfirm
+                [nzPopconfirmTitle]="t('receipts.deleteConfirm')"
+                [nzOkText]="'common.delete' | transloco"
+                [nzCancelText]="'common.cancel' | transloco"
+                nzOkDanger
+                [nzLoading]="deleting()"
+                [disabled]="!connectivity.online()"
+                (nzOnConfirm)="deleteReceipt()"
+              >
+                <span nz-icon nzType="delete"></span>
+                {{ t('receipts.deleteButton') }}
+              </button>
+              <p class="muted small">{{ t('receipts.deleteHint') }}</p>
+            </section>
+          </div>
+        </div>
+
+        <nz-modal
+          [nzVisible]="createForLine() !== null"
+          [nzTitle]="t('receipts.create.title')"
+          [nzFooter]="null"
+          (nzOnCancel)="createForLine.set(null)"
+        >
+          <ng-container *nzModalContent>
+            @if (createForLine(); as line) {
+              <p class="create-hint">
+                {{ t('receipts.create.labelPrefix') }} <strong>{{ line.labelRaw }}</strong>
+              </p>
+              <p class="create-hint">{{ t('receipts.create.hint') }}</p>
+              <app-product-form
+                [initialName]="line.labelRaw"
+                [store]="receipt.store"
+                (created)="onProductCreated(line, $event)"
+                (existingMatched)="onExistingMatched(line, $event)"
+                (cancelled)="createForLine.set(null)"
+              />
+            }
+          </ng-container>
+        </nz-modal>
+      }
+    }
+  }
+
+  <ng-template #retryAction>
+    <button nz-button nzSize="small" type="button" (click)="load()">
+      {{ t('receipts.retry') }}
+    </button>
+  </ng-template>
+</ng-container>

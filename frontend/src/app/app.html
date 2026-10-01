@@ -19,6 +19,16 @@
         <span nz-icon nzType="plus-circle"></span>
         <span class="app-menu-label">{{ 'nav.price' | transloco }}</span>
       </li>
+      <!-- Účtenky jsou soukromé a bez účtu k ničemu — položka jen pro přihlášené. -->
+      @if (auth.isLoggedIn()) {
+        <li nz-menu-item routerLink="/receipts" routerLinkActive="ant-menu-item-selected">
+          <span nz-icon nzType="file-text"></span>
+          <span class="app-menu-label">{{ 'nav.receipts' | transloco }}</span>
+          @if (receipts.unseenCount() > 0) {
+            <nz-badge nzSize="small" [nzCount]="receipts.unseenCount()" class="app-menu-badge" />
+          }
+        </li>
+      }
       <li nz-menu-item routerLink="/settings" routerLinkActive="ant-menu-item-selected">
         <span nz-icon nzType="setting"></span>
         <span class="app-menu-label">{{ 'nav.settings' | transloco }}</span>

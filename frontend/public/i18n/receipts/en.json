@@ -1,0 +1,181 @@
+{
+  "title": "Receipts",
+  "intro": "Take a photo of your shopping receipt and record its prices in a few clicks instead of typing them. Only you can see your receipts.",
+  "uploadButton": "Upload a receipt",
+  "loading": "Loading receipts…",
+  "retry": "Try again",
+  "loadFailed": "The receipts could not be loaded.",
+  "detailLoadFailed": "The receipt could not be loaded.",
+  "offlineTitle": "You are offline",
+  "offlineListText": "Your receipts will load as soon as you are back online.",
+  "offlineDetailText": "The receipt will load as soon as you are back online.",
+  "offlineStale": "You are offline — the list may be out of date. It will refresh once you reconnect.",
+  "offlineEditText": "Changes cannot be saved right now. Once you reconnect you can carry on matching; nothing is lost.",
+  "offlineAction": "You are not connected to the internet — the action was not saved. Please try again once you are online.",
+  "emptyTitle": "You have no receipts yet",
+  "emptyText": "Upload a photo of a shopping receipt. The app reads the store, date and items from it, and you just confirm which prices to record.",
+  "uploadedTitle": "The receipt has been sent",
+  "uploadedText": "It is queued for processing on the operator's computer, which may take a while. Once it is done you will find it here ready for matching, and a badge will appear next to Receipts in the menu.",
+  "unknownStore": "Unknown store",
+  "newBadge": "New",
+  "uploadedAt": "Uploaded {{date}}",
+  "lineCountTotal": "{count, plural, one {# item} other {# items}}",
+  "lineCountOpen": "{count, plural, one {# unmatched} other {# unmatched}}",
+  "lineCountReady": "{count, plural, one {# ready to confirm} other {# ready to confirm}}",
+  "lineCountMatched": "{count, plural, one {# matched} other {# matched}}",
+  "lineCountRecorded": "{count, plural, one {# price recorded} other {# prices recorded}}",
+  "deleteConfirm": "Delete the receipt including its images? Prices you have already recorded from it will stay.",
+  "deleteLabel": "Delete receipt",
+  "deleteButton": "Delete receipt",
+  "deleteHint": "Deletes the images and the text of the receipt. Prices you have already confirmed from it remain as regular price records.",
+  "backToList": "Back to receipts",
+  "notFoundTitle": "This receipt is not here",
+  "notFoundText": "You may have deleted it, or it belongs to another account — a receipt is only ever visible to its owner.",
+  "externalImageNote": "Some product thumbnails come from Open Food Facts (hover for the source).",
+  "mask": {
+    "imageAlt": "Preview of photo {{name}}",
+    "maskLabel": "Cover {{index}} — move it with the arrow keys, delete it with Delete",
+    "removeOne": "Remove cover",
+    "drawModeOff": "Draw a cover",
+    "drawModeOn": "Stop drawing",
+    "addBand": "Cover the bottom strip",
+    "clearAll": "Remove all covers",
+    "hintMouse": "Drag the mouse across the detail you want to hide. The black rectangle can be moved and resized by its corners. Anything black never reaches the server.",
+    "hintTouch": "Turn on “Draw a cover” and drag your finger across the detail. The black rectangle can be moved and resized by its corners. Anything black never reaches the server."
+  },
+  "upload": {
+    "title": "New receipt",
+    "maskWarningTitle": "Cover the payment card number, loyalty card and the cashier's name",
+    "maskWarningText": "The app does not need these details. The cover is burned into the image right in your browser, so it never reaches the server. Leave the store, date and time of purchase visible — your prices are made from them.",
+    "stepPhotos": "1. Photos of the receipt",
+    "photosHint": "Photograph the receipt straight and sharp. Take a long receipt in parts from top to bottom with a little overlap — at most {{max}} parts.",
+    "choosePhotos": "Choose photos",
+    "addPart": "Add another part",
+    "partsLabel": "Receipt parts from top to bottom",
+    "partName": "Part {{index}}",
+    "partMasks": "{count, plural, one {# cover} other {# covers}}",
+    "partMasksNone": "no covers",
+    "moveUp": "Move part {{index}} up",
+    "moveDown": "Move part {{index}} down",
+    "removePart": "Remove part {{index}}",
+    "orderHint": "The order must match the receipt from top to bottom — adjust it with the arrows. The bottom strip is suggested on the last part.",
+    "stepMask": "2. Cover sensitive details (part {{index}} of {{total}})",
+    "stepConsent": "3. Consent to processing",
+    "consentProcessing": "I agree that the app operator processes the receipt on their own computer (turning the image into text). It is not sent to anyone else and only I can see it.",
+    "consentDetail": "Images are deleted 30 days after processing; the text of the receipt stays until you delete it. Details:",
+    "privacyLink": "privacy policy",
+    "consentArchive": "Optional: the operator may keep the images to improve receipt recognition.",
+    "consentVersionFailed": "The current consent text could not be loaded — the receipt cannot be sent without it.",
+    "waitingTitle": "Waiting for a connection",
+    "waitingText": "You are offline. The receipt is ready and will be sent automatically once you reconnect — keep this page open.",
+    "cancelSend": "Don't send",
+    "submit": "Send receipt",
+    "blocker": {
+      "noParts": "Choose at least one photo first.",
+      "loading": "Loading photos…",
+      "noConsent": "Nothing is sent without your consent to processing.",
+      "noConsentVersion": "Waiting for the consent text from the server…"
+    },
+    "tooManyParts": "A receipt may have at most {{max}} parts — the extra photos were not added.",
+    "unsupportedFile": "The file {{name}} could not be opened as an image. Try JPEG or PNG.",
+    "fileFailed": "The photo {{name}} could not be loaded.",
+    "renderFailed": "The photos could not be prepared for sending. Try choosing them again.",
+    "tooLarge": "The receipt is too large to send. Try fewer parts."
+  },
+  "images": {
+    "title": "Receipt image",
+    "show": "Show receipt image",
+    "hide": "Hide receipt image",
+    "deleted": "The images were deleted after 30 days",
+    "deletedAt": "Deleted on {{date}}. The text of the receipt and recorded prices remain.",
+    "partAlt": "Receipt, part {{index}} of {{total}}",
+    "offline": "The image will load once you reconnect.",
+    "failed": "The image could not be loaded.",
+    "zoomHint": "Click to open the image in full size."
+  },
+  "match": {
+    "placeholder": "Search products by name",
+    "hintLabel": "Suggestions based on the receipt text. If the right product is not among them, type its name.",
+    "hintQuery": "Results for the name you typed.",
+    "offline": "You are offline — searching will work once you reconnect.",
+    "empty": "Nothing similar found. Try a different name.",
+    "emptyCreate": "Nothing similar found. Try a different name, or add the product.",
+    "unconfirmed": "not confirmed yet",
+    "close": "Close"
+  },
+  "header": {
+    "title": "Receipt header",
+    "store": "Store",
+    "changeStore": "Change store",
+    "suggestedStore": "According to the receipt this looks like",
+    "confirmStore": "Confirm",
+    "otherStore": "Choose another",
+    "saveStore": "Save store",
+    "storeUnknown": "The store will be filled in after processing.",
+    "rawPrefix": "On the receipt:",
+    "rawIco": "Company ID {{ico}}",
+    "purchasedAt": "Date and time of purchase",
+    "purchasedAtPlaceholder": "Choose date and time",
+    "savePurchasedAt": "Save date",
+    "purchasedAtMissing": "The date and time of purchase could not be read from the receipt. Please fill them in — prices cannot be recorded without them.",
+    "total": "Total"
+  },
+  "status": {
+    "queuedTitle": "The receipt is waiting to be processed",
+    "processingTitle": "The receipt is being read",
+    "pendingText": "Processing runs on the operator's computer, so it may take a while. This page refreshes by itself — feel free to close it and come back later.",
+    "NOT_A_RECEIPT": {
+      "title": "We found no receipt in the image",
+      "text": "Delete it and upload a photo of the receipt again."
+    },
+    "UNREADABLE": {
+      "title": "The receipt is unreadable",
+      "text": "Photograph it again sharp, straight and in good light, a long one in parts. Then delete this one."
+    },
+    "FAILED": {
+      "title": "Processing failed",
+      "text": "The error is on our side. Try uploading the receipt again and delete this one."
+    }
+  },
+  "lines": {
+    "title": "Items",
+    "storeFirst": "Confirm the store first — products are searched and added based on it, and prices cannot be recorded without it.",
+    "empty": "No items were found on the receipt."
+  },
+  "line": {
+    "selectLabel": "Record the price from line {{label}}",
+    "quantityPieces": "{{quantity}} {{unit}} × {{price}}",
+    "quantityWeighed": "{{quantity}} {{unit}} × {{price}} per {{unit}}",
+    "pricePerUnit": "{{price}} per {{unit}}",
+    "discount": "discount −{{amount}}",
+    "recorded": "Price recorded",
+    "findProduct": "Find product",
+    "changeProduct": "Change product",
+    "createProduct": "Add new product",
+    "createNeedsStore": "A new product can be added once the store is confirmed.",
+    "ignore": "Ignore",
+    "unmatch": "Unmatch",
+    "unignore": "Stop ignoring"
+  },
+  "skip": {
+    "duplicateSameDay": "You have already recorded this price for the day of purchase — no second record was added."
+  },
+  "confirm": {
+    "button": "Confirm matched ({{count}})",
+    "hint": "Records the prices of the ticked lines with the date and time of purchase from the receipt.",
+    "blocker": {
+      "notProcessed": "The receipt has not been processed yet.",
+      "storeMissing": "Confirm the store above first.",
+      "purchaseTimeMissing": "Fill in the date and time of purchase above first.",
+      "nothing": "Tick at least one matched line."
+    },
+    "done": "{count, plural, one {# price recorded.} other {# prices recorded.}}",
+    "doneNone": "No new price was recorded.",
+    "skipped": "{count, plural, one {# line skipped:} other {# lines skipped:}}"
+  },
+  "create": {
+    "title": "New product from the receipt",
+    "labelPrefix": "On the receipt:",
+    "hint": "Rewrite the abbreviation from the receipt into the full name as you know it from the package. The product is added for this store and the line is matched with it right away."
+  }
+}

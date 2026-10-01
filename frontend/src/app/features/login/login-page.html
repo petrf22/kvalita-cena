@@ -18,6 +18,10 @@
           <span nz-icon nzType="unordered-list"></span>
           {{ t('login.myContributions') }}
         </button>
+        <button nz-button nzType="default" routerLink="/receipts">
+          <span nz-icon nzType="file-text"></span>
+          {{ t('login.receipts') }}
+        </button>
         @if (viewer()?.moderator) {
           <button nz-button nzType="default" routerLink="/moderation">
             <span nz-icon nzType="safety-certificate"></span>

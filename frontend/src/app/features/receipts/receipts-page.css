@@ -1,0 +1,145 @@
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kc-space-3);
+}
+
+.page-title {
+  margin: 0;
+}
+
+.page-head button {
+  min-height: 44px;
+}
+
+.intro {
+  margin: var(--kc-space-2) 0 var(--kc-space-5);
+  color: var(--kc-text-secondary);
+}
+
+.page-block {
+  display: block;
+  margin-bottom: var(--kc-space-4);
+}
+
+.state-block {
+  display: flex;
+  justify-content: center;
+  padding: var(--kc-space-6) 0;
+}
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--kc-space-2);
+  padding: var(--kc-space-6) var(--kc-space-4);
+  text-align: center;
+  border: 1px dashed var(--kc-border);
+  border-radius: var(--kc-space-2);
+  background: var(--kc-bg-subtle);
+}
+
+.empty-icon {
+  font-size: var(--kc-space-6);
+  color: var(--kc-text-muted);
+}
+
+.empty-title {
+  margin: 0;
+  font-size: var(--kc-font-xl);
+  font-weight: 600;
+}
+
+.empty-text {
+  max-width: 480px;
+  margin: 0 0 var(--kc-space-2);
+  color: var(--kc-text-secondary);
+}
+
+.receipt-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--kc-border-split);
+}
+
+.receipt {
+  display: flex;
+  align-items: center;
+  gap: var(--kc-space-3);
+  padding: var(--kc-space-3) 0;
+  border-bottom: 1px solid var(--kc-border-split);
+}
+
+/* Novinka od posledního otevření — zvýrazněná pruhem v barvě značky, ne jen tečkou. */
+.receipt-unseen {
+  padding-left: var(--kc-space-3);
+  box-shadow: inset var(--kc-space-1) 0 0 var(--kc-brand);
+  background: var(--kc-bg-subtle);
+}
+
+.receipt-link {
+  display: grid;
+  flex: 1;
+  gap: var(--kc-space-1);
+  min-width: 0;
+  min-height: 44px;
+  color: var(--kc-text);
+}
+
+.receipt-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--kc-space-2);
+}
+
+.receipt-store {
+  font-size: var(--kc-font-lg);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.receipt-unseen .receipt-store {
+  color: var(--kc-brand);
+}
+
+.receipt-meta {
+  font-size: var(--kc-font-sm);
+  color: var(--kc-text-secondary);
+}
+
+.receipt-side {
+  display: flex;
+  align-items: center;
+  gap: var(--kc-space-1);
+  flex-shrink: 0;
+}
+
+.receipt-side nz-tag {
+  margin: 0;
+}
+
+.receipt-delete {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.pagination {
+  margin-top: var(--kc-space-4);
+  text-align: right;
+}
+
+/* Na úzkém displeji se štítek a mazání přesunou pod text, ať název obchodu nemá 3 znaky. */
+@media (max-width: 600px) {
+  .receipt {
+    flex-wrap: wrap;
+  }
+
+  .receipt-side {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

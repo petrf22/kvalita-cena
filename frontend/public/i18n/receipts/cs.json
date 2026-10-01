@@ -1,0 +1,181 @@
+{
+  "title": "Účtenky",
+  "intro": "Nafoť účtenku z nákupu a ceny z ní zapíšeš pár kliknutími místo opisování. Účtenku vidíš jen ty.",
+  "uploadButton": "Nahrát účtenku",
+  "loading": "Načítám účtenky…",
+  "retry": "Zkusit znovu",
+  "loadFailed": "Účtenky se nepodařilo načíst.",
+  "detailLoadFailed": "Účtenku se nepodařilo načíst.",
+  "offlineTitle": "Jsi offline",
+  "offlineListText": "Účtenky se načtou samy, jakmile se připojíš.",
+  "offlineDetailText": "Účtenka se načte sama, jakmile se připojíš.",
+  "offlineStale": "Jsi offline — seznam může být zastaralý. Po připojení se obnoví sám.",
+  "offlineEditText": "Změny teď nejde uložit. Po připojení můžeš v párování pokračovat, nic se neztratí.",
+  "offlineAction": "Nejsi připojený/á k internetu — akce se neuložila. Zkus to po připojení znovu.",
+  "emptyTitle": "Zatím tu nemáš žádnou účtenku",
+  "emptyText": "Nahraj fotku účtenky z nákupu. Appka z ní přečte obchod, datum a položky a ty jen potvrdíš, které ceny zapsat.",
+  "uploadedTitle": "Účtenka je odeslaná",
+  "uploadedText": "Čeká ve frontě na zpracování na počítači provozovatele, může to chvíli trvat. Jakmile bude hotová, najdeš ji tady k párování a v menu se u Účtenek objeví odznak.",
+  "unknownStore": "Neznámý obchod",
+  "newBadge": "Nové",
+  "uploadedAt": "Nahráno {{date}}",
+  "lineCountTotal": "{count, plural, one {# položka} few {# položky} other {# položek}}",
+  "lineCountOpen": "{count, plural, one {# nespárovaná} few {# nespárované} other {# nespárovaných}}",
+  "lineCountReady": "{count, plural, one {# připravená k potvrzení} few {# připravené k potvrzení} other {# připravených k potvrzení}}",
+  "lineCountMatched": "{count, plural, one {# spárovaná} few {# spárované} other {# spárovaných}}",
+  "lineCountRecorded": "{count, plural, one {# cena zapsaná} few {# ceny zapsané} other {# cen zapsaných}}",
+  "deleteConfirm": "Smazat účtenku i s obrázky? Ceny, které z ní už máš zapsané, zůstanou.",
+  "deleteLabel": "Smazat účtenku",
+  "deleteButton": "Smazat účtenku",
+  "deleteHint": "Smaže obrázky i text účtenky. Ceny, které jsi z ní už potvrdil/a, zůstávají jako běžné cenové záznamy.",
+  "backToList": "Zpět na účtenky",
+  "notFoundTitle": "Účtenka tu není",
+  "notFoundText": "Možná jsi ji smazal/a, nebo patří jinému účtu — účtenku vidí vždy jen její vlastník.",
+  "externalImageNote": "Některé miniatury zboží pocházejí z Open Food Facts (najeď myší pro zdroj).",
+  "mask": {
+    "imageAlt": "Náhled fotky {{name}}",
+    "maskLabel": "Zakrytí {{index}} — šipkami ho posuneš, klávesou Delete smažeš",
+    "removeOne": "Odebrat zakrytí",
+    "drawModeOff": "Kreslit zakrytí",
+    "drawModeOn": "Ukončit kreslení",
+    "addBand": "Zakrýt spodní pás",
+    "clearAll": "Odebrat všechna zakrytí",
+    "hintMouse": "Táhni myší přes údaj, který chceš zakrýt. Černý obdélník jde posunout a za rohy zvětšit. Co je černé, na server neodejde.",
+    "hintTouch": "Zapni „Kreslit zakrytí“ a táhni prstem přes údaj. Černý obdélník jde posunout a za rohy zvětšit. Co je černé, na server neodejde."
+  },
+  "upload": {
+    "title": "Nová účtenka",
+    "maskWarningTitle": "Zakryj číslo platební karty, věrnostní kartu a jméno pokladní",
+    "maskWarningText": "Tyhle údaje appka nepotřebuje. Zakrytí se vypálí do obrázku přímo v prohlížeči, takže na server vůbec nedorazí. Obchod, datum a čas nákupu nech odkryté — z nich vzniknou tvoje ceny.",
+    "stepPhotos": "1. Fotky účtenky",
+    "photosHint": "Vyfoť účtenku rovně a ostře. Dlouhou účtenku nafoť po částech shora dolů s kouskem překryvu — nejvýš {{max}} částí.",
+    "choosePhotos": "Vybrat fotky",
+    "addPart": "Přidat další část",
+    "partsLabel": "Části účtenky shora dolů",
+    "partName": "Část {{index}}",
+    "partMasks": "{count, plural, other {# zakrytí}}",
+    "partMasksNone": "bez zakrytí",
+    "moveUp": "Posunout část {{index}} nahoru",
+    "moveDown": "Posunout část {{index}} dolů",
+    "removePart": "Odebrat část {{index}}",
+    "orderHint": "Pořadí musí odpovídat účtence shora dolů — šipkami ho upravíš. Spodní pás se nabízí u poslední části.",
+    "stepMask": "2. Zakrytí citlivých údajů (část {{index}} z {{total}})",
+    "stepConsent": "3. Souhlas se zpracováním",
+    "consentProcessing": "Souhlasím, že účtenku zpracuje provozovatel appky na svém vlastním počítači (převod obrázku na text). Nikomu dalšímu se neposílá a vidím ji jen já.",
+    "consentDetail": "Obrázky se 30 dní po zpracování smažou, text účtenky zůstane, dokud ji nesmažeš. Podrobnosti:",
+    "privacyLink": "zásady ochrany osobních údajů",
+    "consentArchive": "Volitelně: provozovatel si smí obrázky ponechat pro zlepšování rozpoznávání účtenek.",
+    "consentVersionFailed": "Nepodařilo se načíst aktuální znění souhlasu — bez něj účtenku odeslat nejde.",
+    "waitingTitle": "Čeká na připojení",
+    "waitingText": "Jsi offline. Účtenka je připravená a odešle se sama, jakmile se připojíš — nech tuhle stránku otevřenou.",
+    "cancelSend": "Neodesílat",
+    "submit": "Odeslat účtenku",
+    "blocker": {
+      "noParts": "Nejdřív vyber aspoň jednu fotku.",
+      "loading": "Načítám fotky…",
+      "noConsent": "Bez souhlasu se zpracováním nic neodejde.",
+      "noConsentVersion": "Čekám na znění souhlasu ze serveru…"
+    },
+    "tooManyParts": "Účtenka smí mít nejvýš {{max}} částí — přebývající fotky se nepřidaly.",
+    "unsupportedFile": "Soubor {{name}} se nepodařilo otevřít jako obrázek. Zkus JPEG nebo PNG.",
+    "fileFailed": "Fotku {{name}} se nepodařilo načíst.",
+    "renderFailed": "Fotky se nepodařilo připravit k odeslání. Zkus je vybrat znovu.",
+    "tooLarge": "Účtenka je na odeslání moc velká. Zkus méně částí."
+  },
+  "images": {
+    "title": "Obrázek účtenky",
+    "show": "Zobrazit obrázek účtenky",
+    "hide": "Skrýt obrázek účtenky",
+    "deleted": "Obrázky byly po 30 dnech smazány",
+    "deletedAt": "Smazány {{date}}. Text účtenky i zapsané ceny zůstávají.",
+    "partAlt": "Účtenka, část {{index}} z {{total}}",
+    "offline": "Obrázek se načte po připojení.",
+    "failed": "Obrázek se nepodařilo načíst.",
+    "zoomHint": "Kliknutím otevřeš obrázek v plné velikosti."
+  },
+  "match": {
+    "placeholder": "Hledat zboží podle názvu",
+    "hintLabel": "Návrhy podle textu z účtenky. Když mezi nimi správné zboží není, napiš jeho název.",
+    "hintQuery": "Výsledky pro zadaný název.",
+    "offline": "Jsi offline — hledat půjde po připojení.",
+    "empty": "Nic podobného jsme nenašli. Zkus jiný název.",
+    "emptyCreate": "Nic podobného jsme nenašli. Zkus jiný název, nebo zboží založ.",
+    "unconfirmed": "zatím nepotvrzeno",
+    "close": "Zavřít"
+  },
+  "header": {
+    "title": "Hlavička účtenky",
+    "store": "Obchod",
+    "changeStore": "Změnit obchod",
+    "suggestedStore": "Podle účtenky to vypadá na",
+    "confirmStore": "Potvrdit",
+    "otherStore": "Vybrat jiný",
+    "saveStore": "Uložit obchod",
+    "storeUnknown": "Obchod se doplní po zpracování.",
+    "rawPrefix": "Na účtence:",
+    "rawIco": "IČO {{ico}}",
+    "purchasedAt": "Datum a čas nákupu",
+    "purchasedAtPlaceholder": "Vyber datum a čas",
+    "savePurchasedAt": "Uložit datum",
+    "purchasedAtMissing": "Datum a čas nákupu se z účtenky nepodařilo přečíst. Doplň je — bez nich ceny zapsat nejde.",
+    "total": "Celkem"
+  },
+  "status": {
+    "queuedTitle": "Účtenka čeká na zpracování",
+    "processingTitle": "Účtenka se právě čte",
+    "pendingText": "Zpracování běží na počítači provozovatele, takže může chvíli trvat. Stránka se obnoví sama — klidně ji zavři a vrať se později.",
+    "NOT_A_RECEIPT": {
+      "title": "Na obrázku jsme účtenku nenašli",
+      "text": "Smaž ji a nahraj fotku účtenky znovu."
+    },
+    "UNREADABLE": {
+      "title": "Účtenka je nečitelná",
+      "text": "Vyfoť ji znovu ostře, rovně a při dobrém světle, dlouhou po částech. Tuhle pak smaž."
+    },
+    "FAILED": {
+      "title": "Zpracování se nepovedlo",
+      "text": "Chyba je na naší straně. Zkus účtenku nahrát znovu a tuhle smaž."
+    }
+  },
+  "lines": {
+    "title": "Položky",
+    "storeFirst": "Nejdřív potvrď obchod — podle něj se zboží hledá a zakládá a bez něj ceny zapsat nejde.",
+    "empty": "Na účtence se nenašly žádné položky."
+  },
+  "line": {
+    "selectLabel": "Zapsat cenu z řádku {{label}}",
+    "quantityPieces": "{{quantity}} {{unit}} × {{price}}",
+    "quantityWeighed": "{{quantity}} {{unit}} × {{price}} za {{unit}}",
+    "pricePerUnit": "{{price}} za {{unit}}",
+    "discount": "sleva −{{amount}}",
+    "recorded": "Cena zapsána",
+    "findProduct": "Najít zboží",
+    "changeProduct": "Změnit zboží",
+    "createProduct": "Založit nové zboží",
+    "createNeedsStore": "Nové zboží půjde založit po potvrzení obchodu.",
+    "ignore": "Ignorovat",
+    "unmatch": "Zrušit párování",
+    "unignore": "Zrušit ignorování"
+  },
+  "skip": {
+    "duplicateSameDay": "Tuhle cenu jsi pro den nákupu už zapsal/a — druhý záznam se nepřidal."
+  },
+  "confirm": {
+    "button": "Potvrdit spárované ({{count}})",
+    "hint": "Zapíše ceny zaškrtnutých řádků s datem a časem nákupu z účtenky.",
+    "blocker": {
+      "notProcessed": "Účtenka ještě není zpracovaná.",
+      "storeMissing": "Nejdřív potvrď obchod nahoře.",
+      "purchaseTimeMissing": "Nejdřív doplň datum a čas nákupu nahoře.",
+      "nothing": "Zaškrtni aspoň jeden spárovaný řádek."
+    },
+    "done": "{count, plural, one {# cena je zapsaná.} few {# ceny jsou zapsané.} other {# cen je zapsaných.}}",
+    "doneNone": "Žádná nová cena se nezapsala.",
+    "skipped": "{count, plural, one {# řádek se přeskočil:} few {# řádky se přeskočily:} other {# řádků se přeskočilo:}}"
+  },
+  "create": {
+    "title": "Nové zboží z účtenky",
+    "labelPrefix": "Na účtence:",
+    "hint": "Zkratku z účtenky přepiš na celý název, jak ho znáš z obalu. Zboží se založí pro tenhle obchod a řádek se s ním rovnou spáruje."
+  }
+}

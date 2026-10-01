@@ -1,0 +1,171 @@
+<ng-container *transloco="let t; scope: 'receipts'">
+  <div class="page-head">
+    <h1 class="page-title">{{ t('receipts.title') }}</h1>
+    @if (!showUpload()) {
+      <button nz-button nzType="primary" type="button" (click)="openUpload()">
+        <span nz-icon nzType="upload"></span>
+        {{ t('receipts.uploadButton') }}
+      </button>
+    }
+  </div>
+  <p class="intro">{{ t('receipts.intro') }}</p>
+
+  @if (showUpload()) {
+    <nz-card [nzTitle]="t('receipts.upload.title')" class="page-block">
+      <app-receipt-upload (uploaded)="onUploaded()" (cancelled)="showUpload.set(false)" />
+    </nz-card>
+  }
+
+  @if (justUploaded()) {
+    <nz-alert
+      nzType="success"
+      nzShowIcon
+      nzCloseable
+      [nzMessage]="t('receipts.uploadedTitle')"
+      [nzDescription]="t('receipts.uploadedText')"
+      (nzOnClose)="justUploaded.set(false)"
+      class="page-block"
+    />
+  }
+
+  @if (actionError()) {
+    <nz-alert
+      nzType="error"
+      nzShowIcon
+      nzCloseable
+      [nzMessage]="actionError()"
+      (nzOnClose)="actionError.set(null)"
+      class="page-block"
+    />
+  }
+
+  @if (state() === 'ready' && !connectivity.online()) {
+    <nz-alert
+      nzType="info"
+      nzShowIcon
+      [nzMessage]="t('receipts.offlineStale')"
+      class="page-block"
+    />
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <div class="state-block">
+        <nz-spin nzSimple [nzTip]="t('receipts.loading')" />
+      </div>
+    }
+    @case ('offline') {
+      <nz-alert
+        nzType="info"
+        nzShowIcon
+        [nzMessage]="t('receipts.offlineTitle')"
+        [nzDescription]="t('receipts.offlineListText')"
+        [nzAction]="retryAction"
+        class="page-block"
+      />
+    }
+    @case ('error') {
+      <nz-alert
+        nzType="error"
+        nzShowIcon
+        [nzMessage]="t('receipts.loadFailed')"
+        [nzDescription]="errorMessage()"
+        [nzAction]="retryAction"
+        class="page-block"
+      />
+    }
+    @default {
+      @if (items().length === 0) {
+        <div class="empty">
+          <span nz-icon nzType="file-text" class="empty-icon"></span>
+          <h2 class="empty-title">{{ t('receipts.emptyTitle') }}</h2>
+          <p class="empty-text">{{ t('receipts.emptyText') }}</p>
+          @if (!showUpload()) {
+            <button nz-button nzType="primary" type="button" (click)="openUpload()">
+              <span nz-icon nzType="upload"></span>
+              {{ t('receipts.uploadButton') }}
+            </button>
+          }
+        </div>
+      } @else {
+        <ul class="receipt-list">
+          @for (receipt of items(); track receipt.id) {
+            <li class="receipt" [class.receipt-unseen]="receipt.unseen">
+              <a [routerLink]="['/receipts', receipt.id]" class="receipt-link">
+                <span class="receipt-head">
+                  <span class="receipt-store">{{
+                    storeName(receipt) ?? t('receipts.unknownStore')
+                  }}</span>
+                  @if (receipt.unseen) {
+                    <nz-badge nzStatus="processing" [nzText]="t('receipts.newBadge')" />
+                  }
+                </span>
+                <span class="receipt-meta">
+                  @if (receipt.purchasedAt) {
+                    {{ format.dateTime(receipt.purchasedAt) }}
+                  } @else {
+                    {{ t('receipts.uploadedAt', { date: format.dateTime(receipt.createdAt) }) }}
+                  }
+                  @if (receipt.totalAmount != null) {
+                    · {{ receipt.totalAmount | money: receipt.currency }}
+                  }
+                </span>
+                @if (receipt.processingStatus === 'PROCESSED') {
+                  <span class="receipt-meta">
+                    {{ t('receipts.lineCountTotal', { count: receipt.lineCounts.total }) }}
+                    @if (receipt.lineCounts.unmatched > 0) {
+                      · {{ t('receipts.lineCountOpen', { count: receipt.lineCounts.unmatched }) }}
+                    }
+                    @if (receipt.lineCounts.suggested > 0) {
+                      · {{ t('receipts.lineCountReady', { count: receipt.lineCounts.suggested }) }}
+                    }
+                    @if (receipt.lineCounts.matched > 0) {
+                      · {{ t('receipts.lineCountMatched', { count: receipt.lineCounts.matched }) }}
+                    }
+                  </span>
+                }
+              </a>
+              <div class="receipt-side">
+                <nz-tag [nzColor]="statusColor(receipt)">{{
+                  statusKey(receipt) | transloco
+                }}</nz-tag>
+                <button
+                  nz-button
+                  nzType="text"
+                  nzDanger
+                  type="button"
+                  class="receipt-delete"
+                  nz-popconfirm
+                  [nzPopconfirmTitle]="t('receipts.deleteConfirm')"
+                  [nzOkText]="'common.delete' | transloco"
+                  [nzCancelText]="'common.cancel' | transloco"
+                  nzOkDanger
+                  [nzLoading]="deletingId() === receipt.id"
+                  [attr.aria-label]="t('receipts.deleteLabel')"
+                  (nzOnConfirm)="delete(receipt)"
+                >
+                  <span nz-icon nzType="delete"></span>
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+        @if (totalCount() > pageSize) {
+          <nz-pagination
+            class="pagination"
+            [nzPageIndex]="pageIndex()"
+            [nzPageSize]="pageSize"
+            [nzTotal]="totalCount()"
+            (nzPageIndexChange)="onPageIndexChange($event)"
+          />
+        }
+      }
+    }
+  }
+
+  <ng-template #retryAction>
+    <button nz-button nzSize="small" type="button" (click)="load()">
+      {{ t('receipts.retry') }}
+    </button>
+  </ng-template>
+</ng-container>
