@@ -350,6 +350,8 @@
       </nz-card>
     }
 
+    <app-receipt-labels [labels]="product()!.storeLabels" />
+
     <nz-card id="price-entry" [nzTitle]="t('product-detail.submitTitle')" class="submit-card">
       <app-price-entry-form [product]="product()!" (submitted)="loadProduct(product()!.id)" />
     </nz-card>

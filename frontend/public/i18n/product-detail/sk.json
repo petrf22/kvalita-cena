@@ -56,5 +56,10 @@
     "en": "anglicky",
     "pl": "poľsky",
     "de": "nemecky"
+  },
+  "receiptLabels": {
+    "title": "Názvy na bločkoch",
+    "hint": "Takto tovar tlačia obchody na bloček — podľa toho sa pri načítaní bločku spáruje samo.",
+    "unknownScope": "neznámy obchod"
   }
 }
