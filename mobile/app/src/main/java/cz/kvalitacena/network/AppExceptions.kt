@@ -17,8 +17,12 @@ class GraphQlAppException(
   val serverMessage: String,
 ) : Exception(serverMessage)
 
-/** Chyba mimo GraphQL kontrakt — REST volání (MediaClient upload) nebo transportní selhání. */
-class TransportException(message: String, cause: Throwable? = null) : Exception(message, cause)
+/**
+ * Chyba mimo GraphQL kontrakt — REST volání (MediaClient upload) nebo transportní selhání.
+ * [status] je HTTP status, když server odpověděl bez `ProblemDetail` těla (0 = odpověď vůbec
+ * nepřišla) — ReceiptUploadWorker podle něj pozná, jestli má smysl pokus opakovat.
+ */
+class TransportException(message: String, cause: Throwable? = null, val status: Int = 0) : Exception(message, cause)
 
 /**
  * Chyba z REST endpointu (MediaController) — `ProblemDetail` tělo se stejným kontraktem jako
@@ -26,7 +30,7 @@ class TransportException(message: String, cause: Throwable? = null) : Exception(
  * (očekávané doménové výjimky), takže bez rozbalení tady appka ukázala jen obecné "Něco se
  * pokazilo" bez ohledu na skutečnou příčinu (`Throwable.toUiText()`, `ErrorMessages.kt`).
  */
-class HttpAppException(val code: String?, val serverMessage: String) : Exception(serverMessage)
+class HttpAppException(val code: String?, val serverMessage: String, val status: Int = 0) : Exception(serverMessage)
 
 /**
  * Backend odmítl request kvůli staré verzi appky (HTTP 426, [ClientVersionInterceptor]) —

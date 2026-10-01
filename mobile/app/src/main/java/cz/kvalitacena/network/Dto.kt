@@ -188,6 +188,8 @@ data class Product(
   val externalImage: ExternalProductImage? = null,
   // Obal i etiketa z OFF ve všech jazycích, které OFF má; jazyk requestu první.
   val externalImages: List<ExternalProductImage> = emptyList(),
+  // Jen v detailu — jak zboží tisknou obchody na účtenku (core.product_store_label).
+  val storeLabels: List<ProductStoreLabel> = emptyList(),
 )
 
 /**
@@ -718,6 +720,99 @@ data class PriceObservation(
   val status: String,
 )
 
+// --- Účtenky (docs/soukromi.md, „Účtenky"; docs/datovy-model.md, „Účtenky") ---
+
+/**
+ * Označení zboží na účtenkách jednoho řetězce nebo obchodu — sekce „Názvy na účtenkách"
+ * v detailu zboží. [chainName] null = označení platí jen pro jeden obchod ([storeName]).
+ */
+@Serializable
+data class ProductStoreLabel(
+  val label: String,
+  val chainName: String? = null,
+  val storeName: String? = null,
+  val lastSeenAt: String,
+)
+
+@Serializable
+data class ReceiptLineCounts(
+  val total: Int,
+  val unmatched: Int,
+  val suggested: Int,
+  val matched: Int,
+  val ignored: Int,
+)
+
+/**
+ * Řádek účtenky. Enumy se jako všude jinde v appce mapují ručně na String (appka typy ze
+ * schématu negeneruje, kořenový CLAUDE.md): [status] UNMATCHED/SUGGESTED/MATCHED/IGNORED,
+ * [matchSource] CODE/LABEL/USER/NEW_PRODUCT, [quantityUnit] PCS/KG/L. [unitPrice] je u váhového
+ * zboží cena za kg/l, ne zaplacená částka ([lineTotal]).
+ */
+@Serializable
+data class ReceiptLine(
+  val id: String,
+  val lineNo: Int,
+  val labelRaw: String,
+  val internalCode: String? = null,
+  val quantity: Double? = null,
+  val quantityUnit: String = "PCS",
+  val unitPrice: Double? = null,
+  val lineTotal: Double? = null,
+  val discountAmount: Double? = null,
+  val priceKind: String = "REGULAR",
+  val status: String,
+  val matchSource: String? = null,
+  val product: ProductSummary? = null,
+  val observationId: String? = null,
+  // DUPLICATE_SAME_DAY, nebo kód chyby (ErrorCode), proč potvrzení cenu nezapsalo.
+  val skipReason: String? = null,
+)
+
+/**
+ * Naskenovaná účtenka — vidí ji jen vlastník. [lines] chodí jen v detailu (RECEIPT_DETAIL_FIELDS),
+ * seznam si je nežádá. [imagePaths] jsou cesty REST `GET /api/receipts/{id}/images/{seq}`,
+ * přístupné jen s Bearer tokenem vlastníka; po uplynutí retence jsou prázdné.
+ */
+@Serializable
+data class Receipt(
+  val id: String,
+  val processingStatus: String,
+  val reviewStatus: String,
+  val createdAt: String,
+  val processedAt: String? = null,
+  val purchasedAt: String? = null,
+  val storeNameRaw: String? = null,
+  val storeAddressRaw: String? = null,
+  val storeIcoRaw: String? = null,
+  val totalAmount: Double? = null,
+  val currency: String? = null,
+  val store: Store? = null,
+  val suggestedStore: Store? = null,
+  val imagePaths: List<String> = emptyList(),
+  val imagesDeletedAt: String? = null,
+  val unseen: Boolean = false,
+  val lineCounts: ReceiptLineCounts,
+  val lines: List<ReceiptLine> = emptyList(),
+)
+
+@Serializable
+data class ReceiptPage(val items: List<Receipt>, val totalCount: Int, val hasMore: Boolean)
+
+@Serializable
+data class ReceiptSummary(val unseenCount: Int, val consentVersion: Int)
+
+@Serializable
+data class ConfirmReceiptLinesResult(
+  val receipt: Receipt,
+  val confirmed: Int,
+  val skipped: List<ReceiptLine> = emptyList(),
+)
+
+/** Odpověď `POST /api/receipts`. */
+@Serializable
+data class ReceiptUploadResponse(val id: Long)
+
 // --- "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty") ---
 
 /**
@@ -956,6 +1051,39 @@ data class MyEditsData(val myEdits: MyEditResult)
 
 @Serializable
 data class MyReviewsData(val myReviews: MyReviewResult)
+
+@Serializable
+data class MyReceiptsData(val myReceipts: ReceiptPage)
+
+@Serializable
+data class ReceiptData(val receipt: Receipt? = null)
+
+@Serializable
+data class ReceiptSummaryData(val receiptSummary: ReceiptSummary)
+
+@Serializable
+data class ReceiptLineSuggestionsData(val receiptLineSuggestions: List<ProductSummary> = emptyList())
+
+@Serializable
+data class UpdateReceiptHeaderData(val updateReceiptHeader: Receipt)
+
+@Serializable
+data class MatchReceiptLineData(val matchReceiptLine: ReceiptLine)
+
+@Serializable
+data class IgnoreReceiptLineData(val ignoreReceiptLine: ReceiptLine)
+
+@Serializable
+data class UnmatchReceiptLineData(val unmatchReceiptLine: ReceiptLine)
+
+@Serializable
+data class ConfirmReceiptLinesData(val confirmReceiptLines: ConfirmReceiptLinesResult)
+
+@Serializable
+data class MarkReceiptSeenData(val markReceiptSeen: Receipt)
+
+@Serializable
+data class DeleteReceiptData(val deleteReceipt: Boolean)
 
 /**
  * `extensions.code`/`params` je strojový kontrakt chyby (docs/lokalizace.md), stejný jako
