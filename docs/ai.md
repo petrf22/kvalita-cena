@@ -154,13 +154,25 @@ vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DI
 | `label-confirmations` | 1 | aktivace označení; 1, dokud je přispěvatelů málo, pak zvednout na 2 (vzor alias) |
 | `rematch-max-age-days` | 180 | pozdější návrh spárování jen u účtenek mladších než pseudonymizační okno |
 
-**Snímání na klientovi (mobil):** prahy capture pipeline (`ui/receipt/capture/`,
-`docs/rozvoj.md`, „Sběr snímků") — ostrost: Laplacianova variance ≥ 60 (na zmenšeném
-šedotónovém snímku, šířka 480 px); nový výřez při posunu ≥ 60 % výšky proti poslednímu
-uloženému (~40 % překryv). Web (`frontend/.../features/receipts/`) díly nesnímá kamerou, uživatel
-vybírá fotky sám; výchozí maska je spodní pás 20 % výšky poslední části a odesílaná šířka
-je nejvýš 1600 px (stejně jako `max-width` na serveru). Hodnoty patří sem, v kódu jsou jen jako konstanty s odkazem
-na tenhle dokument.
+**Snímání na klientovi (mobil):** prahy capture pipeline (`ui/receipt/capture/CaptureThresholds.kt`,
+`docs/rozvoj.md`, „Sběr snímků"). V kódu jsou jen jako konstanty s odkazem sem.
+
+| Konstanta | Hodnota | Proč |
+|---|---|---|
+| `ANALYSIS_WIDTH` | 480 px | analýza ostrosti/hran na zmenšeném šedotónu — rychlost |
+| `MIN_SHARPNESS` | 60 | Laplacianova variance, pod ní se snímek zahodí jako rozmazaný |
+| `NEW_PART_SHIFT_RATIO` | 0,60 | nový díl při posunu o 60 % výšky (~40 % překryv pro spojení ve workeru) |
+| `OUTPUT_MAX_WIDTH` | 1600 px | stejně jako `app.receipt.max-width` |
+| `MAX_PARTS` | 30 | stejně jako `app.receipt.max-images-per-receipt` |
+| `JPEG_QUALITY` | 85 | šedotónový termotisk zůstane čitelný, díl má desítky kB |
+| `MIN_QUAD_AREA_RATIO` | 0,10 | menší čtyřúhelník není účtenka, ale šum |
+| `MIN_BAND_WIDTH_RATIO` / `MIN_BAND_CONTRAST` | 0,25 / 25 | záchrana podle bočních hran u dlouhé účtenky, kde se čtyřúhelník nevejde |
+| `IMPORT_TILE_ASPECT` | 1,0 | dlouhý obrázek z galerie se řeže na díly s poměrem stran ~1:1 |
+| `MIN_SHIFT_RESPONSE` / `MAX_SHIFT_RATIO` | 0,05 / 1,0 | `phaseCorrelate` — slabší odezva = posun se nepočítá |
+| `CUT_SNAP_WINDOW_RATIO` / `INK_THRESHOLD` | ±5 % / 128 | řez dílu se posune do mezery mezi řádky textu, ať se řádek nepřeřízne |
+
+Web díly nesnímá kamerou — uživatel vybírá fotky sám (`frontend/.../features/receipts/`);
+výchozí maska je spodní pás 20 % výšky poslední části a odesílaná šířka nejvýš 1600 px.
 
 ## Konfigurace (až přijde čas)
 
