@@ -186,6 +186,35 @@ object ReceiptImageProcessor {
     }
   }
 
+  /**
+   * „Inkoust" po řádcích — počet pixelů tmavších než [CaptureThresholds.INK_THRESHOLD] v každém
+   * řádku obrázku. Mezery mezi řádky textu mají nulu nebo skoro nulu (`snapToGap`).
+   */
+  fun rowInk(gray: Mat): IntArray {
+    val binary = Mat()
+    val sums = Mat()
+    try {
+      Imgproc.threshold(gray, binary, CaptureThresholds.INK_THRESHOLD, 1.0, Imgproc.THRESH_BINARY_INV)
+      Core.reduce(binary, sums, 1, Core.REDUCE_SUM, CvType.CV_32S)
+      val values = IntArray(sums.rows())
+      sums.get(0, 0, values)
+      return values
+    } finally {
+      binary.release()
+      sums.release()
+    }
+  }
+
+  /**
+   * Díl z kamery oříznutý na celé řádky textu (`trimToTextGaps`) — vrací pohled do [gray]
+   * (submat), volající ho uvolní spolu s originálem.
+   */
+  fun trimPartialLines(gray: Mat): Mat {
+    val kept = trimToTextGaps(rowInk(gray))
+    if (kept.isEmpty() || (kept.first == 0 && kept.last == gray.rows() - 1)) return gray
+    return gray.submat(kept.first, kept.last + 1, 0, gray.cols())
+  }
+
   /** Šedotón → JPEG šířky nejvýš [CaptureThresholds.OUTPUT_MAX_WIDTH] (docs/ai.md, `max-width`). */
   fun encodePart(gray: Mat): EncodedPart {
     val (width, height) = limitWidth(gray.cols(), gray.rows())
@@ -226,9 +255,16 @@ object ReceiptImageProcessor {
     try {
       val straightened = straightenWhole(upright)
       try {
-        if (!splitTall) return listOf(encodePart(straightened))
+        if (!splitTall) {
+          val trimmed = trimPartialLines(straightened)
+          try {
+            return listOf(encodePart(trimmed))
+          } finally {
+            if (trimmed !== straightened) trimmed.release()
+          }
+        }
         val tileHeight = (straightened.cols() * CaptureThresholds.IMPORT_TILE_ASPECT).roundToInt()
-        return tileRanges(straightened.rows(), tileHeight).map { range ->
+        return gapAlignedTileRanges(rowInk(straightened), tileHeight).map { range ->
           val tile = straightened.submat(range.first, range.last + 1, 0, straightened.cols())
           try {
             encodePart(tile)

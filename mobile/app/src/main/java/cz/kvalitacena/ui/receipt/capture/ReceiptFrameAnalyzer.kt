@@ -105,7 +105,13 @@ class ReceiptFrameAnalyzer(
         val sensorQuad = fullQuad.map { uprightToSensor(it, rotation, sensorWidth, sensorHeight) }
         val straight = ReceiptImageProcessor.straighten(sensor, sensorQuad, width, height)
         val part = try {
-          ReceiptImageProcessor.encodePart(straight)
+          // Okraj záběru protíná řádek textu napůl — worker by díly nespojil (snapToGap).
+          val trimmed = ReceiptImageProcessor.trimPartialLines(straight)
+          try {
+            ReceiptImageProcessor.encodePart(trimmed)
+          } finally {
+            if (trimmed !== straight) trimmed.release()
+          }
         } finally {
           straight.release()
         }

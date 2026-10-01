@@ -136,4 +136,39 @@ class QuadGeometryTest {
   fun kratkyObrazekZustaneVcelku() {
     assertEquals(listOf(0 until 700), tileRanges(height = 700, tileHeight = 940))
   }
+
+  /** Řádky textu po 30 px s mezerou 10 px: inkoust v řádcích 0–29, 40–69, … */
+  private fun textRows(height: Int) = IntArray(height) { row -> if (row % 40 < 30) 200 else 0 }
+
+  @Test
+  fun rezSePosuneDoMezeryMeziRadky() {
+    val ink = textRows(400)
+    // Řádek 115 je uprostřed textu (80–109 text, 110–119 mezera… 115 je v mezeře).
+    assertEquals(115, snapToGap(ink, 115, 10))
+    // Řádek 95 je uprostřed textu (80–109) → nejbližší mezera v okně ±20 je 110 (79 je dál).
+    assertEquals(110, snapToGap(ink, 95, 20))
+  }
+
+  @Test
+  fun dilyZGalerieRezouMezeramiAPrekryvZustava() {
+    val ink = textRows(3430)
+    val ranges = gapAlignedTileRanges(ink, tileHeight = 1009)
+    assertEquals(5, ranges.size)
+    assertEquals(0, ranges.first().first)
+    assertEquals(3429, ranges.last().last)
+    ranges.drop(1).forEach { assertEquals("horní řez dílu $it je v mezeře", 0, ink[it.first]) }
+    ranges.dropLast(1).forEach { assertEquals("dolní řez dílu $it je v mezeře", 0, ink[it.last]) }
+    ranges.zipWithNext().forEach { (a, b) -> assertTrue(a.last - b.first + 1 >= 0.35 * 1009) }
+  }
+
+  @Test
+  fun dilZKameryOrizneNapulPrerizleRadky() {
+    // Záběr začíná uprostřed řádku textu (posun o 15 px) a končí taky uprostřed.
+    val ink = IntArray(395) { row -> if ((row + 15) % 40 < 30) 200 else 0 }
+    val kept = trimToTextGaps(ink)
+    assertEquals(0, ink[kept.first])
+    assertEquals(0, ink[kept.last])
+    assertTrue(kept.first > 0)
+    assertTrue(kept.last < 394)
+  }
 }

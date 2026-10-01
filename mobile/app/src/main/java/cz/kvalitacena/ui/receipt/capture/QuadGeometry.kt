@@ -224,3 +224,54 @@ fun tileRanges(
     top until top + tileHeight
   }
 }
+
+/**
+ * Řádek obrázku nejblíž [target] (v okně ±[window]), kde je nejméně „inkoustu" ([rowInk] =
+ * počet tmavých pixelů v řádku) — tedy mezera mezi řádky textu. Worker spojuje díly podle
+ * řádků zopakovaných v překryvu a vyžaduje přesnou shodu (`tools/uctenky/parse.py`,
+ * `merge_segments`); řez vedený napříč řádkem textu by z něj na obou stranách udělal
+ * nečitelný zbytek a překryv by se nespojil (součet účtenky by nesedl).
+ */
+fun snapToGap(rowInk: IntArray, target: Int, window: Int): Int {
+  if (rowInk.isEmpty()) return target
+  val from = (target - window).coerceIn(0, rowInk.lastIndex)
+  val to = (target + window).coerceIn(0, rowInk.lastIndex)
+  var best = target.coerceIn(from, to)
+  for (row in from..to) {
+    val better = rowInk[row] < rowInk[best] ||
+      (rowInk[row] == rowInk[best] && kotlin.math.abs(row - target) < kotlin.math.abs(best - target))
+    if (better) best = row
+  }
+  return best
+}
+
+/**
+ * [tileRanges] s řezy posunutými do mezer mezi řádky textu ([snapToGap]). Horní okraj
+ * prvního a dolní okraj posledního dílu zůstávají na okraji obrázku.
+ */
+fun gapAlignedTileRanges(
+  rowInk: IntArray,
+  tileHeight: Int,
+  windowRatio: Double = CaptureThresholds.CUT_SNAP_WINDOW_RATIO,
+): List<IntRange> {
+  val window = (tileHeight * windowRatio).roundToInt()
+  val ranges = tileRanges(rowInk.size, tileHeight)
+  return ranges.mapIndexed { index, range ->
+    val top = if (index == 0) range.first else snapToGap(rowInk, range.first, window)
+    val bottom = if (index == ranges.lastIndex) range.last else snapToGap(rowInk, range.last, window)
+    top..maxOf(top, bottom)
+  }
+}
+
+/**
+ * Oříznutí dílu z kamery na celé řádky textu — horní a dolní okraj záběru obvykle protíná řádek
+ * napůl a takový zbytek by spojení dílů ve workeru rozbil (viz [snapToGap]). Vrací rozsah
+ * řádků, který se má ponechat.
+ */
+fun trimToTextGaps(rowInk: IntArray, windowRatio: Double = CaptureThresholds.CUT_SNAP_WINDOW_RATIO): IntRange {
+  if (rowInk.isEmpty()) return IntRange.EMPTY
+  val window = (rowInk.size * windowRatio).roundToInt()
+  val top = snapToGap(rowInk, 0, window)
+  val bottom = snapToGap(rowInk, rowInk.lastIndex, window)
+  return if (bottom > top) top..bottom else rowInk.indices
+}

@@ -63,4 +63,14 @@ object CaptureThresholds {
    * a worker by je nespojil — appka pak řekne „vraťte telefon výš".
    */
   const val MAX_SHIFT_RATIO = 1.0
+
+  /**
+   * Jak daleko (podíl výšky dílu) smí řez dílu uhnout, aby padl do mezery mezi řádky textu
+   * (`snapToGap`). Řádek účtenky má zhruba 3–4 % výšky čtvercového dílu, takže 5 % vždy
+   * zasáhne aspoň jednu mezeru a překryv ~40 % se tím skoro nezmění.
+   */
+  const val CUT_SNAP_WINDOW_RATIO = 0.05
+
+  /** Pixel tmavší než tahle hodnota (0–255) se počítá jako „inkoust" při hledání mezer mezi řádky. */
+  const val INK_THRESHOLD = 128.0
 }
