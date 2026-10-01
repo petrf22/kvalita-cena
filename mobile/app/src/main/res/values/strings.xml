@@ -743,4 +743,6 @@
     <string name="receipt_confirm_result_skipped">Přeskočené řádky: %1$d</string>
     <string name="receipt_suggestions_search">Hledat zboží</string>
     <string name="receipt_suggestions_empty">Nic podobného se nenašlo. Zkuste jiný název, nebo založte nové zboží.</string>
+    <!-- Účtenky — ladění (jen debug build) -->
+    <string name="receipts_debug_check_status">Zkontrolovat zpracování teď (ladění)</string>
 </resources>

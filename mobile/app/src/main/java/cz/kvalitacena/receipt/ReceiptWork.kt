@@ -62,6 +62,18 @@ object ReceiptWork {
   }
 
   /**
+   * Jednorázová kontrola hned, jakmile je síť — periodickou práci WorkManager před termínem
+   * nespustí ani vynuceně (`cmd jobscheduler run`), takže notifikace by se jinak nedala
+   * ověřit dřív než za 3 h. Volá ji ladicí tlačítko v seznamu účtenek (jen debug build).
+   */
+  fun checkStatusNow(context: Context) {
+    val request = OneTimeWorkRequestBuilder<ReceiptStatusWorker>()
+      .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+      .build()
+    WorkManager.getInstance(context).enqueueUniqueWork("$STATUS_WORK-now", ExistingWorkPolicy.REPLACE, request)
+  }
+
+  /**
    * Periodická kontrola zpracovaných účtenek — plánuje se až u toho, kdo účtenky používá,
    * ostatním by appka budila telefon zbytečně. KEEP: opakované volání interval neresetuje.
    */

@@ -658,4 +658,6 @@
     <string name="receipt_confirm_result_skipped">Pominięte pozycje: %1$d</string>
     <string name="receipt_suggestions_search">Szukaj produktu</string>
     <string name="receipt_suggestions_empty">Nie znaleziono nic podobnego. Spróbuj innej nazwy lub dodaj nowy produkt.</string>
+    <!-- Účtenky — ladění (jen debug build) -->
+    <string name="receipts_debug_check_status">Sprawdź przetwarzanie teraz (debug)</string>
 </resources>

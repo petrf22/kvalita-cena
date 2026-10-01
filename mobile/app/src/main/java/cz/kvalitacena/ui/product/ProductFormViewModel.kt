@@ -52,6 +52,10 @@ class ProductFormViewModel(
   private val countryStore: CountryStore,
   private val lastStoreStore: LastStoreStore,
   private val editingProductId: String? = null,
+  // Předvyplnění z řádku účtenky (ReceiptDetailScreen „Založit nové zboží") — název z textu
+  // účtenky a obchod z její hlavičky místo naposledy použitého obchodu.
+  initialName: String? = null,
+  private val initialStoreId: String? = null,
 ) : ViewModel() {
 
   val isEditing: Boolean get() = editingProductId != null
@@ -59,7 +63,7 @@ class ProductFormViewModel(
   var loadingExisting by mutableStateOf(editingProductId != null)
     private set
 
-  var name by mutableStateOf("")
+  var name by mutableStateOf(initialName.orEmpty())
 
   /**
    * Pole "Název" je VŽDY v jazyce appky (docs/lokalizace.md) — cizojazyčný název z OFF se do
@@ -195,6 +199,9 @@ class ProductFormViewModel(
 
   init {
     if (!isEditing) loadRememberedStore()
+    // Text z účtenky rovnou nabídne podobné existující zboží — založit duplicitu je snazší než
+    // ji pak slučovat (docs/reputace.md, „Zboží bez čárového kódu").
+    if (!initialName.isNullOrBlank()) loadSuggestions(initialName)
     viewModelScope.launch {
       try {
         categories = graphQlClient.categories()
@@ -406,18 +413,28 @@ class ProductFormViewModel(
     loadSuggestions(name)
   }
 
+  /** Kód naskenovaný tlačítkem u pole EAN (ROUTE_SCAN_CODE) — jen do prázdného pole. */
+  fun onCodeScanned(scanned: String) {
+    if (isEditing) return
+    code = scanned.trim()
+  }
+
   fun onNewStoreCreated(store: Store) {
     onStoreSelected(store)
     storeSuggestions = emptyList()
   }
 
   private fun loadRememberedStore() {
-    val id = lastStoreStore.rememberedId() ?: return
+    val id = initialStoreId ?: lastStoreStore.rememberedId() ?: return
     viewModelScope.launch {
       try {
         val store = graphQlClient.storeById(id)
         if (!storeSelectionTouched) {
-          if (store == null) lastStoreStore.clear() else onStoreSelected(store)
+          if (store == null) {
+            if (id != initialStoreId) lastStoreStore.clear()
+          } else {
+            onStoreSelected(store)
+          }
         }
       } catch (e: Exception) {
         // Poslední obchod je jen pohodlný prefill, jeho výpadek formulář neblokuje.

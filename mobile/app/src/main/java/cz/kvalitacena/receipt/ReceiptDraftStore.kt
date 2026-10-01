@@ -67,7 +67,11 @@ class ReceiptDraftStore(filesDir: File) {
   @Synchronized
   fun removePart(index: Int) {
     val old = _draft.value.parts.getOrNull(index) ?: return
-    update { draft -> draft.copy(parts = draft.parts.filterIndexed { i, _ -> i != index }) }
+    update { draft ->
+      val remaining = draft.parts.filterIndexed { i, _ -> i != index }
+      // Prázdný koncept začíná znovu — čas focení i návrh zakrytí patří nové účtence.
+      if (remaining.isEmpty()) ReceiptDraft() else draft.copy(parts = remaining)
+    }
     File(dir, old.file).delete()
   }
 

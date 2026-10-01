@@ -658,4 +658,6 @@
     <string name="receipt_confirm_result_skipped">Preskočené riadky: %1$d</string>
     <string name="receipt_suggestions_search">Hľadať tovar</string>
     <string name="receipt_suggestions_empty">Nič podobné sa nenašlo. Skúste iný názov alebo založte nový tovar.</string>
+    <!-- Účtenky — ladění (jen debug build) -->
+    <string name="receipts_debug_check_status">Skontrolovať spracovanie teraz (ladenie)</string>
 </resources>

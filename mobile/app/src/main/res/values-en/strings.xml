@@ -658,4 +658,6 @@
     <string name="receipt_confirm_result_skipped">Skipped lines: %1$d</string>
     <string name="receipt_suggestions_search">Search products</string>
     <string name="receipt_suggestions_empty">Nothing similar was found. Try another name or create a new product.</string>
+    <!-- Účtenky — ladění (jen debug build) -->
+    <string name="receipts_debug_check_status">Check processing now (debug)</string>
 </resources>

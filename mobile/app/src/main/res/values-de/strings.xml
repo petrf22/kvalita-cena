@@ -660,4 +660,6 @@
     <string name="receipt_confirm_result_skipped">Übersprungene Zeilen: %1$d</string>
     <string name="receipt_suggestions_search">Artikel suchen</string>
     <string name="receipt_suggestions_empty">Nichts Ähnliches gefunden. Versuchen Sie einen anderen Namen oder legen Sie einen neuen Artikel an.</string>
+    <!-- Účtenky — ladění (jen debug build) -->
+    <string name="receipts_debug_check_status">Verarbeitung jetzt prüfen (Debug)</string>
 </resources>
