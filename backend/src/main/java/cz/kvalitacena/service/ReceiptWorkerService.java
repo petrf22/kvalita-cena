@@ -73,6 +73,15 @@ public class ReceiptWorkerService {
         receipt.ifPresent(r -> finish(r, ReceiptProcessingStatus.FAILED, now));
         continue;
       }
+      if (job.getAttempts() >= receiptProperties.getMaxAttempts()) {
+        // Vrátila se jen proto, že vypršel lease — worker na ní spadl nebo zamrzl bez /fail.
+        // Bez téhle větve by se vyzvedávala dokola a limit pokusů by neplatil nikdy.
+        job.setProcessedAt(now);
+        job.setLeaseUntil(null);
+        job.setLastError("lease expired after " + job.getAttempts() + " attempts");
+        finish(receipt.get(), ReceiptProcessingStatus.FAILED, now);
+        continue;
+      }
       job.setLeasedAt(now);
       job.setLeaseUntil(leaseUntil);
       job.setAttempts((short) (job.getAttempts() + 1));
@@ -86,13 +95,19 @@ public class ReceiptWorkerService {
 
   @Transactional
   public void submitResult(Long receiptId, WorkerReceiptResult result) {
-    ReceiptJob job = jobRepository.findByReceiptId(receiptId)
+    ReceiptJob job = jobRepository.findForUpdateByReceiptId(receiptId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_NOT_FOUND));
     Receipt receipt = receiptRepository.findById(receiptId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_NOT_FOUND));
     if (result == null || result.status() == null || !result.status().isFinished()
         || result.status() == ReceiptProcessingStatus.FAILED) {
       throw new ValidationException(ErrorCode.RECEIPT_RESULT_INVALID);
+    }
+    if (job.getProcessedAt() != null) {
+      // Výsledek už přišel (worker nedostal odpověď a poslal ho znovu, nebo pozdě po vypršeném
+      // leasu) nebo úloha skončila jako FAILED — první zápis platí, řádky se nepřepisují.
+      log.warn("Výsledek účtenky {} přišel k už ukončené úloze — ignoruje se", receiptId);
+      return;
     }
     OffsetDateTime now = OffsetDateTime.now();
     job.setProcessedAt(now);
@@ -102,10 +117,10 @@ public class ReceiptWorkerService {
     job.setExtraction(toJson(result.extraction()));
     job.setLastError(null);
 
-    // Opakované odeslání výsledku (worker nedostal odpověď a zkusil to znovu) přepíše řádky,
-    // ale jen dokud je uživatel nezačal párovat — jeho práci stroj nepřepisuje.
+    // Druhá pojistka k processedAt výš: řádky, na které uživatel sáhl, stroj nikdy nepřepisuje.
     List<ReceiptLine> existing = lineRepository.findByReceiptIdOrderByLineNoAsc(receiptId);
-    boolean userTouched = existing.stream().anyMatch(l -> l.getObservationId() != null
+    boolean userTouched = existing.stream().anyMatch(l -> l.isConfirmed()
+        || l.getStatus() == ReceiptLineStatus.MATCHED
         || l.getMatchSource() == ReceiptMatchSource.USER
         || l.getMatchSource() == ReceiptMatchSource.NEW_PRODUCT
         || l.getStatus() == ReceiptLineStatus.IGNORED);
@@ -165,8 +180,14 @@ public class ReceiptWorkerService {
 
   @Transactional
   public void fail(Long receiptId, String error) {
-    ReceiptJob job = jobRepository.findByReceiptId(receiptId)
+    ReceiptJob job = jobRepository.findForUpdateByReceiptId(receiptId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_NOT_FOUND));
+    if (job.getProcessedAt() != null) {
+      // Výsledek už je uložený, jen worker nedostal odpověď na /result a hlásí chybu —
+      // hotovou účtenku nesmí vrátit do fronty (processed_at by ji z lockAvailable vyřadil).
+      log.warn("Chyba účtenky {} nahlášená k už ukončené úloze — ignoruje se", receiptId);
+      return;
+    }
     job.setLeaseUntil(null);
     job.setLastError(truncate(error, 500));
     Receipt receipt = receiptRepository.findById(receiptId).orElse(null);
