@@ -55,8 +55,17 @@ public class ReceiptService {
 
   @Transactional
   public Receipt upload(UUID ownerPublicUid, List<byte[]> images, Integer consentVersion,
-      boolean archiveConsent, OffsetDateTime capturedAt) {
+      boolean archiveConsent, OffsetDateTime capturedAt, UUID clientUploadId) {
     AppUser owner = requireUser(ownerPublicUid);
+    // Opakovaný upload z fronty mobilu (odpověď se ztratila, účtenka už je uložená) vrátí
+    // tutéž účtenku — před denním limitem, jinak by opakování sebralo místo navíc.
+    if (clientUploadId != null) {
+      Optional<Receipt> existing = receiptRepository.findByOwnerUserIdAndClientUploadId(owner.getId(), clientUploadId);
+      if (existing.isPresent()) {
+        log.info("Účtenka {} nahrána znovu se stejným klíčem — vrací se původní", existing.get().getId());
+        return existing.get();
+      }
+    }
     // Souhlas je verzovaný (docs/soukromi.md) — klient se starým textem souhlasu musí uživatele
     // požádat znovu, jinak by účtenku zpracoval někdo, s kým uživatel nesouhlasil.
     if (consentVersion == null || consentVersion != receiptProperties.getConsentVersion()) {
@@ -86,6 +95,7 @@ public class ReceiptService {
         .consentVersion(consentVersion)
         .archiveConsent(archiveConsent)
         .capturedAt(capturedAt)
+        .clientUploadId(clientUploadId)
         .build());
 
     List<String> storedKeys = new ArrayList<>();

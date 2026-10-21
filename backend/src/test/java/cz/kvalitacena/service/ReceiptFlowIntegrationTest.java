@@ -28,6 +28,7 @@ import cz.kvalitacena.db.repo.ReceiptLineRepository;
 import cz.kvalitacena.db.repo.ReceiptRepository;
 import cz.kvalitacena.db.repo.RetailChainRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
+import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.exception.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -83,6 +84,8 @@ class ReceiptFlowIntegrationTest {
   @Autowired private ReceiptWorkerService workerService;
   @Autowired private ReceiptReviewService reviewService;
   @Autowired private ReceiptImageRetentionService retentionService;
+  @Autowired private ReceiptMatchingService matchingService;
+  @Autowired private PseudonymizationService pseudonymizationService;
   @Autowired private ReceiptRepository receiptRepository;
   @Autowired private ReceiptLineRepository lineRepository;
   @Autowired private AppUserRepository appUserRepository;
@@ -174,7 +177,7 @@ class ReceiptFlowIntegrationTest {
   void notAReceiptEndsWithoutLinesAndForeignOwnerSeesNothing() {
     Fixture f = fixture();
     AppUser owner = persistUser();
-    Receipt receipt = receiptService.upload(owner.getPublicUid(), List.of(jpeg()), 1, false, null);
+    Receipt receipt = receiptService.upload(owner.getPublicUid(), List.of(jpeg()), 1, false, null, null);
     workerService.lease(10);
     workerService.submitResult(receipt.getId(), new WorkerReceiptResult(ReceiptProcessingStatus.NOT_A_RECEIPT,
         "test", "kočka", null, null, null, null, null, null, null, List.of()));
@@ -190,7 +193,7 @@ class ReceiptFlowIntegrationTest {
   @Test
   void uploadRequiresCurrentConsentVersion() {
     AppUser owner = persistUser();
-    assertThatThrownBy(() -> receiptService.upload(owner.getPublicUid(), List.of(jpeg()), 0, false, null))
+    assertThatThrownBy(() -> receiptService.upload(owner.getPublicUid(), List.of(jpeg()), 0, false, null, null))
         .isInstanceOf(ValidationException.class);
   }
 
@@ -209,8 +212,158 @@ class ReceiptFlowIntegrationTest {
     assertThat(lines(receiptId)).hasSize(1);
   }
 
+  @Test
+  void ownMatchingDoesNotMarkReceiptAsUnseen() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR)));
+    receiptService.markSeen(owner.getPublicUid(), receiptId);
+
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    reviewService.matchLine(owner.getPublicUid(), lines(receiptId).getFirst().getId(), f.rohlik().getId(), false);
+
+    // Novinka je jen návrh od jiných lidí — vlastní úprava odznak ani notifikaci nespouští.
+    assertThat(receiptRepository.countUnseen(owner.getId())).isZero();
+  }
+
+  @Test
+  void discountedLineRecordsPromoEvenWhenRegularWasRecordedToday() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long first = uploadAndProcess(owner, f, List.of(
+        line("MLEKO", "1", QuantityUnit.PCS, "24.90", "24.90", null, PriceKind.REGULAR)));
+    confirmSingle(owner, f, first, f.rohlik());
+
+    Long second = uploadAndProcess(owner, f, List.of(
+        line("MLEKO", "1", QuantityUnit.PCS, "24.90", "24.90", "5.00", PriceKind.CLUB_CARD)));
+    var result = confirmSingle(owner, f, second, f.rohlik());
+
+    // Běžná cena už dnes zapsaná je — vynechá se, klubová cena po slevě se ale zapsat musí.
+    assertThat(result.confirmed()).isEqualTo(1);
+    assertThat(result.skipped()).isEmpty();
+    assertThat(jdbcTemplate.queryForList(
+        "SELECT price_kind FROM core.price_observation WHERE product_id = ? ORDER BY price_kind",
+        String.class, f.rohlik().getId())).containsExactly("CLUB_CARD", "REGULAR");
+    assertThat(lines(second).getFirst().isConfirmed()).isTrue();
+  }
+
+  @Test
+  void unknownLineIdFailsBeforeAnyPriceIsRecorded() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR)));
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    ReceiptLine line = lines(receiptId).getFirst();
+    reviewService.matchLine(owner.getPublicUid(), line.getId(), f.rohlik().getId(), false);
+
+    assertThatThrownBy(() -> reviewService.confirmLines(owner.getPublicUid(), receiptId,
+        List.of(line.getId(), Long.MAX_VALUE), ObservationSource.WEB))
+        .isInstanceOf(NotFoundException.class);
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT count(*) FROM core.price_observation WHERE product_id = ?", Long.class, f.rohlik().getId())).isZero();
+  }
+
+  @Test
+  void jobWhoseLeaseExpiredTooOftenEndsAsFailed() {
+    AppUser owner = persistUser();
+    Receipt receipt = receiptService.upload(owner.getPublicUid(), List.of(jpeg()), 1, false, null, null);
+    // Worker na ní třikrát spadl bez /fail — lease vypršel, pokusy jsou vyčerpané.
+    jdbcTemplate.update("UPDATE ai.receipt_job SET attempts = 3, lease_until = now() - interval '1 minute' "
+        + "WHERE receipt_id = ?", receipt.getId());
+
+    List<WorkerReceiptJob> leased = workerService.lease(10);
+
+    assertThat(leased).noneMatch(j -> j.receiptId().equals(receipt.getId()));
+    assertThat(receiptRepository.findById(receipt.getId()).orElseThrow().getProcessingStatus())
+        .isEqualTo(ReceiptProcessingStatus.FAILED);
+  }
+
+  @Test
+  void lateResultOrFailureDoesNotTouchProcessedReceipt() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR)));
+    Long lineId = lines(receiptId).getFirst().getId();
+
+    // Worker nedostal odpověď na /result: nahlásí chybu a pak výsledek pošle znovu.
+    workerService.fail(receiptId, "timeout");
+    workerService.submitResult(receiptId, new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED,
+        "test-model", "raw", null, null, null, null, null, null, "CZK", List.of(
+            line("JINY", "1", QuantityUnit.PCS, "9.00", "9.00", null, PriceKind.REGULAR),
+            line("DALSI", "1", QuantityUnit.PCS, "1.00", "1.00", null, PriceKind.REGULAR))));
+
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getProcessingStatus())
+        .isEqualTo(ReceiptProcessingStatus.PROCESSED);
+    assertThat(lines(receiptId)).singleElement().satisfies(l -> assertThat(l.getId()).isEqualTo(lineId));
+  }
+
+  @Test
+  void pseudonymizationCutsReceiptLinkButLineStaysLocked() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR)));
+    confirmSingle(owner, f, receiptId, f.rohlik());
+    jdbcTemplate.update("UPDATE core.price_observation SET observed_at = now() - interval '200 days' "
+        + "WHERE product_id = ?", f.rohlik().getId());
+
+    pseudonymizationService.pseudonymizeOldObservations();
+
+    // Účtenka drží vlastníka po celý život účtu — vazba cena ↔ řádek musí zmizet v obou směrech.
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT count(*) FROM core.price_observation WHERE product_id = ? AND receipt_line_id IS NOT NULL",
+        Long.class, f.rohlik().getId())).isZero();
+    ReceiptLine line = lines(receiptId).getFirst();
+    assertThat(line.getObservationId()).isNull();
+    assertThat(line.isConfirmed()).isTrue();
+    assertThatThrownBy(() -> reviewService.unmatchLine(owner.getPublicUid(), line.getId()))
+        .isInstanceOf(ValidationException.class);
+    assertThat(reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(line.getId()),
+        ObservationSource.WEB).confirmed()).isZero();
+  }
+
+  @Test
+  void repeatedUploadWithSameClientIdReturnsSameReceipt() {
+    AppUser owner = persistUser();
+    UUID clientUploadId = UUID.randomUUID();
+
+    Receipt first = receiptService.upload(owner.getPublicUid(), List.of(jpeg()), 1, false, null, clientUploadId);
+    Receipt again = receiptService.upload(owner.getPublicUid(), List.of(jpeg()), 1, false, null, clientUploadId);
+
+    assertThat(again.getId()).isEqualTo(first.getId());
+    assertThat(receiptRepository.countByOwnerUserId(owner.getId())).isEqualTo(1);
+  }
+
+  @Test
+  void typedQueryWinsOverSuggestionsFromReceiptLabel() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long first = uploadAndProcess(owner, f, List.of(
+        line("TUK.ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    confirmSingle(owner, f, first, f.rohlik());
+    AppUser other = persistUser();
+    Long second = uploadAndProcess(other, f, List.of(
+        line("TUK.ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+
+    List<Product> found = matchingService.suggestions(lines(second).getFirst(), f.store(),
+        f.banany().getName(), null, 1);
+
+    assertThat(found).extracting(Product::getId).containsExactly(f.banany().getId());
+  }
+
+  private ReceiptReviewService.ConfirmResult confirmSingle(AppUser owner, Fixture f, Long receiptId, Product product) {
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    ReceiptLine line = lines(receiptId).getFirst();
+    reviewService.matchLine(owner.getPublicUid(), line.getId(), product.getId(), false);
+    return reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(line.getId()), ObservationSource.WEB);
+  }
+
   private Long uploadAndProcess(AppUser owner, Fixture f, List<WorkerReceiptResult.Line> lines) {
-    Receipt receipt = receiptService.upload(owner.getPublicUid(), List.of(jpeg(), jpeg()), 1, false, OffsetDateTime.now());
+    Receipt receipt = receiptService.upload(owner.getPublicUid(), List.of(jpeg(), jpeg()), 1, false, OffsetDateTime.now(),
+        null);
     List<WorkerReceiptJob> leased = workerService.lease(10);
     assertThat(leased).anySatisfy(j -> {
       assertThat(j.receiptId()).isEqualTo(receipt.getId());

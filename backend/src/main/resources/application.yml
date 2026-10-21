@@ -37,7 +37,10 @@ spring:
       # ImageProcessingService (magic bytes, rozměry), tohle je jen hrubá pojistka na úrovni
       # kontejneru (MediaController a ReceiptController). Request je větší než soubor kvůli
       # účtence — až app.receipt.max-images-per-receipt výřezů v jednom uploadu; každý výřez
-      # zvlášť hlídá app.receipt.max-image-bytes.
+      # zvlášť hlídá app.receipt.max-image-bytes. max-request-size je ale SKUTEČNÝ strop celé
+      # účtenky: 30 × 4 MB by bylo 120 MB, což nechceme pouštět přes proxy ani do paměti
+      # (díly mají šířku max-width 1600 px, reálně stovky kB). Překročení vrací 413
+      # s RECEIPT_UPLOAD_TOO_LARGE (GlobalExceptionHandler).
       max-file-size: 8MB
       max-request-size: 40MB
 

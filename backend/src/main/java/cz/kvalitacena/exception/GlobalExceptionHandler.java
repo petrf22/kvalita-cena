@@ -1,6 +1,7 @@
 package cz.kvalitacena.exception;
 
 import cz.kvalitacena.service.Messages;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -8,6 +9,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -53,6 +55,21 @@ public class GlobalExceptionHandler {
     problem.setProperty("code", ErrorCode.VALIDATION_FAILED.name());
     problem.setProperty("fieldErrors", e.getBindingResult().getFieldErrors().stream()
         .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage, (a, b) -> a)));
+    return problem;
+  }
+
+  /**
+   * Request nad {@code spring.servlet.multipart.max-request-size} odmítne už multipart vrstva,
+   * dřív než controller — bez tohohle handleru by klient dostal holé 413 bez kódu a nevěděl,
+   * co s tím. U účtenky je to součet všech dílů, takže rada zní „méně dílů".
+   */
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  public ProblemDetail handleMaxUploadSize(MaxUploadSizeExceededException e, HttpServletRequest request) {
+    ErrorCode code = request.getRequestURI().startsWith("/api/receipts")
+        ? ErrorCode.RECEIPT_UPLOAD_TOO_LARGE : ErrorCode.PHOTO_TOO_LARGE;
+    ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+        HttpStatus.CONTENT_TOO_LARGE, messages.get(code.getMessageKey()));
+    problem.setProperty("code", code.name());
     return problem;
   }
 

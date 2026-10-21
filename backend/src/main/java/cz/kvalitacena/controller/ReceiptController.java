@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Nahrání účtenky a její obrázky pro vlastníka — REST ze stejného důvodu jako
@@ -40,7 +41,8 @@ public class ReceiptController {
 
   /**
    * {@code images} v pořadí shora dolů. {@code consentVersion} = verze textu souhlasu, kterou
-   * uživatel odsouhlasil (docs/soukromi.md, „Účtenky").
+   * uživatel odsouhlasil (docs/soukromi.md, „Účtenky"). {@code clientUploadId} = klíč
+   * idempotence, mobil ho posílá stejný při každém opakování z fronty.
    */
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public UploadResponse upload(@RequestParam("images") List<MultipartFile> images,
@@ -48,10 +50,11 @@ public class ReceiptController {
       @RequestParam(value = "archiveConsent", defaultValue = "false") boolean archiveConsent,
       @RequestParam(value = "capturedAt", required = false)
       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime capturedAt,
+      @RequestParam(value = "clientUploadId", required = false) UUID clientUploadId,
       Authentication authentication) {
     List<byte[]> bytes = images.stream().map(ReceiptController::readBytes).toList();
     Receipt receipt = receiptService.upload(viewerContextResolver.resolve(authentication).publicUid(), bytes,
-        consentVersion, archiveConsent, capturedAt);
+        consentVersion, archiveConsent, capturedAt, clientUploadId);
     return new UploadResponse(receipt.getId());
   }
 

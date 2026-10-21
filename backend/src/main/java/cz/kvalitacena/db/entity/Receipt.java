@@ -6,6 +6,7 @@ import org.springframework.data.domain.Persistable;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 /**
  * Naskenovaná účtenka — soukromý přehled nákupu vlastníka (docs/soukromi.md, „Účtenky"), nikdy
@@ -43,6 +44,10 @@ public class Receipt implements Persistable<Long> {
 
   @Column(name = "archive_consent", nullable = false)
   private boolean archiveConsent;
+
+  /** Klíč idempotence nahrání (id položky fronty v mobilu) — opakovaný upload vrátí tutéž účtenku. */
+  @Column(name = "client_upload_id")
+  private UUID clientUploadId;
 
   /** Kdy uživatel účtenku vyfotil (hodiny klienta) — jen nápověda, když worker datum nepřečte. */
   @Column(name = "captured_at", columnDefinition = "TIMESTAMPTZ")

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
 
@@ -59,4 +60,6 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
       ORDER BY r.processed_at LIMIT :limit
       """, nativeQuery = true)
   List<Receipt> findArchiveCandidates(@Param("limit") int limit);
+
+  Optional<Receipt> findByOwnerUserIdAndClientUploadId(Long ownerUserId, UUID clientUploadId);
 }
