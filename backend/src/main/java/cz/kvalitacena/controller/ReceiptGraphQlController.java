@@ -192,16 +192,18 @@ public class ReceiptGraphQlController {
         .toList();
   }
 
-  @SchemaMapping(typeName = "Receipt", field = "unseen")
-  public boolean unseen(Receipt receipt) {
-    if (receipt.getProcessedAt() == null) {
-      return false;
+  /** Stejné pravidlo jako ReceiptRepository.countUnseen — dávkově, seznam účtenek ho chce u každé. */
+  @BatchMapping(typeName = "Receipt", field = "unseen")
+  public Map<Receipt, Boolean> unseen(List<Receipt> receipts) {
+    Map<Long, List<ReceiptLine>> byReceipt = linesByReceipt(receipts);
+    Map<Receipt, Boolean> result = new LinkedHashMap<>();
+    for (Receipt r : receipts) {
+      boolean unseen = r.getProcessedAt() != null && (r.getSeenAt() == null
+          || byReceipt.getOrDefault(r.getId(), List.of()).stream()
+              .anyMatch(l -> l.getStatus() == ReceiptLineStatus.SUGGESTED && l.getUpdatedAt().isAfter(r.getSeenAt())));
+      result.put(r, unseen);
     }
-    if (receipt.getSeenAt() == null) {
-      return true;
-    }
-    return lineRepository.findByReceiptIdOrderByLineNoAsc(receipt.getId()).stream()
-        .anyMatch(l -> l.getStatus() == ReceiptLineStatus.SUGGESTED && l.getUpdatedAt().isAfter(receipt.getSeenAt()));
+    return result;
   }
 
   // --- pole typu ReceiptLine

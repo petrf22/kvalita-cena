@@ -134,20 +134,22 @@ public class ReceiptMatchingService {
    * Našeptávač pro nespárovaný řádek (krok 3): nejdřív zboží s podobným označením v rozsahu
    * obchodu, pak podobnost názvu stejně jako {@code productSuggestions}. Zkratka z účtenky
    * („TUK.ROHLIK") se před hledáním názvu zbaví interpunkce, jinak by se tečka počítala do
-   * trigramů.
+   * trigramů. Napsaný dotaz návrhy podle označení vypne — uživatel tím říká, že nesedí,
+   * a při plném limitu by jinak výsledky podle dotazu vůbec nedostaly místo.
    */
   @Transactional(readOnly = true)
   public List<Product> suggestions(ReceiptLine line, Store store, String query, Long viewerId, int limit) {
     Map<Long, Product> result = new LinkedHashMap<>();
     Long storeId = store != null ? store.getId() : null;
     Long chainId = store != null && store.getChain() != null ? store.getChain().getId() : null;
-    if (store != null) {
+    boolean explicitQuery = query != null && !query.isBlank();
+    if (store != null && !explicitQuery) {
       List<Long> labelProductIds = labelRepository.findSimilar(line.getLabelRaw(), storeId, chainId,
               receiptProperties.getLabelSimilarity(), limit).stream()
           .map(ProductStoreLabel::getProductId).toList();
       productRepository.findAllById(labelProductIds).forEach(p -> result.putIfAbsent(p.getId(), p));
     }
-    String name = query != null && !query.isBlank() ? query.trim() : searchableLabel(line.getLabelRaw());
+    String name = explicitQuery ? query.trim() : searchableLabel(line.getLabelRaw());
     if (!name.isBlank()) {
       List<Product> byName = productRepository.findSimilarByName(name, storeId, viewerId,
           catalogProperties.getSuggestionSimilarity(), limit);
