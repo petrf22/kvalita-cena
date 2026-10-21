@@ -26,7 +26,7 @@ def status_of(document: dict) -> str:
     return "PROCESSED"
 
 
-def to_payload(document: dict, raw_text: str, model: str) -> dict:
+def to_payload(document: dict, raw_text: str | None, model: str) -> dict:
     status = status_of(document)
     payload = {
         "status": status,

@@ -61,6 +61,16 @@ def is_noise(line: str) -> bool:
     return bool(_SEPARATOR_RE.match(line)) or bool(_COLUMN_HEADER_RE.match(line))
 
 
+# Maskované číslo platební/věrnostní karty (**** 1234, XXXXXXXXXXXX1234) — pojistka pro
+# syrový text, kdyby se patička nedala oddělit podle řádku s celkovou částkou.
+_MASKED_NUMBER_RE = re.compile(r"[*xX]{4,}[\s-]*\d{2,}|\*{2,}\s*\d{4}")
+
+
+def is_sensitive(line: str) -> bool:
+    """Řádek s maskovaným číslem karty — do textu pro server nepatří (docs/soukromi.md)."""
+    return bool(_MASKED_NUMBER_RE.search(line))
+
+
 def clean_lines(text: str) -> list[str]:
     """Syrový OCR text na očištěné řádky bez prázdných a bez oddělovačů."""
     return [c for line in text.splitlines() if (c := clean_line(line)) and not is_noise(c)]

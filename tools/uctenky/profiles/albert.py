@@ -90,7 +90,8 @@ def split_body(raw_lines: list[str]) -> tuple[list[str], Footer]:
             )
             break
 
-    return raw_lines[start:end], Footer(purchased_at=purchased_at, printed_total=printed_total)
+    return raw_lines[start:end], Footer(purchased_at=purchased_at, printed_total=printed_total,
+                                        total_index=end if printed_total is not None else None)
 
 
 PROFILE = Profile(

@@ -55,12 +55,32 @@ def _same_line(a: str, b: str) -> bool:
     return SequenceMatcher(None, a, b).ratio() >= LINE_SIMILARITY
 
 
-def build_document(texts: list[str] | str, profile_name: str | None = None) -> dict:
-    """OCR text (jedna nebo víc částí) na dokument s řádky a kontrolou součtu."""
-    raw_lines = merge_segments([texts] if isinstance(texts, str) else texts)
+def _profile_for(raw_lines: list[str], profile_name: str | None):
     profile = profiles.by_name(profile_name) if profile_name else profiles.detect(raw_lines)
     if profile is None:
         raise ValueError("neznámý profil: " + str(profile_name))
+    return profile
+
+
+def server_text(texts: list[str] | str, profile_name: str | None = None) -> str | None:
+    """Syrový text pro server (rawText) — hlavička a položky po řádek s celkovou částkou.
+
+    Patička (číslo karty, autorizační kód, věrnostní body) se zahazuje stejně jako
+    v dokumentu; bez řádku s celkovou částkou se nedá oddělit, a tak se text neposílá
+    vůbec. Řádky s maskovaným číslem karty vypadnou i nad patičkou.
+    """
+    raw_lines = merge_segments([texts] if isinstance(texts, str) else texts)
+    _, footer = _profile_for(raw_lines, profile_name).split_body(raw_lines)
+    if footer.total_index is None:
+        return None
+    kept = raw_lines[: footer.total_index + 1]
+    return "\n".join(line for line in kept if not normalize.is_sensitive(line))
+
+
+def build_document(texts: list[str] | str, profile_name: str | None = None) -> dict:
+    """OCR text (jedna nebo víc částí) na dokument s řádky a kontrolou součtu."""
+    raw_lines = merge_segments([texts] if isinstance(texts, str) else texts)
+    profile = _profile_for(raw_lines, profile_name)
 
     header = profile.read_header(raw_lines)
     body, footer = profile.split_body(raw_lines)

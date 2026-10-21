@@ -35,9 +35,8 @@ def process_job(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, job: dict,
     texts = []
     for path in job["imagePaths"]:
         texts.append(extractor.ocr(api.image(path)))
-    raw_text = "\n\n----- další část -----\n\n".join(t.strip() for t in texts)
     document = parse.build_document(texts)
-    payload = result_mod.to_payload(document, raw_text, extractor.model)
+    payload = result_mod.to_payload(document, parse.server_text(texts), extractor.model)
     api.result(receipt_id, payload)
     items = sum(1 for line in payload["lines"])
     mark = "OK " if document["totalMatches"] else "!! "

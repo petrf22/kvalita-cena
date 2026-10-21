@@ -28,6 +28,9 @@ class Footer:
 
     purchased_at: datetime | None = None
     printed_total: Decimal | None = None
+    # Index řádku s celkovou částkou (začátek patičky); None, když se nenašel. Podle něj
+    # parse.server_text ořízne syrový text, ať patička nedorazí na server ani tudy.
+    total_index: int | None = None
 
 
 @dataclass(frozen=True)

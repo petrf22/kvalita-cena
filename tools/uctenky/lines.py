@@ -27,6 +27,7 @@ PER_L = "PER_L"
 
 _UOM_TO_BASIS = {"kg": PER_KG, "g": PER_KG, "l": PER_L, "ml": PER_L}
 _UOM_TO_FACTOR = {"kg": Decimal(1), "g": Decimal(1000), "l": Decimal(1), "ml": Decimal(1000)}
+_BASIS_UOM = {PER_KG: "kg", PER_L: "l"}
 
 _UOM = "kg|g|ml|l"
 _VAT_TAIL = r"(?:\s+(?P<vat>[A-Z]))?\s*$"
@@ -98,14 +99,20 @@ def strip_weight_marker(name: str) -> tuple[str, bool]:
     return name.strip(), False
 
 
-def _weight_basis(uom: str, peruom: str, qty: Decimal) -> tuple[Decimal, str, str | None]:
-    """Množství a základ ceny u váhového zboží; převádí g/ml na kg/l."""
+def _weight_basis(uom: str, peruom: str, qty: Decimal,
+                  unit: Decimal) -> tuple[Decimal, str, Decimal, str | None]:
+    """Množství, základ a jednotková cena váhového zboží — VŽDY v kg/l.
+
+    Základ PER_KG/PER_L říká serveru, že cena je za kg/l, takže množství i cena se musí
+    převést oba: „200 g x 0,25 Kč/g" je 0,2 kg za 250 Kč/kg, ne 0,25 Kč/kg.
+    """
     basis = _UOM_TO_BASIS[peruom.lower()]
     note = None
-    if uom.lower() != peruom.lower():
-        qty = qty / _UOM_TO_FACTOR[uom.lower()] * _UOM_TO_FACTOR[peruom.lower()]
-        note = f"množství v {uom}, cena za {peruom} — přepočteno"
-    return qty, basis, note
+    qty_factor, unit_factor = _UOM_TO_FACTOR[uom.lower()], _UOM_TO_FACTOR[peruom.lower()]
+    if qty_factor != 1 or unit_factor != 1:
+        qty, unit = qty / qty_factor, unit * unit_factor
+        note = f"množství v {uom}, cena za {peruom} — přepočteno na {_BASIS_UOM[basis]}"
+    return qty, basis, unit, note
 
 
 def parse_item_lines(raw_lines: list[str]) -> ParseResult:
@@ -146,14 +153,15 @@ def parse_item_lines(raw_lines: list[str]) -> ParseResult:
             if pre_qty["peruom"].lower() == "ks":
                 pending_qty = (qty, PACKAGE, parse_amount(pre_qty["unit"]), None)
             else:
-                qty, basis, note = _weight_basis(pre_qty["uom"], pre_qty["peruom"], qty)
-                pending_qty = (qty, basis, parse_amount(pre_qty["unit"]), note)
+                qty, basis, unit, note = _weight_basis(pre_qty["uom"], pre_qty["peruom"], qty,
+                                                       parse_amount(pre_qty["unit"]))
+                pending_qty = (qty, basis, unit, note)
             continue
 
         weight = WEIGHT_RE.match(raw)
         if weight:
-            qty, basis, note = _weight_basis(
-                weight["uom"], weight["peruom"], parse_amount(weight["qty"])
+            qty, basis, unit, note = _weight_basis(
+                weight["uom"], weight["peruom"], parse_amount(weight["qty"]), parse_amount(weight["unit"])
             )
             last_item_no = append(
                 ParsedLine(
@@ -163,7 +171,7 @@ def parse_item_lines(raw_lines: list[str]) -> ParseResult:
                     line_total=parse_amount(weight["total"]),
                     quantity=qty,
                     quantity_basis=basis,
-                    unit_price=parse_amount(weight["unit"]),
+                    unit_price=unit,
                     vat_code=weight["vat"],
                     note=note,
                 )

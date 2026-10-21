@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import sys
 import unittest
+from decimal import Decimal
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -55,6 +56,12 @@ class AlbertProfileTest(unittest.TestCase):
             self.assertNotIn(leak, serialized)
         self.assertEqual(self.document["purchasedAt"], "2026-09-07T10:15:00+02:00")
 
+    def test_syrovy_text_pro_server_nema_paticku(self):
+        text = parse.server_text(_text("albert-plny"))
+        self.assertIn("LOSOS FILET ASC", text)
+        for leak in ("VISA", "SEQ ID", "Autoriz", "Terminal", "bodů", "0000000"):
+            self.assertNotIn(leak, text)
+
     def test_nesedici_soucet_se_hlasi(self):
         document = parse.build_document(_text("albert-nesedi"))
         self.assertFalse(document["totalMatches"])
@@ -96,6 +103,46 @@ Platební karta **** 1234
         self.assertEqual((chleb["discountAmount"], chleb["priceKind"]), ("5.00", "CLUB_CARD"))
         self.assertEqual(len(payload["lines"]), 2)
         self.assertEqual(payload["storeIco"], "12345678")
+
+
+    def test_payload_neposila_cislo_karty_ani_v_syrovem_textu(self):
+        payload = result_mod.to_payload(self.document, parse.server_text(self.TEXT), "glm-ocr")
+        serialized = json.dumps(payload, ensure_ascii=False)
+        self.assertNotIn("Platební karta", serialized)
+        self.assertNotIn("**** 1234", serialized)
+        self.assertIn("TUK.ROHLIK 43G", payload["rawText"])
+
+    def test_bez_celkove_castky_se_syrovy_text_neposila(self):
+        self.assertIsNone(parse.server_text("TUK.ROHLIK 43G 3,50 B\nPlatební karta **** 1234"))
+
+    def test_maskovane_cislo_karty_vypadne_i_nad_patickou(self):
+        text = parse.server_text("CHLÉB 54,90 B\nKarta XXXXXXXXXXXX1234\nCelkem k úhradě 54,90 Kč")
+        self.assertNotIn("1234", text)
+
+
+class WeightUnitTest(unittest.TestCase):
+    """Základ PER_KG/PER_L znamená cenu za kg/l — g a ml se převádí v množství i v ceně."""
+
+    def _item(self, raw: str) -> lines_mod.ParsedLine:
+        return lines_mod.parse_item_lines([raw]).lines[0]
+
+    def test_cena_za_gram_se_prevede_na_cenu_za_kilo(self):
+        line = self._item("Syr 200 g x 0,25 Kč/g 50,00 A")
+        self.assertEqual((line.quantity, line.quantity_basis, line.unit_price),
+                         (Decimal("0.2"), lines_mod.PER_KG, Decimal("250.00")))
+
+    def test_kilogramy_zustanou_beze_zmeny(self):
+        line = self._item("SYR EIDAM 0,200 kg x 250,00 Kč/kg 50,00 A")
+        self.assertEqual((line.quantity, line.unit_price), (Decimal("0.200"), Decimal("250.00")))
+
+    def test_cena_za_mililitr_se_prevede_na_cenu_za_litr(self):
+        line = self._item("OLEJ 500 ml x 0,05 Kč/ml 25,00 A")
+        self.assertEqual((line.quantity, line.quantity_basis, line.unit_price),
+                         (Decimal("0.5"), lines_mod.PER_L, Decimal("50.00")))
+
+    def test_mnozstvi_krat_cena_dal_sedi_na_zaplacenou_castku(self):
+        line = self._item("Syr 200 g x 0,25 Kč/g 50,00 A")
+        self.assertEqual(line.quantity * line.unit_price, line.line_total)
 
 
 class PreQuantityTest(unittest.TestCase):
