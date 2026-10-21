@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // Sjednocené verzování napříč monorepem (docs/vydani.md, sekce "Verzování a vydání").
 // Kořenové VERSION + CHANGELOG.md jsou jediný zdroj pravdy — tenhle skript z nich přepisuje
-// pět commitovaných výstupů (backend/build.gradle, frontend/package.json,
-// mobile/app/build.gradle.kts a generované seznamy změn pro web i mobil). Spouští se ručně při
+// sedm commitovaných výstupů (backend/build.gradle, frontend/package.json + package-lock.json,
+// frontend/src/app/version.ts, mobile/app/build.gradle.kts a generované seznamy změn pro web
+// i mobil). Spouští se ručně při
 // vydání a v CI (.github/workflows/ci.yml, job "Verze a changelog") jako `node
 // tools/version/sync.mjs` následované `git diff --exit-code` — stejný vzor jako
 // frontend/tools/version/write-version.mjs + graphql-codegen. Needituj generované soubory
@@ -11,6 +12,7 @@
 // compose.prod.yaml staví backend i frontend s Docker build kontextem uvnitř appky
 // (`context: ./backend`, `context: ./frontend`) — kořenový adresář v něm není vidět, proto se
 // verze i changelog generují dopředu a commitují, ne až při buildu obrazu.
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -149,6 +151,31 @@ if (releases[0].version !== version) {
   content = content.replace(versionField, `$1${version}$2`);
   write(relPath, content);
 }
+
+// package-lock.json nese verzi projektu dvakrát (kořen a `packages[""]`). `npm ci` ji
+// nekontroluje, takže by bez přepisu tiše zastarala — přepisují se jen tyhle dva řádky, ne
+// celý soubor přes JSON.stringify, ať se zbytek lockfilu nehne.
+{
+  const relPath = 'frontend/package-lock.json';
+  let content = read(relPath);
+  const versionFields = [
+    /^(\{\n {2}"name": "[^"]*",\n {2}"version": ")[^"]*(")/,
+    /(\n {4}"": \{\n {6}"name": "[^"]*",\n {6}"version": ")[^"]*(")/,
+  ];
+  for (const versionField of versionFields) {
+    if (!versionField.test(content)) {
+      throw new Error(`${relPath}: nenašel jsem verzi projektu (${versionField})`);
+    }
+    content = content.replace(versionField, `$1${version}$2`);
+  }
+  write(relPath, content);
+}
+
+// src/app/version.ts generuje frontendový write-version.mjs z package.json (npm pre* hooky).
+// Spouští se i tady, ať commitnutý výstup nezůstane na staré verzi až do příštího buildu.
+execFileSync(process.execPath, [path.join(ROOT, 'frontend/tools/version/write-version.mjs')], {
+  stdio: 'ignore',
+});
 
 // --- 5. mobile/app/build.gradle.kts --------------------------------------------------------
 
