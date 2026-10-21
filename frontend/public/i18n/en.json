@@ -57,6 +57,8 @@
     "STORE_CITY_REQUIRED": "City is required",
     "STORE_CITY_EMPTY": "City must not be empty",
     "STORE_URL_INVALID": "The store link has an invalid format",
+    "STORE_OSM_ORIGIN_REQUIRES_REF": "A store taken from OpenStreetMap cannot be saved without a reference to its record",
+    "STORE_DATA_ORIGIN_INVALID": "A store cannot have Open Food Facts as its data origin",
     "COMPANY_ID_INVALID": "Company ID has an invalid format (8 digits, wrong check digit)",
     "UNSUPPORTED_COUNTRY": "This country is not supported yet",
     "STORE_COUNTRY_EDIT_REQUIRES_TRUST": "Editing a store's country requires higher account trust",

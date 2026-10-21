@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Dohledání "podobného" záznamu PO neúspěšném uložení kvůli {@code uq_store_identity}/
@@ -32,6 +33,12 @@ public class DuplicateLookupService {
   @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
   public List<Store> findSimilarStores(String name, String city) {
     return storeRepository.findSimilar(name, city);
+  }
+
+  /** Přesně ta provozovna, která drží {@code uq_store_identity} — viz {@link StoreRepository#findByIdentity}. */
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+  public Optional<Store> findStoreByIdentity(String country, String name, String city, String street) {
+    return storeRepository.findByIdentity(country, name, city, street);
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)

@@ -57,6 +57,8 @@
     "STORE_CITY_REQUIRED": "Die Stadt ist erforderlich",
     "STORE_CITY_EMPTY": "Die Stadt darf nicht leer sein",
     "STORE_URL_INVALID": "Der Link zum Geschäft hat kein gültiges Format",
+    "STORE_OSM_ORIGIN_REQUIRES_REF": "Ein aus OpenStreetMap übernommenes Geschäft kann ohne Verweis auf seinen Datensatz nicht gespeichert werden",
+    "STORE_DATA_ORIGIN_INVALID": "Ein Geschäft kann nicht Open Food Facts als Datenherkunft haben",
     "COMPANY_ID_INVALID": "Die Firmennummer hat kein gültiges Format (8 Ziffern, falsche Prüfziffer)",
     "UNSUPPORTED_COUNTRY": "Dieses Land kennt die App noch nicht",
     "STORE_COUNTRY_EDIT_REQUIRES_TRUST": "Die Änderung des Landes eines Geschäfts erfordert höheres Kontovertrauen",

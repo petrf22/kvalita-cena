@@ -57,6 +57,8 @@
     "STORE_CITY_REQUIRED": "Město je povinné",
     "STORE_CITY_EMPTY": "Město nesmí být prázdné",
     "STORE_URL_INVALID": "Odkaz na obchod nemá platný tvar",
+    "STORE_OSM_ORIGIN_REQUIRES_REF": "Provozovnu převzatou z OpenStreetMap nelze uložit bez odkazu na její záznam",
+    "STORE_DATA_ORIGIN_INVALID": "Provozovna nemůže mít původ dat z Open Food Facts",
     "COMPANY_ID_INVALID": "IČO nemá platný tvar (8 číslic, špatný kontrolní součet)",
     "UNSUPPORTED_COUNTRY": "Tuto zemi appka zatím nezná",
     "STORE_COUNTRY_EDIT_REQUIRES_TRUST": "Úprava země obchodu vyžaduje vyšší důvěru účtu",

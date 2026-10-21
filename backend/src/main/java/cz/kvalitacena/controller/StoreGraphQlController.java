@@ -97,12 +97,22 @@ public class StoreGraphQlController {
       return result;
     }
     // Vlastní obchody se berou ze stejného okruhu jako nabídka, aby se poznala shoda i u
-    // provozovny, kterou někdo založil ručně (a osm_ref tedy nemá).
-    List<Store> known = storeRepository.findNearby(roundedLat, roundedLon,
-        radius * 1000 + ROUNDING_SLACK_M, viewer.userId());
+    // provozovny, kterou někdo založil ručně (a osm_ref tedy nemá). Okruh ale nestačí:
+    // obchod bez souřadnic ani cizí PENDING v něm nejsou, a uq_store_identity by je přesto
+    // srazil — proto ještě dotaz podle názvu a města kandidátů.
+    Map<Long, Store> known = new LinkedHashMap<>();
+    storeRepository.findNearby(roundedLat, roundedLon, radius * 1000 + ROUNDING_SLACK_M, viewer.userId())
+        .forEach(store -> known.put(store.getId(), store));
+    List<String> names = result.candidates().stream().map(OsmStoreCandidate::name).toList();
+    List<String> cities = result.candidates().stream().map(OsmStoreCandidate::city)
+        .filter(city -> city != null && !city.isBlank()).toList();
+    if (!cities.isEmpty()) {
+      storeRepository.findIdentityCandidates(pgArray(names), pgArray(cities))
+          .forEach(store -> known.putIfAbsent(store.getId(), store));
+    }
     String fallbackCountry = countryResolver.resolve(null, viewer.userId());
     return new OsmStoreCandidateResult(result.status(),
-        OsmStoreCandidateFilter.withoutKnownStores(result.candidates(), known, fallbackCountry),
+        OsmStoreCandidateFilter.withoutKnownStores(result.candidates(), List.copyOf(known.values()), fallbackCountry),
         result.attribution());
   }
 
@@ -195,5 +205,17 @@ public class StoreGraphQlController {
       result.put(s, byStore.getOrDefault(s.getId(), List.of()));
     }
     return result;
+  }
+
+  /** Literál pole PostgreSQL ({@code {"a","b"}}) pro {@code CAST(:x AS TEXT[])} v nativním dotazu. */
+  static String pgArray(List<String> values) {
+    StringBuilder sb = new StringBuilder("{");
+    for (int i = 0; i < values.size(); i++) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      sb.append('"').append(values.get(i).replace("\\", "\\\\").replace("\"", "\\\"")).append('"');
+    }
+    return sb.append('}').toString();
   }
 }

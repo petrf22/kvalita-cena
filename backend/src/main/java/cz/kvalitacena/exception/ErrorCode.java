@@ -65,6 +65,7 @@ public enum ErrorCode {
 
   // --- katalog: původ dat (ODbL)
   STORE_OSM_ORIGIN_REQUIRES_REF("error.store.osmOriginRequiresRef"),
+  STORE_DATA_ORIGIN_INVALID("error.store.dataOriginInvalid"),
 
   // --- fotky
   PHOTO_UPLOAD_REQUIRES_LOGIN("error.photo.uploadRequiresLogin"),

@@ -83,14 +83,19 @@ public class StoreService {
     // Původ dat (docs/datovy-model.md, pravidlo 1): OSM_DERIVED znamená "název a adresa jsou
     // z OpenStreetMap", a to se bez odkazu na konkrétní záznam nedá tvrdit. Samotné
     // geokódování adresy OSM_DERIVED není — odtamtud je jen bod, ne text, proto se u něj
-    // geoSource=OSM a data_origin=OWN nevylučují.
+    // geoSource=OSM a data_origin=OWN nevylučují. OFF_DERIVED patří jen ke zboží; u obchodu
+    // by ho odmítl až CHECK v databázi a chyba by se tvářila jako DUPLICATE_STORE.
     DataOrigin dataOrigin = input.dataOrigin() != null ? input.dataOrigin() : DataOrigin.OWN;
+    if (dataOrigin == DataOrigin.OFF_DERIVED) {
+      throw new ValidationException(ErrorCode.STORE_DATA_ORIGIN_INVALID);
+    }
     if (dataOrigin == DataOrigin.OSM_DERIVED && (input.osmRef() == null || input.osmRef().isBlank())) {
       throw new ValidationException(ErrorCode.STORE_OSM_ORIGIN_REQUIRES_REF);
     }
-    GeoSource geoSource = dataOrigin == DataOrigin.OSM_DERIVED
-        ? GeoSource.OSM
-        : input.geoSource() != null ? input.geoSource() : GeoSource.COMMUNITY;
+    // geo_source je původ BODU, data_origin původ TEXTU — u převzaté provozovny může bod
+    // pocházet od uživatele (posunul ho na mapě), proto se OSM jen doplní, když klient nic neposlal.
+    GeoSource geoSource = input.geoSource() != null ? input.geoSource()
+        : dataOrigin == DataOrigin.OSM_DERIVED ? GeoSource.OSM : GeoSource.COMMUNITY;
 
     if (!catalogRateLimiter.tryAcquireStoreCreation(viewerPublicUid)) {
       throw new TooManyRequestsException();
@@ -130,7 +135,7 @@ public class StoreService {
     try {
       return storeRepository.saveAndFlush(store);
     } catch (DataIntegrityViolationException e) {
-      throw duplicateOf(input, e);
+      throw duplicateOf(store);
     }
   }
 
@@ -153,11 +158,18 @@ public class StoreService {
     }
   }
 
-  private DuplicateException duplicateOf(CreateStoreInput input, DataIntegrityViolationException cause) {
+  private DuplicateException duplicateOf(Store rejected) {
     // Vlastní transakce (DuplicateLookupService) — po chybě uq_store_identity je aktuální DB
     // transakce na úrovni Postgresu "aborted", dotaz nad stejnou session by spadl.
-    List<Store> similar = duplicateLookupService.findSimilarStores(input.name().trim(), input.city().trim());
-    Long existingId = similar.isEmpty() ? null : similar.get(0).getId();
+    // existingId musí být skutečná kolize, ne první podobný název — klient ho nabízí jako
+    // "použij existující" a jiná pobočka téhož řetězce by tu cenu dostala omylem.
+    Long existingId = duplicateLookupService.findStoreByIdentity(rejected.getCountry(),
+            rejected.getName(), rejected.getCity(), rejected.getStreet())
+        .map(Store::getId)
+        .orElseGet(() -> {
+          List<Store> similar = duplicateLookupService.findSimilarStores(rejected.getName(), rejected.getCity());
+          return similar.isEmpty() ? null : similar.get(0).getId();
+        });
     return new DuplicateException(ErrorCode.DUPLICATE_STORE, existingId);
   }
 
