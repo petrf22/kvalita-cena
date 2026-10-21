@@ -55,6 +55,17 @@ class FeedbackChallengeServiceTest {
     }
   }
 
+  /** Nonce, který výzvu prokazatelně NEsplňuje. Pevný řetězec nestačí: salt je náhodný a při
+   *  obtížnosti 8 bitů ho „špatný" nonce splní s pravděpodobností 1 : 256 (spadlo v CI). */
+  private String wrongNonce(String salt, int difficulty) {
+    for (long attempt = 0; ; attempt++) {
+      String candidate = "wrong-" + attempt;
+      if (!hasLeadingZeroBits(sha256(salt + ":" + candidate), difficulty)) {
+        return candidate;
+      }
+    }
+  }
+
   private byte[] sha256(String value) {
     try {
       return MessageDigest.getInstance("SHA-256").digest(value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
@@ -99,7 +110,7 @@ class FeedbackChallengeServiceTest {
   void wrongNonceIsRejected() {
     var issued = service.issue();
 
-    assertThat(service.verify(issued.token(), "not-the-right-nonce"))
+    assertThat(service.verify(issued.token(), wrongNonce(issued.salt(), issued.difficulty())))
         .isEqualTo(FeedbackChallengeService.Outcome.INVALID);
   }
 
