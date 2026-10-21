@@ -113,7 +113,12 @@ z `POST /api/worker/receipts/lease`, stáhne části účtenky a každou přečt
 zopakovaných v překryvu, text rozebere **deterministicky regexy** (profil řetězce, jinak obecný
 profil), zkontroluje součet proti vytištěné částce „Celkem" a výsledek vrátí přes
 `POST /{id}/result`. Obrázek bez částek dostane `NOT_A_RECEIPT`, částky bez položek
-`UNREADABLE`, chyba workeru `POST /{id}/fail` (po `max-attempts` → `FAILED`).
+`UNREADABLE`, chyba workeru `POST /{id}/fail` (po `max-attempts` → `FAILED`). Úloha, na které
+worker spadl nebo zamrzl bez `/fail`, se po vypršení leasu vrátí do fronty a po `max-attempts`
+skončí jako `FAILED` při dalším vyzvednutí. Výsledek i chyba k už ukončené úloze se ignorují
+(worker nedostal odpověď a hlásí znovu). Syrový text (`rawText`) jde na server jen po řádek
+s celkovou částkou — patička s kartou se zahodí i tady (`docs/soukromi.md`, „Účtenky"). Váhové
+zboží s cenou za g/ml worker převede na kg/l v množství i v jednotkové ceně.
 
 **Proč ne vision model se strukturovaným výstupem:** vyzkoušeno na reálných účtenkách
 (větev `feat/import-uctenek`, 2026-09-07) — jazykový model nad textem účtenky zahodil řádek
@@ -143,14 +148,14 @@ vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DI
 | Klíč | Hodnota | Proč |
 |---|---|---|
 | `consent-version` | 1 | zvednout při každé změně zpracovatele nebo účelu |
-| `max-images-per-receipt` | 30 | dlouhá účtenka z OpenCV pipeline = desítky výřezů |
+| `max-images-per-receipt` | 30 | dlouhá účtenka z OpenCV pipeline = desítky výřezů; celý upload ale strop `spring.servlet.multipart.max-request-size` 40 MB (nad ním 413 `RECEIPT_UPLOAD_TOO_LARGE`) |
 | `max-receipts-per-day` | 10 | rate limit na uživatele |
 | `max-image-bytes` | 4 MB | výřez je šedotónový JPEG, typicky desítky kB |
 | `max-width` | 1600 px | šířka stačí na čitelnost; výška se neomezuje (jen `media.max-pixels`) |
 | `image-retention-days` | 30 | od zpracování, pak obrázky pryč |
 | `archive-grace-days` | 14 | kolik navíc počkat na stažení do archivu u `archive_consent` |
 | `lease-minutes` | 15 | po vypršení leasu se úloha vrátí do fronty |
-| `max-attempts` | 3 | pak `FAILED` |
+| `max-attempts` | 3 | pak `FAILED` — počítá se každé vyzvednutí, i to, po kterém worker spadl bez `/fail` |
 | `label-confirmations` | 1 | aktivace označení; 1, dokud je přispěvatelů málo, pak zvednout na 2 (vzor alias) |
 | `rematch-max-age-days` | 180 | pozdější návrh spárování jen u účtenek mladších než pseudonymizační okno |
 

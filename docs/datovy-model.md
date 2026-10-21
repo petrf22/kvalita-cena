@@ -527,7 +527,10 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   `store_address_raw`, `store_ico_raw`) + `purchased_at` (datum A čas nákupu, stává se
   `observed_at` všech cen z účtenky) + `total_amount`/`currency`; `store_id` je obchod, který
   uživatel potvrdil (server jen navrhne). `consent_version`/`archive_consent` — viz soukromí.
-  `seen_at` řídí notifikaci/odznak, `images_deleted_at` retenci obrázků.
+  `seen_at` řídí notifikaci/odznak (novinka = návrh od jiných lidí, vlastní úprava ne),
+  `images_deleted_at` retenci obrázků. `client_upload_id` je klíč idempotence nahrání
+  (unikátní na vlastníka): mobil po ztracené odpovědi upload opakuje se stejným klíčem
+  a server vrátí už uloženou účtenku místo druhé identické.
 - **`core.receipt_image`** — části jedné účtenky v pořadí `seq`. Soubor je v `MediaStorage`
   pod `receipts/`, **ne** v `core.media` (ta je veřejná a dlouze cachovaná).
 - **`core.receipt_line`** — řádek účtenky: `label_raw` přesně jak ho obchod tiskne,
@@ -535,10 +538,13 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   (`PCS`/`KG`/`L`), `unit_price`, `line_total`, `discount_amount` (sleva z vlastního řádku
   pod položkou, worker ji připojí). Stav párování `status`: `UNMATCHED` (nic),
   `SUGGESTED` (server našel zboží přes kód nebo známé označení — v UI předem zaškrtnuté),
-  `MATCHED` (uživatel potvrdil, `observation_id` ukazuje na vzniklou cenu), `IGNORED`
-  (uživatel párovat nechce). `skip_reason` nese, proč potvrzený řádek cenu nezapsal
-  (typicky `DUPLICATE_SAME_DAY` — kolize s `uq_price_observation_submitter_kind_per_day`
-  nesmí shodit celou účtenku, na rozdíl od `submitObservations`).
+  `MATCHED` (uživatel potvrdil, `observation_id` ukazuje na vzniklou cenu — po 180 dnech ho
+  pseudonymizace maže, `docs/soukromi.md`), `IGNORED` (uživatel párovat nechce).
+  `skip_reason` nese, proč potvrzený řádek cenu nezapsal (typicky `DUPLICATE_SAME_DAY` —
+  kolize s `uq_price_observation_submitter_kind_per_day` nesmí shodit celou účtenku, na rozdíl
+  od `submitObservations`; druh ceny zapsaný týž den se z řádku vynechá a duplicita platí, až
+  když nezbude žádný). Zamčený je řádek s `observation_id`, nebo `MATCHED` bez
+  `skip_reason` (`ReceiptLine.isConfirmed`).
   **`unit_price` u váhového zboží je cena za kg/l, nikdy zaplacená částka** — ta je
   v `line_total`, zápis ceny bere `unit_price` s `quantityBasis = PER_KG`/`PER_L`.
 - **`core.product_store_label`** + **`core.product_store_label_confirmation`** — „Názvy na
@@ -555,8 +561,9 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   skutečně připojeného artefaktu (`receipt_line_id` → řádek zpracované účtenky), nikdy klient
   v inputu. Do `weightFor()` zatím nevstupuje (`f_evid` je cílový stav, `docs/reputace.md`).
 - **`ai.receipt_job`** — fronta pro pull worker (`docs/ai.md`) s leasem (`lease_until`,
-  `attempts`, `FOR UPDATE SKIP LOCKED`), a syrový výstup modelu (`raw_text`, `extraction`
-  jsonb, `model`). Do `core.receipt_line` jde až normalizovaný návrh.
+  `attempts`, `FOR UPDATE SKIP LOCKED`), a syrový výstup modelu (`raw_text` bez patičky,
+  `extraction` jsonb, `model`). Do `core.receipt_line` jde až normalizovaný návrh. Úloha
+  s `processed_at` je ukončená — pozdní `/result` ani `/fail` ji nezmění.
 - **`auth.api_token`** — strojové tokeny (dnes jen scope `RECEIPT_WORKER`), v DB jen SHA-256,
   prefix `kcw_`. Stroj nemá `app_user`.
 

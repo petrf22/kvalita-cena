@@ -192,7 +192,10 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   pokladní — klient před odesláním nabídne zakrytí (výchozí návrh: pás pod celkovou částkou),
   maska se vypálí do pixelů v telefonu/prohlížeči, na server zakrytý obsah vůbec nedorazí.
   Server navíc obrázek překreslí z pixelů stejně jako fotky (EXIF výš) a worker řádky
-  s kartou/věrnostním číslem zahodí jako druhou pojistku.
+  s kartou/věrnostním číslem zahodí jako druhou pojistku — ze strukturovaného výsledku
+  i ze syrového textu (`ai.receipt_job.raw_text`): ten se ořízne za řádkem s celkovou
+  částkou (`parse.server_text`), bez něj se neposílá vůbec, a řádky s maskovaným číslem
+  karty vypadnou i nad ním.
 - **Obrázky mají krátkou retenci, text ne.** Obrázky se mažou `app.receipt.image-retention-days`
   (30) dní po zpracování (`ReceiptImageRetentionService`, denní job) — u účtenek s
   `archive_consent` až poté, co si je provozovatel stáhl do lokálního archivu (nejvýš o
@@ -204,7 +207,16 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
 - **Cenové zápisy z účtenky jsou běžné observace.** Vznikají jen potvrzením vlastníka (`docs/ai.md`,
   „AI nikdy nerozhoduje"), pseudonymizují se po 180 dnech jako každé jiné a smazání účtenky
   je nesmaže (stejná úvaha jako výmaz účtu — sdílená komunitní data). `receipt_line_id` na
-  observaci se smazáním účtenky nuluje (`ON DELETE SET NULL`).
+  observaci se smazáním účtenky nuluje (`ON DELETE SET NULL`). Protože účtenka drží vlastníka
+  po celý život účtu, maže denní pseudonymizační job (`PseudonymizationService`) po 180 dnech
+  **obě půlky vazby** — `price_observation.receipt_line_id` i `receipt_line.observation_id` —
+  jinak by šel autor ceny dohledat přes účtenku. Řádek zůstane potvrzený a zamčený
+  (`ReceiptLine.isConfirmed`, v API `ReceiptLine.confirmed`), znovu ho potvrdit nejde.
+  **Zbytkové riziko, vědomě přijaté:** dokud účtenka existuje, jde pseudonymizovanou cenu
+  s řádkem účtenky spojit přes hodnoty (zboží + obchod + čas nákupu + cena). Úplné odstranění
+  by znamenalo mazat z účtenky obsah, kvůli kterému ji vlastník má (třetí výjimka výš).
+  Zmírnění je stejné jako u ní: účtenka nikdy nejde přes API k cizímu a export pro třetí
+  stranu musí `owner_user_id` vynechat nebo hashovat.
 - **Nespárované řádky jiných lidí se nikomu neukazují.** Když se později naučí mapování názvu
   z účtenky (`core.product_store_label`), server nespárovaný řádek jen přepne na návrh; vlastník
   dostane upozornění a cenu potvrdí sám. Do sdíleného katalogu jde jen samotné označení
@@ -213,6 +225,14 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
 - **Stroj nemá identitu uživatele.** Worker se přihlašuje strojovým tokenem (`auth.api_token`,
   scope `RECEIPT_WORKER`, v DB jen SHA-256), ne účtem člověka — vidí obrázky ve frontě
   a zapisuje vytěžený text, nic víc.
+- **Čekající účtenka patří účtu, který ji zařadil.** Mobilní fronta (offline odeslání) si
+  k účtence uloží `publicUid` přihlášeného účtu (`sub` z access tokenu); po odhlášení
+  a přihlášení někoho jiného v témže telefonu se účtenka neukáže ani neodešle, dokud se
+  vlastník nepřihlásí zpátky — nákup jednoho člověka nesmí skončit v účtu druhého.
+- **Verze souhlasu je verze textu, který klient ukázal.** Klient posílá a ukládá vlastní
+  `RECEIPT_CONSENT_VERSION` svázanou s textem v aplikaci, ne číslo ze serveru. Když server
+  chce jinou verzi, klient souhlas neukáže a vyzve k aktualizaci (web k obnovení stránky) —
+  stará appka by jinak odeslala souhlas s textem, který uživatel neviděl.
 - **Upozornění o zpracování** chodí jen jako lokální notifikace z telefonu (WorkManager se
   periodicky ptá serveru), žádný push přes Google ani e-mail — obsah nákupu nejde třetí straně
   ani do schránky.
