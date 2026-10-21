@@ -95,6 +95,8 @@
     "RECEIPT_LINE_NOT_MATCHED": "Die Position ist noch keinem Produkt zugeordnet.",
     "RECEIPT_RESULT_INVALID": "Das Verarbeitungsergebnis des Kassenbons ist ungültig.",
     "RECEIPT_LINE_ALREADY_CONFIRMED": "Der Preis aus dieser Position ist bereits erfasst.",
+    "RECEIPT_LINE_CONFIRM_FAILED": "Der Preis aus dieser Position konnte nicht erfasst werden, bitte erneut versuchen.",
+    "RECEIPT_UPLOAD_TOO_LARGE": "Der Kassenbon ist zum Hochladen zu groß — fotografieren Sie ihn in weniger Teilen.",
     "QUALITY_REQUIRES_LOGIN": "Die Qualitätsbewertung erfordert eine Anmeldung",
     "QUALITY_STARS_OUT_OF_RANGE": "Die Bewertung muss zwischen {{p0}} und {{p1}} Sternen liegen",
     "REVIEW_REQUIRES_LOGIN": "Eine Rezension erfordert eine Anmeldung",

@@ -73,6 +73,7 @@
     "blocker": {
       "noParts": "Nejdřív vyber aspoň jednu fotku.",
       "loading": "Načítám fotky…",
+      "consentOutdated": "Znění souhlasu se mezitím změnilo — obnov stránku, ať vidíš aktuální text.",
       "noConsent": "Bez souhlasu se zpracováním nic neodejde.",
       "noConsentVersion": "Čekám na znění souhlasu ze serveru…"
     },

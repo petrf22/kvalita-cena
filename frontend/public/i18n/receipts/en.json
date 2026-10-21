@@ -73,6 +73,7 @@
     "blocker": {
       "noParts": "Choose at least one photo first.",
       "loading": "Loading photos…",
+      "consentOutdated": "The consent text has changed in the meantime — reload the page to see the current version.",
       "noConsent": "Nothing is sent without your consent to processing.",
       "noConsentVersion": "Waiting for the consent text from the server…"
     },

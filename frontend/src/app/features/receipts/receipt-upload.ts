@@ -20,20 +20,21 @@ import {
   loadReceiptPart,
   renderMaskedJpeg,
 } from './receipt-image';
+import { consentOutdated, RECEIPT_CONSENT_VERSION } from './receipt-status';
 import { MaskRect, ReceiptPart, movePart, withDefaultBand } from './receipt-mask';
 import { ReceiptMaskEditor } from './receipt-mask-editor';
 
 /** Proč odeslání zatím nejde — klíč `receipts.upload.blocker.*`. */
-type UploadBlocker = 'noParts' | 'loading' | 'noConsent' | 'noConsentVersion';
+type UploadBlocker = 'noParts' | 'loading' | 'consentOutdated' | 'noConsent' | 'noConsentVersion';
 
 /**
  * Nahrání účtenky z webu: výběr fotek (víc částí dlouhé účtenky shora dolů), jejich pořadí,
  * zakrytí citlivých údajů a souhlas (docs/soukromi.md, „Účtenky"). Masky se vypálí do pixelů
  * na canvasu v prohlížeči (`renderMaskedJpeg`) — na server odejde už jen zakrytý JPEG.
  *
- * Bez zaškrtnutého souhlasu nic neodejde; verze souhlasu se bere ze serveru
- * (`receiptSummary.consentVersion`), takže změna zpracovatele na serveru si vynutí nové
- * zaškrtnutí (`RECEIPT_CONSENT_REQUIRED`).
+ * Bez zaškrtnutého souhlasu nic neodejde. Posílá se verze textu, který web sám ukazuje
+ * (`RECEIPT_CONSENT_VERSION`); když server chce jinou (`receiptSummary.consentVersion`, změna
+ * zpracovatele), odeslání zablokuje a řekne, ať se stránka obnoví.
  *
  * Offline: připravená účtenka (už zamaskované JPEGy) zůstane v paměti stránky a odešle se sama
  * po připojení (`ConnectivityService.reconnected$`) — obrazovka to řekne, netváří se jako chyba.
@@ -90,6 +91,7 @@ export class ReceiptUpload {
   protected readonly blocker = computed<UploadBlocker | null>(() => {
     if (this.parts().length === 0) return 'noParts';
     if (this.loadingCount() > 0) return 'loading';
+    if (consentOutdated(this.consentVersion())) return 'consentOutdated';
     if (!this.consent()) return 'noConsent';
     if (this.consentVersion() === null) return 'noConsentVersion';
     return null;
@@ -183,8 +185,7 @@ export class ReceiptUpload {
   }
 
   protected async submit(): Promise<void> {
-    const version = this.consentVersion();
-    if (this.blocker() !== null || version === null || this.sending()) return;
+    if (this.blocker() !== null || this.sending()) return;
     this.sending.set(true);
     this.sendError.set(null);
     this.progress.set(null);
@@ -198,7 +199,7 @@ export class ReceiptUpload {
     }
     this.send({
       parts: blobs,
-      consentVersion: version,
+      consentVersion: RECEIPT_CONSENT_VERSION,
       archiveConsent: this.archiveConsent(),
       capturedAt: null,
     });
@@ -249,7 +250,8 @@ export class ReceiptUpload {
 
   private uploadErrorMessage(err: unknown): string {
     if (err instanceof HttpErrorResponse) {
-      // Spring odmítne příliš velký multipart dřív, než se dostane k ProblemDetail s kódem.
+      // Součet dílů nad max-request-size — server vrací RECEIPT_UPLOAD_TOO_LARGE, proxy před ním
+      // ale holé 413 bez kódu, proto rozhoduje stav, ne kód.
       if (err.status === 413) return this.transloco.translate('receipts.upload.tooLarge');
       const code = (err.error as { code?: string } | null)?.code;
       if (code === ErrorCode.ReceiptConsentRequired) {

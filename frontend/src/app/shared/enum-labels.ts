@@ -197,6 +197,8 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.ReceiptLineNotMatched]: 'errors.RECEIPT_LINE_NOT_MATCHED',
   [ErrorCode.ReceiptResultInvalid]: 'errors.RECEIPT_RESULT_INVALID',
   [ErrorCode.ReceiptLineAlreadyConfirmed]: 'errors.RECEIPT_LINE_ALREADY_CONFIRMED',
+  [ErrorCode.ReceiptLineConfirmFailed]: 'errors.RECEIPT_LINE_CONFIRM_FAILED',
+  [ErrorCode.ReceiptUploadTooLarge]: 'errors.RECEIPT_UPLOAD_TOO_LARGE',
   [ErrorCode.QualityRequiresLogin]: 'errors.QUALITY_REQUIRES_LOGIN',
   [ErrorCode.QualityStarsOutOfRange]: 'errors.QUALITY_STARS_OUT_OF_RANGE',
   [ErrorCode.ReviewRequiresLogin]: 'errors.REVIEW_REQUIRES_LOGIN',

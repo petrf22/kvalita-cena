@@ -95,6 +95,8 @@
     "RECEIPT_LINE_NOT_MATCHED": "Pozycja nie jest jeszcze powiązana z produktem.",
     "RECEIPT_RESULT_INVALID": "Wynik przetwarzania paragonu jest nieprawidłowy.",
     "RECEIPT_LINE_ALREADY_CONFIRMED": "Cena z tej pozycji jest już zapisana.",
+    "RECEIPT_LINE_CONFIRM_FAILED": "Nie udało się zapisać ceny z tej pozycji, spróbuj ponownie.",
+    "RECEIPT_UPLOAD_TOO_LARGE": "Paragon jest za duży do wysłania — sfotografuj go w mniejszej liczbie części.",
     "QUALITY_REQUIRES_LOGIN": "Ocena jakości wymaga zalogowania",
     "QUALITY_STARS_OUT_OF_RANGE": "Ocena musi być w zakresie od {{p0}} do {{p1}} gwiazdek",
     "REVIEW_REQUIRES_LOGIN": "Recenzja wymaga zalogowania",

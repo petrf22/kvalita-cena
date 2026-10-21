@@ -95,6 +95,8 @@
     "RECEIPT_LINE_NOT_MATCHED": "Riadok ešte nie je spárovaný s tovarom.",
     "RECEIPT_RESULT_INVALID": "Výsledok spracovania bločku je neplatný.",
     "RECEIPT_LINE_ALREADY_CONFIRMED": "Cena z tohto riadku je už zapísaná.",
+    "RECEIPT_LINE_CONFIRM_FAILED": "Cenu z tohto riadku sa nepodarilo zapísať, skúste to znova.",
+    "RECEIPT_UPLOAD_TOO_LARGE": "Bloček je na odoslanie príliš veľký — odfoťte ho na menej častí.",
     "QUALITY_REQUIRES_LOGIN": "Hodnotenie kvality vyžaduje prihlásenie",
     "QUALITY_STARS_OUT_OF_RANGE": "Hodnotenie musí byť {{p0}} až {{p1}} hviezdičiek",
     "REVIEW_REQUIRES_LOGIN": "Recenzia vyžaduje prihlásenie",

@@ -73,6 +73,7 @@
     "blocker": {
       "noParts": "Wähle zuerst mindestens ein Foto aus.",
       "loading": "Fotos werden geladen…",
+      "consentOutdated": "Der Text der Einwilligung hat sich inzwischen geändert — lade die Seite neu, um die aktuelle Fassung zu sehen.",
       "noConsent": "Ohne Einwilligung zur Verarbeitung wird nichts gesendet.",
       "noConsentVersion": "Warte auf den Text der Einwilligung vom Server…"
     },

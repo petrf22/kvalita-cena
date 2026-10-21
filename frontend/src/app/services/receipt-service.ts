@@ -50,6 +50,7 @@ export const receiptLineFieldsFragment = graphql(`
       ...ProductSummaryFields
     }
     observationId
+    confirmed
     skipReason
   }
 `);

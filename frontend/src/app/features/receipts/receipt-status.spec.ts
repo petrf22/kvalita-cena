@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { ReceiptDetail, ReceiptLine } from '../../models/catalog';
 import {
+  RECEIPT_CONSENT_VERSION,
   confirmBlocker,
+  consentOutdated,
   defaultSelectedLineIds,
   isLineConfirmable,
+  isLineLocked,
   lineSummary,
   nextSelection,
   receiptStatusColor,
@@ -29,6 +32,7 @@ function line(id: string, overrides: Partial<ReceiptLine> = {}): ReceiptLine {
     matchSource: null,
     product: null,
     observationId: null,
+    confirmed: false,
     skipReason: null,
     ...overrides,
   } as ReceiptLine;
@@ -70,9 +74,17 @@ describe('stav účtenky', () => {
 describe('výběr řádků k potvrzení', () => {
   it('potvrdit jde jen návrh, ze kterého ještě nevznikla cena', () => {
     expect(isLineConfirmable(line('1', { status: 'SUGGESTED' }))).toBe(true);
-    expect(isLineConfirmable(line('1', { status: 'SUGGESTED', observationId: '9' }))).toBe(false);
+    expect(
+      isLineConfirmable(line('1', { status: 'SUGGESTED', observationId: '9', confirmed: true })),
+    ).toBe(false);
     expect(isLineConfirmable(line('1', { status: 'MATCHED' }))).toBe(false);
     expect(isLineConfirmable(line('1', { status: 'UNMATCHED' }))).toBe(false);
+  });
+
+  it('po pseudonymizaci zůstane potvrzený řádek zamčený i bez observationId', () => {
+    const pseudonymized = line('1', { status: 'MATCHED', observationId: null, confirmed: true });
+    expect(isLineLocked(pseudonymized)).toBe(true);
+    expect(isLineConfirmable(pseudonymized)).toBe(false);
   });
 
   it('předem zaškrtnuté jsou právě návrhy', () => {
@@ -88,7 +100,7 @@ describe('výběr řádků k potvrzení', () => {
 
   it('řádek, který přestal být návrhem, se odškrtne', () => {
     const before = [line('1', { status: 'SUGGESTED' })];
-    const after = [line('1', { status: 'MATCHED', observationId: '5' })];
+    const after = [line('1', { status: 'MATCHED', observationId: '5', confirmed: true })];
     expect([...nextSelection(new Set(['1']), before, after)]).toEqual([]);
   });
 });
@@ -119,7 +131,7 @@ describe('ostatní', () => {
     const lines = [
       line('1'),
       line('2', { status: 'SUGGESTED' }),
-      line('3', { status: 'MATCHED', observationId: '7' }),
+      line('3', { status: 'MATCHED', observationId: '7', confirmed: true }),
       line('4', { status: 'IGNORED' }),
     ];
     expect(lineSummary(lines)).toEqual({ total: 4, open: 1, ready: 1, recorded: 1 });
@@ -129,5 +141,13 @@ describe('ostatní', () => {
     expect(samePurchaseTime(new Date('2026-08-30T09:10:00Z'), '2026-08-30T09:10Z')).toBe(true);
     expect(samePurchaseTime(null, null)).toBe(true);
     expect(samePurchaseTime(new Date(), null)).toBe(false);
+  });
+});
+
+describe('verze souhlasu', () => {
+  it('odeslání blokuje jen jiné znění na serveru, než jaké web ukazuje', () => {
+    expect(consentOutdated(null)).toBe(false);
+    expect(consentOutdated(RECEIPT_CONSENT_VERSION)).toBe(false);
+    expect(consentOutdated(RECEIPT_CONSENT_VERSION + 1)).toBe(true);
   });
 });

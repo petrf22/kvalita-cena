@@ -73,6 +73,7 @@
     "blocker": {
       "noParts": "Najpierw wybierz co najmniej jedno zdjęcie.",
       "loading": "Wczytywanie zdjęć…",
+      "consentOutdated": "Treść zgody w międzyczasie się zmieniła — odśwież stronę, aby zobaczyć aktualną wersję.",
       "noConsent": "Bez zgody na przetwarzanie nic nie zostanie wysłane.",
       "noConsentVersion": "Czekam na treść zgody z serwera…"
     },

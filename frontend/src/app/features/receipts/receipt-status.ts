@@ -67,13 +67,14 @@ export function receiptStoreName(
 /**
  * Z řádku už vznikla cena — pak ho server nedovolí přepárovat ani ignorovat
  * (`RECEIPT_LINE_ALREADY_CONFIRMED`), cena by jinak visela u jiného zboží než řádek.
+ * Podle `confirmed`, ne `observationId`: tu po 180 dnech maže pseudonymizace (docs/soukromi.md).
  */
-export function isLineLocked(line: Pick<ReceiptLine, 'observationId'>): boolean {
-  return line.observationId != null;
+export function isLineLocked(line: Pick<ReceiptLine, 'confirmed'>): boolean {
+  return line.confirmed;
 }
 
 /** Řádek jde zaškrtnout k hromadnému potvrzení: má zboží a cena z něj ještě nevznikla. */
-export function isLineConfirmable(line: Pick<ReceiptLine, 'status' | 'observationId'>): boolean {
+export function isLineConfirmable(line: Pick<ReceiptLine, 'status' | 'confirmed'>): boolean {
   return line.status === ReceiptLineStatus.Suggested && !isLineLocked(line);
 }
 
@@ -166,4 +167,17 @@ export function nextSelection(
     if (!wasConfirmable.has(line.id) || selected.has(line.id)) result.add(line.id);
   }
   return result;
+}
+
+/**
+ * Verze textu souhlasu, který web SÁM ukazuje (`receipts.upload.consentProcessing` /
+ * `consentDetail`). Posílá se tahle, ne číslo ze serveru — jinak by stará otevřená stránka po
+ * zvednutí `app.receipt.consent-version` odeslala souhlas s textem, který uživatel neviděl
+ * (docs/soukromi.md, „Účtenky"). Při změně textu zvednout spolu se serverem.
+ */
+export const RECEIPT_CONSENT_VERSION = 1;
+
+/** Server chce jiné znění souhlasu, než jaké tahle verze webu umí ukázat — pomůže obnovit stránku. */
+export function consentOutdated(serverVersion: number | null): boolean {
+  return serverVersion !== null && serverVersion !== RECEIPT_CONSENT_VERSION;
 }

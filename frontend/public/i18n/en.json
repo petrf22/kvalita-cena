@@ -95,6 +95,8 @@
     "RECEIPT_LINE_NOT_MATCHED": "The line is not matched with a product yet.",
     "RECEIPT_RESULT_INVALID": "The receipt processing result is invalid.",
     "RECEIPT_LINE_ALREADY_CONFIRMED": "The price from this line has already been recorded.",
+    "RECEIPT_LINE_CONFIRM_FAILED": "The price from this line could not be recorded, please try again.",
+    "RECEIPT_UPLOAD_TOO_LARGE": "The receipt is too large to upload — capture it in fewer parts.",
     "QUALITY_REQUIRES_LOGIN": "Rating quality requires signing in",
     "QUALITY_STARS_OUT_OF_RANGE": "The rating must be between {{p0}} and {{p1}} stars",
     "REVIEW_REQUIRES_LOGIN": "Writing a review requires signing in",

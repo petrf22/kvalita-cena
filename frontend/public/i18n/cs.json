@@ -95,6 +95,8 @@
     "RECEIPT_LINE_NOT_MATCHED": "Řádek ještě není spárovaný se zbožím.",
     "RECEIPT_RESULT_INVALID": "Výsledek zpracování účtenky je neplatný.",
     "RECEIPT_LINE_ALREADY_CONFIRMED": "Cena z tohohle řádku už je zapsaná.",
+    "RECEIPT_LINE_CONFIRM_FAILED": "Cenu z tohoto řádku se nepodařilo zapsat, zkuste to znovu.",
+    "RECEIPT_UPLOAD_TOO_LARGE": "Účtenka je na odeslání příliš velká — nafoťte ji na méně dílů.",
     "QUALITY_REQUIRES_LOGIN": "Hodnocení kvality vyžaduje přihlášení",
     "QUALITY_STARS_OUT_OF_RANGE": "Hodnocení musí být {{p0}} až {{p1}} hvězdiček",
     "REVIEW_REQUIRES_LOGIN": "Recenze vyžaduje přihlášení",
