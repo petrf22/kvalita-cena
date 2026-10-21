@@ -48,7 +48,9 @@ Pravidla, která to drží čisté:
    nezapisuje nic. **Hromadný import z OSM/Overpass zůstává zakázaný** (`docs/nasazeni.md`).
 
    Slabina, kterou je poctivé pojmenovat: `dataOrigin` posílá klient (`CreateStoreInput`).
-   Server hlídá jen konzistenci (`OSM_DERIVED` vyžaduje `osmRef` a vynutí `geo_source = OSM`),
+   Server hlídá jen konzistenci (`OSM_DERIVED` vyžaduje `osmRef`, `OFF_DERIVED` u obchodu
+   odmítne a `geo_source = OSM` jen doplní, když klient původ bodu neposlal — bod posunutý
+   uživatelem na mapě zůstává `COMMUNITY`, protože `geo_source` je původ BODU, ne textu),
    ne pravdivost. Směr možného zneužití je „podhlásit" — tedy přesně stav před zavedením
    sloupce, ne zhoršení. Případné zpřísnění: server by si pamatoval, jaké `osm_ref` komu
    nedávno vydal, a při `createStore` to ověřil.
