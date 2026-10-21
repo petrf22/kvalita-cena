@@ -7,9 +7,12 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
-## [Nezveřejněno]
+## [0.10.0] – 2026-10-21
 
 ### Přidáno
+- Účtenky: celou účtenku jde nafotit (mobil) nebo nahrát (web), appka z ní přečte zboží a ceny a uživatel je jen zkontroluje a potvrdí; citlivé údaje se dají před odesláním zakrýt (server, web, mobil)
+- Na detailu zboží je karta „Názvy na účtenkách" — jak se zboží jmenuje na účtenkách jednotlivých obchodů (web)
+- Ve formuláři zboží na webu jde naskenovat čárový kód a název se předvyplní (web)
 - Obchody v okolí appka při zápisu ceny hledá sama hned po otevření a ukáže je jako seznam se vzdáleností — tlačítko „Najít v okolí" tím zmizelo (mobil)
 - Když v okolí žádný známý obchod není, appka nabídne provozovny z OpenStreetMap a vybraná z nich předvyplní celý formulář nového obchodu včetně adresy (server, mobil)
 - V Nastavení jde zvolit, co znamená „v okolí" — 200 m až 5 km, výchozích 500 m; ze seznamu jde jedním klepnutím hledat i v širším okruhu (mobil)
@@ -19,6 +22,8 @@ za jednoduchost skriptu.
 - „Přidat nový obchod" je vidět jako tlačítko pod seznamem, ne až jako poslední položka rozbalovací nabídky (mobil)
 
 ### Opraveno
+- Výpadek služby pro dohledání adresy už nesmaže adresu vyplněnou ve formuláři obchodu po klepnutí do mapy; appka místo toho řekne, že adresu teď dohledat nejde (web, mobil)
+- Při zakládání obchodu, který už v katalogu je, appka nabídne správnou pobočku, ne jinou se stejným názvem ve stejném městě (server, mobil)
 - Když poloha chybí, appka řekne proč a co s tím — jinak se zachová u nepovoleného přístupu, vypnuté polohy a nezdařeného zaměření; dřív z toho byla jediná hláška bez rady (mobil)
 - Obchod ve vzdálenosti kolem 200 m už z okolí nevypadne kvůli zaokrouhlení polohy, které appka posílá serveru kvůli soukromí (server, mobil)
 - Appka umí požádat o přesnou polohu: s přibližnou ji systém posouval až o 1,5 km, takže obchod v okolí nenašla a souřadnice nově zakládané provozovny byly o kilometr vedle (mobil)
