@@ -82,6 +82,18 @@ Na co se naráží:
 - **`resource-id` je u Compose skoro vždy prázdný**, prvky se proto hledají podle textu
   a `contentDescription`. Kdyby to přestalo stačit, další krok je `testTagsAsResourceId`
   a `testTag` na komponentách — zatím není potřeba.
+- **Obrazovka se čte přes všechna okna, ne jen aktivní.** Syrový `uiautomator dump` nevidí
+  nabídku editovatelného comboboxu (`SearchableDropdown` — fokus zůstává v poli, nabídka je
+  nefokusovatelné okno) a prvky pod klávesnicí vypíše, jako by šly klepnout. `ui.py` proto
+  používá vlastní dumper `tools/mobile/windowdump/WindowDump.java` (přes `app_process` jako
+  `uiautomator`, dex si sestaví a nahraje sám — potřebuje `javac` a Android SDK, jinak spadne
+  zpátky na `uiautomator`). Nabídka se v `dump` ukáže za oddělovačem, zakryté prvky mají
+  `POD-KLÁVESNICÍ`/`POD-NABÍDKOU` a `tap` na prvek pod klávesnicí ji nejdřív sám zavře.
+  `tap-xy` na klávesnici odmítne (souřadnice se po jejím zavření posunou).
+- **Testovací obrázky raději ne přes galerii emulátoru** — systémový výběr fotek s Google
+  Fotkami umí emulátor zamrazit. Debug build dovolí zapsat soubor rovnou do soukromých dat
+  appky: `adb push <soubor> /data/local/tmp/` a `adb shell run-as cz.kvalitacena cp
+  /data/local/tmp/<soubor> files/...`.
 - Emulátor a AVD viz „Příkazy" výš; appku nainstaluje a spustí `../start-dev.sh`.
 
 ## Konvence

@@ -56,5 +56,10 @@
     "en": "in English",
     "pl": "in Polish",
     "de": "in German"
+  },
+  "receiptLabels": {
+    "title": "Names on receipts",
+    "hint": "This is how stores print the product on receipts — scanned receipts are matched automatically based on it.",
+    "unknownScope": "unknown store"
   }
 }

@@ -1,0 +1,201 @@
+<ng-container *transloco="let t; scope: 'receipts'">
+  <!--
+    Upozornění stojí nad výběrem fotek a je výrazné schválně: zakrýt se dá jen to, co uživatel
+    uvidí, a co tu nezakryje, odejde (docs/soukromi.md, „Účtenky").
+  -->
+  <nz-alert
+    nzType="warning"
+    nzShowIcon
+    [nzMessage]="t('receipts.upload.maskWarningTitle')"
+    [nzDescription]="t('receipts.upload.maskWarningText')"
+    class="upload-block"
+  />
+
+  <section class="upload-step" aria-labelledby="receipt-upload-photos">
+    <h3 id="receipt-upload-photos" class="step-title">{{ t('receipts.upload.stepPhotos') }}</h3>
+    <p class="step-hint">{{ t('receipts.upload.photosHint', { max: maxParts }) }}</p>
+
+    <input
+      #fileInput
+      type="file"
+      accept="image/*"
+      multiple
+      class="file-input"
+      (change)="onFilesSelected($event)"
+    />
+    <button
+      nz-button
+      type="button"
+      [nzType]="parts().length === 0 ? 'primary' : 'default'"
+      [nzLoading]="loadingCount() > 0"
+      [disabled]="parts().length >= maxParts || sending()"
+      (click)="fileInput.click()"
+    >
+      <span nz-icon nzType="picture"></span>
+      {{ parts().length === 0 ? t('receipts.upload.choosePhotos') : t('receipts.upload.addPart') }}
+    </button>
+
+    @if (fileError()) {
+      <nz-alert nzType="error" nzShowIcon [nzMessage]="fileError()" class="upload-block-top" />
+    }
+
+    @if (parts().length > 0) {
+      <ol class="part-list" [attr.aria-label]="t('receipts.upload.partsLabel')">
+        @for (part of parts(); track part.id; let i = $index, first = $first, last = $last) {
+          <li class="part" [class.part-selected]="part.id === selectedId()">
+            <button
+              type="button"
+              class="part-select"
+              [attr.aria-pressed]="part.id === selectedId()"
+              (click)="selectPart(part.id)"
+            >
+              <img [src]="part.url" alt="" class="part-thumb" />
+              <span class="part-text">
+                <span class="part-name">{{ t('receipts.upload.partName', { index: i + 1 }) }}</span>
+                <span class="part-meta">{{
+                  maskCount(part) === 0
+                    ? t('receipts.upload.partMasksNone')
+                    : t('receipts.upload.partMasks', { count: maskCount(part) })
+                }}</span>
+              </span>
+            </button>
+            <div class="part-actions">
+              <button
+                nz-button
+                nzType="text"
+                type="button"
+                [disabled]="first || sending()"
+                [attr.aria-label]="t('receipts.upload.moveUp', { index: i + 1 })"
+                (click)="move(part.id, -1)"
+              >
+                <span nz-icon nzType="arrow-up"></span>
+              </button>
+              <button
+                nz-button
+                nzType="text"
+                type="button"
+                [disabled]="last || sending()"
+                [attr.aria-label]="t('receipts.upload.moveDown', { index: i + 1 })"
+                (click)="move(part.id, 1)"
+              >
+                <span nz-icon nzType="arrow-down"></span>
+              </button>
+              <button
+                nz-button
+                nzType="text"
+                nzDanger
+                type="button"
+                [disabled]="sending()"
+                [attr.aria-label]="t('receipts.upload.removePart', { index: i + 1 })"
+                (click)="remove(part.id)"
+              >
+                <span nz-icon nzType="delete"></span>
+              </button>
+            </div>
+          </li>
+        }
+      </ol>
+      @if (parts().length > 1) {
+        <p class="step-hint">{{ t('receipts.upload.orderHint') }}</p>
+      }
+    }
+  </section>
+
+  @if (selectedPart(); as part) {
+    <section class="upload-step" aria-labelledby="receipt-upload-mask">
+      <h3 id="receipt-upload-mask" class="step-title">
+        {{ t('receipts.upload.stepMask', { index: selectedIndex() + 1, total: parts().length }) }}
+      </h3>
+      <app-receipt-mask-editor [part]="part" (masksChange)="onMasksChange(part.id, $event)" />
+    </section>
+  }
+
+  <section class="upload-step" aria-labelledby="receipt-upload-consent">
+    <h3 id="receipt-upload-consent" class="step-title">{{ t('receipts.upload.stepConsent') }}</h3>
+    <label
+      nz-checkbox
+      class="consent"
+      [ngModel]="consent()"
+      (ngModelChange)="consent.set($event)"
+      name="receiptConsent"
+    >
+      {{ t('receipts.upload.consentProcessing') }}
+    </label>
+    <p class="consent-detail">
+      {{ t('receipts.upload.consentDetail') }}
+      <a routerLink="/privacy" target="_blank">{{ t('receipts.upload.privacyLink') }}</a>
+    </p>
+    <label
+      nz-checkbox
+      class="consent"
+      [ngModel]="archiveConsent()"
+      (ngModelChange)="archiveConsent.set($event)"
+      name="receiptArchiveConsent"
+    >
+      {{ t('receipts.upload.consentArchive') }}
+    </label>
+    @if (consentVersionError()) {
+      <nz-alert
+        nzType="error"
+        nzShowIcon
+        [nzMessage]="t('receipts.upload.consentVersionFailed')"
+        [nzAction]="retryConsent"
+        class="upload-block-top"
+      />
+      <ng-template #retryConsent>
+        <button nz-button nzSize="small" type="button" (click)="loadConsentVersion()">
+          {{ t('receipts.retry') }}
+        </button>
+      </ng-template>
+    }
+  </section>
+
+  @if (waitingForNetwork()) {
+    <nz-alert
+      nzType="info"
+      nzShowIcon
+      [nzMessage]="t('receipts.upload.waitingTitle')"
+      [nzDescription]="t('receipts.upload.waitingText')"
+      [nzAction]="cancelWaiting"
+      class="upload-block"
+    />
+    <ng-template #cancelWaiting>
+      <button nz-button nzSize="small" type="button" (click)="cancelPending()">
+        {{ t('receipts.upload.cancelSend') }}
+      </button>
+    </ng-template>
+  }
+
+  @if (sendError()) {
+    <nz-alert nzType="error" nzShowIcon [nzMessage]="sendError()" class="upload-block" />
+  }
+
+  @if (sending()) {
+    <nz-progress
+      [nzPercent]="progress() ?? 0"
+      [nzStatus]="progress() === null ? 'active' : 'normal'"
+      [nzShowInfo]="progress() !== null"
+      class="upload-block"
+    />
+  }
+
+  <div class="upload-actions">
+    <button
+      nz-button
+      nzType="primary"
+      type="button"
+      [nzLoading]="sending()"
+      [disabled]="blocker() !== null || waitingForNetwork()"
+      (click)="submit()"
+    >
+      <span nz-icon nzType="upload"></span>
+      {{ t('receipts.upload.submit') }}
+    </button>
+    <button nz-button type="button" [disabled]="sending()" (click)="cancelled.emit()">
+      {{ 'common.cancel' | transloco }}
+    </button>
+    @if (blocker(); as reason) {
+      <span class="blocker">{{ t('receipts.upload.blocker.' + reason) }}</span>
+    }
+  </div>
+</ng-container>

@@ -81,6 +81,16 @@ class StoreFormViewModel(
    * jde ze store.country, při zakládání z [CountryStore] (viewerova volba v Nastavení).
    */
   var country by mutableStateOf(countryStore.country)
+    private set
+
+  /** Vědomá volba země se nesmí přepsat reverzním geokódováním — u pohraničí mění i měnu zápisu. */
+  private var countryTouched = false
+
+  fun onCountryChange(code: String) {
+    countryTouched = true
+    country = code
+    scheduleGeocode()
+  }
 
   var loadingExisting by mutableStateOf(editingStoreId != null)
     private set
@@ -97,9 +107,19 @@ class StoreFormViewModel(
     private set
   private var similarCheckJob: Job? = null
 
+  var showMap by mutableStateOf(false)
+    private set
+
   var geocodeCandidates by mutableStateOf<List<GeocodeCandidate>>(emptyList())
     private set
   var geocodeAttribution by mutableStateOf<String?>(null)
+    private set
+  // Dva samostatné joby: fillAddress ruší jen doplňování adresy, ne běžící geokódování, ze
+  // kterého ho jednoznačný kandidát volá (jinak by korutina rušila sama sebe).
+  private var geocodeJob: Job? = null
+  private var locationJob: Job? = null
+  private var locationRequest = 0
+  var locationMessage by mutableStateOf<UiText?>(null)
     private set
   var geocoding by mutableStateOf(false)
     private set
@@ -139,8 +159,6 @@ class StoreFormViewModel(
     private set
   var loadingDuplicate by mutableStateOf(false)
     private set
-
-  private var geocodeJob: Job? = null
 
   init {
     if (editingStoreId != null) loadExisting(editingStoreId)
@@ -192,6 +210,7 @@ class StoreFormViewModel(
     if (candidate.country in KNOWN_COUNTRIES) country = candidate.country!!
     manualLat = candidate.lat
     manualLon = candidate.lon
+    showMap = true
     selectedCandidate = null
     geocodeCandidates = emptyList()
     prefillChainFromBrand(candidate.brand)
@@ -229,11 +248,6 @@ class StoreFormViewModel(
 
   fun onPostalCodeChange(value: String) {
     postalCode = value
-    scheduleGeocode()
-  }
-
-  fun onCountryChange(value: String) {
-    country = value
     scheduleGeocode()
   }
 
@@ -284,7 +298,7 @@ class StoreFormViewModel(
     if (city.isBlank() || hasCoordinates()) return
     geocodeJob = viewModelScope.launch {
       delay(GEOCODE_DEBOUNCE_MS)
-      geocode()
+      geocode(silent = true)
     }
   }
 
@@ -346,37 +360,57 @@ class StoreFormViewModel(
    * dohledání může tiše selhat (Nominatim blokuje datacentrové IP, docs/spusteni.md), a chybový
    * stav musí jít zopakovat (docs/design.md).
    */
-  fun geocode() {
+  fun geocode(silent: Boolean = false) {
     if (city.isBlank()) return
+    val request = ++locationRequest
+    val address = listOf(street, city, postalCode, country)
     geocoding = true
-    manualLat = null
-    manualLon = null
-    selectedCandidate = null
-    viewModelScope.launch {
+    geocodeJob?.cancel()
+    locating = false
+    locationMessage = null
+    geocodeJob = viewModelScope.launch {
       try {
-        val result = graphQlClient.geocodeAddress(street.trim().ifBlank { null }, city.trim(), postalCode.trim().ifBlank { null })
+        val result = graphQlClient.geocodeAddress(street.trim().ifBlank { null }, city.trim(), postalCode.trim().ifBlank { null }, country)
+        if (request != locationRequest || address != listOf(street, city, postalCode, country)) return@launch
         geocodeAttribution = result.attribution
-        // Jediný nález není co vybírat — formulář ho rovnou použije a jen to oznámí. Víc
-        // kandidátů zůstává na uživateli (CandidateRow), prázdný výsledek je TICHÝ: obchod
-        // jde uložit i bez souřadnic (docs/datovy-model.md), takže to není chyba.
         if (result.candidates.size == 1) {
+          // Jediný nález není co vybírat — formulář ho rovnou použije a jen to oznámí
+          // (store_location_found_from_address ve StoreFormScreen).
           geocodeCandidates = emptyList()
-          selectedCandidate = result.candidates.first()
-        } else {
+          selectCandidate(result.candidates.single())
+        } else if (result.candidates.isNotEmpty()) {
           geocodeCandidates = result.candidates
+          // Nový seznam kandidátů znamená novou volbu — dosavadní bod se musí zahodit, jinak
+          // by submit() uložil souřadnice i osmRef kandidáta k PŘEDCHOZÍ adrese. Prázdný
+          // seznam a chyba bod naopak zachovají (docs/overeni-zadavani-obchodu.md).
+          selectedCandidate = null
+          manualLat = null
+          manualLon = null
+        } else {
+          geocodeCandidates = emptyList()
+          // Automatické dohledání při psaní adresy je u prázdného výsledku TICHÉ: obchod jde
+          // uložit i bez souřadnic (docs/datovy-model.md), takže to není chyba.
+          if (!silent) locationMessage = UiText.Res(R.string.store_location_not_found)
         }
+      } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
       } catch (e: Exception) {
-        geocodeCandidates = emptyList()
+        if (request == locationRequest) {
+          geocodeCandidates = emptyList()
+          locationMessage = UiText.Res(R.string.store_location_not_found)
+        }
       } finally {
-        geocoding = false
+        if (request == locationRequest) geocoding = false
       }
     }
   }
 
   fun selectCandidate(candidate: GeocodeCandidate) {
+    showMap = true
     selectedCandidate = candidate
     manualLat = null
     manualLon = null
+    fillAddress(candidate.lat, candidate.lon, false)
   }
 
   /** Klik/přetažení značky na mapě (LocationMap, editable) — ruční bod, ne kandidát z geokódování. */
@@ -384,33 +418,73 @@ class StoreFormViewModel(
     selectedCandidate = null
     manualLat = lat
     manualLon = lon
+    fillAddress(lat, lon, true)
   }
 
-  fun useMyLocation(lat: Double, lon: Double) {
+  /**
+   * Lístek se bere HNED, ne až v [fillAddress] — čekání na GPS trvá a uživatel mezitím může
+   * stisknout "Najít souřadnice"; opožděná poloha by pak novější hledání přebila. Obrazovka
+   * volá [beginLocating] před zjišťováním polohy a číslo předá zpět do [useMyLocation].
+   */
+  fun beginLocating(): Int {
+    locating = true
+    locationMessage = null
+    return ++locationRequest
+  }
+
+  /** Poloha se nezjistila (odmítnuté oprávnění, prázdný fix) — spinner nesmí zůstat viset. */
+  fun cancelLocating(request: Int) {
+    if (request == locationRequest) locating = false
+  }
+
+  fun useMyLocation(lat: Double, lon: Double, request: Int) {
+    if (request != locationRequest) return
+    showMap = true
     // Syrová hodnota schválně: manualLat/Lon je souřadnice PROVOZOVNY (uloží se do
     // core.store), zaokrouhlení by ji degradovalo. Pro Nominatim zaokrouhluje server
     // (GeocodingService.reverseGeocode, docs/soukromi.md).
     manualLat = lat
     manualLon = lon
     selectedCandidate = null
-    // Doplní jen PRÁZDNÁ adresní pole — nepřepisuje, co uživatel už vyplnil (docs/soukromi.md:
-    // reverseGeocode jde stejně jako geocodeAddress výhradně ze serveru).
+    fillAddress(lat, lon, false)
+  }
+
+  private fun fillAddress(lat: Double, lon: Double, replace: Boolean) {
+    val request = ++locationRequest
+    locationJob?.cancel()
+    val oldStreet = street
+    val oldCity = city
+    val oldPostalCode = postalCode
     locating = true
-    viewModelScope.launch {
+    geocoding = false
+    locationMessage = null
+    locationJob = viewModelScope.launch {
       try {
         val result = graphQlClient.reverseGeocode(lat, lon)
-        if (street.isBlank()) result.street?.let { street = it }
-        if (city.isBlank()) result.city?.let { city = it }
-        if (postalCode.isBlank()) result.postalCode?.let { postalCode = it }
-        // Jen při zakládání — editovaná provozovna svou zemi už má (docs/lokalizace.md).
-        // Neznámá země (appka umí jen CZ/SK/PL) se ignoruje, zůstane výchozí CZ.
-        if (!isEditing && result.country in KNOWN_COUNTRIES) {
-          country = result.country!!
+        if (request != locationRequest) return@launch
+        // Pole, které uživatel mezitím přepsal, zůstává jeho. Při replace (klik do mapy =
+        // celá adresa nového bodu) se chybějící část MAŽE — jinak by po ulici zbyl kus
+        // předchozí adresy a vznikla by smíchaná, ale zdánlivě platná adresa.
+        fun merged(current: String, old: String, incoming: String?): String = when {
+          current != old -> current
+          replace -> incoming.orEmpty()
+          current.isBlank() -> incoming ?: current
+          else -> current
         }
+        street = merged(street, oldStreet, result.street)
+        city = merged(city, oldCity, result.city)
+        postalCode = merged(postalCode, oldPostalCode, result.postalCode)
+        if (!isEditing && !countryTouched && result.country in KNOWN_COUNTRIES) country = result.country!!
+        geocodeAttribution = result.attribution
+        if (result.street.isNullOrBlank() && result.city.isNullOrBlank() && result.postalCode.isNullOrBlank())
+          locationMessage = UiText.Res(R.string.store_location_not_found)
+        scheduleSimilarCheck()
+      } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
       } catch (e: Exception) {
-        // Fail-soft na backendu i tady — adresa prostě zůstane nedoplněná.
+        if (request == locationRequest) locationMessage = UiText.Res(R.string.store_location_not_found)
       } finally {
-        locating = false
+        if (request == locationRequest) locating = false
       }
     }
   }

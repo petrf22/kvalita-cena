@@ -1,0 +1,96 @@
+<ng-container *transloco="let t; scope: 'receipts'">
+  <div class="match">
+    <nz-input-wrapper>
+      <span nzInputPrefix nz-icon nzType="search"></span>
+      <input
+        nz-input
+        type="search"
+        [placeholder]="t('receipts.match.placeholder')"
+        [attr.aria-label]="t('receipts.match.placeholder')"
+        [ngModel]="query()"
+        (ngModelChange)="onQueryChange($event)"
+        (keyup.enter)="search()"
+      />
+    </nz-input-wrapper>
+    <p class="match-hint">
+      {{ query().trim() ? t('receipts.match.hintQuery') : t('receipts.match.hintLabel') }}
+    </p>
+
+    @switch (state()) {
+      @case ('loading') {
+        <div class="match-state"><nz-spin nzSimple /></div>
+      }
+      @case ('offline') {
+        <p class="match-state match-message">{{ t('receipts.match.offline') }}</p>
+      }
+      @case ('error') {
+        <div class="match-state match-message">
+          <span>{{ errorMessage() }}</span>
+          <button nz-button nzSize="small" type="button" (click)="search()">
+            {{ t('receipts.retry') }}
+          </button>
+        </div>
+      }
+      @default {
+        @if (results().length === 0) {
+          <p class="match-state match-message">
+            {{ canCreate() ? t('receipts.match.emptyCreate') : t('receipts.match.empty') }}
+          </p>
+        } @else {
+          <ul class="match-list">
+            @for (product of results(); track product.id) {
+              <li>
+                <button
+                  type="button"
+                  class="match-item"
+                  [disabled]="busy()"
+                  (click)="picked.emit(product)"
+                >
+                  <app-product-thumb
+                    [name]="product.name"
+                    [photos]="product.photos"
+                    [externalImage]="product.externalImage"
+                  />
+                  <span class="match-text">
+                    <span class="match-name">{{ product.name }}</span>
+                    <span class="match-meta">
+                      @if (product.brand) {
+                        {{ product.brand.name }} ·
+                      }
+                      {{ product.category.name }}
+                      @if (product.catalogScope === 'CHAIN' && product.scopeChain) {
+                        · {{ product.scopeChain.name }}
+                      } @else if (product.catalogScope === 'STORE' && product.scopeStore) {
+                        · {{ product.scopeStore.name }}
+                      }
+                      @if (product.status === 'DRAFT') {
+                        · {{ t('receipts.match.unconfirmed') }}
+                      }
+                    </span>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+          @if (showExternalImageNote()) {
+            <p class="match-hint">{{ t('receipts.externalImageNote') }}</p>
+          }
+        }
+      }
+    }
+
+    <div class="match-actions">
+      @if (canCreate()) {
+        <button nz-button type="button" [disabled]="busy()" (click)="createNew.emit()">
+          <span nz-icon nzType="plus"></span>
+          {{ t('receipts.line.createProduct') }}
+        </button>
+      } @else {
+        <span class="match-hint">{{ t('receipts.line.createNeedsStore') }}</span>
+      }
+      <button nz-button nzType="text" type="button" (click)="closed.emit()">
+        {{ t('receipts.match.close') }}
+      </button>
+    </div>
+  </div>
+</ng-container>

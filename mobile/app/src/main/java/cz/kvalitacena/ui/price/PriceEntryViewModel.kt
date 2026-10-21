@@ -228,10 +228,17 @@ class PriceEntryViewModel(
     val id = lastStoreStore.rememberedId() ?: return
     viewModelScope.launch {
       try {
-        graphQlClient.storeById(id)?.let { store ->
-          rememberedStore = store
-          applyPreselection()
-        } ?: lastStoreStore.clear()
+        val store = graphQlClient.storeById(id)
+        // Ručně zvolený nebo vymazaný obchod pozdní odpověď nepřepíše.
+        if (!storeSelectionTouched) {
+          if (store == null) {
+            lastStoreStore.clear()
+          } else {
+            rememberedStore = store
+            // Předvybraný snapshot se jen obnoví na čerstvou podobu ze serveru.
+            if (selectedStore?.id == store.id) selectStore(store) else applyPreselection()
+          }
+        }
       } catch (e: Exception) {
         // Výpadek načtení posledního obchodu nesmí blokovat ruční výběr — snapshot výš platí dál.
       }
@@ -267,10 +274,17 @@ class PriceEntryViewModel(
     }
   }
 
+  private var storeSelectionTouched = false
+
   fun onStoreQueryChange(query: String) {
+    storeSelectionTouched = true
+    selectedStore = null
+    storeSearching = false
     storeQuery = query
     storeSearchJob?.cancel()
     if (query.isBlank()) {
+      lastStoreStore.clear()
+      storeScopeMismatch = false
       storeSuggestions = emptyList()
       return
     }
@@ -288,6 +302,9 @@ class PriceEntryViewModel(
   }
 
   fun onStoreSelected(store: Store) {
+    storeSelectionTouched = true
+    storeSearchJob?.cancel()
+    storeSearching = false
     selectStore(store)
     // Nekompatibilní obchod se rovnou neschová (na rozdíl od discardIncompatibleStore při
     // změně produktu) — uživatel ho právě vybral ručně, appka jen zablokuje odeslání a napíše

@@ -104,6 +104,10 @@ class GraphQlFragmentContractTest {
     "PUBLICATION_STATUS_FIELDS" to PUBLICATION_STATUS_FIELDS,
     "VIEWER_FIELDS" to VIEWER_FIELDS,
     "PRODUCT_REVIEW_FIELDS" to PRODUCT_REVIEW_FIELDS,
+    "PRODUCT_STORE_LABEL_FIELDS" to PRODUCT_STORE_LABEL_FIELDS,
+    "RECEIPT_LINE_FIELDS" to RECEIPT_LINE_FIELDS,
+    "RECEIPT_FIELDS" to RECEIPT_FIELDS,
+    "RECEIPT_DETAIL_FIELDS" to RECEIPT_DETAIL_FIELDS,
   )
 
   /**
@@ -174,4 +178,20 @@ class GraphQlFragmentContractTest {
   @Test
   fun productReviewFieldsCoverRequiredDtoFields() =
     assertContract("PRODUCT_REVIEW_FIELDS", PRODUCT_REVIEW_FIELDS, ProductReview.serializer().descriptor)
+
+  @Test
+  fun productStoreLabelFieldsCoverRequiredDtoFields() =
+    assertContract("PRODUCT_STORE_LABEL_FIELDS", PRODUCT_STORE_LABEL_FIELDS, ProductStoreLabel.serializer().descriptor)
+
+  @Test
+  fun receiptLineFieldsCoverRequiredDtoFields() =
+    assertContract("RECEIPT_LINE_FIELDS", RECEIPT_LINE_FIELDS, ReceiptLine.serializer().descriptor)
+
+  @Test
+  fun receiptFieldsCoverRequiredDtoFields() =
+    assertContract("RECEIPT_FIELDS", RECEIPT_FIELDS, Receipt.serializer().descriptor)
+
+  @Test
+  fun receiptDetailFieldsCoverRequiredDtoFields() =
+    assertContract("RECEIPT_DETAIL_FIELDS", RECEIPT_DETAIL_FIELDS, Receipt.serializer().descriptor)
 }

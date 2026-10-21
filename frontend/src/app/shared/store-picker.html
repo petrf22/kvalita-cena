@@ -1,20 +1,47 @@
 <ng-container *transloco="let t; scope: 'store'">
   <div class="store-picker">
-    <nz-select
-      nzShowSearch
-      nzServerSearch
-      nzAllowClear
-      [nzPlaceHolder]="t('store.picker.searchPlaceholder')"
-      [nzLoading]="searching()"
-      [ngModel]="selectedStoreId()"
-      (nzOnSearch)="onSearch($event)"
-      (ngModelChange)="onSelectId($event)"
-      class="store-select"
-    >
-      @for (store of displayOptions(); track store.id) {
-        <nz-option [nzValue]="store.id" [nzLabel]="storeLabel(store, countryService.country())" />
-      }
-    </nz-select>
+    @if (selectedStore() && selectedStoreId() === selectedStore()!.id && !picking()) {
+      <div class="selected-store">
+        <strong>{{ selectedStore()!.name }}</strong>
+        @if (selectedStore()!.street) {
+          <span>{{ selectedStore()!.street }}</span>
+        }
+        <span>{{ cityLine(selectedStore()!) }}</span>
+        <div class="selected-store-actions">
+          <button nz-button type="button" (click)="picking.set(true)">
+            {{ t('store.picker.change') }}
+          </button>
+          <button nz-button type="button" (click)="onSelectId(null)">
+            {{ t('store.picker.clear') }}
+          </button>
+        </div>
+      </div>
+    } @else {
+      <nz-select
+        nzShowSearch
+        nzServerSearch
+        nzAllowClear
+        [nzPlaceHolder]="t('store.picker.searchPlaceholder')"
+        [nzLoading]="searching()"
+        [ngModel]="selectedStoreId()"
+        (nzOnSearch)="onSearch($event)"
+        (ngModelChange)="onSelectId($event)"
+        class="store-select"
+      >
+        @for (store of displayOptions(); track store.id) {
+          <nz-option
+            [nzValue]="store.id"
+            [nzLabel]="storeLabel(store, countryService.country())"
+            nzCustomContent
+          >
+            <div class="store-option">
+              <strong>{{ store.name }}</strong
+              ><br />{{ addressLine(store) }}
+            </div>
+          </nz-option>
+        }
+      </nz-select>
+    }
     <button nz-button type="button" [nzLoading]="locating()" (click)="findNearby()">
       <span nz-icon nzType="environment"></span>
       {{ t('store.picker.findNearby') }}

@@ -43,7 +43,7 @@
           nz-input
           name="name"
           [ngModel]="name()"
-          (ngModelChange)="onNameChange($event)"
+          (ngModelChange)="onNameInput($event)"
           required
         />
       </nz-form-control>
@@ -262,13 +262,28 @@
     <nz-form-item>
       <nz-form-label>{{ t('product-form.codeLabel') }}</nz-form-label>
       <nz-form-control>
-        <input
-          nz-input
-          name="code"
-          [ngModel]="code()"
-          (ngModelChange)="code.set($event)"
-          [disabled]="!!product()"
-        />
+        <div class="code-row">
+          <input
+            nz-input
+            name="code"
+            [ngModel]="code()"
+            (ngModelChange)="code.set($event); scannedExisting.set(null)"
+            [disabled]="!!product()"
+          />
+          <!-- Sken jen u prázdného pole — přepsat vyplněný kód omylem by bylo horší než psát. -->
+          @if (!product() && !code().trim()) {
+            <button
+              nz-button
+              type="button"
+              class="scan-button"
+              [title]="t('product-form.scan.button')"
+              [attr.aria-label]="t('product-form.scan.button')"
+              (click)="scanning.set(true)"
+            >
+              <span nz-icon nzType="scan"></span>
+            </button>
+          }
+        </div>
         <div class="field-hint">
           {{
             product()
@@ -278,6 +293,21 @@
         </div>
       </nz-form-control>
     </nz-form-item>
+
+    @if (scannedExisting(); as existing) {
+      <nz-alert
+        nzType="info"
+        nzShowIcon
+        [nzMessage]="t('product-form.scan.existing', { name: existing.name })"
+        [nzAction]="useExistingAction"
+        class="form-alert"
+      />
+      <ng-template #useExistingAction>
+        <button nz-button nzSize="small" type="button" (click)="useScannedExisting()">
+          {{ t('product-form.scan.useExisting') }}
+        </button>
+      </ng-template>
+    }
 
     @if (!product()) {
       <!--
@@ -325,4 +355,15 @@
       </button>
     </div>
   </form>
+
+  <nz-modal
+    [nzVisible]="scanning()"
+    [nzTitle]="t('product-form.scan.title')"
+    [nzFooter]="null"
+    (nzOnCancel)="scanning.set(false)"
+  >
+    <ng-container *nzModalContent>
+      <app-barcode-scanner (detected)="onScanned($event)" (cancelled)="scanning.set(false)" />
+    </ng-container>
+  </nz-modal>
 </ng-container>

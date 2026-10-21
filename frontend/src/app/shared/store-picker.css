@@ -1,21 +1,38 @@
 .store-picker {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: var(--kc-space-2);
   align-items: center;
 }
-
-.store-select {
-  flex: 1;
+.store-select,
+.selected-store {
+  flex: 1 1 100%;
+  min-width: 0;
 }
-
+.selected-store {
+  display: grid;
+  gap: var(--kc-space-1);
+  overflow-wrap: anywhere;
+}
+.selected-store-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kc-space-2);
+}
+.selected-store button {
+  min-height: 44px;
+}
+.store-option {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .location-error {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: #ff4d4f;
+  margin: var(--kc-space-1) 0 0;
+  font-size: var(--kc-font-xs);
+  color: var(--kc-danger);
 }
-
 .login-hint {
-  margin: 4px 0 0;
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
+  margin: var(--kc-space-1) 0 0;
+  font-size: var(--kc-font-xs);
+  color: var(--kc-text-muted);
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,8 +48,12 @@ fun LocationMap(
   editable: Boolean,
   onPointSelected: ((Double, Double) -> Unit)? = null,
   modifier: Modifier = Modifier,
+  showRequested: Boolean = false,
 ) {
   var shown by remember { mutableStateOf(false) }
+  LaunchedEffect(showRequested) {
+    if (showRequested) shown = true
+  }
 
   Column(modifier = modifier) {
     if (!shown) {

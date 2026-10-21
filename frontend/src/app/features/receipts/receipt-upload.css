@@ -1,0 +1,129 @@
+:host {
+  display: block;
+}
+
+.upload-block {
+  display: block;
+  margin-bottom: var(--kc-space-4);
+}
+
+.upload-block-top {
+  display: block;
+  margin-top: var(--kc-space-3);
+}
+
+.upload-step {
+  margin-bottom: var(--kc-space-5);
+}
+
+.step-title {
+  margin: 0 0 var(--kc-space-1);
+  font-size: var(--kc-font-lg);
+  font-weight: 600;
+}
+
+.step-hint {
+  margin: 0 0 var(--kc-space-3);
+  font-size: var(--kc-font-sm);
+  color: var(--kc-text-secondary);
+}
+
+.file-input {
+  display: none;
+}
+
+.part-list {
+  display: grid;
+  gap: var(--kc-space-2);
+  margin: var(--kc-space-3) 0 var(--kc-space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.part {
+  display: flex;
+  align-items: center;
+  gap: var(--kc-space-2);
+  padding: var(--kc-space-1) var(--kc-space-2);
+  border: 1px solid var(--kc-border-split);
+  border-radius: var(--kc-space-1);
+}
+
+.part-selected {
+  border-color: var(--kc-brand);
+}
+
+.part-select {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--kc-space-3);
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Rozměr náhledu, ne rozestup — docs/design.md, výjimky u komponenty. */
+.part-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  object-position: top;
+  border-radius: var(--kc-space-1);
+  flex-shrink: 0;
+}
+
+.part-text {
+  display: grid;
+  min-width: 0;
+}
+
+.part-name {
+  font-weight: 600;
+}
+
+.part-meta {
+  font-size: var(--kc-font-xs);
+  color: var(--kc-text-muted);
+}
+
+.part-actions {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.part-actions button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.consent {
+  display: flex;
+  margin: 0 0 var(--kc-space-2);
+}
+
+.consent-detail {
+  margin: 0 0 var(--kc-space-3) var(--kc-space-5);
+  font-size: var(--kc-font-sm);
+  color: var(--kc-text-secondary);
+}
+
+.upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--kc-space-2);
+}
+
+.upload-actions button {
+  min-height: 44px;
+}
+
+.blocker {
+  font-size: var(--kc-font-sm);
+  color: var(--kc-text-muted);
+}

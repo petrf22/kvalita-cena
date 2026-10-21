@@ -1,6 +1,6 @@
 import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslocoDirective, TranslocoService, provideTranslocoScope } from '@jsverse/transloco';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -11,6 +11,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { Observable, first, shareReplay, switchMap } from 'rxjs';
 import { OtpRequestResponse, Viewer } from '../../models/auth';
+import { safeReturnUrl } from '../../func/auth-guard';
 import { AuthService } from '../../services/auth-service';
 import { ViewerService } from '../../services/viewer-service';
 import { translateError } from '../../shared/error-message';
@@ -50,6 +51,11 @@ export class LoginPage implements OnDestroy {
   protected readonly auth = inject(AuthService);
   private readonly viewerService = inject(ViewerService);
   private readonly transloco = inject(TranslocoService);
+  private readonly router = inject(Router);
+  /** Odkud sem appka poslala nepřihlášeného (`authGuard`) — po přihlášení se tam vrátí. */
+  private readonly returnUrl = safeReturnUrl(
+    inject(ActivatedRoute).snapshot.queryParamMap.get('returnUrl'),
+  );
 
   protected readonly step = signal<'email' | 'code'>('email');
   protected readonly email = signal('');
@@ -144,7 +150,12 @@ export class LoginPage implements OnDestroy {
       .subscribe({
         next: () => {
           this.verifying.set(false);
-          // Žádná navigace pryč — stránka se sama překreslí na účet (auth.isLoggedIn() se
+          // Přišel sem ze stránky, která přihlášení vyžaduje (`authGuard`) — vrátit ho tam.
+          if (this.returnUrl) {
+            void this.router.navigateByUrl(this.returnUrl);
+            return;
+          }
+          // Jinak žádná navigace pryč — stránka se sama překreslí na účet (auth.isLoggedIn() se
           // změní), stejný princip jako mobile AccountScreen po přihlášení.
           this.loadViewer();
         },

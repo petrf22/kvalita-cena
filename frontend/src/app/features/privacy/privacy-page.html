@@ -4,7 +4,7 @@
       <p class="legal-notice">{{ t('legal.czechOnlyNotice') }}</p>
     }
 
-    <p class="legal-effective-date">Platí od 24. srpna 2026.</p>
+    <p class="legal-effective-date">Platí od 30. září 2026.</p>
 
     <div class="legal-body">
       <h2>1. Kdo je správce</h2>
@@ -108,6 +108,41 @@
         jediné nahlášení, než ho někdo přezkoumá.
       </p>
 
+      <h3>3.5a Účtenky</h3>
+      <p>
+        Pokud se rozhodneš naskenovat účtenku, appka nahraje její obrázky (případně rozdělené na
+        několik částí) a z nich později vytěží obchod, adresu, datum a čas nákupu a seznam zboží s
+        cenami. Účtenka je <strong>tvůj soukromý přehled nákupu</strong> — nikdy se nezveřejňuje,
+        nevidí ji ostatní uživatelé ani moderátoři, jen ty a zpracování popsané níž.
+      </p>
+      <ul>
+        <li>
+          <strong>Kdo účtenku zpracuje:</strong> provozovatel appky na svém vlastním počítači
+          (převod obrázku na text), ne cloudová služba třetí strany. Kdyby se to mělo změnit, appka
+          tě požádá o nový souhlas dřív, než by jedinou účtenku poslala jinam.
+        </li>
+        <li>
+          <strong>Zakrytí citlivých údajů:</strong> před odesláním ti appka nabídne zakrýt číslo
+          platební karty, věrnostní karty a další údaje (typicky pod celkovou částkou). Zakrytí
+          proběhne přímo v tvém telefonu nebo prohlížeči, zakrytý obsah na server vůbec neodejde.
+        </li>
+        <li>
+          <strong>Ceny z účtenky</strong> se zapíšou jako tvoje cenové záznamy až poté, co je v
+          appce sám/sama potvrdíš — dál s nimi appka zachází stejně jako s ručně zapsanou cenou (bod
+          3.3).
+        </li>
+        <li>
+          <strong>Označení zboží z účtenky</strong> (např. „TUK.ROHLIK"), které spojíš se zbožím v
+          katalogu, se stane sdíleným katalogovým údajem, aby se příště spárovalo samo — bez údaje o
+          tom, kdo a kdy zboží koupil.
+        </li>
+        <li>
+          <strong>Volitelně</strong> můžeš provozovateli dovolit, aby si obrázky účtenky ponechal
+          pro zlepšování rozpoznávání. Bez tohoto zaškrtnutí se obrázky po lhůtě v bodě 5 prostě
+          smažou.
+        </li>
+      </ul>
+
       <h3>3.6 Mapa (vědomá výjimka)</h3>
       <p>
         Pokud si na detailu obchodu otevřeš mapu, appka mapové podklady (dlaždice) stahuje přímo z
@@ -120,10 +155,10 @@
 
       <h3>3.7 Technická data</h3>
       <p>
-        Appka krátkodobě loguje technická data (např. IP adresu u přihlašovacích pokusů a u odesílání
-        formuláře zpětné vazby) kvůli ochraně proti zneužití (např. hromadnému zkoušení přihlašovacích
-        kódů nebo hromadnému odesílání spamu) — tahle data neslouží k profilování ani analytice a appka
-        je neuchovává dlouhodobě, jen v paměti serveru do restartu.
+        Appka krátkodobě loguje technická data (např. IP adresu u přihlašovacích pokusů a u
+        odesílání formuláře zpětné vazby) kvůli ochraně proti zneužití (např. hromadnému zkoušení
+        přihlašovacích kódů nebo hromadnému odesílání spamu) — tahle data neslouží k profilování ani
+        analytice a appka je neuchovává dlouhodobě, jen v paměti serveru do restartu.
       </p>
 
       <h2>4. Proč údaje zpracováváme (právní základ)</h2>
@@ -141,6 +176,12 @@
           <strong>Souhlas</strong> (čl. 6 odst. 1 písm. a) GDPR) — volitelný profil (jméno, telefon,
           kontaktní e-mail, avatar) a jeho případné zveřejnění; souhlas můžeš kdykoli odvolat
           smazáním příslušného údaje v appce.
+        </li>
+        <li>
+          <strong>Souhlas</strong> (čl. 6 odst. 1 písm. a) GDPR) — zpracování naskenovaných účtenek
+          (bod 3.5a), a zvlášť volitelné ponechání jejich obrázků pro zlepšování rozpoznávání.
+          Souhlas odvoláš smazáním účtenky v appce (Účet → Účtenky); další účtenky bez nového
+          souhlasu appka neodešle.
         </li>
       </ul>
 
@@ -164,6 +205,17 @@
           <tr>
             <td>Hodnocení kvality zboží, vlastní úpravy zboží/obchodu</td>
             <td>po dobu trvání účtu, smazáno s účtem</td>
+          </tr>
+          <tr>
+            <td>Obrázky naskenované účtenky</td>
+            <td>
+              30 dní od zpracování, pak automaticky smazány (s volitelným souhlasem s ponecháním:
+              přesunuty do archivu provozovatele mimo server)
+            </td>
+          </tr>
+          <tr>
+            <td>Text účtenky (obchod, datum a čas, položky)</td>
+            <td>po dobu trvání účtu, dokud ji nesmažeš; smazáno s účtem</td>
           </tr>
           <tr>
             <td>Volitelný profil (jméno, telefon, kontaktní e-mail, avatar)</td>
@@ -255,7 +307,13 @@
           (buď zůstanou jako anonymizovaná statistika bez vazby na tebe, nebo se smažou i ony),
         </li>
         <li>
-          <strong>na přenositelnost</strong> — vyžádat si vlastní data ve strojově čitelné podobě,
+          <strong>na přenositelnost</strong> — vyžádat si vlastní data ve strojově čitelné podobě
+          (včetně textu naskenovaných účtenek),
+        </li>
+        <li>
+          <strong>smazat naskenovanou účtenku</strong> — kdykoli přímo v appce (Účet → Účtenky);
+          smaže se obrázek i text, ceny, které jsi z ní už potvrdil(a), zůstanou jako běžné cenové
+          záznamy,
         </li>
         <li><strong>vznést námitku</strong> proti zpracování založenému na oprávněném zájmu,</li>
         <li>
@@ -278,12 +336,18 @@
         let bez souhlasu zákonného zástupce, účet na žádost zákonného zástupce smažeme.
       </p>
 
-      <h2>11. Budoucí strojové zpracování fotek</h2>
+      <h2>11. Strojové zpracování fotek a účtenek</h2>
       <p>
-        Appka do budoucna plánuje automatizovanou předběžnou kontrolu nahraných fotek kvůli moderaci
-        (např. odhalení zjevně nevhodného obsahu, než ho uvidí člověk). Tohle zpracování poběží na
-        počítači provozovatele, ne přes cloudovou službu třetí strany — fotky by tak neopustily
-        appku o nic víc, než dnes. Tenhle text aktualizujeme, až se to skutečně zapne.
+        Převod naskenovaných účtenek na text (bod 3.5a) běží na počítači provozovatele, ne přes
+        cloudovou službu třetí strany. Výsledek je vždy jen návrh — cenu zapíše až tvoje potvrzení.
+      </p>
+      <p>
+        Appka do budoucna plánuje i automatizovanou předběžnou kontrolu nahraných fotek kvůli
+        moderaci (např. odhalení zjevně nevhodného obsahu, než ho uvidí člověk). Tohle zpracování
+        poběží stejně na počítači provozovatele — fotky by tak neopustily appku o nic víc, než dnes.
+        Tenhle text aktualizujeme, až se to skutečně zapne, a kdyby se kterékoli z těchto zpracování
+        mělo přesunout ke třetí straně, oznámíme to předem (bod 12) a u účtenek si vyžádáme nový
+        souhlas.
       </p>
 
       <h2>12. Změny těchto zásad</h2>

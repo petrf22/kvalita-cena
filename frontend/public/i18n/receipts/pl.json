@@ -1,0 +1,182 @@
+{
+  "title": "Paragony",
+  "intro": "Zrób zdjęcie paragonu z zakupów, a ceny z niego zapiszesz kilkoma kliknięciami zamiast przepisywania. Paragon widzisz tylko ty.",
+  "uploadButton": "Prześlij paragon",
+  "loading": "Wczytywanie paragonów…",
+  "retry": "Spróbuj ponownie",
+  "loadFailed": "Nie udało się wczytać paragonów.",
+  "detailLoadFailed": "Nie udało się wczytać paragonu.",
+  "offlineTitle": "Jesteś offline",
+  "offlineListText": "Paragony wczytają się same, gdy tylko się połączysz.",
+  "offlineDetailText": "Paragon wczyta się sam, gdy tylko się połączysz.",
+  "offlineStale": "Jesteś offline — lista może być nieaktualna. Odświeży się sama po połączeniu.",
+  "offlineEditText": "Zmian nie można teraz zapisać. Po połączeniu możesz kontynuować powiązywanie, nic nie zginie.",
+  "offlineAction": "Nie masz połączenia z internetem — akcja nie została zapisana. Spróbuj ponownie po połączeniu.",
+  "emptyTitle": "Nie masz jeszcze żadnego paragonu",
+  "emptyText": "Prześlij zdjęcie paragonu z zakupów. Aplikacja odczyta z niego sklep, datę i pozycje, a ty tylko potwierdzisz, które ceny zapisać.",
+  "uploadedTitle": "Paragon został wysłany",
+  "uploadedText": "Czeka w kolejce na przetworzenie na komputerze operatora, może to chwilę potrwać. Gdy będzie gotowy, znajdziesz go tutaj do powiązania, a w menu przy Paragonach pojawi się znaczek.",
+  "unknownStore": "Nieznany sklep",
+  "newBadge": "Nowy",
+  "uploadedAt": "Przesłano {{date}}",
+  "lineCountTotal": "{count, plural, one {# pozycja} few {# pozycje} many {# pozycji} other {# pozycji}}",
+  "lineCountOpen": "{count, plural, one {# niepowiązana} few {# niepowiązane} many {# niepowiązanych} other {# niepowiązanych}}",
+  "lineCountReady": "{count, plural, one {# gotowa do potwierdzenia} few {# gotowe do potwierdzenia} many {# gotowych do potwierdzenia} other {# gotowych do potwierdzenia}}",
+  "lineCountMatched": "{count, plural, one {# powiązana} few {# powiązane} many {# powiązanych} other {# powiązanych}}",
+  "lineCountRecorded": "{count, plural, one {# cena zapisana} few {# ceny zapisane} many {# cen zapisanych} other {# cen zapisanych}}",
+  "deleteConfirm": "Usunąć paragon razem ze zdjęciami? Ceny, które już z niego zapisałeś/aś, zostaną.",
+  "deleteLabel": "Usuń paragon",
+  "deleteButton": "Usuń paragon",
+  "deleteHint": "Usuwa zdjęcia i tekst paragonu. Ceny, które już z niego potwierdziłeś/aś, zostają jako zwykłe wpisy cen.",
+  "backToList": "Wróć do paragonów",
+  "notFoundTitle": "Tego paragonu tu nie ma",
+  "notFoundText": "Może go usunąłeś/ęłaś albo należy do innego konta — paragon widzi zawsze tylko jego właściciel.",
+  "externalImageNote": "Niektóre miniatury produktów pochodzą z Open Food Facts (najedź myszką, aby zobaczyć źródło).",
+  "mask": {
+    "imageAlt": "Podgląd zdjęcia {{name}}",
+    "maskLabel": "Zasłonięcie {{index}} — przesuniesz je strzałkami, usuniesz klawiszem Delete",
+    "removeOne": "Usuń zasłonięcie",
+    "drawModeOff": "Rysuj zasłonięcie",
+    "drawModeOn": "Zakończ rysowanie",
+    "addBand": "Zasłoń dolny pas",
+    "clearAll": "Usuń wszystkie zasłonięcia",
+    "hintMouse": "Przeciągnij myszką przez dane, które chcesz zasłonić. Czarny prostokąt można przesunąć i powiększyć za rogi. To, co czarne, nie trafi na serwer.",
+    "hintTouch": "Włącz „Rysuj zasłonięcie” i przeciągnij palcem przez dane. Czarny prostokąt można przesunąć i powiększyć za rogi. To, co czarne, nie trafi na serwer."
+  },
+  "upload": {
+    "title": "Nowy paragon",
+    "maskWarningTitle": "Zasłoń numer karty płatniczej, kartę lojalnościową i imię kasjera",
+    "maskWarningText": "Aplikacja tych danych nie potrzebuje. Zasłonięcie zostaje wypalone w obrazie bezpośrednio w przeglądarce, więc w ogóle nie trafia na serwer. Sklep, datę i godzinę zakupu zostaw widoczne — z nich powstaną twoje ceny.",
+    "stepPhotos": "1. Zdjęcia paragonu",
+    "photosHint": "Zrób zdjęcie paragonu prosto i ostro. Długi paragon fotografuj w częściach od góry do dołu z niewielką zakładką — najwyżej {{max}} części.",
+    "choosePhotos": "Wybierz zdjęcia",
+    "addPart": "Dodaj kolejną część",
+    "partsLabel": "Części paragonu od góry do dołu",
+    "partName": "Część {{index}}",
+    "partMasks": "{count, plural, one {# zasłonięcie} few {# zasłonięcia} many {# zasłonięć} other {# zasłonięcia}}",
+    "partMasksNone": "bez zasłonięć",
+    "moveUp": "Przesuń część {{index}} w górę",
+    "moveDown": "Przesuń część {{index}} w dół",
+    "removePart": "Usuń część {{index}}",
+    "orderHint": "Kolejność musi odpowiadać paragonowi od góry do dołu — zmienisz ją strzałkami. Dolny pas jest proponowany na ostatniej części.",
+    "stepMask": "2. Zasłonięcie danych wrażliwych (część {{index}} z {{total}})",
+    "stepConsent": "3. Zgoda na przetwarzanie",
+    "consentProcessing": "Zgadzam się, aby paragon przetworzył operator aplikacji na własnym komputerze (zamiana obrazu na tekst). Nie jest wysyłany nikomu innemu i widzę go tylko ja.",
+    "consentDetail": "Zdjęcia są usuwane 30 dni po przetworzeniu, tekst paragonu zostaje, dopóki go nie usuniesz. Szczegóły:",
+    "privacyLink": "polityka prywatności",
+    "consentArchive": "Opcjonalnie: operator może zachować zdjęcia, aby ulepszać rozpoznawanie paragonów.",
+    "consentVersionFailed": "Nie udało się wczytać aktualnej treści zgody — bez niej nie można wysłać paragonu.",
+    "waitingTitle": "Czeka na połączenie",
+    "waitingText": "Jesteś offline. Paragon jest gotowy i wyśle się sam, gdy tylko się połączysz — nie zamykaj tej strony.",
+    "cancelSend": "Nie wysyłaj",
+    "submit": "Wyślij paragon",
+    "blocker": {
+      "noParts": "Najpierw wybierz co najmniej jedno zdjęcie.",
+      "loading": "Wczytywanie zdjęć…",
+      "consentOutdated": "Treść zgody w międzyczasie się zmieniła — odśwież stronę, aby zobaczyć aktualną wersję.",
+      "noConsent": "Bez zgody na przetwarzanie nic nie zostanie wysłane.",
+      "noConsentVersion": "Czekam na treść zgody z serwera…"
+    },
+    "tooManyParts": "Paragon może mieć najwyżej {{max}} części — nadmiarowe zdjęcia nie zostały dodane.",
+    "unsupportedFile": "Nie udało się otworzyć pliku {{name}} jako obrazu. Spróbuj JPEG lub PNG.",
+    "fileFailed": "Nie udało się wczytać zdjęcia {{name}}.",
+    "renderFailed": "Nie udało się przygotować zdjęć do wysłania. Spróbuj wybrać je ponownie.",
+    "tooLarge": "Paragon jest za duży do wysłania. Spróbuj mniejszej liczby części."
+  },
+  "images": {
+    "title": "Zdjęcie paragonu",
+    "show": "Pokaż zdjęcie paragonu",
+    "hide": "Ukryj zdjęcie paragonu",
+    "deleted": "Zdjęcia zostały usunięte po 30 dniach",
+    "deletedAt": "Usunięte {{date}}. Tekst paragonu i zapisane ceny zostają.",
+    "partAlt": "Paragon, część {{index}} z {{total}}",
+    "offline": "Zdjęcie wczyta się po połączeniu.",
+    "failed": "Nie udało się wczytać zdjęcia.",
+    "zoomHint": "Kliknij, aby otworzyć zdjęcie w pełnym rozmiarze."
+  },
+  "match": {
+    "placeholder": "Szukaj produktu po nazwie",
+    "hintLabel": "Propozycje na podstawie tekstu z paragonu. Jeśli nie ma wśród nich właściwego produktu, wpisz jego nazwę.",
+    "hintQuery": "Wyniki dla wpisanej nazwy.",
+    "offline": "Jesteś offline — wyszukiwanie zadziała po połączeniu.",
+    "empty": "Nie znaleźliśmy nic podobnego. Spróbuj innej nazwy.",
+    "emptyCreate": "Nie znaleźliśmy nic podobnego. Spróbuj innej nazwy albo dodaj produkt.",
+    "unconfirmed": "jeszcze niepotwierdzony",
+    "close": "Zamknij"
+  },
+  "header": {
+    "title": "Nagłówek paragonu",
+    "store": "Sklep",
+    "changeStore": "Zmień sklep",
+    "suggestedStore": "Według paragonu to wygląda na",
+    "confirmStore": "Potwierdź",
+    "otherStore": "Wybierz inny",
+    "saveStore": "Zapisz sklep",
+    "storeUnknown": "Sklep zostanie uzupełniony po przetworzeniu.",
+    "rawPrefix": "Na paragonie:",
+    "rawIco": "NIP {{ico}}",
+    "purchasedAt": "Data i godzina zakupu",
+    "purchasedAtPlaceholder": "Wybierz datę i godzinę",
+    "savePurchasedAt": "Zapisz datę",
+    "purchasedAtMissing": "Nie udało się odczytać z paragonu daty i godziny zakupu. Uzupełnij je — bez nich nie można zapisać cen.",
+    "total": "Razem"
+  },
+  "status": {
+    "queuedTitle": "Paragon czeka na przetworzenie",
+    "processingTitle": "Paragon jest właśnie odczytywany",
+    "pendingText": "Przetwarzanie odbywa się na komputerze operatora, więc może chwilę potrwać. Strona odświeży się sama — możesz ją zamknąć i wrócić później.",
+    "NOT_A_RECEIPT": {
+      "title": "Na zdjęciu nie znaleźliśmy paragonu",
+      "text": "Usuń go i prześlij zdjęcie paragonu ponownie."
+    },
+    "UNREADABLE": {
+      "title": "Paragon jest nieczytelny",
+      "text": "Zrób zdjęcie ponownie — ostro, prosto i przy dobrym świetle, długi paragon w częściach. Ten potem usuń."
+    },
+    "FAILED": {
+      "title": "Przetwarzanie nie powiodło się",
+      "text": "Błąd leży po naszej stronie. Spróbuj przesłać paragon ponownie, a ten usuń."
+    }
+  },
+  "lines": {
+    "title": "Pozycje",
+    "storeFirst": "Najpierw potwierdź sklep — według niego wyszukuje się i dodaje produkty, a bez niego nie można zapisać cen.",
+    "empty": "Na paragonie nie znaleziono żadnych pozycji."
+  },
+  "line": {
+    "selectLabel": "Zapisz cenę z pozycji {{label}}",
+    "quantityPieces": "{{quantity}} {{unit}} × {{price}}",
+    "quantityWeighed": "{{quantity}} {{unit}} × {{price}} za {{unit}}",
+    "pricePerUnit": "{{price}} za {{unit}}",
+    "discount": "rabat −{{amount}}",
+    "recorded": "Cena zapisana",
+    "findProduct": "Znajdź produkt",
+    "changeProduct": "Zmień produkt",
+    "createProduct": "Dodaj nowy produkt",
+    "createNeedsStore": "Nowy produkt będzie można dodać po potwierdzeniu sklepu.",
+    "ignore": "Pomiń",
+    "unmatch": "Anuluj powiązanie",
+    "unignore": "Nie pomijaj"
+  },
+  "skip": {
+    "duplicateSameDay": "Tę cenę już zapisałeś/aś dla dnia zakupu — drugi wpis nie został dodany."
+  },
+  "confirm": {
+    "button": "Potwierdź powiązane ({{count}})",
+    "hint": "Zapisze ceny zaznaczonych pozycji z datą i godziną zakupu z paragonu.",
+    "blocker": {
+      "notProcessed": "Paragon nie został jeszcze przetworzony.",
+      "storeMissing": "Najpierw potwierdź sklep powyżej.",
+      "purchaseTimeMissing": "Najpierw uzupełnij datę i godzinę zakupu powyżej.",
+      "nothing": "Zaznacz co najmniej jedną powiązaną pozycję."
+    },
+    "done": "{count, plural, one {# cena zapisana.} few {# ceny zapisane.} many {# cen zapisanych.} other {# ceny zapisanej.}}",
+    "doneNone": "Nie zapisano żadnej nowej ceny.",
+    "skipped": "{count, plural, one {# pozycja pominięta:} few {# pozycje pominięte:} many {# pozycji pominiętych:} other {# pozycji pominiętej:}}"
+  },
+  "create": {
+    "title": "Nowy produkt z paragonu",
+    "labelPrefix": "Na paragonie:",
+    "hint": "Zamień skrót z paragonu na pełną nazwę, jaką znasz z opakowania. Produkt zostanie dodany dla tego sklepu, a pozycja od razu z nim powiązana."
+  }
+}

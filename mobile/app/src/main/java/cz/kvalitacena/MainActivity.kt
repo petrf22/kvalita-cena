@@ -50,7 +50,23 @@ import cz.kvalitacena.ui.detail.ProductDetailScreen
 import cz.kvalitacena.ui.feedback.FeedbackScreen
 import cz.kvalitacena.ui.legal.PrivacyScreen
 import cz.kvalitacena.ui.legal.TermsScreen
+import cz.kvalitacena.receipt.ReceiptNotifications
+import cz.kvalitacena.receipt.isAllowedNotificationRoute
 import cz.kvalitacena.ui.navigation.ARG_BARCODE
+import cz.kvalitacena.ui.navigation.ARG_NAME
+import cz.kvalitacena.ui.navigation.ARG_RECEIPT_ID
+import cz.kvalitacena.ui.navigation.ARG_RETAKE
+import cz.kvalitacena.ui.navigation.ROUTE_RECEIPTS
+import cz.kvalitacena.ui.navigation.ROUTE_RECEIPT_CAPTURE
+import cz.kvalitacena.ui.navigation.ROUTE_RECEIPT_DETAIL
+import cz.kvalitacena.ui.navigation.ROUTE_RECEIPT_REVIEW
+import cz.kvalitacena.ui.navigation.ROUTE_SCAN_CODE
+import cz.kvalitacena.ui.navigation.receiptCaptureRoute
+import cz.kvalitacena.ui.navigation.receiptDetailRoute
+import cz.kvalitacena.ui.receipt.capture.ReceiptCaptureScreen
+import cz.kvalitacena.ui.receipt.detail.ReceiptDetailScreen
+import cz.kvalitacena.ui.receipt.list.ReceiptListScreen
+import cz.kvalitacena.ui.receipt.review.ReceiptReviewScreen
 import cz.kvalitacena.ui.navigation.ARG_FEEDBACK_SOURCE
 import cz.kvalitacena.ui.navigation.ARG_PRODUCT_ID
 import cz.kvalitacena.ui.navigation.ARG_STORE_ID
@@ -102,6 +118,7 @@ class MainActivity : AppCompatActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     DebugRouteIntent.accept(intent)
+    NotificationRouteIntent.accept(intent)
 
     // Zkusí obnovit přihlášení z uloženého refresh tokenu — stejný princip jako
     // frontend/src/app/func/auth-initializer.ts. Anonymní chod appky (T0) tím není podmíněný.
@@ -122,7 +139,26 @@ class MainActivity : AppCompatActivity() {
     super.onNewIntent(intent)
     setIntent(intent)
     DebugRouteIntent.accept(intent)
+    NotificationRouteIntent.accept(intent)
   }
+}
+
+/**
+ * Trasa z notifikace o zpracované účtence (receipt/ReceiptNotifications.kt). Na rozdíl od
+ * [DebugRouteIntent] platí i ve vydané appce — proto jen seznam nebo detail účtenky
+ * ([isAllowedNotificationRoute]): MainActivity je exportovaná a extra může poslat kdokoli.
+ */
+private object NotificationRouteIntent {
+  var pending by mutableStateOf<String?>(null)
+    private set
+
+  fun accept(intent: Intent?) {
+    val route = intent?.getStringExtra(ReceiptNotifications.EXTRA_ROUTE) ?: return
+    intent.removeExtra(ReceiptNotifications.EXTRA_ROUTE)
+    if (isAllowedNotificationRoute(route)) pending = route
+  }
+
+  fun consume(): String? = pending?.also { pending = null }
 }
 
 /**
@@ -184,6 +220,14 @@ private fun AppScaffold() {
     }
   }
 
+  val notificationRoute = NotificationRouteIntent.pending
+  LaunchedEffect(notificationRoute) {
+    val route = NotificationRouteIntent.consume() ?: return@LaunchedEffect
+    // Seznam jako podklad pod detailem — Zpět z detailu vede na ostatní účtenky, ne ven.
+    navController.navigate(ROUTE_RECEIPTS) { launchSingleTop = true }
+    if (route != ROUTE_RECEIPTS) navController.navigate(route)
+  }
+
   fun navigateBack() {
     if (!navController.navigateUp()) {
       navController.navigate(TopLevelDestination.SEARCH.route) {
@@ -239,6 +283,7 @@ private fun AppScaffold() {
       composable(TopLevelDestination.SCAN.route) {
         ScanScreen(
           onBarcodeDetected = { code -> navController.navigate(priceEntryRouteByBarcode(code)) },
+          onScanReceipt = { navController.navigate(receiptCaptureRoute()) },
         )
       }
       composable(TopLevelDestination.SEARCH.route) {
@@ -261,6 +306,7 @@ private fun AppScaffold() {
           onOpenMyContributions = { navController.navigate(ROUTE_MY_CONTRIBUTIONS) },
           onOpenTerms = { navController.navigate(ROUTE_TERMS) },
           onOpenPrivacy = { navController.navigate(ROUTE_PRIVACY) },
+          onOpenReceipts = { navController.navigate(ROUTE_RECEIPTS) },
         )
       }
       composable(
@@ -332,6 +378,8 @@ private fun AppScaffold() {
           navArgument(ARG_BARCODE) { type = NavType.StringType; nullable = true; defaultValue = null },
           navArgument(ARG_WRITE_PRICE) { type = NavType.BoolType; defaultValue = false },
           navArgument(ARG_PRODUCT_ID) { type = NavType.StringType; nullable = true; defaultValue = null },
+          navArgument(ARG_NAME) { type = NavType.StringType; nullable = true; defaultValue = null },
+          navArgument(ARG_STORE_ID) { type = NavType.StringType; nullable = true; defaultValue = null },
         ),
       ) { backStackEntry ->
         val barcode = backStackEntry.arguments?.getString(ARG_BARCODE)
@@ -340,6 +388,9 @@ private fun AppScaffold() {
         ProductFormScreen(
           barcode = barcode,
           productId = productId,
+          initialName = backStackEntry.arguments?.getString(ARG_NAME),
+          initialStoreId = backStackEntry.arguments?.getString(ARG_STORE_ID),
+          onScanCode = { navController.navigate(ROUTE_SCAN_CODE) },
           onDone = { navController.popBackStack() },
           onAddStore = { navController.navigate(storeFormRouteForCreate()) },
           onCreated = if (writePrice) {
@@ -354,6 +405,72 @@ private fun AppScaffold() {
           } else {
             { navController.popBackStack() }
           },
+        )
+      }
+      composable(ROUTE_SCAN_CODE) {
+        ScanScreen(
+          onBarcodeDetected = { code ->
+            NavigationResults.scannedCode = code
+            navController.popBackStack()
+          },
+        )
+      }
+      composable(ROUTE_RECEIPTS) {
+        ReceiptListScreen(
+          onOpenReceipt = { id -> navController.navigate(receiptDetailRoute(id)) },
+          onCapture = { navController.navigate(receiptCaptureRoute()) },
+          onOpenAccount = { navController.navigate(TopLevelDestination.ACCOUNT.route) { launchSingleTop = true } },
+          onOpenPrivacy = { navController.navigate(ROUTE_PRIVACY) },
+        )
+      }
+      composable(
+        ROUTE_RECEIPT_DETAIL,
+        arguments = listOf(navArgument(ARG_RECEIPT_ID) { type = NavType.StringType }),
+      ) { backStackEntry ->
+        val receiptId = backStackEntry.arguments?.getString(ARG_RECEIPT_ID).orEmpty()
+        ReceiptDetailScreen(
+          receiptId = receiptId,
+          onCreateProduct = { name, storeId -> navController.navigate(productFormRoute(name = name, storeId = storeId)) },
+          onAddStore = { navController.navigate(storeFormRouteForCreate()) },
+          onProductClick = { id -> navController.navigate(productDetailRoute(id)) },
+          onRescan = { navController.navigate(receiptCaptureRoute()) },
+          onDeleted = { navController.popBackStack() },
+          onOpenAccount = { navController.navigate(TopLevelDestination.ACCOUNT.route) { launchSingleTop = true } },
+        )
+      }
+      composable(
+        ROUTE_RECEIPT_CAPTURE,
+        arguments = listOf(navArgument(ARG_RETAKE) { type = NavType.IntType; defaultValue = -1 }),
+      ) { backStackEntry ->
+        val retake = backStackEntry.arguments?.getInt(ARG_RETAKE)?.takeIf { it >= 0 }
+        ReceiptCaptureScreen(
+          retakeIndex = retake,
+          onDone = {
+            // Z kontroly („přidat další díl", „nafotit znovu") se vrací zpátky do ní, jinak
+            // snímání kontrolou nahradí — Zpět z kontroly pak nevede do kamery.
+            if (retake != null || navController.previousBackStackEntry?.destination?.route == ROUTE_RECEIPT_REVIEW) {
+              navController.popBackStack()
+            } else {
+              navController.navigate(ROUTE_RECEIPT_REVIEW) {
+                popUpTo(ROUTE_RECEIPT_CAPTURE) { inclusive = true }
+              }
+            }
+          },
+          onOpenAccount = { navController.navigate(TopLevelDestination.ACCOUNT.route) { launchSingleTop = true } },
+        )
+      }
+      composable(ROUTE_RECEIPT_REVIEW) {
+        ReceiptReviewScreen(
+          onRetake = { index -> navController.navigate(receiptCaptureRoute(index)) },
+          onAddMore = { navController.navigate(receiptCaptureRoute()) },
+          onSubmitted = {
+            navController.navigate(ROUTE_RECEIPTS) {
+              popUpTo(ROUTE_RECEIPT_REVIEW) { inclusive = true }
+              launchSingleTop = true
+            }
+          },
+          onOpenPrivacy = { navController.navigate(ROUTE_PRIVACY) },
+          onOpenAccount = { navController.navigate(TopLevelDestination.ACCOUNT.route) { launchSingleTop = true } },
         )
       }
       composable(ROUTE_PROFILE) {

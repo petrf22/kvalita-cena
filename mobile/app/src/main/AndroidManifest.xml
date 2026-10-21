@@ -11,6 +11,12 @@
          nikam neukládá (docs/soukromi.md, „Poloha se nikdy neukládá jako GPS uživatele"). -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Offline stav obrazovek (network/NetworkMonitor.kt) — účtenka se v obchodě bez signálu
+         jen zařadí a WorkManager ji pošle po připojení. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Lokální notifikace o zpracované účtence (receipt/ReceiptNotifications.kt), bez push
+         služby Google. Appka si o ni řekne až po prvním odeslání účtenky. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <uses-feature
         android:name="android.hardware.camera.any"

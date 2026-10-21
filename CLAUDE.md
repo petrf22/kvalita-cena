@@ -122,6 +122,13 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   posílá poloha zaokrouhlená na ~110 m a `nearbyStores` hledá s okruhem zvětšeným o tuhle chybu
   (`ROUNDING_SLACK_M`), takže dofiltrovat a seřadit podle skutečné vzdálenosti umí jen zařízení,
   které zná přesnou polohu (`docs/soukromi.md`).
+- **Účtenka: strukturu z OCR textu tahají výhradně regexy, nikdy jazykový model**
+  (`tools/uctenky/normalize.py`) — model nad textem účtenky tiše zahodil řádek
+  `3.000 ks x 36.90 Kč /ks` a jindy přejmenoval zboží. OCR model dělá jen obrázek → text.
+  U váhového zboží jde na server cena za kg/l, nikdy zaplacená částka
+  (`ReceiptReviewService.priceRows`). Cenu z účtenky zapisuje VÝHRADNĚ potvrzení uživatele
+  (`confirmReceiptLines`), `evidence_kind` nastavuje jen server. Obrázky účtenek nejsou
+  v `core.media` (ta je veřejná) — `docs/soukromi.md`, „Účtenky".
 - Geometrie ikon (favicon, PWA manifest, Android launcher) žije v `tools/icons/generate.py`,
   zdroj pravdy `docs/branding.md` — po každé úpravě kresby spustit `python3
   tools/icons/generate.py`.

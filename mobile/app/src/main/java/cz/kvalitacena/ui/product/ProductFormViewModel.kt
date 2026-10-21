@@ -52,6 +52,10 @@ class ProductFormViewModel(
   private val countryStore: CountryStore,
   private val lastStoreStore: LastStoreStore,
   private val editingProductId: String? = null,
+  // Předvyplnění z řádku účtenky (ReceiptDetailScreen „Založit nové zboží") — název z textu
+  // účtenky a obchod z její hlavičky místo naposledy použitého obchodu.
+  initialName: String? = null,
+  private val initialStoreId: String? = null,
 ) : ViewModel() {
 
   val isEditing: Boolean get() = editingProductId != null
@@ -59,7 +63,7 @@ class ProductFormViewModel(
   var loadingExisting by mutableStateOf(editingProductId != null)
     private set
 
-  var name by mutableStateOf("")
+  var name by mutableStateOf(initialName.orEmpty())
 
   /**
    * Pole "Název" je VŽDY v jazyce appky (docs/lokalizace.md) — cizojazyčný název z OFF se do
@@ -195,6 +199,9 @@ class ProductFormViewModel(
 
   init {
     if (!isEditing) loadRememberedStore()
+    // Text z účtenky rovnou nabídne podobné existující zboží — založit duplicitu je snazší než
+    // ji pak slučovat (docs/reputace.md, „Zboží bez čárového kódu").
+    if (!initialName.isNullOrBlank()) loadSuggestions(initialName)
     viewModelScope.launch {
       try {
         categories = graphQlClient.categories()
@@ -369,10 +376,16 @@ class ProductFormViewModel(
     }
   }
 
+  private var storeSelectionTouched = false
+
   fun onStoreQueryChange(query: String) {
+    storeSelectionTouched = true
+    selectedStore = null
+    storeSearching = false
     storeQuery = query
     storeSearchJob?.cancel()
     if (query.isBlank()) {
+      lastStoreStore.clear()
       storeSuggestions = emptyList()
       selectedStore = null
       return
@@ -391,10 +404,19 @@ class ProductFormViewModel(
   }
 
   fun onStoreSelected(store: Store) {
+    storeSelectionTouched = true
+    storeSearchJob?.cancel()
+    storeSearching = false
     selectedStore = store
     storeQuery = storeLabel(store, countryStore.country)
     lastStoreStore.remember(store)
     loadSuggestions(name)
+  }
+
+  /** Kód naskenovaný tlačítkem u pole EAN (ROUTE_SCAN_CODE) — jen do prázdného pole. */
+  fun onCodeScanned(scanned: String) {
+    if (isEditing) return
+    code = scanned.trim()
   }
 
   fun onNewStoreCreated(store: Store) {
@@ -404,12 +426,26 @@ class ProductFormViewModel(
 
   private fun loadRememberedStore() {
     // Snapshot je k dispozici hned a bez sítě (LastStoreStore) — formulář jde vyplnit i bez
-    // signálu. Ze serveru se pak jen obnoví čerstvá podoba, když to jde.
-    lastStoreStore.remembered()?.let(::onStoreSelected)
-    val id = lastStoreStore.rememberedId() ?: return
+    // signálu. Ze serveru se pak jen obnoví čerstvá podoba, když to jde. Předvyplnění není
+    // volba uživatele, takže příznak storeSelectionTouched zůstává neshozený a odpověď
+    // serveru ho smí přepsat.
+    if (initialStoreId == null) {
+      lastStoreStore.remembered()?.let { store ->
+        onStoreSelected(store)
+        storeSelectionTouched = false
+      }
+    }
+    val id = initialStoreId ?: lastStoreStore.rememberedId() ?: return
     viewModelScope.launch {
       try {
-        graphQlClient.storeById(id)?.let(::onStoreSelected) ?: lastStoreStore.clear()
+        val store = graphQlClient.storeById(id)
+        if (!storeSelectionTouched) {
+          if (store == null) {
+            if (id != initialStoreId) lastStoreStore.clear()
+          } else {
+            onStoreSelected(store)
+          }
+        }
       } catch (e: Exception) {
         // Poslední obchod je jen pohodlný prefill, jeho výpadek formulář neblokuje.
       }

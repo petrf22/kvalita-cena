@@ -23,20 +23,26 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "zxing_reader.wasm",
+                "input": "node_modules/zxing-wasm/dist/reader",
+                "output": "zxing"
               }
             ],
             "styles": [
               "./node_modules/ng-zorro-antd/ng-zorro-antd.min.css",
               "./node_modules/leaflet/dist/leaflet.css",
               "src/styles.css"
-            ]
+            ],
+            "allowedCommonJsDependencies": ["leaflet", "@messageformat/core"]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "1MB",
+                  "maximumWarning": "1.5MB",
                   "maximumError": "2MB"
                 },
                 {

@@ -65,6 +65,11 @@ internal val PRODUCT_FIELDS = """
   photos { $PHOTO_FIELDS }
 """
 
+/** Název zboží na účtenkách jednoho řetězce/obchodu (core.product_store_label). */
+internal val PRODUCT_STORE_LABEL_FIELDS = """
+  label chainName storeName lastSeenAt
+"""
+
 /** Navíc oproti PRODUCT_FIELDS — jen pro obrazovku detailu (statistiky, graf, recenze, moje
  * ceny), aby si to seznam hledání netahal zbytečně. */
 internal val PRODUCT_DETAIL_FIELDS = """
@@ -87,6 +92,7 @@ internal val PRODUCT_DETAIL_FIELDS = """
     promoValidFrom promoValidTo
     converted { $CONVERTED_PRICE_FIELDS }
   }
+  storeLabels { $PRODUCT_STORE_LABEL_FIELDS }
 """
 
 /** Jedna recenze pod zbožím (docs/soukromi.md, "Podepsaná recenze") — text je tu vždy vyplněný. */
@@ -133,6 +139,28 @@ internal val SEARCH_ITEM_FIELDS = """
  */
 internal val PUBLICATION_STATUS_FIELDS = """
   state confirmationsReceived confirmationsRequired verified
+"""
+
+/** Řádek účtenky i se spárovaným zbožím (docs/datovy-model.md, „Účtenky"). */
+internal val RECEIPT_LINE_FIELDS = """
+  id lineNo labelRaw internalCode quantity quantityUnit unitPrice lineTotal discountAmount
+  priceKind status matchSource observationId confirmed skipReason
+  product { $PRODUCT_SUMMARY_FIELDS }
+"""
+
+/** Účtenka bez řádků — pro seznam; detail přidává `lines` (RECEIPT_DETAIL_FIELDS). */
+internal val RECEIPT_FIELDS = """
+  id processingStatus reviewStatus createdAt processedAt purchasedAt
+  storeNameRaw storeAddressRaw storeIcoRaw totalAmount currency
+  store { $STORE_FIELDS }
+  suggestedStore { $STORE_FIELDS }
+  imagePaths imagesDeletedAt unseen
+  lineCounts { total unmatched suggested matched ignored }
+"""
+
+internal val RECEIPT_DETAIL_FIELDS = """
+  $RECEIPT_FIELDS
+  lines { $RECEIPT_LINE_FIELDS }
 """
 
 /**
@@ -520,10 +548,10 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
    * Geokódování adresy přes server (nikdy přímo z appky, viz docs/soukromi.md). Chyba/výpadek
    * na backendu se vždy projeví jako prázdný seznam kandidátů, ne jako výjimka.
    */
-  suspend fun geocodeAddress(street: String?, city: String, postalCode: String?): GeocodeResult {
+  suspend fun geocodeAddress(street: String?, city: String, postalCode: String?, country: String): GeocodeResult {
     val gql = """
-      query(${'$'}street: String, ${'$'}city: String!, ${'$'}postalCode: String) {
-        geocodeAddress(street: ${'$'}street, city: ${'$'}city, postalCode: ${'$'}postalCode) {
+      query(${'$'}street: String, ${'$'}city: String!, ${'$'}postalCode: String, ${'$'}country: String) {
+        geocodeAddress(street: ${'$'}street, city: ${'$'}city, postalCode: ${'$'}postalCode, country: ${'$'}country) {
           attribution
           candidates { lat lon displayName osmRef }
         }
@@ -533,6 +561,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
       put("street", street)
       put("city", city)
       put("postalCode", postalCode)
+      put("country", country)
     }
     return execute(gql, variables, GraphQlResponse.serializer(GeocodeAddressData.serializer())).geocodeAddress
   }
@@ -822,6 +851,117 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     """
     val variables = buildJsonObject { put("first", first); put("offset", offset) }
     return execute(gql, variables, GraphQlResponse.serializer(MyReviewsData.serializer())).myReviews
+  }
+
+  // --- Účtenky (docs/soukromi.md, „Účtenky") — vidí je jen vlastník, všechno vyžaduje přihlášení.
+
+  suspend fun myReceipts(first: Int = 20, offset: Int = 0): ReceiptPage {
+    val gql = """
+      query(${'$'}first: Int, ${'$'}offset: Int) {
+        myReceipts(first: ${'$'}first, offset: ${'$'}offset) { totalCount hasMore items { $RECEIPT_FIELDS } }
+      }
+    """
+    val variables = buildJsonObject { put("first", first); put("offset", offset) }
+    return execute(gql, variables, GraphQlResponse.serializer(MyReceiptsData.serializer())).myReceipts
+  }
+
+  suspend fun receipt(id: String): Receipt? {
+    val gql = "query(${'$'}id: ID!) { receipt(id: ${'$'}id) { $RECEIPT_DETAIL_FIELDS } }"
+    val variables = buildJsonObject { put("id", id) }
+    return execute(gql, variables, GraphQlResponse.serializer(ReceiptData.serializer())).receipt
+  }
+
+  /** Počet účtenek s novinkou (odznak, notifikace) a aktuální verze textu souhlasu. */
+  suspend fun receiptSummary(): ReceiptSummary {
+    val gql = "query { receiptSummary { unseenCount consentVersion } }"
+    return execute(gql, buildJsonObject {}, GraphQlResponse.serializer(ReceiptSummaryData.serializer())).receiptSummary
+  }
+
+  /** Našeptávač zboží k řádku — bez [query] hledá server podle textu z účtenky. */
+  suspend fun receiptLineSuggestions(lineId: String, query: String? = null, first: Int = 10): List<ProductSummary> {
+    val gql = """
+      query(${'$'}lineId: ID!, ${'$'}query: String, ${'$'}first: Int) {
+        receiptLineSuggestions(lineId: ${'$'}lineId, query: ${'$'}query, first: ${'$'}first) { $PRODUCT_SUMMARY_FIELDS }
+      }
+    """
+    val variables = buildJsonObject {
+      put("lineId", lineId)
+      if (!query.isNullOrBlank()) put("query", query)
+      put("first", first)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(ReceiptLineSuggestionsData.serializer()))
+      .receiptLineSuggestions
+  }
+
+  /** Potvrzení/změna obchodu a data nákupu; null pole server nemění. [purchasedAt] je ISO-8601 s offsetem. */
+  suspend fun updateReceiptHeader(id: String, storeId: String? = null, purchasedAt: String? = null): Receipt {
+    val gql = """
+      mutation(${'$'}id: ID!, ${'$'}storeId: ID, ${'$'}purchasedAt: DateTime) {
+        updateReceiptHeader(id: ${'$'}id, storeId: ${'$'}storeId, purchasedAt: ${'$'}purchasedAt) { $RECEIPT_DETAIL_FIELDS }
+      }
+    """
+    val variables = buildJsonObject {
+      put("id", id)
+      storeId?.let { put("storeId", it) }
+      purchasedAt?.let { put("purchasedAt", it) }
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(UpdateReceiptHeaderData.serializer())).updateReceiptHeader
+  }
+
+  suspend fun matchReceiptLine(lineId: String, productId: String, newProduct: Boolean = false): ReceiptLine {
+    val gql = """
+      mutation(${'$'}lineId: ID!, ${'$'}productId: ID!, ${'$'}newProduct: Boolean) {
+        matchReceiptLine(lineId: ${'$'}lineId, productId: ${'$'}productId, newProduct: ${'$'}newProduct) { $RECEIPT_LINE_FIELDS }
+      }
+    """
+    val variables = buildJsonObject {
+      put("lineId", lineId)
+      put("productId", productId)
+      put("newProduct", newProduct)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(MatchReceiptLineData.serializer())).matchReceiptLine
+  }
+
+  suspend fun ignoreReceiptLine(lineId: String): ReceiptLine {
+    val gql = "mutation(${'$'}lineId: ID!) { ignoreReceiptLine(lineId: ${'$'}lineId) { $RECEIPT_LINE_FIELDS } }"
+    val variables = buildJsonObject { put("lineId", lineId) }
+    return execute(gql, variables, GraphQlResponse.serializer(IgnoreReceiptLineData.serializer())).ignoreReceiptLine
+  }
+
+  suspend fun unmatchReceiptLine(lineId: String): ReceiptLine {
+    val gql = "mutation(${'$'}lineId: ID!) { unmatchReceiptLine(lineId: ${'$'}lineId) { $RECEIPT_LINE_FIELDS } }"
+    val variables = buildJsonObject { put("lineId", lineId) }
+    return execute(gql, variables, GraphQlResponse.serializer(UnmatchReceiptLineData.serializer())).unmatchReceiptLine
+  }
+
+  /** Zapíše ceny z vybraných řádků; kolize jednoho řádku ostatní neshodí (vrátí se ve `skipped`). */
+  suspend fun confirmReceiptLines(receiptId: String, lineIds: List<String>): ConfirmReceiptLinesResult {
+    val gql = """
+      mutation(${'$'}receiptId: ID!, ${'$'}lineIds: [ID!]!) {
+        confirmReceiptLines(receiptId: ${'$'}receiptId, lineIds: ${'$'}lineIds) {
+          confirmed
+          skipped { $RECEIPT_LINE_FIELDS }
+          receipt { $RECEIPT_DETAIL_FIELDS }
+        }
+      }
+    """
+    val variables = buildJsonObject {
+      put("receiptId", receiptId)
+      put("lineIds", json.encodeToJsonElement(lineIds))
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(ConfirmReceiptLinesData.serializer())).confirmReceiptLines
+  }
+
+  suspend fun markReceiptSeen(id: String): Receipt {
+    val gql = "mutation(${'$'}id: ID!) { markReceiptSeen(id: ${'$'}id) { $RECEIPT_FIELDS } }"
+    val variables = buildJsonObject { put("id", id) }
+    return execute(gql, variables, GraphQlResponse.serializer(MarkReceiptSeenData.serializer())).markReceiptSeen
+  }
+
+  suspend fun deleteReceipt(id: String): Boolean {
+    val gql = "mutation(${'$'}id: ID!) { deleteReceipt(id: ${'$'}id) }"
+    val variables = buildJsonObject { put("id", id) }
+    return execute(gql, variables, GraphQlResponse.serializer(DeleteReceiptData.serializer())).deleteReceipt
   }
 
   private suspend fun <T> execute(

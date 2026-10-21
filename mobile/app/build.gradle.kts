@@ -39,12 +39,20 @@ android {
         minSdk = 26
         targetSdk = 36
         // Generováno tools/version/sync.mjs z kořenového VERSION — needituj ručně.
-        versionCode = 800
-        versionName = "0.8.0"
+        versionCode = 900
+        versionName = "0.9.0"
 
         buildConfigField("String", "MAP_TILE_URL", "\"$mapTileUrl\"")
         buildConfigField("String", "MAP_TILE_ATTRIBUTION", "\"$mapTileAttribution\"")
         buildConfigField("int", "MAP_TILE_MAX_ZOOM", "19")
+
+        // Nativní knihovny jen pro ABI, na kterých appka reálně běží: 64bit ARM (všechny
+        // dnešní telefony), 32bit ARM (starší levné telefony, minSdk 26) a x86_64 (emulátor).
+        // 32bit x86 nemá žádné rozšířené zařízení a s OpenCV (docs/rozvoj.md, „Sběr snímků")
+        // by stál další desítky MB v APK. AAB si Play stejně rozdělí po ABI.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
     }
 
     signingConfigs {
@@ -119,21 +127,21 @@ kotlin {
 }
 
 dependencies {
-    implementation(platform("androidx.compose:compose-bom:2026.08.00"))
+    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
-    implementation("androidx.core:core-ktx:1.19.0")
+    implementation("androidx.core:core-ktx:1.19.1")
     implementation("androidx.activity:activity-compose:1.13.0")
     // Jen kvůli AppCompatDelegate.setApplicationLocales() (docs/lokalizace.md) — deleguje na
     // systémový LocaleManager od API 33, pod tím si volbu persistuje sama. Vyžaduje
     // AppCompatActivity (MainActivity.kt) — bez zaregistrované AppCompatDelegate instance je
     // setApplicationLocales() no-op na všech API úrovních.
     implementation("androidx.appcompat:appcompat:1.8.0")
-    implementation("androidx.navigation:navigation-compose:2.10.0")
+    implementation("androidx.navigation:navigation-compose:2.10.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
 
@@ -147,6 +155,18 @@ dependencies {
     implementation("androidx.camera:camera-view:1.6.1")
     implementation("io.github.zxing-cpp:android:3.1.1")
 
+    // Snímání účtenky (ui/receipt/capture/, docs/rozvoj.md „Sběr snímků na klientovi") —
+    // detekce hran a kontur, narovnání perspektivy a posun mezi snímky. OpenCV je od 4.5
+    // pod Apache-2.0 (licence v POM artefaktu ověřená 2026-09-30) a od 4.9 vychází jako AAR
+    // přímo na Maven Central, bez vlastního repozitáře. Žádné rozpoznávání textu na klientovi,
+    // to dělá worker (docs/ai.md, „Účtenky").
+    implementation("org.opencv:opencv:4.14.0")
+
+    // Odeslání účtenky až po připojení a periodický dotaz na zpracované účtenky (lokální
+    // notifikace bez GMS, docs/soukromi.md „Účtenky") — Apache-2.0, běží i bez Play Services
+    // (vlastní JobScheduler/AlarmManager backend).
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
+
     // Refresh token v EncryptedSharedPreferences (docs/soukromi.md v backendu).
     implementation("androidx.security:security-crypto:1.1.0")
 
@@ -156,8 +176,8 @@ dependencies {
 
     // Zobrazení fotek zboží/obchodů (core.media) — Apache-2.0, sdílí OkHttp s GraphQlClient/
     // MediaClient přes coil-network-okhttp, žádný druhý HTTP stack navíc.
-    implementation("io.coil-kt.coil3:coil-compose:3.6.1")
-    implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.1")
+    implementation("io.coil-kt.coil3:coil-compose:3.6.3")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.6.3")
 
     // Mapa nad OpenStreetMap (výběr/náhled souřadnic obchodu) — Apache-2.0, stejná licenční
     // politika jako ZXing/Coil výš. Dlaždice se stahují přímo z klienta od

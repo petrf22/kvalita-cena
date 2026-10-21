@@ -64,6 +64,7 @@ import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
 import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
+import cz.kvalitacena.ui.theme.Spacing
 
 /**
  * Detail produktu: název, fotky, graf vývoje ceny (rozklikávací rozsah), nejlevnější obchod,
@@ -102,7 +103,7 @@ fun ProductDetailScreen(
     }
 
     viewModel.notFound -> {
-      Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+      Box(modifier = Modifier.fillMaxSize().padding(Spacing.xl), contentAlignment = Alignment.Center) {
         Text(stringResource(R.string.product_not_found), style = MaterialTheme.typography.bodyLarge)
       }
     }
@@ -110,7 +111,7 @@ fun ProductDetailScreen(
     else -> {
       val product = viewModel.product!!
       Column(modifier = Modifier.fillMaxSize()) {
-      Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)) {
+      Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(Spacing.lg)) {
         Text(product.name, style = MaterialTheme.typography.headlineSmall)
         // Název může být z jiného jazyka než appka — pak to musí být vidět, ať je jasné, že
         // chybí překlad, ne že se zboží tak jmenuje (docs/lokalizace.md).
@@ -140,7 +141,7 @@ fun ProductDetailScreen(
             recordId = productId,
             existingPhotoCount = product.photos.size,
             onUploaded = { photo -> viewModel.onPhotosChange(product.photos + photo) },
-            modifier = Modifier.padding(top = 4.dp),
+            modifier = Modifier.padding(top = Spacing.xs),
           )
         }
         Gap()
@@ -160,13 +161,13 @@ fun ProductDetailScreen(
 
         // --- Štítky uživatelské vrstvy (docs/datovy-model.md) + nahlášení ---
         Row(
-          modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+          modifier = Modifier.fillMaxWidth().padding(top = Spacing.xs),
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.Top,
         ) {
           FlowRow(
             modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
           ) {
             if (!product.verified) {
               AssistChip(onClick = {}, label = { Text(stringResource(R.string.common_unverified)) })
@@ -214,7 +215,7 @@ fun ProductDetailScreen(
         if (stats?.bestPrice != null && stats.cheapestStore != null) {
           val store = stats.cheapestStore
           LabelValueRow(
-            modifier = Modifier.padding(top = 4.dp).clickable { onStoreClick(store.id) },
+            modifier = Modifier.padding(top = Spacing.xs).clickable { onStoreClick(store.id) },
             label = {
               Text(store.name, style = MaterialTheme.typography.bodyLarge)
               Text(store.city, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -239,7 +240,7 @@ fun ProductDetailScreen(
         if (product.prices.isEmpty()) {
           Text(stringResource(R.string.product_no_price_be_first), style = MaterialTheme.typography.bodyMedium)
         } else {
-          Column(modifier = Modifier.padding(top = 8.dp)) {
+          Column(modifier = Modifier.padding(top = Spacing.sm)) {
             product.prices.forEach { price -> PriceRow(price, onClick = { onStoreClick(price.store.id) }) }
           }
         }
@@ -249,7 +250,7 @@ fun ProductDetailScreen(
 
         // --- Graf vývoje ceny ---
         Text(stringResource(R.string.product_price_trend), style = MaterialTheme.typography.titleMedium)
-        Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(modifier = Modifier.padding(top = Spacing.xs), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
           CHART_RANGES.forEach { (days, labelRes) ->
             FilterChip(
               selected = viewModel.selectedDays == days,
@@ -258,7 +259,7 @@ fun ProductDetailScreen(
             )
           }
         }
-        Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(modifier = Modifier.padding(top = Spacing.xs), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
           listOf("REGULAR", "PROMO").forEach { kind ->
             FilterChip(
               selected = viewModel.selectedPriceKind == kind,
@@ -269,7 +270,7 @@ fun ProductDetailScreen(
         }
         Gap()
         if (viewModel.historyLoading) {
-          Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+          Box(modifier = Modifier.fillMaxWidth().padding(Spacing.lg), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
           }
         } else {
@@ -291,7 +292,7 @@ fun ProductDetailScreen(
 
         // --- Kvalita ---
         QualityBadge(average = product.quality?.average, count = product.quality?.count ?: 0)
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = Spacing.xs)) {
           StarRatingInput(
             value = product.myQualityRating,
             onRate = { stars -> if (isLoggedIn) viewModel.rate(stars) else onNavigateToAccount() },
@@ -342,7 +343,7 @@ fun ProductDetailScreen(
           }
 
           else -> {
-            Column(modifier = Modifier.padding(top = 8.dp)) {
+            Column(modifier = Modifier.padding(top = Spacing.sm)) {
               viewModel.reviews.forEach { review ->
                 ReviewRow(
                   review = review,
@@ -368,7 +369,7 @@ fun ProductDetailScreen(
           HorizontalDivider()
           Gap()
           Text(stringResource(R.string.product_my_price), style = MaterialTheme.typography.titleMedium)
-          Column(modifier = Modifier.padding(top = 8.dp)) {
+          Column(modifier = Modifier.padding(top = Spacing.sm)) {
             product.myPrices.forEach { mp ->
               LabelValueRow(
                 label = "${mp.store.name} — ${priceKindLabel(mp.priceKind)}",
@@ -385,12 +386,33 @@ fun ProductDetailScreen(
           Gap()
         }
 
+        // --- Názvy na účtenkách (core.product_store_label) — jak zboží tisknou obchody ---
+        if (product.storeLabels.isNotEmpty()) {
+          HorizontalDivider()
+          Gap()
+          Text(stringResource(R.string.product_store_labels_title), style = MaterialTheme.typography.titleMedium)
+          Text(
+            stringResource(R.string.product_store_labels_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+          Column(modifier = Modifier.padding(top = Spacing.sm)) {
+            product.storeLabels.forEach { label ->
+              LabelValueRow(
+                label = label.label,
+                value = label.chainName ?: label.storeName.orEmpty(),
+              )
+            }
+          }
+          Gap()
+        }
+
         // --- Další informace (odkazy do otevřených databází) ---
         if (product.externalLinks.isNotEmpty()) {
           HorizontalDivider()
           Gap()
           Text(stringResource(R.string.product_more_info), style = MaterialTheme.typography.titleMedium)
-          Column(modifier = Modifier.padding(top = 8.dp)) {
+          Column(modifier = Modifier.padding(top = Spacing.sm)) {
             product.externalLinks.forEach { link -> ExternalLinkRow(link, onClick = { openUrl(context, link.url) }) }
           }
           Gap()
@@ -400,7 +422,7 @@ fun ProductDetailScreen(
 
       Button(
         onClick = onWriteObservation,
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg, vertical = Spacing.md),
       ) {
         Text(stringResource(R.string.product_write_observation))
       }
@@ -415,8 +437,8 @@ fun ProductDetailScreen(
 
 @Composable
 private fun ReviewRow(review: ProductReview, flagging: Boolean, isLoggedIn: Boolean, onFlag: () -> Unit) {
-  Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+  Column(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.sm)) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
       StarRatingDisplay(average = review.stars.toDouble(), starSize = 14.dp)
       Text(review.authorName, style = MaterialTheme.typography.bodyMedium)
       Text(
@@ -432,13 +454,13 @@ private fun ReviewRow(review: ProductReview, flagging: Boolean, isLoggedIn: Bool
         )
       }
     }
-    Text(review.text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+    Text(review.text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = Spacing.xs))
     if (!review.mine && isLoggedIn) {
       TextButton(onClick = onFlag, enabled = !flagging) {
         Text(stringResource(R.string.common_report))
       }
     }
-    HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+    HorizontalDivider(modifier = Modifier.padding(top = Spacing.sm))
   }
 }
 
@@ -510,7 +532,7 @@ private fun reviewTextDirty(viewModel: ProductDetailViewModel): Boolean =
 
 @Composable
 private fun PriceRow(price: PriceCurrent, onClick: () -> Unit) {
-  Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp)) {
+  Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = Spacing.sm)) {
     LabelValueRow(
       label = "${price.store.name} — ${priceKindLabel(price.priceKind)}",
       value = price.priceAmount?.let { rememberMoneyFormatter(price.currency).format(it) } ?: "–",
@@ -520,13 +542,13 @@ private fun PriceRow(price: PriceCurrent, onClick: () -> Unit) {
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+    HorizontalDivider(modifier = Modifier.padding(top = Spacing.sm))
   }
 }
 
 @Composable
 private fun ExternalLinkRow(link: ExternalLink, onClick: () -> Unit) {
-  OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+  OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs)) {
     Column {
       Text(link.label)
       // Atribuce zdroje/licence MUSÍ být vidět — ODbL (docs/datovy-model.md).
@@ -537,7 +559,7 @@ private fun ExternalLinkRow(link: ExternalLink, onClick: () -> Unit) {
 
 @Composable
 private fun Gap() {
-  androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+  androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(Spacing.md))
 }
 
 /** Jméno jazyka pro štítek u názvu ("německy") — přes `values/`, jako zbytek appky. */

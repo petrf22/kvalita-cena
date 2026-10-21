@@ -86,6 +86,7 @@ fun StorePicker(
       label = stringResource(R.string.store_picker_label),
       loading = searching,
       modifier = Modifier.fillMaxWidth(),
+      multiline = true,
     )
 
     when (nearbyState) {
@@ -152,6 +153,9 @@ fun StorePicker(
       // tlačítko, po kterém se nic nestane.
       onWiderRadius = onWiderRadius.takeIf { nearbyState is NearbyState.Loaded },
       widerRadiusLabel = widerRadiusLabel,
+      // Vymazání ruší i zapamatovanou volbu (PriceEntryViewModel.onStoreQueryChange) — jinak by
+      // se omylem vybraný obchod při příštím zápisu předvybral znovu.
+      onClear = { onQueryChange("") }.takeIf { query.isNotEmpty() || selectedStoreId != null },
       onAddNew = onAddNew,
       isLoggedIn = isLoggedIn,
     )
@@ -351,10 +355,14 @@ private fun osmCandidateLabel(candidate: NearbyOsmStore): String {
 private fun Actions(
   onWiderRadius: (() -> Unit)?,
   widerRadiusLabel: String?,
+  onClear: (() -> Unit)?,
   onAddNew: () -> Unit,
   isLoggedIn: Boolean,
 ) {
   Column(modifier = Modifier.padding(top = Spacing.xs)) {
+    onClear?.let {
+      TextButton(onClick = it) { Text(stringResource(R.string.store_picker_clear)) }
+    }
     if (onWiderRadius != null && widerRadiusLabel != null) {
       TextButton(onClick = onWiderRadius) {
         Text(stringResource(R.string.store_picker_wider_radius, widerRadiusLabel))

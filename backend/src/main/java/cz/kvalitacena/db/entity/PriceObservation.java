@@ -108,6 +108,16 @@ public class PriceObservation implements Persistable<Long> {
   @Column(name = "source", nullable = false, length = 10)
   private ObservationSource source;
 
+  // Druh důkazu — nastavuje výhradně server podle připojeného artefaktu (docs/rozvoj.md,
+  // „Zdroj ceny"), u ceny z účtenky RECEIPT_OCR spolu s receiptLineId.
+  @Enumerated(EnumType.STRING)
+  @Column(name = "evidence_kind", nullable = false, length = 16)
+  @Builder.Default
+  private EvidenceKind evidenceKind = EvidenceKind.NONE;
+
+  @Column(name = "receipt_line_id")
+  private Long receiptLineId;
+
   @PrePersist
   protected void onCreate() {
     createdAt = OffsetDateTime.now();

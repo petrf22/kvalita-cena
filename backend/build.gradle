@@ -6,7 +6,7 @@ plugins {
 
 group = 'cz.kvalitacena'
 // Generováno tools/version/sync.mjs z kořenového VERSION — needituj ručně.
-version = '0.8.0'
+version = '0.9.0'
 description = 'Kvalita a cena — komunitní sledování cen zboží'
 
 java {
@@ -56,7 +56,7 @@ dependencies {
 
     // Cache reputačních skóre a throttlingu (in-memory, Apache-2.0 — bez Bucket4j kvůli jeho
     // komerční licenci na části modulů).
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.4'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.3.1'
 
     // Passwordless auth — JWT
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
@@ -64,7 +64,7 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
     // Argon2PasswordEncoder (Spring Security) potřebuje na classpath Bouncy Castle
-    implementation 'org.bouncycastle:bcprov-jdk18on:1.85.2'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.86'
 
     // Čtení EXIF orientace nahraných fotek (ImageProcessingService) — Apache-2.0. Vlastní
     // parser APP1 segmentu je klasické místo na chyby, tohle je pro to standardní knihovna.

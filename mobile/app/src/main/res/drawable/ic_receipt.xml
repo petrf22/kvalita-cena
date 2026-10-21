@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Účtenka se zoubkovaným spodním okrajem — položka „Účtenky" v Účtu a ikona notifikace
+         (ReceiptNotifications.kt; systém z ní bere jen průhlednost, barvu si dosadí sám). -->
+    <path
+        android:strokeColor="#FF000000"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round"
+        android:pathData="M6,3 L18,3 L18,21 L16,19.5 L14,21 L12,19.5 L10,21 L8,19.5 L6,21 Z" />
+    <path
+        android:strokeColor="#FF000000"
+        android:strokeWidth="1.6"
+        android:strokeLineCap="round"
+        android:pathData="M9,8 L15,8 M9,11.5 L15,11.5 M9,15 L13,15" />
+</vector>

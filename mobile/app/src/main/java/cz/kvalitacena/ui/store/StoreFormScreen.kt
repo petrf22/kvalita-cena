@@ -105,14 +105,29 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
     }
   }
 
+  // Lístek si obrazovka bere ještě PŘED zjišťováním polohy — čekání na GPS trvá a uživatel
+  // mezitím může stisknout "Zkusit dohledat znovu"; opožděná poloha by jinak novější hledání
+  // přebila (ViewModel.beginLocating). Nedostupná poloha se tu ignoruje potichu — bod si
+  // uživatel může dát klepnutím do mapy a adresu vyplnit ručně, takže hláška by jen překážela
+  // (ve výběru obchodu je to naopak, tam bez polohy není co nabídnout — StorePicker/NearbyState).
+  fun fetchLocation() {
+    val request = viewModel.beginLocating()
+    scope.launch {
+      val result = getCurrentLocation(context)
+      if (result !is LocationResult.Found) viewModel.cancelLocating(request)
+      else {
+        formDirty = true
+        viewModel.useMyLocation(result.lat, result.lon, request)
+      }
+    }
+  }
+
   // Obě oprávnění naráz — souřadnice PROVOZOVNY nastavené z přibližné polohy by byly
   // o kilometry vedle (location/LocationPermissions.kt).
   val locationPermissionLauncher = rememberLauncherForActivityResult(
     ActivityResultContracts.RequestMultiplePermissions(),
   ) { result ->
-    if (result.values.any { it }) {
-      scope.launch { useResolvedLocation(context, viewModel) { formDirty = true } }
-    }
+    if (result.values.any { it }) fetchLocation()
   }
 
   fun useMyLocation() {
@@ -120,7 +135,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       locationPermissionLauncher.launch(LOCATION_PERMISSIONS)
       return
     }
-    scope.launch { useResolvedLocation(context, viewModel) { formDirty = true } }
+    fetchLocation()
   }
 
   if (viewModel.loadingExisting) {
@@ -279,15 +294,12 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
-      viewModel.geocodeAttribution?.let {
-        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-      }
       Gap()
     }
     Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
       // Dohledání běží samo po vyplnění adresy — tohle je jen ruční zopakování, když tiše
       // selhalo (docs/design.md: chybový stav musí jít zopakovat).
-      OutlinedButton(onClick = { viewModel.geocode() }, enabled = viewModel.city.isNotBlank() && !viewModel.geocoding) {
+      OutlinedButton(onClick = { formDirty = true; viewModel.geocode() }, enabled = viewModel.city.isNotBlank() && !viewModel.geocoding) {
         if (viewModel.geocoding) CircularProgressIndicator(modifier = Modifier.size(20.dp))
         else Text(stringResource(R.string.store_location_search_again))
       }
@@ -315,9 +327,7 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
           onSelect = { formDirty = true; viewModel.selectCandidate(candidate) },
         )
       }
-      viewModel.geocodeAttribution?.let {
-        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-      }
+
       Gap()
     }
 
@@ -333,7 +343,12 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       Gap()
     }
 
+    viewModel.locationMessage?.let { Text(it.asString(), style = MaterialTheme.typography.bodySmall) }
+    viewModel.geocodeAttribution?.let {
+      Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
     LocationMap(
+      showRequested = viewModel.showMap,
       lat = viewModel.selectedCandidate?.lat ?: viewModel.manualLat,
       lon = viewModel.selectedCandidate?.lon ?: viewModel.manualLon,
       editable = true,
@@ -430,22 +445,5 @@ private fun CountryDropdown(selected: String, onSelect: (String) -> Unit) {
         )
       }
     }
-  }
-}
-
-/**
- * Nedostupná poloha se ve formuláři ignoruje potichu — bod si uživatel může dát klepnutím do
- * mapy a adresu vyplnit ručně, takže hláška by tu jen překážela. (Ve výběru obchodu je to
- * naopak, tam bez polohy není co nabídnout — viz StorePicker/NearbyState.)
- */
-private suspend fun useResolvedLocation(
-  context: android.content.Context,
-  viewModel: StoreFormViewModel,
-  onFound: () -> Unit,
-) {
-  val result = getCurrentLocation(context)
-  if (result is LocationResult.Found) {
-    onFound()
-    viewModel.useMyLocation(result.lat, result.lon)
   }
 }

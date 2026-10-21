@@ -6,21 +6,21 @@
 .app-footer {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 24px;
+  gap: var(--kc-space-2) var(--kc-space-5);
   max-width: 1080px;
   margin: 0 auto;
-  padding: 16px 24px;
-  border-top: 1px solid #f0f0f0;
-  font-size: 13px;
-  color: rgba(0, 0, 0, 0.45);
+  padding: var(--kc-space-4) var(--kc-space-5);
+  border-top: 1px solid var(--kc-border-split);
+  font-size: var(--kc-font-sm);
+  color: var(--kc-text-muted);
 }
 
 .app-footer a {
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--kc-text-muted);
 }
 
 .app-footer a:hover {
-  color: rgba(0, 0, 0, 0.88);
+  color: var(--kc-text);
 }
 
 .app-header {
@@ -28,19 +28,19 @@
   align-items: center;
   justify-content: space-between;
   background: #fff;
-  border-bottom: 1px solid #f0f0f0;
-  padding: 0 24px;
+  border-bottom: 1px solid var(--kc-border-split);
+  padding: 0 var(--kc-space-5);
 }
 
 .app-title {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 18px;
+  gap: var(--kc-space-2);
+  font-size: var(--kc-font-xl);
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.88);
+  color: var(--kc-text);
   flex-shrink: 0;
-  margin-right: 24px;
+  margin-right: var(--kc-space-5);
 }
 
 .app-title img {
@@ -55,9 +55,14 @@
 }
 
 /* Seznam hledání má víc sloupců než dřívější jednoduchý výpis — 720px bylo na tabulku úzké. */
+/* Počet účtenek s novinkou (receiptSummary.unseenCount) za popiskem položky. */
+.app-menu-badge {
+  margin-left: var(--kc-space-1);
+}
+
 .app-content {
   flex: 1;
-  padding: 24px;
+  padding: var(--kc-space-5);
   max-width: 1080px;
   margin: 0 auto;
   width: 100%;
@@ -84,22 +89,50 @@
     left: 0;
     right: 0;
     z-index: 10;
+    display: flex;
     justify-content: space-around;
     background: #fff;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--kc-border-split);
   }
 
-  .app-menu-label {
+  /*
+   * Pět položek (s Účtenkami pro přihlášené) se musí vejít do jednoho řádku i na 360 px —
+   * každá dostane stejný díl šířky a dlouhý popisek se zkrátí, místo aby se lišta zalomila.
+   * Bez vlastní výšky řádku by položka zdědila 64 px z hlavičky a s popiskem pod ikonou
+   * měřila 128 px.
+   */
+  .app-menu li {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    padding: var(--kc-space-2) var(--kc-space-1);
+    line-height: 1.4;
+    text-align: center;
+  }
+
+  .app-menu .app-menu-label {
     display: block;
+    margin-inline-start: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 11px;
   }
 
+  /* Ve spodní liště patří odznak k ikoně, jako u mobilní bottom navigation. */
+  .app-menu-badge {
+    position: absolute;
+    top: var(--kc-space-1);
+    left: 50%;
+    margin-left: var(--kc-space-2);
+  }
+
   .app-content {
-    padding: 16px;
+    padding: var(--kc-space-4);
   }
 
   .app-footer {
-    padding: 16px;
+    padding: var(--kc-space-4);
     padding-bottom: 72px; /* místo pro fixní spodní menu */
   }
 }

@@ -3,6 +3,8 @@ package cz.kvalitacena.service;
 import cz.kvalitacena.config.PrivacyProperties;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductAliasConfirmationRepository;
+import cz.kvalitacena.db.repo.ProductStoreLabelRepository;
+import cz.kvalitacena.db.repo.ReceiptLineRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -23,6 +25,8 @@ public class PseudonymizationService {
 
   private final PriceObservationRepository priceObservationRepository;
   private final ProductAliasConfirmationRepository aliasConfirmationRepository;
+  private final ProductStoreLabelRepository storeLabelRepository;
+  private final ReceiptLineRepository receiptLineRepository;
   private final PrivacyProperties privacyProperties;
 
   @Scheduled(cron = "@daily")
@@ -31,6 +35,12 @@ public class PseudonymizationService {
     OffsetDateTime cutoff = OffsetDateTime.now().minusDays(privacyProperties.getPseudonymizationDays());
     int affected = priceObservationRepository.pseudonymizeObservationsBefore(cutoff);
     int aliasConfirmations = aliasConfirmationRepository.pseudonymizeBefore(cutoff);
+    // Potvrzení „názvů na účtenkách" stejně jako u aliasu (docs/soukromi.md, „Účtenky").
+    int labelConfirmations = storeLabelRepository.pseudonymizeConfirmationsBefore(cutoff);
+    // Cena z účtenky: účtenka drží vlastníka po celý život účtu (třetí výjimka), takže obě
+    // půlky vazby řádek ↔ observace musí zmizet, jinak by šel autor dohledat přes účtenku.
+    int receiptLinks = receiptLineRepository.pseudonymizeObservationLinksBefore(cutoff)
+        + priceObservationRepository.pseudonymizeReceiptLinksBefore(cutoff);
     if (affected > 0) {
       log.info("Pseudonymizace: zrušena vazba na uživatele u {} observací starších {} dní.",
           affected, privacyProperties.getPseudonymizationDays());
@@ -38,6 +48,13 @@ public class PseudonymizationService {
     if (aliasConfirmations > 0) {
       log.info("Pseudonymizace: zrušena vazba na uživatele u {} potvrzení názvových aliasů.",
           aliasConfirmations);
+    }
+    if (labelConfirmations > 0) {
+      log.info("Pseudonymizace: zrušena vazba na uživatele u {} potvrzení názvů z účtenek.",
+          labelConfirmations);
+    }
+    if (receiptLinks > 0) {
+      log.info("Pseudonymizace: zrušeno {} vazeb mezi cenami a řádky účtenek.", receiptLinks);
     }
   }
 }

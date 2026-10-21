@@ -54,6 +54,17 @@ public class PriceObservationService {
   @Transactional
   public List<PriceObservation> submit(SubmitObservationsInput input, UUID authenticatedPublicUid,
       ObservationSource source) {
+    return submit(input, authenticatedPublicUid, source, EvidenceKind.NONE, null);
+  }
+
+  /**
+   * Varianta s důkazem ceny — volá ji VÝHRADNĚ server ({@code ReceiptReviewService} u řádku
+   * zpracované účtenky), nikdy GraphQL input: druh důkazu je budoucí násobič váhy a klient by
+   * si ho jinak mohl sám zvednout (docs/rozvoj.md, „Zdroj ceny").
+   */
+  @Transactional
+  public List<PriceObservation> submit(SubmitObservationsInput input, UUID authenticatedPublicUid,
+      ObservationSource source, EvidenceKind evidenceKind, Long receiptLineId) {
     List<ObservationPriceInput> prices = input.prices();
     if (prices == null || prices.isEmpty()) {
       throw new ValidationException(ErrorCode.OBSERVATION_PRICES_REQUIRED);
@@ -142,6 +153,8 @@ public class PriceObservationService {
           .submitter(submitter)
           .submitterKind(submitter != null ? SubmitterKind.REGISTERED : SubmitterKind.ANONYMOUS)
           .source(source)
+          .evidenceKind(evidenceKind)
+          .receiptLineId(receiptLineId)
           .build());
     }
 

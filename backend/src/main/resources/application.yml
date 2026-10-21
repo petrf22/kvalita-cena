@@ -35,9 +35,14 @@ spring:
     multipart:
       # V souladu s app.media.max-upload-bytes níž — nahrávaný soubor navíc kontroluje
       # ImageProcessingService (magic bytes, rozměry), tohle je jen hrubá pojistka na úrovni
-      # kontejneru (MediaController, jediný multipart endpoint v appce).
+      # kontejneru (MediaController a ReceiptController). Request je větší než soubor kvůli
+      # účtence — až app.receipt.max-images-per-receipt výřezů v jednom uploadu; každý výřez
+      # zvlášť hlídá app.receipt.max-image-bytes. max-request-size je ale SKUTEČNÝ strop celé
+      # účtenky: 30 × 4 MB by bylo 120 MB, což nechceme pouštět přes proxy ani do paměti
+      # (díly mají šířku max-width 1600 px, reálně stovky kB). Překročení vrací 413
+      # s RECEIPT_UPLOAD_TOO_LARGE (GlobalExceptionHandler).
       max-file-size: 8MB
-      max-request-size: 8MB
+      max-request-size: 40MB
 
   graphql:
     graphiql:
@@ -203,6 +208,23 @@ app:
     max-uploads-per-day: 30
     # Atribuce se od 2026-08-09 nečte odsud, ale z messages/attribution*.properties
     # (lokalizovaná, docs/lokalizace.md) — viz Messages, MediaService.toPhoto.
+  receipt:
+    # Účtenky — význam a zdůvodnění hodnot: docs/ai.md, „Účtenky" (ReceiptProperties).
+    consent-version: 1
+    max-images-per-receipt: 30
+    max-receipts-per-day: 10
+    max-image-bytes: 4194304
+    max-width: 1600
+    image-retention-days: 30
+    archive-grace-days: 14
+    stale-image-days: 90
+    lease-minutes: 15
+    max-attempts: 3
+    max-lease-batch: 10
+    label-confirmations: 1
+    rematch-max-age-days: 180
+    max-lines: 300
+    label-similarity: 0.35
   external:
     open-food-facts:
       enabled: true

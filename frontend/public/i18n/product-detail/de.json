@@ -56,5 +56,10 @@
     "en": "auf Englisch",
     "pl": "auf Polnisch",
     "de": "auf Deutsch"
+  },
+  "receiptLabels": {
+    "title": "Namen auf Kassenbons",
+    "hint": "So drucken Geschäfte das Produkt auf den Kassenbon — danach werden eingelesene Kassenbons automatisch zugeordnet.",
+    "unknownScope": "unbekanntes Geschäft"
   }
 }

@@ -82,6 +82,12 @@ class AccountServiceTest {
   @Mock
   private OtpMailSender mailSender;
 
+  @Mock
+  private cz.kvalitacena.db.repo.ReceiptRepository receiptRepository;
+  @Mock
+  private cz.kvalitacena.db.repo.ReceiptLineRepository receiptLineRepository;
+  @Mock
+  private ReceiptService receiptService;
   private OtpProperties properties;
   private AccountService service;
   private AppUser currentUser;
@@ -96,7 +102,8 @@ class AccountServiceTest {
 
     service = new AccountService(appUserRepository, userProfileRepository, priceObservationRepository,
         reviewRepository, productUserEditRepository, storeUserEditRepository, productRepository,
-        storeRepository, mediaRepository, mediaStorage, challengeRepository, emailCipher, codeEncoder,
+        storeRepository, mediaRepository, mediaStorage, receiptRepository, receiptLineRepository, receiptService,
+        challengeRepository, emailCipher, codeEncoder,
         rateLimiter, properties, mailSender);
     currentUser = AppUser.builder().id(USER_ID).emailHash(EMAIL_HASH).publicHandle("blue-stork-1").build();
 

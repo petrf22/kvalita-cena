@@ -32,7 +32,11 @@ import type {
   ProductReviewFieldsFragment,
   ProductReviewsQuery,
   ProductSummaryFieldsFragment,
+  ConfirmReceiptLinesMutation,
   PublicationStatusFieldsFragment,
+  ReceiptDetailFieldsFragment,
+  ReceiptLineFieldsFragment,
+  ReceiptListFieldsFragment,
   ReverseGeocodeQuery,
   SearchFacetsQuery,
   SearchItemFieldsFragment,
@@ -58,6 +62,11 @@ export {
   ProductStatus,
   PublicationState,
   QuantityBasis,
+  QuantityUnit,
+  ReceiptLineStatus,
+  ReceiptMatchSource,
+  ReceiptProcessingStatus,
+  ReceiptReviewStatus,
   RecordType,
   UnitBase,
 } from './generated/enums';
@@ -169,3 +178,16 @@ export type ModerationObservationItem =
 
 /** Jedno hlášení ve frontě zpětné vazby (core.feedback, jen moderátor) — docs/nasazeni.md. */
 export type FeedbackItem = FeedbackItemsQuery['feedbackItems']['items'][number];
+
+/**
+ * Účtenky (docs/datovy-model.md, „Účtenky") — soukromé, vidí je jen vlastník. Řádek seznamu
+ * je lehčí (bez řádků a obrázků), detail nese řádky k párování i cesty k obrázkům.
+ */
+export type ReceiptListItem = ReceiptListFieldsFragment;
+export type ReceiptDetail = ReceiptDetailFieldsFragment;
+export type ReceiptLine = ReceiptLineFieldsFragment;
+export type ReceiptLineCounts = ReceiptListFieldsFragment['lineCounts'];
+export type ConfirmReceiptLinesResult = ConfirmReceiptLinesMutation['confirmReceiptLines'];
+
+/** Označení zboží na účtenkách jednoho řetězce/obchodu (Product.storeLabels). */
+export type ProductStoreLabel = ProductDetailFieldsFragment['storeLabels'][number];

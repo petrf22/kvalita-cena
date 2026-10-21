@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './func/auth-guard';
 
 /**
  * Anglické, jazykově neutrální segmenty (docs/lokalizace.md) — lokalizované cesty per jazyk
@@ -48,13 +49,24 @@ export const routes: Routes = [
       ),
   },
   {
+    // Účtenky vidí jen vlastník (docs/soukromi.md, „Účtenky") — bez přihlášení na login a zpět.
+    path: 'receipts',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/receipts/receipts-page').then((m) => m.ReceiptsPage),
+  },
+  {
+    path: 'receipts/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/receipts/receipt-detail-page').then((m) => m.ReceiptDetailPage),
+  },
+  {
     path: 'about',
     loadComponent: () => import('./features/about/about-page').then((m) => m.AboutPage),
   },
   {
     path: 'changelog',
-    loadComponent: () =>
-      import('./features/changelog/changelog-page').then((m) => m.ChangelogPage),
+    loadComponent: () => import('./features/changelog/changelog-page').then((m) => m.ChangelogPage),
   },
   {
     path: 'feedback',
@@ -87,5 +99,6 @@ export const routes: Routes = [
   { path: 'zasady-ochrany-osobnich-udaju', redirectTo: 'privacy' },
   { path: 'moderace', redirectTo: 'moderation' },
   { path: 'zpetna-vazba', redirectTo: 'feedback' },
+  { path: 'uctenky', redirectTo: 'receipts' },
   { path: '**', redirectTo: '' },
 ];

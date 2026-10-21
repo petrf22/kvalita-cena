@@ -5,6 +5,8 @@ Uživatelé naskenují mobilem čárový kód, zapíšou cenu a obchod; web ukaz
 v čase a průměry napříč obchody. Vedle řetězců se zobrazují i lokální dodavatelé — nejde jen
 o cenu, ale i o kvalitu a lokálnost.
 
+Aplikace pro Android ke stažení: **[petrf22.cz](https://petrf22.cz/)** (odkaz do Google Play a QR kód).
+
 Cíl: dát lidem přehled o cenách, aniž by je aplikace sama sledovala. Pozice a nákupní zvyklosti
 uživatelů se neukládají — ukládá se jen to, co je nutné pro fungování komunity (viz
 [`docs/soukromi.md`](docs/soukromi.md)).

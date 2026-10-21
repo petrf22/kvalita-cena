@@ -22,6 +22,8 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
@@ -43,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -65,6 +68,7 @@ import cz.kvalitacena.ui.common.rememberMoneyFormatter
 import cz.kvalitacena.ui.common.rememberNetContentLabeler
 import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
 import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
+import cz.kvalitacena.ui.theme.Spacing
 
 /**
  * Založení zboží — nejdřív nabídne podobné existující položky (i bezkódové druhové, viz
@@ -87,6 +91,9 @@ fun ProductFormScreen(
   onDone: () -> Unit,
   onAddStore: () -> Unit = {},
   onCreated: (productId: String) -> Unit = { onDone() },
+  onScanCode: () -> Unit = {},
+  initialName: String? = null,
+  initialStoreId: String? = null,
 ) {
   val viewModel: ProductFormViewModel = viewModel(
     factory = viewModelFactory {
@@ -97,6 +104,8 @@ fun ProductFormScreen(
           AppContainer.countryStore,
           AppContainer.lastStoreStore,
           productId,
+          initialName,
+          initialStoreId,
         )
       }
     },
@@ -113,6 +122,7 @@ fun ProductFormScreen(
         onDone()
       } else {
         NavigationResults.newProduct = it
+        NavigationResults.newProductCreated = !viewModel.usingExisting
         NavigationResults.productAlias = if (viewModel.usingExisting) viewModel.matchedAlias else null
         onCreated(it.id)
       }
@@ -127,6 +137,11 @@ fun ProductFormScreen(
       viewModel.onNewStoreCreated(it)
       NavigationResults.newStore = null
     }
+    NavigationResults.scannedCode?.let {
+      formDirty = true
+      viewModel.onCodeScanned(it)
+      NavigationResults.scannedCode = null
+    }
   }
 
   if (viewModel.loadingExisting) {
@@ -134,7 +149,7 @@ fun ProductFormScreen(
     return
   }
 
-  Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+  Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.lg)) {
     Text(
       stringResource(if (viewModel.isEditing) R.string.product_form_edit_title else R.string.product_form_title),
       style = MaterialTheme.typography.headlineSmall,
@@ -166,11 +181,11 @@ fun ProductFormScreen(
     viewModel.offCandidate?.let { candidate ->
       OutlinedButton(
         onClick = { openUrl(context, candidate.sourceUrl) },
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs),
       ) {
         Row(
           verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
           modifier = Modifier.fillMaxWidth(),
         ) {
           candidate.image?.let { image ->
@@ -226,7 +241,7 @@ fun ProductFormScreen(
       viewModel.suggestions.forEach { summary ->
         OutlinedButton(
           onClick = { viewModel.useExisting(summary) },
-          modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+          modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs),
         ) {
           Text(summaryLabel(summary), style = MaterialTheme.typography.bodyMedium)
         }
@@ -362,7 +377,7 @@ fun ProductFormScreen(
             onValueChange = { input -> if (input.matches(Regex("^\\d*[.,]?\\d*$"))) { formDirty = true; viewModel.netContentValue = input } },
             label = stringResource(R.string.product_form_net_content_label),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.padding(start = 8.dp).weight(1f),
+            modifier = Modifier.padding(start = Spacing.sm).weight(1f),
           )
         }
       }
@@ -394,6 +409,20 @@ fun ProductFormScreen(
       label = stringResource(R.string.product_form_code_label),
       readOnly = viewModel.isEditing,
       keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+      // Opisovat 13 číslic z obalu je zdroj překlepů — prázdné pole nabídne sken fotoaparátem
+      // (ScanScreen v režimu „vrátit kód", ROUTE_SCAN_CODE).
+      trailingIcon = if (!viewModel.isEditing && viewModel.code.isBlank()) {
+        {
+          IconButton(onClick = onScanCode) {
+            Icon(
+              painter = painterResource(R.drawable.ic_tab_scan),
+              contentDescription = stringResource(R.string.product_form_scan_code),
+            )
+          }
+        }
+      } else {
+        null
+      },
       modifier = Modifier.fillMaxWidth(),
     )
     Text(
@@ -481,7 +510,7 @@ fun ProductFormScreen(
 
 @Composable
 private fun Gap() {
-  androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+  androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(Spacing.md))
 }
 
 /** Jedno pole názvu v dalším jazyce — stejné pro jazyk země i pro jazyky za „Další jazyky". */

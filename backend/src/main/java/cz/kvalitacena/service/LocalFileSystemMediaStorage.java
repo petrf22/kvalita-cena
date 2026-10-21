@@ -32,7 +32,9 @@ public class LocalFileSystemMediaStorage implements MediaStorage {
   // storageKey vzniká VÝHRADNĚ v store() níže — regex je pojistka proti path traversal,
   // kdyby se klíč z DB (nebo omylem z requestu) dostal do load()/delete() nedůvěryhodně.
   private static final Pattern KEY_PATTERN =
-      Pattern.compile("\\d{4}/\\d{2}/[0-9a-f-]{36}\\.jpg");
+      Pattern.compile("(receipts/)?\\d{4}/\\d{2}/[0-9a-f-]{36}\\.jpg");
+
+  private static final String RECEIPT_PREFIX = "receipts/";
 
   private static final DateTimeFormatter DIR_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM");
 
@@ -50,6 +52,19 @@ public class LocalFileSystemMediaStorage implements MediaStorage {
       return storageKey;
     } catch (IOException e) {
       throw new UncheckedIOException("Uložení fotky selhalo", e);
+    }
+  }
+
+  @Override
+  public String storeReceiptImage(byte[] content) {
+    String storageKey = RECEIPT_PREFIX + OffsetDateTime.now().format(DIR_FORMAT) + "/" + UUID.randomUUID() + ".jpg";
+    try {
+      Path path = resolveValidated(storageKey);
+      Files.createDirectories(path.getParent());
+      writeAtomic(path, content);
+      return storageKey;
+    } catch (IOException e) {
+      throw new UncheckedIOException("Uložení obrázku účtenky selhalo", e);
     }
   }
 

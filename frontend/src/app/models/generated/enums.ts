@@ -42,6 +42,18 @@ export const Confidence = {
 
 export type Confidence = typeof Confidence[keyof typeof Confidence];
 /**
+ * Původ dat záznamu kvůli ODbL (docs/datovy-model.md) — co není OWN, vypadává z „čistého"
+ * exportu vlastních dat. Každá tabulka používá jen svou dvojici: zboží OWN/OFF_DERIVED,
+ * provozovna OWN/OSM_DERIVED.
+ */
+export const DataOrigin = {
+  OffDerived: 'OFF_DERIVED',
+  OsmDerived: 'OSM_DERIVED',
+  Own: 'OWN'
+} as const;
+
+export type DataOrigin = typeof DataOrigin[keyof typeof DataOrigin];
+/**
  * Strojově čitelný kód chyby (docs/lokalizace.md) — jde jen do GraphQL extensions.code, NIKDY
  * do žádného pole typu. Existuje ve schématu čistě proto, aby ho graphql-codegen vygeneroval
  * jako TS konstanty (frontend/codegen.ts, onlyEnums) — frontend nad ním postaví Record<ErrorCode,
@@ -128,6 +140,23 @@ export const ErrorCode = {
   ProfileRequiresLogin: 'PROFILE_REQUIRES_LOGIN',
   QualityRequiresLogin: 'QUALITY_REQUIRES_LOGIN',
   QualityStarsOutOfRange: 'QUALITY_STARS_OUT_OF_RANGE',
+  ReceiptConsentRequired: 'RECEIPT_CONSENT_REQUIRED',
+  ReceiptDailyLimit: 'RECEIPT_DAILY_LIMIT',
+  ReceiptImagesRequired: 'RECEIPT_IMAGES_REQUIRED',
+  ReceiptLineAlreadyConfirmed: 'RECEIPT_LINE_ALREADY_CONFIRMED',
+  ReceiptLineConfirmFailed: 'RECEIPT_LINE_CONFIRM_FAILED',
+  ReceiptLineNotFound: 'RECEIPT_LINE_NOT_FOUND',
+  ReceiptLineNotMatched: 'RECEIPT_LINE_NOT_MATCHED',
+  ReceiptLinePriceMissing: 'RECEIPT_LINE_PRICE_MISSING',
+  ReceiptNotFound: 'RECEIPT_NOT_FOUND',
+  ReceiptNotProcessed: 'RECEIPT_NOT_PROCESSED',
+  ReceiptPurchaseTimeInFuture: 'RECEIPT_PURCHASE_TIME_IN_FUTURE',
+  ReceiptPurchaseTimeRequired: 'RECEIPT_PURCHASE_TIME_REQUIRED',
+  ReceiptRequiresLogin: 'RECEIPT_REQUIRES_LOGIN',
+  ReceiptResultInvalid: 'RECEIPT_RESULT_INVALID',
+  ReceiptStoreRequired: 'RECEIPT_STORE_REQUIRED',
+  ReceiptTooManyImages: 'RECEIPT_TOO_MANY_IMAGES',
+  ReceiptUploadTooLarge: 'RECEIPT_UPLOAD_TOO_LARGE',
   ReviewRequiresLogin: 'REVIEW_REQUIRES_LOGIN',
   ReviewRequiresRating: 'REVIEW_REQUIRES_RATING',
   ReviewTextEmpty: 'REVIEW_TEXT_EMPTY',
@@ -199,6 +228,15 @@ export const ObservationStatus = {
 } as const;
 
 export type ObservationStatus = typeof ObservationStatus[keyof typeof ObservationStatus];
+/** Proč je nabídka z OpenStreetMap prázdná. */
+export const OsmLookupStatus = {
+  /** Dotaz proběhl. Prázdné candidates znamenají, že v okolí opravdu nic není. */
+  Ok: 'OK',
+  /** Overpass je nedostupný, pomalý, nebo vypnutý konfigurací — o okolí nevíme nic. */
+  Unavailable: 'UNAVAILABLE'
+} as const;
+
+export type OsmLookupStatus = typeof OsmLookupStatus[keyof typeof OsmLookupStatus];
 /**
  * Druh fotky (core.media.photo_kind) — nezávislá osa od RecordType (ten říká čí je fotka, tohle
  * co na ní je). ITEM, ne PRODUCT — RecordType.PRODUCT už znamená totéž na jiné ose. Posílá se při
@@ -306,6 +344,52 @@ export const QuantityBasis = {
 } as const;
 
 export type QuantityBasis = typeof QuantityBasis[keyof typeof QuantityBasis];
+export const QuantityUnit = {
+  Kg: 'KG',
+  L: 'L',
+  Pcs: 'PCS'
+} as const;
+
+export type QuantityUnit = typeof QuantityUnit[keyof typeof QuantityUnit];
+export const ReceiptLineStatus = {
+  Ignored: 'IGNORED',
+  /** Potvrzeno uživatelem (observationId je vyplněné, pokud cena nebyla přeskočena). */
+  Matched: 'MATCHED',
+  /** Zboží našel server přes kód nebo známé označení — předem zaškrtnuté, cena ještě nezapsaná. */
+  Suggested: 'SUGGESTED',
+  Unmatched: 'UNMATCHED'
+} as const;
+
+export type ReceiptLineStatus = typeof ReceiptLineStatus[keyof typeof ReceiptLineStatus];
+export const ReceiptMatchSource = {
+  Code: 'CODE',
+  Label: 'LABEL',
+  NewProduct: 'NEW_PRODUCT',
+  User: 'USER'
+} as const;
+
+export type ReceiptMatchSource = typeof ReceiptMatchSource[keyof typeof ReceiptMatchSource];
+/** Stav strojového zpracování účtenky (worker, docs/ai.md). */
+export const ReceiptProcessingStatus = {
+  Failed: 'FAILED',
+  /** Obrázek účtenka není. */
+  NotAReceipt: 'NOT_A_RECEIPT',
+  Processed: 'PROCESSED',
+  Processing: 'PROCESSING',
+  Queued: 'QUEUED',
+  /** Účtenka, ale nečitelná — nafotit znovu. */
+  Unreadable: 'UNREADABLE'
+} as const;
+
+export type ReceiptProcessingStatus = typeof ReceiptProcessingStatus[keyof typeof ReceiptProcessingStatus];
+/** Kam došel uživatel s párováním. */
+export const ReceiptReviewStatus = {
+  Done: 'DONE',
+  InProgress: 'IN_PROGRESS',
+  Pending: 'PENDING'
+} as const;
+
+export type ReceiptReviewStatus = typeof ReceiptReviewStatus[keyof typeof ReceiptReviewStatus];
 export const RecordType = {
   /** Nahlašovaný typ pro flagRecord — core.media samo nese jen PRODUCT/STORE (čí je fotka). */
   Photo: 'PHOTO',
