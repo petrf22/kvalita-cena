@@ -64,7 +64,8 @@
     "findCoordinates": "Znajdź współrzędne",
     "useMyLocation": "Użyj mojej lokalizacji",
     "willUseMapPosition": "Zostanie użyta pozycja z mapy poniżej / twoja aktualna lokalizacja.",
-    "notFound": "Nie udało się znaleźć adresu. Sprawdź połączenie lub wpisz go ręcznie; lokalizację możesz wybrać na mapie."
+    "notFound": "Nie udało się znaleźć adresu. Sprawdź połączenie lub wpisz go ręcznie; lokalizację możesz wybrać na mapie.",
+    "unavailable": "Adresu nie można teraz wyszukać — usługa OpenStreetMap jest niedostępna. Wpisany adres pozostał bez zmian, sprawdź go."
   },
   "detail": {
     "backToSearch": "Powrót do wyszukiwania",

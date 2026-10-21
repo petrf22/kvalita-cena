@@ -181,6 +181,13 @@ export type ObservationStatus =
   | 'PENDING'
   | 'REJECTED';
 
+/** Proč je nabídka z OpenStreetMap prázdná. */
+export type OsmLookupStatus =
+  /** Dotaz proběhl. Prázdné candidates znamenají, že v okolí opravdu nic není. */
+  | 'OK'
+  /** Služba OpenStreetMap (Overpass/Nominatim) je nedostupná, pomalá, nebo vypnutá konfigurací — nevíme nic. */
+  | 'UNAVAILABLE';
+
 /**
  * Druh fotky (core.media.photo_kind) — nezávislá osa od RecordType (ten říká čí je fotka, tohle
  * co na ní je). ITEM, ne PRODUCT — RecordType.PRODUCT už znamená totéž na jiné ose. Posílá se při
@@ -919,7 +926,7 @@ export type ReverseGeocodeQueryVariables = Exact<{
 }>;
 
 
-export type ReverseGeocodeQuery = { reverseGeocode: { street: string | null, city: string | null, postalCode: string | null, country: string | null, osmRef: string | null, attribution: string } };
+export type ReverseGeocodeQuery = { reverseGeocode: { status: OsmLookupStatus, street: string | null, city: string | null, postalCode: string | null, country: string | null, osmRef: string | null, attribution: string } };
 
 export type ChainsQueryVariables = Exact<{
   query?: string | null | undefined;
@@ -4914,6 +4921,7 @@ export const GeocodeAddressDocument = new TypedDocumentString(`
 export const ReverseGeocodeDocument = new TypedDocumentString(`
     query ReverseGeocode($lat: Float!, $lon: Float!) {
   reverseGeocode(lat: $lat, lon: $lon) {
+    status
     street
     city
     postalCode

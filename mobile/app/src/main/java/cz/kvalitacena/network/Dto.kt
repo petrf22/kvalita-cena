@@ -563,6 +563,9 @@ data class OsmStoreCandidateResult(
 /** Opačný směr — souřadnice na adresu, pro tlačítko "Použít mou polohu" při editaci obchodu. */
 @Serializable
 data class ReverseGeocodeResult(
+  // "OK" = Nominatim odpověděl (prázdná pole znamenají, že tu adresu nezná), "UNAVAILABLE" =
+  // výpadek — formulář pak pole NESMÍ přepsat prázdnem (StoreFormViewModel.fillAddress).
+  val status: String = "OK",
   val street: String? = null,
   val city: String? = null,
   val postalCode: String? = null,

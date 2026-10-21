@@ -234,7 +234,7 @@ export type ObservationStatus = typeof ObservationStatus[keyof typeof Observatio
 export const OsmLookupStatus = {
   /** Dotaz proběhl. Prázdné candidates znamenají, že v okolí opravdu nic není. */
   Ok: 'OK',
-  /** Overpass je nedostupný, pomalý, nebo vypnutý konfigurací — o okolí nevíme nic. */
+  /** Služba OpenStreetMap (Overpass/Nominatim) je nedostupná, pomalá, nebo vypnutá konfigurací — nevíme nic. */
   Unavailable: 'UNAVAILABLE'
 } as const;
 

@@ -610,6 +610,7 @@
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
     <string name="store_picker_clear">Vymazat obchod</string>
     <string name="store_location_not_found">Adresu se nepodařilo dohledat. Zkontroluj připojení nebo ji doplň ručně; polohu lze vybrat na mapě.</string>
+    <string name="store_location_unavailable">Adresu teď nejde dohledat — služba OpenStreetMap je nedostupná. Vyplněnou adresu jsme nechali beze změny, zkontroluj ji.</string>
     <!-- Účtenky — společné (docs/soukromi.md, „Účtenky") -->
     <string name="common_close">Zavřít</string>
     <string name="common_ok">OK</string>

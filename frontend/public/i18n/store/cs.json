@@ -64,7 +64,8 @@
     "findCoordinates": "Najít souřadnice",
     "useMyLocation": "Použít mou polohu",
     "willUseMapPosition": "Použije se poloha z mapy níž / tvoje aktuální poloha.",
-    "notFound": "Adresu se nepodařilo dohledat. Zkontroluj připojení nebo ji doplň ručně; polohu lze vybrat na mapě."
+    "notFound": "Adresu se nepodařilo dohledat. Zkontroluj připojení nebo ji doplň ručně; polohu lze vybrat na mapě.",
+    "unavailable": "Adresu teď nejde dohledat — služba OpenStreetMap je nedostupná. Vyplněnou adresu jsme nechali beze změny, zkontroluj ji."
   },
   "detail": {
     "backToSearch": "Zpět na hledání",

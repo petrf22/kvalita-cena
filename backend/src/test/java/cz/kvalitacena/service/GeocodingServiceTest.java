@@ -1,6 +1,7 @@
 package cz.kvalitacena.service;
 
 import cz.kvalitacena.config.NominatimProperties;
+import cz.kvalitacena.controller.OsmLookupStatus;
 import cz.kvalitacena.controller.ReverseGeocodeResult;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +29,9 @@ class GeocodingServiceTest {
 
     ReverseGeocodeResult result = service.reverseGeocode(50.08, 14.42);
 
+    // Výpadek se NESMÍ tvářit jako "tady žádná adresa není" — klient by jinak klepnutím do
+    // mapy smazal vyplněnou adresu prázdnem.
+    assertThat(result.status()).isEqualTo(OsmLookupStatus.UNAVAILABLE);
     assertThat(result.street()).isNull();
     assertThat(result.city()).isNull();
     assertThat(result.postalCode()).isNull();

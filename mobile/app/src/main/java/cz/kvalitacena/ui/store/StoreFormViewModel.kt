@@ -462,6 +462,13 @@ class StoreFormViewModel(
       try {
         val result = graphQlClient.reverseGeocode(lat, lon)
         if (request != locationRequest) return@launch
+        // Výpadek Nominatimu není "tady žádná adresa není" — pole zůstanou, jak jsou, jinak by
+        // klepnutí do mapy smazalo adresu vyplněnou ručně nebo převzatou z OpenStreetMap.
+        if (result.status != "OK") {
+          geocodeAttribution = result.attribution
+          locationMessage = UiText.Res(R.string.store_location_unavailable)
+          return@launch
+        }
         // Pole, které uživatel mezitím přepsal, zůstává jeho. Při replace (klik do mapy =
         // celá adresa nového bodu) se chybějící část MAŽE — jinak by po ulici zbyl kus
         // předchozí adresy a vznikla by smíchaná, ale zdánlivě platná adresa.

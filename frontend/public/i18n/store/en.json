@@ -64,7 +64,8 @@
     "findCoordinates": "Find coordinates",
     "useMyLocation": "Use my location",
     "willUseMapPosition": "The position from the map below / your current location will be used.",
-    "notFound": "The address could not be found. Check your connection or enter it manually; you can select the location on the map."
+    "notFound": "The address could not be found. Check your connection or enter it manually; you can select the location on the map.",
+    "unavailable": "The address can't be looked up right now — the OpenStreetMap service is unavailable. The address you filled in was left unchanged; please check it."
   },
   "detail": {
     "backToSearch": "Back to search",

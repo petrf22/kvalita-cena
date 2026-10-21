@@ -525,6 +525,7 @@
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
     <string name="store_picker_clear">Vymazať obchod</string>
     <string name="store_location_not_found">Adresu sa nepodarilo nájsť. Skontroluj pripojenie alebo ju doplň ručne; polohu možno vybrať na mape.</string>
+    <string name="store_location_unavailable">Adresu teraz nemožno dohľadať — služba OpenStreetMap je nedostupná. Vyplnenú adresu sme nechali bez zmeny, skontroluj ju.</string>
     <!-- Účtenky — společné (docs/soukromi.md, „Účtenky") -->
     <string name="common_close">Zavrieť</string>
     <string name="common_ok">OK</string>

@@ -592,7 +592,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     val query = """
       query(${'$'}lat: Float!, ${'$'}lon: Float!) {
         reverseGeocode(lat: ${'$'}lat, lon: ${'$'}lon) {
-          street city postalCode country osmRef attribution
+          status street city postalCode country osmRef attribution
         }
       }
     """
