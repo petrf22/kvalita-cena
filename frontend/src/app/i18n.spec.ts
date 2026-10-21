@@ -11,6 +11,11 @@ import {
   PRICE_KIND_KEYS,
   PRODUCT_SORT_KEYS,
   QUANTITY_BASIS_KEYS,
+  QUANTITY_UNIT_KEYS,
+  RECEIPT_LINE_STATUS_KEYS,
+  RECEIPT_MATCH_SOURCE_KEYS,
+  RECEIPT_PROCESSING_STATUS_KEYS,
+  RECEIPT_REVIEW_STATUS_KEYS,
   RECORD_TYPE_KEYS,
 } from './shared/enum-labels';
 
@@ -111,6 +116,11 @@ describe('enum-labels.ts keys exist in every language bundle', () => {
     GEO_SOURCE_KEYS,
     RECORD_TYPE_KEYS,
     ERROR_CODE_KEYS,
+    RECEIPT_PROCESSING_STATUS_KEYS,
+    RECEIPT_REVIEW_STATUS_KEYS,
+    RECEIPT_LINE_STATUS_KEYS,
+    RECEIPT_MATCH_SOURCE_KEYS,
+    QUANTITY_UNIT_KEYS,
   };
 
   for (const [recordName, record] of Object.entries(allKeyRecords)) {

@@ -1,0 +1,182 @@
+{
+  "title": "Bločky",
+  "intro": "Odfoť bloček z nákupu a ceny z neho zapíšeš pár kliknutiami namiesto odpisovania. Bloček vidíš len ty.",
+  "uploadButton": "Nahrať bloček",
+  "loading": "Načítavam bločky…",
+  "retry": "Skúsiť znova",
+  "loadFailed": "Bločky sa nepodarilo načítať.",
+  "detailLoadFailed": "Bloček sa nepodarilo načítať.",
+  "offlineTitle": "Si offline",
+  "offlineListText": "Bločky sa načítajú samy, hneď ako sa pripojíš.",
+  "offlineDetailText": "Bloček sa načíta sám, hneď ako sa pripojíš.",
+  "offlineStale": "Si offline — zoznam môže byť zastaraný. Po pripojení sa obnoví sám.",
+  "offlineEditText": "Zmeny teraz nejde uložiť. Po pripojení môžeš v párovaní pokračovať, nič sa nestratí.",
+  "offlineAction": "Nie si pripojený/á k internetu — akcia sa neuložila. Skús to po pripojení znova.",
+  "emptyTitle": "Zatiaľ tu nemáš žiadny bloček",
+  "emptyText": "Nahraj fotku bločku z nákupu. Appka z neho prečíta obchod, dátum a položky a ty len potvrdíš, ktoré ceny zapísať.",
+  "uploadedTitle": "Bloček je odoslaný",
+  "uploadedText": "Čaká vo fronte na spracovanie na počítači prevádzkovateľa, môže to chvíľu trvať. Keď bude hotový, nájdeš ho tu na párovanie a v menu sa pri Bločkoch objaví odznak.",
+  "unknownStore": "Neznámy obchod",
+  "newBadge": "Nové",
+  "uploadedAt": "Nahrané {{date}}",
+  "lineCountTotal": "{count, plural, one {# položka} few {# položky} other {# položiek}}",
+  "lineCountOpen": "{count, plural, one {# nespárovaná} few {# nespárované} other {# nespárovaných}}",
+  "lineCountReady": "{count, plural, one {# pripravená na potvrdenie} few {# pripravené na potvrdenie} other {# pripravených na potvrdenie}}",
+  "lineCountMatched": "{count, plural, one {# spárovaná} few {# spárované} other {# spárovaných}}",
+  "lineCountRecorded": "{count, plural, one {# cena zapísaná} few {# ceny zapísané} other {# cien zapísaných}}",
+  "deleteConfirm": "Zmazať bloček aj s obrázkami? Ceny, ktoré z neho už máš zapísané, zostanú.",
+  "deleteLabel": "Zmazať bloček",
+  "deleteButton": "Zmazať bloček",
+  "deleteHint": "Zmaže obrázky aj text bločku. Ceny, ktoré si z neho už potvrdil/a, zostávajú ako bežné cenové záznamy.",
+  "backToList": "Späť na bločky",
+  "notFoundTitle": "Bloček tu nie je",
+  "notFoundText": "Možno si ho zmazal/a alebo patrí inému účtu — bloček vidí vždy len jeho vlastník.",
+  "externalImageNote": "Niektoré miniatúry tovaru pochádzajú z Open Food Facts (zdroj nájdeš pri prejdení myšou).",
+  "mask": {
+    "imageAlt": "Náhľad fotky {{name}}",
+    "maskLabel": "Zakrytie {{index}} — šípkami ho posunieš, klávesom Delete zmažeš",
+    "removeOne": "Odobrať zakrytie",
+    "drawModeOff": "Kresliť zakrytie",
+    "drawModeOn": "Ukončiť kreslenie",
+    "addBand": "Zakryť spodný pás",
+    "clearAll": "Odobrať všetky zakrytia",
+    "hintMouse": "Ťahaj myšou cez údaj, ktorý chceš zakryť. Čierny obdĺžnik sa dá posunúť a za rohy zväčšiť. Čo je čierne, na server neodíde.",
+    "hintTouch": "Zapni „Kresliť zakrytie“ a ťahaj prstom cez údaj. Čierny obdĺžnik sa dá posunúť a za rohy zväčšiť. Čo je čierne, na server neodíde."
+  },
+  "upload": {
+    "title": "Nový bloček",
+    "maskWarningTitle": "Zakry číslo platobnej karty, vernostnú kartu a meno pokladníčky",
+    "maskWarningText": "Tieto údaje appka nepotrebuje. Zakrytie sa vypáli do obrázka priamo v prehliadači, takže na server vôbec nedorazí. Obchod, dátum a čas nákupu nechaj odkryté — z nich vzniknú tvoje ceny.",
+    "stepPhotos": "1. Fotky bločku",
+    "photosHint": "Odfoť bloček rovno a ostro. Dlhý bloček odfoť po častiach zhora nadol s kúskom prekryvu — najviac {{max}} častí.",
+    "choosePhotos": "Vybrať fotky",
+    "addPart": "Pridať ďalšiu časť",
+    "partsLabel": "Časti bločku zhora nadol",
+    "partName": "Časť {{index}}",
+    "partMasks": "{count, plural, one {# zakrytie} few {# zakrytia} other {# zakrytí}}",
+    "partMasksNone": "bez zakrytia",
+    "moveUp": "Posunúť časť {{index}} nahor",
+    "moveDown": "Posunúť časť {{index}} nadol",
+    "removePart": "Odobrať časť {{index}}",
+    "orderHint": "Poradie musí zodpovedať bločku zhora nadol — šípkami ho upravíš. Spodný pás sa ponúka pri poslednej časti.",
+    "stepMask": "2. Zakrytie citlivých údajov (časť {{index}} z {{total}})",
+    "stepConsent": "3. Súhlas so spracovaním",
+    "consentProcessing": "Súhlasím, že bloček spracuje prevádzkovateľ appky na svojom vlastnom počítači (prevod obrázka na text). Nikomu ďalšiemu sa neposiela a vidím ho len ja.",
+    "consentDetail": "Obrázky sa 30 dní po spracovaní zmažú, text bločku zostane, kým ho nezmažeš. Podrobnosti:",
+    "privacyLink": "zásady ochrany osobných údajov",
+    "consentArchive": "Voliteľne: prevádzkovateľ si smie obrázky ponechať na zlepšovanie rozpoznávania bločkov.",
+    "consentVersionFailed": "Nepodarilo sa načítať aktuálne znenie súhlasu — bez neho bloček odoslať nejde.",
+    "waitingTitle": "Čaká na pripojenie",
+    "waitingText": "Si offline. Bloček je pripravený a odošle sa sám, hneď ako sa pripojíš — nechaj túto stránku otvorenú.",
+    "cancelSend": "Neodosielať",
+    "submit": "Odoslať bloček",
+    "blocker": {
+      "noParts": "Najprv vyber aspoň jednu fotku.",
+      "loading": "Načítavam fotky…",
+      "consentOutdated": "Znenie súhlasu sa medzitým zmenilo — obnov stránku, nech vidíš aktuálny text.",
+      "noConsent": "Bez súhlasu so spracovaním nič neodíde.",
+      "noConsentVersion": "Čakám na znenie súhlasu zo servera…"
+    },
+    "tooManyParts": "Bloček smie mať najviac {{max}} častí — prebytočné fotky sa nepridali.",
+    "unsupportedFile": "Súbor {{name}} sa nepodarilo otvoriť ako obrázok. Skús JPEG alebo PNG.",
+    "fileFailed": "Fotku {{name}} sa nepodarilo načítať.",
+    "renderFailed": "Fotky sa nepodarilo pripraviť na odoslanie. Skús ich vybrať znova.",
+    "tooLarge": "Bloček je na odoslanie príliš veľký. Skús menej častí."
+  },
+  "images": {
+    "title": "Obrázok bločku",
+    "show": "Zobraziť obrázok bločku",
+    "hide": "Skryť obrázok bločku",
+    "deleted": "Obrázky boli po 30 dňoch zmazané",
+    "deletedAt": "Zmazané {{date}}. Text bločku aj zapísané ceny zostávajú.",
+    "partAlt": "Bloček, časť {{index}} z {{total}}",
+    "offline": "Obrázok sa načíta po pripojení.",
+    "failed": "Obrázok sa nepodarilo načítať.",
+    "zoomHint": "Kliknutím otvoríš obrázok v plnej veľkosti."
+  },
+  "match": {
+    "placeholder": "Hľadať tovar podľa názvu",
+    "hintLabel": "Návrhy podľa textu z bločku. Keď medzi nimi správny tovar nie je, napíš jeho názov.",
+    "hintQuery": "Výsledky pre zadaný názov.",
+    "offline": "Si offline — hľadať pôjde po pripojení.",
+    "empty": "Nič podobné sme nenašli. Skús iný názov.",
+    "emptyCreate": "Nič podobné sme nenašli. Skús iný názov alebo tovar založ.",
+    "unconfirmed": "zatiaľ nepotvrdené",
+    "close": "Zavrieť"
+  },
+  "header": {
+    "title": "Hlavička bločku",
+    "store": "Obchod",
+    "changeStore": "Zmeniť obchod",
+    "suggestedStore": "Podľa bločku to vyzerá na",
+    "confirmStore": "Potvrdiť",
+    "otherStore": "Vybrať iný",
+    "saveStore": "Uložiť obchod",
+    "storeUnknown": "Obchod sa doplní po spracovaní.",
+    "rawPrefix": "Na bločku:",
+    "rawIco": "IČO {{ico}}",
+    "purchasedAt": "Dátum a čas nákupu",
+    "purchasedAtPlaceholder": "Vyber dátum a čas",
+    "savePurchasedAt": "Uložiť dátum",
+    "purchasedAtMissing": "Dátum a čas nákupu sa z bločku nepodarilo prečítať. Doplň ich — bez nich ceny zapísať nejde.",
+    "total": "Spolu"
+  },
+  "status": {
+    "queuedTitle": "Bloček čaká na spracovanie",
+    "processingTitle": "Bloček sa práve číta",
+    "pendingText": "Spracovanie beží na počítači prevádzkovateľa, takže môže chvíľu trvať. Stránka sa obnoví sama — pokojne ju zavri a vráť sa neskôr.",
+    "NOT_A_RECEIPT": {
+      "title": "Na obrázku sme bloček nenašli",
+      "text": "Zmaž ho a nahraj fotku bločku znova."
+    },
+    "UNREADABLE": {
+      "title": "Bloček je nečitateľný",
+      "text": "Odfoť ho znova ostro, rovno a pri dobrom svetle, dlhý po častiach. Tento potom zmaž."
+    },
+    "FAILED": {
+      "title": "Spracovanie sa nepodarilo",
+      "text": "Chyba je na našej strane. Skús bloček nahrať znova a tento zmaž."
+    }
+  },
+  "lines": {
+    "title": "Položky",
+    "storeFirst": "Najprv potvrď obchod — podľa neho sa tovar hľadá a zakladá a bez neho ceny zapísať nejde.",
+    "empty": "Na bločku sa nenašli žiadne položky."
+  },
+  "line": {
+    "selectLabel": "Zapísať cenu z riadku {{label}}",
+    "quantityPieces": "{{quantity}} {{unit}} × {{price}}",
+    "quantityWeighed": "{{quantity}} {{unit}} × {{price}} za {{unit}}",
+    "pricePerUnit": "{{price}} za {{unit}}",
+    "discount": "zľava −{{amount}}",
+    "recorded": "Cena zapísaná",
+    "findProduct": "Nájsť tovar",
+    "changeProduct": "Zmeniť tovar",
+    "createProduct": "Založiť nový tovar",
+    "createNeedsStore": "Nový tovar pôjde založiť po potvrdení obchodu.",
+    "ignore": "Ignorovať",
+    "unmatch": "Zrušiť párovanie",
+    "unignore": "Zrušiť ignorovanie"
+  },
+  "skip": {
+    "duplicateSameDay": "Túto cenu si pre deň nákupu už zapísal/a — druhý záznam sa nepridal."
+  },
+  "confirm": {
+    "button": "Potvrdiť spárované ({{count}})",
+    "hint": "Zapíše ceny zaškrtnutých riadkov s dátumom a časom nákupu z bločku.",
+    "blocker": {
+      "notProcessed": "Bloček ešte nie je spracovaný.",
+      "storeMissing": "Najprv potvrď obchod hore.",
+      "purchaseTimeMissing": "Najprv doplň dátum a čas nákupu hore.",
+      "nothing": "Zaškrtni aspoň jeden spárovaný riadok."
+    },
+    "done": "{count, plural, one {# cena je zapísaná.} few {# ceny sú zapísané.} other {# cien je zapísaných.}}",
+    "doneNone": "Žiadna nová cena sa nezapísala.",
+    "skipped": "{count, plural, one {# riadok sa preskočil:} few {# riadky sa preskočili:} other {# riadkov sa preskočilo:}}"
+  },
+  "create": {
+    "title": "Nový tovar z bločku",
+    "labelPrefix": "Na bločku:",
+    "hint": "Skratku z bločku prepíš na celý názov, ako ho poznáš z obalu. Tovar sa založí pre tento obchod a riadok sa s ním rovno spáruje."
+  }
+}

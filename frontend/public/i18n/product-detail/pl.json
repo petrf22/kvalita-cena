@@ -56,5 +56,10 @@
     "en": "po angielsku",
     "pl": "po polsku",
     "de": "po niemiecku"
+  },
+  "receiptLabels": {
+    "title": "Nazwy na paragonach",
+    "hint": "Tak sklepy drukują produkt na paragonie — na tej podstawie wczytany paragon powiąże się sam.",
+    "unknownScope": "nieznany sklep"
   }
 }

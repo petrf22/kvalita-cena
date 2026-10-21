@@ -47,3 +47,9 @@ databaseChangeLog:
   - include: { file: 2026-09-05/01-off-product-i18n.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-09-05/02-product-name-i18n.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-09-05/03-media-lang.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-09-30/01-receipt.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-09-30/02-product-store-label.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-09-30/03-observation-evidence.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-09-30/04-ai-receipt-job.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-09-30/05-api-token.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-09-30/06-receipt-client-upload-id.yaml, relativeToChangelogFile: true }

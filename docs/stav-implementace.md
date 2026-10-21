@@ -27,6 +27,7 @@ v příslušné sekci pod ní.
 | [Open Food Facts — základní integrace](#open-food-facts) | hotovo | hotovo | hotovo | HOTOVO |
 | [Aditiva (E-čka) z OFF](#aditiva-e-čka-z-off) | hotovo | hotovo (beze změny) | hotovo (beze změny) | HOTOVO |
 | [Vícejazyčný název a fotky zboží](#vícejazyčný-název-a-fotky-zboží) | hotovo | hotovo | hotovo | HOTOVO |
+| [Účtenky](#účtenky) | hotovo | hotovo | hotovo | HOTOVO (worker na PC provozovatele) |
 | Neimplementováno | — | — | — | viz [„Neimplementováno"](#neimplementováno) níž |
 
 ## Passwordless auth a GraphQL základ
@@ -433,6 +434,37 @@ písmeny jako label, max 5, `ProductGraphQlController.externalLinksFor`) — či
 beze změny klientů, karta odkazy renderuje generickým cyklem. Zbytek údajů z etikety (nutriční
 tabulka, složení, alergeny, vlastní zadání) je rozvojový nápad v `docs/rozvoj.md`.
 
+## Účtenky
+
+Zadání a rozhodnutí: `docs/rozvoj.md` („Načtení celé účtenky", „Mapování obchodního označení");
+datový model `docs/datovy-model.md`, „Účtenky"; soukromí `docs/soukromi.md`, „Účtenky"; worker,
+prahy a limity `docs/ai.md`, „Účtenky"; nasazení workeru `docs/nasazeni.md`.
+
+**Tok:** klient nafotí účtenku po dílech (mobil: CameraX + OpenCV, web: výběr souborů), uživatel
+zakryje citlivé údaje (maska vypálená do pixelů na zařízení), odsouhlasí zpracování a pošle
+`POST /api/receipts` → `core.receipt` + `ai.receipt_job` → worker na PC provozovatele
+(`tools/uctenky/worker.py`, `glm-ocr` jen obrázek → text, struktura regexy, kontrola součtu)
+vrátí řádky → server navrhne obchod (IČO/název/adresa) a spáruje, co jde (vnitroobchodní kód,
+známé „Názvy na účtenkách") → mobil upozorní lokální notifikací (WorkManager, bez GMS) →
+uživatel potvrdí obchod a datum, páruje zbytek (našeptávač, nové zboží, ignorovat) → „Potvrdit
+spárované" zapíše ceny (`observed_at` = čas nákupu, `evidence_kind = RECEIPT_OCR`) a naučí
+označení → nespárované řádky ostatních účtenek se shodným označením dostanou návrh.
+
+**Backend:** `ReceiptController` (upload, obrázky vlastníka), `WorkerReceiptController`
+(`/api/worker/receipts/**`, strojový token `ApiTokenAuthenticationFilter`), `ReceiptGraphQlController`,
+služby `ReceiptService`, `ReceiptWorkerService`, `ReceiptMatchingService`,
+`ReceiptReviewService` (potvrzení po řádcích, každý ve vlastní transakci — duplicita se přeskočí,
+ne shodí dávku), `ProductStoreLabelService`, `ReceiptImageRetentionService` (denně, 30 dní).
+Testy `ReceiptFlowIntegrationTest` (Testcontainers), `ReceiptPriceRowsTest`.
+
+**Ověřeno end-to-end (2026-09-30)** na reálných účtenkách Albert a Billa (Billa 940×3430 px
+rozdělená na 5 dílů s překryvem): OCR → řádky se součtem na haléř → párování → cena s
+`RECEIPT_OCR` → naučené označení v „Názvech na účtenkách".
+
+**Co zbývá:** vlastní profily dalších řetězců v `tools/uctenky/profiles/` (dnes Albert + obecný
+profil, Penny prochází obecným), `f_evid` ve váze ceny, leták jako druhý zdroj označení,
+oprava špatně naučeného označení jinak než moderátorem v SQL / `mergeProducts`.
+
 ## Neimplementováno
 
 Jemnější viditelnost recenzí `PUBLIC`/`GROUPS`/`PRIVATE` a `ViewerContext` (textové recenze
@@ -448,12 +480,13 @@ záznam, ne na cenový zápis), další jazyky appky nad `de` (viz „Lokalizace
 (`docs/ai.md` — čtení čísel z fotek, kontrola textů, předfiltr moderace; zatím jen rozhodnutí
 v docs, žádný kód — výjimkou je předfiltr fotek pro moderaci, který podle `docs/ai.md` patří
 před spuštění veřejného provozu, ne až za MVP) — viz `docs/reputace.md` pro poznámku o
-hodnocení kvality vs. dodavatelích.
+hodnocení kvality vs. dodavatelích. Vytěžení účtenek je z lokální AI jediná hotová úloha
+(„Účtenky" výš).
 
 Další rozvojové nápady mimo MVP (nezávazné, k realizaci až přijde řada, se stavem
 NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `docs/rozvoj.md`: pojmenování slevové karty podle
-obchodu, ceny předem z akčního letáku, načtení celé účtenky, mapování obchodního označení
-zboží na katalogovou položku (párování řádků účtenky/letáku), zdroj ceny a druh důkazu
+obchodu, ceny předem z akčního letáku, mapování obchodního označení u letáku (u účtenky
+hotové, viz „Účtenky" výš), zdroj ceny a druh důkazu
 (`core.price_observation.source` dnes existuje, ale nikdo ho nečte), nákup podle receptu nebo
 seznamu, údaje z etikety (nutriční hodnoty, složení, alergeny — aditiva/E-čka jako odkazy z OFF už
 hotová jsou, viz výš).

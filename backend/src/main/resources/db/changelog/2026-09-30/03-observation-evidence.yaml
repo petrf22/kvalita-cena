@@ -1,0 +1,25 @@
+# 03-observation-evidence.yaml — druh důkazu ceny (docs/rozvoj.md, „Zdroj ceny: kanál klienta
+# vs. druh důkazu"; docs/ai.md, „Vazba na f_evid").
+#
+# Druhá osa vedle `source` (kanál): na čem cena stojí. Nastavuje VÝHRADNĚ server podle skutečně
+# připojeného artefaktu (receipt_line_id → řádek zpracované účtenky), nikdy klient v inputu —
+# důkaz je budoucí násobič váhy (f_evid) a sebedeklarovaný by byl reputační útok.
+# Do weightFor() zatím nevstupuje. Existující řádky dostanou NONE, což je pravda.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-09-30-03-observation-evidence
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.price_observation
+                ADD COLUMN evidence_kind VARCHAR(16) NOT NULL DEFAULT 'NONE',
+                ADD COLUMN receipt_line_id BIGINT REFERENCES core.receipt_line(id) ON DELETE SET NULL,
+                ADD CONSTRAINT chk_price_observation_evidence_kind
+                  CHECK (evidence_kind IN ('NONE','PRICE_TAG_PHOTO','RECEIPT_OCR'));
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE core.price_observation
+                DROP COLUMN IF EXISTS receipt_line_id,
+                DROP COLUMN IF EXISTS evidence_kind;

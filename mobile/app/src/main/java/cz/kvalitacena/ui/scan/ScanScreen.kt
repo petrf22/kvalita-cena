@@ -8,6 +8,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.Camera
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
+import androidx.camera.core.UseCase
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Box
@@ -53,10 +54,16 @@ import cz.kvalitacena.scanner.BarcodeAnalyzer
 import cz.kvalitacena.scanner.ZxingBarcodeScanner
 import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
 import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
+import cz.kvalitacena.ui.theme.Spacing
 
-/** Záložka "Sken" — obrazovky 1/3 flow "sken → cena → výběr provozovny → odeslání". */
+/**
+ * Záložka "Sken" — obrazovky 1/3 flow "sken → cena → výběr provozovny → odeslání".
+ *
+ * [onScanReceipt] přidá tlačítko „Naskenovat účtenku" (jen záložka, ne režim „vrátit kód"
+ * z formuláře zboží, ROUTE_SCAN_CODE — tam by odvádělo pryč od rozepsaného formuláře).
+ */
 @Composable
-fun ScanScreen(onBarcodeDetected: (String) -> Unit) {
+fun ScanScreen(onBarcodeDetected: (String) -> Unit, onScanReceipt: (() -> Unit)? = null) {
   val context = LocalContext.current
   var hasCameraPermission by remember {
     mutableStateOf(
@@ -96,14 +103,14 @@ fun ScanScreen(onBarcodeDetected: (String) -> Unit) {
         onBarcodeDetected = onBarcodeDetected,
       )
       Surface(
-        modifier = Modifier.align(Alignment.TopCenter).padding(20.dp),
+        modifier = Modifier.align(Alignment.TopCenter).padding(Spacing.lg),
         shape = RoundedCornerShape(8.dp),
         color = Color.Black.copy(alpha = 0.7f),
       ) {
         Text(
           stringResource(R.string.scan_instruction),
           color = Color.White,
-          modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+          modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
         )
       }
       Box(
@@ -113,23 +120,31 @@ fun ScanScreen(onBarcodeDetected: (String) -> Unit) {
           .height(160.dp)
           .border(3.dp, Color.White, RoundedCornerShape(12.dp)),
       )
-      Row(
-        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+      Column(
+        modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(Spacing.lg),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
       ) {
-        if (torchAvailable) {
-          Button(onClick = { torchEnabled = !torchEnabled }) {
-            Text(stringResource(if (torchEnabled) R.string.scan_flashlight_off else R.string.scan_flashlight_on))
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md, Alignment.CenterHorizontally)) {
+          if (torchAvailable) {
+            Button(onClick = { torchEnabled = !torchEnabled }) {
+              Text(stringResource(if (torchEnabled) R.string.scan_flashlight_off else R.string.scan_flashlight_on))
+            }
+          }
+          Button(onClick = { manualEntryVisible = true }) {
+            Text(stringResource(R.string.scan_manual_entry))
           }
         }
-        Button(onClick = { manualEntryVisible = true }) {
-          Text(stringResource(R.string.scan_manual_entry))
+        if (onScanReceipt != null) {
+          Button(onClick = onScanReceipt) {
+            Text(stringResource(R.string.scan_receipt))
+          }
         }
       }
     }
   } else {
     Column(
-      modifier = Modifier.fillMaxSize().padding(24.dp),
+      modifier = Modifier.fillMaxSize().padding(Spacing.xl),
       horizontalAlignment = Alignment.CenterHorizontally,
       verticalArrangement = Arrangement.Center,
     ) {
@@ -139,9 +154,14 @@ fun ScanScreen(onBarcodeDetected: (String) -> Unit) {
       )
       OutlinedButton(
         onClick = { manualEntryVisible = true },
-        modifier = Modifier.padding(top = 16.dp),
+        modifier = Modifier.padding(top = Spacing.lg),
       ) {
         Text(stringResource(R.string.scan_manual_entry))
+      }
+      if (onScanReceipt != null) {
+        OutlinedButton(onClick = onScanReceipt, modifier = Modifier.padding(top = Spacing.sm)) {
+          Text(stringResource(R.string.scan_receipt))
+        }
       }
     }
   }
@@ -205,6 +225,7 @@ private fun CameraPreview(
   // záložky, ne se jen spolehnout na to, že NavBackStackEntry lifecycle klesne včas.
   DisposableEffect(lifecycleOwner) {
     analyzer.resume() // po návratu na tuhle záložku nesmí zůstat "mrtvá" po prvním skenu
+    val boundUseCases = mutableListOf<UseCase>()
     val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
     cameraProviderFuture.addListener(
       {
@@ -222,6 +243,7 @@ private fun CameraPreview(
           preview,
           imageAnalysis,
         )
+        boundUseCases += listOf(preview, imageAnalysis)
         onTorchAvailabilityChange(boundCamera?.cameraInfo?.hasFlashUnit() == true)
       },
       ContextCompat.getMainExecutor(context),
@@ -233,7 +255,9 @@ private fun CameraPreview(
       onTorchAvailabilityChange(false)
       // Future je v tuhle chvíli už vyřešený (kamera se stihla svázat výše), .get() tu
       // neblokuje — pojistka navíc, appka nesmí dál žrát baterii po přepnutí záložky.
-      runCatching { ProcessCameraProvider.getInstance(context).get().unbindAll() }
+      // Jen VLASTNÍ use case, ne unbindAll(): onDispose doběhne až po svázání kamery na
+      // obrazovce, kam se přechází (snímání účtenky), a unbindAll by jí kameru vzal.
+      runCatching { ProcessCameraProvider.getInstance(context).get().unbind(*boundUseCases.toTypedArray()) }
     }
   }
 

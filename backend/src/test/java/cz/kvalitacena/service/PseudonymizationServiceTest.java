@@ -30,6 +30,10 @@ class PseudonymizationServiceTest {
   private PriceObservationRepository priceObservationRepository;
   @Mock
   private ProductAliasConfirmationRepository aliasConfirmationRepository;
+  @Mock
+  private cz.kvalitacena.db.repo.ProductStoreLabelRepository storeLabelRepository;
+  @Mock
+  private cz.kvalitacena.db.repo.ReceiptLineRepository receiptLineRepository;
 
   private final PrivacyProperties privacyProperties = new PrivacyProperties();
 
@@ -41,13 +45,18 @@ class PseudonymizationServiceTest {
   void pseudonymizesObservationsOlderThanConfiguredWindow() {
     when(priceObservationRepository.pseudonymizeObservationsBefore(any())).thenReturn(3);
     PseudonymizationService service = new PseudonymizationService(
-        priceObservationRepository, aliasConfirmationRepository, privacyProperties);
+        priceObservationRepository, aliasConfirmationRepository, storeLabelRepository, receiptLineRepository,
+        privacyProperties);
 
     service.pseudonymizeOldObservations();
 
     ArgumentCaptor<OffsetDateTime> cutoffCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
     verify(priceObservationRepository).pseudonymizeObservationsBefore(cutoffCaptor.capture());
     verify(aliasConfirmationRepository).pseudonymizeBefore(any());
+    verify(storeLabelRepository).pseudonymizeConfirmationsBefore(any());
+    // Obě půlky vazby cena ↔ řádek účtenky (docs/soukromi.md, „Účtenky").
+    verify(receiptLineRepository).pseudonymizeObservationLinksBefore(cutoffCaptor.getValue());
+    verify(priceObservationRepository).pseudonymizeReceiptLinksBefore(cutoffCaptor.getValue());
     verifyNoMoreInteractions(priceObservationRepository);
     assertThat(cutoffCaptor.getValue())
         .isCloseTo(OffsetDateTime.now().minusDays(180), within(5, ChronoUnit.SECONDS));
@@ -58,7 +67,8 @@ class PseudonymizationServiceTest {
     privacyProperties.setPseudonymizationDays(30);
     when(priceObservationRepository.pseudonymizeObservationsBefore(any())).thenReturn(0);
     PseudonymizationService service = new PseudonymizationService(
-        priceObservationRepository, aliasConfirmationRepository, privacyProperties);
+        priceObservationRepository, aliasConfirmationRepository, storeLabelRepository, receiptLineRepository,
+        privacyProperties);
 
     service.pseudonymizeOldObservations();
 

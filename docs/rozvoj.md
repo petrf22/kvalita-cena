@@ -93,7 +93,24 @@ Souvislost s lokálními dodavateli (`core.supplier`/`core.supplier_offer`,
 tenhle případ. Až se bude navrhovat jedno nebo druhé, řešit oba nápady společně, ať nevznikají
 dvě podobné datové struktury vedle sebe.
 
-## Načtení celé účtenky (ROZHODNOUT)
+## Načtení celé účtenky (ČÁSTEČNĚ)
+
+**Stav (2026-09-30):** implementováno podle rozhodnutí níž — datový model
+`docs/datovy-model.md`, „Účtenky", worker a prahy `docs/ai.md`, „Účtenky", soukromí
+`docs/soukromi.md`, „Účtenky". Rozhodnuto:
+
+- **zpracování jen lokálně** na PC provozovatele (Python worker + Ollama, vision model),
+  s vyměnitelným enginem; cloud (např. Google Document AI) až s novou verzí souhlasu,
+- **capture pipeline s OpenCV** podle odstavce níž, ruční spoušť jako záloha,
+- **záměrně částečný sken se neřeší ořezem hlavičky** — hlavička nese obchod, adresu a čas,
+  které appka potřebuje. Citlivé údaje (karta, věrnostní číslo, jméno pokladní) zakrývá
+  uživatel **na zařízení** před odesláním (výchozí návrh: pás pod celkovou částkou), worker
+  je jako druhou pojistku zahodí,
+- **upozornění o zpracování** přes WorkManager + lokální notifikaci (bez GMS, bez e-mailu),
+- **párování na mobilu i webu**, výsledek vytěžení je vždy návrh, cenu zapíše potvrzení.
+
+Zbývá: leták jako druhý zdroj označení (otevřená otázka v „Mapování…" níž), `f_evid` ve
+váze a cloudový engine.
 
 **Zadání:** naskenovat celou účtenku z obchodu a vytěžit z ní názvy zboží, ceny, slevy,
 vnitroobchodní kódy, počty kusů, případně obchod a datum. Dvojí přínos: hromadné zadání/
@@ -146,7 +163,8 @@ kategorie osobních dat a bude si žádat vlastní oddíl v `docs/soukromi.md` (
 retence, vztah k pseudonymizaci po 180 dnech) — psát ho zároveň s návrhem téhle funkce, ne
 dodatečně.
 
-**Otevřená otázka: záměrně částečný sken.** Hlavička a patička účtenky nesou údaje, které jde
+**Otevřená otázka: záměrně částečný sken** (rozhodnuto 2026-09-30, viz „Stav" výš — maskování
+na zařízení, ne ořez hlavičky). Hlavička a patička účtenky nesou údaje, které jde
 spojit s konkrétním člověkem a jeho nákupem — adresa/IČO provozovny + přesný čas nákupu
 prakticky identifikují zákazníka, k tomu často poslední čtyřčíslí platební karty nebo číslo
 věrnostní karty. Appka pro cenová data potřebuje jen blok s řádky položek (název, cena,
@@ -156,7 +174,18 @@ Konkrétní mechanismus (oříznutí podle pozice v obraze, ruční vymezení ob
 worker, který citlivé řádky rozpozná a zahodí ještě před uložením) není rozhodnutý — k dořešení
 spolu s oddílem v `docs/soukromi.md` zmíněným výš.
 
-## Mapování obchodního označení zboží na katalogovou položku (ROZHODNOUT)
+## Mapování obchodního označení zboží na katalogovou položku (ČÁSTEČNĚ)
+
+**Stav (2026-09-30):** `core.product_store_label` implementované přesně podle návrhu níž,
+zatím jen s účtenkou jako zdrojem. Rozhodnuto: kaskáda kroky 1–2 dají řádku stav `SUGGESTED`
+(předem zaškrtnutý, ale cenu zapíše až potvrzení — `docs/ai.md`), krok 3 je našeptávač
+`receiptLineSuggestions`, krok 4 nové zboží s předvyplněným názvem z účtenky. Import
+z účtenky duplicitní řádky **přeskočí a nahlásí** (`receipt_line.skip_reason`), každý řádek
+ve vlastním savepointu. **Pozdější párování:** když se označení aktivuje, server nespárované
+řádky ostatních účtenek (mladší 180 dní) se shodným označením v rozsahu přepne na
+`SUGGESTED` a vlastník dostane upozornění — cenu nezapisuje za něj. Detail zboží má kartu
+„Názvy na účtenkách". Otevřené zůstává: leták a kdo opravuje špatné mapování (zatím
+moderátor přes SQL / `mergeProducts`).
 
 **Zadání:** účtenka i akční leták mluví názvoslovím obchodu, ne katalogu — na účtence je
 `ROHLIK TUZ 43G`, ne EAN a ne „Rohlík tukový 43 g". EAN na účtence prakticky nikdy není, takže

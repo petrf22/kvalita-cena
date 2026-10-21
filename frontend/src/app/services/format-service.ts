@@ -13,6 +13,7 @@ export class FormatService {
   private readonly moneyFormatters = new Map<string, Intl.NumberFormat>();
   private readonly dateFormatters = new Map<string, Intl.DateTimeFormat>();
   private readonly numberFormatters = new Map<string, Intl.NumberFormat>();
+  private readonly dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
 
   /** @param currency ISO-4217 kód z dat (docs/lokalizace.md) — chybí-li, CZK je jen nouzový fallback. */
   money(amount: number | null | undefined, currency: string | null | undefined): string {
@@ -34,6 +35,20 @@ export class FormatService {
     const date = new Date(iso);
     if (Number.isNaN(date.getTime())) return iso;
     return this.dateFormatter(style).format(date);
+  }
+
+  /** Datum i čas bez sekund — čas nákupu z účtenky, kde na hodině záleží (stává se `observedAt`). */
+  dateTime(iso: string | null | undefined): string {
+    if (!iso) return '—';
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return iso;
+    const key = this.language.lang();
+    let formatter = this.dateTimeFormatters.get(key);
+    if (!formatter) {
+      formatter = new Intl.DateTimeFormat(this.tag(), { dateStyle: 'medium', timeStyle: 'short' });
+      this.dateTimeFormatters.set(key, formatter);
+    }
+    return formatter.format(date);
   }
 
   /**

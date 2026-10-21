@@ -56,5 +56,10 @@
     "en": "anglicky",
     "pl": "polsky",
     "de": "německy"
+  },
+  "receiptLabels": {
+    "title": "Názvy na účtenkách",
+    "hint": "Takhle zboží tisknou obchody na účtenku — podle toho se při načtení účtenky spáruje samo.",
+    "unknownScope": "neznámý obchod"
   }
 }

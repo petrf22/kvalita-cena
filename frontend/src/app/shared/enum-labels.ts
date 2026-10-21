@@ -10,7 +10,14 @@ import {
   QuantityBasis,
   RecordType,
 } from '../models/catalog';
-import { ErrorCode } from '../models/generated/enums';
+import {
+  ErrorCode,
+  QuantityUnit,
+  ReceiptLineStatus,
+  ReceiptMatchSource,
+  ReceiptProcessingStatus,
+  ReceiptReviewStatus,
+} from '../models/generated/enums';
 
 /**
  * Překladové KLÍČE (ne texty) na jedno místo — `Record<PriceKind, string>` nad generovaným
@@ -87,6 +94,48 @@ export const CLIENT_KIND_KEYS: Record<ClientKind, string> = {
   [ClientKind.Android]: 'enum.clientKind.ANDROID',
 };
 
+/**
+ * Účtenky (docs/datovy-model.md, „Účtenky") — stav strojového zpracování a stav párování jsou
+ * dvě nezávislé osy. Štítek v seznamu ukazuje zpracování, dokud stroj nedoběhl, a pak párování
+ * (`receiptStatusKey` ve `features/receipts/receipt-status.ts`).
+ */
+export const RECEIPT_PROCESSING_STATUS_KEYS: Record<ReceiptProcessingStatus, string> = {
+  [ReceiptProcessingStatus.Queued]: 'enum.receiptProcessingStatus.QUEUED',
+  [ReceiptProcessingStatus.Processing]: 'enum.receiptProcessingStatus.PROCESSING',
+  [ReceiptProcessingStatus.Processed]: 'enum.receiptProcessingStatus.PROCESSED',
+  [ReceiptProcessingStatus.NotAReceipt]: 'enum.receiptProcessingStatus.NOT_A_RECEIPT',
+  [ReceiptProcessingStatus.Unreadable]: 'enum.receiptProcessingStatus.UNREADABLE',
+  [ReceiptProcessingStatus.Failed]: 'enum.receiptProcessingStatus.FAILED',
+};
+
+export const RECEIPT_REVIEW_STATUS_KEYS: Record<ReceiptReviewStatus, string> = {
+  [ReceiptReviewStatus.Pending]: 'enum.receiptReviewStatus.PENDING',
+  [ReceiptReviewStatus.InProgress]: 'enum.receiptReviewStatus.IN_PROGRESS',
+  [ReceiptReviewStatus.Done]: 'enum.receiptReviewStatus.DONE',
+};
+
+export const RECEIPT_LINE_STATUS_KEYS: Record<ReceiptLineStatus, string> = {
+  [ReceiptLineStatus.Unmatched]: 'enum.receiptLineStatus.UNMATCHED',
+  [ReceiptLineStatus.Suggested]: 'enum.receiptLineStatus.SUGGESTED',
+  [ReceiptLineStatus.Matched]: 'enum.receiptLineStatus.MATCHED',
+  [ReceiptLineStatus.Ignored]: 'enum.receiptLineStatus.IGNORED',
+};
+
+/** Proč server (nebo uživatel) řádek k zboží přiřadil — drobný popisek u návrhu. */
+export const RECEIPT_MATCH_SOURCE_KEYS: Record<ReceiptMatchSource, string> = {
+  [ReceiptMatchSource.Code]: 'enum.receiptMatchSource.CODE',
+  [ReceiptMatchSource.Label]: 'enum.receiptMatchSource.LABEL',
+  [ReceiptMatchSource.User]: 'enum.receiptMatchSource.USER',
+  [ReceiptMatchSource.NewProduct]: 'enum.receiptMatchSource.NEW_PRODUCT',
+};
+
+/** Jednotka množství na řádku účtenky — u KG/L je `unitPrice` cena za kg/l, ne zaplacená částka. */
+export const QUANTITY_UNIT_KEYS: Record<QuantityUnit, string> = {
+  [QuantityUnit.Pcs]: 'enum.quantityUnit.PCS',
+  [QuantityUnit.Kg]: 'enum.quantityUnit.KG',
+  [QuantityUnit.L]: 'enum.quantityUnit.L',
+};
+
 /** Díky `enum ErrorCode` ve `schema.graphqls` (docs/lokalizace.md) generuje codegen i tohle zadarmo. */
 export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.OffUnavailable]: 'errors.OFF_UNAVAILABLE',
@@ -133,6 +182,23 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.PhotoUnsupportedFormat]: 'errors.PHOTO_UNSUPPORTED_FORMAT',
   [ErrorCode.PhotoUnreadable]: 'errors.PHOTO_UNREADABLE',
   [ErrorCode.PhotoResolutionTooHigh]: 'errors.PHOTO_RESOLUTION_TOO_HIGH',
+  [ErrorCode.ReceiptRequiresLogin]: 'errors.RECEIPT_REQUIRES_LOGIN',
+  [ErrorCode.ReceiptNotFound]: 'errors.RECEIPT_NOT_FOUND',
+  [ErrorCode.ReceiptLineNotFound]: 'errors.RECEIPT_LINE_NOT_FOUND',
+  [ErrorCode.ReceiptConsentRequired]: 'errors.RECEIPT_CONSENT_REQUIRED',
+  [ErrorCode.ReceiptImagesRequired]: 'errors.RECEIPT_IMAGES_REQUIRED',
+  [ErrorCode.ReceiptTooManyImages]: 'errors.RECEIPT_TOO_MANY_IMAGES',
+  [ErrorCode.ReceiptDailyLimit]: 'errors.RECEIPT_DAILY_LIMIT',
+  [ErrorCode.ReceiptNotProcessed]: 'errors.RECEIPT_NOT_PROCESSED',
+  [ErrorCode.ReceiptStoreRequired]: 'errors.RECEIPT_STORE_REQUIRED',
+  [ErrorCode.ReceiptPurchaseTimeRequired]: 'errors.RECEIPT_PURCHASE_TIME_REQUIRED',
+  [ErrorCode.ReceiptPurchaseTimeInFuture]: 'errors.RECEIPT_PURCHASE_TIME_IN_FUTURE',
+  [ErrorCode.ReceiptLinePriceMissing]: 'errors.RECEIPT_LINE_PRICE_MISSING',
+  [ErrorCode.ReceiptLineNotMatched]: 'errors.RECEIPT_LINE_NOT_MATCHED',
+  [ErrorCode.ReceiptResultInvalid]: 'errors.RECEIPT_RESULT_INVALID',
+  [ErrorCode.ReceiptLineAlreadyConfirmed]: 'errors.RECEIPT_LINE_ALREADY_CONFIRMED',
+  [ErrorCode.ReceiptLineConfirmFailed]: 'errors.RECEIPT_LINE_CONFIRM_FAILED',
+  [ErrorCode.ReceiptUploadTooLarge]: 'errors.RECEIPT_UPLOAD_TOO_LARGE',
   [ErrorCode.QualityRequiresLogin]: 'errors.QUALITY_REQUIRES_LOGIN',
   [ErrorCode.QualityStarsOutOfRange]: 'errors.QUALITY_STARS_OUT_OF_RANGE',
   [ErrorCode.ReviewRequiresLogin]: 'errors.REVIEW_REQUIRES_LOGIN',

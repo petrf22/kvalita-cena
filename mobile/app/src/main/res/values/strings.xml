@@ -227,7 +227,7 @@
     <string name="terms_title">Podmínky užití</string>
     <string name="privacy_title">Zásady ochrany osobních údajů</string>
     <string name="legal_czech_only_notice">Tento dokument je zatím k dispozici jen v češtině.</string>
-    <string name="legal_effective_date" translatable="false">Platí od 24. srpna 2026.</string>
+    <string name="legal_effective_date" translatable="false">Platí od 30. září 2026.</string>
 
     <string-array name="terms_headings" translatable="false">
         <item>1. Kdo podmínky vydává</item>
@@ -248,7 +248,7 @@
         <item>Kvalita a cena je komunitní databáze cen běžného zboží v obchodech. Uživatelé zapisují ceny, které vidí v obchodech, appka je agreguje a zobrazuje jejich vývoj v čase a porovnání napříč obchody. Vedle řetězců appka záměrně dává prostor i menším a lokálním dodavatelům.\n\nAppka není cenovým srovnávačem s garantovanou přesností ani zdrojem k okamžitému uzavírání nákupů — ceny zapisují dobrovolníci, mohou být neaktuální, chybné nebo se mezitím v obchodě změnit. Než uskutečníš nákup na základě ceny z appky, ověř si ji v obchodě.</item>
         <item>Přihlášení je bez hesla — appka pošle jednorázový kód na tvůj e-mail. Účet vznikne automaticky při první úspěšné přihlašovací operaci. Odpovídáš za to, že máš pod kontrolou e-mailovou schránku, kterou k přihlášení použiješ — přihlašovací kódy nikomu nesděluj.\n\nAppku smíš používat i anonymně bez registrace (prohlížení, hledání cen); zápis ceny, hodnocení zboží, nahrávání fotek a zakládání nového zboží/obchodu vyžaduje přihlášení.\n\nVěk: Appka je určená lidem starším 15 let. Pokud jsi mladší, používej appku jen se souhlasem zákonného zástupce.</item>
         <item>Appku používej k tomu, k čemu je určená — zápisu a hledání skutečných cen a k orientaci v nabídce obchodů. Zejména je zakázáno vkládat vymyšlené, záměrně zkreslené nebo zastaralé ceny, vydávat se za jiného uživatele nebo za zaměstnance/zástupce obchodu bez oprávnění, nahrávat fotky, ke kterým nemáš práva, nebo fotky lidí bez jejich souhlasu, pokoušet se o automatizovaný hromadný sběr dat z appky mimo rozumnou míru, obcházet limity appky (např. opakovaným zakládáním účtů) nebo narušovat její provoz, a nahrávat obsah, který je nezákonný, urážlivý nebo jinak poškozuje appku, ostatní uživatele nebo třetí strany.\n\nPorušení může vést k moderačnímu opatření podle bodu 6, v závažných nebo opakovaných případech až k vyloučení podle bodu 7.</item>
-        <item>Cenové záznamy, hodnocení, fotky a údaje o zboží/obchodech, které do appky vložíš, zůstávají tvým obsahem — appka k nim nezískává vlastnictví. Odpovídáš za to, že máš právo obsah nahrát (zejména u fotek — nesmí porušovat autorská práva třetích stran), údaje odpovídají realitě podle tvého nejlepšího vědomí a fotka nezobrazuje osobní údaje třetích osob bez jejich souhlasu.\n\nAppka z nahraných fotek automaticky odstraňuje metadata (včetně polohy, pokud by je fotka nesla) — víc v Zásadách ochrany osobních údajů.\n\nLicence k vloženému obsahu: appka stojí na otevřených datech (OpenStreetMap, Open Food Facts) a stejnou logiku otevřenosti uplatňuje i na obsah, který do appky vkládáš ty jako uživatel. Vložením obsahu do appky ho zveřejňuješ pod otevřenou licencí, volně dál použitelnou kýmkoli, i komerčně, pokud uvede zdroj a odvozené dílo šíří dál za stejných podmínek: faktické údaje (ceny, gramáž/objem, název a kategorie zboží, adresa a poloha obchodu) poskytuješ appce pod licencí ODbL (Open Database License, stejná jako u OpenStreetMap a Open Food Facts), fotky poskytuješ pod licencí CC BY-SA 4.0 (Creative Commons Uveďte původ – Zachovejte licenci).\n\nTohle je nevratné rozhodnutí pro obsah, který už vložíš — jednou zveřejněný pod otevřenou licencí zůstává pod ní i po případném smazání účtu (smazání účtu se týká vazby tebe na záznam, ne licence k už zveřejněnému obsahu samotnému). Než něco nahraješ, počítej s tím, že to může kdokoli dál volně použít.</item>
+        <item>Cenové záznamy, hodnocení, fotky a údaje o zboží/obchodech, které do appky vložíš, zůstávají tvým obsahem — appka k nim nezískává vlastnictví. Odpovídáš za to, že máš právo obsah nahrát (zejména u fotek — nesmí porušovat autorská práva třetích stran), údaje odpovídají realitě podle tvého nejlepšího vědomí a fotka nezobrazuje osobní údaje třetích osob bez jejich souhlasu.\n\nAppka z nahraných fotek automaticky odstraňuje metadata (včetně polohy, pokud by je fotka nesla) — víc v Zásadách ochrany osobních údajů.\n\nLicence k vloženému obsahu: appka stojí na otevřených datech (OpenStreetMap, Open Food Facts) a stejnou logiku otevřenosti uplatňuje i na obsah, který do appky vkládáš ty jako uživatel. Vložením obsahu do appky ho zveřejňuješ pod otevřenou licencí, volně dál použitelnou kýmkoli, i komerčně, pokud uvede zdroj a odvozené dílo šíří dál za stejných podmínek: faktické údaje (ceny, gramáž/objem, název a kategorie zboží, adresa a poloha obchodu) poskytuješ appce pod licencí ODbL (Open Database License, stejná jako u OpenStreetMap a Open Food Facts), fotky poskytuješ pod licencí CC BY-SA 4.0 (Creative Commons Uveďte původ – Zachovejte licenci).\n\nTohle je nevratné rozhodnutí pro obsah, který už vložíš — jednou zveřejněný pod otevřenou licencí zůstává pod ní i po případném smazání účtu (smazání účtu se týká vazby tebe na záznam, ne licence k už zveřejněnému obsahu samotnému). Než něco nahraješ, počítej s tím, že to může kdokoli dál volně použít.\n\nNaskenované účtenky nejsou zveřejněný obsah: obrázek a text účtenky jsou tvůj soukromý přehled nákupu, appka je nezveřejňuje a nevztahuje se na ně licence výš. Pod ODbL se dostane jen to, co z účtenky sám/sama potvrdíš — cena konkrétního zboží v konkrétním obchodě a označení zboží, jak ho obchod tiskne na účtenku, spárované se zbožím v katalogu. Posílej jen účtenky ze svých nákupů nebo nákupů, ke kterým máš souhlas; opakované zneužití je důvodem k omezení účtu.</item>
         <item>Appka záměrně nemá veřejné negativní hodnocení uživatelů — nesouhlas se vždy vyjadřuje k záznamu (ceně, fotce, zboží, obchodu), nikdy k člověku, který ho vložil. Kterýkoli přihlášený uživatel může záznam nahlásit jako nesmyslný nebo nepravdivý; po nasbírání dostatečného počtu nezávislých nahlášení se záznam skryje a čeká na přezkum. U fotek stačí k dočasnému skrytí nahlášení jediného uživatele, protože rizika u fotek jsou závažnější než u čísla.\n\nNový obsah od čerstvých účtů appka zpočátku zobrazuje jen autorovi, dokud ho nepotvrdí víc nezávislých přispěvatelů — cílem je odfiltrovat omyly a zneužití dřív, než se dostanou k ostatním uživatelům, ne trestat nové uživatele.</item>
         <item>Účet si můžeš kdykoli smazat sám (Nastavení → Účet), nebo o smazání požádat na kontaktním e-mailu — viz Zásady ochrany osobních údajů, kde je popsáno, co smazání znamená pro už vložené ceny.\n\nProvozovatel si vyhrazuje právo účet omezit nebo zrušit při opakovaném nebo závažném porušení těchto podmínek. Před zrušením účtu se provozovatel přiměřeně pokusí uživatele na důvod upozornit, pokud tomu nebrání povaha porušení.</item>
         <item>Appka zobrazuje vedle vlastních dat i informace z veřejných zdrojů třetích stran — OpenStreetMap (mapa, adresy provozoven), Open Food Facts (údaje o zboží), ARES (veřejný rejstřík ekonomických subjektů) a kurzovní lístek ČNB. Tahle data appka nikdy nekopíruje do vlastní databáze jako svoje — spojuje je až při zobrazení a vždy uvádí zdroj. Data z OSM a Open Food Facts podléhají licenci ODbL se sdílením za stejných podmínek.</item>
@@ -269,22 +269,22 @@
         <item>8. Zabezpečení</item>
         <item>9. Tvá práva</item>
         <item>10. Věk</item>
-        <item>11. Budoucí strojové zpracování fotek</item>
+        <item>11. Strojové zpracování fotek a účtenek</item>
         <item>12. Změny těchto zásad</item>
         <item>13. Kontakt</item>
     </string-array>
     <string-array name="privacy_paragraphs" translatable="false">
         <item>Správcem osobních údajů zpracovávaných appkou Kvalita a cena je Petr Franta, soukromá osoba (dále jen „my" nebo „provozovatel").\n\nKontakt ve věci ochrany osobních údajů: kontakt@kvalitacena.cz</item>
         <item>Cílem appky je, aby co nejvíc lidí mělo přehled o cenách — ne sledovat, kdo kde nakupuje. Tenhle princip je promítnutý přímo do toho, jak appka ukládá data: appka nikdy neukládá tvoji GPS polohu, nepoužívá žádnou analytiku ani sledovací nástroje třetích stran, žádnou reklamu ani externí fonty, nemá funkci sledovat jiné uživatele ani vidět jejich historii nákupů, a nepoužívá cookies pro sledování — appka na webu nastavuje jedinou cookie, výhradně k udržení přihlášení.</item>
-        <item>Přihlašovací e-mail: e-mail, kterým se přihlašuješ, se v databázi neukládá v čitelné podobě — ukládá se jednak jako nevratný otisk (k rozpoznání stejného e-mailu při přihlášení), jednak zašifrovaný (aby ti appka mohla poslat přihlašovací kód nebo pozdější oznámení).\n\nVolitelný profil: pokud se rozhodneš appce sdělit jméno, příjmení, telefon, kontaktní e-mail nebo nahrát profilovou fotku, jsou to čistě dobrovolné údaje — appka po nich nikde nežádá a bez nich plně funguje. Textové údaje profilu jsou zašifrované stejně jako přihlašovací e-mail, výchozí viditelnost profilu je nastavená tak, že ho vidíš jen ty.\n\nCenové záznamy a hodnocení, které vložíš: cena, kterou zapíšeš, se propojí s tvým účtem, ale tahle vazba není trvalá — po 180 dnech appka automaticky vazbu na tvůj konkrétní účet zruší, záznam zůstane jen jako anonymizovaná statistika. Výjimky: hodnocení kvality zboží a tvoje vlastní úpravy existujícího zboží/obchodu zůstávají navázané na tvůj účet po celou dobu jeho trvání (jinak by šlo systém obejít nebo by ti tiše zmizely vlastní opravy) — appka navenek vždy ukazuje jen výslednou hodnotu, ne kdo ji vložil. Obě výjimky se smažou při smazání účtu.\n\nPoloha: appka nikdy neukládá tvoji GPS polohu. Když appce dovolíš najít obchody v okolí, polohu použije jen k dotazu „co je nablízku" a hned zapomene. Dotaz na OpenStreetMap kvůli adrese obchodu vždy posílá appka sama ze svého serveru, tvoje IP adresa se k OpenStreetMap nedostane — jedinou vědomou výjimkou je mapa samotná (viz níže).\n\nFotky zboží a provozoven: appka každou nahranou fotku před uložením kompletně překreslí z jednotlivých obrazových bodů do nového souboru, takže výsledek nikdy nenese skrytá data z originálu (včetně GPS). Fotky se dají kdykoli smazat (vlastní) nebo nahlásit (cizí) — u fotek stačí k dočasnému skrytí nahlášení jediného uživatele.\n\nMapa (vědomá výjimka): pokud si na detailu obchodu otevřeš mapu, appka mapové podklady stahuje přímo z tvého telefonu z OpenStreetMap, ne přes náš server — OpenStreetMap tak uvidí tvoji IP adresu. Appka tomu předchází tím, že se mapa nenačte, dokud si o ni výslovně neřekneš.\n\nTechnická data: appka krátkodobě loguje technická data (např. IP adresu u přihlašovacích pokusů a u odesílání formuláře zpětné vazby) kvůli ochraně proti zneužití — neslouží k profilování ani analytice a neuchovává se dlouhodobě, jen v paměti serveru do restartu.</item>
-        <item>Plnění smlouvy (čl. 6 odst. 1 písm. b GDPR) — přihlašovací e-mail a vazba cenových záznamů na účet, bez kterých by appka nemohla fungovat.\n\nOprávněný zájem (čl. 6 odst. 1 písm. f GDPR) — ochrana appky před zneužitím.\n\nSouhlas (čl. 6 odst. 1 písm. a GDPR) — volitelný profil a jeho případné zveřejnění; souhlas můžeš kdykoli odvolat smazáním příslušného údaje v appce.</item>
-        <item>Vazba cenového záznamu na tvůj účet: 180 dní od data ceny, pak automaticky anonymizováno.\nSamotný cenový záznam (bez vazby na účet): trvale, jako anonymizovaná statistika ve veřejném zájmu.\nHodnocení kvality zboží, vlastní úpravy zboží/obchodu: po dobu trvání účtu, smazáno s účtem.\nVolitelný profil: po dobu trvání účtu, smazáno s účtem.\nPřihlašovací e-mail (hash a šifrovaná podoba): po dobu trvání účtu.\nTechnická data (IP u přihlašovacích pokusů a odesílání zpětné vazby): krátkodobě, jen pro ochranu proti zneužití.</item>
+        <item>Přihlašovací e-mail: e-mail, kterým se přihlašuješ, se v databázi neukládá v čitelné podobě — ukládá se jednak jako nevratný otisk (k rozpoznání stejného e-mailu při přihlášení), jednak zašifrovaný (aby ti appka mohla poslat přihlašovací kód nebo pozdější oznámení).\n\nVolitelný profil: pokud se rozhodneš appce sdělit jméno, příjmení, telefon, kontaktní e-mail nebo nahrát profilovou fotku, jsou to čistě dobrovolné údaje — appka po nich nikde nežádá a bez nich plně funguje. Textové údaje profilu jsou zašifrované stejně jako přihlašovací e-mail, výchozí viditelnost profilu je nastavená tak, že ho vidíš jen ty.\n\nCenové záznamy a hodnocení, které vložíš: cena, kterou zapíšeš, se propojí s tvým účtem, ale tahle vazba není trvalá — po 180 dnech appka automaticky vazbu na tvůj konkrétní účet zruší, záznam zůstane jen jako anonymizovaná statistika. Výjimky: hodnocení kvality zboží a tvoje vlastní úpravy existujícího zboží/obchodu zůstávají navázané na tvůj účet po celou dobu jeho trvání (jinak by šlo systém obejít nebo by ti tiše zmizely vlastní opravy) — appka navenek vždy ukazuje jen výslednou hodnotu, ne kdo ji vložil. Obě výjimky se smažou při smazání účtu.\n\nPoloha: appka nikdy neukládá tvoji GPS polohu. Když appce dovolíš najít obchody v okolí, polohu použije jen k dotazu „co je nablízku" a hned zapomene. Dotaz na OpenStreetMap kvůli adrese obchodu vždy posílá appka sama ze svého serveru, tvoje IP adresa se k OpenStreetMap nedostane — jedinou vědomou výjimkou je mapa samotná (viz níže).\n\nFotky zboží a provozoven: appka každou nahranou fotku před uložením kompletně překreslí z jednotlivých obrazových bodů do nového souboru, takže výsledek nikdy nenese skrytá data z originálu (včetně GPS). Fotky se dají kdykoli smazat (vlastní) nebo nahlásit (cizí) — u fotek stačí k dočasnému skrytí nahlášení jediného uživatele.\n\nÚčtenky: pokud naskenuješ účtenku, appka nahraje její obrázky a vytěží z nich obchod, adresu, datum a čas nákupu a seznam zboží s cenami. Účtenka je tvůj soukromý přehled nákupu — nikdy se nezveřejňuje, nevidí ji ostatní uživatelé ani moderátoři. Zpracuje ji provozovatel appky na svém počítači, ne cloudová služba třetí strany; kdyby se to mělo změnit, appka tě požádá o nový souhlas. Před odesláním ti appka nabídne zakrýt číslo platební karty, věrnostní karty a další údaje — zakrytí proběhne přímo v telefonu. Ceny z účtenky se zapíšou jako tvoje cenové záznamy, až je sám/sama potvrdíš. Označení zboží z účtenky (např. „TUK.ROHLIK“), které spojíš se zbožím v katalogu, se stane sdíleným katalogovým údajem — bez údaje o tom, kdo a kdy zboží koupil. Volitelně můžeš provozovateli dovolit ponechat si obrázky účtenky pro zlepšování rozpoznávání.\n\nMapa (vědomá výjimka): pokud si na detailu obchodu otevřeš mapu, appka mapové podklady stahuje přímo z tvého telefonu z OpenStreetMap, ne přes náš server — OpenStreetMap tak uvidí tvoji IP adresu. Appka tomu předchází tím, že se mapa nenačte, dokud si o ni výslovně neřekneš.\n\nTechnická data: appka krátkodobě loguje technická data (např. IP adresu u přihlašovacích pokusů a u odesílání formuláře zpětné vazby) kvůli ochraně proti zneužití — neslouží k profilování ani analytice a neuchovává se dlouhodobě, jen v paměti serveru do restartu.</item>
+        <item>Plnění smlouvy (čl. 6 odst. 1 písm. b GDPR) — přihlašovací e-mail a vazba cenových záznamů na účet, bez kterých by appka nemohla fungovat.\n\nOprávněný zájem (čl. 6 odst. 1 písm. f GDPR) — ochrana appky před zneužitím.\n\nSouhlas (čl. 6 odst. 1 písm. a GDPR) — volitelný profil a jeho případné zveřejnění; souhlas můžeš kdykoli odvolat smazáním příslušného údaje v appce.\n\nSouhlas (čl. 6 odst. 1 písm. a GDPR) — zpracování naskenovaných účtenek a zvlášť volitelné ponechání jejich obrázků pro zlepšování rozpoznávání. Souhlas odvoláš smazáním účtenky v appce (Účet → Účtenky); další účtenky bez nového souhlasu appka neodešle.</item>
+        <item>Vazba cenového záznamu na tvůj účet: 180 dní od data ceny, pak automaticky anonymizováno.\nSamotný cenový záznam (bez vazby na účet): trvale, jako anonymizovaná statistika ve veřejném zájmu.\nHodnocení kvality zboží, vlastní úpravy zboží/obchodu: po dobu trvání účtu, smazáno s účtem.\nObrázky naskenované účtenky: 30 dní od zpracování, pak automaticky smazány (se souhlasem s ponecháním přesunuty do archivu provozovatele mimo server).\nText účtenky (obchod, datum a čas, položky): po dobu trvání účtu, dokud ji nesmažeš; smazáno s účtem.\nVolitelný profil: po dobu trvání účtu, smazáno s účtem.\nPřihlašovací e-mail (hash a šifrovaná podoba): po dobu trvání účtu.\nTechnická data (IP u přihlašovacích pokusů a odesílání zpětné vazby): krátkodobě, jen pro ochranu proti zneužití.</item>
         <item>Osobní údaje nikomu neprodáváme ani je nepoužíváme k reklamě. Appka pracuje s těmito externími službami, u kterých se — mimo výjimku mapových dlaždic výš — appka vždy staví mezi tebe a danou službu jako prostředník: OpenStreetMap (Nominatim) pro vyhledání/ověření adresy provozovny, Open Food Facts pro veřejné údaje o zboží, ARES pro volitelné ověření IČO provozovny, Česká národní banka pro kurzovní lístek, a poskytovatel e-mailových služeb, přes kterého appka posílá přihlašovací kódy.\n\nAppka neběží na cizí analytické platformě a nemá vestavěné žádné sledovací pixely.</item>
         <item>Appka na webu používá jedinou cookie: httpOnly cookie s přihlašovacím tokenem, nutnou k udržení přihlášení. Neslouží k analytice ani reklamě, appka proto nezobrazuje cookie lištu. Mobilní appka žádné cookies nepoužívá; přihlašovací token ukládá zašifrovaný přímo v zabezpečeném úložišti telefonu.</item>
         <item>Přihlašovací e-mail i volitelné údaje profilu appka šifruje algoritmem AES-256-GCM, šifrovací klíč se nenachází v databázi. Přihlašovací kódy appka neukládá v čitelné podobě, jen jejich kryptografický otisk. Fotky appka před uložením kompletně přegeneruje, aby nikdy nenesly skrytá metadata z originálu. Přístup ke zdrojovému kódu, databázi a serveru má výhradně provozovatel.\n\nŽádný systém není stoprocentně bezpečný, ale appka je navržená tak, aby v případě úniku dat uniklá data sama o sobě neobsahovala čitelné e-maily ani jiné osobní údaje bez šifrovacího klíče, který je uložený odděleně.</item>
-        <item>Podle GDPR máš právo na přístup (vědět, jaké údaje o tobě appka má), na opravu (přímo v appce, Nastavení → Účet), na výmaz (smazat účet — tvoje cenové záznamy přitom zůstanou jako anonymizovaná statistika bez vazby na tebe, appka je nemaže, jde o sdílená komunitní data, ne o tvůj osobní údaj), na přenositelnost (vyžádat si vlastní data ve strojově čitelné podobě), vznést námitku proti zpracování založenému na oprávněném zájmu a podat stížnost u Úřadu pro ochranu osobních údajů (www.uoou.cz).\n\nSamoobslužné smazání účtu nabízí appka na webu (Účet → Profil → Smazat účet); v mobilní appce a samoobslužný export dat se teprve připravují. Do té doby si o kterékoli z těchto práv napiš na kontakt@kvalitacena.cz — vyřídíme to ručně, obvykle do několika dní.</item>
+        <item>Podle GDPR máš právo na přístup (vědět, jaké údaje o tobě appka má), na opravu (přímo v appce, Nastavení → Účet), na výmaz (smazat účet — tvoje cenové záznamy přitom zůstanou jako anonymizovaná statistika bez vazby na tebe, appka je nemaže, jde o sdílená komunitní data, ne o tvůj osobní údaj), na přenositelnost (vyžádat si vlastní data ve strojově čitelné podobě, včetně textu naskenovaných účtenek), smazat naskenovanou účtenku kdykoli přímo v appce (Účet → Účtenky — smaže se obrázek i text, už potvrzené ceny zůstanou jako běžné cenové záznamy), vznést námitku proti zpracování založenému na oprávněném zájmu a podat stížnost u Úřadu pro ochranu osobních údajů (www.uoou.cz).\n\nSamoobslužné smazání účtu nabízí appka na webu (Účet → Profil → Smazat účet); v mobilní appce a samoobslužný export dat se teprve připravují. Do té doby si o kterékoli z těchto práv napiš na kontakt@kvalitacena.cz — vyřídíme to ručně, obvykle do několika dní.</item>
         <item>Appka je určená lidem starším 15 let (viz Podmínky užití). Pokud zjistíme, že appku používá dítě mladší 15 let bez souhlasu zákonného zástupce, účet na žádost zákonného zástupce smažeme.</item>
-        <item>Appka do budoucna plánuje automatizovanou předběžnou kontrolu nahraných fotek kvůli moderaci. Tohle zpracování poběží na počítači provozovatele, ne přes cloudovou službu třetí strany — fotky by tak neopustily appku o nic víc, než dnes. Tenhle text aktualizujeme, až se to skutečně zapne.</item>
+        <item>Převod naskenovaných účtenek na text běží na počítači provozovatele, ne přes cloudovou službu třetí strany. Výsledek je vždy jen návrh — cenu zapíše až tvoje potvrzení.\n\nAppka do budoucna plánuje i automatizovanou předběžnou kontrolu nahraných fotek kvůli moderaci. Tohle zpracování poběží stejně na počítači provozovatele — fotky by tak neopustily appku o nic víc, než dnes. Kdyby se kterékoli z těchto zpracování mělo přesunout ke třetí straně, oznámíme to předem a u účtenek si vyžádáme nový souhlas.</item>
         <item>Zásady se mohou měnit, zejména s tím, jak appka přibývá funkcemi. O podstatné změně budeme přihlášené uživatele informovat e-mailem nebo oznámením v appce s přiměřeným předstihem. Datum aktuálního znění je na začátku tohoto dokumentu.</item>
         <item>E-mail: kontakt@kvalitacena.cz</item>
     </string-array>
@@ -579,4 +579,171 @@
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
     <string name="store_picker_clear">Vymazat obchod</string>
     <string name="store_location_not_found">Adresu se nepodařilo dohledat. Zkontroluj připojení nebo ji doplň ručně; polohu lze vybrat na mapě.</string>
+    <!-- Účtenky — společné (docs/soukromi.md, „Účtenky") -->
+    <string name="common_close">Zavřít</string>
+    <string name="common_ok">OK</string>
+    <string name="common_retry">Zkusit znovu</string>
+    <string name="account_receipts">Účtenky</string>
+    <string name="scan_receipt">Naskenovat účtenku</string>
+    <string name="scan_code_title">Naskenovat kód</string>
+    <string name="product_form_scan_code">Naskenovat kód fotoaparátem</string>
+    <string name="product_store_labels_title">Názvy na účtenkách</string>
+    <string name="product_store_labels_hint">Jak zboží tisknou obchody na účtenku — podle toho appka příště spáruje řádek účtenky sama.</string>
+    <string name="receipts_title">Účtenky</string>
+    <string name="receipt_detail_title">Účtenka</string>
+    <string name="receipt_capture_title">Naskenovat účtenku</string>
+    <string name="receipt_review_title">Kontrola účtenky</string>
+    <string name="receipts_login_title">Účtenky vyžadují přihlášení</string>
+    <string name="receipts_login_text">Účtenka je soukromý přehled vašeho nákupu, proto patří k účtu. Nikdo jiný ji neuvidí.</string>
+    <string name="receipts_login_action">Přihlásit se</string>
+    <string name="receipt_status_queued">Čeká na zpracování</string>
+    <string name="receipt_status_processing">Zpracovává se</string>
+    <string name="receipt_status_processed">Zpracováno</string>
+    <string name="receipt_status_not_a_receipt">Nejde o účtenku</string>
+    <string name="receipt_status_unreadable">Nečitelná</string>
+    <string name="receipt_status_failed">Zpracování selhalo</string>
+    <string name="receipt_status_queued_text">Účtenky čte počítač provozovatele appky, obvykle během několika hodin. Až bude hotovo, appka dá vědět.</string>
+    <string name="receipt_status_processing_text">Účtenku právě čte počítač provozovatele. Až bude hotovo, appka dá vědět.</string>
+    <string name="receipt_status_not_a_receipt_text">Na obrázcích nebyly žádné částky. Pokud to účtenka je, nafoťte ji znovu zblízka.</string>
+    <string name="receipt_status_unreadable_text">Částky jsou vidět, ale položky přečíst nešlo. Nafoťte účtenku znovu — ostře a při dobrém světle.</string>
+    <string name="receipt_status_failed_text">Účtenku se nepodařilo přečíst ani na několik pokusů. Zkuste ji naskenovat znovu.</string>
+    <string name="receipt_notification_channel">Účtenky</string>
+    <string name="receipt_notification_channel_description">Upozornění, že je naskenovaná účtenka zpracovaná a připravená ke kontrole.</string>
+    <string name="receipt_notification_title">Účtenka je připravená ke kontrole</string>
+    <string name="receipt_notification_text">Ke kontrole: %1$d. Ťukněte a potvrďte ceny.</string>
+    <!-- Účtenky — snímání, kontrola před odesláním, souhlas -->
+    <string name="receipt_capture_hint_find">Namiřte telefon na horní okraj účtenky</string>
+    <string name="receipt_capture_hint_retake">Namiřte telefon na díl, který chcete nafotit znovu</string>
+    <string name="receipt_capture_hint_hold_still">Držte telefon v klidu</string>
+    <string name="receipt_capture_hint_move_down">Posuňte telefon níž</string>
+    <string name="receipt_capture_hint_move_back">Příliš rychle — vraťte telefon kousek výš</string>
+    <string name="receipt_capture_hint_limit">Víc dílů jedna účtenka mít nemůže — klepněte na Hotovo</string>
+    <string name="receipt_capture_parts">Nafocené díly: %1$d</string>
+    <string name="receipt_capture_undo">Smazat poslední díl</string>
+    <string name="receipt_capture_shutter">Vyfotit ručně</string>
+    <string name="receipt_capture_done">Hotovo</string>
+    <string name="receipt_capture_import">Načíst z galerie (ladění)</string>
+    <string name="receipt_capture_limit">Účtenka může mít nejvýš %1$d dílů — zbytek se nepřidal.</string>
+    <string name="receipt_capture_offline">Jste offline — účtenka počká v telefonu a odešle se po připojení.</string>
+    <string name="receipt_capture_permission_title">Chybí přístup ke kameře</string>
+    <string name="receipt_capture_permission_text">Účtenku appka snímá kamerou. Nic se neodešle, dokud účtenku nezkontrolujete a neodešlete sami.</string>
+    <string name="receipt_capture_permission_action">Povolit kameru</string>
+    <string name="receipt_capture_camera_error_title">Kamera se nespustila</string>
+    <string name="receipt_capture_camera_error_text">Zavřete jiné aplikace, které kameru používají, a zkuste to znovu.</string>
+    <string name="receipt_capture_process_failed">Snímek se nepodařilo zpracovat. Zkuste to znovu.</string>
+    <string name="receipt_capture_unavailable_title">Snímání účtenek tu nefunguje</string>
+    <string name="receipt_capture_unavailable_text">Knihovnu pro zpracování obrazu se na tomto zařízení nepodařilo načíst.</string>
+    <string name="receipt_review_warning_title">Zakryjte citlivé údaje</string>
+    <string name="receipt_review_warning_text">Zakryjte číslo platební karty, věrnostní kartu a jméno pokladní. Zakrytí se vypálí do obrázku přímo v telefonu — zakrytý obsah se na server nedostane.</string>
+    <string name="receipt_review_part">Díl %1$d z %2$d</string>
+    <string name="receipt_review_no_masks">Nic nezakryto</string>
+    <string name="receipt_review_masks">Zakrytá místa: %1$d</string>
+    <string name="receipt_review_mask">Zakrýt</string>
+    <string name="receipt_review_move_up">Nahoru</string>
+    <string name="receipt_review_move_down">Dolů</string>
+    <string name="receipt_review_retake">Nafotit znovu</string>
+    <string name="receipt_review_add_more">Přidat další díl</string>
+    <string name="receipt_review_capture">Nafotit účtenku</string>
+    <string name="receipt_review_submit">Odeslat účtenku (dílů: %1$d)</string>
+    <string name="receipt_review_submit_failed">Účtenku se nepodařilo připravit k odeslání. Zkuste to znovu.</string>
+    <string name="receipt_review_offline">Jste offline — účtenka se uloží v telefonu a odešle se, jakmile bude signál.</string>
+    <string name="receipt_review_empty_title">Zatím žádný díl</string>
+    <string name="receipt_review_empty_text">Nafoťte účtenku shora dolů. Dlouhou po částech — appka díly fotí sama, když telefonem posouváte.</string>
+    <string name="receipt_review_delete_title">Smazat díl?</string>
+    <string name="receipt_review_delete_text">Díl %1$d se z účtenky smaže.</string>
+    <string name="receipt_mask_editor_title">Zakrýt citlivé údaje</string>
+    <string name="receipt_mask_editor_hint">Tažením prstu nakreslete černý obdélník přes číslo karty, věrnostní kartu nebo jméno pokladní. Ťuknutím na obdélník ho smažete.</string>
+    <string name="receipt_mask_undo">Vrátit poslední</string>
+    <string name="receipt_mask_clear">Odkrýt vše</string>
+    <string name="receipt_mask_save">Uložit zakrytí</string>
+    <string name="receipt_consent_title">Souhlas se zpracováním účtenky</string>
+    <string name="receipt_consent_outdated">Znění souhlasu se změnilo a tahle verze aplikace ho neumí ukázat. Aktualizujte aplikaci a odešlete účtenku znovu.</string>
+    <string name="receipt_consent_text">Účtenku přečte provozovatel appky na svém vlastním počítači — žádná cloudová služba. Obrázky se do 30 dnů po zpracování smažou; přehled nákupu (obchod, datum, položky) vidíte jen vy. Ceny z účtenky se zapíší až po vašem potvrzení.</string>
+    <string name="receipt_consent_processing">Souhlasím, aby účtenku zpracoval provozovatel appky na svém počítači (povinné)</string>
+    <string name="receipt_consent_archive">Provozovatel si smí obrázky ponechat pro zlepšení rozpoznávání (nepovinné)</string>
+    <string name="receipt_consent_privacy_link">Zásady ochrany osobních údajů</string>
+    <string name="receipt_consent_accept">Souhlasím a odeslat</string>
+    <!-- Účtenky — seznam a detail -->
+    <string name="receipts_capture">Naskenovat účtenku</string>
+    <string name="receipts_empty_title">Zatím žádné účtenky</string>
+    <string name="receipts_empty_text">Naskenujte účtenku z obchodu — appka z ní vytáhne ceny a vy je jen potvrdíte. Účtenky vidíte jen vy.</string>
+    <string name="receipts_error_title">Účtenky se nepodařilo načíst</string>
+    <string name="receipts_offline">Jste offline — čekající účtenky se odešlou samy po připojení.</string>
+    <string name="receipts_offline_title">Jste offline</string>
+    <string name="receipts_offline_text">Seznam účtenek se načte po připojení. Naskenovat účtenku jde i teď — odešle se později.</string>
+    <string name="receipts_pending_title">Čeká na odeslání</string>
+    <string name="receipts_server_title">Vaše účtenky</string>
+    <string name="receipts_load_more">Načíst další</string>
+    <string name="receipt_pending_parts">Dílů: %1$d</string>
+    <string name="receipt_pending_queued">Připravena k odeslání</string>
+    <string name="receipt_pending_uploading">Odesílá se…</string>
+    <string name="receipt_pending_waiting_network">Čeká na signál — odešle se sama po připojení.</string>
+    <string name="receipt_pending_failed">Odeslání se nepovedlo.</string>
+    <string name="receipt_pending_needs_consent">Znění souhlasu se změnilo — účtenka čeká na nový souhlas.</string>
+    <string name="receipt_pending_needs_login">Pro odeslání se přihlaste, pak klepněte na Odeslat znovu.</string>
+    <string name="receipt_pending_retry">Odeslat znovu</string>
+    <string name="receipt_pending_give_consent">Dát souhlas a odeslat</string>
+    <string name="receipt_pending_delete_title">Zahodit čekající účtenku?</string>
+    <string name="receipt_pending_delete_text">Účtenka se ještě neodeslala. Smaže se jen z telefonu.</string>
+    <string name="receipt_unknown_store">Účtenka</string>
+    <string name="receipt_new">Nové</string>
+    <string name="receipt_actions">Akce s účtenkou</string>
+    <string name="receipt_review_status_pending">Ke kontrole — položek: %1$d</string>
+    <string name="receipt_review_status_in_progress">Rozpracováno — %1$d z %2$d</string>
+    <string name="receipt_review_status_done">Hotovo — spárováno %1$d z %2$d</string>
+    <string name="receipt_delete">Smazat účtenku</string>
+    <string name="receipt_delete_title">Smazat účtenku?</string>
+    <string name="receipt_delete_text">Smaže se účtenka, její obrázky i řádky. Už zapsané ceny zůstanou jako běžné cenové záznamy.</string>
+    <string name="receipt_detail_not_found_title">Účtenka nenalezena</string>
+    <string name="receipt_detail_not_found_text">Možná byla smazaná. Své účtenky najdete v Účtu.</string>
+    <string name="receipt_detail_offline">Jste offline — účtenka se načte a změny půjde uložit po připojení.</string>
+    <string name="receipt_total">Celkem: %1$s</string>
+    <string name="receipt_rescan">Naskenovat znovu</string>
+    <string name="receipt_store">Obchod: %1$s</string>
+    <string name="receipt_store_suggested">Navržený obchod: %1$s</string>
+    <string name="receipt_store_confirm">Potvrdit obchod</string>
+    <string name="receipt_store_other">Jiný obchod</string>
+    <string name="receipt_store_raw">Na účtence: %1$s</string>
+    <string name="receipt_store_ico">IČO %1$s</string>
+    <string name="receipt_change">Změnit</string>
+    <string name="receipt_purchased_at">Nákup: %1$s</string>
+    <string name="receipt_purchased_at_missing">Datum nákupu chybí</string>
+    <string name="receipt_purchase_time">Čas nákupu</string>
+    <string name="receipt_images_title">Obrázky</string>
+    <string name="receipt_image">Obrázek účtenky</string>
+    <string name="receipt_images_retention">Obrázky vidíte jen vy a smažou se 30 dní po zpracování.</string>
+    <string name="receipt_images_deleted">Obrázky už byly smazané — uchovávají se 30 dní po zpracování.</string>
+    <string name="receipt_lines_title">Položky (%1$d)</string>
+    <string name="receipt_lines_empty">Na účtence se nenašly žádné položky.</string>
+    <string name="receipt_line_qty_pcs">%1$s ks × %2$s</string>
+    <string name="receipt_line_qty_kg">%1$s kg × %2$s/kg</string>
+    <string name="receipt_line_qty_l">%1$s l × %2$s/l</string>
+    <string name="receipt_line_discount">Sleva −%1$s</string>
+    <string name="receipt_line_actions">Akce s řádkem</string>
+    <string name="receipt_line_choose">Vybrat zboží</string>
+    <string name="receipt_line_choose_other">Vybrat jiné zboží</string>
+    <string name="receipt_line_create">Založit nové zboží</string>
+    <string name="receipt_line_ignore">Ignorovat</string>
+    <string name="receipt_line_unmatch">Zrušit párování</string>
+    <string name="receipt_line_restore">Vrátit mezi nespárované</string>
+    <string name="receipt_line_status_unmatched">Nespárováno</string>
+    <string name="receipt_line_status_suggested">Návrh — zkontrolujte a potvrďte</string>
+    <string name="receipt_line_status_matched_by_you">Spárováno vámi — čeká na potvrzení</string>
+    <string name="receipt_line_status_confirmed">Cena zapsána</string>
+    <string name="receipt_line_status_matched">Spárováno</string>
+    <string name="receipt_line_status_ignored">Ignorováno</string>
+    <string name="receipt_skip_duplicate">cenu tohoto zboží už pro tento den máte zapsanou</string>
+    <string name="receipt_skip_price_missing">na řádku chybí cena</string>
+    <string name="receipt_skip_not_matched">řádek nemá spárované zboží</string>
+    <string name="receipt_skip_other">cenu se nepodařilo zapsat</string>
+    <string name="receipt_confirm">Potvrdit spárované (%1$d)</string>
+    <string name="receipt_confirm_needs_store">Nejdřív potvrďte obchod — bez něj cenu zapsat nejde.</string>
+    <string name="receipt_confirm_needs_date">Doplňte datum a čas nákupu — stane se datem všech cen z účtenky.</string>
+    <string name="receipt_confirm_result_title">Ceny z účtenky</string>
+    <string name="receipt_confirm_result_confirmed">Zapsané ceny: %1$d</string>
+    <string name="receipt_confirm_result_skipped">Přeskočené řádky: %1$d</string>
+    <string name="receipt_suggestions_search">Hledat zboží</string>
+    <string name="receipt_suggestions_empty">Nic podobného se nenašlo. Zkuste jiný název, nebo založte nové zboží.</string>
+    <!-- Účtenky — ladění (jen debug build) -->
+    <string name="receipts_debug_check_status">Zkontrolovat zpracování teď (ladění)</string>
 </resources>

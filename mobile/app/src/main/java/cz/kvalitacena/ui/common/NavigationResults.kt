@@ -15,6 +15,16 @@ import cz.kvalitacena.network.Store
 object NavigationResults {
   var newStore: Store? = null
   var newProduct: Product? = null
+
+  /**
+   * [newProduct] je opravdu nově založené zboží, ne existující položka vybraná z nabídky
+   * podobných (ProductFormViewModel.usingExisting) — párování řádku účtenky to posílá serveru
+   * jako `matchReceiptLine(newProduct)`.
+   */
+  var newProductCreated: Boolean = false
+
+  /** Kód naskenovaný v režimu „vrátit kód" (ROUTE_SCAN_CODE) — vyzvedne ho formulář zboží. */
+  var scannedCode: String? = null
   /** Napsaný název, kterým uživatel našel existující lokální položku; odešle se až s cenou. */
   var productAlias: String? = null
 

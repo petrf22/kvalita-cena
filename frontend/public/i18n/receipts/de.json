@@ -1,0 +1,182 @@
+{
+  "title": "Kassenbons",
+  "intro": "Fotografiere den Kassenbon deines Einkaufs und erfasse die Preise mit ein paar Klicks statt abzutippen. Nur du siehst deine Kassenbons.",
+  "uploadButton": "Kassenbon hochladen",
+  "loading": "Kassenbons werden geladen…",
+  "retry": "Erneut versuchen",
+  "loadFailed": "Die Kassenbons konnten nicht geladen werden.",
+  "detailLoadFailed": "Der Kassenbon konnte nicht geladen werden.",
+  "offlineTitle": "Du bist offline",
+  "offlineListText": "Deine Kassenbons werden geladen, sobald du wieder online bist.",
+  "offlineDetailText": "Der Kassenbon wird geladen, sobald du wieder online bist.",
+  "offlineStale": "Du bist offline — die Liste ist womöglich veraltet. Sie aktualisiert sich nach dem Verbinden von selbst.",
+  "offlineEditText": "Änderungen können gerade nicht gespeichert werden. Nach dem Verbinden kannst du mit dem Zuordnen weitermachen, nichts geht verloren.",
+  "offlineAction": "Du bist nicht mit dem Internet verbunden — die Aktion wurde nicht gespeichert. Versuch es nach dem Verbinden erneut.",
+  "emptyTitle": "Du hast noch keine Kassenbons",
+  "emptyText": "Lade ein Foto eines Kassenbons hoch. Die App liest Geschäft, Datum und Positionen aus, und du bestätigst nur, welche Preise erfasst werden.",
+  "uploadedTitle": "Der Kassenbon wurde gesendet",
+  "uploadedText": "Er wartet auf die Verarbeitung auf dem Rechner des Betreibers, das kann eine Weile dauern. Sobald er fertig ist, findest du ihn hier zum Zuordnen, und im Menü erscheint ein Hinweis bei Kassenbons.",
+  "unknownStore": "Unbekanntes Geschäft",
+  "newBadge": "Neu",
+  "uploadedAt": "Hochgeladen {{date}}",
+  "lineCountTotal": "{count, plural, one {# Position} other {# Positionen}}",
+  "lineCountOpen": "{count, plural, one {# nicht zugeordnet} other {# nicht zugeordnet}}",
+  "lineCountReady": "{count, plural, one {# bereit zur Bestätigung} other {# bereit zur Bestätigung}}",
+  "lineCountMatched": "{count, plural, one {# zugeordnet} other {# zugeordnet}}",
+  "lineCountRecorded": "{count, plural, one {# Preis erfasst} other {# Preise erfasst}}",
+  "deleteConfirm": "Kassenbon samt Bildern löschen? Preise, die du daraus schon erfasst hast, bleiben erhalten.",
+  "deleteLabel": "Kassenbon löschen",
+  "deleteButton": "Kassenbon löschen",
+  "deleteHint": "Löscht die Bilder und den Text des Kassenbons. Preise, die du daraus schon bestätigt hast, bleiben als normale Preiseinträge erhalten.",
+  "backToList": "Zurück zu den Kassenbons",
+  "notFoundTitle": "Dieser Kassenbon ist nicht hier",
+  "notFoundText": "Vielleicht hast du ihn gelöscht, oder er gehört zu einem anderen Konto — einen Kassenbon sieht immer nur sein Eigentümer.",
+  "externalImageNote": "Manche Miniaturbilder der Produkte stammen von Open Food Facts (Quelle beim Hovern sichtbar).",
+  "mask": {
+    "imageAlt": "Vorschau des Fotos {{name}}",
+    "maskLabel": "Abdeckung {{index}} — mit den Pfeiltasten verschieben, mit Entf löschen",
+    "removeOne": "Abdeckung entfernen",
+    "drawModeOff": "Abdeckung zeichnen",
+    "drawModeOn": "Zeichnen beenden",
+    "addBand": "Unteren Streifen abdecken",
+    "clearAll": "Alle Abdeckungen entfernen",
+    "hintMouse": "Zieh mit der Maus über die Angabe, die du verdecken willst. Das schwarze Rechteck lässt sich verschieben und an den Ecken vergrößern. Was schwarz ist, erreicht den Server nicht.",
+    "hintTouch": "Schalte „Abdeckung zeichnen“ ein und zieh mit dem Finger über die Angabe. Das schwarze Rechteck lässt sich verschieben und an den Ecken vergrößern. Was schwarz ist, erreicht den Server nicht."
+  },
+  "upload": {
+    "title": "Neuer Kassenbon",
+    "maskWarningTitle": "Verdecke Kartennummer, Kundenkarte und den Namen der Kassiererin",
+    "maskWarningText": "Diese Angaben braucht die App nicht. Die Abdeckung wird direkt im Browser ins Bild eingebrannt und erreicht den Server gar nicht. Geschäft, Datum und Uhrzeit des Einkaufs lass sichtbar — daraus entstehen deine Preise.",
+    "stepPhotos": "1. Fotos des Kassenbons",
+    "photosHint": "Fotografiere den Kassenbon gerade und scharf. Einen langen Kassenbon fotografierst du in Teilen von oben nach unten mit etwas Überlappung — höchstens {{max}} Teile.",
+    "choosePhotos": "Fotos auswählen",
+    "addPart": "Weiteren Teil hinzufügen",
+    "partsLabel": "Teile des Kassenbons von oben nach unten",
+    "partName": "Teil {{index}}",
+    "partMasks": "{count, plural, one {# Abdeckung} other {# Abdeckungen}}",
+    "partMasksNone": "keine Abdeckung",
+    "moveUp": "Teil {{index}} nach oben verschieben",
+    "moveDown": "Teil {{index}} nach unten verschieben",
+    "removePart": "Teil {{index}} entfernen",
+    "orderHint": "Die Reihenfolge muss dem Kassenbon von oben nach unten entsprechen — mit den Pfeilen änderst du sie. Der untere Streifen wird beim letzten Teil vorgeschlagen.",
+    "stepMask": "2. Sensible Angaben verdecken (Teil {{index}} von {{total}})",
+    "stepConsent": "3. Einwilligung zur Verarbeitung",
+    "consentProcessing": "Ich bin einverstanden, dass der Betreiber der App den Kassenbon auf seinem eigenen Rechner verarbeitet (Umwandlung des Bildes in Text). Er wird an niemanden sonst geschickt und nur ich sehe ihn.",
+    "consentDetail": "Die Bilder werden 30 Tage nach der Verarbeitung gelöscht, der Text des Kassenbons bleibt, bis du ihn löschst. Details:",
+    "privacyLink": "Datenschutzerklärung",
+    "consentArchive": "Optional: Der Betreiber darf die Bilder behalten, um die Erkennung von Kassenbons zu verbessern.",
+    "consentVersionFailed": "Der aktuelle Text der Einwilligung konnte nicht geladen werden — ohne ihn lässt sich der Kassenbon nicht senden.",
+    "waitingTitle": "Wartet auf Verbindung",
+    "waitingText": "Du bist offline. Der Kassenbon ist vorbereitet und wird automatisch gesendet, sobald du wieder verbunden bist — lass diese Seite offen.",
+    "cancelSend": "Nicht senden",
+    "submit": "Kassenbon senden",
+    "blocker": {
+      "noParts": "Wähle zuerst mindestens ein Foto aus.",
+      "loading": "Fotos werden geladen…",
+      "consentOutdated": "Der Text der Einwilligung hat sich inzwischen geändert — lade die Seite neu, um die aktuelle Fassung zu sehen.",
+      "noConsent": "Ohne Einwilligung zur Verarbeitung wird nichts gesendet.",
+      "noConsentVersion": "Warte auf den Text der Einwilligung vom Server…"
+    },
+    "tooManyParts": "Ein Kassenbon darf höchstens {{max}} Teile haben — die überzähligen Fotos wurden nicht hinzugefügt.",
+    "unsupportedFile": "Die Datei {{name}} ließ sich nicht als Bild öffnen. Versuch JPEG oder PNG.",
+    "fileFailed": "Das Foto {{name}} konnte nicht geladen werden.",
+    "renderFailed": "Die Fotos konnten nicht zum Senden vorbereitet werden. Wähle sie erneut aus.",
+    "tooLarge": "Der Kassenbon ist zum Senden zu groß. Versuch es mit weniger Teilen."
+  },
+  "images": {
+    "title": "Bild des Kassenbons",
+    "show": "Bild des Kassenbons anzeigen",
+    "hide": "Bild des Kassenbons ausblenden",
+    "deleted": "Die Bilder wurden nach 30 Tagen gelöscht",
+    "deletedAt": "Gelöscht am {{date}}. Der Text des Kassenbons und erfasste Preise bleiben erhalten.",
+    "partAlt": "Kassenbon, Teil {{index}} von {{total}}",
+    "offline": "Das Bild wird nach dem Verbinden geladen.",
+    "failed": "Das Bild konnte nicht geladen werden.",
+    "zoomHint": "Klicken öffnet das Bild in voller Größe."
+  },
+  "match": {
+    "placeholder": "Produkt nach Namen suchen",
+    "hintLabel": "Vorschläge anhand des Textes auf dem Kassenbon. Ist das richtige Produkt nicht dabei, gib seinen Namen ein.",
+    "hintQuery": "Ergebnisse für den eingegebenen Namen.",
+    "offline": "Du bist offline — die Suche funktioniert nach dem Verbinden.",
+    "empty": "Nichts Ähnliches gefunden. Versuch einen anderen Namen.",
+    "emptyCreate": "Nichts Ähnliches gefunden. Versuch einen anderen Namen oder lege das Produkt an.",
+    "unconfirmed": "noch nicht bestätigt",
+    "close": "Schließen"
+  },
+  "header": {
+    "title": "Kopf des Kassenbons",
+    "store": "Geschäft",
+    "changeStore": "Geschäft ändern",
+    "suggestedStore": "Laut Kassenbon sieht es aus nach",
+    "confirmStore": "Bestätigen",
+    "otherStore": "Anderes wählen",
+    "saveStore": "Geschäft speichern",
+    "storeUnknown": "Das Geschäft wird nach der Verarbeitung ergänzt.",
+    "rawPrefix": "Auf dem Kassenbon:",
+    "rawIco": "Firmennr. {{ico}}",
+    "purchasedAt": "Datum und Uhrzeit des Einkaufs",
+    "purchasedAtPlaceholder": "Datum und Uhrzeit wählen",
+    "savePurchasedAt": "Datum speichern",
+    "purchasedAtMissing": "Datum und Uhrzeit des Einkaufs ließen sich nicht vom Kassenbon lesen. Ergänze sie — ohne sie können keine Preise erfasst werden.",
+    "total": "Summe"
+  },
+  "status": {
+    "queuedTitle": "Der Kassenbon wartet auf die Verarbeitung",
+    "processingTitle": "Der Kassenbon wird gerade gelesen",
+    "pendingText": "Die Verarbeitung läuft auf dem Rechner des Betreibers und kann daher eine Weile dauern. Die Seite aktualisiert sich selbst — du kannst sie auch schließen und später wiederkommen.",
+    "NOT_A_RECEIPT": {
+      "title": "Auf dem Bild haben wir keinen Kassenbon gefunden",
+      "text": "Lösche ihn und lade erneut ein Foto des Kassenbons hoch."
+    },
+    "UNREADABLE": {
+      "title": "Der Kassenbon ist unleserlich",
+      "text": "Fotografiere ihn erneut scharf, gerade und bei gutem Licht, einen langen in Teilen. Diesen dann löschen."
+    },
+    "FAILED": {
+      "title": "Die Verarbeitung ist fehlgeschlagen",
+      "text": "Der Fehler liegt bei uns. Lade den Kassenbon erneut hoch und lösche diesen."
+    }
+  },
+  "lines": {
+    "title": "Positionen",
+    "storeFirst": "Bestätige zuerst das Geschäft — danach werden Produkte gesucht und angelegt, und ohne es lassen sich keine Preise erfassen.",
+    "empty": "Auf dem Kassenbon wurden keine Positionen gefunden."
+  },
+  "line": {
+    "selectLabel": "Preis aus der Position {{label}} erfassen",
+    "quantityPieces": "{{quantity}} {{unit}} × {{price}}",
+    "quantityWeighed": "{{quantity}} {{unit}} × {{price}} pro {{unit}}",
+    "pricePerUnit": "{{price}} pro {{unit}}",
+    "discount": "Rabatt −{{amount}}",
+    "recorded": "Preis erfasst",
+    "findProduct": "Produkt suchen",
+    "changeProduct": "Produkt ändern",
+    "createProduct": "Neues Produkt anlegen",
+    "createNeedsStore": "Ein neues Produkt lässt sich anlegen, sobald das Geschäft bestätigt ist.",
+    "ignore": "Ignorieren",
+    "unmatch": "Zuordnung aufheben",
+    "unignore": "Nicht mehr ignorieren"
+  },
+  "skip": {
+    "duplicateSameDay": "Diesen Preis hast du für den Einkaufstag schon erfasst — ein zweiter Eintrag wurde nicht hinzugefügt."
+  },
+  "confirm": {
+    "button": "Zugeordnete bestätigen ({{count}})",
+    "hint": "Erfasst die Preise der angehakten Positionen mit Datum und Uhrzeit des Einkaufs vom Kassenbon.",
+    "blocker": {
+      "notProcessed": "Der Kassenbon ist noch nicht verarbeitet.",
+      "storeMissing": "Bestätige zuerst oben das Geschäft.",
+      "purchaseTimeMissing": "Ergänze zuerst oben Datum und Uhrzeit des Einkaufs.",
+      "nothing": "Hake mindestens eine zugeordnete Position an."
+    },
+    "done": "{count, plural, one {# Preis erfasst.} other {# Preise erfasst.}}",
+    "doneNone": "Es wurde kein neuer Preis erfasst.",
+    "skipped": "{count, plural, one {# Position übersprungen:} other {# Positionen übersprungen:}}"
+  },
+  "create": {
+    "title": "Neues Produkt vom Kassenbon",
+    "labelPrefix": "Auf dem Kassenbon:",
+    "hint": "Schreib die Abkürzung vom Kassenbon zum vollen Namen um, wie du ihn von der Verpackung kennst. Das Produkt wird für dieses Geschäft angelegt und die Position gleich damit zugeordnet."
+  }
+}

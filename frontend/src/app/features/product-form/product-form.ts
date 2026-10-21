@@ -8,6 +8,7 @@ import {
   inject,
   input,
   signal,
+  untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
@@ -21,7 +22,9 @@ import type { NzTreeNode } from 'ng-zorro-antd/core/tree';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzFormModule } from 'ng-zorro-antd/form';
+import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
@@ -59,6 +62,7 @@ import {
   productFormDefaults,
   visibleNetContent,
 } from './product-form-validation';
+import { BarcodeScanner } from './barcode-scanner';
 
 type CategoryOption = CategoriesQuery['categories'][number];
 
@@ -94,9 +98,12 @@ export interface ExistingProductMatch {
     NzSwitchModule,
     NzButtonModule,
     NzAlertModule,
+    NzIconModule,
+    NzModalModule,
     TranslocoDirective,
     TranslocoPipe,
     PhotoSlot,
+    BarcodeScanner,
   ],
   providers: [provideTranslocoScope('product-form')],
   templateUrl: './product-form.html',
@@ -133,12 +140,28 @@ export class ProductForm {
   readonly product = input<Product | null>(null);
   /** Obchod vybraný před formulářem; pro bezkódový produkt je povinnou součástí identity. */
   readonly store = input<Store | null>(null);
+  /**
+   * Předvyplněný název při zakládání — text řádku účtenky (`features/receipts`). Zkratka typu
+   * „ČF ŽAMPIONY 300G" je jen výchozí bod k přepsání, proto se hned podle ní hledají podobné
+   * existující položky (`onNameChange`), ať nevznikne duplicita.
+   */
+  readonly initialName = input<string | null>(null);
 
   @Output() readonly created = new EventEmitter<Product>();
   @Output() readonly existingMatched = new EventEmitter<ExistingProductMatch>();
   @Output() readonly cancelled = new EventEmitter<void>();
 
   protected readonly name = signal('');
+  /**
+   * Uživatel název sám psal — předvyplněný text (řádek účtenky, `initialName`) se pak smí
+   * přepsat názvem z Open Food Facts po naskenování, ručně napsaný ne.
+   */
+  private nameTouched = false;
+
+  /** Otevřený skener čárového kódu (`BarcodeScanner`) u prázdného pole kódu. */
+  protected readonly scanning = signal(false);
+  /** Naskenovaný kód už v katalogu je — nabídne se místo zakládání duplicity. */
+  protected readonly scannedExisting = signal<Product | null>(null);
 
   /**
    * Pole „Název" je VŽDY v jazyce appky (docs/lokalizace.md) — proto se do něj nikdy nedosazuje
@@ -247,6 +270,14 @@ export class ProductForm {
     });
 
     effect(() => {
+      const initial = this.initialName()?.trim();
+      if (!initial || this.product()) return;
+      untracked(() => {
+        if (this.name() === '') this.onNameChange(initial);
+      });
+    });
+
+    effect(() => {
       const product = this.product();
       if (!product) return;
       const defaults = productFormDefaults(product, this.nameLang());
@@ -280,6 +311,12 @@ export class ProductForm {
     this.moreLangsExpanded.update((expanded) => !expanded);
   }
 
+  /** Psaní do pole „Název" (šablona) — na rozdíl od `onNameChange` i značka ručního zásahu. */
+  onNameInput(value: string): void {
+    this.nameTouched = true;
+    this.onNameChange(value);
+  }
+
   onNameChange(value: string): void {
     this.name.set(value);
     clearTimeout(this.suggestionsTimer);
@@ -304,7 +341,7 @@ export class ProductForm {
    *  past OFF kandidáta — hodnotu i jednotku bere, jak jsou) a snímek pro submit() si uloží
    *  stranou do `offDefaults`. Nepřepisuje
    *  pole, která kandidát nemá (necháme prázdné pro ruční vyplnění). */
-  private applyOffCandidate(candidate: ExternalProductCandidate): void {
+  private applyOffCandidate(candidate: ExternalProductCandidate, keepFilled = false): void {
     this.offCandidate.set(candidate);
     const defaults = offCandidateDefaults(candidate, this.nameLang());
     this.offDefaults = defaults;
@@ -313,11 +350,51 @@ export class ProductForm {
     // Sekce ostatních jazyků se ZÁMĚRNĚ nerozbaluje sama, ani když OFF zná zboží jen
     // cizojazyčně — ten název je vidět v upozornění pod polem „Název" a rozbalená sekce by
     // místo toho ukázala hlavně prázdná pole jazyků, které nikdo nevyplní.
-    if (defaults.name) this.name.set(defaults.name);
-    if (defaults.brandName) this.brandName.set(defaults.brandName);
-    if (defaults.categoryId) this.selectedCategoryId.set(defaults.categoryId);
-    if (defaults.netContentValue != null) this.netContentValue.set(defaults.netContentValue);
-    if (defaults.netContentUom) this.netContentUom.set(defaults.netContentUom);
+    // keepFilled (sken do rozepsaného formuláře): co uživatel už vyplnil, OFF nepřepíše —
+    // `offDefaults` zůstává snímkem OFF, takže se jeho hodnota pošle jako vlastní změna.
+    const keep = (filled: boolean) => keepFilled && filled;
+    if (defaults.name && !keep(this.nameTouched && this.name().trim() !== '')) {
+      this.name.set(defaults.name);
+    }
+    if (defaults.brandName && !keep(this.brandName().trim() !== '')) {
+      this.brandName.set(defaults.brandName);
+    }
+    if (defaults.categoryId && !keep(this.selectedCategoryId() !== null)) {
+      this.selectedCategoryId.set(defaults.categoryId);
+    }
+    if (defaults.netContentValue != null && !keep(this.netContentValue() !== null)) {
+      this.netContentValue.set(defaults.netContentValue);
+      if (defaults.netContentUom) this.netContentUom.set(defaults.netContentUom);
+    } else if (defaults.netContentUom && !keep(this.netContentUom() !== null)) {
+      this.netContentUom.set(defaults.netContentUom);
+    }
+  }
+
+  /**
+   * Kód přečtený skenerem — vyplní pole a zeptá se katalogu i Open Food Facts stejně jako
+   * vstup `barcode`: existující zboží se nabídne k použití, OFF kandidát předvyplní prázdná pole.
+   */
+  onScanned(code: string): void {
+    this.scanning.set(false);
+    this.code.set(code);
+    this.scannedExisting.set(null);
+    this.productService.lookupByCode(code).subscribe({
+      next: (result) => {
+        if (result.status === 'EXISTING' && result.product) {
+          this.scannedExisting.set(result.product);
+        } else if (result.status === 'OFF_CANDIDATE' && result.candidate) {
+          this.applyOffCandidate(result.candidate, true);
+        }
+      },
+      // Výpadek katalogu/OFF skenu nevadí — kód je v poli a formulář jde vyplnit ručně.
+      error: () => {},
+    });
+  }
+
+  /** Naskenované zboží už existuje — použít ho místo založení nového. */
+  useScannedExisting(): void {
+    const product = this.scannedExisting();
+    if (product) this.existingMatched.emit({ product, alias: this.name().trim() });
   }
 
   /** Uživatel si vybral existující nabídnutou položku místo založení nové (docs/reputace.md). */

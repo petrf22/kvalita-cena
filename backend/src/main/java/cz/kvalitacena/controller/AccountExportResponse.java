@@ -18,7 +18,8 @@ public record AccountExportResponse(
     List<ObservationExport> priceObservations,
     List<QualityRatingExport> qualityRatings,
     List<ProductEditExport> productEdits,
-    List<StoreEditExport> storeEdits) {
+    List<StoreEditExport> storeEdits,
+    List<ReceiptExport> receipts) {
 
   public record AccountInfo(String publicHandle, String displayName, String loginEmail,
       OffsetDateTime createdAt, String locale, String country) {
@@ -51,5 +52,18 @@ public record AccountExportResponse(
   public record StoreEditExport(String storeName, String name, String street, String city,
       String postalCode, String ico, BigDecimal lat, BigDecimal lon, String url,
       List<String> clearedFields, OffsetDateTime updatedAt) {
+  }
+
+  /**
+   * Naskenovaná účtenka (docs/soukromi.md, „Účtenky") — hlavička a řádky, bez obrázků (ty má
+   * vlastník v appce, dokud nevyprší retence). Syrový text z účtenky, jak ho přečetl stroj.
+   */
+  public record ReceiptExport(OffsetDateTime createdAt, String processingStatus, String storeName,
+      String storeAddress, OffsetDateTime purchasedAt, BigDecimal totalAmount, String currency,
+      List<ReceiptLineExport> lines) {
+  }
+
+  public record ReceiptLineExport(String label, BigDecimal quantity, String quantityUnit,
+      BigDecimal unitPrice, BigDecimal lineTotal, BigDecimal discountAmount, String status) {
   }
 }

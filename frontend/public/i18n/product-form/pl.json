@@ -36,5 +36,16 @@
   "uploadingPhotos": "Przesyłanie zdjęć…",
   "photoUploadFailedWarning": "Produkt został dodany, ale przesłanie zdjęcia się nie powiodło. Spróbuj ponownie na jego stronie szczegółów.",
   "submit": "Dodaj produkt",
-  "submitEdit": "Zapisz zmiany"
+  "submitEdit": "Zapisz zmiany",
+  "scan": {
+    "button": "Zeskanuj kod kreskowy",
+    "title": "Zeskanuj kod kreskowy",
+    "cameraHint": "Skieruj aparat na kod kreskowy, odczyta się sam.",
+    "fromPhoto": "Wybierz zdjęcie kodu",
+    "denied": "Przeglądarka nie ma dostępu do aparatu. Zezwól na niego albo wybierz zdjęcie kodu kreskowego.",
+    "noCamera": "Aparat jest niedostępny. Wybierz zdjęcie kodu kreskowego.",
+    "notFound": "Nie udało się odczytać kodu kreskowego. Spróbuj ostrzejszego zdjęcia albo przepisz kod.",
+    "existing": "Produkt z tym kodem już jest w katalogu: {{name}}.",
+    "useExisting": "Użyj"
+  }
 }

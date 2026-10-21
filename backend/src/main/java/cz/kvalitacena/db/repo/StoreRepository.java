@@ -99,4 +99,27 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
       @Param("offset") int offset);
 
   long countByCreatedByUserId(Long userId);
+
+  /**
+   * Návrh obchodu pro hlavičku účtenky (ReceiptMatchingService) — IČO z účtenky identifikuje
+   * provozovatele (u řetězce stejné pro všechny pobočky), rozhodne až adresa. Bez IČO se
+   * hledá podle názvu a adresy. Vrací kandidáty seřazené, práh posuzuje volající.
+   */
+  @Query(value = """
+      SELECT s.* FROM core.store s
+      WHERE s.status IN ('ACTIVE', 'PENDING') AND s.hidden_at IS NULL
+        AND ((CAST(:ico AS TEXT) IS NOT NULL AND s.ico = CAST(:ico AS TEXT))
+          OR (CAST(:name AS TEXT) IS NOT NULL
+              AND word_similarity(core.norm_text(s.name), core.norm_text(CAST(:name AS TEXT))) > 0.5))
+      ORDER BY word_similarity(core.norm_text(COALESCE(s.street, '') || ' ' || s.city),
+                               core.norm_text(COALESCE(CAST(:address AS TEXT), ''))) DESC,
+               CASE WHEN s.ico = CAST(:ico AS TEXT) THEN 0 ELSE 1 END
+      LIMIT 5
+      """, nativeQuery = true)
+  List<Store> findReceiptCandidates(@Param("ico") String ico, @Param("name") String name,
+      @Param("address") String address);
+
+  @Query(value = "SELECT word_similarity(core.norm_text(COALESCE(s.street, '') || ' ' || s.city), "
+      + "core.norm_text(:address)) FROM core.store s WHERE s.id = :storeId", nativeQuery = true)
+  Double addressSimilarity(@Param("storeId") Long storeId, @Param("address") String address);
 }

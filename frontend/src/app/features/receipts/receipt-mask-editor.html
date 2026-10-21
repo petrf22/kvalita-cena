@@ -1,0 +1,96 @@
+<ng-container *transloco="let t; scope: 'receipts'">
+  <div class="mask-stage">
+    <img
+      [src]="part().url"
+      [alt]="t('receipts.mask.imageAlt', { name: part().name })"
+      class="mask-image"
+      draggable="false"
+    />
+    <div
+      #layer
+      class="mask-layer"
+      [class.drawing]="drawMode()"
+      (pointerdown)="onLayerPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp($event)"
+      (pointercancel)="onPointerCancel()"
+    >
+      @for (mask of masks(); track $index; let i = $index) {
+        @let pos = percent(mask);
+        <div
+          class="mask"
+          [class.selected]="selectedIndex() === i"
+          [style.left]="pos.left"
+          [style.top]="pos.top"
+          [style.width]="pos.width"
+          [style.height]="pos.height"
+          [style.background]="maskFill"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="t('receipts.mask.maskLabel', { index: i + 1 })"
+          (pointerdown)="onMaskPointerDown($event, i)"
+          (keydown)="onMaskKeydown($event, i)"
+          (focus)="selectedIndex.set(i)"
+        >
+          @if (selectedIndex() === i) {
+            @for (corner of corners; track corner) {
+              <span
+                [class]="'handle handle-' + corner"
+                (pointerdown)="onHandlePointerDown($event, i, corner)"
+              ></span>
+            }
+            <button
+              nz-button
+              nzType="primary"
+              nzDanger
+              nzShape="circle"
+              type="button"
+              class="mask-remove"
+              [attr.aria-label]="t('receipts.mask.removeOne')"
+              (pointerdown)="$event.stopPropagation()"
+              (click)="removeMask(i)"
+            >
+              <span nz-icon nzType="close"></span>
+            </button>
+          }
+        </div>
+      }
+      @if (draft(); as rect) {
+        @let pos = percent(rect);
+        <div
+          class="mask draft"
+          [style.left]="pos.left"
+          [style.top]="pos.top"
+          [style.width]="pos.width"
+          [style.height]="pos.height"
+          [style.background]="maskFill"
+        ></div>
+      }
+    </div>
+  </div>
+
+  <div class="mask-tools">
+    @if (coarsePointer) {
+      <button
+        nz-button
+        type="button"
+        [nzType]="drawMode() ? 'primary' : 'default'"
+        [attr.aria-pressed]="drawMode()"
+        (click)="drawMode.set(!drawMode())"
+      >
+        <span nz-icon nzType="edit"></span>
+        {{ drawMode() ? t('receipts.mask.drawModeOn') : t('receipts.mask.drawModeOff') }}
+      </button>
+    }
+    <button nz-button type="button" (click)="addBand()">
+      <span nz-icon nzType="plus"></span>
+      {{ t('receipts.mask.addBand') }}
+    </button>
+    <button nz-button type="button" [disabled]="masks().length === 0" (click)="clearMasks()">
+      {{ t('receipts.mask.clearAll') }}
+    </button>
+  </div>
+  <p class="mask-hint">
+    {{ coarsePointer ? t('receipts.mask.hintTouch') : t('receipts.mask.hintMouse') }}
+  </p>
+</ng-container>

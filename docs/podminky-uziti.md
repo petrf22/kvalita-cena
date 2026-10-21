@@ -1,6 +1,6 @@
 # Podmínky užití
 
-Platí od 24. srpna 2026. Toto je aktuálně platné znění; předchozí verze viz
+Platí od 30. září 2026. Toto je aktuálně platné znění; předchozí verze viz
 historie tohoto souboru.
 
 ## 1. Kdo podmínky vydává
@@ -87,6 +87,15 @@ samotnému). Než něco nahraješ, počítej s tím, že to může kdokoli dál 
 
 Vkládáním obsahu potvrzuješ, že ho poskytuješ pod licencí výš a že k tomu máš právo (viz
 podmínky o právech k fotce níže).
+
+### Naskenované účtenky nejsou zveřejněný obsah
+
+Obrázek a text naskenované účtenky jsou tvůj soukromý přehled nákupu — appka je nezveřejňuje
+a nevztahuje se na ně licence výš. Pod ODbL se dostane jen to, co z účtenky sám/sama
+potvrdíš: cena konkrétního zboží v konkrétním obchodě (stejně jako ručně zapsaná cena)
+a označení zboží, jak ho obchod tiskne na účtenku (např. „TUK.ROHLIK"), spárované se zbožím
+v katalogu. Posílej jen účtenky ze svých nákupů nebo nákupů, ke kterým máš souhlas — obrázky,
+které účtenka nejsou, appka nezpracuje a opakované zneužití je důvodem k omezení účtu (bod 7).
 
 ## 6. Moderace a nahlašování
 

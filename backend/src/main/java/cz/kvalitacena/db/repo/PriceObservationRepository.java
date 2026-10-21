@@ -141,6 +141,12 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
       + "WHERE o.observedAt < :cutoff AND o.submitter IS NOT NULL")
   int pseudonymizeObservationsBefore(@Param("cutoff") OffsetDateTime cutoff);
 
+  /** Opačná půlka vazby na řádek účtenky — viz ReceiptLineRepository.pseudonymizeObservationLinksBefore. */
+  @Modifying
+  @Query("UPDATE PriceObservation o SET o.receiptLineId = NULL "
+      + "WHERE o.observedAt < :cutoff AND o.receiptLineId IS NOT NULL")
+  int pseudonymizeReceiptLinksBefore(@Param("cutoff") OffsetDateTime cutoff);
+
   /** GDPR export (AccountService) — vlastní observace včetně čitelného názvu zboží/obchodu. */
   @Query("SELECT o FROM PriceObservation o JOIN FETCH o.product JOIN FETCH o.store "
       + "WHERE o.submitter.id = :userId ORDER BY o.observedAt DESC")

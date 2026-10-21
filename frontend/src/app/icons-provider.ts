@@ -1,5 +1,12 @@
 import {
+  ArrowDownOutline,
   ArrowLeftOutline,
+  ArrowUpOutline,
+  CheckOutline,
+  CloseOutline,
+  FileTextOutline,
+  ScanOutline,
+  UploadOutline,
   CheckCircleOutline,
   DeleteOutline,
   EditOutline,
@@ -55,6 +62,15 @@ export const icons = [
   EllipsisOutline,
   UnorderedListOutline,
   SafetyCertificateOutline,
+  // Účtenky (features/receipts): menu, nahrání, pořadí částí, zakrytí, potvrzení.
+  FileTextOutline,
+  UploadOutline,
+  ArrowUpOutline,
+  ArrowDownOutline,
+  CloseOutline,
+  CheckOutline,
+  // Sken čárového kódu u prázdného pole kódu (features/product-form/barcode-scanner.ts).
+  ScanOutline,
   // Zástupná ikona miniatury zboží, když nemá vlastní fotku ani OFF obrázek (shared/product-thumb.ts).
   PictureOutline,
 ];

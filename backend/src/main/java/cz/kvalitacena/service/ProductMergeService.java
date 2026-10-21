@@ -64,6 +64,11 @@ public class ProductMergeService {
     mergeUserEdits(sourceId, targetId);
     mergeAliases(source, target);
     mergeObservations(sourceId, targetId);
+    // Názvy na účtenkách: unikátnost je (označení, rozsah) bez zboží, takže kolize s cílem
+    // nastat nemůže — stačí přepsat product_id. Spárované řádky účtenek jdou s nimi, jinak by
+    // sloučení rozbilo párování, které předtím fungovalo (docs/rozvoj.md).
+    jdbcTemplate.update("UPDATE core.product_store_label SET product_id = ? WHERE product_id = ?", targetId, sourceId);
+    jdbcTemplate.update("UPDATE core.receipt_line SET product_id = ? WHERE product_id = ?", targetId, sourceId);
 
     // Staré agregáty zdroje už nesmějí nikde přežít. Cíl se přepočítá z právě sjednocených
     // observací; frontu zdroje mažeme, jinak by plánovač znovu vytvořil osiřelé agregáty.

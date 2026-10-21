@@ -7,6 +7,8 @@ import cz.kvalitacena.controller.AccountExportResponse.ObservationExport;
 import cz.kvalitacena.controller.AccountExportResponse.ProductEditExport;
 import cz.kvalitacena.controller.AccountExportResponse.ProfileExport;
 import cz.kvalitacena.controller.AccountExportResponse.QualityRatingExport;
+import cz.kvalitacena.controller.AccountExportResponse.ReceiptExport;
+import cz.kvalitacena.controller.AccountExportResponse.ReceiptLineExport;
 import cz.kvalitacena.controller.AccountExportResponse.StoreEditExport;
 import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.ChallengePurpose;
@@ -17,6 +19,8 @@ import cz.kvalitacena.db.entity.PriceObservation;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.ProductReview;
 import cz.kvalitacena.db.entity.ProductUserEdit;
+import cz.kvalitacena.db.entity.Receipt;
+import cz.kvalitacena.db.entity.ReceiptLine;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.entity.StoreUserEdit;
 import cz.kvalitacena.db.entity.UserProfile;
@@ -27,6 +31,8 @@ import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ProductReviewRepository;
 import cz.kvalitacena.db.repo.ProductUserEditRepository;
+import cz.kvalitacena.db.repo.ReceiptLineRepository;
+import cz.kvalitacena.db.repo.ReceiptRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import cz.kvalitacena.db.repo.StoreUserEditRepository;
 import cz.kvalitacena.db.repo.UserProfileRepository;
@@ -85,6 +91,9 @@ public class AccountService {
   private final StoreRepository storeRepository;
   private final MediaRepository mediaRepository;
   private final MediaStorage mediaStorage;
+  private final ReceiptRepository receiptRepository;
+  private final ReceiptLineRepository receiptLineRepository;
+  private final ReceiptService receiptService;
   private final LoginChallengeRepository challengeRepository;
   private final EmailCipher emailCipher;
   private final PasswordEncoder codeEncoder; // Argon2id, stejný bean jako OtpService/EmailChangeService
@@ -138,8 +147,21 @@ public class AccountService {
         profile == null ? null : profile.getVisibility().name(),
         profile != null && profile.getAvatarMediaId() != null);
 
+    List<Receipt> receipts = receiptRepository.findByOwnerUserIdOrderByCreatedAtDesc(user.getId());
+    Map<Long, List<ReceiptLine>> linesByReceipt = receiptLineRepository
+        .findByReceiptIdInOrderByLineNoAsc(receipts.stream().map(Receipt::getId).toList()).stream()
+        .collect(Collectors.groupingBy(ReceiptLine::getReceiptId));
+    List<ReceiptExport> receiptExports = receipts.stream()
+        .map(r -> new ReceiptExport(r.getCreatedAt(), r.getProcessingStatus().name(), r.getStoreNameRaw(),
+            r.getStoreAddressRaw(), r.getPurchasedAt(), r.getTotalAmount(), r.getCurrency(),
+            linesByReceipt.getOrDefault(r.getId(), List.of()).stream()
+                .map(l -> new ReceiptLineExport(l.getLabelRaw(), l.getQuantity(), l.getQuantityUnit().name(),
+                    l.getUnitPrice(), l.getLineTotal(), l.getDiscountAmount(), l.getStatus().name()))
+                .toList()))
+        .toList();
+
     return new AccountExportResponse(accountInfo, profileExport, observationExports, ratingExports,
-        productEditExports, storeEditExports);
+        productEditExports, storeEditExports, receiptExports);
   }
 
   public record RequestResult(UUID challengeUid, long expiresInSec, long resendAfterSec) {
@@ -225,6 +247,8 @@ public class AccountService {
     for (Media media : mediaRepository.findByUploadedByUserId(currentUser.getId())) {
       mediaStorage.delete(media.getStorageKey());
     }
+    // Obrázky účtenek leží mimo core.media — kaskáda smaže jen řádky, soubory musí pryč dřív.
+    receiptService.deleteAllImageFilesOf(currentUser.getId());
 
     appUserRepository.delete(currentUser);
     log.info("Účet {} smazán.", currentUser.getPublicHandle());

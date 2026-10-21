@@ -383,6 +383,24 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   jen shoda tří registrovaných lidí. Pokud u studeného startu zůstane bezkódové zboží v DRAFTu
   (a tedy v otevřeném hledání neviditelné ostatním) příliš dlouho, zvážit snížení prahu na 2.
 
+### Worker účtenek (domácí PC)
+
+Účtenky (`docs/ai.md`, „Účtenky") čte pull worker `tools/uctenky/worker.py` na PC
+provozovatele — na serveru se nic dalšího nespouští, appka bez běžícího workeru funguje,
+účtenky jen čekají ve frontě. Postup:
+
+1. Na PC: `ollama pull glm-ocr:bf16`.
+2. Vydat strojový token (`tools/uctenky/README.md`, „Token") — na produkci přes
+   `docker compose -f compose.prod.yaml exec postgres psql …`, token si uložit jen na PC.
+3. Spouštět `KC_API_URL=https://api.kvalitacena.cz KC_WORKER_TOKEN=kcw_… python3
+   tools/uctenky/worker.py` (smyčka), nebo `--once` ze systemd timeru.
+4. Volitelně `ARCHIVE_DIR` pro obrázky se souhlasem s archivací (mimo git, mimo cloud).
+
+Obrázky účtenek leží ve stejné volume jako fotky (`kvalita-a-cena-media-prod`, podadresář
+`receipts/`) a denní job je po 30 dnech od zpracování maže — záloha volume je tedy pokrývá jen
+krátce, což je záměr (`docs/soukromi.md`, „Účtenky"). Upload účtenky je až 40 MB na request
+(`spring.servlet.multipart.max-request-size`); Caddy velikost těla neomezuje.
+
 ### Protokol bety — koho pozvat a co s nálezy
 
 Profil `beta` (prahy 0/0/1) dává smysl jen pro OSOBNĚ pozvané lidi, ne pro veřejnou výzvu —

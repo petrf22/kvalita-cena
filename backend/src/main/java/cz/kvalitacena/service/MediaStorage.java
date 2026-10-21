@@ -20,6 +20,13 @@ public interface MediaStorage {
    */
   String store(byte[] full, byte[] thumbnail);
 
+  /**
+   * Uloží jeden výřez účtenky (bez náhledu) pod oddělený prefix {@code receipts/} — soukromá
+   * data se nesmí míchat s veřejnými fotkami ani omylem projít přes {@code GET /api/media}
+   * (docs/soukromi.md, „Účtenky"). Čte se přes {@link #load} s {@link Variant#FULL}.
+   */
+  String storeReceiptImage(byte[] content);
+
   /** Prázdný výsledek, pokud soubor neexistuje (např. byl odstraněný mimo appku). */
   Optional<byte[]> load(String storageKey, Variant variant);
 

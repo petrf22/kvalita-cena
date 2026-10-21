@@ -1,5 +1,6 @@
 package cz.kvalitacena.ui.navigation
 
+import android.net.Uri
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import cz.kvalitacena.R
@@ -64,6 +65,11 @@ fun nestedRouteTitle(route: String?): Int = when (route) {
   ROUTE_ABOUT -> R.string.about_title
   ROUTE_CHANGELOG -> R.string.changelog_title
   ROUTE_FEEDBACK -> R.string.feedback_title
+  ROUTE_RECEIPTS -> R.string.receipts_title
+  ROUTE_RECEIPT_DETAIL -> R.string.receipt_detail_title
+  ROUTE_RECEIPT_CAPTURE -> R.string.receipt_capture_title
+  ROUTE_RECEIPT_REVIEW -> R.string.receipt_review_title
+  ROUTE_SCAN_CODE -> R.string.scan_code_title
   else -> R.string.app_name
 }
 
@@ -76,13 +82,27 @@ fun nestedRouteTitle(route: String?): Int = when (route) {
  * "Upravit"), stejný vzor jako ROUTE_STORE_FORM.
  */
 const val ARG_WRITE_PRICE = "writePrice"
-const val ROUTE_PRODUCT_FORM =
-  "product_form?$ARG_BARCODE={$ARG_BARCODE}&$ARG_WRITE_PRICE={$ARG_WRITE_PRICE}&$ARG_PRODUCT_ID={$ARG_PRODUCT_ID}"
 
-fun productFormRoute(barcode: String? = null, writePrice: Boolean = false): String {
+/**
+ * Předvyplněný název a obchod — „Založit nové zboží" z řádku účtenky (ReceiptDetailScreen):
+ * název z textu účtenky (`labelRaw`), obchod z hlavičky účtenky.
+ */
+const val ARG_NAME = "name"
+const val ROUTE_PRODUCT_FORM =
+  "product_form?$ARG_BARCODE={$ARG_BARCODE}&$ARG_WRITE_PRICE={$ARG_WRITE_PRICE}&$ARG_PRODUCT_ID={$ARG_PRODUCT_ID}" +
+    "&$ARG_NAME={$ARG_NAME}&$ARG_STORE_ID={$ARG_STORE_ID}"
+
+fun productFormRoute(
+  barcode: String? = null,
+  writePrice: Boolean = false,
+  name: String? = null,
+  storeId: String? = null,
+): String {
   val params = buildList {
     if (!barcode.isNullOrBlank()) add("$ARG_BARCODE=$barcode")
     if (writePrice) add("$ARG_WRITE_PRICE=true")
+    if (!name.isNullOrBlank()) add("$ARG_NAME=${Uri.encode(name)}")
+    if (!storeId.isNullOrBlank()) add("$ARG_STORE_ID=$storeId")
   }
   return if (params.isEmpty()) "product_form" else "product_form?" + params.joinToString("&")
 }
@@ -123,3 +143,31 @@ const val ARG_FEEDBACK_SOURCE = "source"
 const val ROUTE_FEEDBACK = "feedback?$ARG_FEEDBACK_SOURCE={$ARG_FEEDBACK_SOURCE}"
 
 fun feedbackRoute(source: String) = "feedback?$ARG_FEEDBACK_SOURCE=$source"
+
+/**
+ * Účtenky (docs/soukromi.md, „Účtenky") — seznam ze záložky Účet, detail s párováním řádků,
+ * snímání kamerou (ze záložky Sken) a kontrola před odesláním (masky, souhlas). Seznam i detail
+ * otevírá i notifikace o zpracované účtence (receipt/ReceiptNotifications.kt).
+ */
+const val ROUTE_RECEIPTS = "receipts"
+
+const val ARG_RECEIPT_ID = "receiptId"
+const val ROUTE_RECEIPT_DETAIL = "receipt/{$ARG_RECEIPT_ID}"
+
+fun receiptDetailRoute(receiptId: String) = "receipt/$receiptId"
+
+/** `retake` = index dílu, který se má nafotit znovu (z kontroly); bez něj běžné snímání. */
+const val ARG_RETAKE = "retake"
+const val ROUTE_RECEIPT_CAPTURE = "receipt_capture?$ARG_RETAKE={$ARG_RETAKE}"
+
+fun receiptCaptureRoute(retakeIndex: Int? = null) =
+  if (retakeIndex == null) "receipt_capture" else "receipt_capture?$ARG_RETAKE=$retakeIndex"
+
+const val ROUTE_RECEIPT_REVIEW = "receipt_review"
+
+/**
+ * Sken čárového kódu v režimu „vrátit kód" — tlačítko u prázdného pole EAN ve formuláři zboží.
+ * Stejná [cz.kvalitacena.ui.scan.ScanScreen], jen kód nejde na zápis ceny, ale zpátky do
+ * formuláře (NavigationResults.scannedCode).
+ */
+const val ROUTE_SCAN_CODE = "scan_code"

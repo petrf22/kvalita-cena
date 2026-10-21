@@ -45,6 +45,14 @@ android {
         buildConfigField("String", "MAP_TILE_URL", "\"$mapTileUrl\"")
         buildConfigField("String", "MAP_TILE_ATTRIBUTION", "\"$mapTileAttribution\"")
         buildConfigField("int", "MAP_TILE_MAX_ZOOM", "19")
+
+        // Nativní knihovny jen pro ABI, na kterých appka reálně běží: 64bit ARM (všechny
+        // dnešní telefony), 32bit ARM (starší levné telefony, minSdk 26) a x86_64 (emulátor).
+        // 32bit x86 nemá žádné rozšířené zařízení a s OpenCV (docs/rozvoj.md, „Sběr snímků")
+        // by stál další desítky MB v APK. AAB si Play stejně rozdělí po ABI.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
     }
 
     signingConfigs {
@@ -146,6 +154,18 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.6.1")
     implementation("androidx.camera:camera-view:1.6.1")
     implementation("io.github.zxing-cpp:android:3.1.1")
+
+    // Snímání účtenky (ui/receipt/capture/, docs/rozvoj.md „Sběr snímků na klientovi") —
+    // detekce hran a kontur, narovnání perspektivy a posun mezi snímky. OpenCV je od 4.5
+    // pod Apache-2.0 (licence v POM artefaktu ověřená 2026-09-30) a od 4.9 vychází jako AAR
+    // přímo na Maven Central, bez vlastního repozitáře. Žádné rozpoznávání textu na klientovi,
+    // to dělá worker (docs/ai.md, „Účtenky").
+    implementation("org.opencv:opencv:4.14.0")
+
+    // Odeslání účtenky až po připojení a periodický dotaz na zpracované účtenky (lokální
+    // notifikace bez GMS, docs/soukromi.md „Účtenky") — Apache-2.0, běží i bez Play Services
+    // (vlastní JobScheduler/AlarmManager backend).
+    implementation("androidx.work:work-runtime-ktx:2.12.0")
 
     // Refresh token v EncryptedSharedPreferences (docs/soukromi.md v backendu).
     implementation("androidx.security:security-crypto:1.1.0")

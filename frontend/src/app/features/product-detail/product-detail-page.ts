@@ -40,6 +40,7 @@ import {
 } from '../../shared/review-validation';
 import { ProductForm } from '../product-form/product-form';
 import { PriceChart } from './price-chart';
+import { ReceiptLabels } from './receipt-labels';
 
 const CHART_RANGES = [7, 30, 90, 365];
 const REVIEWS_PAGE_SIZE = 10;
@@ -64,6 +65,7 @@ const REVIEWS_PAGE_SIZE = 10;
     QualityBadge,
     PriceEntryForm,
     PriceChart,
+    ReceiptLabels,
     PhotoGallery,
     ProductForm,
     TranslocoDirective,

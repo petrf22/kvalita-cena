@@ -36,5 +36,16 @@
   "uploadingPhotos": "Fotos werden hochgeladen…",
   "photoUploadFailedWarning": "Die Ware wurde angelegt, aber das Foto konnte nicht hochgeladen werden. Versuch es auf ihrer Detailseite noch einmal.",
   "submit": "Ware anlegen",
-  "submitEdit": "Änderungen speichern"
+  "submitEdit": "Änderungen speichern",
+  "scan": {
+    "button": "Barcode scannen",
+    "title": "Barcode scannen",
+    "cameraHint": "Richte die Kamera auf den Barcode, er wird automatisch gelesen.",
+    "fromPhoto": "Foto des Codes wählen",
+    "denied": "Der Browser darf die Kamera nicht verwenden. Erlaube es oder wähle ein Foto des Barcodes.",
+    "noCamera": "Keine Kamera verfügbar. Wähle ein Foto des Barcodes.",
+    "notFound": "Der Barcode konnte nicht gelesen werden. Versuch ein schärferes Foto oder tippe den Code ab.",
+    "existing": "Ein Produkt mit diesem Code ist schon im Katalog: {{name}}.",
+    "useExisting": "Verwenden"
+  }
 }

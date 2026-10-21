@@ -1,0 +1,306 @@
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--kc-space-1);
+  min-height: 44px;
+  margin-bottom: var(--kc-space-2);
+}
+
+.block {
+  display: block;
+  margin-bottom: var(--kc-space-4);
+}
+
+.state-block {
+  display: flex;
+  justify-content: center;
+  padding: var(--kc-space-6) 0;
+}
+
+.muted,
+.line-recorded,
+.blocker,
+.create-hint {
+  color: var(--kc-text-secondary);
+}
+
+.small {
+  font-size: var(--kc-font-xs);
+}
+
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--kc-space-3);
+  margin-bottom: var(--kc-space-4);
+}
+
+.page-title {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Obrázek vlevo zůstává při posouvání řádků vidět — porovnává se s ním text řádku. */
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: var(--kc-space-5);
+  align-items: start;
+}
+
+.images-column {
+  position: sticky;
+  top: var(--kc-space-4);
+  max-height: calc(100vh - var(--kc-space-6));
+  overflow-y: auto;
+}
+
+.images-toggle {
+  display: none;
+}
+
+.header,
+.lines,
+.field {
+  margin-bottom: var(--kc-space-5);
+}
+
+.field-label {
+  display: block;
+  margin-bottom: var(--kc-space-1);
+  font-size: var(--kc-font-xs);
+  color: var(--kc-text-muted);
+}
+
+.field-value {
+  display: grid;
+}
+
+.store-name,
+.total {
+  font-size: var(--kc-font-lg);
+  font-weight: 600;
+}
+
+.inline-action {
+  padding: 0;
+  min-height: 44px;
+}
+
+.suggested-text {
+  margin: 0 0 var(--kc-space-2);
+}
+
+.actions,
+.date-row,
+.confirm-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--kc-space-2);
+  margin-top: var(--kc-space-2);
+}
+
+.actions button,
+.date-row button,
+.confirm-row button {
+  min-height: 44px;
+}
+
+.date-input {
+  min-width: 0;
+}
+
+.raw-hint,
+.field-warning {
+  margin: var(--kc-space-2) 0 0;
+  font-size: var(--kc-font-xs);
+  color: var(--kc-text-muted);
+}
+
+.raw-text {
+  font-family: monospace;
+  overflow-wrap: anywhere;
+}
+
+.field-warning {
+  color: var(--kc-danger);
+}
+
+.lines-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--kc-space-2);
+  margin-bottom: var(--kc-space-3);
+}
+
+.section-title {
+  margin: 0;
+  font-size: var(--kc-font-xl);
+  font-weight: 600;
+}
+
+.line-list {
+  margin: 0 0 var(--kc-space-3);
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--kc-border-split);
+}
+
+.line {
+  display: flex;
+  gap: var(--kc-space-2);
+  padding: var(--kc-space-3) 0;
+  border-bottom: 1px solid var(--kc-border-split);
+}
+
+.line-check {
+  flex: 0 0 var(--kc-space-5);
+  padding-top: var(--kc-space-1);
+}
+
+.line-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.line-top {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--kc-space-3);
+}
+
+.line-label {
+  font-family: monospace;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.line-total {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.line-meta {
+  font-size: var(--kc-font-sm);
+  color: var(--kc-text-secondary);
+}
+
+.line-discount {
+  margin-left: var(--kc-space-2);
+  color: var(--kc-danger);
+}
+
+.line-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--kc-space-2);
+  margin-top: var(--kc-space-1);
+  font-size: var(--kc-font-sm);
+}
+
+.line-status nz-tag {
+  margin: 0;
+}
+
+.line-product {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--kc-space-2);
+  min-width: 0;
+}
+
+.line-skip,
+.line-error {
+  margin: var(--kc-space-1) 0 0;
+  font-size: var(--kc-font-sm);
+  color: var(--kc-text-secondary);
+}
+
+.line-error {
+  color: var(--kc-danger);
+}
+
+.line-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kc-space-1) var(--kc-space-2);
+  margin-top: var(--kc-space-2);
+}
+
+.line-ignored .line-label,
+.line-ignored .line-meta {
+  color: var(--kc-text-muted);
+  text-decoration: line-through;
+}
+
+.line-done .line-label {
+  color: var(--kc-text-secondary);
+}
+
+/* Na širokém displeji je potvrzení vždy po ruce, i uprostřed dlouhé účtenky. */
+.confirm-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  padding: var(--kc-space-3) 0;
+  border-top: 1px solid var(--kc-border-split);
+  background: var(--kc-bg-subtle);
+}
+
+.blocker {
+  font-size: var(--kc-font-sm);
+}
+
+.skipped-list {
+  margin: 0;
+  padding-left: var(--kc-space-4);
+}
+
+.danger-zone {
+  padding-top: var(--kc-space-4);
+  border-top: 1px solid var(--kc-border-split);
+}
+
+.create-hint,
+.skipped-title {
+  margin: 0 0 var(--kc-space-2);
+}
+
+@media (max-width: 600px) {
+  .detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--kc-space-4);
+  }
+
+  .images-column {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .images-toggle {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-bottom: var(--kc-space-2);
+  }
+
+  .detail-grid:not(.images-open) .images-body {
+    display: none;
+  }
+
+  /* Pod 600 px je dole fixní navigace (app.css) — lišta se nelepí, stojí na konci seznamu. */
+  .confirm-bar {
+    position: static;
+    padding: var(--kc-space-3);
+  }
+
+  .line-actions button {
+    min-height: 44px;
+  }
+}
