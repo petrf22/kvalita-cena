@@ -68,6 +68,7 @@ způsob, jak ruční checklist odklikat textově.
 | `ui.py wait "Uložit" [--gone]` | čekání na obrazovku místo `sleep` |
 | `ui.py open "product/<uuid>"` | skok rovnou na obrazovku |
 | `ui.py log [--clear] [--level D]` | logcat filtrovaný na PID appky |
+| `ui.py geo 49.1996 16.6089` | poloha zařízení; `--off` ji zruší |
 
 `ui.py open` posílá `MainActivity` intent extra `route` (`DebugRouteIntent` tamtéž), který se
 čte **jen v debug buildu** — funguje pro libovolnou trasu z `ui/navigation/AppDestinations.kt`
@@ -90,6 +91,11 @@ Na co se naráží:
   zpátky na `uiautomator`). Nabídka se v `dump` ukáže za oddělovačem, zakryté prvky mají
   `POD-KLÁVESNICÍ`/`POD-NABÍDKOU` a `tap` na prvek pod klávesnicí ji nejdřív sám zavře.
   `tap-xy` na klávesnici odmítne (souřadnice se po jejím zavření posunou).
+- **Polohu nastavuj `ui.py geo`, ne `adb emu geo fix`** — ten v tomhle AVD zabere jen
+  poprvé, další polohy se k aplikacím nedostanou a GPS dál hlásí tu první. `ui.py geo` jde
+  přes testovacího poskytovatele polohy (`cmd location providers`), který GPS přebije. Appka
+  bere čerstvou polohu z posledních 5 minut, takže po `geo` stačí obrazovku otevřít znovu
+  (`am force-stop cz.kvalitacena` + `ui.py open`) — návrat na stejnou trasu drží starý stav.
 - **Testovací obrázky raději ne přes galerii emulátoru** — systémový výběr fotek s Google
   Fotkami umí emulátor zamrazit. Debug build dovolí zapsat soubor rovnou do soukromých dat
   appky: `adb push <soubor> /data/local/tmp/` a `adb shell run-as cz.kvalitacena cp
