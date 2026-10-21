@@ -34,6 +34,16 @@ padá instalace na `ERESOLVE` (`npm ci` z hotového lockfilu to nikdy nezkontrol
 projeví až při přidávání knihovny). `$vitest` znamená „tu verzi, co má projekt v
 `devDependencies`" — až `@angular/build` podporu `vitest` 5 doplní, override zmizí.
 
+Rozpočet úvodního bundle v `angular.json` (varování 1,5 MB, chyba 2 MB) je posunutý
+z výchozího 1 MB, protože ten nešel dodržet už v 0.9.0 (1,32 MB, ~240 kB gzip). Většinu tvoří
+celé předkompilované CSS ng-zorro (~560 kB, i pro nepoužité komponenty), `@messageformat/core`
+(~105 kB, potřeba hned při startu kvůli překladům) a mapa dokumentů z `graphql-codegen`
+(~75 kB). Zmenšit to jde kompilací ng-zorro z LESS jen pro použité komponenty (~−27 % CSS),
+zatím se to nevyplatilo. Když varování zase naskočí, nejdřív zjisti, co přibylo do úvodního
+bundle (`npx ng build --stats-json`), ne rovnou posouvat limit. `leaflet` a
+`@messageformat/core` jsou CommonJS a v `allowedCommonJsDependencies` jsou vědomě (při
+přechodu na ESM verzi je odtamtud smaž).
+
 ## Konvence
 
 - Standalone komponenty, signály, bez state managementu, bez Apollo v runtime
