@@ -61,6 +61,8 @@ mobile/keystore.properties
 # --- tools/ (Python) ---
 __pycache__/
 *.pyc
+# Dex pro dump všech oken, ui.py ho sestaví sám z WindowDump.java
+tools/mobile/windowdump/build/
 
 # --- OS ---
 .DS_Store

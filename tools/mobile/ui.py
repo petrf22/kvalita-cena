@@ -15,7 +15,7 @@ Použití (emulátor musí běžet, appka být nainstalovaná — viz `./start-d
     python3 tools/mobile/ui.py setup                   # jednorázově: vypnout animace
     python3 tools/mobile/ui.py dump                    # co je na obrazovce
     python3 tools/mobile/ui.py tap "Zapsat cenu"       # klepnutí podle popisku
-    python3 tools/mobile/ui.py tap-xy 540 1820         # klepnutí podle souřadnic z dumpu
+    python3 tools/mobile/ui.py tap-xy 540 1820         # klepnutí podle souřadnic z dumpu (ne na klávesnici)
     python3 tools/mobile/ui.py text 8594001020102      # psaní do zaostřeného pole
     python3 tools/mobile/ui.py key back
     python3 tools/mobile/ui.py wait "Uložit" --timeout 15
@@ -33,17 +33,26 @@ Omezení, na která se naráží v praxi:
   * `resource-id` je u Compose skoro vždy prázdný (musel by se zapnout `testTagsAsResourceId`
     a rozdat `testTag`). Proto se prvky hledají podle textu a `contentDescription`, kterých má
     appka dost.
+  * `uiautomator dump` čte jen AKTIVNÍ okno: nevidí nabídku editovatelného comboboxu (Compose
+    ExposedDropdownMenu s `PrimaryEditable` kotvou otevírá nefokusovatelné okno, fokus zůstává
+    v poli) a neví, kde je klávesnice — prvky pod ní vypíše, jako by šly klepnout. Skript proto
+    obrazovku čte vlastním dumperem všech oken (`windowdump/WindowDump.java`, přes
+    `app_process` stejně jako `uiautomator`; dex se sestaví a nahraje sám). Prvky zakryté
+    klávesnicí nebo nabídkou mají v dumpu příznak a `tap` na prvek pod klávesnicí ji nejdřív
+    zavře. Bez `javac`/Android SDK se vrací k `uiautomator dump` a klávesnici zjistí z `dumpsys`.
 
 `adb` se hledá stejně jako v `start-dev.sh`: `sdk.dir` z `mobile/local.properties`, pak
 `$ANDROID_HOME`/`$ANDROID_SDK_ROOT`, pak `~/Android/Sdk`, nakonec `adb` v PATH.
 """
 import argparse
+import hashlib
 import os
 import re
 import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import unicodedata
 import xml.etree.ElementTree as ET
@@ -54,6 +63,11 @@ ACTIVITY = PACKAGE + "/.MainActivity"
 # Extra, kterou MainActivity čte jen v debug buildu (viz DebugRouteIntent tamtéž).
 ROUTE_EXTRA = "route"
 DUMP_REMOTE_PATH = "/sdcard/kvalitacena-ui.xml"
+WINDOWDUMP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "windowdump")
+WINDOWDUMP_SOURCE = os.path.join(WINDOWDUMP_DIR, "WindowDump.java")
+# Strop na jedno volání adb: zamrzlý emulátor nebo zaseknutý uiautomator jinak skript pověsí
+# navždy (viděno u systémového výběru fotek).
+ADB_TIMEOUT = 45
 
 # Zkratky tříd do výpisu — plné android.widget.* názvy by byly jen šum.
 CLASS_SHORT = {
@@ -82,18 +96,21 @@ def die(message):
 # ---- adb ----------------------------------------------------------------------------------
 
 
-def adb_binary():
-    sdk_dir = None
+def sdk_dir():
+    found = None
     properties = os.path.join(ROOT, "mobile", "local.properties")
     if os.path.isfile(properties):
         with open(properties, encoding="utf-8") as handle:
             for line in handle:
                 if line.startswith("sdk.dir="):
-                    sdk_dir = line.split("=", 1)[1].strip().replace("\\:", ":").replace("\\\\", "\\")
+                    found = line.split("=", 1)[1].strip().replace("\\:", ":").replace("\\\\", "\\")
                     break
-    sdk_dir = sdk_dir or os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT") \
+    return found or os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT") \
         or os.path.expanduser("~/Android/Sdk")
-    candidate = os.path.join(sdk_dir, "platform-tools", "adb")
+
+
+def adb_binary():
+    candidate = os.path.join(sdk_dir(), "platform-tools", "adb")
     if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
         return candidate
     found = shutil.which("adb")
@@ -108,7 +125,11 @@ def adb(args, device=None, check=True):
     if device:
         command += ["-s", device]
     command += args
-    result = subprocess.run(command, capture_output=True)
+    try:
+        result = subprocess.run(command, capture_output=True, timeout=ADB_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        die("adb neodpověděl do %d s: %s\nZamrzl emulátor? Zkus `adb devices`, případně emulátor "
+            "restartovat." % (ADB_TIMEOUT, " ".join(command)))
     text = (result.stdout + result.stderr).decode("utf-8", errors="replace")
     if check and result.returncode != 0:
         die("Selhalo: %s\n%s" % (" ".join(command), text.strip()))
@@ -141,6 +162,9 @@ class Node:
         # Kam klepnout: u popisku vyzvednutého z klikatelného rodiče je to střed RODIČE
         # (tlačítko), ne středu textu — viz flatten().
         self.tap = None
+        # Vrstva okna (vyšší = navrch) a co bod klepnutí zakrývá — viz Screen.
+        self.layer = 0
+        self.covered = None
 
     @property
     def label(self):
@@ -174,6 +198,8 @@ class Node:
             flags.append("selected")
         if self.focused:
             flags.append("focused")
+        if self.covered:
+            flags.append("POD-" + self.covered.upper())
         label = self.label or "—"
         if self.text and self.desc and self.text != self.desc:
             label = "%s «%s»" % (self.text, self.desc)
@@ -281,12 +307,176 @@ def all_nodes(xml):
 def dump_lines(nodes):
     lines = []
     seen = set()
+    layer = None
     for node in nodes:
+        if layer is not None and node.layer != layer:
+            lines.append("── nabídka v samostatném okně (navrch) ──")
+        layer = node.layer
         line = node.render()
         if line not in seen:
             seen.add(line)
             lines.append(line)
     return lines
+
+
+# ---- všechna okna (WindowDump) ------------------------------------------------------------
+
+
+def _newest(directory, check):
+    """Nejnovější podadresář SDK (`platforms/android-36`, `build-tools/36.0.0`), který projde `check`."""
+    if not os.path.isdir(directory):
+        return None
+    def version(name):
+        return [int(part) if part.isdigit() else -1 for part in re.split(r"[.-]", name)]
+    for name in sorted(os.listdir(directory), key=version, reverse=True):
+        path = os.path.join(directory, name)
+        if check(path):
+            return path
+    return None
+
+
+_windowdump_warned = False
+
+
+def _windowdump_unavailable(reason):
+    global _windowdump_warned
+    if not _windowdump_warned:
+        print("Pozor: dump všech oken nejde (%s) — čtu jen aktivní okno přes uiautomator, "
+              "nabídky comboboxů nebudou vidět." % reason, file=sys.stderr)
+        _windowdump_warned = True
+    return None
+
+
+def windowdump_dex():
+    """Lokální dex dumperu — sestaví se z WindowDump.java, kdykoli je zdroj novější."""
+    build_dir = os.path.join(WINDOWDUMP_DIR, "build")
+    dex = os.path.join(build_dir, "classes.dex")
+    if os.path.isfile(dex) and os.path.getmtime(dex) >= os.path.getmtime(WINDOWDUMP_SOURCE):
+        return dex
+    javac = shutil.which("javac")
+    platform = _newest(os.path.join(sdk_dir(), "platforms"),
+                       lambda path: os.path.isfile(os.path.join(path, "android.jar")))
+    build_tools = _newest(os.path.join(sdk_dir(), "build-tools"),
+                          lambda path: os.path.isfile(os.path.join(path, "d8")))
+    if not javac or not platform or not build_tools:
+        return _windowdump_unavailable("chybí javac, android.jar nebo d8 v Android SDK")
+    os.makedirs(build_dir, exist_ok=True)
+    with tempfile.TemporaryDirectory() as classes:
+        result = subprocess.run([javac, "--release", "11", "-nowarn", "-cp", os.path.join(platform, "android.jar"),
+                                 "-d", classes, WINDOWDUMP_SOURCE], capture_output=True)
+        if result.returncode != 0:
+            return _windowdump_unavailable("javac: " + result.stderr.decode("utf-8", "replace").strip()[:300])
+        class_files = [os.path.join(classes, name) for name in os.listdir(classes) if name.endswith(".class")]
+        result = subprocess.run([os.path.join(build_tools, "d8"), "--min-api", "26", "--output", build_dir]
+                                + class_files, capture_output=True)
+        if result.returncode != 0:
+            return _windowdump_unavailable("d8: " + result.stderr.decode("utf-8", "replace").strip()[:300])
+    return dex
+
+
+def windowdump_xml(device):
+    """XML všech oken, nebo None (dumper nejde sestavit/spustit — volající spadne na uiautomator)."""
+    dex = windowdump_dex()
+    if not dex:
+        return None
+    with open(dex, "rb") as handle:
+        digest = hashlib.sha256(handle.read()).hexdigest()[:12]
+    remote = "/data/local/tmp/kvalitacena-windowdump-%s.dex" % digest
+    code, _ = adb_shell(["ls", remote], device, check=False)
+    if code != 0:
+        adb(["push", dex, remote], device)
+    for _ in range(2):
+        _, output = adb_shell(["CLASSPATH=" + remote, "app_process", "/system/bin", "WindowDump"],
+                              device, check=False)
+        start, end = output.find("<hierarchy"), output.rfind("</hierarchy>")
+        if start != -1 and end != -1:
+            return output[start:end + len("</hierarchy>")]
+        time.sleep(0.5)
+    return _windowdump_unavailable("app_process: " + output.strip()[:300])
+
+
+def _bounds(text):
+    values = [int(value) for value in re.findall(r"-?\d+", text or "")]
+    return tuple(values) if len(values) == 4 else None
+
+
+def _inside(point, bounds):
+    return bounds is not None and bounds[0] <= point[0] < bounds[2] and bounds[1] <= point[1] < bounds[3]
+
+
+def ime_bounds_dumpsys(device):
+    """Kde je klávesnice podle `dumpsys` — pro tap-xy a záložní cestu přes uiautomator.
+
+    Rámec okna InputMethod je přes celou obrazovku; skutečnou plochu klávesnice nese až
+    IME inset (`InsetsSource ... type=ime frame=[..] visible=true`)."""
+    _, methods = adb_shell(["dumpsys", "input_method"], device, check=False)
+    if "mInputShown=true" not in methods:
+        return None
+    _, windows = adb_shell(["dumpsys", "window"], device, check=False)
+    match = re.search(r"type=ime frame=(\[\d+,\d+\]\[\d+,\d+\])[^\n]*visible=true", windows)
+    return _bounds(match.group(1)) if match else None
+
+
+class Screen:
+    """Obrazovka jako seznam prvků napříč okny appky + kde je klávesnice.
+
+    Prvek, jehož bod klepnutí leží pod oknem z vyšší vrstvy (klávesnice, nabídka comboboxu),
+    dostane `covered` — klepnutí by trefilo to okno, ne jeho."""
+
+    def __init__(self, device):
+        self.xml = windowdump_xml(device)
+        self.nodes, self.all, self.ime = [], [], None
+        if self.xml is not None:
+            self._from_windows()
+        else:
+            self.xml = dump_xml(device)
+            self.nodes, self.all = parse_nodes(self.xml), all_nodes(self.xml)
+            self.ime = ime_bounds_dumpsys(device)
+            self._mark([(1, "klávesnicí", self.ime)] if self.ime else [])
+
+    def _from_windows(self):
+        covers = []
+        app_windows = []
+        for window in ET.fromstring(self.xml).iter("window"):
+            kind, layer = window.get("type"), int(window.get("layer") or 0)
+            bounds = _bounds(window.get("bounds"))
+            if kind == "ime":
+                self.ime = bounds
+                covers.append((layer, "klávesnicí", bounds))
+            elif kind == "application":
+                app_windows.append((layer, window))
+                covers.append((layer, "nabídkou", bounds))
+        # Okna appky odspodu nahoru: hlavní obrazovka první, nabídka za ní (dump_lines je oddělí).
+        for layer, window in sorted(app_windows, key=lambda item: item[0]):
+            for element in window:
+                if element.tag != "node":
+                    continue
+                flat = []
+                flatten(self._tree(element), flat)
+                for node in flat:
+                    node.layer = layer
+                self.nodes += flat
+                for item in element.iter("node"):
+                    node = Node(item.attrib)
+                    if node.bounds and node.area > 0:
+                        node.layer = layer
+                        self.all.append(node)
+        self._mark(covers)
+
+    @staticmethod
+    def _tree(element):
+        node = Node(element.attrib)
+        node.children = [Screen._tree(child) for child in element if child.tag == "node"]
+        return node
+
+    def _mark(self, covers):
+        for node in self.nodes + self.all:
+            if not node.bounds:
+                continue
+            for layer, what, bounds in covers:
+                if layer > node.layer and _inside(node.point, bounds):
+                    node.covered = what
+                    break
 
 
 # ---- hledání prvku ------------------------------------------------------------------------
@@ -318,6 +508,9 @@ def resolve_target(nodes, query, nth=None):
         for line in dump_lines(nodes):
             print("  " + line, file=sys.stderr)
         sys.exit(1)
+    # Nezakrytý prvek má přednost — stejný text pod otevřenou nabídkou a v ní je typicky
+    # položka nabídky, na kterou se má klepnout.
+    found = [node for node in found if not node.covered] or found
     # Compose vrací zanořené uzly se stejným textem (klikatelný rodič + textový potomek) —
     # pro klepnutí je správně ten klikatelný, jinak nejmenší (nejkonkrétnější).
     clickable = [node for node in found if node.clickable]
@@ -340,28 +533,52 @@ def resolve_target(nodes, query, nth=None):
 
 
 def cmd_dump(args):
-    xml = dump_xml(args.device)
+    screen = Screen(args.device)
     if args.raw:
-        print(xml)
+        print(screen.xml)
         return
-    lines = dump_lines(all_nodes(xml) if args.all else parse_nodes(xml))
+    lines = dump_lines(screen.all if args.all else screen.nodes)
+    if screen.ime:
+        lines.insert(0, "[klávesnice otevřená: y %d–%d — prvky POD-KLÁVESNICÍ klepnutí netrefí, "
+                        "`tap` ji sám zavře]" % (screen.ime[1], screen.ime[3]))
     print("\n".join(lines) if lines else "(prázdná obrazovka)")
 
 
+def hide_keyboard(device):
+    """Zavře klávesnici (Zpět ji zavře, dokud je otevřená — nenaviguje) a počká, až zmizí."""
+    adb_shell(["input", "keyevent", "KEYCODE_BACK"], device)
+    deadline = time.monotonic() + 3
+    while ime_bounds_dumpsys(device) and time.monotonic() < deadline:
+        time.sleep(0.2)
+
+
 def cmd_tap(args):
-    node = resolve_target(parse_nodes(dump_xml(args.device)), args.text, args.nth)
+    screen = Screen(args.device)
+    node = resolve_target(screen.nodes, args.text, args.nth)
+    if node.covered == "klávesnicí":
+        # Po zavření klávesnice se rozvržení posune — souřadnice se musí načíst znovu.
+        hide_keyboard(args.device)
+        print("klávesnice zakrývala %r — zavřena" % args.text)
+        node = resolve_target(Screen(args.device).nodes, args.text, args.nth)
+    if node.covered:
+        die("%r je pod otevřenou nabídkou — klepni na její položku, nebo ji zavři `key back`.\n  %s"
+            % (args.text, node.render()))
     x, y = node.point
     adb_shell(["input", "tap", str(x), str(y)], args.device)
     print("tap @(%d,%d) — %s" % (x, y, node.render()))
 
 
 def cmd_tap_xy(args):
+    ime = None if args.force else ime_bounds_dumpsys(args.device)
+    if _inside((args.x, args.y), ime):
+        die("@(%d,%d) je na klávesnici (y %d–%d) — zavři ji `key back` a vezmi souřadnice z nového "
+            "`dump` (rozvržení se posune), nebo pošli --force." % (args.x, args.y, ime[1], ime[3]))
     adb_shell(["input", "tap", str(args.x), str(args.y)], args.device)
     print("tap @(%d,%d)" % (args.x, args.y))
 
 
 def focused_field(device):
-    for node in parse_nodes(dump_xml(device)):
+    for node in Screen(device).nodes:
         if node.focused:
             return node
     return None
@@ -416,7 +633,7 @@ def cmd_key(args):
 def cmd_wait(args):
     deadline = time.monotonic() + args.timeout
     while True:
-        nodes = parse_nodes(dump_xml(args.device))
+        nodes = Screen(args.device).nodes
         found = find_nodes(nodes, args.text)
         if args.gone and not found:
             print("zmizelo: %r" % args.text)
@@ -492,6 +709,7 @@ def main():
     tap_xy = subparsers.add_parser("tap-xy", help="klepne na souřadnice z dumpu")
     tap_xy.add_argument("x", type=int)
     tap_xy.add_argument("y", type=int)
+    tap_xy.add_argument("--force", action="store_true", help="klepnout i na klávesnici")
     tap_xy.set_defaults(func=cmd_tap_xy)
 
     text = subparsers.add_parser("text", help="napíše text do zaostřeného pole (jen ASCII)")
