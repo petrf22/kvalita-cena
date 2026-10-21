@@ -20,6 +20,29 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.10.0", date: "2026-10-21", sections: [
+      { title: "Přidáno", items: [
+        { text: "Účtenky: celou účtenku jde nafotit (mobil) nebo nahrát (web), appka z ní přečte zboží a ceny a uživatel je jen zkontroluje a potvrdí; citlivé údaje se dají před odesláním zakrýt", parts: ["server", "web", "mobil"] },
+        { text: "Na detailu zboží je karta „Názvy na účtenkách\" — jak se zboží jmenuje na účtenkách jednotlivých obchodů", parts: ["web"] },
+        { text: "Ve formuláři zboží na webu jde naskenovat čárový kód a název se předvyplní", parts: ["web"] },
+        { text: "Obchody v okolí appka při zápisu ceny hledá sama hned po otevření a ukáže je jako seznam se vzdáleností — tlačítko „Najít v okolí\" tím zmizelo", parts: ["mobil"] },
+        { text: "Když v okolí žádný známý obchod není, appka nabídne provozovny z OpenStreetMap a vybraná z nich předvyplní celý formulář nového obchodu včetně adresy", parts: ["server", "mobil"] },
+        { text: "V Nastavení jde zvolit, co znamená „v okolí\" — 200 m až 5 km, výchozích 500 m; ze seznamu jde jedním klepnutím hledat i v širším okruhu", parts: ["mobil"] },
+      ] },
+      { title: "Změněno", items: [
+        { text: "Souřadnice nového obchodu se dohledají samy z vyplněné adresy, tlačítko „Najít souřadnice\" zůstalo jen jako ruční zopakování", parts: ["mobil"] },
+        { text: "„Přidat nový obchod\" je vidět jako tlačítko pod seznamem, ne až jako poslední položka rozbalovací nabídky", parts: ["mobil"] },
+      ] },
+      { title: "Opraveno", items: [
+        { text: "Výpadek služby pro dohledání adresy už nesmaže adresu vyplněnou ve formuláři obchodu po klepnutí do mapy; appka místo toho řekne, že adresu teď dohledat nejde", parts: ["web", "mobil"] },
+        { text: "Při zakládání obchodu, který už v katalogu je, appka nabídne správnou pobočku, ne jinou se stejným názvem ve stejném městě", parts: ["server", "mobil"] },
+        { text: "Když poloha chybí, appka řekne proč a co s tím — jinak se zachová u nepovoleného přístupu, vypnuté polohy a nezdařeného zaměření; dřív z toho byla jediná hláška bez rady", parts: ["mobil"] },
+        { text: "Obchod ve vzdálenosti kolem 200 m už z okolí nevypadne kvůli zaokrouhlení polohy, které appka posílá serveru kvůli soukromí", parts: ["server", "mobil"] },
+        { text: "Appka umí požádat o přesnou polohu: s přibližnou ji systém posouval až o 1,5 km, takže obchod v okolí nenašla a souřadnice nově zakládané provozovny byly o kilometr vedle", parts: ["mobil"] },
+        { text: "Naposledy použitý obchod je předvybraný i bez signálu — appka si ho pamatuje celý, ne jen jeho id", parts: ["mobil"] },
+        { text: "Pokus o založení obchodu, který už v katalogu je, nabídne ten existující místo pouhé chybové hlášky", parts: ["mobil"] },
+      ] },
+  ] },
   { version: "0.9.0", date: "2026-09-20", sections: [
       { title: "Přidáno", items: [
         { text: "Při zakládání obchodu stačí ukázat místo na mapě a adresa se doplní sama; hledání podle adresy hledá v zemi zvolené ve formuláři a jediný nález rovnou ukáže na mapě", parts: ["web", "mobil"] },
