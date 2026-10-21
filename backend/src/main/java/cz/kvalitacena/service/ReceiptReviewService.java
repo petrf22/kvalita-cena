@@ -18,6 +18,7 @@ import cz.kvalitacena.db.entity.ReceiptProcessingStatus;
 import cz.kvalitacena.db.entity.ReceiptReviewStatus;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.AppUserRepository;
+import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ReceiptLineRepository;
 import cz.kvalitacena.db.repo.ReceiptRepository;
@@ -40,8 +41,11 @@ import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Párování řádků účtenky a potvrzení cen (docs/datovy-model.md, „Účtenky"). Tady — a jen tady —
@@ -63,6 +67,7 @@ public class ReceiptReviewService {
   private final StoreRepository storeRepository;
   private final ProductRepository productRepository;
   private final AppUserRepository appUserRepository;
+  private final PriceObservationRepository priceObservationRepository;
   private final ReceiptMatchingService matchingService;
   private final PriceObservationService priceObservationService;
   private final ProductStoreLabelService labelService;
@@ -90,6 +95,7 @@ public class ReceiptReviewService {
         List<ReceiptLine> lines = lineRepository.findByReceiptIdOrderByLineNoAsc(receiptId);
         matchingService.matchLines(lines, store, owner.getId());
         lineRepository.saveAll(lines);
+        lineRepository.flush();
       }
     }
     touchReview(receipt);
@@ -106,8 +112,9 @@ public class ReceiptReviewService {
     line.setMatchSource(newProduct ? ReceiptMatchSource.NEW_PRODUCT : ReceiptMatchSource.USER);
     line.setStatus(ReceiptLineStatus.SUGGESTED);
     line.setSkipReason(null);
+    ReceiptLine saved = lineRepository.saveAndFlush(line);
     touchReview(receiptRepository.findById(line.getReceiptId()).orElseThrow());
-    return lineRepository.save(line);
+    return saved;
   }
 
   @Transactional
@@ -157,15 +164,23 @@ public class ReceiptReviewService {
       throw new ValidationException(ErrorCode.RECEIPT_PURCHASE_TIME_REQUIRED);
     }
 
+    // Všechny řádky se ověří DŘÍV, než se zapíše první cena — neexistující nebo cizí řádek
+    // uprostřed by jinak nechal část cen zapsanou a klientovi vrátil jen chybu.
+    List<Long> ids = lineIds == null ? List.of() : lineIds;
+    Map<Long, ReceiptLine> requested = lineRepository.findAllById(ids).stream()
+        .filter(l -> l.getReceiptId().equals(receiptId))
+        .collect(Collectors.toMap(ReceiptLine::getId, Function.identity()));
+    if (!requested.keySet().containsAll(ids)) {
+      throw new NotFoundException(ErrorCode.RECEIPT_LINE_NOT_FOUND);
+    }
+
     TransactionTemplate lineTx = new TransactionTemplate(transactionManager);
     lineTx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     int confirmed = 0;
     List<ReceiptLine> skipped = new ArrayList<>();
-    for (Long lineId : lineIds == null ? List.<Long>of() : lineIds) {
-      ReceiptLine line = lineRepository.findById(lineId)
-          .filter(l -> l.getReceiptId().equals(receiptId))
-          .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_LINE_NOT_FOUND));
-      if (line.getObservationId() != null || line.getStatus() == ReceiptLineStatus.IGNORED) {
+    for (Long lineId : ids) {
+      ReceiptLine line = requested.get(lineId);
+      if (line.isConfirmed() || line.getStatus() == ReceiptLineStatus.IGNORED) {
         continue;
       }
       try {
@@ -173,18 +188,11 @@ public class ReceiptReviewService {
         confirmed++;
       } catch (AppException e) {
         String reason = DUPLICATE_CODES.contains(e.getCode()) ? SKIP_DUPLICATE : e.getCode().name();
-        lineTx.executeWithoutResult(status -> {
-          ReceiptLine fresh = lineRepository.findById(line.getId()).orElseThrow();
-          fresh.setSkipReason(reason);
-          // Duplicita znamená, že tuhle cenu uživatel dnes už zapsal — párování samo je
-          // potvrzené, jen druhá cena navíc by porušila denní limit (docs/reputace.md).
-          if (SKIP_DUPLICATE.equals(reason) && fresh.getProductId() != null) {
-            fresh.setStatus(ReceiptLineStatus.MATCHED);
-            learn(fresh, receipt, owner);
-          }
-          lineRepository.save(fresh);
-          skipped.add(fresh);
-        });
+        skipped.add(skip(lineTx, line.getId(), reason, receipt, owner));
+      } catch (RuntimeException e) {
+        // Neočekávaná chyba jednoho řádku nesmí shodit ostatní ani přeskočit updateReviewStatus.
+        log.error("Účtenka {}: řádek {} se nepodařilo potvrdit", receiptId, line.getId(), e);
+        skipped.add(skip(lineTx, line.getId(), ErrorCode.RECEIPT_LINE_CONFIRM_FAILED.name(), receipt, owner));
       }
     }
     Receipt result = new TransactionTemplate(transactionManager).execute(status -> {
@@ -196,6 +204,20 @@ public class ReceiptReviewService {
     return new ConfirmResult(result, confirmed, skipped);
   }
 
+  private ReceiptLine skip(TransactionTemplate lineTx, Long lineId, String reason, Receipt receipt, AppUser owner) {
+    return lineTx.execute(status -> {
+      ReceiptLine fresh = lineRepository.findById(lineId).orElseThrow();
+      fresh.setSkipReason(reason);
+      // Duplicita znamená, že tuhle cenu uživatel dnes už zapsal — párování samo je
+      // potvrzené, jen druhá cena navíc by porušila denní limit (docs/reputace.md).
+      if (SKIP_DUPLICATE.equals(reason) && fresh.getProductId() != null) {
+        fresh.setStatus(ReceiptLineStatus.MATCHED);
+        learn(fresh, receipt, owner);
+      }
+      return lineRepository.save(fresh);
+    });
+  }
+
   private void confirmLine(Long lineId, Receipt receipt, AppUser owner, UUID ownerPublicUid, ObservationSource source) {
     ReceiptLine line = lineRepository.findById(lineId).orElseThrow();
     if (line.getProductId() == null) {
@@ -204,9 +226,20 @@ public class ReceiptReviewService {
     Product product = productRepository.findById(line.getProductId())
         .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
     PriceRows rows = priceRows(line);
+    // Druh ceny, který uživatel ten den už zapsal (typicky běžnou cenu ručně), se vynechá —
+    // submit by jinak kvůli jedné kolizi shodil celou dávku a cena po slevě by se ztratila.
+    Set<String> alreadyToday = Set.copyOf(priceObservationRepository.findPriceKindsBySubmitterOnDay(
+        product.getId(), receipt.getStoreId(), owner.getId(), receipt.getPurchasedAt()));
+    List<ObservationPriceInput> prices = rows.prices().stream()
+        .filter(p -> !alreadyToday.contains(p.priceKind().name()))
+        .toList();
+    if (prices.isEmpty()) {
+      throw new ValidationException(ErrorCode.OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY,
+          rows.prices().getFirst().priceKind().name());
+    }
     List<PriceObservation> saved = priceObservationService.submit(new SubmitObservationsInput(
             product.getId(), receipt.getStoreId(), rows.basis(), receipt.getPurchasedAt(), receipt.getCurrency(),
-            null, rows.prices()),
+            null, prices),
         ownerPublicUid, source, EvidenceKind.RECEIPT_OCR, line.getId());
     line.setObservationId(saved.getFirst().getId());
     line.setStatus(ReceiptLineStatus.MATCHED);
@@ -295,7 +328,7 @@ public class ReceiptReviewService {
     ReceiptLine line = lineRepository.findById(lineId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_LINE_NOT_FOUND));
     ownedReceipt(line.getReceiptId(), owner);
-    if (line.getObservationId() != null) {
+    if (line.isConfirmed()) {
       // Cena už je zapsaná — přepárování by ji nechalo viset u jiného zboží než řádek.
       throw new ValidationException(ErrorCode.RECEIPT_LINE_ALREADY_CONFIRMED);
     }

@@ -96,6 +96,8 @@ public enum ErrorCode {
   RECEIPT_LINE_NOT_MATCHED("error.receipt.lineNotMatched"),
   RECEIPT_RESULT_INVALID("error.receipt.resultInvalid"),
   RECEIPT_LINE_ALREADY_CONFIRMED("error.receipt.lineAlreadyConfirmed"),
+  RECEIPT_LINE_CONFIRM_FAILED("error.receipt.lineConfirmFailed"),
+  RECEIPT_UPLOAD_TOO_LARGE("error.receipt.uploadTooLarge"),   // spring.servlet.multipart.max-request-size
 
   // --- cenové observace
   // uq_price_observation_submitter_kind_per_day — 1 záznam/uživatel/produkt/obchod/druh ceny/den
