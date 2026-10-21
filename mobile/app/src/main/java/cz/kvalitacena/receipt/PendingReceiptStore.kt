@@ -16,10 +16,13 @@ import kotlinx.serialization.json.Json
  * Účtenka zařazená k odeslání — díly už se zakrytím vypáleným do pixelů. [errorCode]
  * a [errorMessage] jsou vyplněné, když odeslání skončilo chybou, kterou nemá smysl opakovat
  * automaticky (chybí přihlášení nebo nový souhlas, denní limit — [uploadFailureAction]).
+ * [ownerUid] je `publicUid` účtu, který ji zařadil — pod jiným účtem nikdy neodejde.
+ * [id] slouží zároveň jako klíč idempotence nahrání (`clientUploadId`).
  */
 @Serializable
 data class PendingReceipt(
   val id: String,
+  val ownerUid: String? = null,
   val consentVersion: Int,
   val archiveConsent: Boolean,
   val capturedAt: String,
@@ -57,7 +60,12 @@ class PendingReceiptStore(filesDir: File) {
    * obsah na server vůbec nedorazí), díly očísluje podle pořadí a koncept smaže. Nepovede-li
    * se vypálit masku, nezařadí nic — raději neodeslat než odeslat nezakryté.
    */
-  suspend fun commitDraft(draftStore: ReceiptDraftStore, consentVersion: Int, archiveConsent: Boolean): PendingReceipt =
+  suspend fun commitDraft(
+    draftStore: ReceiptDraftStore,
+    consentVersion: Int,
+    archiveConsent: Boolean,
+    ownerUid: String?,
+  ): PendingReceipt =
     withContext(Dispatchers.IO) {
       val draft = draftStore.draft.value
       if (draft.parts.isEmpty()) throw DraftCommitException("Koncept účtenky je prázdný")
@@ -76,6 +84,7 @@ class PendingReceiptStore(filesDir: File) {
         val now = OffsetDateTime.now().toString()
         val pending = PendingReceipt(
           id = id,
+          ownerUid = ownerUid,
           consentVersion = consentVersion,
           archiveConsent = archiveConsent,
           capturedAt = draft.capturedAt ?: now,

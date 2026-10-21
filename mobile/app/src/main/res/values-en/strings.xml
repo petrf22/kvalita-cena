@@ -572,6 +572,7 @@
     <string name="receipt_mask_clear">Remove all</string>
     <string name="receipt_mask_save">Save</string>
     <string name="receipt_consent_title">Consent to receipt processing</string>
+    <string name="receipt_consent_outdated">The consent text has changed and this version of the app can\'t show it. Update the app and send the receipt again.</string>
     <string name="receipt_consent_text">The receipt is read by the app operator on their own computer — no cloud service. Images are deleted within 30 days of processing; only you can see the purchase overview (shop, date, items). Prices from the receipt are saved only after you confirm them.</string>
     <string name="receipt_consent_processing">I agree that the app operator processes the receipt on their own computer (required)</string>
     <string name="receipt_consent_archive">The operator may keep the images to improve recognition (optional)</string>

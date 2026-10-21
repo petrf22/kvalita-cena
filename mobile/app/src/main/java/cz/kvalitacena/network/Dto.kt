@@ -765,6 +765,8 @@ data class ReceiptLine(
   val matchSource: String? = null,
   val product: ProductSummary? = null,
   val observationId: String? = null,
+  // Cena z řádku je zapsaná — platí i po pseudonymizaci, kdy observationId chybí (docs/soukromi.md).
+  val confirmed: Boolean = false,
   // DUPLICATE_SAME_DAY, nebo kód chyby (ErrorCode), proč potvrzení cenu nezapsalo.
   val skipReason: String? = null,
 )

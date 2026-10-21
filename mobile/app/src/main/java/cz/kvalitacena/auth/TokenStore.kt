@@ -7,6 +7,7 @@ import androidx.security.crypto.MasterKey
 
 private const val PREFS_NAME = "kvalita_a_cena_auth"
 private const val KEY_REFRESH_TOKEN = "refresh_token"
+private const val KEY_USER_UID = "user_uid"
 
 /**
  * Refresh token je jediná věc, která se na Androidu trvale ukládá — access token žije jen
@@ -35,7 +36,14 @@ class TokenStore(context: Context) {
 
   fun getRefreshToken(): String? = prefs.getString(KEY_REFRESH_TOKEN, null)
 
+  /** `publicUid` přihlášeného účtu (z access tokenu) — musí přežít restart procesu stejně jako refresh token. */
+  fun saveUserUid(uid: String) {
+    prefs.edit().putString(KEY_USER_UID, uid).apply()
+  }
+
+  fun getUserUid(): String? = prefs.getString(KEY_USER_UID, null)
+
   fun clear() {
-    prefs.edit().remove(KEY_REFRESH_TOKEN).apply()
+    prefs.edit().remove(KEY_REFRESH_TOKEN).remove(KEY_USER_UID).apply()
   }
 }

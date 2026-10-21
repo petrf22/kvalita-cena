@@ -9,15 +9,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import cz.kvalitacena.R
+import cz.kvalitacena.auth.AuthRepository
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Receipt
+import cz.kvalitacena.receipt.PendingReceipt
 import cz.kvalitacena.receipt.PendingReceiptStore
+import cz.kvalitacena.receipt.RECEIPT_CONSENT_VERSION
 import cz.kvalitacena.receipt.ReceiptPrefs
 import cz.kvalitacena.receipt.ReceiptWork
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.toUiText
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -34,6 +41,7 @@ class ReceiptListViewModel(
   private val graphQlClient: GraphQlClient,
   private val pendingStore: PendingReceiptStore,
   private val prefs: ReceiptPrefs,
+  private val authRepository: AuthRepository,
 ) : ViewModel() {
 
   var items by mutableStateOf<List<Receipt>>(emptyList())
@@ -53,7 +61,16 @@ class ReceiptListViewModel(
   var actionError by mutableStateOf<UiText?>(null)
     private set
 
-  val pending = pendingStore.pending
+  private val currentUserUid = MutableStateFlow<String?>(null)
+
+  /**
+   * Čekající účtenky jen přihlášeného účtu — účtenky jiného účtu v tomhle telefonu (odhlášení
+   * před odesláním) se neukazují ani neodesílají, dokud se jejich vlastník nepřihlásí zpátky.
+   * Účtenka bez vlastníka vznikla před touhle kontrolou a ukazuje se všem.
+   */
+  val pending: StateFlow<List<PendingReceipt>> = combine(pendingStore.pending, currentUserUid) { list, uid ->
+    list.filter { it.ownerUid == null || it.ownerUid == uid }
+  }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
   /** Stav odeslání čekajících účtenek podle id v [PendingReceiptStore]. */
   val uploadStates: StateFlow<Map<String, WorkInfo.State>> =
@@ -70,6 +87,7 @@ class ReceiptListViewModel(
 
   init {
     refresh()
+    viewModelScope.launch(Dispatchers.IO) { currentUserUid.value = authRepository.currentUserUid() }
     viewModelScope.launch {
       uploadStates.collect { states ->
         val finished = states.filterValues { it == WorkInfo.State.SUCCEEDED }.keys - handledSuccess
@@ -144,11 +162,20 @@ class ReceiptListViewModel(
     ReceiptWork.enqueueUpload(appContext, id)
   }
 
+  /**
+   * Smí se ukázat dialog souhlasu? Když server chce znění, které tahle verze appky nezná,
+   * ukáže místo toho výzvu k aktualizaci (docs/soukromi.md, „Účtenky").
+   */
+  fun canAskConsent(): Boolean {
+    if (!prefs.consentOutdated) return true
+    actionError = UiText.Res(R.string.receipt_consent_outdated)
+    return false
+  }
+
   /** Server mezitím zvedl verzi souhlasu — nový souhlas platí i pro tuhle čekající účtenku. */
   fun acceptConsentAndRetry(id: String, archive: Boolean) {
-    val version = prefs.serverConsentVersion
-    prefs.acceptConsent(version, archive)
-    pendingStore.clearError(id, consentVersion = version, archiveConsent = archive)
+    prefs.acceptConsent(RECEIPT_CONSENT_VERSION, archive)
+    pendingStore.clearError(id, consentVersion = RECEIPT_CONSENT_VERSION, archiveConsent = archive)
     ReceiptWork.enqueueUpload(appContext, id)
   }
 

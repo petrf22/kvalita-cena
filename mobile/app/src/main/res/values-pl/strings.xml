@@ -572,6 +572,7 @@
     <string name="receipt_mask_clear">Usuń wszystkie</string>
     <string name="receipt_mask_save">Zapisz</string>
     <string name="receipt_consent_title">Zgoda na przetwarzanie paragonu</string>
+    <string name="receipt_consent_outdated">Treść zgody się zmieniła, a ta wersja aplikacji nie potrafi jej wyświetlić. Zaktualizuj aplikację i wyślij paragon ponownie.</string>
     <string name="receipt_consent_text">Paragon odczyta operator aplikacji na własnym komputerze — bez usług w chmurze. Obrazy zostaną usunięte do 30 dni po przetworzeniu; podsumowanie zakupu (sklep, data, pozycje) widzisz tylko ty. Ceny z paragonu zostaną zapisane dopiero po twoim potwierdzeniu.</string>
     <string name="receipt_consent_processing">Zgadzam się, aby operator aplikacji przetworzył paragon na swoim komputerze (wymagane)</string>
     <string name="receipt_consent_archive">Operator może zachować obrazy w celu ulepszenia rozpoznawania (opcjonalne)</string>

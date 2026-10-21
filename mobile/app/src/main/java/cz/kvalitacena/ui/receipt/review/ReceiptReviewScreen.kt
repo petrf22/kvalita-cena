@@ -79,6 +79,7 @@ fun ReceiptReviewScreen(
           AppContainer.pendingReceipts,
           AppContainer.receiptPrefs,
           AppContainer.graphQlClient,
+          AppContainer.authRepository,
         )
       }
     },

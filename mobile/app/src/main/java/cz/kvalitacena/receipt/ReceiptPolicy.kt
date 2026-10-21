@@ -33,6 +33,17 @@ fun uploadFailureAction(status: Int, code: String?): UploadFailureAction = when 
 }
 
 /**
+ * Verze textu souhlasu, který appka SAMA ukazuje (`receipt_consent_*` ve strings.xml). Ukládá
+ * a posílá se tahle, ne číslo ze serveru — jinak by stará appka po zvednutí
+ * `app.receipt.consent-version` odeslala souhlas s textem, který uživatel neviděl
+ * (docs/soukromi.md, „Účtenky"). Při změně textu zvednout spolu se serverem.
+ */
+const val RECEIPT_CONSENT_VERSION = 1
+
+/** Server chce jiné znění souhlasu, než jaké tahle verze appky umí ukázat — pomůže jen aktualizace. */
+fun consentOutdated(serverVersion: Int): Boolean = serverVersion != RECEIPT_CONSENT_VERSION
+
+/**
  * Ptát se znovu na souhlas? Při prvním odeslání ([acceptedVersion] 0) vždy, pak jen když server
  * zvedl verzi textu (`receiptSummary.consentVersion`, docs/soukromi.md „Účtenky" — změna
  * zpracovatele znamená nové zaškrtnutí, ne tichou výměnu).

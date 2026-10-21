@@ -13,12 +13,6 @@ private const val KEY_NOTIFICATION_ASKED = "notification_permission_asked"
 private const val KEY_LAST_NOTIFIED_UNSEEN = "last_notified_unseen"
 
 /**
- * Verze textu souhlasu, kterou server dnes chce, dokud se appka nezeptá (`app.receipt.consent-version`,
- * docs/ai.md) — souhlas jde dát i offline v obchodě, bez dotazu na server.
- */
-private const val DEFAULT_SERVER_CONSENT_VERSION = 1
-
-/**
  * Lokální stav účtenek (docs/soukromi.md, „Účtenky"): odsouhlasená verze textu a volba
  * archivace, poslední známá verze ze serveru, jestli uživatel účtenky vůbec používá (jen pak
  * běží periodická kontrola) a na kolik neviděných účtenek už notifikace upozornila.
@@ -34,10 +28,15 @@ class ReceiptPrefs(context: Context) {
   val archiveConsent: Boolean get() = prefs.getBoolean(KEY_ARCHIVE_CONSENT, false)
 
   var serverConsentVersion: Int
-    get() = prefs.getInt(KEY_SERVER_CONSENT_VERSION, DEFAULT_SERVER_CONSENT_VERSION)
+    // Dokud se appka serveru nezeptá, platí znění, které sama ukazuje — souhlas jde dát
+    // i offline v obchodě, bez dotazu na server.
+    get() = prefs.getInt(KEY_SERVER_CONSENT_VERSION, RECEIPT_CONSENT_VERSION)
     set(value) = prefs.edit { putInt(KEY_SERVER_CONSENT_VERSION, value) }
 
-  fun needsConsent(): Boolean = consentRequired(acceptedConsentVersion, serverConsentVersion)
+  /** Poslední známá verze ze serveru je jiná, než jakou appka umí ukázat (consentOutdated). */
+  val consentOutdated: Boolean get() = consentOutdated(serverConsentVersion)
+
+  fun needsConsent(): Boolean = consentRequired(acceptedConsentVersion, RECEIPT_CONSENT_VERSION)
 
   fun acceptConsent(version: Int, archive: Boolean) {
     prefs.edit {

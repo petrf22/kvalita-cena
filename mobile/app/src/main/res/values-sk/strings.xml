@@ -572,6 +572,7 @@
     <string name="receipt_mask_clear">Odkryť všetko</string>
     <string name="receipt_mask_save">Uložiť zakrytie</string>
     <string name="receipt_consent_title">Súhlas so spracovaním účtenky</string>
+    <string name="receipt_consent_outdated">Znenie súhlasu sa zmenilo a táto verzia aplikácie ho nevie zobraziť. Aktualizujte aplikáciu a odošlite účtenku znova.</string>
     <string name="receipt_consent_text">Účtenku prečíta prevádzkovateľ appky na svojom vlastnom počítači — žiadna cloudová služba. Obrázky sa do 30 dní po spracovaní zmažú; prehľad nákupu (obchod, dátum, položky) vidíte len vy. Ceny z účtenky sa zapíšu až po vašom potvrdení.</string>
     <string name="receipt_consent_processing">Súhlasím, aby účtenku spracoval prevádzkovateľ appky na svojom počítači (povinné)</string>
     <string name="receipt_consent_archive">Prevádzkovateľ si smie obrázky ponechať na zlepšenie rozpoznávania (nepovinné)</string>

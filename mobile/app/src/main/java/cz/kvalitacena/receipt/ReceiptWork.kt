@@ -112,6 +112,16 @@ class ReceiptUploadWorker(context: Context, params: WorkerParameters) : Coroutin
       store.markFailed(id, CODE_REQUIRES_LOGIN, null)
       return Result.failure()
     }
+    // Účtenku zařadil jiný účet (odhlášení a přihlášení někoho jiného před odesláním) — nákup
+    // jednoho člověka nesmí skončit v účtu druhého. Počká, až se vlastník přihlásí zpátky.
+    if (pending.ownerUid != null) {
+      val current = auth.currentUserUid()
+      if (current == null) return Result.retry() // uid se uloží s první obnovou tokenu
+      if (current != pending.ownerUid) {
+        store.markFailed(id, CODE_REQUIRES_LOGIN, null)
+        return Result.failure()
+      }
+    }
 
     return try {
       val receiptId = AppContainer.mediaClient.uploadReceipt(
@@ -119,6 +129,7 @@ class ReceiptUploadWorker(context: Context, params: WorkerParameters) : Coroutin
         pending.consentVersion,
         pending.archiveConsent,
         pending.capturedAt,
+        clientUploadId = pending.id,
       )
       store.delete(id)
       Result.success(workDataOf(KEY_RECEIPT_ID to receiptId))

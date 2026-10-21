@@ -574,6 +574,7 @@
     <string name="receipt_mask_clear">Alle entfernen</string>
     <string name="receipt_mask_save">Speichern</string>
     <string name="receipt_consent_title">Einwilligung zur Verarbeitung des Kassenbons</string>
+    <string name="receipt_consent_outdated">Der Text der Einwilligung hat sich geändert und diese App-Version kann ihn nicht anzeigen. Aktualisieren Sie die App und senden Sie den Kassenbon erneut.</string>
     <string name="receipt_consent_text">Der Kassenbon wird vom App-Betreiber auf seinem eigenen Computer gelesen — ohne Cloud-Dienst. Die Bilder werden innerhalb von 30 Tagen nach der Verarbeitung gelöscht; die Einkaufsübersicht (Geschäft, Datum, Artikel) sehen nur Sie. Preise vom Kassenbon werden erst nach Ihrer Bestätigung gespeichert.</string>
     <string name="receipt_consent_processing">Ich bin einverstanden, dass der App-Betreiber den Kassenbon auf seinem eigenen Computer verarbeitet (erforderlich)</string>
     <string name="receipt_consent_archive">Der Betreiber darf die Bilder zur Verbesserung der Erkennung behalten (optional)</string>

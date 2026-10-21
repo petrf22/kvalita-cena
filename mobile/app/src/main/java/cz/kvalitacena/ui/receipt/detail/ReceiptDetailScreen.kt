@@ -630,7 +630,7 @@ private fun LineStatusChip(line: ReceiptLine) {
       MaterialTheme.colorScheme.onSecondaryContainer,
     )
     "MATCHED" -> Triple(
-      stringResource(if (line.observationId != null) R.string.receipt_line_status_confirmed else R.string.receipt_line_status_matched),
+      stringResource(if (line.confirmed) R.string.receipt_line_status_confirmed else R.string.receipt_line_status_matched),
       MaterialTheme.colorScheme.primaryContainer,
       MaterialTheme.colorScheme.onPrimaryContainer,
     )

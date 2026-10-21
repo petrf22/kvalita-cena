@@ -2,22 +2,25 @@ package cz.kvalitacena.ui.receipt.review
 
 import android.content.Context
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cz.kvalitacena.R
+import cz.kvalitacena.auth.AuthRepository
 import cz.kvalitacena.crash.AppLog
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.receipt.PendingReceiptStore
+import cz.kvalitacena.receipt.RECEIPT_CONSENT_VERSION
 import cz.kvalitacena.receipt.ReceiptDraftStore
 import cz.kvalitacena.receipt.ReceiptNotifications
 import cz.kvalitacena.receipt.ReceiptPrefs
 import cz.kvalitacena.receipt.ReceiptWork
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.receipt.capture.MaskRect
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Kontrola účtenky před odesláním — pořadí dílů, zakrytí citlivých údajů a souhlas
@@ -30,13 +33,10 @@ class ReceiptReviewViewModel(
   private val pendingStore: PendingReceiptStore,
   private val prefs: ReceiptPrefs,
   private val graphQlClient: GraphQlClient,
+  private val authRepository: AuthRepository,
 ) : ViewModel() {
 
   val draft = draftStore.draft
-
-  /** Verze textu souhlasu, na kterou se appka ptá — ze serveru, offline poslední známá. */
-  var consentVersion by mutableIntStateOf(prefs.serverConsentVersion)
-    private set
 
   var consentVisible by mutableStateOf(false)
     private set
@@ -61,7 +61,6 @@ class ReceiptReviewViewModel(
       // se zeptá znovu.
       runCatching { graphQlClient.receiptSummary() }.onSuccess {
         prefs.serverConsentVersion = it.consentVersion
-        consentVersion = it.consentVersion
       }
     }
   }
@@ -86,6 +85,11 @@ class ReceiptReviewViewModel(
   }
 
   fun requestSubmit() {
+    if (prefs.consentOutdated) {
+      // Text v téhle verzi appky už neplatí — souhlas s ním by byl souhlas s něčím jiným.
+      submitError = UiText.Res(R.string.receipt_consent_outdated)
+      return
+    }
     if (prefs.needsConsent()) {
       consentVisible = true
     } else {
@@ -98,9 +102,9 @@ class ReceiptReviewViewModel(
   }
 
   fun acceptConsent(archive: Boolean) {
-    prefs.acceptConsent(consentVersion, archive)
+    prefs.acceptConsent(RECEIPT_CONSENT_VERSION, archive)
     consentVisible = false
-    submit(consentVersion, archive)
+    submit(RECEIPT_CONSENT_VERSION, archive)
   }
 
   private fun submit(version: Int, archive: Boolean) {
@@ -109,7 +113,8 @@ class ReceiptReviewViewModel(
     submitError = null
     viewModelScope.launch {
       try {
-        val pending = pendingStore.commitDraft(draftStore, version, archive)
+        val owner = withContext(Dispatchers.IO) { authRepository.currentUserUid() }
+        val pending = pendingStore.commitDraft(draftStore, version, archive, owner)
         ReceiptNotifications.ensureChannel(appContext)
         ReceiptWork.enqueueUpload(appContext, pending.id)
         submitted = true

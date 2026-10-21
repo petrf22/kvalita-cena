@@ -350,8 +350,15 @@ class AuthRepository(context: Context, private val client: OkHttpClient) {
     _accessToken.value = token.accessToken
     accessTokenExpiresAt = accessTokenExpiresAt(SystemClock.elapsedRealtime(), token.expiresInSec)
     token.refreshToken?.let { tokenStore.saveRefreshToken(it) }
+    accessTokenSubject(token.accessToken)?.let { tokenStore.saveUserUid(it) }
     markSession(loggedIn = true)
   }
+
+  /**
+   * `publicUid` přihlášeného účtu, `null` u anonyma — nebo hned po aktualizaci appky, dokud
+   * první obnova tokenu uid neuloží. Čte Keystore, takže ne z hlavního vlákna.
+   */
+  fun currentUserUid(): String? = tokenStore.getUserUid()
 
   /** Konec session — v paměti i na disku, ať `isLoggedIn` napříč appkou nelže. */
   private fun clearSession() {

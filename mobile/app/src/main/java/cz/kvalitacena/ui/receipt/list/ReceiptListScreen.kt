@@ -91,6 +91,7 @@ fun ReceiptListScreen(
           AppContainer.graphQlClient,
           AppContainer.pendingReceipts,
           AppContainer.receiptPrefs,
+          AppContainer.authRepository,
         )
       }
     },
@@ -151,7 +152,7 @@ fun ReceiptListScreen(
               state = uploadStates[item.id],
               online = online,
               onRetry = { viewModel.retryPending(item.id) },
-              onConsent = { consentFor = item },
+              onConsent = { if (viewModel.canAskConsent()) consentFor = item },
               onDelete = { confirmDeletePending = item },
             )
           }

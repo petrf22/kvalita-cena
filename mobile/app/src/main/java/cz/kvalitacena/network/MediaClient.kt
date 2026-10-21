@@ -125,6 +125,7 @@ class MediaClient(private val authRepository: AuthRepository, private val client
     consentVersion: Int,
     archiveConsent: Boolean,
     capturedAt: String,
+    clientUploadId: String,
   ): Long = withContext(Dispatchers.IO) {
     val jpeg = "image/jpeg".toMediaType()
     val multipartBody = MultipartBody.Builder()
@@ -133,6 +134,8 @@ class MediaClient(private val authRepository: AuthRepository, private val client
       .addFormDataPart("consentVersion", consentVersion.toString())
       .addFormDataPart("archiveConsent", archiveConsent.toString())
       .addFormDataPart("capturedAt", capturedAt)
+      // Stejný při každém opakování z fronty — server pak vrátí už uloženou účtenku.
+      .addFormDataPart("clientUploadId", clientUploadId)
       .build()
     uploadAttempt(
       "${ApiConfig.BASE_URL}/api/receipts",
