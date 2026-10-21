@@ -496,8 +496,15 @@ class StoreFormViewModel(
     duplicateStoreId = null
     val lat = selectedCandidate?.lat ?: manualLat
     val lon = selectedCandidate?.lon ?: manualLon
-    val geoSource = if (selectedCandidate != null || osmCandidate != null) "OSM" else if (lat != null) "COMMUNITY" else null
-    val osmRef = selectedCandidate?.osmRef ?: osmCandidate?.osmRef
+    // geoSource je původ BODU, dataOrigin původ TEXTU (docs/datovy-model.md, pravidlo 1) —
+    // u převzaté provozovny může uživatel bod posunout na mapě; pak je bod jeho (COMMUNITY),
+    // i když název a adresa zůstávají z OSM. osmRef u OSM_DERIVED vždy ukazuje na obchod, ne
+    // na geokódovaný bod, jinak by se značka původu odkazovala na cizí záznam.
+    val osm = osmCandidate
+    val pointFromOsm = selectedCandidate != null ||
+      (osm != null && manualLat == osm.lat && manualLon == osm.lon)
+    val geoSource = if (pointFromOsm) "OSM" else if (lat != null) "COMMUNITY" else null
+    val osmRef = osm?.osmRef ?: selectedCandidate?.osmRef
     // OSM_DERIVED jen u provozovny převzaté z nabídky — u pouhého geokódování adresy pochází
     // z OpenStreetMap bod, ne text, a značka původu se nedává (docs/datovy-model.md, pravidlo 1).
     val dataOrigin = if (osmCandidate != null) "OSM_DERIVED" else null
@@ -563,10 +570,15 @@ class StoreFormViewModel(
     loadingDuplicate = true
     viewModelScope.launch {
       try {
-        graphQlClient.storeById(id)?.let { existing ->
+        val existing = graphQlClient.storeById(id)
+        duplicateStoreId = null
+        if (existing != null) {
           saveError = null
-          duplicateStoreId = null
           created = existing
+        } else {
+          // PENDING obchod jiného autora (docs/reputace.md) — viditelný jen jemu. Tichý klik
+          // by vypadal jako nefunkční tlačítko.
+          saveError = UiText.Res(R.string.store_form_existing_store_pending)
         }
       } catch (e: Exception) {
         saveError = e.toUiText()

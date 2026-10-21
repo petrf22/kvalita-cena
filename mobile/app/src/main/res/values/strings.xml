@@ -534,6 +534,7 @@
     <string name="store_location_approximate_warning">Poloha je povolená jen přibližně, takže bod bude o kilometry vedle — přesnou polohu povol v nastavení systému, nebo značku rovnou umísti klepnutím do mapy.</string>
     <string name="store_form_prefilled_from_osm">Předvyplněno z OpenStreetMap — údaje zkontroluj a případně oprav.</string>
     <string name="store_form_use_existing_store">Tenhle obchod už známe — použít ho</string>
+    <string name="store_form_existing_store_pending">Tenhle obchod už v katalogu je, ale čeká na potvrzení dalších přispěvatelů — zatím ho nejde vybrat</string>
     <string name="store_location_searching">Hledám souřadnice podle adresy…</string>
     <string name="store_location_found_from_address">Souřadnice se dohledaly podle adresy. Když sedí jinam, přesuň značku v mapě.</string>
     <string name="store_location_search_again">Zkusit dohledat znovu</string>

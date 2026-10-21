@@ -449,6 +449,7 @@
     <string name="store_location_approximate_warning">Location is granted only approximately, so the point will be off by kilometres — allow precise location in system settings, or place the marker by tapping the map.</string>
     <string name="store_form_prefilled_from_osm">Prefilled from OpenStreetMap — check the details and correct them if needed.</string>
     <string name="store_form_use_existing_store">We already know this store — use it</string>
+    <string name="store_form_existing_store_pending">This store is already in the catalog but is awaiting confirmation by other contributors — it can\'t be selected yet</string>
     <string name="store_location_searching">Looking up coordinates from the address…</string>
     <string name="store_location_found_from_address">Coordinates were found from the address. If they point elsewhere, move the marker on the map.</string>
     <string name="store_location_search_again">Try looking up again</string>

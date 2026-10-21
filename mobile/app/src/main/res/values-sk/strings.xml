@@ -449,6 +449,7 @@
     <string name="store_location_approximate_warning">Poloha je povolená len približne, takže bod bude o kilometre vedľa — presnú polohu povoľ v nastaveniach systému, alebo značku rovno umiestni klepnutím do mapy.</string>
     <string name="store_form_prefilled_from_osm">Predvyplnené z OpenStreetMap — údaje skontroluj a prípadne oprav.</string>
     <string name="store_form_use_existing_store">Tento obchod už poznáme — použiť ho</string>
+    <string name="store_form_existing_store_pending">Tento obchod už v katalógu je, ale čaká na potvrdenie ďalšími prispievateľmi — zatiaľ ho nemožno vybrať</string>
     <string name="store_location_searching">Hľadám súradnice podľa adresy…</string>
     <string name="store_location_found_from_address">Súradnice sa dohľadali podľa adresy. Ak sedia inam, presuň značku v mape.</string>
     <string name="store_location_search_again">Skúsiť dohľadať znova</string>

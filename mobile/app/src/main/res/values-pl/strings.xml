@@ -449,6 +449,7 @@
     <string name="store_location_approximate_warning">Lokalizacja jest przyznana tylko przybliżona, więc punkt będzie oddalony o kilometry — zezwól na dokładną lokalizację w ustawieniach systemu albo ustaw znacznik, dotykając mapy.</string>
     <string name="store_form_prefilled_from_osm">Wypełnione wstępnie z OpenStreetMap — sprawdź dane i w razie potrzeby popraw.</string>
     <string name="store_form_use_existing_store">Ten sklep już znamy — użyj go</string>
+    <string name="store_form_existing_store_pending">Ten sklep jest już w katalogu, ale czeka na potwierdzenie przez innych użytkowników — na razie nie można go wybrać</string>
     <string name="store_location_searching">Szukam współrzędnych według adresu…</string>
     <string name="store_location_found_from_address">Współrzędne znaleziono według adresu. Jeśli wskazują gdzie indziej, przesuń znacznik na mapie.</string>
     <string name="store_location_search_again">Spróbuj wyszukać ponownie</string>
