@@ -253,16 +253,18 @@ app:
       # Usage policy Nominatimu vyžaduje identifikovatelný User-Agent — v produkci nahradit
       # reálným kontaktem (viz https://operations.osmfoundation.org/policies/nominatim/).
       base-url: https://nominatim.openstreetmap.org
-      # V produkci nahradit reálným kontaktním e-mailem.
-      user-agent: "KvalitaACena/0.1 (dev@example.com)"
+      # Zástupný kontakt veřejná instance odmítá (HTTP 403) — i lokálně je potřeba skutečný,
+      # přes NOMINATIM_USER_AGENT (docs/spusteni.md, "Služby OpenStreetMap lokálně").
+      user-agent: ${NOMINATIM_USER_AGENT:KvalitaACena/0.1 (dev@example.com)}
       timeout: PT5S
       cache-ttl: P1D
     overpass:
       # Nabídka provozoven v okolí z OpenStreetMap (docs/datovy-model.md). Overpass, ne
       # Nominatim: Nominatimova usage policy hledání POI podle kategorie zakazuje.
-      base-url: https://overpass-api.de/api/interpreter
-      # V produkci nahradit reálným kontaktním e-mailem (stejně jako u Nominatimu).
-      user-agent: "KvalitaACena/0.1 (dev@example.com)"
+      base-url: ${OVERPASS_BASE_URL:https://overpass-api.de/api/interpreter}
+      # Zástupný kontakt veřejná instance odmítá (HTTP 406, stejně jako obecný User-Agent) — i
+      # lokálně je potřeba skutečný, přes OVERPASS_USER_AGENT (docs/spusteni.md).
+      user-agent: ${OVERPASS_USER_AGENT:KvalitaACena/0.1 (dev@example.com)}
       # MUSÍ zůstat pod HTTP timeoutem klientů (mobil má readTimeout 10 s, AppContainer) —
       # server má stihnout odpovědět "UNAVAILABLE" dřív, než to klient vzdá. Jinak uživatel
       # místo srozumitelné hlášky uvidí obecnou chybu sítě.

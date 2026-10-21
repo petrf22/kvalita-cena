@@ -58,6 +58,27 @@ ani řetězce; to je záměr, seed dat nepatří do migrací).
 
 Ověření, že appka žije: `curl http://localhost:8080/actuator/health` → `{"status":"UP"}`.
 
+### Služby OpenStreetMap lokálně (Nominatim, Overpass)
+
+Hledání souřadnic k adrese, doplnění adresy z mapy (Nominatim) a nabídka obchodů v okolí
+(Overpass) se ptají veřejných instancí OpenStreetMap. Obě vyžadují v User-Agentu skutečný
+kontakt: zástupný `dev@example.com` z `application.yml` Nominatim odmítne `403 Forbidden`
+a Overpass `406 Not Acceptable` (ověřeno 2026-10-21, se skutečným e-mailem z téhož stroje
+prošlo `200`). Appka obojí ustojí, jen hlásí „nedostupné". Pro ruční testování proto
+spouštěj backend s vlastním kontaktem:
+
+```bash
+export NOMINATIM_USER_AGENT="KvalitaACena/0.1 (tvuj@email.cz)"
+export OVERPASS_USER_AGENT="KvalitaACena/0.1 (tvuj@email.cz)"
+./gradlew bootRun
+```
+
+Veřejný Overpass bývá i tak přetížený (dotaz visí ve frontě nebo vrací 502/504). Na jinou
+instanci přepneš `OVERPASS_BASE_URL`; když neodpovídá žádná, dá se chování appky ověřit proti
+lokálnímu serveru, který na POST vrací pevnou odpověď ve tvaru Overpassu
+(`{"elements":[{"type":"node","id":1,"lat":…,"lon":…,"tags":{"name":…,"shop":…}}]}`), přes
+`OVERPASS_BASE_URL=http://127.0.0.1:<port>/api/interpreter`.
+
 ### Testování s čerstvým účtem — práh důvěry (`app.trust.*`)
 
 Bez aktivního profilu `beta` platí ostré produkční prahy z `application.yml`
@@ -305,6 +326,7 @@ cd mobile && ./gradlew :app:testDebugUnitTest    # JUnit, jen čistá logika (ge
 | Port `5437` obsazený | jiný projekt na stejném stroji na něm už běží | zastav ho, nebo změň port v `compose.yaml` i `application.yml` |
 | Backend hlásí chybu schématu po ruční změně DB | `ddl-auto: validate` — schéma smí měnit jen Liquibase | vrať se k migracím, neuprav tabulku ručně |
 | `Cannot run program "docker"` při spuštění z IDE | IDE (např. IntelliJ IDEA) běží jako Flatpak, sandbox nevidí hostovský docker | spusť `docker compose up -d` ručně a appku pouštěj přes run konfiguraci s `SPRING_DOCKER_COMPOSE_ENABLED=false` — viz sekce **2. Backend** |
-| Nabídka obchodů z OpenStreetMap je vždy prázdná se stavem „nedostupná" | veřejná instance Overpassu (`overpass-api.de`) odmítá část IP rozsahů rovnou `406 Not Acceptable` a pod zátěží vrací 429/504; ověřeno 2026-09-17, kdy z vývojového stroje neprošel ani `/api/status` | nastav `OVERPASS_BASE_URL` na jinou instanci (`https://overpass.private.coffee/api/interpreter` funguje, jen je pomalejší — pak je potřeba zvednout i `app.external.overpass.timeout`); nabídka je fail-soft, appka bez ní funguje dál a obchod jde založit ručně |
+| Nabídka obchodů z OpenStreetMap je vždy prázdná se stavem „nedostupná" | veřejná instance Overpassu (`overpass-api.de`) odmítá zástupný kontakt v User-Agentu `406 Not Acceptable` a pod zátěží nechává dotaz viset nebo vrací 429/502/504 | nastav `OVERPASS_USER_AGENT` se skutečným kontaktem („Služby OpenStreetMap lokálně" výš); při přetížení přepni `OVERPASS_BASE_URL` na jinou instanci (`https://overpass.private.coffee/api/interpreter`, pomalejší — pak zvedni i `app.external.overpass.timeout`); nabídka je fail-soft, obchod jde založit ručně |
+| Klik do mapy ve formuláři obchodu hlásí „Adresu teď nejde dohledat" | Nominatim odmítá zástupný kontakt `403 Forbidden` | nastav `NOMINATIM_USER_AGENT` se skutečným kontaktem |
 | `geocodeAddress` vždy vrátí prázdné `candidates` | Nominatim často blokuje datacentrové/sdílené IP (`403 Access denied`, viz jeho usage policy) | obchod jde uložit i bez souřadnic — doplní se později; pro reálné testování geokódování je potřeba běžná domácí IP |
 | Nově založené zboží/obchod „zmizí" — nejde najít ani přes hledání, ani opětovným skenem kódu | čerstvý účet je pod prahem důvěry (`app.trust.*`), záznam vznikl jako `status: DRAFT`, vidí ho jen autor | zkontroluj `/moje-prispevky` — ukáže přesný stav ("zatím X z Y potvrzení"); aktivuj lokálně profil `beta` (`SPRING_PROFILES_ACTIVE=beta`, viz sekce **2. Backend**), nebo počkej/navyš stáří účtu a `observation_count` |
