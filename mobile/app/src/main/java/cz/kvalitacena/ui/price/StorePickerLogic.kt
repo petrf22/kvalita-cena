@@ -15,8 +15,8 @@ import java.util.Locale
  * (StoreGraphQlController.ROUNDING_SLACK_M), aby uživateli nevypadl obchod, ve kterém právě
  * stojí — pár řádků navíc proto odfiltruje až klient.
  *
- * Obchod bez souřadnic se nezahazuje: může přijít z našeptávače, kde je legitimní
- * (docs/datovy-model.md — provozovna založená doma bez GPS souřadnice nemá). Řadí se na konec.
+ * Obchod bez souřadnic se zahazuje — vzdálenost k němu neznáme, takže "v okolí" není. Výsledky
+ * našeptávače (kde je obchod bez GPS legitimní, docs/datovy-model.md) sem proto nepatří.
  */
 fun nearbyStoresWithin(stores: List<Store>, lat: Double, lon: Double, radiusMeters: Int): List<NearbyStore> =
   stores.mapNotNull { store ->
@@ -42,16 +42,25 @@ fun nearbyOsmStoresWithin(
 /**
  * Druhá síť proti duplicitám — hlavní filtr běží na serveru (OsmStoreCandidateFilter), ale
  * nabídka z OSM může být z jiného okruhu nebo staršího dotazu než seznam vlastních obchodů.
- * Porovnává se `osmRef` a zjednodušená normalizovaná identita (název + město), tedy ve stejném
- * duchu jako `uq_store_identity`.
+ * Porovnává se zjednodušená normalizovaná identita (název + město + ulice), tedy klíč
+ * `uq_store_identity` — bez ulice by jedna pobočka řetězce v katalogu schovala všechny ostatní
+ * ve stejném městě. Země se porovná jen u kandidáta, který ji má (`addr:country` v OSM často
+ * chybí a fallback, který dosazuje server, klient nezná). `osmRef` mobilní [Store] nenese,
+ * shodu podle něj řeší server.
  */
 fun osmCandidatesNotInOwnCatalog(
   candidates: List<NearbyOsmStore>,
   ownStores: List<Store>,
 ): List<NearbyOsmStore> {
   if (candidates.isEmpty() || ownStores.isEmpty()) return candidates
-  val knownIdentities = ownStores.map { identity(it.name, it.city) }.toSet()
-  return candidates.filterNot { identity(it.candidate.name, it.candidate.city.orEmpty()) in knownIdentities }
+  return candidates.filterNot { nearby ->
+    val candidate = nearby.candidate
+    val key = identity(candidate.name, candidate.city.orEmpty(), candidate.street)
+    ownStores.any { store ->
+      identity(store.name, store.city, store.street) == key &&
+        (candidate.country == null || candidate.country.equals(store.country, ignoreCase = true))
+    }
+  }
 }
 
 /**
@@ -69,7 +78,8 @@ fun storeToPreselect(remembered: Store?, nearby: List<NearbyStore>, locationKnow
   return nearby.firstOrNull { it.store.id == remembered.id }?.store
 }
 
-private fun identity(name: String, city: String): String = "${norm(name)}|${norm(city)}"
+private fun identity(name: String, city: String, street: String?): String =
+  "${norm(name)}|${norm(city)}|${norm(street.orEmpty())}"
 
 /** Zjednodušená obdoba `core.norm_text` — malá písmena, bez diakritiky, sjednocené mezery. */
 private fun norm(value: String): String =

@@ -215,8 +215,9 @@ class PriceEntryViewModel(
 
   /**
    * Zapamatovaný obchod se načte, ale NEVYBERE se rovnou jako dřív — o předvýběr se stará
-   * [storeToPreselect] podle toho, jestli je obchod mezi nalezenými v okolí. Bez polohy
-   * (nepovolená, vypnutá, offline) vyhraje zapamatovaný obchod stejně jako dřív.
+   * [storeToPreselect] podle toho, jestli je obchod mezi nalezenými v okolí, a to až po
+   * doběhnutí hledání ([applyPreselection]). Bez polohy (nepovolená, vypnutá, offline) vyhraje
+   * zapamatovaný obchod stejně jako dřív.
    */
   private fun loadRememberedStore() {
     // Snapshot ze SharedPreferences je k dispozici hned a bez sítě — teprve díky tomu jde
@@ -247,12 +248,17 @@ class PriceEntryViewModel(
 
   /**
    * Předvybere obchod, jakmile je znám jak zapamatovaný obchod, tak (ne)úspěch hledání v okolí
-   * — obojí dorazí asynchronně a v libovolném pořadí. Ručně vybraný obchod se nikdy nepřepisuje.
+   * — obojí dorazí asynchronně a v libovolném pořadí. Dokud hledání běží (Idle/Locating), čeká
+   * se: brát to jako "poloha neznámá" by vybralo obchod z minula, a pozdní výsledek z okolí by
+   * ho už nepřepsal. Daň: bez signálu se předvybere až po timeoutu polohy nebo selhání dotazu.
+   * Ručně vybraný ani ručně vymazaný obchod se nikdy nepřepisuje.
    */
   private fun applyPreselection() {
-    if (selectedStore != null) return
-    val nearby = (nearbyState as? NearbyState.Loaded)?.stores ?: emptyList()
-    val locationKnown = nearbyState is NearbyState.Loaded
+    if (selectedStore != null || storeSelectionTouched) return
+    val state = nearbyState
+    if (state is NearbyState.Idle || state is NearbyState.Locating) return
+    val nearby = (state as? NearbyState.Loaded)?.stores ?: emptyList()
+    val locationKnown = state is NearbyState.Loaded
     val candidate = storeToPreselect(rememberedStore, nearby, locationKnown) ?: return
     if (product != null && !productAvailableAtStore(product!!, candidate)) return
     selectStore(candidate)
@@ -323,7 +329,8 @@ class PriceEntryViewModel(
     onStoreSelected(store)
     storeSuggestions = emptyList()
     // Nabídka z OSM je po založení zastaralá — obsahuje i obchod, který právě vznikl, a jeho
-    // dalším klepnutím by uživatel mířil na duplicitu. Načte se znovu, až si o ni řekne.
+    // dalším klepnutím by uživatel mířil na duplicitu. Načte se znovu, až si o ni řekne (nebo
+    // sama, když vlastní katalog v okolí pořád nic nemá — server nový obchod už odfiltruje).
     osmState = OsmState.Idle
   }
 

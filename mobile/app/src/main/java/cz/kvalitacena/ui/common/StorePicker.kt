@@ -16,6 +16,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -277,12 +278,19 @@ private fun OsmSection(
   onSearchOsm: () -> Unit,
   onSelectCandidate: (NearbyOsmStore) -> Unit,
 ) {
+  // Vlastní katalog v okolí nic nemá — právě pro tenhle případ nabídka z OSM vznikla, takže se
+  // načte sama. Jinak je jen doplněk na vyžádání, ať se cizí služba nedotazuje při každém skenu.
+  // Sekce se kreslí jen přihlášenému (viz volající), takže se anonym na Overpass neptá.
+  val idle = state is OsmState.Idle
+  LaunchedEffect(idle, empty) {
+    if (idle && empty) onSearchOsm()
+  }
   Column(modifier = Modifier.padding(top = Spacing.sm)) {
     when (state) {
-      is OsmState.Idle -> if (!empty) {
-        // Vlastní katalog něco našel — nabídka z OSM je pak jen doplněk na vyžádání, ať se
-        // cizí služba nedotazuje při každém skenu.
-        TextButton(onClick = onSearchOsm) { Text(stringResource(R.string.store_picker_osm_search)) }
+      // Tlačítko zůstává i při prázdném katalogu — kdyby automatické načtení neproběhlo,
+      // nesmí nabídka zůstat nedostupná.
+      is OsmState.Idle -> TextButton(onClick = onSearchOsm) {
+        Text(stringResource(R.string.store_picker_osm_search))
       }
 
       is OsmState.Loading -> StatusLine(stringResource(R.string.store_picker_searching_nearby), loading = true)
