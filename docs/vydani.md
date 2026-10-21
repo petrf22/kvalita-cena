@@ -290,12 +290,14 @@ Server, web i mobil sdílejí **jednu verzi** (SemVer). Zdroj pravdy jsou dva ko
   text česky (konvence repa). Každá položka na jednom řádku, nepovinně s dotčenými částmi na
   konci — `- Text změny (server, web, mobil)`. Sekce `## [Nezveřejněno]` se do appek negeneruje.
 
-`node tools/version/sync.mjs` z obou přepíše pět commitovaných výstupů — needituj je ručně:
+`node tools/version/sync.mjs` z obou přepíše sedm commitovaných výstupů — needituj je ručně:
 
 | Výstup | Co obsahuje |
 |---|---|
 | `backend/build.gradle` | `version = '...'` |
 | `frontend/package.json` | `"version": "..."` |
+| `frontend/package-lock.json` | verze projektu v kořeni a v `packages[""]` (`npm ci` ji nekontroluje, bez přepisu by tiše zastarala) |
+| `frontend/src/app/version.ts` | `APP_VERSION` — skript spustí `frontend/tools/version/write-version.mjs` |
 | `mobile/app/build.gradle.kts` | `versionCode`, `versionName` |
 | `frontend/src/app/changelog.generated.ts` | seznam změn pro `/changelog` na webu |
 | `mobile/app/src/main/assets/changelog.json` | totéž pro „Novinky" v appce (`ui/about/ChangelogScreen.kt`) |
@@ -342,7 +344,7 @@ navíc jediný způsob, jak umožnit rebase/fixup PR před schválením bez dopa
 1. Doplnit položky do `## [Nezveřejněno]` v `CHANGELOG.md`, přejmenovat na
    `## [X.Y.Z] – <datum>`.
 2. Zapsat `X.Y.Z` do `VERSION`.
-3. `node tools/version/sync.mjs` — přepíše všech pět generovaných výstupů.
+3. `node tools/version/sync.mjs` — přepíše všech sedm generovaných výstupů.
 4. Založit větev `release/X.Y.Z` z `main`, commit „Vydat X.Y.Z", push, otevřít PR (`gh pr
    create`) — **ne** commit/tag/push přímo na `main`, ruleset by ho stejně odmítl.
 5. Počkat na všech 5 CI checků a PR smergovat (metoda mergnutí je jedno — squash, merge i
