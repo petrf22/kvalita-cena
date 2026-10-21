@@ -92,7 +92,7 @@ public class StoreGraphQlController {
     double roundedLat = Coordinates.round(lat, 3);
     double roundedLon = Coordinates.round(lon, 3);
 
-    OsmStoreCandidateResult result = overpassPoiService.nearby(roundedLat, roundedLon, radius);
+    OsmStoreCandidateResult result = overpassPoiService.nearby(roundedLat, roundedLon, radius, ROUNDING_SLACK_M);
     if (result.candidates().isEmpty()) {
       return result;
     }

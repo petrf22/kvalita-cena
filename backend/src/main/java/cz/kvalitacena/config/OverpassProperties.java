@@ -34,4 +34,10 @@ public class OverpassProperties {
   private Duration cacheTtl;
   private double maxRadiusKm;
   private int maxResults;
+  /**
+   * Strop počtu prvků v samotném dotazu ({@code out ... N}). Overpass neřadí podle vzdálenosti
+   * a vrací prvních N podle svého pořadí — proto musí být výrazně vyšší než {@code maxResults},
+   * na který se ořízne až po seřazení od nejbližšího.
+   */
+  private int fetchLimit;
 }

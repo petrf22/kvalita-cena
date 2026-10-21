@@ -73,8 +73,11 @@ public class OverpassPoiService {
    * Throttle i HTTP timeout jsou schválně krátké: tenhle dotaz visí na interaktivní obrazovce
    * a klient má vlastní HTTP timeout (mobil 10 s). Server musí stihnout odpovědět
    * {@code UNAVAILABLE} dřív, než to klient vzdá — jinak uživatel místo srozumitelné hlášky
-   * dostane obecnou chybu sítě.
+   * dostane obecnou chybu sítě. Rozpočet je proto nejdelší čekání ve frontě throttlu plus HTTP
+   * timeout ({@code app.external.overpass.timeout}), dohromady pod 10 s.
    */
+  private static final long MAX_THROTTLE_WAIT_MS = 2000;
+
   private final OverpassProperties overpassProperties;
   private final Messages messages;
 
@@ -113,14 +116,18 @@ public class OverpassPoiService {
    * Kandidáti seřazení od nejbližšího. Souřadnice se očekávají už zaokrouhlené (volající je
    * prohnal {@link Coordinates#round}) — jsou zároveň cache klíčem, takže se na Overpass
    * posílá přesně to, co se cachuje.
+   *
+   * <p>{@code slackM} zvětší okruh o chybu toho zaokrouhlení (přičítá se až po stropu
+   * {@code maxRadiusKm}): obchod, ve kterém člověk stojí, může být od zaokrouhleného bodu dál
+   * než okruh, a co Overpass nevrátí, už klient podle přesné polohy nedoplní.
    */
-  public OsmStoreCandidateResult nearby(double roundedLat, double roundedLon, double radiusKm) {
+  public OsmStoreCandidateResult nearby(double roundedLat, double roundedLon, double radiusKm, double slackM) {
     String attribution = messages.get("attribution.osm");
     if (!overpassProperties.isEnabled()) {
       return new OsmStoreCandidateResult(OsmLookupStatus.UNAVAILABLE, List.of(), attribution);
     }
 
-    double radiusM = Math.min(radiusKm, overpassProperties.getMaxRadiusKm()) * 1000;
+    double radiusM = Math.min(radiusKm, overpassProperties.getMaxRadiusKm()) * 1000 + slackM;
     String key = String.format(Locale.ROOT, "%.3f|%.3f|%.0f", roundedLat, roundedLon, radiusM);
     List<OsmStoreCandidate> cached = cache().getIfPresent(key);
     if (cached != null) {
@@ -139,7 +146,11 @@ public class OverpassPoiService {
   /** {@code null} = dotaz selhal (odlišeno od prázdného seznamu, který znamená "v okolí nic"). */
   private List<OsmStoreCandidate> fetch(double lat, double lon, double radiusM) {
     try {
-      throttle();
+      if (!throttle()) {
+        // Fronta je delší, než klient vydrží čekat — lepší hned UNAVAILABLE než obecná chyba sítě.
+        log.warn("Fronta dotazů na Overpass je plná, nabídka obchodů z OSM bude prázdná");
+        return null;
+      }
       String query = buildQuery(lat, lon, radiusM);
       OverpassResponse response = restClient().post()
           .uri("")
@@ -147,6 +158,17 @@ public class OverpassPoiService {
           .body("data=" + java.net.URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8))
           .retrieve()
           .body(OverpassResponse.class);
+      if (response == null) {
+        return null;
+      }
+      if (response.remark() != null && !response.remark().isBlank()) {
+        // Overpass hlásí vlastní běhovou chybu (timeout, nedostatek paměti) jako HTTP 200 s
+        // `remark` a prázdnými nebo NEÚPLNÝMI `elements` — kdyby to prošlo jako OK, uložilo by
+        // se do cache "v okolí nic není" a uživatel by zakládal duplicity.
+        log.warn("Overpass vrátil chybu v těle odpovědi, nabídka obchodů z OSM bude prázdná: {}",
+            response.remark());
+        return null;
+      }
       return toCandidates(response, lat, lon);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
@@ -165,7 +187,7 @@ public class OverpassPoiService {
         queryTimeoutSec,
         radiusM, lat, lon,
         radiusM, lat, lon,
-        overpassProperties.getMaxResults());
+        overpassProperties.getFetchLimit());
   }
 
   private List<OsmStoreCandidate> toCandidates(OverpassResponse response, double lat, double lon) {
@@ -236,19 +258,34 @@ public class OverpassPoiService {
     return null;
   }
 
-  /** Nejvýš 1 dotaz/s (usage policy Overpassu) — sdílené napříč appkou, stejně jako u Nominatimu. */
-  private void throttle() throws InterruptedException {
+  /**
+   * Nejvýš 1 dotaz/s (usage policy Overpassu) — sdílené napříč appkou, stejně jako u Nominatimu.
+   * Slot se rezervuje jen tehdy, když se na něj dá dočkat do {@link #MAX_THROTTLE_WAIT_MS};
+   * jinak {@code false} a slot zůstane volný pro další dotaz.
+   */
+  private boolean throttle() throws InterruptedException {
     long minGapMs = 1000;
-    long now = System.currentTimeMillis();
-    long previous = lastRequestAtMs.getAndUpdate(prev -> Math.max(now, prev + minGapMs));
-    long waitMs = previous + minGapMs - now;
-    if (waitMs > 0) {
-      Thread.sleep(waitMs);
+    while (true) {
+      long now = System.currentTimeMillis();
+      long previous = lastRequestAtMs.get();
+      long slot = Math.max(now, previous + minGapMs);
+      long waitMs = slot - now;
+      if (waitMs > MAX_THROTTLE_WAIT_MS) {
+        return false;
+      }
+      if (lastRequestAtMs.compareAndSet(previous, slot)) {
+        if (waitMs > 0) {
+          Thread.sleep(waitMs);
+        }
+        return true;
+      }
     }
   }
 
   /** Tvar odpovědi Overpassu — viz https://wiki.openstreetmap.org/wiki/Overpass_API. */
-  private record OverpassResponse(@JsonProperty("elements") List<OverpassElement> elements) {
+  private record OverpassResponse(
+      @JsonProperty("elements") List<OverpassElement> elements,
+      @JsonProperty("remark") String remark) {
   }
 
   private record OverpassElement(

@@ -267,8 +267,10 @@ app:
       # server má stihnout odpovědět "UNAVAILABLE" dřív, než to klient vzdá. Jinak uživatel
       # místo srozumitelné hlášky uvidí obecnou chybu sítě.
       timeout: PT7S
-      # Jde do [timeout:N] v samotném dotazu — Overpass si smí dotaz zabít dřív než my.
-      query-timeout: PT10S
+      # Jde do [timeout:N] v samotném dotazu a MUSÍ být kratší než timeout výš — Overpass si má
+      # dotaz zabít sám dřív než my, svou chybu pak pošle v `remark` (hlásí se jako UNAVAILABLE).
+      # Ke 7 s se ještě přičítá nejvýš 2 s čekání ve frontě throttlu (OverpassPoiService).
+      query-timeout: PT6S
       # POI se nestěhují; cache je hlavní ochrana kvóty cizí služby.
       cache-ttl: PT6H
       # Strop okruhu a počtu není jen ochrana kvóty, ale i hranice proti "substantial part"
@@ -279,6 +281,10 @@ app:
       # ve kterém člověk stojí, ne průzkum města.
       max-radius-km: 2
       max-results: 40
+      # Kolik prvků smí vrátit samotný dotaz. Overpass neřadí podle vzdálenosti, takže ořez
+      # na max-results dělá až server po seřazení od nejbližšího — kdyby dotaz vracel jen 40,
+      # v centru města by mezi nimi nejbližší obchod vůbec nemusel být.
+      fetch-limit: 400
       # Kill switch bez redeploye — vypnuté vrací rovnou UNAVAILABLE.
       enabled: true
     ares:

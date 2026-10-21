@@ -26,6 +26,7 @@ class OverpassPoiServiceTest {
     properties.setCacheTtl(Duration.ofHours(6));
     properties.setMaxRadiusKm(5);
     properties.setMaxResults(40);
+    properties.setFetchLimit(400);
     return properties;
   }
 
@@ -34,7 +35,7 @@ class OverpassPoiServiceTest {
     // Nic tu neposlouchá — spojení je odmítnuto okamžitě, žádné čekání na timeout.
     OverpassPoiService service = new OverpassPoiService(properties("http://127.0.0.1:1"), TestMessages.instance());
 
-    OsmStoreCandidateResult result = service.nearby(50.08, 14.42, 0.5);
+    OsmStoreCandidateResult result = service.nearby(50.08, 14.42, 0.5, 0);
 
     assertThat(result.status()).isEqualTo(OsmLookupStatus.UNAVAILABLE);
     assertThat(result.candidates()).isEmpty();
@@ -46,10 +47,10 @@ class OverpassPoiServiceTest {
   void doesNotCacheFailures() {
     OverpassPoiService service = new OverpassPoiService(properties("http://127.0.0.1:1"), TestMessages.instance());
 
-    assertThat(service.nearby(50.08, 14.42, 0.5).status()).isEqualTo(OsmLookupStatus.UNAVAILABLE);
+    assertThat(service.nearby(50.08, 14.42, 0.5, 0).status()).isEqualTo(OsmLookupStatus.UNAVAILABLE);
     // Druhý dotaz na tentýž bod musí jít znovu ven, ne vrátit zamrzlé prázdno z cache — jinak
     // by hodinový výpadek Overpassu přežil celé TTL (viz javadoc OverpassPoiService).
-    assertThat(service.nearby(50.08, 14.42, 0.5).status()).isEqualTo(OsmLookupStatus.UNAVAILABLE);
+    assertThat(service.nearby(50.08, 14.42, 0.5, 0).status()).isEqualTo(OsmLookupStatus.UNAVAILABLE);
   }
 
   @Test
@@ -58,7 +59,7 @@ class OverpassPoiServiceTest {
     properties.setEnabled(false);
     OverpassPoiService service = new OverpassPoiService(properties, TestMessages.instance());
 
-    OsmStoreCandidateResult result = service.nearby(50.08, 14.42, 0.5);
+    OsmStoreCandidateResult result = service.nearby(50.08, 14.42, 0.5, 0);
 
     assertThat(result.status()).isEqualTo(OsmLookupStatus.UNAVAILABLE);
     assertThat(result.candidates()).isEmpty();
@@ -84,7 +85,7 @@ class OverpassPoiServiceTest {
     try (StubOverpass stub = new StubOverpass(200, body)) {
       OverpassPoiService service = new OverpassPoiService(properties(stub.url()), TestMessages.instance());
 
-      OsmStoreCandidateResult result = service.nearby(49.1996, 16.6089, 0.5);
+      OsmStoreCandidateResult result = service.nearby(49.1996, 16.6089, 0.5, 0);
 
       assertThat(result.status()).isEqualTo(OsmLookupStatus.OK);
       // Bezejmenný POI vypadne — bez názvu je pro core.store nepoužitelný.
@@ -115,7 +116,41 @@ class OverpassPoiServiceTest {
     try (StubOverpass stub = new StubOverpass(429, "rate limited")) {
       OverpassPoiService service = new OverpassPoiService(properties(stub.url()), TestMessages.instance());
 
-      assertThat(service.nearby(49.1996, 16.6089, 0.5).status()).isEqualTo(OsmLookupStatus.UNAVAILABLE);
+      assertThat(service.nearby(49.1996, 16.6089, 0.5, 0).status()).isEqualTo(OsmLookupStatus.UNAVAILABLE);
+    }
+  }
+
+  @Test
+  void runtimeErrorInsideSuccessfulResponseIsUnavailableAndNotCached() throws Exception {
+    // Overpass hlásí vlastní timeout nebo nedostatek paměti jako HTTP 200 s `remark` a prázdnými
+    // či neúplnými `elements` — jako OK by to v cache 6 hodin tvrdilo "v okolí nic není".
+    String body = """
+        {"elements":[],
+         "remark":"runtime error: Query timed out in \\"query\\" at line 3 after 6 seconds."}
+        """;
+    try (StubOverpass stub = new StubOverpass(200, body)) {
+      OverpassPoiService service = new OverpassPoiService(properties(stub.url()), TestMessages.instance());
+
+      assertThat(service.nearby(49.1996, 16.6089, 0.5, 0).status()).isEqualTo(OsmLookupStatus.UNAVAILABLE);
+      assertThat(service.nearby(49.1996, 16.6089, 0.5, 0).status()).isEqualTo(OsmLookupStatus.UNAVAILABLE);
+      assertThat(stub.requestCount()).isEqualTo(2);
+    }
+  }
+
+  @Test
+  void queryCoversRoundingSlackAndLeavesTruncationToTheServer() throws Exception {
+    try (StubOverpass stub = new StubOverpass(200, "{\"elements\":[]}")) {
+      OverpassPoiService service = new OverpassPoiService(properties(stub.url()), TestMessages.instance());
+
+      service.nearby(49.1996, 16.6089, 0.2, 70);
+
+      String query = java.net.URLDecoder.decode(stub.lastBody(), java.nio.charset.StandardCharsets.UTF_8);
+      // Okruh je zvětšený o chybu zaokrouhlení polohy, jinak by obchod, ve kterém člověk
+      // stojí, mohl z odpovědi vypadnout ještě dřív, než ho klient dofiltruje.
+      assertThat(query).contains("around:270.0,49.199600,16.608900");
+      // Overpass neřadí podle vzdálenosti — dotaz smí vrátit víc, na max-results se ořízne
+      // až po seřazení od nejbližšího.
+      assertThat(query).contains("out center tags 400;");
     }
   }
 
@@ -124,8 +159,8 @@ class OverpassPoiServiceTest {
     try (StubOverpass stub = new StubOverpass(200, "{\"elements\":[]}")) {
       OverpassPoiService service = new OverpassPoiService(properties(stub.url()), TestMessages.instance());
 
-      service.nearby(49.1996, 16.6089, 0.5);
-      service.nearby(49.1996, 16.6089, 0.5);
+      service.nearby(49.1996, 16.6089, 0.5, 0);
+      service.nearby(49.1996, 16.6089, 0.5, 0);
 
       // Kvóta Overpassu je cizí — opakovaný dotaz na tentýž bod se ven posílat nesmí.
       assertThat(stub.requestCount()).isEqualTo(1);
@@ -136,11 +171,13 @@ class OverpassPoiServiceTest {
   private static final class StubOverpass implements AutoCloseable {
     private final com.sun.net.httpserver.HttpServer server;
     private final java.util.concurrent.atomic.AtomicInteger requests = new java.util.concurrent.atomic.AtomicInteger();
+    private volatile String lastBody;
 
     StubOverpass(int status, String body) throws java.io.IOException {
       server = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress(0), 0);
       server.createContext("/api/interpreter", exchange -> {
         requests.incrementAndGet();
+        lastBody = new String(exchange.getRequestBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
         byte[] bytes = body.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         exchange.getResponseHeaders().add("Content-Type", "application/json; charset=utf-8");
         exchange.sendResponseHeaders(status, bytes.length);
@@ -157,6 +194,10 @@ class OverpassPoiServiceTest {
 
     int requestCount() {
       return requests.get();
+    }
+
+    String lastBody() {
+      return lastBody;
     }
 
     @Override
