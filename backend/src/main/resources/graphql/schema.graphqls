@@ -1831,8 +1831,13 @@ type ReceiptLine {
   status: ReceiptLineStatus!
   matchSource: ReceiptMatchSource
   product: Product
-  "Vyplněno, když z řádku vznikla cena."
+  "Vyplněno, když z řádku vznikla cena — po 180 dnech se vazba pseudonymizací maže (docs/soukromi.md)."
   observationId: ID
+  """
+  Cena z řádku je zapsaná, řádek nejde přepárovat ani potvrdit znovu. Platí i po pseudonymizaci,
+  kdy už observationId chybí — klient se má řídit tímhle polem, ne observationId.
+  """
+  confirmed: Boolean!
   "Proč potvrzení cenu nezapsalo — DUPLICATE_SAME_DAY, nebo kód chyby (ErrorCode)."
   skipReason: String
 }

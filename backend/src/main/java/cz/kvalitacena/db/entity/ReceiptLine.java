@@ -89,6 +89,16 @@ public class ReceiptLine implements Persistable<Long> {
     updatedAt = OffsetDateTime.now();
   }
 
+  /**
+   * Cena z řádku je zapsaná. Pseudonymizace po 180 dnech (docs/soukromi.md, „Účtenky")
+   * {@code observationId} vynuluje, řádek ale zůstane MATCHED bez {@code skipReason} — a musí
+   * zůstat zamčený, jinak by šel potvrdit znovu a vznikla by nová cena s autorem. MATCHED se
+   * {@code skipReason} je duplicita téhož dne, ze které cena nevznikla.
+   */
+  public boolean isConfirmed() {
+    return observationId != null || (status == ReceiptLineStatus.MATCHED && skipReason == null);
+  }
+
   @Override
   public boolean isNew() {
     return id == null;

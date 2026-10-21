@@ -39,8 +39,16 @@ public interface ReceiptLineRepository extends JpaRepository<ReceiptLine, Long> 
       @Param("chainId") Long chainId, @Param("storeId") Long storeId,
       @Param("notBefore") OffsetDateTime notBefore);
 
+  /**
+   * Pseudonymizace (docs/soukromi.md, „Účtenky"): řádek účtenky drží vlastníka po celý život
+   * účtu, takže vazba na observaci starší než {@code cutoff} by obnovila vazbu cena → autor.
+   * Bez změny {@code updated_at} — účtenka se kvůli tomu nesmí rozsvítit jako novinka.
+   */
   @Modifying
-  @Query(value = "UPDATE core.receipt_line SET product_id = :targetId WHERE product_id = :sourceId",
-      nativeQuery = true)
-  int reassignProduct(@Param("sourceId") Long sourceId, @Param("targetId") Long targetId);
+  @Query(value = """
+      UPDATE core.receipt_line l SET observation_id = NULL
+      FROM core.price_observation o
+      WHERE o.id = l.observation_id AND o.observed_at < :cutoff
+      """, nativeQuery = true)
+  int pseudonymizeObservationLinksBefore(@Param("cutoff") OffsetDateTime cutoff);
 }
