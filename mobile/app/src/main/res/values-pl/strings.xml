@@ -153,6 +153,13 @@
     <string name="settings_currency">Waluta wyświetlania</string>
     <string name="settings_currency_store_default">Waluta sklepu (domyślnie)</string>
     <string name="settings_currency_note">Przeliczenie służy tylko do porównania — cenę zawsze zgłaszasz w walucie sklepu, to tylko zmienia sposób jej wyświetlania.</string>
+    <string name="settings_nearby_radius">Okolica do wyszukiwania sklepów</string>
+    <string name="settings_nearby_radius_note">Jak daleko wokół siebie aplikacja szuka sklepów, gdy zgłaszasz cenę. Domyślne 500 m odpowiada sklepowi, w którym właśnie stoisz.</string>
+    <string name="settings_nearby_radius_200m">200 m</string>
+    <string name="settings_nearby_radius_500m">500 m</string>
+    <string name="settings_nearby_radius_1km">1 km</string>
+    <string name="settings_nearby_radius_3km">3 km</string>
+    <string name="settings_nearby_radius_5km">5 km</string>
     <string name="settings_about_link">Co robi aplikacja, skąd pochodzą dane i kto ją prowadzi</string>
     <string name="settings_feedback_link">Wyślij opinię o aplikacji</string>
     <string name="settings_legal_title">Dokumenty prawne</string>
@@ -166,7 +173,7 @@
     <string name="about_what_it_is_not_text">Aplikacja nie jest porównywarką cen o gwarantowanej dokładności ani źródłem do natychmiastowego podejmowania decyzji zakupowych — ceny wpisują ochotnicy, mogą być nieaktualne, błędne lub mogły się w międzyczasie zmienić w sklepie. Zanim kupisz na podstawie ceny z aplikacji, sprawdź ją w sklepie.</string>
     <string name="about_data_sources_title">Skąd pochodzą dane</string>
     <string name="about_data_sources_text">Ceny i oceny jakości to nasze własne dane społecznościowe. Odnośniki do Open Food Facts są zgodne z licencją ODbL (Open Database License) — dane nigdzie nie są kopiowane, aplikacja tylko odsyła do źródła.</string>
-    <string name="about_osm_attribution">Współrzędne sklepów pochodzą z OpenStreetMap © współtwórcy OpenStreetMap, licencja ODbL.</string>
+    <string name="about_osm_attribution">Współrzędne sklepów, a w przypadku sklepów pobranych z propozycji OpenStreetMap także ich nazwa i adres, pochodzą z OpenStreetMap © współtwórcy OpenStreetMap, licencja ODbL.</string>
     <string name="about_data_sources_other">Aplikacja korzysta też z ARES do weryfikacji numeru firmy sklepu oraz z dostawcy usług e-mail do wysyłania kodów logowania — żadne z tych danych nie jest zapisywane jako własne dane aplikacji.</string>
     <string name="about_fx_attribution">Kursy walut pochodzą z tabeli kursowej Czeskiego Banku Narodowego.</string>
     <string name="about_open_source_title">Otwarty kod</string>
@@ -337,7 +344,6 @@
     <string name="price_entry_submit">Zapisz cenę</string>
     <string name="price_entry_back_without_price">Wstecz bez podania ceny</string>
     <string name="price_entry_submit_success">Cena została zapisana, dziękujemy!</string>
-    <string name="price_entry_location_unavailable">Nie udało się ustalić lokalizacji — wybierz sklep, gdy dane będą dostępne.</string>
     <string name="price_entry_store_not_available">Ten lokalny produkt nie należy do wybranego sklepu — wybierz inny sklep lub produkt.</string>
 
     <string name="product_form_title">Nowy produkt</string>
@@ -391,11 +397,30 @@
     <string name="store_report_hidden">Dziękujemy za zgłoszenie — sklep jest teraz ukryty i czeka na weryfikację.</string>
 
     <string name="store_picker_label">Sklep</string>
+    <string name="store_picker_distance_m">%1$d m</string>
+    <string name="store_picker_distance_km">%1$.1f km</string>
+    <string name="store_picker_nearby_title">Sklepy w okolicy</string>
+    <string name="store_picker_searching_nearby">Szukam sklepów w okolicy…</string>
+    <string name="store_picker_permission_needed">Sklepy wokół siebie zobaczysz, gdy zezwolisz aplikacji na dostęp do lokalizacji. Bez tego sklep można znaleźć, wpisując nazwę lub miasto.</string>
+    <string name="store_picker_permission_grant">Zezwól na lokalizację</string>
+    <string name="store_picker_location_disabled">Lokalizacja jest wyłączona w telefonie. Włącz ją w ustawieniach systemu albo znajdź sklep, wpisując nazwę lub miasto.</string>
+    <string name="store_picker_open_location_settings">Włącz lokalizację</string>
+    <string name="store_picker_location_timeout">Nie udało się ustalić lokalizacji — w budynku chwilę to trwa.</string>
+    <string name="store_picker_retry">Spróbuj ponownie</string>
+    <string name="store_picker_nearby_failed">Nie udało się wczytać sklepów w okolicy — bez połączenia aplikacja zna tylko ostatnio użyty sklep.</string>
+    <string name="store_picker_none_nearby_title">W okolicy nie znamy jeszcze żadnego sklepu</string>
+    <string name="store_picker_none_nearby_hint">Katalog sklepów rośnie wraz z użytkownikami — jesteś tu prawdopodobnie pierwszy. Dodanie sklepu to kwestia kilku dotknięć.</string>
+    <string name="store_picker_approximate_location">Masz przyznaną tylko przybliżoną lokalizację, którą system przesuwa nawet o kilometry — sklepu w promieniu kilkuset metrów tak nie znajdziemy. Zezwól aplikacji na dokładną lokalizację w ustawieniach systemu albo szukaj w szerszej okolicy.</string>
+    <string name="store_picker_wider_radius">Szukaj w szerszej okolicy (%1$s)</string>
+    <string name="store_picker_show_more">Pokaż kolejne (%1$d)</string>
+    <string name="store_picker_pending_confirmation">czeka na potwierdzenie</string>
+    <string name="store_picker_osm_title">Sklepy według OpenStreetMap</string>
+    <string name="store_picker_osm_search">Spróbuj sklepów z OpenStreetMap</string>
+    <string name="store_picker_osm_unavailable">OpenStreetMap jest teraz niedostępna, więc nic nie wiemy o tej okolicy. Spróbuj za chwilę albo wpisz sklep samodzielnie.</string>
+    <string name="store_picker_osm_none">Nawet OpenStreetMap nie zna tu żadnego sklepu.</string>
+    <string name="store_picker_add_new_action">Nie ma tu tego sklepu — dodaj nowy</string>
     <string name="store_picker_add_new">+ Dodaj nowy sklep</string>
-    <string name="store_picker_find_nearby">Znajdź w okolicy</string>
-    <string name="store_picker_hint_logged_in">Wpisz nazwę lub miasto sklepu, dotknij „Znajdź w okolicy”, albo dodaj sklep od razu.</string>
-    <string name="store_picker_hint_anonymous">Wpisz nazwę lub miasto sklepu, albo dotknij „Znajdź w okolicy” — dodanie nowego sklepu wymaga zalogowania.</string>
-    <string name="store_picker_no_nearby_stores">Nie znaleźliśmy żadnego sklepu w okolicy.</string>
+    <string name="store_picker_hint_anonymous">Wpisz nazwę lub miasto sklepu — dodanie nowego sklepu wymaga zalogowania.</string>
 
     <string name="store_form_create_title">Nowy sklep</string>
     <string name="store_form_edit_title">Edytuj sklep</string>
@@ -418,10 +443,16 @@
     <string name="store_company_id_shape_invalid">%1$s musi mieć %2$d cyfr.</string>
     <string name="store_company_id_not_found_in_registry">Nie znaleźliśmy tego numeru w rejestrze.</string>
 
-    <string name="store_location_section_title">Współrzędne (opcjonalnie)</string>
-    <string name="store_location_hint">Wybierz miejsce na mapie, aby uzupełnić dostępny adres. Możesz też wpisać adres i znaleźć go na mapie. Sprawdź uzupełnione dane.</string>
-    <string name="store_location_find_coordinates">Znajdź współrzędne</string>
+    <string name="store_location_section_title">Współrzędne</string>
+    <string name="store_location_hint">Zostaną wyszukane automatycznie na podstawie wpisanego adresu. Możesz też wybrać miejsce na mapie, aby uzupełnić dostępny adres. Sprawdź uzupełnione dane. Bez współrzędnych sklep nie pojawi się w wyszukiwaniu w okolicy, tylko w wyszukiwaniu po nazwie — można je dodać później.</string>
     <string name="store_location_use_my_location">Użyj mojej lokalizacji</string>
+    <string name="store_location_approximate_warning">Lokalizacja jest przyznana tylko przybliżona, więc punkt będzie oddalony o kilometry — zezwól na dokładną lokalizację w ustawieniach systemu albo ustaw znacznik, dotykając mapy.</string>
+    <string name="store_form_prefilled_from_osm">Wypełnione wstępnie z OpenStreetMap — sprawdź dane i w razie potrzeby popraw.</string>
+    <string name="store_form_use_existing_store">Ten sklep już znamy — użyj go</string>
+    <string name="store_form_existing_store_pending">Ten sklep jest już w katalogu, ale czeka na potwierdzenie przez innych użytkowników — na razie nie można go wybrać</string>
+    <string name="store_location_searching">Szukam współrzędnych według adresu…</string>
+    <string name="store_location_found_from_address">Współrzędne znaleziono według adresu. Jeśli wskazują gdzie indziej, przesuń znacznik na mapie.</string>
+    <string name="store_location_search_again">Spróbuj wyszukać ponownie</string>
     <string name="store_location_will_use_map_position">Zostanie użyta pozycja z mapy poniżej / twoja aktualna lokalizacja.</string>
 
     <!-- "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty"; prahy v docs/reputace.md) -->
@@ -494,6 +525,7 @@
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
     <string name="store_picker_clear">Wyczyść sklep</string>
     <string name="store_location_not_found">Nie udało się znaleźć adresu. Sprawdź połączenie lub wpisz go ręcznie; lokalizację możesz wybrać na mapie.</string>
+    <string name="store_location_unavailable">Adresu nie można teraz wyszukać — usługa OpenStreetMap jest niedostępna. Wpisany adres pozostał bez zmian, sprawdź go.</string>
     <!-- Účtenky — společné (docs/soukromi.md, „Účtenky") -->
     <string name="common_close">Zamknij</string>
     <string name="common_ok">OK</string>

@@ -157,9 +157,24 @@ type Query {
   """
   Provozovny v okolí zadaného bodu. Souřadnice se používají JEN jako parametry dotazu
   a nikam se neukládají — viz docs/soukromi.md. Server je zaokrouhlí na 3 desetinná místa
-  (~110 m) — při rádiusu 3–25 km pod rozlišovací schopnost výsledku.
+  (~110 m), což u malých rádiusů (klient nabízí od 200 m) není zanedbatelné: střed hledání
+  se může posunout až o ~66 m. Server to kompenzuje tím, že hledá v rádiusu zvětšeném o tuhle
+  chybu, a klient pak seznam dofiltruje podle SKUTEČNÉ vzdálenosti, kterou zná jen on. Přesná
+  poloha tak nikdy neopustí zařízení a přitom nic nevypadne.
   """
   nearbyStores(lat: Float!, lon: Float!, radiusKm: Float = 3): [Store!]!
+
+  """
+  Provozovny v okolí podle OpenStreetMap (Overpass API) — nabídka k založení obchodu, který
+  appka ve vlastním katalogu nezná. Dotaz jde VÝHRADNĚ ze serveru (docs/soukromi.md), nic se
+  z odpovědi neukládá; do core.store se dostane teprve to, co uživatel potvrdí ve formuláři,
+  se značkou data_origin = OSM_DERIVED (docs/datovy-model.md, "Oddělení schémat kvůli ODbL").
+  Kandidáti, které appka ve svém katalogu už má, se z nabídky vyřadí.
+
+  Vyžaduje přihlášení — kandidát je bez createStore (které přihlášení vyžaduje, docs/reputace.md
+  T1) k ničemu a anonymovi by nabídka jen připravila slepou uličku.
+  """
+  nearbyOsmStores(lat: Float!, lon: Float!, radiusKm: Float = 0.5): OsmStoreCandidateResult!
 
   """
   Denní řada z agg.price_daily. Graf NIKDY nečte core.price_observation
@@ -750,8 +765,26 @@ input CreateStoreInput {
   lon: Float
   geoSource: GeoSource
   osmRef: String
+  """
+  OSM_DERIVED patří provozovně založené z potvrzeného kandidáta nearbyOsmStores — tedy když
+  z OpenStreetMap pochází i název a adresa, ne jen souřadnice. Vyžaduje neprázdný osmRef
+  a vynutí geoSource = OSM. Bez zadání OWN. Samotné geokódování adresy (geocodeAddress)
+  OSM_DERIVED NENÍ: odtamtud je jen bod, ne text (docs/datovy-model.md, pravidlo 1).
+  """
+  dataOrigin: DataOrigin
   "Odkaz na stránku provozovny (u řetězce) — jako street/city jde přes core.store_user_edit."
   url: String
+}
+
+"""
+Původ dat záznamu kvůli ODbL (docs/datovy-model.md) — co není OWN, vypadává z „čistého"
+exportu vlastních dat. Každá tabulka používá jen svou dvojici: zboží OWN/OFF_DERIVED,
+provozovna OWN/OSM_DERIVED.
+"""
+enum DataOrigin {
+  OWN
+  OFF_DERIVED
+  OSM_DERIVED
 }
 
 """
@@ -1465,10 +1498,51 @@ type GeocodeResult {
 }
 
 """
-Adresa dohledaná ze souřadnic (reverseGeocode) — všechna pole nullable, neúplná adresa nebo
-výpadek Nominatimu se projeví jako prázdná pole, ne jako chyba dotazu.
+Provozovna nalezená v OpenStreetMap — nabídka k založení obchodu. Nic z toho se samo nikam
+neukládá; teprve potvrzený kandidát se uloží do core.store s data_origin = OSM_DERIVED.
+"""
+type OsmStoreCandidate {
+  name: String!
+  street: String
+  city: String
+  postalCode: String
+  country: String
+  lat: Float!
+  lon: Float!
+  "Formát '{typ}/{id}' (např. 'way/123456') — ukládá se do core.store.osm_ref při potvrzení."
+  osmRef: String!
+  "Vzdálenost od (zaokrouhleného) zadaného bodu. Klient ji smí přepočítat z přesnější polohy."
+  distanceMeters: Float!
+  "Tag brand/operator — jen k předvyplnění NAŠEPTÁVAČE řetězců, ne k zakládání nového řetězce."
+  brand: String
+}
+
+"Proč je nabídka z OpenStreetMap prázdná."
+enum OsmLookupStatus {
+  "Dotaz proběhl. Prázdné candidates znamenají, že v okolí opravdu nic není."
+  OK
+  "Služba OpenStreetMap (Overpass/Nominatim) je nedostupná, pomalá, nebo vypnutá konfigurací — nevíme nic."
+  UNAVAILABLE
+}
+
+type OsmStoreCandidateResult {
+  """
+  Odlišuje 'v okolí nic není' od 'Overpass je mimo' — bez toho by uživatel při výpadku založil
+  duplicitu obchodu, který v OSM dávno je. Stejný vzor jako ProductLookupStatus.OFF_UNAVAILABLE.
+  """
+  status: OsmLookupStatus!
+  candidates: [OsmStoreCandidate!]!
+  "Povinný text zdroje/licence (ODbL) — UI ho musí zobrazit vedle výsledků."
+  attribution: String!
+}
+
+"""
+Adresa dohledaná ze souřadnic (reverseGeocode) — adresní pole nullable, neúplná adresa se
+projeví jako prázdná pole, ne jako chyba dotazu. Výpadek Nominatimu hlásí status UNAVAILABLE —
+klient pak pole formuláře NESMÍ přepsat prázdnem.
 """
 type ReverseGeocodeResult {
+  status: OsmLookupStatus!
   street: String
   city: String
   postalCode: String
@@ -1644,6 +1718,8 @@ enum ErrorCode {
   STORE_CITY_REQUIRED
   STORE_CITY_EMPTY
   STORE_URL_INVALID
+  STORE_OSM_ORIGIN_REQUIRES_REF
+  STORE_DATA_ORIGIN_INVALID
   COMPANY_ID_INVALID
   UNSUPPORTED_COUNTRY
   STORE_COUNTRY_EDIT_REQUIRES_TRUST

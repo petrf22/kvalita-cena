@@ -253,10 +253,42 @@ app:
       # Usage policy Nominatimu vyžaduje identifikovatelný User-Agent — v produkci nahradit
       # reálným kontaktem (viz https://operations.osmfoundation.org/policies/nominatim/).
       base-url: https://nominatim.openstreetmap.org
-      # V produkci nahradit reálným kontaktním e-mailem.
-      user-agent: "KvalitaACena/0.1 (dev@example.com)"
+      # Zástupný kontakt veřejná instance odmítá (HTTP 403) — i lokálně je potřeba skutečný,
+      # přes NOMINATIM_USER_AGENT (docs/spusteni.md, "Služby OpenStreetMap lokálně").
+      user-agent: ${NOMINATIM_USER_AGENT:KvalitaACena/0.1 (dev@example.com)}
       timeout: PT5S
       cache-ttl: P1D
+    overpass:
+      # Nabídka provozoven v okolí z OpenStreetMap (docs/datovy-model.md). Overpass, ne
+      # Nominatim: Nominatimova usage policy hledání POI podle kategorie zakazuje.
+      base-url: ${OVERPASS_BASE_URL:https://overpass-api.de/api/interpreter}
+      # Zástupný kontakt veřejná instance odmítá (HTTP 406, stejně jako obecný User-Agent) — i
+      # lokálně je potřeba skutečný, přes OVERPASS_USER_AGENT (docs/spusteni.md).
+      user-agent: ${OVERPASS_USER_AGENT:KvalitaACena/0.1 (dev@example.com)}
+      # MUSÍ zůstat pod HTTP timeoutem klientů (mobil má readTimeout 10 s, AppContainer) —
+      # server má stihnout odpovědět "UNAVAILABLE" dřív, než to klient vzdá. Jinak uživatel
+      # místo srozumitelné hlášky uvidí obecnou chybu sítě.
+      timeout: PT7S
+      # Jde do [timeout:N] v samotném dotazu a MUSÍ být kratší než timeout výš — Overpass si má
+      # dotaz zabít sám dřív než my, svou chybu pak pošle v `remark` (hlásí se jako UNAVAILABLE).
+      # Ke 7 s se ještě přičítá nejvýš 2 s čekání ve frontě throttlu (OverpassPoiService).
+      query-timeout: PT6S
+      # POI se nestěhují; cache je hlavní ochrana kvóty cizí služby.
+      cache-ttl: PT6H
+      # Strop okruhu a počtu není jen ochrana kvóty, ale i hranice proti "substantial part"
+      # cizí ODbL databáze — nabídka je vždy hrst záznamů kolem jednoho bodu.
+      # Cena dotazu roste s poloměrem rychle a veřejné instance Overpassu bývají vytížené
+      # (naměřeno: 150 m projde v jednotkách sekund, 500 m na téže instanci o pár minut
+      # později spadne na timeout). Dva kilometry jsou strop i věcně — je to nabídka obchodu,
+      # ve kterém člověk stojí, ne průzkum města.
+      max-radius-km: 2
+      max-results: 40
+      # Kolik prvků smí vrátit samotný dotaz. Overpass neřadí podle vzdálenosti, takže ořez
+      # na max-results dělá až server po seřazení od nejbližšího — kdyby dotaz vracel jen 40,
+      # v centru města by mezi nimi nejbližší obchod vůbec nemusel být.
+      fetch-limit: 400
+      # Kill switch bez redeploye — vypnuté vrací rovnou UNAVAILABLE.
+      enabled: true
     ares:
       # Veřejný rejstřík ekonomických subjektů ČR — ne ODbL, jen předvyplnění formuláře.
       base-url: https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty

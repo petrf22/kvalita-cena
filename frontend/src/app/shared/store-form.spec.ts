@@ -6,9 +6,11 @@ import { vi } from 'vitest';
 import { StoreForm } from './store-form';
 import { StoreService } from '../services/store-service';
 import { CountryService } from '../services/country-service';
+import { OsmLookupStatus } from '../models/generated/enums';
 
 describe('StoreForm – propojení adresy a mapy', () => {
   const address = (city: string) => ({
+    status: OsmLookupStatus.Ok,
     street: 'Hlavní 12',
     city,
     postalCode: '12345',
@@ -113,6 +115,26 @@ describe('StoreForm – propojení adresy a mapy', () => {
     form.onMapPointSelected({ lat: 50, lon: 16 });
     expect(form['street']()).toBe('');
     expect(form['city']()).toBe('Ostrava');
+  });
+
+  it('výpadek Nominatimu adresu nesmaže', () => {
+    service.reverseGeocode.mockReturnValueOnce(of(address('Brno')));
+    form.onMapPointSelected({ lat: 49, lon: 15 });
+    service.reverseGeocode.mockReturnValueOnce(
+      of({
+        status: OsmLookupStatus.Unavailable,
+        street: null,
+        city: null,
+        postalCode: null,
+        country: null,
+        osmRef: null,
+        attribution: 'OSM',
+      }),
+    );
+    form.onMapPointSelected({ lat: 50, lon: 16 });
+    expect(form['street']()).toBe('Hlavní 12');
+    expect(form['city']()).toBe('Brno');
+    expect(form['locationMessage']()).toBe('store.location.unavailable');
   });
 
   it('samotné PSČ za nenalezenou adresu nepovažuje', () => {

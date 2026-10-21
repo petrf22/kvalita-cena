@@ -526,9 +526,46 @@ data class GeocodeResult(
   val attribution: String,
 )
 
+/**
+ * Provozovna nalezená v OpenStreetMap (Overpass) — nabídka k založení obchodu, který appka ve
+ * vlastním katalogu nezná. Na rozdíl od [GeocodeCandidate] nese i název a adresu, takže
+ * potvrzený kandidát předvyplní celý formulář; uložený obchod pak dostane
+ * `dataOrigin = OSM_DERIVED` (docs/datovy-model.md).
+ *
+ * `distanceMeters` je od ZAOKROUHLENÉ polohy, kterou zná server — klient si ji přepočítá
+ * přesněji sám (ui/common/GeoDistance.kt).
+ */
+@Serializable
+data class OsmStoreCandidate(
+  val name: String,
+  val street: String? = null,
+  val city: String? = null,
+  val postalCode: String? = null,
+  val country: String? = null,
+  val lat: Double,
+  val lon: Double,
+  val osmRef: String,
+  val distanceMeters: Double = 0.0,
+  // Tag brand/operator — jen k předvyplnění NAŠEPTÁVAČE řetězců, ne k zakládání nového řetězce.
+  val brand: String? = null,
+)
+
+@Serializable
+data class OsmStoreCandidateResult(
+  // "OK" = dotaz proběhl (prázdné candidates znamenají, že v okolí opravdu nic není),
+  // "UNAVAILABLE" = Overpass je mimo. Rozlišení je nutné, jinak by uživatel při výpadku
+  // založil duplicitu obchodu, který v OSM dávno je.
+  val status: String = "OK",
+  val candidates: List<OsmStoreCandidate> = emptyList(),
+  val attribution: String,
+)
+
 /** Opačný směr — souřadnice na adresu, pro tlačítko "Použít mou polohu" při editaci obchodu. */
 @Serializable
 data class ReverseGeocodeResult(
+  // "OK" = Nominatim odpověděl (prázdná pole znamenají, že tu adresu nezná), "UNAVAILABLE" =
+  // výpadek — formulář pak pole NESMÍ přepsat prázdnem (StoreFormViewModel.fillAddress).
+  val status: String = "OK",
   val street: String? = null,
   val city: String? = null,
   val postalCode: String? = null,
@@ -575,6 +612,9 @@ data class CreateStoreInput(
   val lon: Double? = null,
   val geoSource: String? = null,
   val osmRef: String? = null,
+  // "OSM_DERIVED" u obchodu založeného z potvrzeného kandidáta nearbyOsmStores — tedy když
+  // z OpenStreetMap pochází i název a adresa, ne jen souřadnice (docs/datovy-model.md).
+  val dataOrigin: String? = null,
   val url: String? = null,
 )
 
@@ -944,6 +984,9 @@ data class ProductData(val product: Product? = null)
 data class NearbyStoresData(val nearbyStores: List<Store> = emptyList())
 
 @Serializable
+data class NearbyOsmStoresData(val nearbyOsmStores: OsmStoreCandidateResult)
+
+@Serializable
 data class SubmitObservationsData(val submitObservations: List<PriceObservation>)
 
 @Serializable
@@ -1102,6 +1145,9 @@ data class GraphQlErrorExtensions(
   val code: String? = null,
   val params: List<JsonElement> = emptyList(),
   val classification: String? = null,
+  // Jen u duplicit — id záznamu, se kterým se nový sráží (viz GraphQlAppException.existingId).
+  // JsonElement schválně: server posílá číslo, ale klient s ním pracuje jako s id (String).
+  val existingId: JsonElement? = null,
 )
 
 @Serializable

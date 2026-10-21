@@ -409,7 +409,7 @@ class ProductFormViewModel(
     storeSearching = false
     selectedStore = store
     storeQuery = storeLabel(store, countryStore.country)
-    lastStoreStore.remember(store.id)
+    lastStoreStore.remember(store)
     loadSuggestions(name)
   }
 
@@ -425,6 +425,16 @@ class ProductFormViewModel(
   }
 
   private fun loadRememberedStore() {
+    // Snapshot je k dispozici hned a bez sítě (LastStoreStore) — formulář jde vyplnit i bez
+    // signálu. Ze serveru se pak jen obnoví čerstvá podoba, když to jde. Předvyplnění není
+    // volba uživatele, takže příznak storeSelectionTouched zůstává neshozený a odpověď
+    // serveru ho smí přepsat.
+    if (initialStoreId == null) {
+      lastStoreStore.remembered()?.let { store ->
+        onStoreSelected(store)
+        storeSelectionTouched = false
+      }
+    }
     val id = initialStoreId ?: lastStoreStore.rememberedId() ?: return
     viewModelScope.launch {
       try {

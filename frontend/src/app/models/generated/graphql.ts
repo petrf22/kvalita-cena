@@ -74,6 +74,13 @@ export type CreateStoreInput = {
   city: string;
   /** Bez zadání server dosadí zemi vieweru, jinak app.i18n.default-country (CountryResolver, docs/lokalizace.md) — ŽÁDNÝ literální default tady, jinak by tahle větev nikdy nenaběhla. */
   country?: string | null | undefined;
+  /**
+   * OSM_DERIVED patří provozovně založené z potvrzeného kandidáta nearbyOsmStores — tedy když
+   * z OpenStreetMap pochází i název a adresa, ne jen souřadnice. Vyžaduje neprázdný osmRef
+   * a vynutí geoSource = OSM. Bez zadání OWN. Samotné geokódování adresy (geocodeAddress)
+   * OSM_DERIVED NENÍ: odtamtud je jen bod, ne text (docs/datovy-model.md, pravidlo 1).
+   */
+  dataOrigin?: DataOrigin | null | undefined;
   geoSource?: GeoSource | null | undefined;
   /** 8 číslic, ověří se v ARES (companyByIco) — viz docs/soukromi.md. */
   ico?: string | null | undefined;
@@ -87,6 +94,16 @@ export type CreateStoreInput = {
   /** Odkaz na stránku provozovny (u řetězce) — jako street/city jde přes core.store_user_edit. */
   url?: string | null | undefined;
 };
+
+/**
+ * Původ dat záznamu kvůli ODbL (docs/datovy-model.md) — co není OWN, vypadává z „čistého"
+ * exportu vlastních dat. Každá tabulka používá jen svou dvojici: zboží OWN/OFF_DERIVED,
+ * provozovna OWN/OSM_DERIVED.
+ */
+export type DataOrigin =
+  | 'OFF_DERIVED'
+  | 'OSM_DERIVED'
+  | 'OWN';
 
 export type ExternalLinkKind =
   | 'E_NUMBERS'
@@ -163,6 +180,13 @@ export type ObservationStatus =
   | 'DISPUTED'
   | 'PENDING'
   | 'REJECTED';
+
+/** Proč je nabídka z OpenStreetMap prázdná. */
+export type OsmLookupStatus =
+  /** Dotaz proběhl. Prázdné candidates znamenají, že v okolí opravdu nic není. */
+  | 'OK'
+  /** Služba OpenStreetMap (Overpass/Nominatim) je nedostupná, pomalá, nebo vypnutá konfigurací — nevíme nic. */
+  | 'UNAVAILABLE';
 
 /**
  * Druh fotky (core.media.photo_kind) — nezávislá osa od RecordType (ten říká čí je fotka, tohle
@@ -902,7 +926,7 @@ export type ReverseGeocodeQueryVariables = Exact<{
 }>;
 
 
-export type ReverseGeocodeQuery = { reverseGeocode: { street: string | null, city: string | null, postalCode: string | null, country: string | null, osmRef: string | null, attribution: string } };
+export type ReverseGeocodeQuery = { reverseGeocode: { status: OsmLookupStatus, street: string | null, city: string | null, postalCode: string | null, country: string | null, osmRef: string | null, attribution: string } };
 
 export type ChainsQueryVariables = Exact<{
   query?: string | null | undefined;
@@ -4897,6 +4921,7 @@ export const GeocodeAddressDocument = new TypedDocumentString(`
 export const ReverseGeocodeDocument = new TypedDocumentString(`
     query ReverseGeocode($lat: Float!, $lon: Float!) {
   reverseGeocode(lat: $lat, lon: $lon) {
+    status
     street
     city
     postalCode

@@ -15,6 +15,7 @@ import cz.kvalitacena.receipt.ReceiptPrefs
 import cz.kvalitacena.ui.settings.CountryStore
 import cz.kvalitacena.ui.settings.DisplayCurrencyStore
 import cz.kvalitacena.ui.settings.LastStoreStore
+import cz.kvalitacena.ui.settings.NearbyRadiusStore
 import cz.kvalitacena.ui.settings.PriceEntryVisibilityStore
 import cz.kvalitacena.ui.settings.SearchFilterStore
 import okhttp3.OkHttpClient
@@ -49,6 +50,9 @@ object AppContainer {
   lateinit var lastStoreStore: LastStoreStore
     private set
 
+  lateinit var nearbyRadiusStore: NearbyRadiusStore
+    private set
+
   lateinit var networkMonitor: NetworkMonitor
     private set
 
@@ -70,6 +74,7 @@ object AppContainer {
     priceEntryVisibilityStore = PriceEntryVisibilityStore(context.applicationContext)
     searchFilterStore = SearchFilterStore(context.applicationContext)
     lastStoreStore = LastStoreStore(context.applicationContext)
+    nearbyRadiusStore = NearbyRadiusStore(context.applicationContext)
     networkMonitor = NetworkMonitor(context.applicationContext)
     receiptPrefs = ReceiptPrefs(context.applicationContext)
     receiptDraft = ReceiptDraftStore(context.applicationContext.filesDir)

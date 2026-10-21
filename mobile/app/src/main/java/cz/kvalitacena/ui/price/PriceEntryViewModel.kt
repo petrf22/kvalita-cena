@@ -10,12 +10,17 @@ import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.Store
 import cz.kvalitacena.network.SubmitObservationsInput
+import cz.kvalitacena.ui.common.NearbyState
+import cz.kvalitacena.ui.common.OsmState
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.storeLabel
 import cz.kvalitacena.ui.common.toUiText
 import cz.kvalitacena.ui.settings.CountryStore
 import cz.kvalitacena.ui.settings.LastStoreStore
+import cz.kvalitacena.ui.settings.NearbyRadius
+import cz.kvalitacena.ui.settings.NearbyRadiusStore
 import cz.kvalitacena.ui.settings.PriceEntryVisibilityStore
+import cz.kvalitacena.ui.settings.widerNearbyRadius
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -29,6 +34,7 @@ class PriceEntryViewModel(
   private val countryStore: CountryStore,
   private val visibilityStore: PriceEntryVisibilityStore,
   private val lastStoreStore: LastStoreStore,
+  private val nearbyRadiusStore: NearbyRadiusStore,
 ) : ViewModel() {
 
   var loading by mutableStateOf(true)
@@ -48,9 +54,9 @@ class PriceEntryViewModel(
   var priceEntryExpanded by mutableStateOf(visibilityStore.expandedByDefault)
     private set
 
-  // Obchod se dá vybrat třemi cestami — napsat název/město (storeQuery → searchStores),
-  // "Najít v okolí" (nearbyStores, dosavadní chování) nebo založit nový. Všechny tři plní
-  // stejný `storeSuggestions`, ať má obrazovka jeden zdroj pravdy pro nabídku (StorePicker).
+  // Obchod se dá vybrat třemi cestami — automatickým hledáním v okolí (nearbyStores), napsáním
+  // názvu/města (storeQuery → searchStores) nebo založením nového. Všechny tři plní stejný
+  // `storeSuggestions`, ať má obrazovka jeden zdroj pravdy pro nabídku i mapu (StorePicker).
   var storeQuery by mutableStateOf("")
   var storeSuggestions by mutableStateOf<List<Store>>(emptyList())
     private set
@@ -66,16 +72,41 @@ class PriceEntryViewModel(
     private set
   private var storeSearchJob: Job? = null
 
-  var locating by mutableStateOf(false)
-    private set
-  var locationError by mutableStateOf<UiText?>(null)
+  // Obchody v okolí se od 2026-09 hledají SAMY hned po otevření (dřív až po stisku tlačítka
+  // "Najít v okolí") — stav proto musí umět odlišit "ještě se nehledalo" od "nenašlo se nic",
+  // a hlavně jednotlivé důvody, proč appka polohu nemá: u vypnuté polohy stačí poradit ji
+  // zapnout, u nepovoleného oprávnění nabídnout dialog, u timeoutu zkusit znovu. Dřív se
+  // všechno slilo do jedné hlášky, která uživateli neřekla, co má udělat (docs/design.md,
+  // "Čtyři stavy každé obrazovky").
+  var nearbyState by mutableStateOf<NearbyState>(NearbyState.Idle)
     private set
 
-  // Roste při každém úspěšném "Najít v okolí" — StorePicker/SearchableDropdown ho použije jako
-  // expandSignal, aby nabídku otevřel i bez psaní (dřív appka nabídku potichu naplnila a sama
-  // vybrala první obchod, viz onLocationResolved níž).
-  var nearbyStoresSignal by mutableStateOf(0)
+  /** Nabídka z OpenStreetMap — načítá se líně, teprve když vlastní katalog v okolí nic nemá. */
+  var osmState by mutableStateOf<OsmState>(OsmState.Idle)
     private set
+
+  /**
+   * Okruh pro TUHLE obrazovku. Začíná na volbě z Nastavení a "hledat v širším okolí" ho posune
+   * o krok nahoru, aniž by trvale přepsal, co si uživatel nastavil.
+   */
+  var activeRadius by mutableStateOf(nearbyRadiusStore.radius)
+    private set
+
+  /** Zapamatovaný obchod z minule — předvybere se jen podle [storeToPreselect]. */
+  var rememberedStore by mutableStateOf<Store?>(null)
+    private set
+
+  // Poloha uživatele žije JEN v paměti ViewModelu po dobu zobrazené obrazovky (docs/soukromi.md)
+  // — potřebuje ji "širší okolí" i nabídka z OSM, aby se nemuselo znovu čekat na GPS fix, a
+  // hlavně výpočet skutečné vzdálenosti, který na serveru udělat nejde (posílá se mu poloha
+  // zaokrouhlená na ~110 m).
+  private var lastLat: Double? = null
+  private var lastLon: Double? = null
+
+  // Automatické hledání smí proběhnout jen jednou za život ViewModelu. LaunchedEffect(Unit) na
+  // to nestačí: navigation-compose obrazovku při odchodu zahodí a při návratu (z formuláře
+  // obchodu/zboží) postaví znovu, zatímco ViewModel přežívá ve svém NavBackStackEntry.
+  private var autoLocateDone = false
 
   // Seznam řádků "(druh ceny, částka)" — u regálu bývá cena napsaná i dvakrát/třikrát (běžná,
   // klubová, množstevní), viz PriceRow. Vždy aspoň jeden řádek (removePriceRow ho neodebere).
@@ -182,19 +213,55 @@ class PriceEntryViewModel(
     discardIncompatibleStore()
   }
 
+  /**
+   * Zapamatovaný obchod se načte, ale NEVYBERE se rovnou jako dřív — o předvýběr se stará
+   * [storeToPreselect] podle toho, jestli je obchod mezi nalezenými v okolí, a to až po
+   * doběhnutí hledání ([applyPreselection]). Bez polohy (nepovolená, vypnutá, offline) vyhraje
+   * zapamatovaný obchod stejně jako dřív.
+   */
   private fun loadRememberedStore() {
+    // Snapshot ze SharedPreferences je k dispozici hned a bez sítě — teprve díky tomu jde
+    // zapsat cenu v obchodě bez signálu, kde `storeById` selže (docs/design.md, čtvrtý stav).
+    lastStoreStore.remembered()?.let {
+      rememberedStore = it
+      applyPreselection()
+    }
     val id = lastStoreStore.rememberedId() ?: return
     viewModelScope.launch {
       try {
         val store = graphQlClient.storeById(id)
+        // Ručně zvolený nebo vymazaný obchod pozdní odpověď nepřepíše.
         if (!storeSelectionTouched) {
-          if (store == null) lastStoreStore.clear()
-          else if (product == null || productAvailableAtStore(product!!, store)) selectStore(store)
+          if (store == null) {
+            lastStoreStore.clear()
+          } else {
+            rememberedStore = store
+            // Předvybraný snapshot se jen obnoví na čerstvou podobu ze serveru.
+            if (selectedStore?.id == store.id) selectStore(store) else applyPreselection()
+          }
         }
       } catch (e: Exception) {
-        // Výpadek načtení posledního obchodu nesmí blokovat ruční výběr.
+        // Výpadek načtení posledního obchodu nesmí blokovat ruční výběr — snapshot výš platí dál.
       }
     }
+  }
+
+  /**
+   * Předvybere obchod, jakmile je znám jak zapamatovaný obchod, tak (ne)úspěch hledání v okolí
+   * — obojí dorazí asynchronně a v libovolném pořadí. Dokud hledání běží (Idle/Locating), čeká
+   * se: brát to jako "poloha neznámá" by vybralo obchod z minula, a pozdní výsledek z okolí by
+   * ho už nepřepsal. Daň: bez signálu se předvybere až po timeoutu polohy nebo selhání dotazu.
+   * Ručně vybraný ani ručně vymazaný obchod se nikdy nepřepisuje.
+   */
+  private fun applyPreselection() {
+    if (selectedStore != null || storeSelectionTouched) return
+    val state = nearbyState
+    if (state is NearbyState.Idle || state is NearbyState.Locating) return
+    val nearby = (state as? NearbyState.Loaded)?.stores ?: emptyList()
+    val locationKnown = state is NearbyState.Loaded
+    val candidate = storeToPreselect(rememberedStore, nearby, locationKnown) ?: return
+    if (product != null && !productAvailableAtStore(product!!, candidate)) return
+    selectStore(candidate)
   }
 
   private fun productAvailableAtStore(product: Product, store: Store): Boolean = when (product.catalogScope) {
@@ -233,7 +300,7 @@ class PriceEntryViewModel(
       try {
         storeSuggestions = graphQlClient.searchStores(query = query).items
       } catch (e: Exception) {
-        // Chyba našeptávače nesmí blokovat zápis — "Najít v okolí" a ruční výběr fungují dál.
+        // Chyba našeptávače nesmí blokovat zápis — seznam z okolí a ruční výběr fungují dál.
       } finally {
         storeSearching = false
       }
@@ -249,7 +316,7 @@ class PriceEntryViewModel(
     // změně produktu) — uživatel ho právě vybral ručně, appka jen zablokuje odeslání a napíše
     // proč, ať mu výběr nezmizí beze stopy.
     storeScopeMismatch = product?.let { !productAvailableAtStore(it, store) } ?: false
-    if (!storeScopeMismatch) lastStoreStore.remember(store.id)
+    if (!storeScopeMismatch) lastStoreStore.remember(store)
   }
 
   private fun selectStore(store: Store) {
@@ -261,40 +328,113 @@ class PriceEntryViewModel(
   fun onNewStoreCreated(store: Store) {
     onStoreSelected(store)
     storeSuggestions = emptyList()
+    // Nabídka z OSM je po založení zastaralá — obsahuje i obchod, který právě vznikl, a jeho
+    // dalším klepnutím by uživatel mířil na duplicitu. Načte se znovu, až si o ni řekne (nebo
+    // sama, když vlastní katalog v okolí pořád nic nemá — server nový obchod už odfiltruje).
+    osmState = OsmState.Idle
+  }
+
+  /**
+   * Smí teď proběhnout automatické hledání v okolí? Vrací true nejvýš jednou — viz
+   * [autoLocateDone]. Obrazovka se ptá až při rozbalení sekce "Zadat cenu": pro nového
+   * uživatele je sekce schovaná (PriceEntryVisibilityStore), takže by GPS fix i dotaz na server
+   * shořely naprázdno.
+   */
+  fun shouldAutoLocate(): Boolean {
+    if (autoLocateDone) return false
+    autoLocateDone = true
+    return true
+  }
+
+  fun startLocating() {
+    nearbyState = NearbyState.Locating
+  }
+
+  fun onLocationPermissionMissing() {
+    nearbyState = NearbyState.PermissionMissing
+    applyPreselection()
+  }
+
+  fun onLocationDisabled() {
+    nearbyState = NearbyState.LocationDisabled
+    applyPreselection()
+  }
+
+  fun onLocationTimeout() {
+    nearbyState = NearbyState.LocationTimeout
+    applyPreselection()
   }
 
   fun onLocationResolved(lat: Double, lon: Double) {
-    locating = true
-    locationError = null
+    lastLat = lat
+    lastLon = lon
+    loadNearby(lat, lon)
+  }
+
+  /** "Hledat v širším okolí" — jeden krok po škále z Nastavení, bez čekání na nový GPS fix. */
+  fun widenRadius() {
+    val wider = widerNearbyRadius(activeRadius) ?: return
+    activeRadius = wider
+    val lat = lastLat
+    val lon = lastLon
+    if (lat != null && lon != null) loadNearby(lat, lon)
+  }
+
+  private fun loadNearby(lat: Double, lon: Double) {
+    nearbyState = NearbyState.Locating
+    osmState = OsmState.Idle
     viewModelScope.launch {
       try {
-        val stores = graphQlClient.nearbyStores(lat, lon)
-        storeSuggestions = stores
-        if (stores.isEmpty()) {
-          locationError = UiText.Res(R.string.store_picker_no_nearby_stores)
-        } else {
-          // Dřív appka potichu vybrala stores.first() — uživatel viděl výsledek "Najít v
-          // okolí" jen jako vybraný obchod, ostatní nálezy nešly vidět/zvolit (viz plán
-          // projektu, "nefunguje mi výběr obchodu z mapy"). Teď appka jen otevře nabídku
-          // (a mapu, StorePicker.StoreMap) a výběr nechá na uživateli.
-          nearbyStoresSignal++
-        }
+        val radiusMeters = activeRadius.meters
+        // Server hledá s okruhem zvětšeným o chybu zaokrouhlení polohy, takže dofiltrovat
+        // a seřadit podle SKUTEČNÉ vzdálenosti umí až klient — jen on zná přesnou polohu.
+        val stores = nearbyStoresWithin(
+          graphQlClient.nearbyStores(lat, lon, activeRadius.radiusKm),
+          lat, lon, radiusMeters,
+        )
+        nearbyState = NearbyState.Loaded(stores)
+        // Nabídka jde do stejného seznamu jako našeptávač, aby měl StorePicker jeden zdroj
+        // pravdy i pro mapu; psaní do pole ji přepíše, což je správně.
+        storeSuggestions = stores.map { it.store }
+        applyPreselection()
       } catch (e: Exception) {
-        locationError = e.toUiText()
-      } finally {
-        locating = false
+        nearbyState = NearbyState.Failed(e.toUiText())
+        applyPreselection()
       }
     }
   }
 
-  fun onLocationUnavailable() {
-    locating = false
-    locationError = UiText.Res(R.string.price_entry_location_unavailable)
-  }
+  /** Atribuce k aktuální nabídce z OSM — formulář nového obchodu ji musí zobrazit (ODbL). */
+  fun osmAttribution(): String? = (osmState as? OsmState.Loaded)?.attribution
 
-  fun startLocating() {
-    locating = true
-    locationError = null
+  /**
+   * Nabídka provozoven z OpenStreetMap. Volá se líně — teprve když vlastní katalog v okolí nic
+   * nemá, nebo když si o ni uživatel řekne: Overpass je pomalý a jeho kvóta je cizí.
+   */
+  fun loadOsmCandidates() {
+    val lat = lastLat ?: return
+    val lon = lastLon ?: return
+    if (osmState is OsmState.Loading) return
+    osmState = OsmState.Loading
+    viewModelScope.launch {
+      try {
+        val result = graphQlClient.nearbyOsmStores(lat, lon, activeRadius.radiusKm)
+        osmState = if (result.status != "OK") {
+          OsmState.Unavailable
+        } else {
+          val known = (nearbyState as? NearbyState.Loaded)?.stores?.map { it.store } ?: emptyList()
+          OsmState.Loaded(
+            osmCandidatesNotInOwnCatalog(
+              nearbyOsmStoresWithin(result.candidates, lat, lon, activeRadius.meters),
+              known,
+            ),
+            result.attribution,
+          )
+        }
+      } catch (e: Exception) {
+        osmState = OsmState.Failed(e.toUiText())
+      }
+    }
   }
 
   fun submit() {

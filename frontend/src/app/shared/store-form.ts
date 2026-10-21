@@ -25,6 +25,7 @@ import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { GeocodeCandidate, RetailChain, Store, UpdateStoreInput } from '../models/catalog';
 import { CountryService } from '../services/country-service';
+import { OsmLookupStatus } from '../models/generated/enums';
 import { StoreService } from '../services/store-service';
 import { translateError } from './error-message';
 import { KNOWN_COUNTRIES } from './known-countries';
@@ -362,6 +363,12 @@ export class StoreForm {
         if (request !== this.locationRequest) return;
         this.locating.set(false);
         this.geocodeAttribution.set(result.attribution);
+        // Výpadek Nominatimu není "tady žádná adresa není" — pole zůstanou, jak jsou, jinak
+        // by klik do mapy smazal adresu vyplněnou ručně nebo převzatou z OpenStreetMap.
+        if (result.status === OsmLookupStatus.Unavailable) {
+          this.locationMessage.set(this.transloco.translate('store.location.unavailable'));
+          return;
+        }
         for (const key of ['street', 'city', 'postalCode'] as const) {
           // Pole, které uživatel mezitím přepsal, zůstává jeho. Při replace (klik do mapy =
           // celá adresa nového bodu) se chybějící část MAŽE — jinak by po ulici zbyl kus

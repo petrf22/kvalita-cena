@@ -153,6 +153,13 @@
     <string name="settings_currency">Anzeigewährung</string>
     <string name="settings_currency_store_default">Währung des Geschäfts (Standard)</string>
     <string name="settings_currency_note">Die Umrechnung dient nur zum Vergleich — den Preis meldest du immer in der Währung des Geschäfts, dies ändert nur die Anzeige.</string>
+    <string name="settings_nearby_radius">Umkreis für die Geschäftssuche</string>
+    <string name="settings_nearby_radius_note">Wie weit die App beim Melden eines Preises nach Geschäften sucht. Die voreingestellten 500 m entsprechen dem Geschäft, in dem du gerade stehst.</string>
+    <string name="settings_nearby_radius_200m">200 m</string>
+    <string name="settings_nearby_radius_500m">500 m</string>
+    <string name="settings_nearby_radius_1km">1 km</string>
+    <string name="settings_nearby_radius_3km">3 km</string>
+    <string name="settings_nearby_radius_5km">5 km</string>
     <string name="settings_about_link">Was die App macht, woher die Daten stammen und wer sie betreibt</string>
     <string name="settings_feedback_link">Feedback zur App senden</string>
     <string name="settings_legal_title">Rechtliche Dokumente</string>
@@ -166,7 +173,7 @@
     <string name="about_what_it_is_not_text">Die App ist kein Preisvergleichsdienst mit garantierter Genauigkeit und keine Quelle für sofortige Kaufentscheidungen — die Preise werden von Freiwilligen eingetragen und können veraltet, falsch sein oder sich im Geschäft inzwischen geändert haben. Bevor du aufgrund eines Preises aus der App einkaufst, überprüfe ihn im Geschäft.</string>
     <string name="about_data_sources_title">Woher die Daten stammen</string>
     <string name="about_data_sources_text">Preise und Qualitätsbewertungen sind eigene Community-Daten. Links zu Open Food Facts folgen der ODbL-Lizenz (Open Database License) — Daten werden nie kopiert, die App verweist nur auf die Quelle.</string>
-    <string name="about_osm_attribution">Die Koordinaten der Geschäfte stammen von OpenStreetMap © OpenStreetMap-Mitwirkende, Lizenz ODbL.</string>
+    <string name="about_osm_attribution">Die Koordinaten der Geschäfte — und bei aus den OpenStreetMap-Vorschlägen übernommenen Geschäften auch deren Name und Adresse — stammen von OpenStreetMap © OpenStreetMap-Mitwirkende, Lizenz ODbL.</string>
     <string name="about_data_sources_other">Die App nutzt außerdem ARES zur Prüfung der Handelsregisternummer eines Geschäfts und einen E-Mail-Dienstanbieter zum Versand von Anmeldecodes — keines von beidem wird als eigene Daten der App gespeichert.</string>
     <string name="about_fx_attribution">Die Wechselkurse stammen aus dem Kurslisten der Tschechischen Nationalbank.</string>
     <string name="about_open_source_title">Offener Quellcode</string>
@@ -339,7 +346,6 @@
     <string name="price_entry_submit">Preis speichern</string>
     <string name="price_entry_back_without_price">Zurück ohne Preis einzugeben</string>
     <string name="price_entry_submit_success">Der Preis wurde gespeichert, danke!</string>
-    <string name="price_entry_location_unavailable">Der Standort konnte nicht ermittelt werden — wähle ein Geschäft, sobald Daten verfügbar sind.</string>
     <string name="price_entry_store_not_available">Dieses lokale Produkt gehört nicht zum gewählten Geschäft — wähle ein anderes Geschäft oder Produkt.</string>
 
     <string name="product_form_title">Neue Ware</string>
@@ -393,11 +399,30 @@
     <string name="store_report_hidden">Danke für die Meldung — das Geschäft ist jetzt ausgeblendet und wird überprüft.</string>
 
     <string name="store_picker_label">Geschäft</string>
+    <string name="store_picker_distance_m">%1$d m</string>
+    <string name="store_picker_distance_km">%1$.1f km</string>
+    <string name="store_picker_nearby_title">Geschäfte in der Nähe</string>
+    <string name="store_picker_searching_nearby">Suche Geschäfte in der Nähe…</string>
+    <string name="store_picker_permission_needed">Geschäfte in deiner Umgebung siehst du, sobald du der App Zugriff auf den Standort erlaubst. Ohne das findest du ein Geschäft, indem du Namen oder Stadt eingibst.</string>
+    <string name="store_picker_permission_grant">Standort erlauben</string>
+    <string name="store_picker_location_disabled">Der Standort ist am Telefon ausgeschaltet. Schalte ihn in den Systemeinstellungen ein oder finde das Geschäft über Namen oder Stadt.</string>
+    <string name="store_picker_open_location_settings">Standort einschalten</string>
+    <string name="store_picker_location_timeout">Der Standort konnte nicht ermittelt werden — in Gebäuden dauert das eine Weile.</string>
+    <string name="store_picker_retry">Erneut versuchen</string>
+    <string name="store_picker_nearby_failed">Geschäfte in der Nähe konnten nicht geladen werden — ohne Verbindung kennt die App nur das zuletzt verwendete Geschäft.</string>
+    <string name="store_picker_none_nearby_title">Hier kennen wir noch kein Geschäft</string>
+    <string name="store_picker_none_nearby_hint">Der Geschäftskatalog wächst mit seinen Nutzern — du bist hier wahrscheinlich die erste Person. Das Anlegen dauert ein paar Tipps.</string>
+    <string name="store_picker_approximate_location">Du hast nur den ungefähren Standort erlaubt, den das System um bis zu mehrere Kilometer verschiebt — ein Geschäft im Umkreis von ein paar hundert Metern lässt sich so nicht finden. Erlaube den genauen Standort in den Systemeinstellungen oder suche im größeren Umkreis.</string>
+    <string name="store_picker_wider_radius">Im größeren Umkreis suchen (%1$s)</string>
+    <string name="store_picker_show_more">Weitere anzeigen (%1$d)</string>
+    <string name="store_picker_pending_confirmation">wartet auf Bestätigung</string>
+    <string name="store_picker_osm_title">Geschäfte laut OpenStreetMap</string>
+    <string name="store_picker_osm_search">Geschäfte aus OpenStreetMap versuchen</string>
+    <string name="store_picker_osm_unavailable">OpenStreetMap ist gerade nicht erreichbar, wir wissen über diese Umgebung also nichts. Versuche es gleich noch einmal oder gib das Geschäft selbst ein.</string>
+    <string name="store_picker_osm_none">Auch OpenStreetMap kennt hier kein Geschäft.</string>
+    <string name="store_picker_add_new_action">Das Geschäft fehlt hier — neues hinzufügen</string>
     <string name="store_picker_add_new">+ Neues Geschäft hinzufügen</string>
-    <string name="store_picker_find_nearby">In der Umgebung finden</string>
-    <string name="store_picker_hint_logged_in">Gib den Namen oder die Stadt des Geschäfts ein, tippe auf „In der Umgebung finden“, oder lege das Geschäft direkt an.</string>
-    <string name="store_picker_hint_anonymous">Gib den Namen oder die Stadt des Geschäfts ein, oder tippe auf „In der Umgebung finden“ — das Anlegen eines neuen Geschäfts erfordert eine Anmeldung.</string>
-    <string name="store_picker_no_nearby_stores">In der Umgebung haben wir kein Geschäft gefunden.</string>
+    <string name="store_picker_hint_anonymous">Gib Namen oder Stadt des Geschäfts ein — ein neues Geschäft anzulegen erfordert eine Anmeldung.</string>
 
     <string name="store_form_create_title">Neues Geschäft</string>
     <string name="store_form_edit_title">Geschäft bearbeiten</string>
@@ -420,10 +445,16 @@
     <string name="store_company_id_shape_invalid">%1$s muss %2$d Ziffern haben.</string>
     <string name="store_company_id_not_found_in_registry">Diese Firmennummer haben wir in ARES nicht gefunden.</string>
 
-    <string name="store_location_section_title">Koordinaten (optional)</string>
-    <string name="store_location_hint">Wähle einen Ort auf der Karte, um die verfügbare Adresse auszufüllen. Oder gib eine Adresse ein und suche sie auf der Karte. Prüfe die ergänzten Angaben.</string>
-    <string name="store_location_find_coordinates">Koordinaten finden</string>
+    <string name="store_location_section_title">Koordinaten</string>
+    <string name="store_location_hint">Sie werden automatisch anhand der eingegebenen Adresse ermittelt, oder wähle einen Ort auf der Karte, um die verfügbare Adresse auszufüllen. Prüfe die ergänzten Angaben. Ohne Koordinaten erscheint das Geschäft nicht in der Umgebungssuche, nur in der Suche nach Namen — sie lassen sich später ergänzen.</string>
     <string name="store_location_use_my_location">Meinen Standort verwenden</string>
+    <string name="store_location_approximate_warning">Der Standort ist nur ungefähr erlaubt, der Punkt liegt also um Kilometer daneben — erlaube den genauen Standort in den Systemeinstellungen oder setze die Markierung per Tippen auf die Karte.</string>
+    <string name="store_form_prefilled_from_osm">Aus OpenStreetMap vorausgefüllt — prüfe die Angaben und korrigiere sie gegebenenfalls.</string>
+    <string name="store_form_use_existing_store">Dieses Geschäft kennen wir schon — verwenden</string>
+    <string name="store_form_existing_store_pending">Dieses Geschäft ist bereits im Katalog, wartet aber auf die Bestätigung anderer Beitragender — es kann noch nicht ausgewählt werden</string>
+    <string name="store_location_searching">Suche Koordinaten anhand der Adresse…</string>
+    <string name="store_location_found_from_address">Die Koordinaten wurden anhand der Adresse gefunden. Zeigen sie woandershin, verschiebe die Markierung auf der Karte.</string>
+    <string name="store_location_search_again">Erneut suchen</string>
     <string name="store_location_will_use_map_position">Es wird die Position von der Karte unten / dein aktueller Standort verwendet.</string>
 
     <!-- "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty"; prahy v docs/reputace.md) -->
@@ -496,6 +527,7 @@
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
     <string name="store_picker_clear">Geschäft leeren</string>
     <string name="store_location_not_found">Die Adresse wurde nicht gefunden. Prüfe die Verbindung oder gib sie manuell ein; den Standort kannst du auf der Karte auswählen.</string>
+    <string name="store_location_unavailable">Die Adresse kann gerade nicht ermittelt werden — der OpenStreetMap-Dienst ist nicht erreichbar. Die eingegebene Adresse wurde nicht geändert, bitte prüfe sie.</string>
     <!-- Účtenky — společné (docs/soukromi.md, „Účtenky") -->
     <string name="common_close">Schließen</string>
     <string name="common_ok">OK</string>

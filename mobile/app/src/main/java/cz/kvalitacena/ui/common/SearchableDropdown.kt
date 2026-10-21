@@ -11,7 +11,6 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,17 +39,9 @@ fun <T> SearchableDropdown(
   multiline: Boolean = false,
   // Extra položky v patičce nabídky (např. "+ Přidat nový obchod").
   footer: (@Composable () -> Unit)? = null,
-  // Změna hodnoty otevře nabídku i BEZ psaní — "Najít v okolí"/nearbyStores dřív naplnily
-  // `suggestions` potichu (expanded zůstalo false), appka pak sama vybrala první nález a
-  // uživatel neměl šanci zvolit jiný (viz PriceEntryViewModel.onLocationResolved).
-  expandSignal: Any? = null,
 ) {
   var expanded by remember { mutableStateOf(false) }
   val showMenu = expanded && (suggestions.isNotEmpty() || footer != null)
-
-  LaunchedEffect(expandSignal) {
-    if (expandSignal != null && suggestions.isNotEmpty()) expanded = true
-  }
 
   ExposedDropdownMenuBox(expanded = showMenu, onExpandedChange = { expanded = it }, modifier = modifier) {
     OutlinedTextField(

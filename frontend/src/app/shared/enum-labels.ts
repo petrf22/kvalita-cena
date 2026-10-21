@@ -159,6 +159,8 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.StoreCityRequired]: 'errors.STORE_CITY_REQUIRED',
   [ErrorCode.StoreCityEmpty]: 'errors.STORE_CITY_EMPTY',
   [ErrorCode.StoreUrlInvalid]: 'errors.STORE_URL_INVALID',
+  [ErrorCode.StoreOsmOriginRequiresRef]: 'errors.STORE_OSM_ORIGIN_REQUIRES_REF',
+  [ErrorCode.StoreDataOriginInvalid]: 'errors.STORE_DATA_ORIGIN_INVALID',
   [ErrorCode.CompanyIdInvalid]: 'errors.COMPANY_ID_INVALID',
   [ErrorCode.UnsupportedCountry]: 'errors.UNSUPPORTED_COUNTRY',
   [ErrorCode.StoreCountryEditRequiresTrust]: 'errors.STORE_COUNTRY_EDIT_REQUIRES_TRUST',

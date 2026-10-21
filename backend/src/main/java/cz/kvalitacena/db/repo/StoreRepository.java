@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface StoreRepository extends JpaRepository<Store, Long> {
 
@@ -76,6 +77,38 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
       + "ORDER BY similarity(core.norm_text(s.name), core.norm_text(:name)) DESC "
       + "LIMIT 5", nativeQuery = true)
   List<Store> findSimilar(@Param("name") String name, @Param("city") String city);
+
+  /**
+   * Provozovna, se kterou se zakládaný obchod srazil na {@code uq_store_identity} — predikát je
+   * přesně výraz toho indexu (country, normalizovaný název, město a ulice, bez MERGED), aby
+   * {@code existingId} v chybě DUPLICATE_STORE ukazoval na skutečnou kolizi, ne na první
+   * podobný název z {@link #findSimilar} (ten může být jiná pobočka ve stejném městě).
+   */
+  @Query(value = "SELECT * FROM core.store s WHERE s.status <> 'MERGED' "
+      + "AND s.country = :country "
+      + "AND core.norm_text(s.name) = core.norm_text(:name) "
+      + "AND core.norm_text(s.city) = core.norm_text(:city) "
+      + "AND COALESCE(core.norm_text(s.street), '') = COALESCE(core.norm_text(CAST(:street AS TEXT)), '') "
+      + "LIMIT 1", nativeQuery = true)
+  Optional<Store> findByIdentity(@Param("country") String country, @Param("name") String name,
+      @Param("city") String city, @Param("street") String street);
+
+  /**
+   * Obchody, se kterými by se kandidáti z nabídky OpenStreetMap mohli srazit na
+   * {@code uq_store_identity} — podle normalizovaného názvu a města, BEZ ohledu na souřadnice
+   * a viditelnost. {@link #findNearby} totiž nevrátí provozovnu založenou bez GPS ani cizí
+   * PENDING, a ty by jinak v nabídce zůstaly a skončily až na DUPLICATE_STORE. Přesnou shodu
+   * (země, ulice) dořeší {@code OsmStoreCandidateFilter}.
+   *
+   * <p>{@code names}/{@code cities} jsou literály pole PostgreSQL ({@code {"a","b"}}, viz
+   * {@code StoreGraphQlController}) — normalizace musí proběhnout v SQL přes
+   * {@code core.norm_text}, ne v Javě, jinak by se s indexem rozcházela.
+   */
+  @Query(value = "SELECT * FROM core.store s WHERE s.status <> 'MERGED' "
+      + "AND core.norm_text(s.name) IN (SELECT core.norm_text(n) FROM unnest(CAST(:names AS TEXT[])) n) "
+      + "AND core.norm_text(s.city) IN (SELECT core.norm_text(c) FROM unnest(CAST(:cities AS TEXT[])) c)",
+      nativeQuery = true)
+  List<Store> findIdentityCandidates(@Param("names") String names, @Param("cities") String cities);
 
   /**
    * Číselník pro filtr hledání (searchFacets) — přes idx_store_city, jen obchody se skutečnou

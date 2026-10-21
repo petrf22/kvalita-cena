@@ -6,6 +6,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import cz.kvalitacena.config.NominatimProperties;
 import cz.kvalitacena.controller.GeocodeCandidate;
 import cz.kvalitacena.controller.GeocodeResult;
+import cz.kvalitacena.controller.OsmLookupStatus;
 import cz.kvalitacena.controller.ReverseGeocodeResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -101,8 +102,9 @@ public class GeocodingService {
    * ukládanou souřadnici PROVOZOVNY, tam se zaokrouhlovat nesmí), zaokrouhlení pro Nominatim
    * proto dělá TADY server, na 4 desetinná místa (~11 m) — hluboko pod přesností mobilního
    * fixu, takže se nic reálného neztrácí, jen zmizí falešná sub-metrová přesnost posílaná třetí
-   * straně. Výpadek/timeout vrací prázdný výsledek, nikdy výjimku — editace obchodu nesmí
-   * spadnout kvůli nedostupnému Nominatimu.
+   * straně. Výpadek/timeout vrací {@code UNAVAILABLE}, nikdy výjimku — editace obchodu nesmí
+   * spadnout kvůli nedostupnému Nominatimu. Na rozdíl od úspěšné (i prázdné) odpovědi se
+   * selhání NEcachuje, jinak by krátký výpadek přežil celé TTL (stejně jako OverpassPoiService).
    */
   public ReverseGeocodeResult reverseGeocode(double lat, double lon) {
     double roundedLat = Coordinates.round(lat, 4);
@@ -113,12 +115,18 @@ public class GeocodingService {
     // Cachovaná hodnota NENESE atribuci (viz fetchReverseFromNominatim níž) — text je
     // lokalizovaný (docs/lokalizace.md) a cache klíč locale nezná, takže by se jinak zamrzl
     // na jazyku prvního requestu pro dané souřadnice až do vypršení TTL.
-    ReverseGeocodeResult cached = reverseCache().get(key, k -> fetchReverseFromNominatim(roundedLat, roundedLon));
+    ReverseGeocodeResult cached = reverseCache().getIfPresent(key);
+    if (cached == null) {
+      cached = fetchReverseFromNominatim(roundedLat, roundedLon);
+      if (cached.status() == OsmLookupStatus.OK) {
+        reverseCache().put(key, cached);
+      }
+    }
     return withAttribution(cached);
   }
 
   private ReverseGeocodeResult withAttribution(ReverseGeocodeResult result) {
-    return new ReverseGeocodeResult(result.street(), result.city(), result.postalCode(),
+    return new ReverseGeocodeResult(result.status(), result.street(), result.city(), result.postalCode(),
         result.country(), result.osmRef(), attribution());
   }
 
@@ -142,10 +150,10 @@ public class GeocodingService {
       return toReverseResult(result);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      return emptyReverseResult();
+      return unavailableReverseResult();
     } catch (RuntimeException e) {
       log.warn("Reverzní geokódování přes Nominatim selhalo: {}", e.getMessage());
-      return emptyReverseResult();
+      return unavailableReverseResult();
     }
   }
 
@@ -164,11 +172,16 @@ public class GeocodingService {
         : null;
     String country = address.countryCode() != null ? address.countryCode().toUpperCase(Locale.ROOT) : null;
     // attribution=null schválně — viz reverseGeocode(), doplní se AŽ po vytažení z cache.
-    return new ReverseGeocodeResult(street, city, address.postcode(), country, osmRef, null);
+    return new ReverseGeocodeResult(OsmLookupStatus.OK, street, city, address.postcode(), country, osmRef, null);
   }
 
+  /** Nominatim odpověděl, ale na tomhle místě adresu nezná — platná odpověď, cachuje se. */
   private ReverseGeocodeResult emptyReverseResult() {
-    return new ReverseGeocodeResult(null, null, null, null, null, null);
+    return new ReverseGeocodeResult(OsmLookupStatus.OK, null, null, null, null, null, null);
+  }
+
+  private ReverseGeocodeResult unavailableReverseResult() {
+    return new ReverseGeocodeResult(OsmLookupStatus.UNAVAILABLE, null, null, null, null, null, null);
   }
 
   private String firstNonBlank(String... values) {

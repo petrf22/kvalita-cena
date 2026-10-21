@@ -5,6 +5,8 @@ import cz.kvalitacena.db.entity.RetailChain;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.entity.StoreStatus;
 import cz.kvalitacena.db.repo.StoreRepository;
+import cz.kvalitacena.exception.ErrorCode;
+import cz.kvalitacena.exception.UnauthorizedException;
 import cz.kvalitacena.security.ViewerContext;
 import cz.kvalitacena.security.ViewerContextResolver;
 import cz.kvalitacena.service.CatalogEditService;
@@ -14,6 +16,8 @@ import cz.kvalitacena.service.Coordinates;
 import cz.kvalitacena.service.CountryResolver;
 import cz.kvalitacena.service.GeocodingService;
 import cz.kvalitacena.service.MediaService;
+import cz.kvalitacena.service.OsmStoreCandidateFilter;
+import cz.kvalitacena.service.OverpassPoiService;
 import cz.kvalitacena.service.StoreOverlayService;
 import cz.kvalitacena.service.StoreSearchService;
 import cz.kvalitacena.service.StoreService;
@@ -34,6 +38,16 @@ import java.util.Map;
 public class StoreGraphQlController {
 
   private static final double MAX_RADIUS_KM = 25;
+  private static final double MIN_RADIUS_KM = 0.05;
+
+  /**
+   * Kolik metrů se přidá k hledanému okruhu jako kompenzace za zaokrouhlení polohy na 3
+   * desetinná místa. Mřížka 0,001° je 111 m na šířce a ~71 m na délce (50° s. š.), takže se
+   * střed hledání může posunout až o ~66 m — u okruhu 200 m třetina. Bez kompenzace by
+   * uživateli vypadl obchod, ve kterém právě stojí. Klient seznam dofiltruje podle skutečné
+   * vzdálenosti (docs/soukromi.md), takže navíc přišlých pár řádků nikdo neuvidí.
+   */
+  private static final double ROUNDING_SLACK_M = 70;
 
   private final StoreRepository storeRepository;
   private final StoreSearchService storeSearchService;
@@ -43,6 +57,7 @@ public class StoreGraphQlController {
   private final MediaService mediaService;
   private final ViewerContextResolver viewerContextResolver;
   private final GeocodingService geocodingService;
+  private final OverpassPoiService overpassPoiService;
   private final CompanyRegistries companyRegistries;
   private final CountryResolver countryResolver;
   private final ChainCatalogService chainCatalogService;
@@ -50,15 +65,55 @@ public class StoreGraphQlController {
   @QueryMapping
   public List<Store> nearbyStores(@Argument double lat, @Argument double lon, @Argument Double radiusKm,
       Authentication authentication) {
-    double radius = Math.min(radiusKm == null ? 3 : radiusKm, MAX_RADIUS_KM);
+    double radius = clampRadiusKm(radiusKm == null ? 3 : radiusKm);
     Long viewerId = viewerContextResolver.resolve(authentication).userId();
     // Zaokrouhlení na 3 desetinná místa (~110 m, docs/soukromi.md — dřív dokumentované, ale
-    // nikde neimplementované) — při rádiusu 3–25 km je to pod rozlišovací schopnost výsledku,
-    // ale snižuje přesnost polohy, která skončí v logu requestu/dotazu.
+    // nikde neimplementované) snižuje přesnost polohy, která skončí v logu requestu/dotazu.
     double roundedLat = Coordinates.round(lat, 3);
     double roundedLon = Coordinates.round(lon, 3);
     return storeOverlayService.applyOverlay(
-        storeRepository.findNearby(roundedLat, roundedLon, radius * 1000, viewerId), viewerId);
+        storeRepository.findNearby(roundedLat, roundedLon, radius * 1000 + ROUNDING_SLACK_M, viewerId),
+        viewerId);
+  }
+
+  /**
+   * Nabídka provozoven z OpenStreetMap — poslední záchrana, když appka v okolí žádný svůj
+   * obchod nezná. Kandidáty, které v katalogu už jsou, vyřadí {@link OsmStoreCandidateFilter}
+   * ještě před odesláním, ať uživatel nezakládá duplicitu.
+   */
+  @QueryMapping
+  public OsmStoreCandidateResult nearbyOsmStores(@Argument double lat, @Argument double lon,
+      @Argument Double radiusKm, Authentication authentication) {
+    ViewerContext viewer = viewerContextResolver.resolve(authentication);
+    if (viewer.userId() == null) {
+      throw new UnauthorizedException(ErrorCode.STORE_CREATE_REQUIRES_LOGIN);
+    }
+    double radius = clampRadiusKm(radiusKm == null ? 0.5 : radiusKm);
+    double roundedLat = Coordinates.round(lat, 3);
+    double roundedLon = Coordinates.round(lon, 3);
+
+    OsmStoreCandidateResult result = overpassPoiService.nearby(roundedLat, roundedLon, radius, ROUNDING_SLACK_M);
+    if (result.candidates().isEmpty()) {
+      return result;
+    }
+    // Vlastní obchody se berou ze stejného okruhu jako nabídka, aby se poznala shoda i u
+    // provozovny, kterou někdo založil ručně (a osm_ref tedy nemá). Okruh ale nestačí:
+    // obchod bez souřadnic ani cizí PENDING v něm nejsou, a uq_store_identity by je přesto
+    // srazil — proto ještě dotaz podle názvu a města kandidátů.
+    Map<Long, Store> known = new LinkedHashMap<>();
+    storeRepository.findNearby(roundedLat, roundedLon, radius * 1000 + ROUNDING_SLACK_M, viewer.userId())
+        .forEach(store -> known.put(store.getId(), store));
+    List<String> names = result.candidates().stream().map(OsmStoreCandidate::name).toList();
+    List<String> cities = result.candidates().stream().map(OsmStoreCandidate::city)
+        .filter(city -> city != null && !city.isBlank()).toList();
+    if (!cities.isEmpty()) {
+      storeRepository.findIdentityCandidates(pgArray(names), pgArray(cities))
+          .forEach(store -> known.putIfAbsent(store.getId(), store));
+    }
+    String fallbackCountry = countryResolver.resolve(null, viewer.userId());
+    return new OsmStoreCandidateResult(result.status(),
+        OsmStoreCandidateFilter.withoutKnownStores(result.candidates(), List.copyOf(known.values()), fallbackCountry),
+        result.attribution());
   }
 
   @QueryMapping
@@ -135,6 +190,11 @@ public class StoreGraphQlController {
     return geocodingService.reverseGeocode(lat, lon);
   }
 
+  /** Strop kvůli ceně dotazu, spodní mez proto, že radiusKm = 0 je tichý nesmysl. */
+  private double clampRadiusKm(double radiusKm) {
+    return Math.min(Math.max(radiusKm, MIN_RADIUS_KM), MAX_RADIUS_KM);
+  }
+
   @BatchMapping(typeName = "Store", field = "photos")
   public Map<Store, List<Photo>> photos(List<Store> stores, Authentication authentication) {
     ViewerContext viewer = viewerContextResolver.resolve(authentication);
@@ -145,5 +205,17 @@ public class StoreGraphQlController {
       result.put(s, byStore.getOrDefault(s.getId(), List.of()));
     }
     return result;
+  }
+
+  /** Literál pole PostgreSQL ({@code {"a","b"}}) pro {@code CAST(:x AS TEXT[])} v nativním dotazu. */
+  static String pgArray(List<String> values) {
+    StringBuilder sb = new StringBuilder("{");
+    for (int i = 0; i < values.size(); i++) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      sb.append('"').append(values.get(i).replace("\\", "\\\\").replace("\"", "\\\"")).append('"');
+    }
+    return sb.append('}').toString();
   }
 }

@@ -154,6 +154,13 @@
     <string name="settings_currency">Zobrazovací měna</string>
     <string name="settings_currency_store_default">Měna obchodu (výchozí)</string>
     <string name="settings_currency_note">Přepočet slouží jen k porovnání — cenu vždy hlásíte v měně obchodu, tohle jen mění, jak se zobrazuje.</string>
+    <string name="settings_nearby_radius">Okolí pro hledání obchodů</string>
+    <string name="settings_nearby_radius_note">Kolik kolem sebe appka hledá obchody, když zapisuješ cenu. Výchozích 500 m odpovídá obchodu, ve kterém právě stojíš.</string>
+    <string name="settings_nearby_radius_200m">200 m</string>
+    <string name="settings_nearby_radius_500m">500 m</string>
+    <string name="settings_nearby_radius_1km">1 km</string>
+    <string name="settings_nearby_radius_3km">3 km</string>
+    <string name="settings_nearby_radius_5km">5 km</string>
     <string name="settings_about_link">Co appka dělá, odkud bere data a kdo ji provozuje</string>
     <string name="settings_feedback_link">Napsat zpětnou vazbu appce</string>
     <string name="settings_legal_title">Právní dokumenty</string>
@@ -172,7 +179,7 @@
     <string name="about_what_it_is_not_text">Appka není cenovým srovnávačem s garantovanou přesností ani zdrojem k okamžitému uzavírání nákupů — ceny zapisují dobrovolníci, mohou být neaktuální, chybné nebo se mezitím v obchodě změnit. Než uskutečníš nákup na základě ceny z appky, ověř si ji v obchodě.</string>
     <string name="about_data_sources_title">Odkud se berou data</string>
     <string name="about_data_sources_text">Ceny a hodnocení kvality jsou vlastní komunitní data. Odkazy do Open Food Facts jsou podle licence ODbL (Open Database License) — data se nikam nekopírují, appka jen odkazuje na zdroj.</string>
-    <string name="about_osm_attribution">Souřadnice provozoven vycházejí z OpenStreetMap © přispěvatelé OpenStreetMap, licence ODbL.</string>
+    <string name="about_osm_attribution">Souřadnice provozoven, a u obchodů převzatých z nabídky OpenStreetMap i jejich název a adresa, vycházejí z OpenStreetMap © přispěvatelé OpenStreetMap, licence ODbL.</string>
     <string name="about_data_sources_other">Appka dál používá ARES k ověření IČO provozovny a poskytovatele e-mailových služeb k odeslání přihlašovacích kódů — ani jedno se neukládá jako appčina vlastní data.</string>
     <string name="about_fx_attribution">Kurzy měn vycházejí z kurzovního lístku České národní banky.</string>
     <string name="about_open_source_title">Otevřený kód</string>
@@ -422,7 +429,6 @@
     <string name="price_entry_submit">Zapsat cenu</string>
     <string name="price_entry_back_without_price">Zpět bez zadání ceny</string>
     <string name="price_entry_submit_success">Cena byla zapsána, díky!</string>
-    <string name="price_entry_location_unavailable">Polohu se nepodařilo zjistit — vyber obchod, až budou data.</string>
     <string name="price_entry_store_not_available">Tohle místní zboží do vybraného obchodu nepatří — vyber jiný, nebo jiné zboží.</string>
 
     <string name="product_form_title">Nové zboží</string>
@@ -476,11 +482,30 @@
     <string name="store_report_hidden">Díky za nahlášení — provozovna je teď skrytá a čeká na přezkum.</string>
 
     <string name="store_picker_label">Obchod</string>
+    <string name="store_picker_distance_m">%1$d m</string>
+    <string name="store_picker_distance_km">%1$.1f km</string>
+    <string name="store_picker_nearby_title">Obchody v okolí</string>
+    <string name="store_picker_searching_nearby">Hledám obchody v okolí…</string>
+    <string name="store_picker_permission_needed">Obchody kolem sebe uvidíš, až appce povolíš přístup k poloze. Bez toho jde obchod najít napsáním názvu nebo města.</string>
+    <string name="store_picker_permission_grant">Povolit polohu</string>
+    <string name="store_picker_location_disabled">Poloha je v telefonu vypnutá. Zapni ji v nastavení systému, nebo obchod najdi napsáním názvu či města.</string>
+    <string name="store_picker_open_location_settings">Zapnout polohu</string>
+    <string name="store_picker_location_timeout">Polohu se nepodařilo zjistit — uvnitř budovy to chvíli trvá.</string>
+    <string name="store_picker_retry">Zkusit znovu</string>
+    <string name="store_picker_nearby_failed">Obchody v okolí se nepodařilo načíst — bez připojení appka zná jen naposledy použitý obchod.</string>
+    <string name="store_picker_none_nearby_title">V okolí zatím žádný obchod neznáme</string>
+    <string name="store_picker_none_nearby_hint">Katalog obchodů roste s uživateli — tenhle jsi tu nejspíš první. Založit ho je otázka pár klepnutí.</string>
+    <string name="store_picker_approximate_location">Máš povolenou jen přibližnou polohu, kterou systém posouvá až o kilometry — obchod v okruhu pár set metrů tak najít nejde. Povol appce přesnou polohu v nastavení systému, nebo hledej v širším okolí.</string>
+    <string name="store_picker_wider_radius">Hledat v širším okolí (%1$s)</string>
+    <string name="store_picker_show_more">Zobrazit další (%1$d)</string>
+    <string name="store_picker_pending_confirmation">čeká na potvrzení</string>
+    <string name="store_picker_osm_title">Obchody podle OpenStreetMap</string>
+    <string name="store_picker_osm_search">Zkusit obchody z OpenStreetMap</string>
+    <string name="store_picker_osm_unavailable">OpenStreetMap je teď nedostupná, o okolí tedy nic nevíme. Zkus to za chvíli, nebo obchod zadej sám.</string>
+    <string name="store_picker_osm_none">Ani OpenStreetMap tu žádný obchod nezná.</string>
+    <string name="store_picker_add_new_action">Obchod tu není — přidat nový</string>
     <string name="store_picker_add_new">+ Přidat nový obchod</string>
-    <string name="store_picker_find_nearby">Najít v okolí</string>
-    <string name="store_picker_hint_logged_in">Napiš název nebo město obchodu, stiskni „Najít v okolí“, nebo obchod rovnou založ.</string>
-    <string name="store_picker_hint_anonymous">Napiš název nebo město obchodu, nebo stiskni „Najít v okolí“ — založení nového obchodu vyžaduje přihlášení.</string>
-    <string name="store_picker_no_nearby_stores">V okolí jsme nenašli žádný obchod.</string>
+    <string name="store_picker_hint_anonymous">Napiš název nebo město obchodu — založení nového obchodu vyžaduje přihlášení.</string>
 
     <string name="store_form_create_title">Nový obchod</string>
     <string name="store_form_edit_title">Upravit obchod</string>
@@ -503,10 +528,16 @@
     <string name="store_company_id_shape_invalid">%1$s musí mít %2$d číslic.</string>
     <string name="store_company_id_not_found_in_registry">V ARES jsme tohle IČO nenašli.</string>
 
-    <string name="store_location_section_title">Souřadnice (volitelné)</string>
-    <string name="store_location_hint">Vyber místo na mapě a doplníme dostupnou adresu. Nebo vyplň adresu a najdi ji na mapě. Údaje z mapy zkontroluj.</string>
-    <string name="store_location_find_coordinates">Najít souřadnice</string>
+    <string name="store_location_section_title">Souřadnice</string>
+    <string name="store_location_hint">Dohledají se samy z vyplněné adresy, nebo vyber místo na mapě a doplníme dostupnou adresu. Údaje z mapy zkontroluj. Bez souřadnic obchod nenajde hledání v okolí, jen ruční hledání podle názvu — doplnit je jde i později.</string>
     <string name="store_location_use_my_location">Použít mou polohu</string>
+    <string name="store_location_approximate_warning">Poloha je povolená jen přibližně, takže bod bude o kilometry vedle — přesnou polohu povol v nastavení systému, nebo značku rovnou umísti klepnutím do mapy.</string>
+    <string name="store_form_prefilled_from_osm">Předvyplněno z OpenStreetMap — údaje zkontroluj a případně oprav.</string>
+    <string name="store_form_use_existing_store">Tenhle obchod už známe — použít ho</string>
+    <string name="store_form_existing_store_pending">Tenhle obchod už v katalogu je, ale čeká na potvrzení dalších přispěvatelů — zatím ho nejde vybrat</string>
+    <string name="store_location_searching">Hledám souřadnice podle adresy…</string>
+    <string name="store_location_found_from_address">Souřadnice se dohledaly podle adresy. Když sedí jinam, přesuň značku v mapě.</string>
+    <string name="store_location_search_again">Zkusit dohledat znovu</string>
     <string name="store_location_will_use_map_position">Použije se poloha z mapy níž / tvoje aktuální poloha.</string>
 
     <!-- "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty"; prahy v docs/reputace.md) -->
@@ -579,6 +610,7 @@
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
     <string name="store_picker_clear">Vymazat obchod</string>
     <string name="store_location_not_found">Adresu se nepodařilo dohledat. Zkontroluj připojení nebo ji doplň ručně; polohu lze vybrat na mapě.</string>
+    <string name="store_location_unavailable">Adresu teď nejde dohledat — služba OpenStreetMap je nedostupná. Vyplněnou adresu jsme nechali beze změny, zkontroluj ji.</string>
     <!-- Účtenky — společné (docs/soukromi.md, „Účtenky") -->
     <string name="common_close">Zavřít</string>
     <string name="common_ok">OK</string>

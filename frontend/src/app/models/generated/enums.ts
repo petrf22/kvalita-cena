@@ -42,6 +42,18 @@ export const Confidence = {
 
 export type Confidence = typeof Confidence[keyof typeof Confidence];
 /**
+ * Původ dat záznamu kvůli ODbL (docs/datovy-model.md) — co není OWN, vypadává z „čistého"
+ * exportu vlastních dat. Každá tabulka používá jen svou dvojici: zboží OWN/OFF_DERIVED,
+ * provozovna OWN/OSM_DERIVED.
+ */
+export const DataOrigin = {
+  OffDerived: 'OFF_DERIVED',
+  OsmDerived: 'OSM_DERIVED',
+  Own: 'OWN'
+} as const;
+
+export type DataOrigin = typeof DataOrigin[keyof typeof DataOrigin];
+/**
  * Strojově čitelný kód chyby (docs/lokalizace.md) — jde jen do GraphQL extensions.code, NIKDY
  * do žádného pole typu. Existuje ve schématu čistě proto, aby ho graphql-codegen vygeneroval
  * jako TS konstanty (frontend/codegen.ts, onlyEnums) — frontend nad ním postaví Record<ErrorCode,
@@ -154,10 +166,12 @@ export const ErrorCode = {
   StoreCityRequired: 'STORE_CITY_REQUIRED',
   StoreCountryEditRequiresTrust: 'STORE_COUNTRY_EDIT_REQUIRES_TRUST',
   StoreCreateRequiresLogin: 'STORE_CREATE_REQUIRES_LOGIN',
+  StoreDataOriginInvalid: 'STORE_DATA_ORIGIN_INVALID',
   StoreEditRequiresLogin: 'STORE_EDIT_REQUIRES_LOGIN',
   StoreNameEmpty: 'STORE_NAME_EMPTY',
   StoreNameRequired: 'STORE_NAME_REQUIRED',
   StoreNotFound: 'STORE_NOT_FOUND',
+  StoreOsmOriginRequiresRef: 'STORE_OSM_ORIGIN_REQUIRES_REF',
   StoreUrlInvalid: 'STORE_URL_INVALID',
   TermsAcceptanceRequired: 'TERMS_ACCEPTANCE_REQUIRED',
   TooManyRequests: 'TOO_MANY_REQUESTS',
@@ -216,6 +230,15 @@ export const ObservationStatus = {
 } as const;
 
 export type ObservationStatus = typeof ObservationStatus[keyof typeof ObservationStatus];
+/** Proč je nabídka z OpenStreetMap prázdná. */
+export const OsmLookupStatus = {
+  /** Dotaz proběhl. Prázdné candidates znamenají, že v okolí opravdu nic není. */
+  Ok: 'OK',
+  /** Služba OpenStreetMap (Overpass/Nominatim) je nedostupná, pomalá, nebo vypnutá konfigurací — nevíme nic. */
+  Unavailable: 'UNAVAILABLE'
+} as const;
+
+export type OsmLookupStatus = typeof OsmLookupStatus[keyof typeof OsmLookupStatus];
 /**
  * Druh fotky (core.media.photo_kind) — nezávislá osa od RecordType (ten říká čí je fotka, tohle
  * co na ní je). ITEM, ne PRODUCT — RecordType.PRODUCT už znamená totéž na jiné ose. Posílá se při

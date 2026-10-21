@@ -18,6 +18,7 @@ v příslušné sekci pod ní.
 | [Fotky zboží a provozoven](#fotky-zboží-a-provozoven) | hotovo | hotovo | hotovo | HOTOVO |
 | [Profil uživatele a viditelnost](#profil-uživatele-a-viditelnost) | hotovo | hotovo | hotovo | HOTOVO (skupiny důvěry mimo MVP) |
 | [Adresa/mapa provozovny](#adresamapa-provozovny) | hotovo | hotovo | hotovo | HOTOVO |
+| [Výběr obchodu při zápisu ceny](#výběr-obchodu-při-zápisu-ceny) | hotovo | starší varianta | hotovo | ČÁSTEČNĚ (web zaostává) |
 | [Hledání podle čárového kódu](#hledání-podle-čárového-kódu) | hotovo | hotovo | hotovo | HOTOVO |
 | [Hledání podle kategorie](#hledání-podle-kategorie) | hotovo | hotovo | hotovo | HOTOVO |
 | [Lokalizace a multi-měna](#lokalizace-csskenplde-multi-měna-strojově-čitelný-kontrakt-chyb) | hotovo | hotovo | chybí klientský překlad chyb podle `code` | ČÁSTEČNĚ |
@@ -287,8 +288,37 @@ uživatel výslovně neřekne. Poskytovatel dlaždic je konfigurovatelný (web `
 polohu" přímo v mapě (jednorázový `getCurrentLocation`, `ui/common/OsmMapView.kt` —
 `MyLocationButton`, sdílené `LocationMap`/`StoreMap`), atribuci poskytovatele přímo v mapě
 (`CopyrightOverlay`) a mapu se značkami obchodů k výběru (`ui/common/StoreMap.kt`, zapojená do
-`StorePicker` vedle napovídání a „Najít v okolí") — souřadnice uživatele se do ní na rozdíl od
-`LocationMap` v editovatelném režimu vůbec nedostávají, appka jen ukáže obchody, které už zná.
+`StorePicker`) — souřadnice uživatele se do ní na rozdíl od `LocationMap` v editovatelném
+režimu vůbec nedostávají, appka jen ukáže obchody, které už zná.
+
+**Souřadnice se od 2026-09 na mobilu dohledají samy z vyplněné adresy**
+(`StoreFormViewModel.scheduleGeocode`, debounce 800 ms, jen když obchod žádné souřadnice nemá —
+bod z mapy, z „Použít mou polohu" ani z OSM kandidáta se nikdy nepřepíše). Jediný nález se
+rovnou použije, víc kandidátů zůstává na výběru, prázdný výsledek je tichý (obchod jde uložit
+i bez souřadnic). Dosavadní tlačítko „Najít souřadnice" zůstalo jako ruční zopakování —
+dohledání umí tiše selhat, protože Nominatim blokuje datacentrové IP (`docs/spusteni.md`).
+Web tuhle automatiku zatím nemá (`shared/store-form.ts`, pořád jen tlačítko).
+
+## Výběr obchodu při zápisu ceny
+
+**Mobil** (`ui/common/StorePicker.kt`, `ui/price/PriceEntryViewModel.kt`): obchody v okolí se
+hledají samy po otevření zápisu ceny, nálezy jsou vidět jako seznam se vzdáleností (počítá ji
+klient, `ui/common/GeoDistance.kt`), okruh si uživatel volí v Nastavení
+(`ui/settings/NearbyRadiusStore.kt`, 200 m – 5 km, výchozí 500 m) a „hledat v širším okolí" ho
+posune o krok pro danou obrazovku. Prázdný stav a každý důvod chybějící polohy
+(`ui/common/NearbyState.kt`) mají vlastní text s akcí, co udělat. Nabídka provozoven
+z OpenStreetMap (`nearbyOsmStores`, backend `OverpassPoiService`) se načte, když vlastní
+katalog v okolí nic nemá; vybraný kandidát předvyplní formulář a obchod se uloží
+s `data_origin = 'OSM_DERIVED'` (`docs/datovy-model.md`). Čistá logika je v
+`ui/price/StorePickerLogic.kt` a `ui/common/GeoDistance.kt`, obojí s JUnit testy.
+
+Zapamatovaný obchod se od 2026-09 ukládá celý (`LastStoreStore` drží snapshot DTO, ne jen id),
+takže v obchodě bez signálu je předvybraný bez jediného dotazu na server — dřív se detail vždy
+dotahoval přes `storeById` a offline nebyl k dispozici ani on.
+
+**Neimplementováno na webu** — `shared/store-picker.ts` má pořád tlačítko „Najít v okolí",
+pevný okruh a žádnou nabídku z OSM. Backend je připravený (dotazy jsou aditivní), chybí jen
+frontend.
 
 ## Hledání podle čárového kódu
 

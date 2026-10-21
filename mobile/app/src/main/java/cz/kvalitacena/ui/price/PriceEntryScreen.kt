@@ -1,8 +1,6 @@
 package cz.kvalitacena.ui.price
 
-import android.Manifest
 import android.app.DatePickerDialog
-import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,13 +43,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
+import cz.kvalitacena.location.LOCATION_PERMISSIONS
+import cz.kvalitacena.location.LocationResult
 import cz.kvalitacena.location.getCurrentLocation
+import cz.kvalitacena.location.hasAnyLocationPermission
+import cz.kvalitacena.location.hasOnlyApproximateLocation
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.ProductImagePreview
 import cz.kvalitacena.ui.common.SELECTABLE_PRICE_KINDS
@@ -61,6 +62,7 @@ import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.productImageUrl
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.StorePicker
+import cz.kvalitacena.ui.settings.widerNearbyRadius
 import cz.kvalitacena.ui.common.currencyForCountry
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 import cz.kvalitacena.ui.common.usesExternalImage
@@ -112,6 +114,7 @@ fun PriceEntryScreen(
           AppContainer.countryStore,
           AppContainer.priceEntryVisibilityStore,
           AppContainer.lastStoreStore,
+          AppContainer.nearbyRadiusStore,
         )
       }
     },
@@ -144,37 +147,45 @@ fun PriceEntryScreen(
     }
   }
 
-  val locationPermissionLauncher = rememberLauncherForActivityResult(
-    ActivityResultContracts.RequestPermission(),
-  ) { granted ->
-    if (granted) {
-      viewModel.startLocating()
-      scope.launch {
-        val location = getCurrentLocation(context)
-        if (location != null) viewModel.onLocationResolved(location.latitude, location.longitude)
-        else viewModel.onLocationUnavailable()
+  fun locateAndLoadNearby() {
+    viewModel.startLocating()
+    scope.launch {
+      // Každý důvod, proč poloha není, má vlastní stav — jen tak umí obrazovka poradit, co
+      // udělat, aby to příště vyšlo (docs/design.md, "Čtyři stavy každé obrazovky").
+      when (val result = getCurrentLocation(context)) {
+        is LocationResult.Found -> viewModel.onLocationResolved(result.lat, result.lon)
+        is LocationResult.ProvidersDisabled -> viewModel.onLocationDisabled()
+        is LocationResult.Timeout -> viewModel.onLocationTimeout()
       }
-    } else {
-      viewModel.onLocationUnavailable()
     }
   }
 
-  fun findNearbyStores() {
-    val hasPermission = ContextCompat.checkSelfPermission(
-      context,
-      Manifest.permission.ACCESS_COARSE_LOCATION,
-    ) == PackageManager.PERMISSION_GRANTED
+  // O obě oprávnění naráz — jinak Android nenabídne volbu "Přesná"/"Přibližná"
+  // (location/LocationPermissions.kt, proč na přibližné polohu malý okruh nefunguje).
+  val locationPermissionLauncher = rememberLauncherForActivityResult(
+    ActivityResultContracts.RequestMultiplePermissions(),
+  ) { result ->
+    if (result.values.any { it }) locateAndLoadNearby() else viewModel.onLocationPermissionMissing()
+  }
 
-    if (!hasPermission) {
-      locationPermissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
-      return
-    }
-    viewModel.startLocating()
-    scope.launch {
-      val location = getCurrentLocation(context)
-      if (location != null) viewModel.onLocationResolved(location.latitude, location.longitude)
-      else viewModel.onLocationUnavailable()
-    }
+  /**
+   * Hledání v okolí. O oprávnění se appka nikdy neřekne sama od sebe — systémový dialog, který
+   * vyskočí hned po otevření obrazovky, lidé odklikávají "zamítnout" a na Androidu je odmítnutí
+   * lepivé. Místo toho stav [NearbyState.PermissionMissing] vysvětlí, k čemu to je, a dialog
+   * vyvolá až tlačítko.
+   */
+  fun findNearbyStores(userAsked: Boolean) {
+    if (hasAnyLocationPermission(context)) locateAndLoadNearby()
+    else if (userAsked) locationPermissionLauncher.launch(LOCATION_PERMISSIONS)
+    else viewModel.onLocationPermissionMissing()
+  }
+
+  // Obchody v okolí se hledají SAMY, bez mačkání tlačítka — ale až když je sekce zápisu ceny
+  // rozbalená: nováčkovi je schovaná (PriceEntryVisibilityStore) a GPS fix i dotaz na server by
+  // shořely naprázdno. shouldAutoLocate() pustí hledání nejvýš jednou za život ViewModelu, takže
+  // ho návrat z formuláře obchodu/zboží (obrazovka se staví znovu) nespustí podruhé.
+  LaunchedEffect(viewModel.priceEntryExpanded) {
+    if (viewModel.priceEntryExpanded && viewModel.shouldAutoLocate()) findNearbyStores(userAsked = false)
   }
 
   // Po úspěšném zápisu se obrazovka rovnou opouští (návrat tam, odkud se přišlo) — hláška
@@ -323,15 +334,12 @@ fun PriceEntryScreen(
             }
             Gap()
 
-            viewModel.locationError?.let {
-              Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-              Gap()
-            }
             viewModel.submitError?.let {
               Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
               Gap()
             }
 
+            val widerRadius = widerNearbyRadius(viewModel.activeRadius)
             StorePicker(
               query = viewModel.storeQuery,
               onQueryChange = viewModel::onStoreQueryChange,
@@ -339,13 +347,26 @@ fun PriceEntryScreen(
               searching = viewModel.storeSearching,
               selectedStoreId = viewModel.selectedStore?.id,
               onSelect = viewModel::onStoreSelected,
-              onFindNearby = { findNearbyStores() },
-              locating = viewModel.locating,
               onAddNew = onAddStore,
+              nearbyState = viewModel.nearbyState,
+              osmState = viewModel.osmState,
+              onRequestLocationPermission = { findNearbyStores(userAsked = true) },
+              onOpenLocationSettings = { openLocationSettings(context) },
+              onRetryNearby = { findNearbyStores(userAsked = true) },
+              onWiderRadius = widerRadius?.let { { viewModel.widenRadius() } },
+              widerRadiusLabel = widerRadius?.let { stringResource(it.labelRes) },
+              onSearchOsm = viewModel::loadOsmCandidates,
+              onSelectOsmCandidate = { candidate ->
+                NavigationResults.osmStoreCandidate = candidate.candidate
+                NavigationResults.osmStoreAttribution = viewModel.osmAttribution()
+                onAddStore()
+              },
+              // Přibližná poloha je od systému mimo až o kilometry — bez vysvětlení by prázdný
+              // výsledek v okruhu 500 m vypadal jako chyba appky.
+              approximateLocation = hasOnlyApproximateLocation(context),
               isLoggedIn = isLoggedIn,
               homeCountry = AppContainer.countryStore.country,
               modifier = Modifier.fillMaxWidth(),
-              expandSignal = viewModel.nearbyStoresSignal,
             )
             if (viewModel.storeScopeMismatch) {
               Text(
@@ -635,4 +656,17 @@ private fun PromoDateField(
 @Composable
 private fun Gap() {
   androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+}
+
+/**
+ * Systémové nastavení polohy — jediná cesta, jak vypnutou polohu zapnout; appka to za uživatele
+ * udělat nemůže, tak ho tam aspoň dovede jedním klepnutím.
+ */
+private fun openLocationSettings(context: android.content.Context) {
+  runCatching {
+    context.startActivity(
+      android.content.Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+    )
+  }
 }

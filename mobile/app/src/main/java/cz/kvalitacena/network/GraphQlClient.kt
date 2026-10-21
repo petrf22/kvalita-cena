@@ -10,7 +10,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
@@ -208,7 +210,11 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     return execute(query, variables, GraphQlResponse.serializer(ProductData.serializer())).product
   }
 
-  suspend fun nearbyStores(lat: Double, lon: Double, radiusKm: Double = 5.0): List<Store> {
+  /**
+   * Obchody z vlastního katalogu v okolí. `radiusKm` NEMÁ výchozí hodnotu schválně — okruh si
+   * uživatel volí v Nastavení (NearbyRadiusStore) a tichý default by tu volbu obešel.
+   */
+  suspend fun nearbyStores(lat: Double, lon: Double, radiusKm: Double): List<Store> {
     val query = """
       query(${'$'}lat: Float!, ${'$'}lon: Float!, ${'$'}radiusKm: Float) {
         nearbyStores(lat: ${'$'}lat, lon: ${'$'}lon, radiusKm: ${'$'}radiusKm) { $STORE_FIELDS }
@@ -220,6 +226,29 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
       put("radiusKm", radiusKm)
     }
     return execute(query, variables, GraphQlResponse.serializer(NearbyStoresData.serializer())).nearbyStores
+  }
+
+  /**
+   * Provozovny v okolí podle OpenStreetMap — nabídka k založení obchodu, který appka ve vlastním
+   * katalogu nezná. Vyžaduje přihlášení (bez `createStore` je kandidát k ničemu), volá se proto
+   * až když je vlastní nabídka prázdná, ne při každém skenu: Overpass je pomalý a jeho kvóta
+   * je cizí.
+   */
+  suspend fun nearbyOsmStores(lat: Double, lon: Double, radiusKm: Double): OsmStoreCandidateResult {
+    val query = """
+      query(${'$'}lat: Float!, ${'$'}lon: Float!, ${'$'}radiusKm: Float) {
+        nearbyOsmStores(lat: ${'$'}lat, lon: ${'$'}lon, radiusKm: ${'$'}radiusKm) {
+          status attribution
+          candidates { name street city postalCode country lat lon osmRef distanceMeters brand }
+        }
+      }
+    """
+    val variables = buildJsonObject {
+      put("lat", lat)
+      put("lon", lon)
+      put("radiusKm", radiusKm)
+    }
+    return execute(query, variables, GraphQlResponse.serializer(NearbyOsmStoresData.serializer())).nearbyOsmStores
   }
 
   /**
@@ -563,7 +592,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     val query = """
       query(${'$'}lat: Float!, ${'$'}lon: Float!) {
         reverseGeocode(lat: ${'$'}lat, lon: ${'$'}lon) {
-          street city postalCode country osmRef attribution
+          status street city postalCode country osmRef attribution
         }
       }
     """
@@ -991,9 +1020,20 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
           first.extensions?.code,
           first.extensions?.params ?: emptyList(),
           parsed.errors.joinToString("; ") { it.message },
+          first.extensions?.existingId?.let { existingIdOf(it) },
         )
       }
       return parsed.data ?: throw TransportException("Prázdná odpověď od serveru")
     }
   }
+}
+
+/**
+ * `extensions.existingId` chodí ze serveru jako číslo, klient s id pracuje jako se `String`
+ * (tak je má i `Store.id`). Nečíselný/chybějící tvar se tiše zahodí — je to jen nabídka
+ * "použij existující obchod", ne něco, na čem by chybová hláška stála.
+ */
+private fun existingIdOf(element: JsonElement): String? {
+  val primitive = element as? JsonPrimitive ?: return null
+  return primitive.content.takeIf { it.isNotBlank() && it != "null" }
 }

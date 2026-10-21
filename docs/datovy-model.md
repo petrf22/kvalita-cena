@@ -32,12 +32,34 @@ jen dvě čísla u obchodu.
 Pravidla, která to drží čisté:
 
 1. Žádný **hromadný ani podstatný výřez** `off.*`/`osm.*` se nekopíruje do `core.*`. Spojení
-   vzniká až při čtení v service vrstvě; UI vždy uvede zdroj a licenci. Výjimka: jednotlivě
-   zvolený geokódovaný výsledek (lat/lon + `osm_ref` konkrétního kandidáta) se uložit smí,
-   s `geo_source` jako značkou původu — viz `core.store.geo_source` níž.
+   vzniká až při čtení v service vrstvě; UI vždy uvede zdroj a licenci. Dvě výjimky, obě
+   omezené na **jeden záznam, který si člověk vybral a potvrdil**:
+   - jednotlivě zvolený geokódovaný výsledek (lat/lon + `osm_ref` konkrétního kandidáta) se
+     uložit smí, s `geo_source` jako značkou původu — viz `core.store.geo_source` níž. Odtud
+     pochází jen BOD, ne text, takže `data_origin` zůstává `OWN`;
+   - jednotlivě zvolená **provozovna z nabídky `nearbyOsmStores`** (Overpass) smí přinést
+     i název a adresu — ty se značí `data_origin = 'OSM_DERIVED'` a vypadávají z „čistého"
+     exportu podle pravidla 3, stejně jako `OFF_DERIVED` u zboží.
+
+   Co hranici proti hromadnému importu drží, je konfigurace, ne dobrá vůle:
+   `app.external.overpass.max-radius-km` a `max-results` (nabídka je vždy hrst záznamů kolem
+   jednoho bodu), jedno lidské potvrzení na řádek a žádná perzistence syrové odpovědi —
+   Caffeine cache v `OverpassPoiService` je jen v paměti a s TTL, do `core.*` ani `osm.*`
+   nezapisuje nic. **Hromadný import z OSM/Overpass zůstává zakázaný** (`docs/nasazeni.md`).
+
+   Slabina, kterou je poctivé pojmenovat: `dataOrigin` posílá klient (`CreateStoreInput`).
+   Server hlídá jen konzistenci (`OSM_DERIVED` vyžaduje `osmRef`, `OFF_DERIVED` u obchodu
+   odmítne a `geo_source = OSM` jen doplní, když klient původ bodu neposlal — bod posunutý
+   uživatelem na mapě zůstává `COMMUNITY`, protože `geo_source` je původ BODU, ne textu),
+   ne pravdivost. Směr možného zneužití je „podhlásit" — tedy přesně stav před zavedením
+   sloupce, ne zhoršení. Případné zpřísnění: server by si pamatoval, jaké `osm_ref` komu
+   nedávno vydal, a při `createStore` to ověřil.
 2. Pokud uživatel ručně opíše údaj z OFF do `core.product`, nastaví se
-   `data_origin = 'OFF_DERIVED'` a tenhle produkt se vyloučí z "čistého" exportu.
-3. Čistý export vlastních dat: `pg_dump --schema=core --schema=agg`. **Pozor:**
+   `data_origin = 'OFF_DERIVED'` a tenhle produkt se vyloučí z "čistého" exportu. Totéž platí
+   pro `core.store.data_origin = 'OSM_DERIVED'` (viz pravidlo 1).
+3. Čistý export vlastních dat: `pg_dump --schema=core --schema=agg` — z něj musí vypadnout
+   (nebo být označené) řádky s `data_origin <> 'OWN'`, a to v `core.product` i `core.store`.
+   **Pozor:**
    `core.product_review.user_id` (hodnocení kvality a text recenze, viz níže) se do „čistého"
    exportu nesmí dostat beze změny — je to jediné místo v `core.*`, kde vazba na uživatele
    nepodléhá pseudonymizaci po 180 dnech (na rozdíl od `price_observation.submitter_id`,
@@ -52,6 +74,11 @@ Pravidla, která to drží čisté:
 `core.store.geo_source` rozlišuje `COMMUNITY` (zadal uživatel) od `OSM` (převzato) —
 i tak souřadnice zůstávají v `core.store`, protože jsou to fakta o konkrétní provozovně
 potřebná pro běžný provoz appky (vyhledávání), ne surová OFF/OSM data k re-exportu.
+
+`core.store.geo_source` a `core.store.data_origin` odpovídají na dvě různé otázky a je snadné
+je splést: `geo_source` říká, odkud je BOD, `data_origin` odkud je TEXT. Obchod, u kterého si
+uživatel napsal adresu sám a jen si nechal dohledat souřadnice, má proto `geo_source = 'OSM'`
+a `data_origin = 'OWN'` — a je to tak správně.
 
 ## `core.price_observation` — jádro celé aplikace
 
@@ -164,7 +191,11 @@ apod.), je to signál k přehodnocení, ne důvod sahat po PostGIS hned teď.
 Dřív vstupovaly obchody do appky jen dvěma cestami: `nearbyStores` (nutná poloha) nebo
 seed. Kdo nechce sdílet polohu, nebo zapisuje ceny zpětně doma, potřebuje třetí cestu —
 napsat název/město a obchod ručně dohledat nebo založit (`searchStores`, `createStore`,
-`StoreService`). Tři rozhodnutí za tím:
+`StoreService`). Od 2026-09 je čtvrtá: **nabídka provozoven z OpenStreetMap**
+(`nearbyOsmStores`, `OverpassPoiService`), ze které si člověk jednu vybere a ta mu předvyplní
+formulář. Vznikla proto, že katalog obchodů se záměrně nepředvyplňuje (`docs/nasazeni.md`),
+takže první uživatel v dané lokalitě jinak narazil na prázdný výběr bez nápovědy, co dál.
+Rozhodnutí za tím:
 
 **`core.store.lat`/`lon` jsou nullable.** Obchod založený doma bez GPS musí jít uložit i bez
 souřadnic — doplní je až geokódování (`geocodeAddress`, viz níže) nebo někdo, kdo u obchodu
@@ -226,6 +257,17 @@ nestačí k jednoznačné identifikaci. Validuje se jen tvar (8 číslic + kontr
 rejstřík ekonomických subjektů ČR). ARES **není ODbL data** (na rozdíl od OSM/OFF), nemusí se
 tedy držet mimo `core.*`; ukládá se ale jen to, co uživatel skutečně potvrdí uložením obchodu,
 ne celá odpověď ARES.
+
+**Nabídka provozoven z OSM jde přes Overpass API, ne přes Nominatim** — Nominatimova usage
+policy vyhledávání POI podle kategorie („systematic queries") výslovně zakazuje, Overpass je
+na dotaz „co je v okruhu R" určený nástroj. `OverpassPoiService` je stavbou dvojče
+`GeocodingService` (líný `RestClient`, sdílený throttle 1 dotaz/s, Caffeine cache, fail-soft),
+s jedním rozdílem: **selhání se necachuje**. Prázdný výsledek uložený do cache by při hodinovém
+výpadku Overpassu zamrzl na celé TTL a uživatelé by mezitím zakládali duplicity — proto se
+výpadek hlásí jako `status = UNAVAILABLE`, odlišený od „v okolí opravdu nic není" (stejný vzor
+jako `ProductLookupStatus.OFF_UNAVAILABLE` u skenování). Kandidáty, které appka ve svém
+katalogu už má, vyřadí `OsmStoreCandidateFilter` (shoda `osm_ref`, nebo normalizovaná identita
+jako v `uq_store_identity`) ještě před odesláním nabídky.
 
 **Geokódování (OpenStreetMap Nominatim, `geocodeAddress`, `GeocodingService`) jde vždy ze
 serveru, nikdy z klienta** (`docs/soukromi.md` — jinak by šla Nominatimu přímo IP uživatele).

@@ -21,6 +21,7 @@ Použití (emulátor musí běžet, appka být nainstalovaná — viz `./start-d
     python3 tools/mobile/ui.py wait "Uložit" --timeout 15
     python3 tools/mobile/ui.py open "product/<uuid>"   # skok rovnou na obrazovku
     python3 tools/mobile/ui.py log --clear
+    python3 tools/mobile/ui.py geo 49.1996 16.6089     # poloha zařízení (lat lon), --off zruší
     python3 tools/mobile/ui.py screenshot /tmp/x.png   # vypíše JEN cestu, pro oko uživatele
 
 Omezení, na která se naráží v praxi:
@@ -679,6 +680,26 @@ def cmd_setup(args):
     print("Animace v emulátoru vypnuté (rychlejší a spolehlivější `dump`).")
 
 
+def cmd_geo(args):
+    # `adb emu geo fix` v emulátoru (API 36, google_apis) zabere jen poprvé — další polohy se
+    # k aplikacím nedostanou a GPS dál hlásí tu první. Testovací poskytovatel polohy
+    # (`cmd location providers`) přebíjí GPS spolehlivě a okamžitě.
+    if args.off:
+        adb_shell(["cmd", "location", "providers", "remove-test-provider", "gps"], args.device, check=False)
+        adb_shell(["appops", "set", "com.android.shell", "android:mock_location", "default"], args.device)
+        print("Testovací poloha zrušená, GPS emulátoru zase platí.")
+        return
+    if args.lat is None or args.lon is None:
+        die("Zadej `geo LAT LON`, nebo `geo --off`.")
+    adb_shell(["appops", "set", "com.android.shell", "android:mock_location", "allow"], args.device)
+    # Opakované přidání už existujícího poskytovatele selže — není to chyba.
+    adb_shell(["cmd", "location", "providers", "add-test-provider", "gps"], args.device, check=False)
+    adb_shell(["cmd", "location", "providers", "set-test-provider-enabled", "gps", "true"], args.device)
+    adb_shell(["cmd", "location", "providers", "set-test-provider-location", "gps",
+               "--location", "%s,%s" % (args.lat, args.lon), "--accuracy", "5"], args.device)
+    print("Poloha: %s, %s" % (args.lat, args.lon))
+
+
 def cmd_screenshot(args):
     # Záměrně vypisuje jen cestu: screenshot je pro OKO UŽIVATELE, ne pro čtení modelem
     # (mobile/CLAUDE.md, "Ladění v emulátoru").
@@ -741,6 +762,12 @@ def main():
 
     setup = subparsers.add_parser("setup", help="vypne animace v emulátoru")
     setup.set_defaults(func=cmd_setup)
+
+    geo = subparsers.add_parser("geo", help="nastaví polohu zařízení (lat lon) přes testovací poskytovatel")
+    geo.add_argument("lat", nargs="?", type=float)
+    geo.add_argument("lon", nargs="?", type=float)
+    geo.add_argument("--off", action="store_true", help="zruší testovací polohu")
+    geo.set_defaults(func=cmd_geo)
 
     screenshot = subparsers.add_parser("screenshot", help="uloží PNG a vypíše jen cestu")
     screenshot.add_argument("path")

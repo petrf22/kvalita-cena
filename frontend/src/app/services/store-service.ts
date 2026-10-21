@@ -130,6 +130,7 @@ export class StoreService {
     const document = graphql(`
       query ReverseGeocode($lat: Float!, $lon: Float!) {
         reverseGeocode(lat: $lat, lon: $lon) {
+          status
           street
           city
           postalCode

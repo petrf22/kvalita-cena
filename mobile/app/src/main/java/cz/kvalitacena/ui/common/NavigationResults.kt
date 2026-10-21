@@ -1,5 +1,6 @@
 package cz.kvalitacena.ui.common
 
+import cz.kvalitacena.network.OsmStoreCandidate
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.Store
 
@@ -27,6 +28,16 @@ object NavigationResults {
   var scannedCode: String? = null
   /** Napsaný název, kterým uživatel našel existující lokální položku; odešle se až s cenou. */
   var productAlias: String? = null
+
+  /**
+   * Provozovna vybraná z nabídky OpenStreetMap — StoreFormScreen z ní předvyplní celý formulář
+   * (StoreFormViewModel.applyOsmCandidate). Stejný mezikrok jako newStore/newProduct výš,
+   * jen opačným směrem: tenhle jde DO formuláře, ne z něj.
+   */
+  var osmStoreCandidate: OsmStoreCandidate? = null
+
+  /** Povinný text zdroje/licence (ODbL) k [osmStoreCandidate] — formulář ho MUSÍ zobrazit. */
+  var osmStoreAttribution: String? = null
 
   /** Stejný vzor, ale pro editaci existující provozovny (StoreFormScreen storeId != null) — StoreDetailScreen ho vyzvedne. */
   var updatedStore: Store? = null

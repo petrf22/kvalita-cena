@@ -153,6 +153,13 @@
     <string name="settings_currency">Display currency</string>
     <string name="settings_currency_store_default">Store currency (default)</string>
     <string name="settings_currency_note">The conversion is only for comparison — you always report a price in the store\'s currency, this just changes how it\'s displayed.</string>
+    <string name="settings_nearby_radius">Search radius for stores</string>
+    <string name="settings_nearby_radius_note">How far around you the app looks for stores when you report a price. The default 500 m matches the store you are standing in.</string>
+    <string name="settings_nearby_radius_200m">200 m</string>
+    <string name="settings_nearby_radius_500m">500 m</string>
+    <string name="settings_nearby_radius_1km">1 km</string>
+    <string name="settings_nearby_radius_3km">3 km</string>
+    <string name="settings_nearby_radius_5km">5 km</string>
     <string name="settings_about_link">What the app does, where the data comes from, and who runs it</string>
     <string name="settings_feedback_link">Send feedback about the app</string>
     <string name="settings_legal_title">Legal documents</string>
@@ -166,7 +173,7 @@
     <string name="about_what_it_is_not_text">The app isn\'t a price comparison service with guaranteed accuracy, nor a source for making purchase decisions on the spot — prices are entered by volunteers and may be outdated, wrong, or have changed in the store since. Before you buy based on a price from the app, check it in the store.</string>
     <string name="about_data_sources_title">Where the data comes from</string>
     <string name="about_data_sources_text">Prices and quality ratings are our own community data. Links to Open Food Facts follow the ODbL (Open Database License) — no data is copied, the app only links to the source.</string>
-    <string name="about_osm_attribution">Store coordinates are based on OpenStreetMap © OpenStreetMap contributors, ODbL license.</string>
+    <string name="about_osm_attribution">Store coordinates — and for stores taken from the OpenStreetMap suggestions also their name and address — are based on OpenStreetMap © OpenStreetMap contributors, ODbL license.</string>
     <string name="about_data_sources_other">The app also uses ARES to verify a store\'s company ID and an email service provider to send login codes — neither is stored as the app\'s own data.</string>
     <string name="about_fx_attribution">Exchange rates come from the Czech National Bank\'s daily rate list.</string>
     <string name="about_open_source_title">Open source</string>
@@ -337,7 +344,6 @@
     <string name="price_entry_submit">Record price</string>
     <string name="price_entry_back_without_price">Back without recording a price</string>
     <string name="price_entry_submit_success">Price recorded, thanks!</string>
-    <string name="price_entry_location_unavailable">We couldn\'t determine your location — pick a store once data is available.</string>
     <string name="price_entry_store_not_available">This local item doesn\'t belong to the selected store — pick a different store or item.</string>
 
     <string name="product_form_title">New product</string>
@@ -391,11 +397,30 @@
     <string name="store_report_hidden">Thanks for reporting — the store is now hidden and awaiting review.</string>
 
     <string name="store_picker_label">Store</string>
+    <string name="store_picker_distance_m">%1$d m</string>
+    <string name="store_picker_distance_km">%1$.1f km</string>
+    <string name="store_picker_nearby_title">Stores nearby</string>
+    <string name="store_picker_searching_nearby">Looking for stores nearby…</string>
+    <string name="store_picker_permission_needed">You will see stores around you once you allow the app to access your location. Without it, you can still find a store by typing its name or city.</string>
+    <string name="store_picker_permission_grant">Allow location</string>
+    <string name="store_picker_location_disabled">Location is turned off on your phone. Turn it on in system settings, or find the store by typing its name or city.</string>
+    <string name="store_picker_open_location_settings">Turn on location</string>
+    <string name="store_picker_location_timeout">Could not determine your location — indoors it takes a while.</string>
+    <string name="store_picker_retry">Try again</string>
+    <string name="store_picker_nearby_failed">Nearby stores could not be loaded — without a connection the app only knows the store you used last.</string>
+    <string name="store_picker_none_nearby_title">We do not know any store around here yet</string>
+    <string name="store_picker_none_nearby_hint">The store catalogue grows with its users — you are probably the first one here. Adding it takes a few taps.</string>
+    <string name="store_picker_approximate_location">You have only granted approximate location, which the system shifts by up to kilometres — a store within a few hundred metres cannot be found that way. Allow precise location in system settings, or search a wider area.</string>
+    <string name="store_picker_wider_radius">Search a wider area (%1$s)</string>
+    <string name="store_picker_show_more">Show more (%1$d)</string>
+    <string name="store_picker_pending_confirmation">awaiting confirmation</string>
+    <string name="store_picker_osm_title">Stores according to OpenStreetMap</string>
+    <string name="store_picker_osm_search">Try stores from OpenStreetMap</string>
+    <string name="store_picker_osm_unavailable">OpenStreetMap is unavailable right now, so we know nothing about this area. Try again in a moment, or enter the store yourself.</string>
+    <string name="store_picker_osm_none">Not even OpenStreetMap knows a store here.</string>
+    <string name="store_picker_add_new_action">The store is not here — add a new one</string>
     <string name="store_picker_add_new">+ Add new store</string>
-    <string name="store_picker_find_nearby">Find nearby</string>
-    <string name="store_picker_hint_logged_in">Type a store name or city, tap \"Find nearby\", or create a store directly.</string>
-    <string name="store_picker_hint_anonymous">Type a store name or city, or tap \"Find nearby\" — creating a new store requires signing in.</string>
-    <string name="store_picker_no_nearby_stores">We didn\'t find any store nearby.</string>
+    <string name="store_picker_hint_anonymous">Type the store name or city — adding a new store requires signing in.</string>
 
     <string name="store_form_create_title">New store</string>
     <string name="store_form_edit_title">Edit store</string>
@@ -418,10 +443,16 @@
     <string name="store_company_id_shape_invalid">%1$s must have %2$d digits.</string>
     <string name="store_company_id_not_found_in_registry">We couldn\'t find this ID in the registry.</string>
 
-    <string name="store_location_section_title">Coordinates (optional)</string>
-    <string name="store_location_hint">Select a place on the map to fill in the available address. Or enter an address and find it on the map. Check the suggested details.</string>
-    <string name="store_location_find_coordinates">Find coordinates</string>
+    <string name="store_location_section_title">Coordinates</string>
+    <string name="store_location_hint">They are looked up automatically from the address you fill in, or select a place on the map to fill in the available address. Check the suggested details. Without coordinates the store will not show up in nearby search, only in search by name — they can be added later.</string>
     <string name="store_location_use_my_location">Use my location</string>
+    <string name="store_location_approximate_warning">Location is granted only approximately, so the point will be off by kilometres — allow precise location in system settings, or place the marker by tapping the map.</string>
+    <string name="store_form_prefilled_from_osm">Prefilled from OpenStreetMap — check the details and correct them if needed.</string>
+    <string name="store_form_use_existing_store">We already know this store — use it</string>
+    <string name="store_form_existing_store_pending">This store is already in the catalog but is awaiting confirmation by other contributors — it can\'t be selected yet</string>
+    <string name="store_location_searching">Looking up coordinates from the address…</string>
+    <string name="store_location_found_from_address">Coordinates were found from the address. If they point elsewhere, move the marker on the map.</string>
+    <string name="store_location_search_again">Try looking up again</string>
     <string name="store_location_will_use_map_position">The position from the map below / your current location will be used.</string>
 
     <!-- "Moje příspěvky" (docs/datovy-model.md, "Uživatelská vrstva nad globálními daty"; prahy v docs/reputace.md) -->
@@ -494,6 +525,7 @@
     <string name="product_form_label_photo_label_with_lang">%1$s — %2$s</string>
     <string name="store_picker_clear">Clear store</string>
     <string name="store_location_not_found">The address could not be found. Check your connection or enter it manually; you can select the location on the map.</string>
+    <string name="store_location_unavailable">The address can\'t be looked up right now — the OpenStreetMap service is unavailable. The address you filled in was left unchanged; please check it.</string>
     <!-- Účtenky — společné (docs/soukromi.md, „Účtenky") -->
     <string name="common_close">Close</string>
     <string name="common_ok">OK</string>

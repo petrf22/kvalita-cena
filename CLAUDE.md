@@ -111,6 +111,17 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   tam, kde si o něj uživatel výslovně řekne. Podrobně `mobile/CLAUDE.md`, „Ladění
   v emulátoru"; skok na obrazovku obstarává `DebugRouteIntent` v `MainActivity.kt`, čtený
   jen v debug buildu.
+- **Nabídka obchodů z OpenStreetMap se ptá Overpassu, ne Nominatimu** (`OverpassPoiService`) —
+  Nominatimova usage policy hledání POI podle kategorie zakazuje. Výpadek se hlásí jako
+  `status: UNAVAILABLE`, nikdy jako prázdný seznam, jinak by uživatel při nedostupnosti zakládal
+  duplicity; selhání se proto NEcachuje (na rozdíl od `GeocodingService`, kde prázdný výsledek
+  do cache jde). Potvrzený kandidát se ukládá s `core.store.data_origin = 'OSM_DERIVED'` —
+  `geo_source` na to nestačí, ta odpovídá na jinou otázku: `geo_source` je původ BODU,
+  `data_origin` původ TEXTU (`docs/datovy-model.md`, pravidlo 1).
+- **Vzdálenost obchodu počítá KLIENT, ne server** (`ui/common/GeoDistance.kt`) — serveru se
+  posílá poloha zaokrouhlená na ~110 m a `nearbyStores` hledá s okruhem zvětšeným o tuhle chybu
+  (`ROUNDING_SLACK_M`), takže dofiltrovat a seřadit podle skutečné vzdálenosti umí jen zařízení,
+  které zná přesnou polohu (`docs/soukromi.md`).
 - **Účtenka: strukturu z OCR textu tahají výhradně regexy, nikdy jazykový model**
   (`tools/uctenky/normalize.py`) — model nad textem účtenky tiše zahodil řádek
   `3.000 ks x 36.90 Kč /ks` a jindy přejmenoval zboží. OCR model dělá jen obrázek → text.
@@ -150,10 +161,14 @@ Open Food Facts **i OpenStreetMap** jsou pod ODbL se share-alike podmínkou. Odd
 **projektová bezpečnostní politika zvolená vědomě přísněji, než ODbL vyžaduje** (ta rozlišuje
 odvozenou a kolektivní databázi; podrobné odůvodnění a odkazy na ODbL 1.0/OSMF guideline jsou
 v `docs/datovy-model.md`, „Oddělení schémat kvůli ODbL") — žádný hromadný ani podstatný výřez
-`off.*`/`osm.*` se nekopíruje do `core.*`; jednotlivě zvolený geokódovaný výsledek (lat/lon +
-`osm_ref`) se do `core.store` uložit smí, s `geo_source` jako značkou původu. UI vždy uvede
-zdroj. Čistý export vlastních dat je `pg_dump --schema=core --schema=agg`. Aplikační DB
-uživatel má na `off`/`osm` jen `SELECT`, zapisuje jen synchronizační job.
+`off.*`/`osm.*` se nekopíruje do `core.*`. Dvě výjimky, obě omezené na jeden záznam, který si
+člověk vybral a potvrdil: jednotlivě zvolený geokódovaný výsledek (lat/lon + `osm_ref`) se do
+`core.store` uložit smí s `geo_source` jako značkou původu (`data_origin` zůstává `OWN` — odtud
+je jen BOD), a jednotlivě potvrzená provozovna z nabídky `nearbyOsmStores` smí přinést i název
+a adresu, ty se ale značí `core.store.data_origin = 'OSM_DERIVED'` a vypadávají z čistého
+exportu. UI vždy uvede zdroj. Čistý export vlastních dat je `pg_dump --schema=core
+--schema=agg`, z něj musí vypadnout řádky s `data_origin <> 'OWN'`. Aplikační DB uživatel má na
+`off`/`osm` jen `SELECT`, zapisuje jen synchronizační job.
 
 ### `core.price_observation` je jádro aplikace
 

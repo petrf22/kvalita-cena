@@ -3,9 +3,14 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
-    <!-- Jen COARSE — na dohledání nejbližších obchodů stačí, ADRESA se nikam neukládá
-         (docs/soukromi.md v backendu, "poloha se nikdy neukládá jako GPS uživatele"). -->
+    <!-- COARSE dlouho stačilo, ale Android přibližnou polohu snapuje na mřížku o hraně kolem
+         2 km (naměřeno 1,5 km odchylky) — s tím nejde najít obchod, ve kterém člověk právě
+         stojí, ani nastavit souřadnice provozovny. FINE je proto nabídnuté jako volba: appka
+         o ně požádá, systémový dialog nechá uživatele vybrat „Přesná"/„Přibližná" a při
+         přibližné appka dál funguje, jen to řekne a doporučí širší okruh. Poloha se ani tak
+         nikam neukládá (docs/soukromi.md, „Poloha se nikdy neukládá jako GPS uživatele"). -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!-- Offline stav obrazovek (network/NetworkMonitor.kt) — účtenka se v obchodě bez signálu
          jen zařadí a WorkManager ji pošle po připojení. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />

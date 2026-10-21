@@ -15,6 +15,12 @@ class GraphQlAppException(
   val code: String?,
   val params: List<JsonElement>,
   val serverMessage: String,
+  /**
+   * Id už existujícího záznamu u duplicit (`DUPLICATE_STORE`, `DUPLICATE_GENERIC_PRODUCT`) —
+   * server ho posílá v `extensions.existingId` (GraphQlExceptionHandler). Díky němu umí
+   * formulář místo holé chyby nabídnout "tenhle obchod už známe, použij ho" místo slepé uličky.
+   */
+  val existingId: String? = null,
 ) : Exception(serverMessage)
 
 /**

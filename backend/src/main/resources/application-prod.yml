@@ -81,3 +81,8 @@ app:
       # Usage policy Nominatimu vyžaduje identifikovatelný kontakt (dev@example.com by appku
       # v produkci riskovalo zablokování IP, viz https://operations.osmfoundation.org/policies/nominatim/).
       user-agent: ${NOMINATIM_USER_AGENT}
+    overpass:
+      # Overpass má vlastní usage policy s týmž požadavkem na identifikovatelný kontakt.
+      # OVERPASS_BASE_URL dovolí přejít na vlastní instanci, až veřejná přestane stačit.
+      base-url: ${OVERPASS_BASE_URL:https://overpass-api.de/api/interpreter}
+      user-agent: ${OVERPASS_USER_AGENT}
