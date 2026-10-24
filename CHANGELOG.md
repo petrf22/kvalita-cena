@@ -7,6 +7,19 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [0.11.0] – 2026-10-24
+
+### Přidáno
+- Před snímáním účtenky appka ukáže čáru, ke které srovnat horní okraj, a animací naznačí posun telefonu dolů; první díl se uloží až po krátkém odpočtu v klidu, takže už nevyjde nakloněný ani s kusem stolu (mobil)
+- Délku odpočtu před snímáním účtenky jde nastavit v Nastavení — 1 až 5 s, výchozí 2 s (mobil)
+- Při prvním snímání účtenky se ukáže krátký návod, pak je k dispozici pod tlačítkem „Jak na to" (mobil)
+
+### Opraveno
+- Zakrytí citlivých údajů na účtence zakryje i okrajový pruh pixelů, který dřív mohl zůstat vidět (web)
+- U váhového zboží z účtenky bez přečteného množství se už nezapíše zaplacená částka jako cena za kilogram (server)
+- Účtenka nad 1000 Kč z pokladny, která netiskne mezeru v tisících, se přečte celá — se součtem i drahými položkami (server)
+- Po smazání nafoceného dílu účtenky snímání správně ví, kolik dílů už má (mobil)
+
 ## [0.10.0] – 2026-10-21
 
 ### Přidáno
