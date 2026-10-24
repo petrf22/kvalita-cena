@@ -266,7 +266,8 @@ public class ReceiptReviewService {
    *       zaplacená částka — ta říká jen, kolik toho člověk koupil;</li>
    *   <li>sleva z vlastního řádku pod položkou dá vedle běžné ceny i cenu po slevě, druh
    *       podle toho, co worker rozpoznal (klubová jen výslovně, jinak akční);</li>
-   *   <li>chybí-li jednotková cena, dopočítá se z celkové a množství.</li>
+   *   <li>chybí-li jednotková cena, dopočítá se z celkové a množství — u váhového zboží jen
+   *       se známým množstvím, jinak by se zaplacená částka zapsala jako cena za kg/l.</li>
    * </ul>
    */
   static PriceRows priceRows(ReceiptLine line) {
@@ -275,10 +276,13 @@ public class ReceiptReviewService {
       case L -> QuantityBasis.PER_L;
       case PCS -> QuantityBasis.PACKAGE;
     };
-    BigDecimal quantity = line.getQuantity() != null && line.getQuantity().signum() > 0
-        ? line.getQuantity() : BigDecimal.ONE;
+    boolean knownQuantity = line.getQuantity() != null && line.getQuantity().signum() > 0;
+    // Bez množství jde cenu za jednotku odvodit z celkové částky jen u kusů (1 ks = balení);
+    // u kg/l by zaplacených 20,50 Kč bylo „20,50 Kč/kg", ať zboží stojí kolik chce.
+    boolean perUnitDerivable = knownQuantity || basis == QuantityBasis.PACKAGE;
+    BigDecimal quantity = knownQuantity ? line.getQuantity() : BigDecimal.ONE;
     BigDecimal unit = line.getUnitPrice();
-    if (unit == null && line.getLineTotal() != null) {
+    if (unit == null && line.getLineTotal() != null && perUnitDerivable) {
       unit = line.getLineTotal().divide(quantity, 2, RoundingMode.HALF_UP);
     }
     if (unit == null || unit.signum() <= 0) {
@@ -287,7 +291,11 @@ public class ReceiptReviewService {
     PriceKind guess = line.getPriceKindGuess() == null ? PriceKind.REGULAR : line.getPriceKindGuess();
     List<ObservationPriceInput> prices = new ArrayList<>();
     BigDecimal discount = line.getDiscountAmount();
-    if (discount != null && discount.signum() > 0) {
+    if (discount != null && discount.signum() > 0 && !perUnitDerivable) {
+      // Sleva váhového zboží bez množství — cenu po slevě za kg/l spočítat nejde, zapíše se
+      // jen běžná cena z tištěné jednotkové ceny.
+      prices.add(price(PriceKind.REGULAR, unit));
+    } else if (discount != null && discount.signum() > 0) {
       BigDecimal total = line.getLineTotal() != null ? line.getLineTotal() : unit.multiply(quantity);
       BigDecimal discounted = total.subtract(discount).divide(quantity, 2, RoundingMode.HALF_UP);
       prices.add(price(PriceKind.REGULAR, unit));

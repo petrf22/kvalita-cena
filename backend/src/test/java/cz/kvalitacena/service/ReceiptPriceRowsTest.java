@@ -53,6 +53,29 @@ class ReceiptPriceRowsTest {
   }
 
   @Test
+  void weighedLineWithoutQuantityDoesNotTurnPaidAmountIntoPricePerKg() {
+    // Zaplacených 20,50 Kč za neznámé množství není 20,50 Kč/kg.
+    assertThatThrownBy(() -> ReceiptReviewService.priceRows(line(null, QuantityUnit.KG, null, "20.50", null, PriceKind.REGULAR)))
+        .isInstanceOf(ValidationException.class);
+  }
+
+  @Test
+  void weighedLineWithoutQuantityKeepsPrintedPricePerKgAndSkipsDiscount() {
+    var rows = ReceiptReviewService.priceRows(line(null, QuantityUnit.KG, "44.90", "20.50", "3.00", PriceKind.CLUB_CARD));
+    assertThat(rows.basis()).isEqualTo(QuantityBasis.PER_KG);
+    assertThat(rows.prices()).singleElement().satisfies(p -> {
+      assertThat(p.priceKind()).isEqualTo(PriceKind.REGULAR);
+      assertThat(p.priceAmount()).isEqualByComparingTo("44.90");
+    });
+  }
+
+  @Test
+  void packageWithoutQuantityIsOnePiece() {
+    var rows = ReceiptReviewService.priceRows(line(null, QuantityUnit.PCS, null, "24.90", null, PriceKind.REGULAR));
+    assertThat(rows.prices().getFirst().priceAmount()).isEqualByComparingTo("24.90");
+  }
+
+  @Test
   void icoFromReceiptDropsVatPrefix() {
     assertThat(ReceiptMatchingService.normalizeIco("DIČ: CZ 44012373")).isEqualTo("44012373");
     assertThat(ReceiptMatchingService.normalizeIco("abc")).isNull();
@@ -63,7 +86,7 @@ class ReceiptPriceRowsTest {
       PriceKind kind) {
     return ReceiptLine.builder()
         .labelRaw("X")
-        .quantity(new BigDecimal(qty))
+        .quantity(qty == null ? null : new BigDecimal(qty))
         .quantityUnit(unit)
         .unitPrice(unitPrice == null ? null : new BigDecimal(unitPrice))
         .lineTotal(total == null ? null : new BigDecimal(total))
