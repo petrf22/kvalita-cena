@@ -3,6 +3,7 @@ package cz.kvalitacena.ui.receipt.capture
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import cz.kvalitacena.crash.AppLog
+import java.util.concurrent.atomic.AtomicReference
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 
@@ -53,8 +54,12 @@ class ReceiptFrameAnalyzer(
   @Volatile
   var paused: Boolean = false
 
-  @Volatile
-  private var pendingReset: Int? = null
+  /**
+   * Reset z hlavního vlákna pro vlákno analyzátoru. Atomické převzetí (`getAndSet`) — při
+   * čtení a nulování zvlášť by se reset, který dorazí mezi nimi, ztratil a tracker by si
+   * myslel, že má jiný počet dílů než koncept (třeba po smazání jediného dílu bez odpočtu).
+   */
+  private val pendingReset = AtomicReference<Int?>(null)
 
   private var yBytes = ByteArray(0)
   private var previous: Mat? = null
@@ -65,7 +70,7 @@ class ReceiptFrameAnalyzer(
    * díl se počítá od posledního uloženého, posun od nuly.
    */
   fun resetParts(parts: Int) {
-    pendingReset = parts
+    pendingReset.set(parts)
   }
 
   override fun analyze(image: ImageProxy) {
@@ -80,10 +85,7 @@ class ReceiptFrameAnalyzer(
   }
 
   private fun process(image: ImageProxy) {
-    pendingReset?.let {
-      tracker.reset(it)
-      pendingReset = null
-    }
+    pendingReset.getAndSet(null)?.let { tracker.reset(it) }
 
     val sensorWidth = image.width
     val sensorHeight = image.height
