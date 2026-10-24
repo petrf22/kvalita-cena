@@ -1,4 +1,4 @@
-import { MaskRect, ReceiptPart, scaledSize } from './receipt-mask';
+import { MaskRect, ReceiptPart, maskPixelRect, scaledSize } from './receipt-mask';
 
 /**
  * Limity nahrání účtenky — zdroj pravdy je `app.receipt.*` na serveru (docs/ai.md, tabulka
@@ -97,6 +97,7 @@ export async function renderMaskedJpeg(part: ReceiptPart): Promise<Blob> {
 export function paintMasks(context: CanvasRenderingContext2D, masks: readonly MaskRect[]): void {
   context.fillStyle = MASK_FILL;
   for (const mask of masks) {
-    context.fillRect(Math.floor(mask.x), Math.floor(mask.y), Math.ceil(mask.w), Math.ceil(mask.h));
+    const px = maskPixelRect(mask);
+    context.fillRect(px.x, px.y, px.w, px.h);
   }
 }

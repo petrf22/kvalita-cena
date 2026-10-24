@@ -102,6 +102,18 @@ export function rectFromPoints(
   return { x: left, y: top, w: right - left, h: bottom - top };
 }
 
+/**
+ * Obdélník masky v celých pixelech, zaokrouhlený VEN na všech stranách — pravý a dolní okraj
+ * se počítají z `x + w`/`y + h`, ne zaokrouhlením šířky zvlášť. Jinak by u masky třeba
+ * x = 10,9, w = 5 zůstal odkrytý sloupec 15 a na server by dorazil pruh čísla karty.
+ * Stejné pravidlo jako `maskToPixels` na mobilu.
+ */
+export function maskPixelRect(mask: MaskRect): { x: number; y: number; w: number; h: number } {
+  const x = Math.floor(mask.x);
+  const y = Math.floor(mask.y);
+  return { x, y, w: Math.ceil(mask.x + mask.w) - x, h: Math.ceil(mask.y + mask.h) - y };
+}
+
 export function isUsableMask(rect: MaskRect): boolean {
   return rect.w >= MIN_MASK_PX && rect.h >= MIN_MASK_PX;
 }
