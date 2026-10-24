@@ -80,6 +80,12 @@ fun isPlausibleReceiptQuad(quad: Quad, frameWidth: Int, frameHeight: Int): Boole
 private fun distance(a: Pt, b: Pt): Double = hypot(a.x - b.x, a.y - b.y)
 
 /**
+ * Největší posun kteréhokoli rohu mezi dvěma čtyřúhelníky, v pixelech — podle něj odpočet
+ * před prvním dílem pozná, že uživatel ještě míří ([CaptureThresholds.START_MAX_DRIFT_RATIO]).
+ */
+fun maxCornerDrift(a: Quad, b: Quad): Double = a.points.zip(b.points).maxOf { (p, q) -> distance(p, q) }
+
+/**
  * Rozměr narovnaného výřezu — delší z protějších stran, ať narovnání text nestlačí. Výsledek
  * je v pixelech zdroje, ze kterého čtyřúhelník pochází.
  */

@@ -73,4 +73,22 @@ object CaptureThresholds {
 
   /** Pixel tmavší než tahle hodnota (0–255) se počítá jako „inkoust" při hledání mezer mezi řádky. */
   const val INK_THRESHOLD = 128.0
+
+  /**
+   * Výchozí délka odpočtu před prvním dílem (docs/ai.md) — účtenka musí být tak dlouho v klidu
+   * vidět, jinak by se uložil záběr z míření. Uživatel ji mění v Nastavení ([START_DELAY_CHOICES]).
+   */
+  const val DEFAULT_START_DELAY_SECONDS = 2
+
+  /** Délky odpočtu, které nabízí Nastavení (docs/ai.md). */
+  val START_DELAY_CHOICES: List<Int> = listOf(1, 2, 3, 4, 5)
+
+  /**
+   * O kolik (podíl šířky záběru) smí kterýkoli roh rámečku ujet od začátku odpočtu — víc znamená,
+   * že uživatel ještě míří, a odpočet začne znovu (docs/ai.md).
+   */
+  const val START_MAX_DRIFT_RATIO = 0.06
+
+  /** Jak dlouho smí účtenka z detekce vypadnout, než se odpočet zruší (docs/ai.md). */
+  const val START_LOST_GRACE_MS = 300L
 }

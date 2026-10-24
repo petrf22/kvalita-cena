@@ -160,6 +160,9 @@
     <string name="settings_nearby_radius_1km">1 km</string>
     <string name="settings_nearby_radius_3km">3 km</string>
     <string name="settings_nearby_radius_5km">5 km</string>
+    <string name="settings_capture_delay">Odliczanie przed skanowaniem paragonu</string>
+    <string name="settings_capture_delay_option">%1$d s</string>
+    <string name="settings_capture_delay_note">Jak długo paragon musi być nieruchomo widoczny, zanim zapisze się pierwsza część. Krótsze odliczanie jest szybsze, dłuższe daje więcej czasu na ustawienie telefonu.</string>
     <string name="settings_about_link">Co robi aplikacja, skąd pochodzą dane i kto ją prowadzi</string>
     <string name="settings_feedback_link">Wyślij opinię o aplikacji</string>
     <string name="settings_legal_title">Dokumenty prawne</string>
@@ -559,14 +562,24 @@
     <string name="receipt_notification_title">Paragon gotowy do sprawdzenia</string>
     <string name="receipt_notification_text">Do sprawdzenia: %1$d. Dotknij, aby potwierdzić ceny.</string>
     <!-- Účtenky — snímání, kontrola před odesláním, souhlas -->
-    <string name="receipt_capture_hint_find">Skieruj telefon na górną krawędź paragonu</string>
+    <string name="receipt_capture_hint_find">Wyrównaj górną krawędź paragonu z poziomą linią</string>
     <string name="receipt_capture_hint_retake">Skieruj telefon na część, którą chcesz sfotografować ponownie</string>
     <string name="receipt_capture_hint_hold_still">Trzymaj telefon nieruchomo</string>
+    <string name="receipt_capture_hint_starting">Nie ruszaj — skanowanie za chwilę się zacznie</string>
     <string name="receipt_capture_hint_move_down">Przesuń telefon niżej</string>
     <string name="receipt_capture_hint_move_back">Za szybko — przesuń telefon trochę wyżej</string>
     <string name="receipt_capture_hint_limit">Paragon nie może mieć więcej części — dotknij Gotowe</string>
     <string name="receipt_capture_parts">Zrobione części: %1$d</string>
     <string name="receipt_capture_undo">Usuń ostatnią część</string>
+    <string name="receipt_capture_tips_open">Jak to zrobić</string>
+    <string name="receipt_capture_tips_title">Jak zeskanować paragon</string>
+    <string name="receipt_capture_tips_ok">Rozumiem</string>
+    <string name="receipt_capture_tip_number">%1$d.</string>
+    <string name="receipt_capture_tip_surface">Połóż paragon płasko na ciemnym podłożu i obciąż końce, żeby się nie zwijał.</string>
+    <string name="receipt_capture_tip_align">Trzymaj telefon równo nad papierem. Wyrównaj górną krawędź paragonu z poziomą linią — po bokach powinien być widoczny kawałek podłoża.</string>
+    <string name="receipt_capture_tip_wait">Nie ruszaj, dopóki u góry nie skończy się odliczanie. Wtedy zapisze się pierwsza część, a telefon zawibruje.</string>
+    <string name="receipt_capture_tip_move">Powoli przesuwaj telefon w dół, bez przechylania. Kolejne części zapisują się same.</string>
+    <string name="receipt_capture_tip_end">Na końcu przesuń telefon trochę za dolną krawędź paragonu albo zrób ostatni fragment ręcznie. Potem stuknij Gotowe.</string>
     <string name="receipt_capture_shutter">Zrób zdjęcie ręcznie</string>
     <string name="receipt_capture_done">Gotowe</string>
     <string name="receipt_capture_import">Wczytaj z galerii (debug)</string>

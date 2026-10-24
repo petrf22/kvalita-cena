@@ -18,6 +18,9 @@ data class FrameResult(
   val hint: CaptureHint,
   val progress: Float,
   val partCount: Int,
+  /** Průběh odpočtu před prvním dílem (0–1), smysl má jen při [startCountdownRunning]. */
+  val startProgress: Float,
+  val startCountdownRunning: Boolean,
 )
 
 /**
@@ -33,13 +36,22 @@ class ReceiptFrameAnalyzer(
   private val onPart: (EncodedPart) -> Unit,
   initialParts: Int = 0,
   maxParts: Int = CaptureThresholds.MAX_PARTS,
+  startDelayMillis: Long = CaptureThresholds.DEFAULT_START_DELAY_SECONDS * 1000L,
 ) : ImageAnalysis.Analyzer {
 
-  private val tracker = CoverageTracker(maxParts = maxParts).also { it.reset(initialParts) }
+  private val tracker = CoverageTracker(maxParts = maxParts, startDelayMillis = startDelayMillis)
+    .also { it.reset(initialParts) }
 
   /** Automatické ukládání vypnuté — ruční spoušť, nebo „nafotit znovu" jednoho dílu už hotové. */
   @Volatile
   var autoCapture: Boolean = true
+
+  /**
+   * Snímání dočasně stojí (přes náhled je otevřený návod) — nic se neuloží a odpočet před prvním
+   * dílem se nerozběhne, ať se díl neuloží za dialogem, který uživatel zrovna čte.
+   */
+  @Volatile
+  var paused: Boolean = false
 
   @Volatile
   private var pendingReset: Int? = null
@@ -99,7 +111,12 @@ class ReceiptFrameAnalyzer(
       trackShift(small)
 
       val found = quad != null
-      if (autoCapture && quad != null && tracker.shouldCapture(found, sharp)) {
+      if (paused) {
+        tracker.cancelStart()
+      } else {
+        tracker.updateStart(quad, small.cols(), image.imageInfo.timestamp)
+      }
+      if (autoCapture && !paused && quad != null && tracker.shouldCapture(found, sharp)) {
         val fullQuad = quad.scaled(1.0 / scale)
         val (width, height) = straightenedSize(fullQuad)
         val sensorQuad = fullQuad.map { uprightToSensor(it, rotation, sensorWidth, sensorHeight) }
@@ -128,6 +145,8 @@ class ReceiptFrameAnalyzer(
           hint = tracker.hint(found, sharp),
           progress = tracker.progressToNextPart,
           partCount = tracker.partCount,
+          startProgress = tracker.startProgress,
+          startCountdownRunning = tracker.startCountdownRunning,
         ),
       )
       small.release()

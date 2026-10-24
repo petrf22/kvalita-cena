@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -33,6 +34,7 @@ import cz.kvalitacena.network.CountryInfo
 import cz.kvalitacena.ui.common.KNOWN_COUNTRIES
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.countryNameRes
+import cz.kvalitacena.ui.receipt.capture.CaptureThresholds
 import kotlinx.coroutines.launch
 
 /**
@@ -46,6 +48,9 @@ import kotlinx.coroutines.launch
  * Přepínač zobrazovací měny (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna") je druhá,
  * nezávislá volba — [DisplayCurrency] `null` (měna obchodu) je výchozí, appka pak vůbec
  * neposílá X-Display-Currency a nic nepřepočítává ([DisplayCurrencyStore]).
+ *
+ * Odpočet před snímáním účtenky (docs/ai.md, `START_DELAY_CHOICES`) je jen lokální volba
+ * v `ReceiptPrefs` — na server nejde a platí od příštího otevření snímání.
  */
 @Composable
 fun SettingsScreen(
@@ -121,6 +126,25 @@ fun SettingsScreen(
     Spacer()
     Text(
       stringResource(R.string.settings_nearby_radius_note),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer()
+    HorizontalDivider()
+    Spacer()
+
+    val receiptPrefs = AppContainer.receiptPrefs
+    var captureDelay by remember { mutableIntStateOf(receiptPrefs.captureStartDelaySeconds) }
+    CaptureDelayDropdown(
+      selected = captureDelay,
+      onSelect = {
+        receiptPrefs.captureStartDelaySeconds = it
+        captureDelay = it
+      },
+    )
+    Spacer()
+    Text(
+      stringResource(R.string.settings_capture_delay_note),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -291,6 +315,34 @@ private fun NearbyRadiusDropdown(selected: NearbyRadius, onSelect: (NearbyRadius
           text = { Text(stringResource(option.labelRes)) },
           onClick = {
             onSelect(option)
+            expanded = false
+          },
+        )
+      }
+    }
+  }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CaptureDelayDropdown(selected: Int, onSelect: (Int) -> Unit) {
+  var expanded by remember { mutableStateOf(false) }
+
+  ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+    SingleLineTextField(
+      value = stringResource(R.string.settings_capture_delay_option, selected),
+      onValueChange = {},
+      readOnly = true,
+      label = stringResource(R.string.settings_capture_delay),
+      trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+      modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+    )
+    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+      CaptureThresholds.START_DELAY_CHOICES.forEach { seconds ->
+        DropdownMenuItem(
+          text = { Text(stringResource(R.string.settings_capture_delay_option, seconds)) },
+          onClick = {
+            onSelect(seconds)
             expanded = false
           },
         )

@@ -160,6 +160,9 @@
     <string name="settings_nearby_radius_1km">1 km</string>
     <string name="settings_nearby_radius_3km">3 km</string>
     <string name="settings_nearby_radius_5km">5 km</string>
+    <string name="settings_capture_delay">Odpočet pred snímaním účtenky</string>
+    <string name="settings_capture_delay_option">%1$d s</string>
+    <string name="settings_capture_delay_note">Ako dlho musí byť účtenka v pokoji vidieť, kým sa uloží prvý diel. Kratší odpočet je rýchlejší, dlhší dá viac času telefón zarovnať.</string>
     <string name="settings_about_link">Čo appka robí, odkiaľ berie dáta a kto ju prevádzkuje</string>
     <string name="settings_feedback_link">Napísať spätnú väzbu appke</string>
     <string name="settings_legal_title">Právne dokumenty</string>
@@ -559,14 +562,24 @@
     <string name="receipt_notification_title">Účtenka je pripravená na kontrolu</string>
     <string name="receipt_notification_text">Na kontrolu: %1$d. Ťuknite a potvrďte ceny.</string>
     <!-- Účtenky — snímání, kontrola před odesláním, souhlas -->
-    <string name="receipt_capture_hint_find">Namierte telefón na horný okraj účtenky</string>
+    <string name="receipt_capture_hint_find">Zarovnajte horný okraj účtenky s vodorovnou čiarou</string>
     <string name="receipt_capture_hint_retake">Namierte telefón na diel, ktorý chcete odfotiť znova</string>
     <string name="receipt_capture_hint_hold_still">Držte telefón v pokoji</string>
+    <string name="receipt_capture_hint_starting">Držte v pokoji — snímanie o chvíľu začne</string>
     <string name="receipt_capture_hint_move_down">Posuňte telefón nižšie</string>
     <string name="receipt_capture_hint_move_back">Príliš rýchlo — vráťte telefón kúsok vyššie</string>
     <string name="receipt_capture_hint_limit">Viac dielov jedna účtenka mať nemôže — ťuknite na Hotovo</string>
     <string name="receipt_capture_parts">Odfotené diely: %1$d</string>
     <string name="receipt_capture_undo">Zmazať posledný diel</string>
+    <string name="receipt_capture_tips_open">Ako na to</string>
+    <string name="receipt_capture_tips_title">Ako naskenovať účtenku</string>
+    <string name="receipt_capture_tips_ok">Rozumiem</string>
+    <string name="receipt_capture_tip_number">%1$d.</string>
+    <string name="receipt_capture_tip_surface">Položte účtenku narovno na tmavú podložku a konce zaťažte, aby sa nekrútila.</string>
+    <string name="receipt_capture_tip_align">Držte telefón rovno nad papierom. Horný okraj účtenky zarovnajte s vodorovnou čiarou — po stranách má zostať vidieť kus podložky.</string>
+    <string name="receipt_capture_tip_wait">Vydržte v pokoji, kým hore nedobehne odpočet. Potom sa uloží prvý diel a telefón zavibruje.</string>
+    <string name="receipt_capture_tip_move">Pomaly posúvajte telefón nadol, bez nakláňania. Ďalšie diely sa ukladajú samy.</string>
+    <string name="receipt_capture_tip_end">Na konci dojdite kúsok za spodný okraj účtenky, alebo posledný kus odfoťte ručne. Potom ťuknite na Hotovo.</string>
     <string name="receipt_capture_shutter">Odfotiť ručne</string>
     <string name="receipt_capture_done">Hotovo</string>
     <string name="receipt_capture_import">Načítať z galérie (ladenie)</string>

@@ -103,6 +103,12 @@ z Material schématu a v tmavém režimu má vypadat stejně. Webový protějše
 protože hvězdičky vykresluje `nz-rate` a upozornění `nzType="warning"` — obojí si barvu
 řeší samo uvnitř ng-zorro.
 
+Druhá vědomá výjimka je **kresba přes náhled kamery** (vodítko a animace před snímáním účtenky,
+`ui/receipt/capture/CaptureGuide.kt`): bílá s poloprůhledným černým stínem. Podklad tu není
+povrch appky, ale obraz z kamery — a návod ke snímání chce tmavou podložku, takže barva podle
+tématu (v tmavém režimu tmavá) by na ní zmizela. Rámeček nalezené účtenky zůstává
+`colorScheme.primary`.
+
 **`#1890ff` z předkompilovaného CSS ng-zorro** je známá nekonzistence popsaná v
 `docs/branding.md` — tenhle dokument ji neřeší ani nepřebíjí.
 
