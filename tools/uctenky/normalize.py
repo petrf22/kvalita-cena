@@ -23,8 +23,9 @@ from decimal import Decimal
 # jinak tvar částky. Plošná záměna přes celý řádek by mrzačila názvy zboží.
 _D = "[0-9Oo]"
 
-# 986,20 | 1 369,20 | -79,00 | 986.20 (mezera i nedělitelná mezera jako oddělovač tisíců)
-AMOUNT = rf"-?{_D}{{1,3}}(?:[  ]{_D}{{3}})*[.,]{_D}{{2}}"
+# 986,20 | 1 369,20 | 1526,70 | -79,00 | 986.20 (mezera i nedělitelná mezera jako oddělovač
+# tisíců, ale i bez něj — pokladna, která mezeru netiskne, by jinak z 1526,70 dala jen 526,70)
+AMOUNT = rf"-?(?:{_D}{{1,3}}(?:[  ]{_D}{{3}})+|{_D}+)[.,]{_D}{{2}}"
 AMOUNT_RE = re.compile(AMOUNT)
 
 _ZERO_LIKE = str.maketrans({"O": "0", "o": "0"})
