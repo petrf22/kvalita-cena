@@ -20,6 +20,19 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.11.0", date: "2026-10-24", sections: [
+      { title: "Přidáno", items: [
+        { text: "Před snímáním účtenky appka ukáže čáru, ke které srovnat horní okraj, a animací naznačí posun telefonu dolů; první díl se uloží až po krátkém odpočtu v klidu, takže už nevyjde nakloněný ani s kusem stolu", parts: ["mobil"] },
+        { text: "Délku odpočtu před snímáním účtenky jde nastavit v Nastavení — 1 až 5 s, výchozí 2 s", parts: ["mobil"] },
+        { text: "Při prvním snímání účtenky se ukáže krátký návod, pak je k dispozici pod tlačítkem „Jak na to\"", parts: ["mobil"] },
+      ] },
+      { title: "Opraveno", items: [
+        { text: "Zakrytí citlivých údajů na účtence zakryje i okrajový pruh pixelů, který dřív mohl zůstat vidět", parts: ["web"] },
+        { text: "U váhového zboží z účtenky bez přečteného množství se už nezapíše zaplacená částka jako cena za kilogram", parts: ["server"] },
+        { text: "Účtenka nad 1000 Kč z pokladny, která netiskne mezeru v tisících, se přečte celá — se součtem i drahými položkami", parts: ["server"] },
+        { text: "Po smazání nafoceného dílu účtenky snímání správně ví, kolik dílů už má", parts: ["mobil"] },
+      ] },
+  ] },
   { version: "0.10.0", date: "2026-10-21", sections: [
       { title: "Přidáno", items: [
         { text: "Účtenky: celou účtenku jde nafotit (mobil) nebo nahrát (web), appka z ní přečte zboží a ceny a uživatel je jen zkontroluje a potvrdí; citlivé údaje se dají před odesláním zakrýt", parts: ["server", "web", "mobil"] },
