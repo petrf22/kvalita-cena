@@ -42,12 +42,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -74,9 +77,11 @@ private val ANALYSIS_RESOLUTION = Size(1600, 1200)
 
 /**
  * Snímání účtenky (docs/rozvoj.md, „Sběr snímků na klientovi"): živý náhled s rámečkem nalezené
- * účtenky, průběhem k dalšímu dílu a pokynem, díly se ukládají samy. Ruční spoušť funguje vždy —
- * i když detekce nic nenajde, nebo v emulátoru s virtuální kamerou. V debug buildu jde díly
- * načíst i z galerie (ladění bez fyzické účtenky).
+ * účtenky, průběhem k dalšímu dílu a pokynem, díly se ukládají samy. Před prvním dílem ukazuje
+ * vodítko pro horní okraj ([StartGuideOverlay]) a odpočet (docs/ai.md, `START_*`); při prvním
+ * snímání se sám otevře návod ([CaptureTipsDialog]). Ruční spoušť funguje vždy — i když detekce
+ * nic nenajde, nebo v emulátoru s virtuální kamerou. V debug buildu jde díly načíst i z galerie
+ * (ladění bez fyzické účtenky).
  */
 @Composable
 fun ReceiptCaptureScreen(
@@ -96,7 +101,11 @@ fun ReceiptCaptureScreen(
   }
 
   val viewModel: ReceiptCaptureViewModel = viewModel(
-    factory = viewModelFactory { initializer { ReceiptCaptureViewModel(AppContainer.receiptDraft, retakeIndex) } },
+    factory = viewModelFactory {
+      initializer {
+        ReceiptCaptureViewModel(AppContainer.receiptDraft, retakeIndex, AppContainer.receiptPrefs.captureStartDelaySeconds)
+      }
+    },
   )
   val context = LocalContext.current
   var hasCameraPermission by remember {
@@ -110,6 +119,22 @@ fun ReceiptCaptureScreen(
   }
   val online by AppContainer.networkMonitor.online.collectAsState()
   val draft by viewModel.draft.collectAsState()
+  var showTips by rememberSaveable {
+    mutableStateOf(!viewModel.isRetake && !AppContainer.receiptPrefs.captureTipsSeen)
+  }
+  // Návod až nad běžící kamerou — přes systémový dotaz na oprávnění by ho nikdo nečetl.
+  val tipsVisible = showTips && hasCameraPermission
+  LaunchedEffect(tipsVisible) {
+    viewModel.analyzer.paused = tipsVisible
+  }
+  if (tipsVisible) {
+    CaptureTipsDialog(
+      onDismiss = {
+        AppContainer.receiptPrefs.captureTipsSeen = true
+        showTips = false
+      },
+    )
+  }
 
   LaunchedEffect(Unit) {
     if (!hasCameraPermission) permissionLauncher.launch(Manifest.permission.CAMERA)
@@ -160,20 +185,40 @@ fun ReceiptCaptureScreen(
       partCount = draft.parts.size,
       canShoot = hasCameraPermission && !viewModel.cameraError,
       onImport = importFromGallery,
+      onShowTips = { showTips = true },
       onDone = onDone,
     )
   }
 }
 
-/** Náhled kamery s rámečkem účtenky, pokynem a průběhem k dalšímu dílu. */
+/**
+ * Náhled kamery s rámečkem účtenky, pokynem a průběhem — před prvním dílem s vodítkem a průběhem
+ * odpočtu, potom s průběhem k dalšímu dílu.
+ */
 @Composable
 private fun CameraWithOverlay(viewModel: ReceiptCaptureViewModel) {
   val frame by viewModel.frame.collectAsState()
   val primary = MaterialTheme.colorScheme.primary
   val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
+  val beforeStart = (frame?.partCount ?: 0) == 0
+
+  // Konec odpočtu = uložený první díl: zavibrování řekne „teď posouvejte", i když se uživatel
+  // dívá na účtenku, ne na displej. Jen přechod 0 → 1 z analyzátoru, ne návrat do rozdělaného
+  // konceptu (první snímek pak hlásí rovnou uložené díly).
+  val haptic = LocalHapticFeedback.current
+  var lastPartCount by remember { mutableStateOf<Int?>(null) }
+  val partCount = frame?.partCount
+  LaunchedEffect(partCount) {
+    if (partCount == null) return@LaunchedEffect
+    if (lastPartCount == 0 && partCount == 1) haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+    lastPartCount = partCount
+  }
 
   Box(Modifier.fillMaxSize()) {
     ReceiptCameraPreview(viewModel)
+    if (beforeStart && !viewModel.isRetake) {
+      StartGuideOverlay(receiptFound = frame?.quad != null, modifier = Modifier.fillMaxSize())
+    }
     Canvas(Modifier.fillMaxSize()) {
       val current = frame ?: return@Canvas
       val quad = current.quad ?: return@Canvas
@@ -206,8 +251,13 @@ private fun CameraWithOverlay(viewModel: ReceiptCaptureViewModel) {
         )
       }
       val current = frame
-      if (!viewModel.isRetake && current != null && current.partCount > 0) {
-        LinearProgressIndicator(progress = { current.progress }, modifier = Modifier.fillMaxWidth())
+      when {
+        // Lišta odpočtu je vidět prázdná od začátku, ať je jasné, že na něco čeká — plnit se
+        // začne, až účtenka v klidu drží v záběru, a při ztrátě nebo pohybu spadne zpět na nulu.
+        beforeStart ->
+          LinearProgressIndicator(progress = { current?.startProgress ?: 0f }, modifier = Modifier.fillMaxWidth())
+        !viewModel.isRetake && current != null ->
+          LinearProgressIndicator(progress = { current.progress }, modifier = Modifier.fillMaxWidth())
       }
     }
   }
@@ -218,6 +268,7 @@ private fun hintText(hint: CaptureHint, retake: Boolean): String = stringResourc
   when (hint) {
     CaptureHint.FIND_RECEIPT -> if (retake) R.string.receipt_capture_hint_retake else R.string.receipt_capture_hint_find
     CaptureHint.HOLD_STILL -> R.string.receipt_capture_hint_hold_still
+    CaptureHint.STARTING -> R.string.receipt_capture_hint_starting
     CaptureHint.MOVE_DOWN -> R.string.receipt_capture_hint_move_down
     CaptureHint.MOVE_BACK_UP -> R.string.receipt_capture_hint_move_back
     CaptureHint.LIMIT_REACHED -> R.string.receipt_capture_hint_limit
@@ -230,6 +281,7 @@ private fun CaptureControls(
   partCount: Int,
   canShoot: Boolean,
   onImport: (() -> Unit)?,
+  onShowTips: () -> Unit,
   onDone: () -> Unit,
 ) {
   Column(
@@ -246,9 +298,15 @@ private fun CaptureControls(
           style = MaterialTheme.typography.bodyMedium,
           modifier = Modifier.weight(1f),
         )
+        // Návod patří k začátku, smazání dílu až k rozdělanému snímání — střídají se na jednom
+        // místě, ať se řádek na úzkém displeji nepřeplní.
         if (partCount > 0) {
           TextButton(onClick = viewModel::undoLastPart, enabled = !viewModel.processing) {
             Text(stringResource(R.string.receipt_capture_undo))
+          }
+        } else {
+          TextButton(onClick = onShowTips) {
+            Text(stringResource(R.string.receipt_capture_tips_open))
           }
         }
       }

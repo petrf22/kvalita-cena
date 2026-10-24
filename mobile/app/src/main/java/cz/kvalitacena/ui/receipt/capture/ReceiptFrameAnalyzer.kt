@@ -3,6 +3,7 @@ package cz.kvalitacena.ui.receipt.capture
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import cz.kvalitacena.crash.AppLog
+import java.util.concurrent.atomic.AtomicReference
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 
@@ -18,6 +19,9 @@ data class FrameResult(
   val hint: CaptureHint,
   val progress: Float,
   val partCount: Int,
+  /** Průběh odpočtu před prvním dílem (0–1); 0, dokud odpočet neběží ([startCountdownRunning]). */
+  val startProgress: Float,
+  val startCountdownRunning: Boolean,
 )
 
 /**
@@ -33,16 +37,29 @@ class ReceiptFrameAnalyzer(
   private val onPart: (EncodedPart) -> Unit,
   initialParts: Int = 0,
   maxParts: Int = CaptureThresholds.MAX_PARTS,
+  startDelayMillis: Long = CaptureThresholds.DEFAULT_START_DELAY_SECONDS * 1000L,
 ) : ImageAnalysis.Analyzer {
 
-  private val tracker = CoverageTracker(maxParts = maxParts).also { it.reset(initialParts) }
+  private val tracker = CoverageTracker(maxParts = maxParts, startDelayMillis = startDelayMillis)
+    .also { it.reset(initialParts) }
 
   /** Automatické ukládání vypnuté — ruční spoušť, nebo „nafotit znovu" jednoho dílu už hotové. */
   @Volatile
   var autoCapture: Boolean = true
 
+  /**
+   * Snímání dočasně stojí (přes náhled je otevřený návod) — nic se neuloží a odpočet před prvním
+   * dílem se nerozběhne, ať se díl neuloží za dialogem, který uživatel zrovna čte.
+   */
   @Volatile
-  private var pendingReset: Int? = null
+  var paused: Boolean = false
+
+  /**
+   * Reset z hlavního vlákna pro vlákno analyzátoru. Atomické převzetí (`getAndSet`) — při
+   * čtení a nulování zvlášť by se reset, který dorazí mezi nimi, ztratil a tracker by si
+   * myslel, že má jiný počet dílů než koncept (třeba po smazání jediného dílu bez odpočtu).
+   */
+  private val pendingReset = AtomicReference<Int?>(null)
 
   private var yBytes = ByteArray(0)
   private var previous: Mat? = null
@@ -53,7 +70,7 @@ class ReceiptFrameAnalyzer(
    * díl se počítá od posledního uloženého, posun od nuly.
    */
   fun resetParts(parts: Int) {
-    pendingReset = parts
+    pendingReset.set(parts)
   }
 
   override fun analyze(image: ImageProxy) {
@@ -68,10 +85,7 @@ class ReceiptFrameAnalyzer(
   }
 
   private fun process(image: ImageProxy) {
-    pendingReset?.let {
-      tracker.reset(it)
-      pendingReset = null
-    }
+    pendingReset.getAndSet(null)?.let { tracker.reset(it) }
 
     val sensorWidth = image.width
     val sensorHeight = image.height
@@ -99,7 +113,12 @@ class ReceiptFrameAnalyzer(
       trackShift(small)
 
       val found = quad != null
-      if (autoCapture && quad != null && tracker.shouldCapture(found, sharp)) {
+      if (paused) {
+        tracker.cancelStart()
+      } else {
+        tracker.updateStart(quad, small.cols(), image.imageInfo.timestamp)
+      }
+      if (autoCapture && !paused && quad != null && tracker.shouldCapture(found, sharp)) {
         val fullQuad = quad.scaled(1.0 / scale)
         val (width, height) = straightenedSize(fullQuad)
         val sensorQuad = fullQuad.map { uprightToSensor(it, rotation, sensorWidth, sensorHeight) }
@@ -128,6 +147,8 @@ class ReceiptFrameAnalyzer(
           hint = tracker.hint(found, sharp),
           progress = tracker.progressToNextPart,
           partCount = tracker.partCount,
+          startProgress = tracker.startProgress,
+          startCountdownRunning = tracker.startCountdownRunning,
         ),
       )
       small.release()

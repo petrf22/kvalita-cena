@@ -252,6 +252,11 @@ class NormalizeTest(unittest.TestCase):
     def test_castka_s_mezerou_v_tisicich(self):
         self.assertEqual(str(normalize.parse_amount("1 369,20")), "1369.20")
 
+    def test_castka_nad_tisic_bez_oddelovace(self):
+        self.assertEqual(normalize.AMOUNT_RE.findall("CELKEM 1526,70"), ["1526,70"])
+        line = lines_mod.parse_item_lines(["TELEVIZE 12990,00 A"]).lines[0]
+        self.assertEqual((line.kind, line.line_total), (lines_mod.ITEM, Decimal("12990.00")))
+
     def test_pismeno_O_misto_nuly_jen_v_cisle(self):
         self.assertEqual(str(normalize.parse_amount("98O,2O")), "980.20")
 

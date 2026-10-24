@@ -27,6 +27,7 @@ import kotlinx.coroutines.withContext
 class ReceiptCaptureViewModel(
   private val draftStore: ReceiptDraftStore,
   private val retakeIndex: Int?,
+  startDelaySeconds: Int,
 ) : ViewModel() {
 
   val isRetake: Boolean get() = retakeIndex != null
@@ -56,6 +57,7 @@ class ReceiptCaptureViewModel(
     onPart = ::onAutoPart,
     initialParts = if (retakeIndex != null) 0 else draftStore.draft.value.parts.size,
     maxParts = if (retakeIndex != null) 1 else CaptureThresholds.MAX_PARTS,
+    startDelayMillis = startDelaySeconds * 1000L,
   )
 
   /**

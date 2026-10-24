@@ -160,6 +160,9 @@
     <string name="settings_nearby_radius_1km">1 km</string>
     <string name="settings_nearby_radius_3km">3 km</string>
     <string name="settings_nearby_radius_5km">5 km</string>
+    <string name="settings_capture_delay">Countdown vor dem Scannen eines Kassenbons</string>
+    <string name="settings_capture_delay_option">%1$d s</string>
+    <string name="settings_capture_delay_note">Wie lange der Kassenbon ruhig im Bild sein muss, bevor der erste Teil gespeichert wird. Ein kürzerer Countdown ist schneller, ein längerer lässt mehr Zeit, das Handy auszurichten.</string>
     <string name="settings_about_link">Was die App macht, woher die Daten stammen und wer sie betreibt</string>
     <string name="settings_feedback_link">Feedback zur App senden</string>
     <string name="settings_legal_title">Rechtliche Dokumente</string>
@@ -561,14 +564,24 @@
     <string name="receipt_notification_title">Kassenbon bereit zur Prüfung</string>
     <string name="receipt_notification_text">Zu prüfen: %1$d. Tippen Sie, um die Preise zu bestätigen.</string>
     <!-- Účtenky — snímání, kontrola před odesláním, souhlas -->
-    <string name="receipt_capture_hint_find">Richten Sie das Handy auf den oberen Rand des Kassenbons</string>
+    <string name="receipt_capture_hint_find">Richten Sie den oberen Rand des Kassenbons an der waagerechten Linie aus</string>
     <string name="receipt_capture_hint_retake">Richten Sie das Handy auf den Teil, den Sie neu aufnehmen möchten</string>
     <string name="receipt_capture_hint_hold_still">Halten Sie das Handy ruhig</string>
+    <string name="receipt_capture_hint_starting">Ruhig halten — das Scannen beginnt gleich</string>
     <string name="receipt_capture_hint_move_down">Bewegen Sie das Handy nach unten</string>
     <string name="receipt_capture_hint_move_back">Zu schnell — bewegen Sie das Handy ein Stück zurück nach oben</string>
     <string name="receipt_capture_hint_limit">Mehr Teile sind nicht möglich — tippen Sie auf Fertig</string>
     <string name="receipt_capture_parts">Aufgenommene Teile: %1$d</string>
     <string name="receipt_capture_undo">Letzten Teil löschen</string>
+    <string name="receipt_capture_tips_open">So geht\'s</string>
+    <string name="receipt_capture_tips_title">So scannen Sie einen Kassenbon</string>
+    <string name="receipt_capture_tips_ok">Verstanden</string>
+    <string name="receipt_capture_tip_number">%1$d.</string>
+    <string name="receipt_capture_tip_surface">Legen Sie den Kassenbon glatt auf eine dunkle Unterlage und beschweren Sie die Enden, damit er sich nicht einrollt.</string>
+    <string name="receipt_capture_tip_align">Halten Sie das Handy gerade über das Papier. Richten Sie den oberen Rand des Kassenbons an der waagerechten Linie aus — an beiden Seiten soll etwas Unterlage sichtbar bleiben.</string>
+    <string name="receipt_capture_tip_wait">Halten Sie still, bis sich der Balken oben gefüllt hat. Dann wird der erste Teil gespeichert und das Handy vibriert.</string>
+    <string name="receipt_capture_tip_move">Bewegen Sie das Handy langsam nach unten, ohne es zu kippen. Die weiteren Teile werden automatisch gespeichert.</string>
+    <string name="receipt_capture_tip_end">Fahren Sie am Ende ein Stück über den unteren Rand des Kassenbons hinaus oder fotografieren Sie das letzte Stück manuell. Tippen Sie dann auf Fertig.</string>
     <string name="receipt_capture_shutter">Manuell auslösen</string>
     <string name="receipt_capture_done">Fertig</string>
     <string name="receipt_capture_import">Aus Galerie laden (Debug)</string>

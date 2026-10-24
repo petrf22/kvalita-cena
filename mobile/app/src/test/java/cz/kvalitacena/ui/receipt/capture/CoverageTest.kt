@@ -8,11 +8,80 @@ import org.junit.Test
 
 class CoverageTest {
 
+  private val quad = Quad(Pt(100.0, 50.0), Pt(380.0, 50.0), Pt(380.0, 600.0), Pt(100.0, 600.0))
+
+  private fun ms(value: Long) = value * 1_000_000L
+
+  private fun Quad.shiftedX(dx: Double) = map { Pt(it.x + dx, it.y) }
+
   @Test
-  fun prvniDilHnedJakJeUctenkaOstra() {
-    val tracker = CoverageTracker()
-    assertFalse(tracker.shouldCapture(receiptFound = false, sharp = true))
-    assertFalse(tracker.shouldCapture(receiptFound = true, sharp = false))
+  fun prvniDilAzPoOdpoctu() {
+    val tracker = CoverageTracker(startDelayMillis = 2000)
+    tracker.updateStart(quad, frameWidth = 480, timestampNanos = ms(0))
+    assertTrue(tracker.startCountdownRunning)
+    assertFalse("hned po nalezení se neukládá", tracker.shouldCapture(receiptFound = true, sharp = true))
+
+    tracker.updateStart(quad, frameWidth = 480, timestampNanos = ms(1000))
+    assertEquals(0.5f, tracker.startProgress, 1e-6f)
+    assertFalse(tracker.shouldCapture(receiptFound = true, sharp = true))
+
+    tracker.updateStart(quad, frameWidth = 480, timestampNanos = ms(2000))
+    assertFalse("rozmazaný snímek ani po odpočtu", tracker.shouldCapture(receiptFound = true, sharp = false))
+    assertTrue(tracker.shouldCapture(receiptFound = true, sharp = true))
+
+    tracker.onPartSaved()
+    assertFalse(tracker.startCountdownRunning)
+    assertEquals(0f, tracker.startProgress, 0f)
+  }
+
+  @Test
+  fun odpocetZacneZnovuKdyzRamecekUjede() {
+    val tracker = CoverageTracker(startDelayMillis = 2000)
+    tracker.updateStart(quad, frameWidth = 480, timestampNanos = ms(0))
+    // Třesoucí se ruka: 10 px z 480 je pod 6 % — odpočet běží dál.
+    tracker.updateStart(quad.shiftedX(10.0), frameWidth = 480, timestampNanos = ms(1500))
+    assertEquals(0.75f, tracker.startProgress, 1e-6f)
+    // Uživatel ještě míří: 40 px je přes 6 % šířky záběru.
+    tracker.updateStart(quad.shiftedX(40.0), frameWidth = 480, timestampNanos = ms(1600))
+    assertEquals(0f, tracker.startProgress, 0f)
+    tracker.updateStart(quad.shiftedX(40.0), frameWidth = 480, timestampNanos = ms(3600))
+    assertTrue(tracker.shouldCapture(receiptFound = true, sharp = true))
+  }
+
+  @Test
+  fun kratkyVypadekDetekceOdpocetNeshodi() {
+    val tracker = CoverageTracker(startDelayMillis = 2000)
+    tracker.updateStart(quad, frameWidth = 480, timestampNanos = ms(0))
+    tracker.updateStart(null, frameWidth = 480, timestampNanos = ms(200))
+    assertTrue("jeden snímek bez rámečku", tracker.startCountdownRunning)
+    tracker.updateStart(quad, frameWidth = 480, timestampNanos = ms(400))
+    assertEquals(0.2f, tracker.startProgress, 1e-6f)
+
+    tracker.updateStart(null, frameWidth = 480, timestampNanos = ms(800))
+    assertFalse("účtenka zmizela na déle než 300 ms", tracker.startCountdownRunning)
+    tracker.updateStart(quad, frameWidth = 480, timestampNanos = ms(900))
+    assertEquals(0f, tracker.startProgress, 0f)
+  }
+
+  @Test
+  fun pozastaveniAResetOdpocetZrusi() {
+    val tracker = CoverageTracker(startDelayMillis = 2000)
+    tracker.updateStart(quad, frameWidth = 480, timestampNanos = ms(0))
+    tracker.cancelStart()
+    assertFalse(tracker.startCountdownRunning)
+
+    tracker.updateStart(quad, frameWidth = 480, timestampNanos = ms(100))
+    tracker.reset()
+    assertFalse(tracker.startCountdownRunning)
+  }
+
+  @Test
+  fun dalsiDilyOdpocetNemaji() {
+    val tracker = CoverageTracker(startDelayMillis = 2000)
+    tracker.onPartSaved()
+    tracker.updateStart(quad, frameWidth = 480, timestampNanos = ms(0))
+    assertFalse(tracker.startCountdownRunning)
+    tracker.addFrameShift(dyPixels = -400.0, frameHeight = 640, response = 0.5)
     assertTrue(tracker.shouldCapture(receiptFound = true, sharp = true))
   }
 
@@ -86,7 +155,8 @@ class CoverageTest {
   fun pokynyPodleStavu() {
     val tracker = CoverageTracker()
     assertEquals(CaptureHint.FIND_RECEIPT, tracker.hint(receiptFound = false, sharp = true))
-    assertEquals(CaptureHint.HOLD_STILL, tracker.hint(receiptFound = true, sharp = true))
+    assertEquals(CaptureHint.HOLD_STILL, tracker.hint(receiptFound = true, sharp = false))
+    assertEquals(CaptureHint.STARTING, tracker.hint(receiptFound = true, sharp = true))
     tracker.onPartSaved()
     assertEquals(CaptureHint.MOVE_DOWN, tracker.hint(receiptFound = true, sharp = true))
     assertEquals(CaptureHint.MOVE_DOWN, tracker.hint(receiptFound = false, sharp = true))

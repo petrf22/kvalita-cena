@@ -3,6 +3,7 @@ package cz.kvalitacena.receipt
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import cz.kvalitacena.ui.receipt.capture.CaptureThresholds
 
 private const val PREFS_NAME = "kvalita_a_cena_receipts"
 private const val KEY_CONSENT_VERSION = "consent_version"
@@ -11,11 +12,14 @@ private const val KEY_SERVER_CONSENT_VERSION = "server_consent_version"
 private const val KEY_RECEIPTS_USED = "receipts_used"
 private const val KEY_NOTIFICATION_ASKED = "notification_permission_asked"
 private const val KEY_LAST_NOTIFIED_UNSEEN = "last_notified_unseen"
+private const val KEY_CAPTURE_START_DELAY = "capture_start_delay_seconds"
+private const val KEY_CAPTURE_TIPS_SEEN = "capture_tips_seen"
 
 /**
  * Lokální stav účtenek (docs/soukromi.md, „Účtenky"): odsouhlasená verze textu a volba
  * archivace, poslední známá verze ze serveru, jestli uživatel účtenky vůbec používá (jen pak
- * běží periodická kontrola) a na kolik neviděných účtenek už notifikace upozornila.
+ * běží periodická kontrola), na kolik neviděných účtenek už notifikace upozornila, délka
+ * odpočtu před snímáním a jestli už uživatel viděl návod ke snímání.
  * Nic z toho není citlivé — obsah nákupu se sem neukládá.
  */
 class ReceiptPrefs(context: Context) {
@@ -56,4 +60,16 @@ class ReceiptPrefs(context: Context) {
   var lastNotifiedUnseen: Int
     get() = prefs.getInt(KEY_LAST_NOTIFIED_UNSEEN, 0)
     set(value) = prefs.edit { putInt(KEY_LAST_NOTIFIED_UNSEEN, value) }
+
+  /** Odpočet před prvním dílem účtenky (docs/ai.md) — hodnota mimo nabídku se vrátí na výchozí. */
+  var captureStartDelaySeconds: Int
+    get() = prefs.getInt(KEY_CAPTURE_START_DELAY, CaptureThresholds.DEFAULT_START_DELAY_SECONDS)
+      .takeIf { it in CaptureThresholds.START_DELAY_CHOICES }
+      ?: CaptureThresholds.DEFAULT_START_DELAY_SECONDS
+    set(value) = prefs.edit { putInt(KEY_CAPTURE_START_DELAY, value) }
+
+  /** Návod ke snímání se sám otevře jen poprvé, pak je za tlačítkem „Jak na to". */
+  var captureTipsSeen: Boolean
+    get() = prefs.getBoolean(KEY_CAPTURE_TIPS_SEEN, false)
+    set(value) = prefs.edit { putBoolean(KEY_CAPTURE_TIPS_SEEN, value) }
 }

@@ -160,6 +160,9 @@
     <string name="settings_nearby_radius_1km">1 km</string>
     <string name="settings_nearby_radius_3km">3 km</string>
     <string name="settings_nearby_radius_5km">5 km</string>
+    <string name="settings_capture_delay">Countdown before scanning a receipt</string>
+    <string name="settings_capture_delay_option">%1$d s</string>
+    <string name="settings_capture_delay_note">How long the receipt has to be held still in view before the first part is saved. A shorter countdown is faster, a longer one gives you more time to line up the phone.</string>
     <string name="settings_about_link">What the app does, where the data comes from, and who runs it</string>
     <string name="settings_feedback_link">Send feedback about the app</string>
     <string name="settings_legal_title">Legal documents</string>
@@ -559,14 +562,24 @@
     <string name="receipt_notification_title">Receipt ready to review</string>
     <string name="receipt_notification_text">To review: %1$d. Tap to confirm the prices.</string>
     <!-- Účtenky — snímání, kontrola před odesláním, souhlas -->
-    <string name="receipt_capture_hint_find">Point the phone at the top of the receipt</string>
+    <string name="receipt_capture_hint_find">Line up the top edge of the receipt with the horizontal line</string>
     <string name="receipt_capture_hint_retake">Point the phone at the part you want to retake</string>
     <string name="receipt_capture_hint_hold_still">Hold the phone still</string>
+    <string name="receipt_capture_hint_starting">Hold still — scanning starts in a moment</string>
     <string name="receipt_capture_hint_move_down">Move the phone down</string>
     <string name="receipt_capture_hint_move_back">Too fast — move the phone back up a little</string>
     <string name="receipt_capture_hint_limit">A receipt cannot have more parts — tap Done</string>
     <string name="receipt_capture_parts">Parts captured: %1$d</string>
     <string name="receipt_capture_undo">Delete last part</string>
+    <string name="receipt_capture_tips_open">How to scan</string>
+    <string name="receipt_capture_tips_title">How to scan a receipt</string>
+    <string name="receipt_capture_tips_ok">Got it</string>
+    <string name="receipt_capture_tip_number">%1$d.</string>
+    <string name="receipt_capture_tip_surface">Lay the receipt flat on a dark surface and weigh down the ends so it doesn\'t curl.</string>
+    <string name="receipt_capture_tip_align">Hold the phone level above the paper. Line up the top edge of the receipt with the horizontal line — some of the surface should stay visible on both sides.</string>
+    <string name="receipt_capture_tip_wait">Hold still until the bar at the top fills up. The first part is then saved and the phone vibrates.</string>
+    <string name="receipt_capture_tip_move">Slowly move the phone down without tilting it. The next parts are saved automatically.</string>
+    <string name="receipt_capture_tip_end">At the end, move a little past the bottom edge of the receipt, or take the last bit manually. Then tap Done.</string>
     <string name="receipt_capture_shutter">Take photo manually</string>
     <string name="receipt_capture_done">Done</string>
     <string name="receipt_capture_import">Import from gallery (debug)</string>

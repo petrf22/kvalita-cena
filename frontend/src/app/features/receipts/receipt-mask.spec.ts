@@ -5,6 +5,7 @@ import {
   ReceiptPart,
   defaultBand,
   isUsableMask,
+  maskPixelRect,
   movePart,
   moveRect,
   rectFromPoints,
@@ -135,5 +136,21 @@ describe('scaledSize', () => {
   it('zmenší jen širší obrázek a zachová poměr stran', () => {
     expect(scaledSize(3200, 4000, 1600)).toEqual({ width: 1600, height: 2000 });
     expect(scaledSize(900, 3000, 1600)).toEqual({ width: 900, height: 3000 });
+  });
+});
+
+describe('maskPixelRect', () => {
+  it('zaokrouhlí okraje ven, i když šířka sama vychází celá', () => {
+    // Pravý okraj 15,9 — zaokrouhlená šířka 5 od x = 10 by sloupec 15 nechala odkrytý.
+    expect(maskPixelRect({ x: 10.9, y: 4.2, w: 5, h: 3 })).toEqual({ x: 10, y: 4, w: 6, h: 4 });
+  });
+
+  it('celé pixely nechá být', () => {
+    expect(maskPixelRect({ x: 0, y: 1600, w: 1000, h: 400 })).toEqual({
+      x: 0,
+      y: 1600,
+      w: 1000,
+      h: 400,
+    });
   });
 });

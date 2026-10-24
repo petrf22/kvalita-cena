@@ -487,6 +487,13 @@ služby `ReceiptService`, `ReceiptWorkerService`, `ReceiptMatchingService`,
 ne shodí dávku), `ProductStoreLabelService`, `ReceiptImageRetentionService` (denně, 30 dní).
 Testy `ReceiptFlowIntegrationTest` (Testcontainers), `ReceiptPriceRowsTest`.
 
+**Snímání na mobilu:** první díl se uloží až po odpočtu (výchozí 2 s, volba 1–5 s v Nastavení,
+`ReceiptPrefs.captureStartDelaySeconds`), během kterého rámeček účtenky drží na místě
+(`CoverageTracker.updateStart`, prahy `docs/ai.md`); do té doby náhled ukazuje vodítko pro horní
+okraj ve tvaru obráceného U s animací posunu (`CaptureGuide.kt`) a lištu odpočtu — prázdnou od začátku, plní se jen při účtence v klidu —, konec odpočtu
+ohlásí vibrace. Při prvním snímání se otevře návod (`CaptureTipsDialog`, pak „Jak na to");
+snímání za ním stojí (`ReceiptFrameAnalyzer.paused`).
+
 **Ověřeno end-to-end (2026-09-30)** na reálných účtenkách Albert a Billa (Billa 940×3430 px
 rozdělená na 5 dílů s překryvem): OCR → řádky se součtem na haléř → párování → cena s
 `RECEIPT_OCR` → naučené označení v „Názvech na účtenkách".

@@ -175,6 +175,13 @@ vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DI
 | `IMPORT_TILE_ASPECT` | 1,0 | dlouhý obrázek z galerie se řeže na díly s poměrem stran ~1:1 |
 | `MIN_SHIFT_RESPONSE` / `MAX_SHIFT_RATIO` | 0,05 / 1,0 | `phaseCorrelate` — slabší odezva = posun se nepočítá |
 | `CUT_SNAP_WINDOW_RATIO` / `INK_THRESHOLD` | ±5 % / 128 | řez dílu se posune do mezery mezi řádky textu, ať se řádek nepřeřízne |
+| `DEFAULT_START_DELAY_SECONDS` / `START_DELAY_CHOICES` | 2 s / 1–5 s | první díl se uloží až po odpočtu, během kterého je účtenka v klidu vidět; délku si uživatel mění v Nastavení |
+| `START_MAX_DRIFT_RATIO` | 0,06 | roh rámečku ujel od začátku odpočtu o víc než 6 % šířky záběru = uživatel ještě míří, odpočet začne znovu |
+| `START_LOST_GRACE_MS` | 300 ms | tak dlouho smí účtenka z detekce vypadnout, než se odpočet zruší — jednotlivý snímek bez rámečku ho nesmí shodit |
+
+Proč odpočet: dřív se první díl uložil hned na prvním ostrém snímku s nalezeným rámečkem, tedy
+typicky ještě během míření — nakloněný, nebo s rámečkem chyceným za hranu stolu. Odpočet běží
+jen na první díl (a na „nafotit znovu" jednoho dílu); další díly řídí posun (`NEW_PART_SHIFT_RATIO`).
 
 Web díly nesnímá kamerou — uživatel vybírá fotky sám (`frontend/.../features/receipts/`);
 výchozí maska je spodní pás 20 % výšky poslední části a odesílaná šířka nejvýš 1600 px.
