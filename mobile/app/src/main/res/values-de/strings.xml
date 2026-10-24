@@ -579,7 +579,7 @@
     <string name="receipt_capture_tip_number">%1$d.</string>
     <string name="receipt_capture_tip_surface">Legen Sie den Kassenbon glatt auf eine dunkle Unterlage und beschweren Sie die Enden, damit er sich nicht einrollt.</string>
     <string name="receipt_capture_tip_align">Halten Sie das Handy gerade über das Papier. Richten Sie den oberen Rand des Kassenbons an der waagerechten Linie aus — an beiden Seiten soll etwas Unterlage sichtbar bleiben.</string>
-    <string name="receipt_capture_tip_wait">Halten Sie still, bis oben der Countdown abgelaufen ist. Dann wird der erste Teil gespeichert und das Handy vibriert.</string>
+    <string name="receipt_capture_tip_wait">Halten Sie still, bis sich der Balken oben gefüllt hat. Dann wird der erste Teil gespeichert und das Handy vibriert.</string>
     <string name="receipt_capture_tip_move">Bewegen Sie das Handy langsam nach unten, ohne es zu kippen. Die weiteren Teile werden automatisch gespeichert.</string>
     <string name="receipt_capture_tip_end">Fahren Sie am Ende ein Stück über den unteren Rand des Kassenbons hinaus oder fotografieren Sie das letzte Stück manuell. Tippen Sie dann auf Fertig.</string>
     <string name="receipt_capture_shutter">Manuell auslösen</string>

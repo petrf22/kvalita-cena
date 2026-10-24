@@ -577,7 +577,7 @@
     <string name="receipt_capture_tip_number">%1$d.</string>
     <string name="receipt_capture_tip_surface">Połóż paragon płasko na ciemnym podłożu i obciąż końce, żeby się nie zwijał.</string>
     <string name="receipt_capture_tip_align">Trzymaj telefon równo nad papierem. Wyrównaj górną krawędź paragonu z poziomą linią — po bokach powinien być widoczny kawałek podłoża.</string>
-    <string name="receipt_capture_tip_wait">Nie ruszaj, dopóki u góry nie skończy się odliczanie. Wtedy zapisze się pierwsza część, a telefon zawibruje.</string>
+    <string name="receipt_capture_tip_wait">Nie ruszaj, dopóki pasek u góry się nie zapełni. Wtedy zapisze się pierwsza część, a telefon zawibruje.</string>
     <string name="receipt_capture_tip_move">Powoli przesuwaj telefon w dół, bez przechylania. Kolejne części zapisują się same.</string>
     <string name="receipt_capture_tip_end">Na końcu przesuń telefon trochę za dolną krawędź paragonu albo zrób ostatni fragment ręcznie. Potem stuknij Gotowe.</string>
     <string name="receipt_capture_shutter">Zrób zdjęcie ręcznie</string>

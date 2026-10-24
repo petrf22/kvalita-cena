@@ -18,7 +18,7 @@ data class FrameResult(
   val hint: CaptureHint,
   val progress: Float,
   val partCount: Int,
-  /** Průběh odpočtu před prvním dílem (0–1), smysl má jen při [startCountdownRunning]. */
+  /** Průběh odpočtu před prvním dílem (0–1); 0, dokud odpočet neběží ([startCountdownRunning]). */
   val startProgress: Float,
   val startCountdownRunning: Boolean,
 )

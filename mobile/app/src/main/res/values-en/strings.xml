@@ -577,7 +577,7 @@
     <string name="receipt_capture_tip_number">%1$d.</string>
     <string name="receipt_capture_tip_surface">Lay the receipt flat on a dark surface and weigh down the ends so it doesn\'t curl.</string>
     <string name="receipt_capture_tip_align">Hold the phone level above the paper. Line up the top edge of the receipt with the horizontal line — some of the surface should stay visible on both sides.</string>
-    <string name="receipt_capture_tip_wait">Hold still until the countdown at the top finishes. The first part is then saved and the phone vibrates.</string>
+    <string name="receipt_capture_tip_wait">Hold still until the bar at the top fills up. The first part is then saved and the phone vibrates.</string>
     <string name="receipt_capture_tip_move">Slowly move the phone down without tilting it. The next parts are saved automatically.</string>
     <string name="receipt_capture_tip_end">At the end, move a little past the bottom edge of the receipt, or take the last bit manually. Then tap Done.</string>
     <string name="receipt_capture_shutter">Take photo manually</string>

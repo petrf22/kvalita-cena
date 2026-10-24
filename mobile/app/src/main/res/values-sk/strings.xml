@@ -577,7 +577,7 @@
     <string name="receipt_capture_tip_number">%1$d.</string>
     <string name="receipt_capture_tip_surface">Položte účtenku narovno na tmavú podložku a konce zaťažte, aby sa nekrútila.</string>
     <string name="receipt_capture_tip_align">Držte telefón rovno nad papierom. Horný okraj účtenky zarovnajte s vodorovnou čiarou — po stranách má zostať vidieť kus podložky.</string>
-    <string name="receipt_capture_tip_wait">Vydržte v pokoji, kým hore nedobehne odpočet. Potom sa uloží prvý diel a telefón zavibruje.</string>
+    <string name="receipt_capture_tip_wait">Vydržte v pokoji, kým sa lišta hore nenaplní. Potom sa uloží prvý diel a telefón zavibruje.</string>
     <string name="receipt_capture_tip_move">Pomaly posúvajte telefón nadol, bez nakláňania. Ďalšie diely sa ukladajú samy.</string>
     <string name="receipt_capture_tip_end">Na konci dojdite kúsok za spodný okraj účtenky, alebo posledný kus odfoťte ručne. Potom ťuknite na Hotovo.</string>
     <string name="receipt_capture_shutter">Odfotiť ručne</string>

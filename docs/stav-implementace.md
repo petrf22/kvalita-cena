@@ -490,7 +490,7 @@ Testy `ReceiptFlowIntegrationTest` (Testcontainers), `ReceiptPriceRowsTest`.
 **Snímání na mobilu:** první díl se uloží až po odpočtu (výchozí 2 s, volba 1–5 s v Nastavení,
 `ReceiptPrefs.captureStartDelaySeconds`), během kterého rámeček účtenky drží na místě
 (`CoverageTracker.updateStart`, prahy `docs/ai.md`); do té doby náhled ukazuje vodítko pro horní
-okraj ve tvaru obráceného U s animací posunu (`CaptureGuide.kt`) a průběh odpočtu, konec odpočtu
+okraj ve tvaru obráceného U s animací posunu (`CaptureGuide.kt`) a lištu odpočtu — prázdnou od začátku, plní se jen při účtence v klidu —, konec odpočtu
 ohlásí vibrace. Při prvním snímání se otevře návod (`CaptureTipsDialog`, pak „Jak na to");
 snímání za ním stojí (`ReceiptFrameAnalyzer.paused`).
 

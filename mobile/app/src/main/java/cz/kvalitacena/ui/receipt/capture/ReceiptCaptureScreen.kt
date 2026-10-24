@@ -252,10 +252,11 @@ private fun CameraWithOverlay(viewModel: ReceiptCaptureViewModel) {
       }
       val current = frame
       when {
-        current == null -> Unit
-        current.partCount == 0 && current.startCountdownRunning ->
-          LinearProgressIndicator(progress = { current.startProgress }, modifier = Modifier.fillMaxWidth())
-        !viewModel.isRetake && current.partCount > 0 ->
+        // Lišta odpočtu je vidět prázdná od začátku, ať je jasné, že na něco čeká — plnit se
+        // začne, až účtenka v klidu drží v záběru, a při ztrátě nebo pohybu spadne zpět na nulu.
+        beforeStart ->
+          LinearProgressIndicator(progress = { current?.startProgress ?: 0f }, modifier = Modifier.fillMaxWidth())
+        !viewModel.isRetake && current != null ->
           LinearProgressIndicator(progress = { current.progress }, modifier = Modifier.fillMaxWidth())
       }
     }

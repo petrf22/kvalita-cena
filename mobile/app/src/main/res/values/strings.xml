@@ -662,7 +662,7 @@
     <string name="receipt_capture_tip_number">%1$d.</string>
     <string name="receipt_capture_tip_surface">Položte účtenku narovno na tmavou podložku a konce zatižte, ať se nekroutí.</string>
     <string name="receipt_capture_tip_align">Držte telefon rovně nad papírem. Horní okraj účtenky srovnejte s vodorovnou čarou — po stranách má zůstat vidět kus podložky.</string>
-    <string name="receipt_capture_tip_wait">Vydržte v klidu, dokud nahoře nedoběhne odpočet. Pak se uloží první díl a telefon zavibruje.</string>
+    <string name="receipt_capture_tip_wait">Vydržte v klidu, dokud se lišta nahoře nenaplní. Pak se uloží první díl a telefon zavibruje.</string>
     <string name="receipt_capture_tip_move">Pomalu posouvejte telefon dolů, bez naklánění. Další díly se ukládají samy.</string>
     <string name="receipt_capture_tip_end">Na konci dojeďte kousek za spodní okraj účtenky, nebo poslední kus vyfoťte ručně. Pak klepněte na Hotovo.</string>
     <string name="receipt_capture_shutter">Vyfotit ručně</string>
