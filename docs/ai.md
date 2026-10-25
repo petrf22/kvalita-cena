@@ -158,6 +158,8 @@ vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DI
 | `max-attempts` | 3 | pak `FAILED` — počítá se každé vyzvednutí, i to, po kterém worker spadl bez `/fail` |
 | `label-confirmations` | 1 | aktivace označení; 1, dokud je přispěvatelů málo, pak zvednout na 2 (vzor alias) |
 | `rematch-max-age-days` | 180 | pozdější návrh spárování jen u účtenek mladších než pseudonymizační okno |
+| `notify-email` | prázdné (prod: `RECEIPT_NOTIFY_EMAIL` v `.env`) | kam `ReceiptQueueNotifier` hlásí čekající účtenky; prázdné = vypnuto. Worker se spouští ručně, takže bez e-mailu by provozovatel o frontě nevěděl |
+| `notify-reminder-cron` / `-zone` | `0 0 8 * * *`, `Europe/Prague` | denní připomínka, dokud fronta není prázdná. Okamžitý e-mail chodí jen u první účtenky do prázdné fronty, aby víc nahrávajících lidí neznamenalo víc e-mailů. Text nese jen počet a čas nejstarší účtenky, nic o uživateli |
 
 **Snímání na klientovi (mobil):** prahy capture pipeline (`ui/receipt/capture/CaptureThresholds.kt`,
 `docs/rozvoj.md`, „Sběr snímků"). V kódu jsou jen jako konstanty s odkazem sem.

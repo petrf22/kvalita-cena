@@ -31,4 +31,8 @@ public class ReceiptProperties {
   private int maxLines = 300;
   /** Práh podobnosti pro našeptávač označení z účtenky (pg_trgm similarity). */
   private double labelSimilarity = 0.35;
+  /** Kam hlásit čekající účtenky (ReceiptQueueNotifier); prázdné = notifikace vypnuté. */
+  private String notifyEmail;
+  private String notifyReminderCron = "0 0 8 * * *";
+  private String notifyReminderZone = "Europe/Prague";
 }

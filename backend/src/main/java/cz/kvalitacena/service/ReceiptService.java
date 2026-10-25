@@ -46,6 +46,7 @@ public class ReceiptService {
   private final ImageProcessingService imageProcessingService;
   private final MediaStorage mediaStorage;
   private final ReceiptProperties receiptProperties;
+  private final ReceiptQueueNotifier queueNotifier;
 
   public record ReceiptPage(List<Receipt> items, int totalCount, boolean hasMore) {
   }
@@ -115,6 +116,7 @@ public class ReceiptService {
           .build());
     }
     jobRepository.save(ReceiptJob.builder().receiptId(receipt.getId()).build());
+    queueNotifier.onEnqueued();
     log.info("Účtenka {} nahrána ({} částí)", receipt.getId(), processed.size());
     return receipt;
   }

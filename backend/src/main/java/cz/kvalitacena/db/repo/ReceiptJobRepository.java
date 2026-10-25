@@ -15,6 +15,11 @@ public interface ReceiptJobRepository extends JpaRepository<ReceiptJob, Long> {
 
   Optional<ReceiptJob> findByReceiptId(Long receiptId);
 
+  /** Nezpracované úlohy včetně právě držených workerem — pro notifikaci provozovatele. */
+  long countByProcessedAtIsNull();
+
+  Optional<ReceiptJob> findFirstByProcessedAtIsNullOrderByEnqueuedAtAsc();
+
   /**
    * Úloha se zámkem řádku — {@code submitResult} a {@code fail} se tak nepotkají napůl
    * (výsledek uložený, odpověď ztracená, worker pak hlásí chybu téže úlohy).

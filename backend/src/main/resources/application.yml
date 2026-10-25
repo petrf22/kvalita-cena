@@ -225,6 +225,11 @@ app:
     rematch-max-age-days: 180
     max-lines: 300
     label-similarity: 0.35
+    # E-mail provozovateli o čekajících účtenkách (ReceiptQueueNotifier) — první účtenka do
+    # prázdné fronty + denní připomínka, dokud fronta není prázdná. Prázdné = vypnuto.
+    notify-email: ${RECEIPT_NOTIFY_EMAIL:}
+    notify-reminder-cron: "0 0 8 * * *"
+    notify-reminder-zone: Europe/Prague
   external:
     open-food-facts:
       enabled: true

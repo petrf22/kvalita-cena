@@ -484,8 +484,10 @@ označení → nespárované řádky ostatních účtenek se shodným označení
 (`/api/worker/receipts/**`, strojový token `ApiTokenAuthenticationFilter`), `ReceiptGraphQlController`,
 služby `ReceiptService`, `ReceiptWorkerService`, `ReceiptMatchingService`,
 `ReceiptReviewService` (potvrzení po řádcích, každý ve vlastní transakci — duplicita se přeskočí,
-ne shodí dávku), `ProductStoreLabelService`, `ReceiptImageRetentionService` (denně, 30 dní).
-Testy `ReceiptFlowIntegrationTest` (Testcontainers), `ReceiptPriceRowsTest`.
+ne shodí dávku), `ProductStoreLabelService`, `ReceiptImageRetentionService` (denně, 30 dní),
+`ReceiptQueueNotifier` (e-mail provozovateli o čekajících účtenkách, `app.receipt.notify-*`).
+Testy `ReceiptFlowIntegrationTest` (Testcontainers), `ReceiptPriceRowsTest`,
+`ReceiptQueueNotifierTest`.
 
 **Snímání na mobilu:** první díl se uloží až po odpočtu (výchozí 2 s, volba 1–5 s v Nastavení,
 `ReceiptPrefs.captureStartDelaySeconds`), během kterého rámeček účtenky drží na místě
