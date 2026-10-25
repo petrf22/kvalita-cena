@@ -409,6 +409,10 @@ provozovatele — na serveru se nic dalšího nespouští, appka bez běžícíh
 3. Spouštět `KC_API_URL=https://api.kvalitacena.cz KC_WORKER_TOKEN=kcw_… python3
    tools/uctenky/worker.py` (smyčka), nebo `--once` ze systemd timeru.
 4. Volitelně `ARCHIVE_DIR` pro obrázky se souhlasem s archivací (mimo git, mimo cloud).
+5. Volitelně `RECEIPT_NOTIFY_EMAIL=<adresa>` v `.env` na serveru a restart backendu
+   (`docker compose -f compose.prod.yaml up -d --force-recreate backend`) — e-mail, když do
+   prázdné fronty dorazí účtenka, a denně v 8:00, dokud fronta není prázdná (`docs/ai.md`,
+   „Účtenky", `notify-*`). Jde přes stejné SMTP jako OTP.
 
 Obrázky účtenek leží ve stejné volume jako fotky (`kvalita-a-cena-media-prod`, podadresář
 `receipts/`) a denní job je po 30 dnech od zpracování maže — záloha volume je tedy pokrývá jen
