@@ -17,8 +17,8 @@ Stačí standardní knihovna Pythonu 3.12, žádné `pip install` není potřeba
 ```bash
 ollama pull glm-ocr:bf16                        # jednorázově (licence MIT)
 
-export KC_API_URL=https://kvalitacena.cz        # lokálně http://localhost:8080
-export KC_WORKER_TOKEN=kcw_...                  # viz „Token" níž
+export KC_API_URL=https://api.kvalitacena.cz    # lokálně http://localhost:8080
+export KC_WORKER_TOKEN="$(cat ~/.config/kvalitacena-worker-token)"   # viz „Token" níž
 python3 tools/uctenky/worker.py                 # smyčka: když je fronta prázdná, čeká 5 min
 python3 tools/uctenky/worker.py --once          # jedna dávka a konec (cron / systemd timer)
 ```
@@ -39,15 +39,29 @@ spadne uprostřed práce, nevadí: lease po 15 minutách vyprší a účtenka se
 ### Token
 
 Worker se přihlašuje strojovým tokenem, ne účtem uživatele. V databázi je uložený jen jeho
-SHA-256:
+SHA-256. Token proto vzniká na PC a na server jde jen jeho otisk; samotný token PC neopustí.
+
+Na PC:
 
 ```bash
 TOKEN="kcw_$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
-echo "$TOKEN"   # ulož si ho; znovu už ho nezjistíš
-docker compose exec postgres psql -U postgres -d kvalitaacena -c \
-  "INSERT INTO auth.api_token(name, token_hash, scope)
-   VALUES ('domaci-pc', sha256(convert_to('$TOKEN', 'UTF8')), 'RECEIPT_WORKER');"
+echo "$TOKEN" > ~/.config/kvalitacena-worker-token && chmod 600 ~/.config/kvalitacena-worker-token
+printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1   # otisk pro INSERT níž
 ```
+
+Na produkčním serveru (přes ssh, v adresáři s `compose.prod.yaml`):
+
+```bash
+docker compose -f compose.prod.yaml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d kvalitaacena' <<'SQL'
+INSERT INTO auth.api_token(name, token_hash, scope)
+VALUES ('domaci-pc', decode('OTISK', 'hex'), 'RECEIPT_WORKER');
+SQL
+```
+
+Dvě věci, na kterých to padá: role `postgres` na produkci neexistuje (uživatele nastavuje
+`POSTGRES_USER` z `.env` uvnitř kontejneru, proto `sh -c`), a bez `-T` skončí `exec`
+s heredocem na `cannot attach stdin to a TTY-enabled container`. Lokálně stačí
+`docker compose exec -T postgres psql -U postgres -d kvalitaacena` se stejným heredocem.
 
 Token zneplatníš příkazem `UPDATE auth.api_token SET revoked_at = now() WHERE name = 'domaci-pc';`.
 Změna se projeví do 60 s.
