@@ -404,8 +404,8 @@ provozovatele — na serveru se nic dalšího nespouští, appka bez běžícíh
 účtenky jen čekají ve frontě. Postup:
 
 1. Na PC: `ollama pull glm-ocr:bf16`.
-2. Vydat strojový token (`tools/uctenky/README.md`, „Token") — na produkci přes
-   `docker compose -f compose.prod.yaml exec postgres psql …`, token si uložit jen na PC.
+2. Vydat strojový token (`tools/uctenky/README.md`, „Token") — token vzniká na PC, na server
+   jde jen jeho SHA-256 přes `docker compose -f compose.prod.yaml exec -T postgres …`.
 3. Spouštět `KC_API_URL=https://api.kvalitacena.cz KC_WORKER_TOKEN=kcw_… python3
    tools/uctenky/worker.py` (smyčka), nebo `--once` ze systemd timeru.
 4. Volitelně `ARCHIVE_DIR` pro obrázky se souhlasem s archivací (mimo git, mimo cloud).
