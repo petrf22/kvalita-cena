@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Pull worker účtenek — běží na PC provozovatele (docs/ai.md, „Účtenky").
 
-    KC_API_URL=https://kvalitacena.cz KC_WORKER_TOKEN=kcw_... python3 tools/uctenky/worker.py
+    KC_API_URL=https://api.kvalitacena.cz KC_WORKER_TOKEN=kcw_... python3 tools/uctenky/worker.py
     python3 tools/uctenky/worker.py --once          # jedna dávka a konec (cron/systemd timer)
 
 Cyklus: vyzvedne dávku účtenek (lease), každou část přečte OCR modelem (obrázek -> text),
