@@ -34,7 +34,8 @@ Další volby:
   Archiv drž mimo git.
 
 Na čekající účtenky upozorní server e-mailem (`RECEIPT_NOTIFY_EMAIL`, `docs/nasazeni.md`),
-takže worker stačí spouštět ručně s `--once`.
+takže worker stačí spouštět ručně s `--once`. Zkratka pro to je `tools/uctenky/run-worker.sh`:
+nastaví obě proměnné výš (`KC_API_URL` jde přebít zvenku) a předá workeru další argumenty.
 
 Když worker neběží, účtenky jen čekají ve frontě a appka funguje beze změny. Worker, který
 spadne uprostřed práce, nevadí: lease po 15 minutách vyprší a účtenka se vrátí do fronty.
