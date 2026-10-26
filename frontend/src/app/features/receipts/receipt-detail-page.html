@@ -131,6 +131,7 @@
                   <app-store-picker
                     [restoreLast]="false"
                     [selectedStoreId]="pendingStore()?.id ?? null"
+                    [prefill]="storePrefill()"
                     (selectedStoreChange)="pendingStore.set($event)"
                   />
                   <div class="actions">

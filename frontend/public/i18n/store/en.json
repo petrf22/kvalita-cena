@@ -29,6 +29,7 @@
       "RS": "Serbia"
     },
     "similarWarning": "Did you mean one of these existing stores?",
+    "prefilledFromReceipt": "Prefilled from the receipt — check the details, the machine may have misread them.",
     "saveChanges": "Save changes",
     "createStore": "Create store"
   },

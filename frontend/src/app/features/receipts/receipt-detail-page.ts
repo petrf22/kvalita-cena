@@ -61,6 +61,7 @@ import {
   samePurchaseTime,
   skipReasonKey,
 } from './receipt-status';
+import { receiptStorePrefill } from './receipt-store-prefill';
 
 /** Stejná perioda jako seznam (`receipts-page.ts`) — dokud stroj účtenku nezpracoval. */
 const PENDING_POLL_MS = 30_000;
@@ -127,6 +128,11 @@ export class ReceiptDetailPage {
   protected readonly storeName = computed(() => {
     const receipt = this.receipt();
     return receipt ? receiptStoreName(receipt) : null;
+  });
+  /** „Přidat nový obchod" se předvyplní z hlavičky účtenky, ať uživatel neopisuje. */
+  protected readonly storePrefill = computed(() => {
+    const receipt = this.receipt();
+    return receipt ? receiptStorePrefill(receipt) : null;
   });
   protected readonly awaiting = computed(() => {
     const receipt = this.receipt();
