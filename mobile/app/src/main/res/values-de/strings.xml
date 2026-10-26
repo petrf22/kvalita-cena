@@ -453,6 +453,7 @@
     <string name="store_location_use_my_location">Meinen Standort verwenden</string>
     <string name="store_location_approximate_warning">Der Standort ist nur ungefähr erlaubt, der Punkt liegt also um Kilometer daneben — erlaube den genauen Standort in den Systemeinstellungen oder setze die Markierung per Tippen auf die Karte.</string>
     <string name="store_form_prefilled_from_osm">Aus OpenStreetMap vorausgefüllt — prüfe die Angaben und korrigiere sie gegebenenfalls.</string>
+    <string name="store_form_prefilled_from_receipt">Aus dem Kassenbon vorausgefüllt — prüfe die Angaben, die Maschine kann sich verlesen haben.</string>
     <string name="store_form_use_existing_store">Dieses Geschäft kennen wir schon — verwenden</string>
     <string name="store_form_existing_store_pending">Dieses Geschäft ist bereits im Katalog, wartet aber auf die Bestätigung anderer Beitragender — es kann noch nicht ausgewählt werden</string>
     <string name="store_location_searching">Suche Koordinaten anhand der Adresse…</string>

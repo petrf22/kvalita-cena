@@ -95,6 +95,11 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       NavigationResults.osmStoreCandidate = null
       NavigationResults.osmStoreAttribution = null
     }
+    NavigationResults.storePrefill?.let { prefill ->
+      formDirty = true
+      viewModel.applyReceiptPrefill(prefill)
+      NavigationResults.storePrefill = null
+    }
   }
 
   LaunchedEffect(viewModel.created) {
@@ -149,6 +154,11 @@ fun StoreFormScreen(storeId: String? = null, onDone: () -> Unit) {
       style = MaterialTheme.typography.headlineSmall,
     )
     Gap()
+
+    if (viewModel.prefilledFromReceipt) {
+      Text(stringResource(R.string.store_form_prefilled_from_receipt), style = MaterialTheme.typography.bodyMedium)
+      Gap()
+    }
 
     // ODbL vyžaduje, aby appka u převzatých dat vždy uvedla zdroj (docs/datovy-model.md).
     // Text chodí ze serveru, protože je lokalizovaný (docs/lokalizace.md).

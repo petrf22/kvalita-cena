@@ -76,6 +76,7 @@ import cz.kvalitacena.ui.receipt.ReceiptStateMessage
 import cz.kvalitacena.ui.receipt.formatReceiptDateTime
 import cz.kvalitacena.ui.receipt.processingStatusExplanation
 import cz.kvalitacena.ui.receipt.processingStatusLabel
+import cz.kvalitacena.ui.receipt.receiptStorePrefill
 import cz.kvalitacena.ui.theme.Spacing
 import java.text.NumberFormat
 import java.time.Instant
@@ -364,7 +365,10 @@ private fun HeaderCard(receipt: Receipt, viewModel: ReceiptDetailViewModel, onAd
             searching = viewModel.storeSearching,
             selectedStoreId = store?.id,
             onSelect = viewModel::onStoreSelected,
-            onAddNew = onAddStore,
+            onAddNew = {
+              NavigationResults.storePrefill = receiptStorePrefill(receipt)
+              onAddStore()
+            },
             isLoggedIn = true,
             homeCountry = homeCountry,
             modifier = Modifier.fillMaxWidth(),
