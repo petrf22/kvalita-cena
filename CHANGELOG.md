@@ -7,10 +7,15 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
-## [Nezveřejněno]
+## [0.11.1] – 2026-10-26
 
 ### Přidáno
 - „Obchod tu není — přidat nový" v detailu účtenky předvyplní formulář nového obchodu názvem, adresou a IČO, které appka z účtenky přečetla — není potřeba je opisovat (web, mobil)
+
+### Opraveno
+- Hledání obchodu najde i víc slov naráz v libovolném pořadí — „Lidl Brno" nebo „Vídeňská Lidl" — dřív nenašlo nic (server, web, mobil)
+- Rozpracovanou účtenku nafocenou jedním účtem už po přihlášení jiného účtu v témže telefonu nikdo jiný neuvidí ani neodešle (mobil)
+- Zpracování účtenky, které trvalo déle, už nemůže omylem vrátit do fronty účtenku, na které se právě pracuje znovu (server)
 
 ## [0.11.0] – 2026-10-24
 
