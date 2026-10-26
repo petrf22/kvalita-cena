@@ -63,7 +63,8 @@ type Query {
   searchFacets(query: String, country: String): SearchFacets!
 
   """
-  Našeptávač obchodů podle názvu/města (core.norm_text, pg_trgm) — doplněk k nearbyStores pro
+  Našeptávač obchodů podle názvu, města a ulice (core.norm_text, pg_trgm) — každé slovo dotazu
+  musí být v některém z nich, v libovolném pořadí ("Lidl Brno"). Doplněk k nearbyStores pro
   zápis ceny bez sdílení polohy nebo zpětně z domova (docs/datovy-model.md, "Identita
   provozovny"). Na rozdíl od nearbyStores najde i obchody bez souřadnic.
   """

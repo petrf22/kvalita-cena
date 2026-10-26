@@ -1,0 +1,24 @@
+# 01-store-search-trgm.yaml — trigramový index pro víceslovné hledání obchodů (searchStores).
+#
+# Hledání bere dotaz po slovech: každé slovo musí být v názvu, městě NEBO ulici, v libovolném
+# pořadí („Lidl Brno", „Brno, Vídeňská Lidl"). Indexy idx_store_name_trgm/idx_store_city_trgm
+# pokrývají jen jedno pole, takže slova rozložená přes víc polí by šla sekvenčním průchodem
+# s core.norm_text na každém řádku — při 50 000 obchodech ~150 ms na každé písmeno
+# v našeptávači proti ~6 ms s tímhle indexem (měřeno 2026-10-26 na PostgreSQL 17).
+#
+# Pole se spojují operátorem ||, ne concat_ws: concat_ws je jen STABLE a do výrazu indexu
+# nesmí. Výraz musí znak po znaku odpovídat StoreRepository.SEARCH_TEXT, jinak ho plánovač
+# nepozná a index nepoužije.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-26-01-store-search-trgm
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              CREATE INDEX idx_store_search_trgm ON core.store
+                USING gin (core.norm_text(name || ' ' || city || ' ' || COALESCE(street, '')) gin_trgm_ops);
+      rollback:
+        - sql:
+            sql: |
+              DROP INDEX IF EXISTS core.idx_store_search_trgm;
