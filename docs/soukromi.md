@@ -265,7 +265,13 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
 - **Čekající účtenka patří účtu, který ji zařadil.** Mobilní fronta (offline odeslání) si
   k účtence uloží `publicUid` přihlášeného účtu (`sub` z access tokenu); po odhlášení
   a přihlášení někoho jiného v témže telefonu se účtenka neukáže ani neodešle, dokud se
-  vlastník nepřihlásí zpátky — nákup jednoho člověka nesmí skončit v účtu druhého.
+  vlastník nepřihlásí zpátky — nákup jednoho člověka nesmí skončit v účtu druhého. Totéž platí
+  pro rozpracovaný koncept ještě před zařazením: nese `publicUid` účtu, který ho fotí, a když
+  snímání nebo kontrolu otevře jiný přihlášený účet, nafocené díly se zahodí
+  (`draftClaim`, `ReceiptDraftStore.claimFor`) — jinak by je druhý účet odeslal jako svou
+  účtenku, vlastník fronty se totiž určuje až při zařazení. Koncept bez vlastníka (z verze
+  appky před touto pojistkou) převezme ten, kdo je přihlášený; dokud appka uid účtu nezná
+  (přihlášení starší verzí, než doběhne obnova tokenu), koncept nechá být.
 - **Verze souhlasu je verze textu, který klient ukázal.** Klient posílá a ukládá vlastní
   `RECEIPT_CONSENT_VERSION` svázanou s textem v aplikaci, ne číslo ze serveru. Když server
   chce jinou verzi, klient souhlas neukáže a vyzve k aktualizaci (web k obnovení stránky) —

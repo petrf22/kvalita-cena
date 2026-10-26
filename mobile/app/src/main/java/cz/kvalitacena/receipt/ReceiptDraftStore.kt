@@ -29,6 +29,8 @@ data class ReceiptDraft(
   val capturedAt: String? = null,
   /** Díl, na který appka naposledy navrhla výchozí zakrytí (spodní pás posledního dílu). */
   val proposedMaskFor: String? = null,
+  /** `publicUid` účtu, který koncept fotí — jinému účtu se neukáže ([ReceiptDraftStore.claimFor]). */
+  val ownerUid: String? = null,
 )
 
 /**
@@ -47,6 +49,27 @@ class ReceiptDraftStore(filesDir: File) {
   val draft: StateFlow<ReceiptDraft> = _draft
 
   fun fileOf(part: DraftPart): File = File(dir, part.file)
+
+  /**
+   * Koncept pro účet [currentUid] ([draftClaim]) — díly jiného účtu se zahodí. Vrací `true`,
+   * když se zahazovalo, ať snímání srovná počítadlo dílů.
+   */
+  @Synchronized
+  fun claimFor(currentUid: String?): Boolean {
+    val current = _draft.value
+    return when (draftClaim(current.ownerUid, current.parts.isNotEmpty(), currentUid)) {
+      DraftClaim.KEEP -> false
+      DraftClaim.ADOPT -> {
+        update { it.copy(ownerUid = currentUid) }
+        false
+      }
+      DraftClaim.DISCARD -> {
+        clear()
+        update { it.copy(ownerUid = currentUid) }
+        true
+      }
+    }
+  }
 
   @Synchronized
   fun addPart(part: EncodedPart): DraftPart {
@@ -69,8 +92,8 @@ class ReceiptDraftStore(filesDir: File) {
     val old = _draft.value.parts.getOrNull(index) ?: return
     update { draft ->
       val remaining = draft.parts.filterIndexed { i, _ -> i != index }
-      // Prázdný koncept začíná znovu — čas focení i návrh zakrytí patří nové účtence.
-      if (remaining.isEmpty()) ReceiptDraft() else draft.copy(parts = remaining)
+      // Prázdný koncept začíná znovu — čas focení i návrh zakrytí patří nové účtence, vlastník zůstává.
+      if (remaining.isEmpty()) ReceiptDraft(ownerUid = draft.ownerUid) else draft.copy(parts = remaining)
     }
     File(dir, old.file).delete()
   }

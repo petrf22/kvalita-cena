@@ -28,6 +28,7 @@ class ReceiptCaptureViewModel(
   private val draftStore: ReceiptDraftStore,
   private val retakeIndex: Int?,
   startDelaySeconds: Int,
+  currentUserUid: () -> String?,
 ) : ViewModel() {
 
   val isRetake: Boolean get() = retakeIndex != null
@@ -59,6 +60,15 @@ class ReceiptCaptureViewModel(
     maxParts = if (retakeIndex != null) 1 else CaptureThresholds.MAX_PARTS,
     startDelayMillis = startDelaySeconds * 1000L,
   )
+
+  init {
+    // Rozpracovaný koncept jiného účtu se zahodí dřív, než do něj přibude díl (docs/soukromi.md,
+    // „Účtenky"). Uid se čte z Keystore, proto mimo hlavní vlákno.
+    viewModelScope.launch {
+      val discarded = withContext(Dispatchers.IO) { draftStore.claimFor(currentUserUid()) }
+      if (discarded && retakeIndex == null) analyzer.resetParts(0)
+    }
+  }
 
   /**
    * Díl z analyzátoru — volá se na jeho vlákně (soubor je malý a zápis rychlý), stav obrazovky
