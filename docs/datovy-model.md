@@ -191,7 +191,9 @@ apod.), je to signál k přehodnocení, ne důvod sahat po PostGIS hned teď.
 Dřív vstupovaly obchody do appky jen dvěma cestami: `nearbyStores` (nutná poloha) nebo
 seed. Kdo nechce sdílet polohu, nebo zapisuje ceny zpětně doma, potřebuje třetí cestu —
 napsat název/město a obchod ručně dohledat nebo založit (`searchStores`, `createStore`,
-`StoreService`). Od 2026-09 je čtvrtá: **nabídka provozoven z OpenStreetMap**
+`StoreService`). Hledání bere dotaz po slovech a každé musí být v názvu, městě nebo ulici,
+v libovolném pořadí („Lidl Brno", „Brno, Vídeňská Lidl") — přes trigramový index nad jejich
+spojením (`idx_store_search_trgm`), nejdelší slovo slouží jako předfiltr indexu. Od 2026-09 je čtvrtá: **nabídka provozoven z OpenStreetMap**
 (`nearbyOsmStores`, `OverpassPoiService`), ze které si člověk jednu vybere a ta mu předvyplní
 formulář. Vznikla proto, že katalog obchodů se záměrně nepředvyplňuje (`docs/nasazeni.md`),
 takže první uživatel v dané lokalitě jinak narazil na prázdný výběr bez nápovědy, co dál.

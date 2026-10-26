@@ -7,10 +7,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
- * Našeptávač obchodů podle názvu/města — doplněk k {@code nearbyStores} pro zápis ceny bez
+ * Našeptávač obchodů podle názvu, města a ulice — doplněk k {@code nearbyStores} pro zápis ceny bez
  * sdílení polohy nebo zpětně z domova (docs/datovy-model.md, "Identita provozovny"). Stejný
  * ořez limitů jako {@link ProductSearchService}, aby si klient nemohl vyžádat neomezenou stránku.
  */
@@ -21,6 +24,13 @@ public class StoreSearchService {
   private static final int MAX_FIRST = 50;
   private static final int MAX_OFFSET = 500;
 
+  /**
+   * Oddělovače slov pro výběr nejdelšího slova — NADMNOŽINA toho, čím dělí dotaz SQL
+   * ({@code [[:space:],]+} po {@code core.norm_text}): slovo z Javy pak vždy leží uvnitř
+   * některého slova z SQL, takže předfiltr nikdy nevyřadí obchod, který by SQL našlo.
+   */
+  private static final Pattern WORD_SEPARATORS = Pattern.compile("[\\s\\p{Z},]+");
+
   private final StoreRepository storeRepository;
   private final StoreOverlayService storeOverlayService;
 
@@ -30,13 +40,29 @@ public class StoreSearchService {
     int limitedOffset = clamp(offset == null ? 0 : offset, 0, MAX_OFFSET);
     String normalizedQuery = blankToNull(query);
     String normalizedCity = blankToNull(city);
+    String longestWord = longestWord(normalizedQuery);
 
     List<Store> items = storeOverlayService.applyOverlay(
-        storeRepository.searchByText(normalizedQuery, normalizedCity, limitedFirst, limitedOffset, viewerId),
+        storeRepository.searchByText(normalizedQuery, longestWord, normalizedCity, limitedFirst, limitedOffset,
+            viewerId),
         viewerId);
-    long totalCount = storeRepository.countByText(normalizedQuery, normalizedCity, viewerId);
+    long totalCount = storeRepository.countByText(normalizedQuery, longestWord, normalizedCity, viewerId);
     boolean hasMore = (long) limitedOffset + items.size() < totalCount;
     return new StoreSearchResult(items, (int) totalCount, hasMore);
+  }
+
+  /**
+   * Nejdelší slovo dotazu jako předfiltr pro trigramový index ({@link StoreRepository#TEXT_MATCH}) —
+   * nejvíc trigramů, nejmenší výběr. Dotaz bez slov (jen čárky) dá prázdný řetězec, tedy bez
+   * předfiltru, stejně jako ho bere SQL.
+   */
+  static String longestWord(String query) {
+    if (query == null) {
+      return null;
+    }
+    return Arrays.stream(WORD_SEPARATORS.split(query))
+        .max(Comparator.comparingInt(String::length))
+        .orElse("");
   }
 
   private String blankToNull(String value) {
