@@ -496,6 +496,16 @@ okraj ve tvaru obráceného U s animací posunu (`CaptureGuide.kt`) a lištu odp
 ohlásí vibrace. Při prvním snímání se otevře návod (`CaptureTipsDialog`, pak „Jak na to");
 snímání za ním stojí (`ReceiptFrameAnalyzer.paused`).
 
+**Nový obchod z hlavičky:** „Obchod tu není — přidat nový" v detailu účtenky předvyplní
+formulář obchodu z `storeNameRaw`/`storeAddressRaw`/`storeIcoRaw` (mobil
+`ui/receipt/ReceiptStorePrefill.kt` → `NavigationResults.storePrefill` →
+`StoreFormViewModel.applyReceiptPrefill`, web `features/receipts/receipt-store-prefill.ts` →
+vstup `prefill` v `app-store-picker`/`app-store-form`). Adresa chodí jako jeden řetězec
+`"[ulice, ]PSČ Město"` (`tools/uctenky/result.py`) a klient ji rozkládá zpátky; řetězec se
+dohledá přesnou shodou s číselníkem, ARES se sám nevolá (IČO z účtenky je sídlo firmy, ne
+provozovna). Souřadnice se z adresy dohledají samy jen na mobilu (`scheduleGeocode`), web je
+jako u ručně vyplněné adresy hledá až tlačítkem. Data jsou vlastní, `data_origin` zůstává `OWN`.
+
 **Ověřeno end-to-end (2026-09-30)** na reálných účtenkách Albert a Billa (Billa 940×3430 px
 rozdělená na 5 dílů s překryvem): OCR → řádky se součtem na haléř → párování → cena s
 `RECEIPT_OCR` → naučené označení v „Názvech na účtenkách".

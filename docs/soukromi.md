@@ -254,6 +254,11 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   dostane upozornění a cenu potvrdí sám. Do sdíleného katalogu jde jen samotné označení
   obchodu (`ROHLIK TUK 43G` → zboží), ne kdo a kdy ho koupil — `product_store_label_confirmation
   .user_id` se po 180 dnech nuluje stejně jako u aliasu.
+- **Z hlavičky do katalogu obchodů jen přes formulář.** „Obchod tu není — přidat nový"
+  předvyplní formulář nového obchodu názvem, adresou a IČO z hlavičky účtenky — to jsou údaje
+  prodejce, ne kupujícího. Do veřejného `core.store` se dostane jen to, co uživatel ve
+  formuláři nechá a uloží; účtenka, čas nákupu ani obrázek se s obchodem nespojují
+  (`docs/stav-implementace.md`, „Účtenky").
 - **Stroj nemá identitu uživatele.** Worker se přihlašuje strojovým tokenem (`auth.api_token`,
   scope `RECEIPT_WORKER`, v DB jen SHA-256), ne účtem člověka — vidí obrázky ve frontě
   a zapisuje vytěžený text, nic víc.
