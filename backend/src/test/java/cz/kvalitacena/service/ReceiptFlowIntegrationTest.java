@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -289,7 +290,7 @@ class ReceiptFlowIntegrationTest {
     Long lineId = lines(receiptId).getFirst().getId();
 
     // Worker nedostal odpověď na /result: nahlásí chybu a pak výsledek pošle znovu.
-    workerService.fail(receiptId, "timeout");
+    workerService.fail(receiptId, "timeout", null);
     workerService.submitResult(receiptId, new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED,
         "test-model", "raw", null, null, null, null, null, null, "CZK", List.of(
             line("JINY", "1", QuantityUnit.PCS, "9.00", "9.00", null, PriceKind.REGULAR),
@@ -298,6 +299,24 @@ class ReceiptFlowIntegrationTest {
     assertThat(receiptRepository.findById(receiptId).orElseThrow().getProcessingStatus())
         .isEqualTo(ReceiptProcessingStatus.PROCESSED);
     assertThat(lines(receiptId)).singleElement().satisfies(l -> assertThat(l.getId()).isEqualTo(lineId));
+  }
+
+  @Test
+  void failFromExpiredLeaseIsIgnoredButCurrentLeaseFails() {
+    AppUser owner = persistUser();
+    Receipt receipt = receiptService.upload(owner.getPublicUid(), List.of(jpeg()), 1, false, null, null);
+    WorkerReceiptJob job = workerService.lease(10).stream()
+        .filter(j -> j.receiptId().equals(receipt.getId())).findFirst().orElseThrow();
+
+    // Opožděné hlášení z dřívějšího pronájmu nesmí shodit ten, na kterém se právě pracuje.
+    workerService.fail(receipt.getId(), "z dřívějšího pronájmu", job.leaseUntil().minusMinutes(15));
+    assertThat(receiptRepository.findById(receipt.getId()).orElseThrow().getProcessingStatus())
+        .isEqualTo(ReceiptProcessingStatus.PROCESSING);
+
+    // Lease prošel JSONem do workeru a zpět — porovnává se okamžik, ne zápis s offsetem.
+    workerService.fail(receipt.getId(), "OCR spadlo", job.leaseUntil().withOffsetSameInstant(ZoneOffset.UTC));
+    assertThat(receiptRepository.findById(receipt.getId()).orElseThrow().getProcessingStatus())
+        .isEqualTo(ReceiptProcessingStatus.QUEUED);
   }
 
   @Test

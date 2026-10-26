@@ -55,7 +55,7 @@ def run_batch(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, limit: int, 
         except Exception as error:  # noqa: BLE001 — jedna vadná účtenka nesmí zastavit dávku
             log(f"!! účtenka {job.get('receiptId')}: {error}")
             try:
-                api.fail(job["receiptId"], f"{type(error).__name__}: {error}")
+                api.fail(job["receiptId"], f"{type(error).__name__}: {error}", job.get("leaseUntil"))
             except Exception as report_error:  # noqa: BLE001
                 log(f"!! nepodařilo se nahlásit chybu: {report_error}")
     return len(jobs)

@@ -116,7 +116,11 @@ profil), zkontroluje součet proti vytištěné částce „Celkem" a výsledek 
 `UNREADABLE`, chyba workeru `POST /{id}/fail` (po `max-attempts` → `FAILED`). Úloha, na které
 worker spadl nebo zamrzl bez `/fail`, se po vypršení leasu vrátí do fronty a po `max-attempts`
 skončí jako `FAILED` při dalším vyzvednutí. Výsledek i chyba k už ukončené úloze se ignorují
-(worker nedostal odpověď a hlásí znovu). Syrový text (`rawText`) jde na server jen po řádek
+(worker nedostal odpověď a hlásí znovu). Chyba nese `leaseUntil` z `lease` jako identifikátor
+pronájmu a hlášení ze staršího, mezitím vypršelého pronájmu server ignoruje — jinak by pokus,
+který se probral po vypršení leasu, vrátil do fronty úlohu, na které už pracuje další pokus
+(lease se proto zaokrouhluje na milisekundy, ať porovnání přežije cestu JSON → DB). Bez
+`leaseUntil` (starší worker) platí jen kontrola ukončené úlohy. Syrový text (`rawText`) jde na server jen po řádek
 s celkovou částkou — patička s kartou se zahodí i tady (`docs/soukromi.md`, „Účtenky"). Váhové
 zboží s cenou za g/ml worker převede na kg/l v množství i v jednotkové ceně.
 

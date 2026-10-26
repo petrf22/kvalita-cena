@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
@@ -27,7 +28,8 @@ public class WorkerReceiptController {
 
   private final ReceiptWorkerService workerService;
 
-  public record FailRequest(String error) {
+  /** [leaseUntil] z odpovědi `lease` — určuje pronájem, ke kterému chyba patří (nepovinné). */
+  public record FailRequest(String error, OffsetDateTime leaseUntil) {
   }
 
   @PostMapping("/lease")
@@ -53,7 +55,7 @@ public class WorkerReceiptController {
 
   @PostMapping("/{id}/fail")
   public ResponseEntity<Void> fail(@PathVariable Long id, @RequestBody(required = false) FailRequest request) {
-    workerService.fail(id, request == null ? null : request.error());
+    workerService.fail(id, request == null ? null : request.error(), request == null ? null : request.leaseUntil());
     return ResponseEntity.noContent().build();
   }
 

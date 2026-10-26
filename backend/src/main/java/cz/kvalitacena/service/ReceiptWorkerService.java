@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -62,7 +63,9 @@ public class ReceiptWorkerService {
   public List<WorkerReceiptJob> lease(Integer requested) {
     int limit = Math.max(1, Math.min(requested == null ? 1 : requested, receiptProperties.getMaxLeaseBatch()));
     OffsetDateTime now = OffsetDateTime.now();
-    OffsetDateTime leaseUntil = now.plusMinutes(receiptProperties.getLeaseMinutes());
+    // Na milisekundy: konec lease se workeru vrací jako identifikátor pronájmu (fail) a musí
+    // se po cestě JSON → DB (mikrosekundy) porovnat přesně.
+    OffsetDateTime leaseUntil = now.plusMinutes(receiptProperties.getLeaseMinutes()).truncatedTo(ChronoUnit.MILLIS);
     List<WorkerReceiptJob> result = new ArrayList<>();
     for (ReceiptJob job : jobRepository.lockAvailable(now, limit)) {
       Optional<Receipt> receipt = receiptRepository.findById(job.getReceiptId());
@@ -179,13 +182,20 @@ public class ReceiptWorkerService {
   }
 
   @Transactional
-  public void fail(Long receiptId, String error) {
+  public void fail(Long receiptId, String error, OffsetDateTime leaseUntil) {
     ReceiptJob job = jobRepository.findForUpdateByReceiptId(receiptId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_NOT_FOUND));
     if (job.getProcessedAt() != null) {
       // Výsledek už je uložený, jen worker nedostal odpověď na /result a hlásí chybu —
       // hotovou účtenku nesmí vrátit do fronty (processed_at by ji z lockAvailable vyřadil).
       log.warn("Chyba účtenky {} nahlášená k už ukončené úloze — ignoruje se", receiptId);
+      return;
+    }
+    if (leaseUntil != null && (job.getLeaseUntil() == null || !leaseUntil.isEqual(job.getLeaseUntil()))) {
+      // Hlášení ze staršího, mezitím vypršelého pronájmu — úlohu už má jiný pokus a ten by
+      // chyba cizího pokusu vrátila do fronty uprostřed práce. Bez leaseUntil (starší worker)
+      // platí jen kontrola dokončení výš.
+      log.warn("Chyba účtenky {} z neplatného pronájmu — ignoruje se", receiptId);
       return;
     }
     job.setLeaseUntil(null);

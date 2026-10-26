@@ -32,8 +32,10 @@ class WorkerApi:
     def result(self, receipt_id: int, payload: dict) -> None:
         self._request("POST", f"/api/worker/receipts/{receipt_id}/result", payload)
 
-    def fail(self, receipt_id: int, error: str) -> None:
-        self._request("POST", f"/api/worker/receipts/{receipt_id}/fail", {"error": error[:500]})
+    def fail(self, receipt_id: int, error: str, lease_until: str | None = None) -> None:
+        # leaseUntil z lease určuje pronájem — server pak ignoruje hlášení ze staršího pronájmu.
+        body = {"error": error[:500], "leaseUntil": lease_until}
+        self._request("POST", f"/api/worker/receipts/{receipt_id}/fail", body)
 
     def archive_candidates(self, limit: int = 20) -> list[dict]:
         return self._request("GET", f"/api/worker/receipts/archive-candidates?limit={limit}") or []
