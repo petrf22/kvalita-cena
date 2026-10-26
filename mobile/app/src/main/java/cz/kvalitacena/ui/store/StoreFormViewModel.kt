@@ -19,6 +19,7 @@ import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.companyIdDigits
 import cz.kvalitacena.ui.common.companyIdLabelRes
 import cz.kvalitacena.ui.common.toUiText
+import cz.kvalitacena.ui.receipt.StorePrefill
 import cz.kvalitacena.ui.settings.CountryStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -136,6 +137,10 @@ class StoreFormViewModel(
   var osmAttribution by mutableStateOf<String?>(null)
     private set
 
+  /** Formulář předvyplnila hlavička účtenky ([applyReceiptPrefill]) — stroj se mohl přečíst. */
+  var prefilledFromReceipt by mutableStateOf(false)
+    private set
+
   var manualLat by mutableStateOf<Double?>(null)
     private set
   var manualLon by mutableStateOf<Double?>(null)
@@ -218,7 +223,26 @@ class StoreFormViewModel(
   }
 
   /**
-   * Značka z OSM se do pole řetězce dostane, JEN když jí odpovídá položka vlastního číselníku
+   * Předvyplnění z hlavičky účtenky (ReceiptDetailScreen → „Obchod tu není — přidat nový"),
+   * ať uživatel neopisuje, co už přečetl worker. Na rozdíl od [applyOsmCandidate] jsou to
+   * vlastní data uživatele — `dataOrigin` zůstává OWN. Souřadnice se dohledají z adresy
+   * ([scheduleGeocode]); ARES se sám nevolá, IČO z účtenky je sídlo firmy, ne provozovna.
+   */
+  fun applyReceiptPrefill(prefill: StorePrefill) {
+    if (isEditing || prefilledFromReceipt) return
+    prefilledFromReceipt = true
+    prefill.name?.let { name = it }
+    prefill.street?.let { street = it }
+    prefill.city?.let { city = it }
+    prefill.postalCode?.let { postalCode = it }
+    prefill.ico?.let { ico = it }
+    prefillChainFromBrand(prefill.name)
+    scheduleSimilarCheck()
+    scheduleGeocode()
+  }
+
+  /**
+   * Značka z OSM (nebo název z účtenky) se do pole řetězce dostane, JEN když jí odpovídá položka vlastního číselníku
    * (`core.retail_chain` je kurátorský, nový řetězec z OSM nevzniká). U nezávislého obchodu
    * bývá `brand` totéž co název — předvyplnit ho natvrdo by znamenalo ukázat vyplněný řetězec,
    * který na nic neodkazuje.
@@ -230,6 +254,9 @@ class StoreFormViewModel(
         val match = graphQlClient.chains(query = query, country = country)
           .firstOrNull { it.name.equals(query, ignoreCase = true) } ?: return@launch
         onChainSelect(match)
+        // Název stejný jako řetězec jen jinak psaný (OCR účtenky čte „ALBERT") — převzít
+        // zápis z číselníku.
+        if (name.equals(match.name, ignoreCase = true)) name = match.name
       } catch (e: Exception) {
         // Našeptávač je jen doporučující — chyba dotazu nesmí blokovat založení obchodu.
       }

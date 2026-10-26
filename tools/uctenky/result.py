@@ -39,6 +39,9 @@ def to_payload(document: dict, raw_text: str | None, model: str) -> dict:
         return payload
 
     merchant = document["merchant"]
+    # Tvar "[ulice, ]PSČ Město" zpátky rozkládají klienti při předvyplnění nového obchodu
+    # (mobile ui/receipt/ReceiptStorePrefill.kt, frontend features/receipts/receipt-store-prefill.ts)
+    # — změna formátu musí jít ruku v ruce s nimi.
     address = ", ".join(part for part in (
         merchant.get("street"),
         " ".join(p for p in (merchant.get("postalCode"), merchant.get("city")) if p),

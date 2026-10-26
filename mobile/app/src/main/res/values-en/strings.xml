@@ -451,6 +451,7 @@
     <string name="store_location_use_my_location">Use my location</string>
     <string name="store_location_approximate_warning">Location is granted only approximately, so the point will be off by kilometres — allow precise location in system settings, or place the marker by tapping the map.</string>
     <string name="store_form_prefilled_from_osm">Prefilled from OpenStreetMap — check the details and correct them if needed.</string>
+    <string name="store_form_prefilled_from_receipt">Prefilled from the receipt — check the details, the machine may have misread them.</string>
     <string name="store_form_use_existing_store">We already know this store — use it</string>
     <string name="store_form_existing_store_pending">This store is already in the catalog but is awaiting confirmation by other contributors — it can\'t be selected yet</string>
     <string name="store_location_searching">Looking up coordinates from the address…</string>
