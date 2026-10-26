@@ -226,8 +226,8 @@ class FakeApi:
     def result(self, receipt_id, payload):
         self.results[receipt_id] = payload
 
-    def fail(self, receipt_id, error):
-        self.failed[receipt_id] = error
+    def fail(self, receipt_id, error, lease_until=None):
+        self.failed[receipt_id] = (error, lease_until)
 
 
 class FakeOcr:
@@ -239,10 +239,11 @@ class FakeOcr:
 
 class WorkerLoopTest(unittest.TestCase):
     def test_vadna_uctenka_nezastavi_davku(self):
-        api = FakeApi([{"receiptId": 1, "imagePaths": ["/x/broken"]},
+        api = FakeApi([{"receiptId": 1, "imagePaths": ["/x/broken"], "leaseUntil": "2026-10-24T10:15:00.123+02:00"},
                        {"receiptId": 2, "imagePaths": ["/x/ok"]}])
         worker.run_batch(api, FakeOcr(), 5, log=lambda *_: None)
-        self.assertIn(1, api.failed)
+        # Chyba nese pronájem, ke kterému patří — server podle něj ignoruje opožděná hlášení.
+        self.assertEqual(api.failed[1][1], "2026-10-24T10:15:00.123+02:00")
         self.assertEqual(api.results[2]["status"], "PROCESSED")
         self.assertTrue(all(isinstance(v, (str, type(None))) for line in api.results[2]["lines"]
                             for v in (line["unitPrice"], line["quantity"])))
