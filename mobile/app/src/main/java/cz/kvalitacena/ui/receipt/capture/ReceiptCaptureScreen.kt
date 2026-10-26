@@ -103,7 +103,12 @@ fun ReceiptCaptureScreen(
   val viewModel: ReceiptCaptureViewModel = viewModel(
     factory = viewModelFactory {
       initializer {
-        ReceiptCaptureViewModel(AppContainer.receiptDraft, retakeIndex, AppContainer.receiptPrefs.captureStartDelaySeconds)
+        ReceiptCaptureViewModel(
+          AppContainer.receiptDraft,
+          retakeIndex,
+          AppContainer.receiptPrefs.captureStartDelaySeconds,
+          AppContainer.authRepository::currentUserUid,
+        )
       }
     },
   )
