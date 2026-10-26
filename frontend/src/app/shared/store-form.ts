@@ -7,6 +7,7 @@ import {
   inject,
   input,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -54,6 +55,19 @@ const COMPANY_ID_DIGITS: Record<string, number> = {
 const COUNTRIES_WITH_REGISTRY: readonly string[] = ['CZ'];
 
 /**
+ * Údaje, kterými se předvyplní NOVÝ obchod — dnes jen z hlavičky účtenky
+ * (features/receipts/receipt-store-prefill.ts). Jsou to vlastní data uživatele, ne OSM, takže
+ * obchod z nich vzniká s `dataOrigin` OWN.
+ */
+export interface StorePrefill {
+  name: string | null;
+  street: string | null;
+  postalCode: string | null;
+  city: string | null;
+  ico: string | null;
+}
+
+/**
  * Založení provozovny — pro zápis ceny bez sdílení polohy nebo zpětně z domova
  * (docs/datovy-model.md, "Identita provozovny"). Používá se uvnitř modalu ze StorePicker.
  *
@@ -88,6 +102,10 @@ export class StoreForm {
 
   /** Nastavený vstup přepne formulář do režimu editace téhle provozovny. */
   readonly store = input<Store | null>(null);
+  /** Předvyplnění nového obchodu (v režimu editace se ignoruje). */
+  readonly prefill = input<StorePrefill | null>(null);
+  /** Formulář předvyplnila účtenka — stroj se mohl přečíst, uživatel má údaje zkontrolovat. */
+  protected readonly prefilled = signal(false);
 
   @Output() readonly created = new EventEmitter<Store>();
   @Output() readonly cancelled = new EventEmitter<void>();
@@ -180,6 +198,40 @@ export class StoreForm {
       // menší nepřesnost v provenienci, ne v samotné poloze.
       this.manualLat.set(store.lat);
       this.manualLon.set(store.lon);
+    });
+    effect(() => {
+      const prefill = this.prefill();
+      if (!prefill || this.store()) return;
+      untracked(() => this.applyPrefill(prefill));
+    });
+  }
+
+  /**
+   * Stejné chování jako mobilní StoreFormViewModel.applyReceiptPrefill: vyplní pole, řetězec
+   * dohledá přesnou shodou s číselníkem (OCR čte „ALBERT" → Albert) a spustí kontrolu
+   * podobných obchodů. ARES se sám nevolá — IČO z účtenky je sídlo firmy, ne provozovna.
+   */
+  private applyPrefill(prefill: StorePrefill): void {
+    if (this.prefilled()) return;
+    this.prefilled.set(true);
+    if (prefill.name) this.name.set(prefill.name);
+    if (prefill.street) this.street.set(prefill.street);
+    if (prefill.city) this.city.set(prefill.city);
+    if (prefill.postalCode) this.postalCode.set(prefill.postalCode);
+    if (prefill.ico) this.ico.set(prefill.ico);
+    this.onNameOrCityChange();
+    const brand = prefill.name?.trim();
+    if (!brand) return;
+    this.storeService.chains(brand, this.country()).subscribe({
+      next: (chains) => {
+        const match = chains.find((c) => c.name.toLowerCase() === brand.toLowerCase());
+        if (!match) return;
+        this.chainOptions.set(chains);
+        this.onChainSelect(match.id);
+        if (this.name().toLowerCase() === match.name.toLowerCase()) this.name.set(match.name);
+      },
+      // Našeptávač je jen doporučující — chyba dotazu nesmí blokovat založení obchodu.
+      error: () => undefined,
     });
   }
 

@@ -1,5 +1,13 @@
 <ng-container *transloco="let t; scope: 'store'">
   <form nz-form nzLayout="vertical" (ngSubmit)="submit()">
+    @if (prefilled()) {
+      <nz-alert
+        nzType="info"
+        [nzMessage]="t('store.form.prefilledFromReceipt')"
+        nzShowIcon
+        class="form-alert"
+      />
+    }
     <nz-form-item>
       <nz-form-label>{{ t('store.form.chainLabel') }}</nz-form-label>
       <nz-form-control>
