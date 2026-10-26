@@ -20,6 +20,16 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.11.1", date: "2026-10-26", sections: [
+      { title: "Přidáno", items: [
+        { text: "„Obchod tu není — přidat nový\" v detailu účtenky předvyplní formulář nového obchodu názvem, adresou a IČO, které appka z účtenky přečetla — není potřeba je opisovat", parts: ["web", "mobil"] },
+      ] },
+      { title: "Opraveno", items: [
+        { text: "Hledání obchodu najde i víc slov naráz v libovolném pořadí — „Lidl Brno\" nebo „Vídeňská Lidl\" — dřív nenašlo nic", parts: ["server", "web", "mobil"] },
+        { text: "Rozpracovanou účtenku nafocenou jedním účtem už po přihlášení jiného účtu v témže telefonu nikdo jiný neuvidí ani neodešle", parts: ["mobil"] },
+        { text: "Zpracování účtenky, které trvalo déle, už nemůže omylem vrátit do fronty účtenku, na které se právě pracuje znovu", parts: ["server"] },
+      ] },
+  ] },
   { version: "0.11.0", date: "2026-10-24", sections: [
       { title: "Přidáno", items: [
         { text: "Před snímáním účtenky appka ukáže čáru, ke které srovnat horní okraj, a animací naznačí posun telefonu dolů; první díl se uloží až po krátkém odpočtu v klidu, takže už nevyjde nakloněný ani s kusem stolu", parts: ["mobil"] },
