@@ -13,6 +13,11 @@ i zvenčí — `/actuator/health` je `UP` a `/actuator/info` hlásí přesně tu
 Zastaví se (bez checkoutu) na necommitnutých změnách v repu na serveru — tam se ručně needituje,
 takže by to byla rozdělaná práce, ne úmyslný stav.
 
+Po sestavení smaže build cache Dockeru starší než týden (`docker builder prune --filter
+until=168h`). Docker ji sám neuklízí a s každým nasazením roste — 2026-10 jí na serveru bylo
+21,6 GB, zatímco images měly 1,4 GB a volumes 74 MB. Nečekaný nárůst obsazeného disku se
+kontroluje přes `docker system df`.
+
 Spustit z checkoutu repa na serveru:
 
 ```bash
