@@ -19,6 +19,9 @@ databaseChangeLog:
               DROP EXTENSION IF EXISTS pg_trgm;
               DROP EXTENSION IF EXISTS unaccent;
 
+  # Natvrdo vložený OID slovníku níž se ukázal jako nepřenositelný (záloha nešla obnovit na
+  # čistou instanci) — definici funkce nahrazuje 2026-10-28/01-norm-text-portable.yaml jménem
+  # slovníku kvalifikovaným schématem. Tenhle changeset zůstává beze změny kvůli checksumu.
   - changeSet:
       id: 2026-08-06-01-create-core-norm-text
       author: Petr F.

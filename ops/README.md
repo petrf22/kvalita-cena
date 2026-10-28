@@ -180,21 +180,42 @@ nebo zálohy starší než 2 dny navíc přijde desktopová notifikace (`notify-
 stroji, nikdy při úspěchu) — bez lokálního MTA je to jediný kanál, kterého si uživatel na
 desktopu skutečně všimne.
 
+**Slepé místo:** obě hlášení žijí uvnitř skriptu, takže nepomůžou, když se skript vůbec
+nespustí. Přesně tak zůstal lokál od 2026-09-19 do 2026-10-28 bez jediné zálohy — repo se
+přestěhovalo do jiného adresáře a crontab volal starou cestu, shell selhal už na přesměrování
+logu (`docs/nasazeni.md`, sekce 1, „Přechod na CAX11"). Po přesunu repa zkontrolovat
+`crontab -l`; nejnovější soubor v `backup/` nesmí být starší než den.
+
 ## Zkouška obnovy — udělat PŘED zapnutím cronu, ne až při skutečné nehodě
 
 `docs/nasazeni.md` to vyžaduje explicitně: „vyzkoušet obnovu na čistou instanci, ne jen že záloha
 proběhla bez chyby." Nejjednodušší způsob je druhá, dočasná Hetzner instance (u hodinové
 fakturace stojí zkouška pár korun):
 
-1. Na čisté instanci: `git clone`, `cp .env.example .env`, doplnit `POSTGRES_USER`/
-   `POSTGRES_PASSWORD` (nemusí sedět s produkčními — je to jen dočasná instance) a stejná
-   tajemství jako na produkci (jinak by po obnově nešlo dekódovat uložené e-maily).
+1. Na čisté instanci: `git clone`, `cp .env.example .env`, doplnit `POSTGRES_USER` **stejný
+   jako na produkci** (dump obsahuje `ALTER ... OWNER TO <uživatel>`, s jiným jménem obnova
+   v kroku 3 skončí na neexistující roli), `POSTGRES_PASSWORD` libovolné a stejná tajemství
+   jako na produkci (jinak by po obnově nešlo dekódovat uložené e-maily).
 2. `docker compose -f compose.prod.yaml up -d postgres` — jen databáze, počkat, až naběhne.
 3. Obnovit databázi ze zálohy:
    ```bash
    zcat db-<timestamp>.sql.gz | \
-     docker compose -f compose.prod.yaml exec -T postgres psql -U "$POSTGRES_USER" -d kvalitaacena
+     docker compose -f compose.prod.yaml exec -T postgres psql -q -v ON_ERROR_STOP=1 \
+       -U "$POSTGRES_USER" -d kvalitaacena && echo "OBNOVA OK"
    ```
+   **`ON_ERROR_STOP=1` je nutné** — bez něj psql chybu jen vypíše a pokračuje dál, takže
+   napůl obnovená databáze (tabulky, jejichž `COPY` selhal, zůstanou prázdné) vypadá jako
+   úspěšná obnova. Při chybě smazat volume databáze a začít krokem 2 znovu.
+
+   **Zálohy starší než 2026-10-28 15:31** mají v těle `core.norm_text` natvrdo OID slovníku
+   (`'16819'::regdictionary`), který v čerstvé databázi neplatí — `COPY` do každé tabulky
+   s indexem nad `norm_text` pak selže na „cache lookup failed for text search dictionary".
+   Takovou zálohu obnovit přes `sed` vložený mezi `zcat` a `docker compose`:
+   ```bash
+   sed "s/'16819'::regdictionary/'public.unaccent'::regdictionary/"
+   ```
+   Novější zálohy už mají jméno slovníku (migrace `2026-10-28/01-norm-text-portable.yaml`,
+   produkce ho má od obnovy na nový server) a úpravu nepotřebují.
 4. Obnovit média do volume (appka musí být předtím aspoň jednou nastartovaná, ať volume existuje):
    ```bash
    docker run --rm \
