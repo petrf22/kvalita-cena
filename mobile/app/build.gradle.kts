@@ -160,7 +160,7 @@ dependencies {
     // pod Apache-2.0 (licence v POM artefaktu ověřená 2026-09-30) a od 4.9 vychází jako AAR
     // přímo na Maven Central, bez vlastního repozitáře. Žádné rozpoznávání textu na klientovi,
     // to dělá worker (docs/ai.md, „Účtenky").
-    implementation("org.opencv:opencv:4.14.0")
+    implementation("org.opencv:opencv:5.0.0.1")
 
     // Odeslání účtenky až po připojení a periodický dotaz na zpracované účtenky (lokální
     // notifikace bez GMS, docs/soukromi.md „Účtenky") — Apache-2.0, běží i bez Play Services
