@@ -112,10 +112,20 @@ if [[ "$SITE_ADDRESS" == *localhost* ]]; then
        "(docs/nasazeni.md, dřív než se přepne DNS ověřuj proti IP ručně: curl http://<IP>/)."
 else
   echo "Ověřuji web na $SITE_ADDRESS..."
-  if curl -sf -o /dev/null "$SITE_ADDRESS"; then
+  # Caddy po prvním startu (nový server, smazaná caddy-data) teprve žádá Let's Encrypt
+  # o certifikát — 2026-10-28 při přechodu na nový server ho měl až ~7 s po startu kontejneru
+  # a jediný pokus hned po `up -d` hlásil falešné selhání. Stejné opakování jako u health níž.
+  WEB_TRIES=5
+  WEB_DELAY=5
+  WEB_OK=0
+  for ((i = 1; i <= WEB_TRIES; i++)); do
+    curl -sf -o /dev/null "$SITE_ADDRESS" && { WEB_OK=1; break; }
+    [ "$i" -lt "$WEB_TRIES" ] && sleep "$WEB_DELAY"
+  done
+  if [ "$WEB_OK" -eq 1 ]; then
     echo "  web OK"
   else
-    echo "  web NEODPOVÍDÁ na $SITE_ADDRESS" >&2
+    echo "  web NEODPOVÍDÁ na $SITE_ADDRESS ani po $WEB_TRIES pokusech" >&2
     FAILED=1
   fi
 fi
