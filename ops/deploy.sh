@@ -82,6 +82,14 @@ docker compose -f "$COMPOSE_FILE" build backend
 echo "Stavím web..."
 docker compose -f "$COMPOSE_FILE" build web
 
+# Build cache Dockeru sám neuklízí — každé nasazení přidá mezivrstvy Gradle a `npm ci`, za necelé
+# dva měsíce provozu (2026-10) jí na serveru bylo 21,6 GB proti 1,4 GB images a 74 MB volumes.
+# Na 40GB disku by zaplnění jako první odneslo zálohy (ops/backup.sh se pod MIN_FREE_MB záměrně
+# nespustí). Týdenní okno nechává vrstvy z nedávných buildů, takže další nasazení zůstane
+# rychlé. Selhání úklidu nasazení neshodí — obrazy jsou v tu chvíli už postavené.
+echo "Uklízím build cache starší než týden..."
+docker builder prune -f --filter until=168h || echo "Pozor: úklid build cache selhal (nasazení pokračuje)." >&2
+
 echo "Spouštím appku..."
 docker compose -f "$COMPOSE_FILE" up -d
 
