@@ -33,6 +33,8 @@ out/
 # konkrétní soubory ve frontend/.vscode/ řeší frontend/.gitignore
 
 ### Lokální konfigurace, která se nesdílí ###
+# skutečné účtenky a jejich OCR text (tools/uctenky/README.md, „Ladění účtenky")
+/uctenky/
 backend/src/main/resources/application-local.yml
 backend/.env
 .env

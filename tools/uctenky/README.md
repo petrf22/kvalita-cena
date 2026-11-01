@@ -104,6 +104,42 @@ kód, čísla pokladny ani věrnostní údaje se na server nevrátí. Hlídají 
 
 Obrázky na serveru navíc uživatel před odesláním maskuje na zařízení.
 
+## Ladění účtenky
+
+Worker si nic neukládá. Když u účtenky hlásí varování (`nerozpoznaný tvar řádku`, chybí
+celková částka nebo datum), zdroj se dohledá takhle:
+
+1. **ID účtenky** je v řádku nad varováními: `!! účtenka <ID>: <status>, … profil …`.
+2. **Obrázek**:
+   - Vlastní účtenka: web `/receipts/<ID>` (nebo mobil). Obrázky jsou tam do 30 dní po
+     zpracování (`app.receipt.image-retention-days`). Ulož je do `uctenky/<ID>/00.jpg`,
+     `01.jpg`…, tedy shora dolů.
+   - Účtenka se souhlasem s archivací: `ARCHIVE_DIR=uctenky tools/uctenky/run-worker.sh`
+     stáhne obrázky do `uctenky/<ID>/`.
+   - Token workeru zpracovanou účtenku bez souhlasu s archivací nevydá
+     (`ReceiptWorkerService.image`). Cizí účtenku bez souhlasu si provozovatel ponechat
+     nesmí (`docs/soukromi.md`, „Účtenky").
+3. **OCR text** je na serveru v `ai.receipt_job.raw_text`, ale jen když se našel řádek
+   s celkovou částkou (`parse.server_text`). Jinak je potřeba přečíst obrázek znovu. Výsledek
+   vyjde stejně jako ve workeru, protože OCR běží s nulovou teplotou a pevným seedem.
+
+Přehrání bez serveru a bez tokenu:
+
+```bash
+python3 tools/uctenky/replay.py --save-ocr uctenky/123/*.jpg   # OCR + rozbor, uloží 00.ocr.txt…
+python3 tools/uctenky/replay.py uctenky/123/*.ocr.txt          # jen rozbor, bez Ollamy
+python3 tools/uctenky/replay.py --profile albert uctenky/123/*.ocr.txt
+python3 tools/uctenky/replay.py --json uctenky/123/*.ocr.txt   # celý dokument
+```
+
+Vypíše řádky po spojení dílů (s vyznačeným řádkem celkové částky), rozebrané položky,
+kontrolní součet a varování ve stejném tvaru jako worker. Rozbor dělá tentýž kód, takže
+regexy se dají ladit nad uloženým `.ocr.txt` opakovaně a bez GPU. Návratový kód 0 znamená,
+že součet sedí a nepadlo žádné varování.
+
+Složka `uctenky/` je v `.gitignore`. Do `testdata/` patří jen anonymizovaná kopie
+(viz „Testy" a „Nový řetězec").
+
 ## Testy
 
 ```bash
