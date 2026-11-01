@@ -149,6 +149,8 @@
     "quantityWeighed": "{{quantity}} {{unit}} × {{price}} za {{unit}}",
     "pricePerUnit": "{{price}} za {{unit}}",
     "discount": "zľava −{{amount}}",
+    "ean": "EAN {{code}}",
+    "matchedByEan": "podľa EAN z bločku",
     "recorded": "Cena zapísaná",
     "findProduct": "Nájsť tovar",
     "changeProduct": "Zmeniť tovar",
@@ -177,6 +179,7 @@
   "create": {
     "title": "Nový tovar z bločku",
     "labelPrefix": "Na bločku:",
-    "hint": "Skratku z bločku prepíš na celý názov, ako ho poznáš z obalu. Tovar sa založí pre tento obchod a riadok sa s ním rovno spáruje."
+    "hint": "Skratku z bločku prepíš na celý názov, ako ho poznáš z obalu. Tovar sa založí pre tento obchod a riadok sa s ním rovno spáruje.",
+    "hintWithCode": "Skontroluj názov — má byť celý, ako ho poznáš z obalu, nie skratka z bločku. Čiarový kód je prevzatý z bločku, takže tovar pôjde nájsť aj v ostatných obchodoch. Riadok sa s ním rovno spáruje."
   }
 }

@@ -149,6 +149,8 @@
     "quantityWeighed": "{{quantity}} {{unit}} × {{price}} za {{unit}}",
     "pricePerUnit": "{{price}} za {{unit}}",
     "discount": "sleva −{{amount}}",
+    "ean": "EAN {{code}}",
+    "matchedByEan": "podle EAN z účtenky",
     "recorded": "Cena zapsána",
     "findProduct": "Najít zboží",
     "changeProduct": "Změnit zboží",
@@ -177,6 +179,7 @@
   "create": {
     "title": "Nové zboží z účtenky",
     "labelPrefix": "Na účtence:",
-    "hint": "Zkratku z účtenky přepiš na celý název, jak ho znáš z obalu. Zboží se založí pro tenhle obchod a řádek se s ním rovnou spáruje."
+    "hint": "Zkratku z účtenky přepiš na celý název, jak ho znáš z obalu. Zboží se založí pro tenhle obchod a řádek se s ním rovnou spáruje.",
+    "hintWithCode": "Zkontroluj název — má být celý, jak ho znáš z obalu, ne zkratka z účtenky. Čárový kód je převzatý z účtenky, takže zboží půjde najít i v ostatních obchodech. Řádek se s ním rovnou spáruje."
   }
 }

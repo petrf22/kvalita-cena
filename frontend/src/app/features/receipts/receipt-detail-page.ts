@@ -31,11 +31,7 @@ import { AuthService } from '../../services/auth-service';
 import { ConnectivityService, isNetworkError } from '../../services/connectivity-service';
 import { FormatService } from '../../services/format-service';
 import { ReceiptService } from '../../services/receipt-service';
-import {
-  QUANTITY_UNIT_KEYS,
-  RECEIPT_LINE_STATUS_KEYS,
-  RECEIPT_MATCH_SOURCE_KEYS,
-} from '../../shared/enum-labels';
+import { QUANTITY_UNIT_KEYS, RECEIPT_LINE_STATUS_KEYS } from '../../shared/enum-labels';
 import { translateError } from '../../shared/error-message';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { ProductThumb, usesExternalImageFallback } from '../../shared/product-thumb';
@@ -51,7 +47,9 @@ import {
   isLineConfirmable,
   isLineLocked,
   isProcessingDeadEnd,
+  lineGtin,
   lineSummary,
+  matchSourceKey,
   nextSelection,
   purchasedAtToDate,
   receiptStatusColor,
@@ -114,7 +112,8 @@ export class ReceiptDetailPage {
   private readonly receiptId = inject(ActivatedRoute).snapshot.paramMap.get('id') ?? '';
 
   protected readonly lineStatusKeys = RECEIPT_LINE_STATUS_KEYS;
-  protected readonly matchSourceKeys = RECEIPT_MATCH_SOURCE_KEYS;
+  protected readonly matchSourceKey = matchSourceKey;
+  protected readonly lineGtin = lineGtin;
   protected readonly statusKey = receiptStatusKey;
   protected readonly statusColor = receiptStatusColor;
   protected readonly isLocked = isLineLocked;

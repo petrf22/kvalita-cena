@@ -296,12 +296,20 @@
                           }
                         </div>
                         <div class="line-meta">
-                          {{ quantityText(line) }}
+                          @if (quantityText(line); as quantity) {
+                            <span>{{ quantity }}</span>
+                          }
                           @if (line.discountAmount) {
                             <span class="line-discount">{{
                               t('receipts.line.discount', {
                                 amount: format.money(line.discountAmount, receipt.currency),
                               })
+                            }}</span>
+                          }
+                          <!-- Podle EANu server páruje — ať jde porovnat s kódem na obalu doma. -->
+                          @if (lineGtin(line); as gtin) {
+                            <span class="line-code">{{
+                              t('receipts.line.ean', { code: gtin })
                             }}</span>
                           }
                         </div>
@@ -319,10 +327,10 @@
                               <span>{{ product.name }}</span>
                             </a>
                           }
-                          @if (line.status === 'SUGGESTED' && line.matchSource) {
-                            <span class="muted">{{
-                              matchSourceKeys[line.matchSource] | transloco
-                            }}</span>
+                          @if (line.status === 'SUGGESTED') {
+                            @if (matchSourceKey(line); as sourceKey) {
+                              <span class="muted">{{ sourceKey | transloco }}</span>
+                            }
                           }
                           @if (line.confirmed) {
                             <span class="line-recorded">
@@ -521,9 +529,18 @@
               <p class="create-hint">
                 {{ t('receipts.create.labelPrefix') }} <strong>{{ line.labelRaw }}</strong>
               </p>
-              <p class="create-hint">{{ t('receipts.create.hint') }}</p>
+              <!--
+                S EANem nevzniká lokální zboží obchodu, ale zboží do společného katalogu —
+                proto jiná nápověda. Formulář se podle kódu zeptá katalogu i Open Food Facts:
+                existující zboží nabídne k použití, OFF předvyplní název v jazyce appky místo
+                zkratky z pokladny.
+              -->
+              <p class="create-hint">
+                {{ lineGtin(line) ? t('receipts.create.hintWithCode') : t('receipts.create.hint') }}
+              </p>
               <app-product-form
                 [initialName]="line.labelRaw"
+                [barcode]="lineGtin(line)"
                 [store]="receipt.store"
                 (created)="onProductCreated(line, $event)"
                 (existingMatched)="onExistingMatched(line, $event)"

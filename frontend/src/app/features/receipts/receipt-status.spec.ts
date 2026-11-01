@@ -7,7 +7,9 @@ import {
   defaultSelectedLineIds,
   isLineConfirmable,
   isLineLocked,
+  lineGtin,
   lineSummary,
+  matchSourceKey,
   nextSelection,
   receiptStatusColor,
   receiptStatusKey,
@@ -149,5 +151,35 @@ describe('verze souhlasu', () => {
     expect(consentOutdated(null)).toBe(false);
     expect(consentOutdated(RECEIPT_CONSENT_VERSION)).toBe(false);
     expect(consentOutdated(RECEIPT_CONSENT_VERSION + 1)).toBe(true);
+  });
+});
+
+describe('EAN řádku', () => {
+  it('vrátí globální EAN z účtenky', () => {
+    expect(lineGtin(line('1', { internalCode: '8594001740659' }))).toBe('8594001740659');
+    expect(lineGtin(line('1', { internalCode: ' 8594001740659 ' }))).toBe('8594001740659');
+  });
+
+  it('vnitroobchodní kód, etiketu váhového zboží ani špatnou kontrolní číslici za EAN nevydává', () => {
+    expect(lineGtin(line('1', { internalCode: null }))).toBeNull();
+    expect(lineGtin(line('1', { internalCode: '123456' }))).toBeNull();
+    expect(lineGtin(line('1', { internalCode: '2012345678903' }))).toBeNull();
+    expect(lineGtin(line('1', { internalCode: '5997321796297' }))).toBeNull();
+  });
+
+  it('párování podle kódu s EANem popíše jako „podle EAN"', () => {
+    expect(matchSourceKey(line('1', { matchSource: 'CODE', internalCode: '8594001740659' }))).toBe(
+      'receipts.line.matchedByEan',
+    );
+  });
+
+  it('ostatní zdroje párování nechá u obecného popisku', () => {
+    expect(matchSourceKey(line('1', { matchSource: 'CODE', internalCode: '123456' }))).toBe(
+      'enum.receiptMatchSource.CODE',
+    );
+    expect(matchSourceKey(line('1', { matchSource: 'LABEL', internalCode: '8594001740659' }))).toBe(
+      'enum.receiptMatchSource.LABEL',
+    );
+    expect(matchSourceKey(line('1', { matchSource: null }))).toBeNull();
   });
 });

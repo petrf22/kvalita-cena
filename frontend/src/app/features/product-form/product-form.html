@@ -27,6 +27,31 @@
     </ng-template>
   }
 
+  <!--
+    Nabídka existujícího zboží ke kódu — jedna šablona, dvě místa: kód předaný zvenku (EAN
+    z řádku účtenky) ji ukáže nahoře, sken pod polem kódu (viz `existingByCode`).
+  -->
+  <ng-template #existingAlert let-product>
+    <nz-alert
+      nzType="info"
+      nzShowIcon
+      [nzMessage]="t('product-form.scan.existing', { name: product.name })"
+      [nzAction]="useExistingAction"
+      class="form-alert"
+    />
+  </ng-template>
+  <ng-template #useExistingAction>
+    <button nz-button nzSize="small" type="button" (click)="useExistingByCode()">
+      {{ t('product-form.scan.useExisting') }}
+    </button>
+  </ng-template>
+
+  @if (existingByCode(); as existing) {
+    @if (existing.fromInput) {
+      <ng-container *ngTemplateOutlet="existingAlert; context: { $implicit: existing.product }" />
+    }
+  }
+
   <form nz-form nzLayout="vertical" (ngSubmit)="submit()">
     <!--
       Pole "Název" je vždy v jazyce appky (docs/lokalizace.md) — proto v popisku svítí jazyk.
@@ -267,7 +292,7 @@
             nz-input
             name="code"
             [ngModel]="code()"
-            (ngModelChange)="code.set($event); scannedExisting.set(null)"
+            (ngModelChange)="onCodeChange($event)"
             [disabled]="!!product()"
           />
           <!-- Sken jen u prázdného pole — přepsat vyplněný kód omylem by bylo horší než psát. -->
@@ -294,19 +319,10 @@
       </nz-form-control>
     </nz-form-item>
 
-    @if (scannedExisting(); as existing) {
-      <nz-alert
-        nzType="info"
-        nzShowIcon
-        [nzMessage]="t('product-form.scan.existing', { name: existing.name })"
-        [nzAction]="useExistingAction"
-        class="form-alert"
-      />
-      <ng-template #useExistingAction>
-        <button nz-button nzSize="small" type="button" (click)="useScannedExisting()">
-          {{ t('product-form.scan.useExisting') }}
-        </button>
-      </ng-template>
+    @if (existingByCode(); as existing) {
+      @if (!existing.fromInput) {
+        <ng-container *ngTemplateOutlet="existingAlert; context: { $implicit: existing.product }" />
+      }
     }
 
     @if (!product()) {
