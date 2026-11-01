@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import lines as lines_mod  # noqa: E402
 import normalize  # noqa: E402
 import parse  # noqa: E402
+import replay  # noqa: E402
 import result as result_mod  # noqa: E402
 import worker  # noqa: E402
 
@@ -247,6 +248,47 @@ class WorkerLoopTest(unittest.TestCase):
         self.assertEqual(api.results[2]["status"], "PROCESSED")
         self.assertTrue(all(isinstance(v, (str, type(None))) for line in api.results[2]["lines"]
                             for v in (line["unitPrice"], line["quantity"])))
+
+
+class ReplayTest(unittest.TestCase):
+    """Offline přehrání (replay.py) — stejný rozbor jako worker, jen nad lokálními soubory."""
+
+    def _run(self, paths, **kwargs):
+        out = []
+        texts = replay.read_parts(paths, self._no_ocr, kwargs.pop("save_ocr", False),
+                                  log=lambda *a, **k: out.append(" ".join(map(str, a))))
+        document = replay.report(texts, log=lambda *a, **k: out.append(" ".join(map(str, a))), **kwargs)
+        return document, "\n".join(out)
+
+    @staticmethod
+    def _no_ocr():
+        raise AssertionError("textový vstup nesmí volat OCR")
+
+    def test_textovy_vstup_bez_ollamy(self):
+        document, output = self._run([TESTDATA / "albert-plny.ocr.txt"])
+        self.assertEqual(document, parse.build_document(_text("albert-plny")))
+        self.assertIn("profil albert", output)
+        self.assertIn("OK součet 387.45 / tištěno 387.45", output)
+        self.assertIn("Celkem 387,45  <- celková částka", output)
+
+    def test_varovani_jako_ve_workeru(self):
+        _, output = self._run([TESTDATA / "albert-nesedi.ocr.txt"])
+        self.assertIn("! nerozpoznaný tvar řádku: 'ROZMAZANÝ ŘÁDEK BEZ CENY'", output)
+
+    def test_obrazek_jde_pres_ocr_a_ulozi_text(self):
+        import tempfile
+
+        class FakeOcr:
+            model = "fake"
+
+            def ocr(self, image):
+                return _text("albert-plny")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / "00.jpg"
+            image.write_bytes(b"jpg")
+            texts = replay.read_parts([image], FakeOcr, True, log=lambda *a, **k: None)
+            self.assertEqual((Path(tmp) / "00.ocr.txt").read_text(encoding="utf-8"), texts[0])
 
 
 class NormalizeTest(unittest.TestCase):
