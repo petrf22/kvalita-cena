@@ -7,10 +7,10 @@ jen detekci a tři metody, ne vlastní parser.
 
 from __future__ import annotations
 
-from profiles import albert, generic
+from profiles import albert, generic, tamda
 from profiles.base import Profile, ReceiptHeader
 
-_PROFILES: tuple[Profile, ...] = (albert.PROFILE,)
+_PROFILES: tuple[Profile, ...] = (albert.PROFILE, tamda.PROFILE)
 
 
 def detect(raw_lines: list[str]) -> Profile:

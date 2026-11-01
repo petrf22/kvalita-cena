@@ -250,6 +250,86 @@ class WorkerLoopTest(unittest.TestCase):
                             for v in (line["unitPrice"], line["quantity"])))
 
 
+def _parts(prefix: str) -> list[str]:
+    return [path.read_text(encoding="utf-8") for path in sorted(TESTDATA.glob(f"{prefix}-dil*.ocr.txt"))]
+
+
+class TamdaProfileTest(unittest.TestCase):
+    """Číslované položky s EAN na druhém řádku, účtenka focená po třech dílech s překryvem."""
+
+    def setUp(self):
+        self.document = parse.build_document(_parts("tamda"))
+        self.by_no = {line["lineNo"]: line for line in self.document["lines"]}
+
+    def test_prekryv_dilu_se_nezapocita_dvakrat(self):
+        self.assertEqual(self.document["profile"], "tamda")
+        self.assertEqual(len(self.document["lines"]), 10)
+        self.assertTrue(self.document["totalMatches"], self.document["warnings"])
+        self.assertEqual(self.document["warnings"], [])
+
+    def test_hlavicka_ico_i_pres_spatne_prectene_JCO_a_datum_z_hlavicky(self):
+        merchant = self.document["merchant"]
+        self.assertEqual((merchant["ico"], merchant["street"], merchant["postalCode"], merchant["city"]),
+                         ("27160840", "Nádražní 1", "100 00", "Vzorov"))
+        # OCR přečetlo „IMDA FOODS" — podle IČO profil ví, čí účtenka to je.
+        self.assertEqual(merchant["rawName"], "TAMDA FOODS s.r.o.")
+        self.assertEqual(self.document["purchasedAt"], "2026-09-07T10:15:00+02:00")
+
+    def test_ze_dvou_cteni_vyhraje_ean_s_platnou_kontrolni_cislici(self):
+        self.assertEqual(self.by_no[4]["code"], "8594001740659")   # díl 2: ...658
+        self.assertEqual(self.by_no[6]["code"], "5906927034812")   # díl 2: ...612
+
+    def test_cteni_kde_mnozstvi_krat_cena_nesedi_prohraje(self):
+        finish = self.by_no[7]                                     # díl 3: 679,00 a ...796297
+        self.assertEqual((finish["lineTotal"], finish["code"]), ("679.80", "5997321736297"))
+        self.assertEqual((finish["quantity"], finish["unitPrice"]), ("2", "339.90"))
+
+    def test_osirely_radek_s_ean_na_zacatku_dilu_se_neprilepi_k_cizi_polozce(self):
+        avokado = self.by_no[8]
+        self.assertEqual((avokado["code"], avokado["quantity"], avokado["unitPrice"]),
+                         ("8595012035352", "4", "9.50"))
+
+    def test_cislice_pred_cenou_neni_oddelovac_tisicu_ale_tisice_se_poznaji(self):
+        self.assertEqual(self.by_no[7]["rawLabel"], "Finish Allin1 Max tablety do myčky nádobi 8")
+        trouba = self.by_no[9]
+        self.assertEqual((trouba["rawLabel"], trouba["lineTotal"], trouba["unitPrice"]),
+                         ("Mikrovlnná trouba 20L", "2599.80", "1299.90"))
+
+    def test_cena_na_radku_s_ean(self):
+        self.assertEqual(self.by_no[1]["lineTotal"], "950.00")
+
+    def test_ean_jde_na_server_jako_internal_code(self):
+        payload = result_mod.to_payload(self.document, None, "test")
+        self.assertEqual(payload["lines"][0]["internalCode"], "8851212221408")
+        self.assertTrue(all(line["internalCode"] for line in payload["lines"]))
+
+    def test_syrovy_text_konci_celkovou_castkou(self):
+        text = parse.server_text(_parts("tamda"))
+        self.assertTrue(text.endswith("Celkem: 5 983,60"))
+        self.assertNotIn("Přijatá", text)
+
+    def test_chybejici_poradove_cislo_se_hlasi(self):
+        document = parse.build_document("""TAMDA FOODS s.r.o.
+1 12 Garak Udon @3x213g Kimchi 79,90
+8800242940117
+3 12 Varmuža pomazánka 135g tuňáková 27,90
+8594002060138
+Celkem: 107,80
+""")
+        self.assertEqual(len(document["lines"]), 2)
+        self.assertTrue(any("chybí položka č. 2" in warning for warning in document["warnings"]))
+
+    def test_neplatny_ean_se_neposle(self):
+        document = parse.build_document("""TAMDA FOODS s.r.o.
+1 12 Garak Udon @3x213g Kimchi 79,90
+8800242940118
+Celkem: 79,90
+""")
+        line = document["lines"][0]
+        self.assertNotIn("code", line)
+        self.assertIn("kontrolní číslicí", line["note"])
+
+
 class ReplayTest(unittest.TestCase):
     """Offline přehrání (replay.py) — stejný rozbor jako worker, jen nad lokálními soubory."""
 
@@ -292,6 +372,12 @@ class ReplayTest(unittest.TestCase):
 
 
 class NormalizeTest(unittest.TestCase):
+    def test_kontrolni_cislice_gtin(self):
+        for code in ("8594001740659", "90169588", "011210617001", "08594001740659"):
+            self.assertTrue(normalize.is_valid_gtin(code), code)
+        for code in ("5997321796297", "400990052165", "859400174065", "85940017406599", "8594O01740659"):
+            self.assertFalse(normalize.is_valid_gtin(code), code)
+
     def test_castka_s_mezerou_v_tisicich(self):
         self.assertEqual(str(normalize.parse_amount("1 369,20")), "1369.20")
 

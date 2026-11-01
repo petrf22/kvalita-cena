@@ -510,8 +510,12 @@ jako u ručně vyplněné adresy hledá až tlačítkem. Data jsou vlastní, `da
 rozdělená na 5 dílů s překryvem): OCR → řádky se součtem na haléř → párování → cena s
 `RECEIPT_OCR` → naučené označení v „Názvech na účtenkách".
 
-**Co zbývá:** vlastní profily dalších řetězců v `tools/uctenky/profiles/` (dnes Albert + obecný
-profil, Penny prochází obecným), `f_evid` ve váze ceny, leták jako druhý zdroj označení,
+**Profily řetězců** (`tools/uctenky/profiles/`): Albert, TAMDA FOODS a obecný profil. Tamda
+ověřena 2026-11-01 na reálné účtence se 66 položkami v 5 dílech, součet sedí na haléř. Tiskne
+EAN u každé položky, worker ho posílá jako `internalCode`, ale jen s platnou kontrolní
+číslicí (`normalize.is_valid_gtin`), protože server kontroluje jen formát.
+
+**Co zbývá:** vlastní profily dalších řetězců (Penny prochází obecným), `f_evid` ve váze ceny, leták jako druhý zdroj označení,
 oprava špatně naučeného označení jinak než moderátorem v SQL / `mergeProducts`.
 
 ## Neimplementováno

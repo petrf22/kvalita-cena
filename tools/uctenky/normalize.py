@@ -42,6 +42,24 @@ def format_amount(value: Decimal) -> str:
     return f"{value:.2f}"
 
 
+_GTIN_LENGTHS = {8, 12, 13, 14}
+
+
+def is_valid_gtin(code: str) -> bool:
+    """EAN-8/UPC-A/EAN-13/GTIN-14 s platnou kontrolní číslicí (GS1, váhy 3-1 zprava).
+
+    OCR čte čárové kódy pod položkou s chybou v jedné číslici (5997321796297 místo
+    5997321736297) a server kontroluje jen formát. Kontrolní číslice zachytí každou záměnu
+    jedné číslice, a tak se dál pošle jen kód, který jí projde — chybně přečtený EAN by
+    jinak spároval úplně jiné zboží.
+    """
+    if not code.isdigit() or len(code) not in _GTIN_LENGTHS:
+        return False
+    digits = [int(char) for char in code]
+    weighted = sum(digit * (3 if index % 2 == 0 else 1) for index, digit in enumerate(reversed(digits[:-1])))
+    return (10 - weighted % 10) % 10 == digits[-1]
+
+
 def clean_line(line: str) -> str:
     """Sjednotí mezery a znaky, které OCR střídá (× vs x, nedělitelné mezery, uvozovky)."""
     text = unicodedata.normalize("NFC", line)

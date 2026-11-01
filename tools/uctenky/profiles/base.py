@@ -41,3 +41,7 @@ class Profile:
     read_header: Callable[[list[str]], ReceiptHeader]
     # Vrátí (řádky bloku položek, patička).
     split_body: Callable[[list[str]], tuple[list[str], Footer]]
+    # Vlastní rozbor bloku položek (vrací lines.ParseResult). Jen pro účtenky, jejichž
+    # položky společné skládání (lines.parse_item_lines) neumí — typicky číslované položky
+    # s EAN na druhém řádku. None = společné skládání.
+    parse_items: Callable[[list[str]], object] | None = None

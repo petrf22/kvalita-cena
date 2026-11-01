@@ -78,6 +78,8 @@ class ParsedLine:
     vat_code: str | None = None
     applies_to_line_no: int | None = None
     note: str | None = None
+    # EAN vytištěný u položky — jen s platnou kontrolní číslicí (normalize.is_valid_gtin).
+    code: str | None = None
 
 
 @dataclass

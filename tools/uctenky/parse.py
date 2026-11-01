@@ -84,7 +84,7 @@ def build_document(texts: list[str] | str, profile_name: str | None = None) -> d
 
     header = profile.read_header(raw_lines)
     body, footer = profile.split_body(raw_lines)
-    parsed = lines_mod.parse_item_lines(body)
+    parsed = (profile.parse_items or lines_mod.parse_item_lines)(body)
 
     computed = sum((line.line_total for line in parsed.lines if line.line_total is not None), Decimal(0))
     warnings = list(parsed.warnings)
@@ -133,5 +133,6 @@ def _line_to_json(line: lines_mod.ParsedLine) -> dict:
         "vatCode": line.vat_code,
         "appliesToLineNo": line.applies_to_line_no,
         "note": line.note,
+        "code": line.code,
     }
     return {key: value for key, value in payload.items() if value is not None}

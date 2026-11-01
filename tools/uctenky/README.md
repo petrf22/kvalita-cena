@@ -153,4 +153,15 @@ mimo git) do repozitáře nepatří.
 
 Do `profiles/` přidej modul se třemi funkcemi (`matches`, `read_header`, `split_body`)
 a zaregistruj ho v `profiles/__init__.py`. Skládání řádků je společné. K tomu patří
-anonymizovaná fixture v `testdata/` a test.
+anonymizovaná fixture v `testdata/` a test. Dlouhou účtenku dej do fixture po dílech
+(`<řetězec>-dil1.ocr.txt`, …), aby test pokryl i spojení překryvu.
+
+Čtvrtá funkce `parse_items` je volitelná. Patří jen účtenkám, jejichž položky společné
+skládání neumí. Příklad je [`profiles/tamda.py`](profiles/tamda.py): číslované položky
+s EAN na druhém řádku a překryvy dílů, které `merge_segments` nepozná. Duplicity se tam
+poznají podle pořadového čísla.
+
+**EAN z účtenky** jde na server jako `internalCode` a server podle něj spáruje zboží
+(`ReceiptMatchingService.byCode`). Server kontroluje jen formát, proto worker posílá jen
+kód s platnou kontrolní číslicí (`normalize.is_valid_gtin`). OCR v čárových kódech běžně
+splete jednu číslici, a chybný EAN by spároval jiné zboží.
