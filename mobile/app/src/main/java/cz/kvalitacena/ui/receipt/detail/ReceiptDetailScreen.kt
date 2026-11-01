@@ -67,6 +67,7 @@ import cz.kvalitacena.network.ReceiptLine
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.StorePicker
 import cz.kvalitacena.ui.common.ZoomableImage
+import cz.kvalitacena.ui.common.globalGtinOrNull
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 import cz.kvalitacena.ui.common.rememberNetContentLabeler
 import cz.kvalitacena.ui.common.storeLabel
@@ -97,11 +98,15 @@ private val SUGGESTIONS_MAX_HEIGHT = 320.dp
  * Detail účtenky: hlavička s obchodem a datem nákupu (obojí se stane údajem všech cen
  * z účtenky), řádky se stavem párování a akcemi, potvrzení spárovaných řádků a náhled obrázků,
  * dokud je server nesmaže (docs/soukromi.md, „Účtenky" — 30 dní od zpracování).
+ *
+ * `onCreateProduct` dostane kromě textu řádku i jeho EAN (`barcode`), ale jen globální GTIN
+ * ([globalGtinOrNull]) — `internalCode` bývá i vnitroobchodní kód řetězce nebo kód váhové
+ * etikety, který by se jinak uložil jako čárový kód cizího zboží.
  */
 @Composable
 fun ReceiptDetailScreen(
   receiptId: String,
-  onCreateProduct: (name: String, storeId: String?) -> Unit,
+  onCreateProduct: (name: String, barcode: String?, storeId: String?) -> Unit,
   onAddStore: () -> Unit,
   onProductClick: (String) -> Unit,
   onRescan: () -> Unit,
@@ -167,7 +172,7 @@ fun ReceiptDetailScreen(
         viewModel = viewModel,
         onCreateProduct = { line ->
           viewModel.startNewProduct(line)
-          onCreateProduct(line.labelRaw, receipt.store?.id)
+          onCreateProduct(line.labelRaw, globalGtinOrNull(line.internalCode), receipt.store?.id)
         },
         onAddStore = onAddStore,
         onProductClick = onProductClick,
@@ -183,7 +188,7 @@ fun ReceiptDetailScreen(
       viewModel = viewModel,
       onCreateProduct = {
         viewModel.startNewProduct(line)
-        onCreateProduct(line.labelRaw, receipt?.store?.id)
+        onCreateProduct(line.labelRaw, globalGtinOrNull(line.internalCode), receipt?.store?.id)
       },
     )
   }
@@ -527,6 +532,7 @@ private fun LineRow(
   onProductClick: (String) -> Unit,
 ) {
   var menuOpen by remember { mutableStateOf(false) }
+  val gtin = globalGtinOrNull(line.internalCode)
   val money = rememberMoneyFormatter(currency)
   val locale = LocalConfiguration.current.locales[0]
   val quantityFormat = remember(locale) { NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = 3 } }
@@ -540,6 +546,9 @@ private fun LineRow(
       }
       Column(Modifier.weight(1f).padding(top = Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
         Text(line.labelRaw, style = MaterialTheme.typography.titleSmall)
+        // EAN hned pod textem z pokladny — podle něj server páruje, a uživatel ho může porovnat
+        // s obalem doma. Vnitroobchodní kód se jako EAN neukazuje (globalGtinOrNull).
+        gtin?.let { LineGtin(it) }
         val unitPrice = line.unitPrice?.let { money.format(it) }
         val quantity = line.quantity?.let { quantityFormat.format(it) }
         val detail = when {
@@ -569,7 +578,7 @@ private fun LineRow(
             modifier = Modifier.clickable { onProductClick(product.id) },
           )
         }
-        LineStatusChip(line)
+        LineStatusChip(line, matchedByGtin = gtin != null && line.matchSource == "CODE")
         line.skipReason?.let {
           Text(skipReasonText(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
@@ -621,14 +630,31 @@ private fun productLabel(product: ProductSummary): String {
   return listOfNotNull(product.brand?.name, product.name, netContent).joinToString(" · ")
 }
 
-/** Stav řádku jako čip — barvy z tématu, fungují ve světlém i tmavém režimu. */
+/** EAN řádku jako sekundární údaj — stejná role jako množství a cena pod textem řádku. */
 @Composable
-private fun LineStatusChip(line: ReceiptLine) {
+private fun LineGtin(gtin: String) {
+  Text(
+    stringResource(R.string.receipt_line_ean, gtin),
+    style = MaterialTheme.typography.bodySmall,
+    color = MaterialTheme.colorScheme.onSurfaceVariant,
+  )
+}
+
+/**
+ * Stav řádku jako čip — barvy z tématu, fungují ve světlém i tmavém režimu. [matchedByGtin]
+ * rozliší návrh podle EANu od návrhu podle textu účtenky: `matchSource == CODE` znamená i shodu
+ * vnitroobchodního kódu řetězce, proto „podle EAN" jen u kódu, který je globální GTIN.
+ */
+@Composable
+private fun LineStatusChip(line: ReceiptLine, matchedByGtin: Boolean) {
   val (label, container, content) = when (line.status) {
     "SUGGESTED" -> Triple(
       stringResource(
-        if (line.matchSource == "USER" || line.matchSource == "NEW_PRODUCT") R.string.receipt_line_status_matched_by_you
-        else R.string.receipt_line_status_suggested,
+        when {
+          line.matchSource == "USER" || line.matchSource == "NEW_PRODUCT" -> R.string.receipt_line_status_matched_by_you
+          matchedByGtin -> R.string.receipt_line_status_suggested_by_ean
+          else -> R.string.receipt_line_status_suggested
+        },
       ),
       MaterialTheme.colorScheme.secondaryContainer,
       MaterialTheme.colorScheme.onSecondaryContainer,
@@ -697,6 +723,7 @@ private fun SuggestionsDialog(line: ReceiptLine, viewModel: ReceiptDetailViewMod
     title = { Text(line.labelRaw) },
     text = {
       Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        globalGtinOrNull(line.internalCode)?.let { LineGtin(it) }
         OutlinedTextField(
           value = viewModel.suggestionQuery,
           onValueChange = viewModel::onSuggestionQueryChange,

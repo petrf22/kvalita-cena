@@ -430,7 +430,9 @@ private fun AppScaffold() {
         val receiptId = backStackEntry.arguments?.getString(ARG_RECEIPT_ID).orEmpty()
         ReceiptDetailScreen(
           receiptId = receiptId,
-          onCreateProduct = { name, storeId -> navController.navigate(productFormRoute(name = name, storeId = storeId)) },
+          onCreateProduct = { name, barcode, storeId ->
+            navController.navigate(productFormRoute(barcode = barcode, name = name, storeId = storeId))
+          },
           onAddStore = { navController.navigate(storeFormRouteForCreate()) },
           onProductClick = { id -> navController.navigate(productDetailRoute(id)) },
           onRescan = { navController.navigate(receiptCaptureRoute()) },

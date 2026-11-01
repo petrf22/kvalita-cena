@@ -73,8 +73,10 @@ import cz.kvalitacena.ui.theme.Spacing
 /**
  * Založení zboží — nejdřív nabídne podobné existující položky (i bezkódové druhové, viz
  * ProductFormViewModel), teprve když se mezi nimi nic nehodí, jde založit nové. `barcode` je
- * naskenovaný kód, který se v katalogu nenašel (viz PriceEntryScreen), předvyplní pole kódu;
- * `null` zakládá bezkódovou druhovou položku (ze záložky Hledat, viz SearchScreen).
+ * naskenovaný kód, který se v katalogu nenašel (viz PriceEntryScreen), nebo EAN z řádku
+ * účtenky (ReceiptDetailScreen), předvyplní pole kódu; `null` zakládá bezkódovou druhovou
+ * položku (ze záložky Hledat, viz SearchScreen). Když kód v katalogu už nějaké zboží má,
+ * nabídne ho formulář k použití nad ostatními poli.
  *
  * `onCreated` (výchozí = zavolá `onDone`) odlišuje úspěch od zrušení — SearchScreen ho
  * přepisuje, ať po založení naskočí rovnou na zápis ceny nového zboží, místo aby se appka jen
@@ -227,6 +229,30 @@ fun ProductFormScreen(
         else -> ""
       }
       "${summary.name}$kind$unconfirmed — $brand${summary.category.name}$netContent$scope"
+    }
+
+    // Kód (typicky EAN z řádku účtenky) už v katalogu nějaké zboží má — nové se stejným kódem
+    // server nezaloží (DUPLICATE_PRODUCT_CODE), proto nabídka stojí nad formulářem a vzhledem
+    // odpovídá nabídce obchodu níž. Po klepnutí se vrací jako existující, ne nově založené
+    // (NavigationResults.newProductCreated = false), takže řádek účtenky se jen spáruje.
+    viewModel.existingForCode?.let { existing ->
+      Text(
+        stringResource(R.string.product_form_existing_by_code_title),
+        style = MaterialTheme.typography.titleSmall,
+      )
+      OutlinedButton(
+        onClick = { viewModel.useExistingByCode() },
+        enabled = !viewModel.saving,
+        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs),
+      ) {
+        Text(summaryLabel(existing), style = MaterialTheme.typography.bodyMedium)
+      }
+      Text(
+        stringResource(R.string.product_form_existing_by_code_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      Gap()
     }
 
     // Nabídka obchodu se ukáže JEŠTĚ NEŽ uživatel začne psát — u bezkódového zboží vznikají
