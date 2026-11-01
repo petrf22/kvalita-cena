@@ -44,17 +44,18 @@ public final class GtinNormalization {
     return (10 - sum % 10) % 10 == digits.charAt(digits.length() - 1) - '0';
   }
 
-  /** GS1 omezený oběh: EAN-8 s prefixem 0/2, GTIN-13 s prefixem 02, 04, 2x, 98, 99. */
+  /**
+   * GS1 omezený oběh: EAN-8 s prefixem 0/2, GTIN-13 s prefixem 2x, 02, 04 (vnitroobchodní
+   * kódy), 05, 98, 99 (kupóny). U GTIN-14 se prefix čte za indikátorem balení (posledních
+   * 13 číslic). GTIN-14 nad omezeným oběhem GS1 nedovoluje, takže takový kód globální není.
+   */
   static boolean isRestrictedCirculation(String digits) {
     if (digits.length() == 8) {
       return digits.charAt(0) == '0' || digits.charAt(0) == '2';
     }
-    String gtin13 = digits.length() == 14
-        ? (digits.charAt(0) == '0' ? digits.substring(1) : null)
-        : "0".repeat(13 - digits.length()) + digits;
-    if (gtin13 == null) return false; // GTIN-14 s indikátorem balení — globální
+    String gtin13 = digits.length() == 14 ? digits.substring(1) : "0".repeat(13 - digits.length()) + digits;
     return gtin13.startsWith("2") || gtin13.startsWith("02") || gtin13.startsWith("04")
-        || gtin13.startsWith("98") || gtin13.startsWith("99");
+        || gtin13.startsWith("05") || gtin13.startsWith("98") || gtin13.startsWith("99");
   }
 
   public static String toGtin14(String code) {

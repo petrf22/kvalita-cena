@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GtinNormalizationTest {
 
   @ParameterizedTest
-  @ValueSource(strings = {"8594001740659", "90169588", "011210617001", "08594001740659", " 8594001740659 "})
+  @ValueSource(strings = {"8594001740659", "90169588", "011210617001", "08594001740659", "18594001740656", " 8594001740659 "})
   void globalniEanProjde(String code) {
     assertThat(GtinNormalization.isGlobalGtin(code)).isTrue();
   }
@@ -23,6 +23,8 @@ class GtinNormalizationTest {
       "2012345678903",   // etiketa váhového zboží (prefix 2) — nese cenu, ne zboží
       "0412345678903",   // GTIN-13 prefix 04, omezený oběh
       "9812345678902",   // kupón (98)
+      "0512345678900",   // kupón UPC (05)
+      "12012345678900",  // GTIN-14 s indikátorem 1 nad etiketou z vah
       "20123451",        // EAN-8 s prefixem 2
       "123456789",       // 9 číslic neexistuje
       "", "abc"})
