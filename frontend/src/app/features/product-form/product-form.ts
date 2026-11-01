@@ -10,6 +10,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   TranslocoDirective,
@@ -44,6 +45,7 @@ import { ProductService } from '../../services/product-service';
 import { buildCategoryTree, categoryBreadcrumb } from '../../shared/category-tree';
 import { translateError } from '../../shared/error-message';
 import { NET_CONTENT_UOM_KEYS } from '../../shared/enum-labels';
+import { normalizeCode } from '../../shared/gtin';
 import { PhotoSlot } from '../../shared/photo-slot';
 import {
   NET_CONTENT_UOM_CHOICES,
@@ -90,6 +92,7 @@ export interface ExistingProductMatch {
   selector: 'app-product-form',
   imports: [
     FormsModule,
+    NgTemplateOutlet,
     NzFormModule,
     NzInputModule,
     NzInputNumberModule,
@@ -118,22 +121,14 @@ export class ProductForm {
   private readonly country = inject(CountryService);
 
   /**
-   * Naskenovaný/zadaný kód, který se v katalogu nenašel — předvyplní pole kódu a zkusí, jestli
-   * ho nezná Open Food Facts (`productLookupByCode`, cache v `ProductService` — druhé volání po
-   * `price-entry-page` je zdarma). Výpadek/nedostupnost OFF je tichý no-op, formulář zůstane
-   * prázdný a ručně vyplnitelný.
+   * Kód známý předem — zadaný v `price-entry-page`, nebo EAN z řádku účtenky. Předvyplní pole
+   * kódu a zeptá se katalogu i Open Food Facts stejně jako skener (`lookUpCode`; cache
+   * v `ProductService`, druhé volání po `price-entry-page` je zdarma). Výpadek/nedostupnost OFF
+   * je tichý no-op, formulář zůstane ručně vyplnitelný.
    */
   @Input() set barcode(value: string | null | undefined) {
-    if (!value) return;
-    this.code.set(value);
-    this.productService.lookupByCode(value).subscribe({
-      next: (result) => {
-        if (result.status === 'OFF_CANDIDATE' && result.candidate) {
-          this.applyOffCandidate(result.candidate);
-        }
-      },
-      error: () => {},
-    });
+    const code = value?.trim();
+    if (code) this.lookUpCode(code, true);
   }
 
   /** Nastavený vstup přepne formulář do režimu editace tohohle zboží. */
@@ -154,14 +149,20 @@ export class ProductForm {
   protected readonly name = signal('');
   /**
    * Uživatel název sám psal — předvyplněný text (řádek účtenky, `initialName`) se pak smí
-   * přepsat názvem z Open Food Facts po naskenování, ručně napsaný ne.
+   * přepsat názvem z Open Food Facts (po skenu i z předaného kódu), ručně napsaný ne.
    */
   private nameTouched = false;
 
   /** Otevřený skener čárového kódu (`BarcodeScanner`) u prázdného pole kódu. */
   protected readonly scanning = signal(false);
-  /** Naskenovaný kód už v katalogu je — nabídne se místo zakládání duplicity. */
-  protected readonly scannedExisting = signal<Product | null>(null);
+  /**
+   * Zboží s kódem z pole už v katalogu je — nabídne se místo zakládání duplicity. `fromInput`
+   * říká, odkud kód přišel: zvenku (vstup `barcode`, třeba EAN z řádku účtenky) se nabídka
+   * ukáže nahoře, kam uživatel kouká hned po otevření formuláře; po skenu pod polem kódu,
+   * kde zrovna je. U účtenky je to běžný případ — server páruje podle kódu jen s vybraným
+   * obchodem a zboží mohlo přibýt až po zpracování.
+   */
+  protected readonly existingByCode = signal<{ product: Product; fromInput: boolean } | null>(null);
 
   /**
    * Pole „Název" je VŽDY v jazyce appky (docs/lokalizace.md) — proto se do něj nikdy nedosazuje
@@ -337,11 +338,18 @@ export class ProductForm {
     }, SUGGESTIONS_DEBOUNCE_MS);
   }
 
-  /** Předvyplní formulář z OFF kandidáta — gramáž převede na kg/l (`offCandidateDefaults`,
-   *  past OFF kandidáta — hodnotu i jednotku bere, jak jsou) a snímek pro submit() si uloží
-   *  stranou do `offDefaults`. Nepřepisuje
-   *  pole, která kandidát nemá (necháme prázdné pro ruční vyplnění). */
-  private applyOffCandidate(candidate: ExternalProductCandidate, keepFilled = false): void {
+  /**
+   * Předvyplní formulář z OFF kandidáta — gramáž i s jednotkou bere, jak je
+   * (`offCandidateDefaults`, past OFF kandidáta), a snímek pro submit() si uloží stranou do
+   * `offDefaults`. Pole, která kandidát nemá, nechá prázdná pro ruční vyplnění.
+   *
+   * Co uživatel už vyplnil, OFF nepřepíše — `offDefaults` zůstává snímkem OFF, takže se jeho
+   * hodnota pošle jako vlastní změna. Výjimka je předvyplněný název (`initialName`, zkratka
+   * z účtenky typu „NAKL. OKURKY 680G"), který uživatel nepsal: ten název z OFF v jazyce appky
+   * nahradí. Když ho OFF v jazyce appky nemá, zkratka zůstane — cizojazyčný název se do pole
+   * nikdy nedosazuje (docs/lokalizace.md).
+   */
+  private applyOffCandidate(candidate: ExternalProductCandidate): void {
     this.offCandidate.set(candidate);
     const defaults = offCandidateDefaults(candidate, this.nameLang());
     this.offDefaults = defaults;
@@ -350,50 +358,61 @@ export class ProductForm {
     // Sekce ostatních jazyků se ZÁMĚRNĚ nerozbaluje sama, ani když OFF zná zboží jen
     // cizojazyčně — ten název je vidět v upozornění pod polem „Název" a rozbalená sekce by
     // místo toho ukázala hlavně prázdná pole jazyků, které nikdo nevyplní.
-    // keepFilled (sken do rozepsaného formuláře): co uživatel už vyplnil, OFF nepřepíše —
-    // `offDefaults` zůstává snímkem OFF, takže se jeho hodnota pošle jako vlastní změna.
-    const keep = (filled: boolean) => keepFilled && filled;
-    if (defaults.name && !keep(this.nameTouched && this.name().trim() !== '')) {
+    if (defaults.name && !(this.nameTouched && this.name().trim() !== '')) {
       this.name.set(defaults.name);
     }
-    if (defaults.brandName && !keep(this.brandName().trim() !== '')) {
+    if (defaults.brandName && this.brandName().trim() === '') {
       this.brandName.set(defaults.brandName);
     }
-    if (defaults.categoryId && !keep(this.selectedCategoryId() !== null)) {
+    if (defaults.categoryId && this.selectedCategoryId() === null) {
       this.selectedCategoryId.set(defaults.categoryId);
     }
-    if (defaults.netContentValue != null && !keep(this.netContentValue() !== null)) {
+    if (defaults.netContentValue != null && this.netContentValue() === null) {
       this.netContentValue.set(defaults.netContentValue);
       if (defaults.netContentUom) this.netContentUom.set(defaults.netContentUom);
-    } else if (defaults.netContentUom && !keep(this.netContentUom() !== null)) {
+    } else if (defaults.netContentUom && this.netContentUom() === null) {
       this.netContentUom.set(defaults.netContentUom);
     }
   }
 
-  /**
-   * Kód přečtený skenerem — vyplní pole a zeptá se katalogu i Open Food Facts stejně jako
-   * vstup `barcode`: existující zboží se nabídne k použití, OFF kandidát předvyplní prázdná pole.
-   */
+  /** Kód přečtený skenerem — stejná cesta jako vstup `barcode`, jen nabídka je u pole kódu. */
   onScanned(code: string): void {
     this.scanning.set(false);
+    this.lookUpCode(code, false);
+  }
+
+  /** Ruční přepis pole kódu — nabídka existujícího zboží patřila k předchozímu kódu. */
+  onCodeChange(value: string): void {
+    this.code.set(value);
+    this.existingByCode.set(null);
+  }
+
+  /**
+   * Vyplní pole kódu a zeptá se katalogu i Open Food Facts: existující zboží se nabídne
+   * k použití místo založení duplicity, OFF kandidát předvyplní prázdná pole. Jediná cesta
+   * pro vstup `barcode` i skener.
+   */
+  private lookUpCode(code: string, fromInput: boolean): void {
     this.code.set(code);
-    this.scannedExisting.set(null);
+    this.existingByCode.set(null);
     this.productService.lookupByCode(code).subscribe({
       next: (result) => {
+        // Uživatel kód mezitím přepsal — odpověď patří k jinému kódu, než je v poli.
+        if (normalizeCode(this.code()) !== normalizeCode(code)) return;
         if (result.status === 'EXISTING' && result.product) {
-          this.scannedExisting.set(result.product);
+          this.existingByCode.set({ product: result.product, fromInput });
         } else if (result.status === 'OFF_CANDIDATE' && result.candidate) {
-          this.applyOffCandidate(result.candidate, true);
+          this.applyOffCandidate(result.candidate);
         }
       },
-      // Výpadek katalogu/OFF skenu nevadí — kód je v poli a formulář jde vyplnit ručně.
+      // Výpadek katalogu/OFF nevadí — kód je v poli a formulář jde vyplnit ručně.
       error: () => {},
     });
   }
 
-  /** Naskenované zboží už existuje — použít ho místo založení nového. */
-  useScannedExisting(): void {
-    const product = this.scannedExisting();
+  /** Zboží s kódem z pole už existuje — použít ho místo založení nového. */
+  useExistingByCode(): void {
+    const product = this.existingByCode()?.product;
     if (product) this.existingMatched.emit({ product, alias: this.name().trim() });
   }
 

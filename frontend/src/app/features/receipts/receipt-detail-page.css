@@ -184,14 +184,24 @@
   font-weight: 600;
 }
 
+/*
+ * Množství, sleva a EAN vedle sebe. Na úzkém displeji se zalomí po celých kusech (flex-wrap),
+ * EAN se tak nikdy nerozdělí mezi dva řádky.
+ */
 .line-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--kc-space-2);
   font-size: var(--kc-font-sm);
   color: var(--kc-text-secondary);
 }
 
-.line-discount {
-  margin-left: var(--kc-space-2);
-  color: var(--kc-danger);
+/* EAN je metadata, ne hlavní údaj — strojopis jako text účtenky, ať jdou číslice porovnat. */
+.line-code {
+  font-family: monospace;
+  font-size: var(--kc-font-xs);
+  color: var(--kc-text-muted);
 }
 
 .line-status {
@@ -221,7 +231,8 @@
   color: var(--kc-text-secondary);
 }
 
-.line-error {
+.line-error,
+.line-discount {
   color: var(--kc-danger);
 }
 

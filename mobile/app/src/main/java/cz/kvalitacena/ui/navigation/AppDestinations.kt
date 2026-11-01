@@ -85,7 +85,8 @@ const val ARG_WRITE_PRICE = "writePrice"
 
 /**
  * Předvyplněný název a obchod — „Založit nové zboží" z řádku účtenky (ReceiptDetailScreen):
- * název z textu účtenky (`labelRaw`), obchod z hlavičky účtenky.
+ * název z textu účtenky (`labelRaw`), obchod z hlavičky účtenky. EAN řádku jde v [ARG_BARCODE],
+ * jen když je to globální GTIN (`isGlobalGtin`).
  */
 const val ARG_NAME = "name"
 const val ROUTE_PRODUCT_FORM =

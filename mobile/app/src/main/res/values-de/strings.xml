@@ -362,6 +362,8 @@
     <string name="product_form_unconfirmed_tag">noch nicht bestätigt</string>
     <string name="product_form_store_offer_title">Schon in diesem Geschäft</string>
     <string name="product_form_suggestions_hint">Ist es nicht schon eine dieser Positionen? Tippe darauf, um sie direkt zu verwenden.</string>
+    <string name="product_form_existing_by_code_title">Ein Artikel mit diesem Code ist schon im Katalog</string>
+    <string name="product_form_existing_by_code_hint">Tippe darauf, um ihn zu verwenden. Einen neuen Artikel mit demselben Code kann man nicht anlegen.</string>
     <string name="product_form_category_label">Kategorie</string>
     <string name="product_form_category_placeholder">Kategorie auswählen</string>
     <string name="product_form_brand_label">Marke (optional)</string>
@@ -682,6 +684,7 @@
     <string name="receipt_line_qty_kg">%1$s kg × %2$s/kg</string>
     <string name="receipt_line_qty_l">%1$s l × %2$s/l</string>
     <string name="receipt_line_discount">Rabatt −%1$s</string>
+    <string name="receipt_line_ean">EAN %1$s</string>
     <string name="receipt_line_actions">Aktionen für die Zeile</string>
     <string name="receipt_line_choose">Artikel wählen</string>
     <string name="receipt_line_choose_other">Anderen Artikel wählen</string>
@@ -691,6 +694,7 @@
     <string name="receipt_line_restore">Zurück zu nicht zugeordnet</string>
     <string name="receipt_line_status_unmatched">Nicht zugeordnet</string>
     <string name="receipt_line_status_suggested">Vorschlag — prüfen und bestätigen</string>
+    <string name="receipt_line_status_suggested_by_ean">Vorschlag nach EAN — prüfen und bestätigen</string>
     <string name="receipt_line_status_matched_by_you">Von Ihnen zugeordnet — wartet auf Bestätigung</string>
     <string name="receipt_line_status_confirmed">Preis gespeichert</string>
     <string name="receipt_line_status_matched">Zugeordnet</string>

@@ -149,6 +149,8 @@
     "quantityWeighed": "{{quantity}} {{unit}} × {{price}} per {{unit}}",
     "pricePerUnit": "{{price}} per {{unit}}",
     "discount": "discount −{{amount}}",
+    "ean": "EAN {{code}}",
+    "matchedByEan": "by the EAN on the receipt",
     "recorded": "Price recorded",
     "findProduct": "Find product",
     "changeProduct": "Change product",
@@ -177,6 +179,7 @@
   "create": {
     "title": "New product from the receipt",
     "labelPrefix": "On the receipt:",
-    "hint": "Rewrite the abbreviation from the receipt into the full name as you know it from the package. The product is added for this store and the line is matched with it right away."
+    "hint": "Rewrite the abbreviation from the receipt into the full name as you know it from the package. The product is added for this store and the line is matched with it right away.",
+    "hintWithCode": "Check the name — it should be the full name as you know it from the package, not the abbreviation from the receipt. The barcode is taken from the receipt, so the product can be found in other stores too. The line is matched with it right away."
   }
 }

@@ -360,6 +360,8 @@
     <string name="product_form_unconfirmed_tag">not confirmed yet</string>
     <string name="product_form_store_offer_title">Already in this shop</string>
     <string name="product_form_suggestions_hint">Isn\'t it one of these existing items? Tap to use it directly.</string>
+    <string name="product_form_existing_by_code_title">A product with this code is already in the catalog</string>
+    <string name="product_form_existing_by_code_hint">Tap to use it. A new product with the same code can\'t be created.</string>
     <string name="product_form_category_label">Category</string>
     <string name="product_form_category_placeholder">Pick a category</string>
     <string name="product_form_brand_label">Brand (optional)</string>
@@ -680,6 +682,7 @@
     <string name="receipt_line_qty_kg">%1$s kg × %2$s/kg</string>
     <string name="receipt_line_qty_l">%1$s l × %2$s/l</string>
     <string name="receipt_line_discount">Discount −%1$s</string>
+    <string name="receipt_line_ean">EAN %1$s</string>
     <string name="receipt_line_actions">Line actions</string>
     <string name="receipt_line_choose">Choose product</string>
     <string name="receipt_line_choose_other">Choose another product</string>
@@ -689,6 +692,7 @@
     <string name="receipt_line_restore">Move back to unmatched</string>
     <string name="receipt_line_status_unmatched">Not matched</string>
     <string name="receipt_line_status_suggested">Suggestion — check and confirm</string>
+    <string name="receipt_line_status_suggested_by_ean">Suggestion by EAN — check and confirm</string>
     <string name="receipt_line_status_matched_by_you">Matched by you — awaiting confirmation</string>
     <string name="receipt_line_status_confirmed">Price saved</string>
     <string name="receipt_line_status_matched">Matched</string>

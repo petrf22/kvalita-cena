@@ -149,6 +149,8 @@
     "quantityWeighed": "{{quantity}} {{unit}} × {{price}} pro {{unit}}",
     "pricePerUnit": "{{price}} pro {{unit}}",
     "discount": "Rabatt −{{amount}}",
+    "ean": "EAN {{code}}",
+    "matchedByEan": "nach der EAN auf dem Kassenbon",
     "recorded": "Preis erfasst",
     "findProduct": "Produkt suchen",
     "changeProduct": "Produkt ändern",
@@ -177,6 +179,7 @@
   "create": {
     "title": "Neues Produkt vom Kassenbon",
     "labelPrefix": "Auf dem Kassenbon:",
-    "hint": "Schreib die Abkürzung vom Kassenbon zum vollen Namen um, wie du ihn von der Verpackung kennst. Das Produkt wird für dieses Geschäft angelegt und die Position gleich damit zugeordnet."
+    "hint": "Schreib die Abkürzung vom Kassenbon zum vollen Namen um, wie du ihn von der Verpackung kennst. Das Produkt wird für dieses Geschäft angelegt und die Position gleich damit zugeordnet.",
+    "hintWithCode": "Prüf den Namen — er soll vollständig sein, wie du ihn von der Verpackung kennst, nicht die Abkürzung vom Kassenbon. Der Barcode stammt vom Kassenbon, daher ist das Produkt auch in anderen Geschäften zu finden. Die Position wird gleich damit zugeordnet."
   }
 }

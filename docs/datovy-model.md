@@ -339,6 +339,16 @@ v `core.product_name (product_id, lang, name)`, osobní patch v `core.product_us
 + `name_lang` (jeden uživatel = jeden jazyk). Pořadí při čtení a fallback napříč jazyky jsou
 v `docs/lokalizace.md`, „Název zboží po jazycích".
 
+**EAN z účtenky je druhá výjimka stejného druhu.** Když uživatel potvrdí řádek účtenky
+s EAN a zboží žádný GTIN nemá, zapíše se kód globálně do `core.product_code`
+(`ReceiptReviewService.learnCode`). Zboží, které už EAN má, se nemění. Omylem spárovaný
+řádek by jinak přilepil cizí kód ke zboží pro všechny a víc EAN u jednoho zboží (jiné balení)
+je věc moderace. Bezkódová položka (`is_generic`) EAN nedostane nikdy. Zapisuje se jen
+`GtinNormalization.isGlobalGtin`: platná kontrolní číslice GS1 a žádný omezený oběh (prefix
+2x u etiket váhového zboží, 02/04, kupóny 98/99). OCR v čárových kódech běžně splete jednu
+číslici a etiketa z vah v obchodě nese cenu, ne zboží. EAN, který už patří jinému zboží,
+se tiše přeskočí (`ON CONFLICT DO NOTHING`), potvrzení ceny tím nespadne.
+
 **`cleared_fields TEXT[]`** na obou patch tabulkách odlišuje "pole nezměněno" (`NULL` ve
 sloupci) od "uživatel volitelné pole vědomě vymazal" (např. odstranění chybně zadaného IČO)
 — bez něj by šlo pole jen přepsat, nikdy smazat, protože `NULL` už má jiný význam.

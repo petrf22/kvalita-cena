@@ -1,13 +1,16 @@
 import type { ReceiptDetail, ReceiptLine, ReceiptListItem } from '../../models/catalog';
 import {
   ReceiptLineStatus,
+  ReceiptMatchSource,
   ReceiptProcessingStatus,
   ReceiptReviewStatus,
 } from '../../models/generated/enums';
 import {
+  RECEIPT_MATCH_SOURCE_KEYS,
   RECEIPT_PROCESSING_STATUS_KEYS,
   RECEIPT_REVIEW_STATUS_KEYS,
 } from '../../shared/enum-labels';
+import { isGlobalGtin } from '../../shared/gtin';
 
 /**
  * Stavová logika účtenky bez UI — obrazovky seznamu i detailu z ní jen čtou. Dvě osy stavu
@@ -76,6 +79,32 @@ export function isLineLocked(line: Pick<ReceiptLine, 'confirmed'>): boolean {
 /** Řádek jde zaškrtnout k hromadnému potvrzení: má zboží a cena z něj ještě nevznikla. */
 export function isLineConfirmable(line: Pick<ReceiptLine, 'status' | 'confirmed'>): boolean {
   return line.status === ReceiptLineStatus.Suggested && !isLineLocked(line);
+}
+
+/**
+ * EAN řádku, pokud ho účtenka tiskne — jinak `null`. `internalCode` nese i vnitroobchodní kód
+ * (platí jen v rámci řetězce) nebo etiketu váhového zboží s cenou uvnitř; jako čárový kód se
+ * smí použít, předvyplnit do nového zboží i ukázat jako „EAN" jen globální GTIN
+ * (`isGlobalGtin`, stejné pravidlo jako server).
+ */
+export function lineGtin(line: Pick<ReceiptLine, 'internalCode'>): string | null {
+  const code = line.internalCode?.trim() ?? '';
+  return isGlobalGtin(code) ? code : null;
+}
+
+/**
+ * Popisek, podle čeho server zboží navrhl. U `CODE` s EANem na řádku řekne „podle EAN" —
+ * uživatel ho vidí hned nad tím a může ho porovnat s obalem; vnitroobchodní kód zůstává
+ * u obecného „podle kódu".
+ */
+export function matchSourceKey(
+  line: Pick<ReceiptLine, 'matchSource' | 'internalCode'>,
+): string | null {
+  if (!line.matchSource) return null;
+  if (line.matchSource === ReceiptMatchSource.Code && lineGtin(line)) {
+    return 'receipts.line.matchedByEan';
+  }
+  return RECEIPT_MATCH_SOURCE_KEYS[line.matchSource];
 }
 
 /** Výchozí zaškrtnutí — přesně řádky, které server (nebo uživatel) připravil jako návrh. */

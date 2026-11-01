@@ -360,6 +360,8 @@
     <string name="product_form_unconfirmed_tag">zatiaľ nepotvrdené</string>
     <string name="product_form_store_offer_title">Čo už v obchode máme</string>
     <string name="product_form_suggestions_hint">Nie je to už niektorá z týchto položiek? Klepnutím ju rovno použiješ.</string>
+    <string name="product_form_existing_by_code_title">Tovar s týmto kódom už v katalógu je</string>
+    <string name="product_form_existing_by_code_hint">Klepnutím ho použiješ. Nový tovar s rovnakým kódom sa založiť nedá.</string>
     <string name="product_form_category_label">Kategória</string>
     <string name="product_form_category_placeholder">Vyber kategóriu</string>
     <string name="product_form_brand_label">Značka (voliteľné)</string>
@@ -680,6 +682,7 @@
     <string name="receipt_line_qty_kg">%1$s kg × %2$s/kg</string>
     <string name="receipt_line_qty_l">%1$s l × %2$s/l</string>
     <string name="receipt_line_discount">Zľava −%1$s</string>
+    <string name="receipt_line_ean">EAN %1$s</string>
     <string name="receipt_line_actions">Akcie s riadkom</string>
     <string name="receipt_line_choose">Vybrať tovar</string>
     <string name="receipt_line_choose_other">Vybrať iný tovar</string>
@@ -689,6 +692,7 @@
     <string name="receipt_line_restore">Vrátiť medzi nespárované</string>
     <string name="receipt_line_status_unmatched">Nespárované</string>
     <string name="receipt_line_status_suggested">Návrh — skontrolujte a potvrďte</string>
+    <string name="receipt_line_status_suggested_by_ean">Návrh podľa EAN — skontrolujte a potvrďte</string>
     <string name="receipt_line_status_matched_by_you">Spárované vami — čaká na potvrdenie</string>
     <string name="receipt_line_status_confirmed">Cena zapísaná</string>
     <string name="receipt_line_status_matched">Spárované</string>

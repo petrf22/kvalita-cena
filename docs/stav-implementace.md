@@ -506,6 +506,18 @@ dohledá přesnou shodou s číselníkem, ARES se sám nevolá (IČO z účtenky
 provozovna). Souřadnice se z adresy dohledají samy jen na mobilu (`scheduleGeocode`), web je
 jako u ručně vyplněné adresy hledá až tlačítkem. Data jsou vlastní, `data_origin` zůstává `OWN`.
 
+**EAN z účtenky** (`ReceiptLine.internalCode`, u účtenek, které ho tisknou): server podle něj
+spáruje zboží (`ReceiptMatchingService.byCode`, jen s vybraným obchodem). Po potvrzení řádku
+ho připíše zboží, které EAN nemá (`ReceiptReviewService.learnCode`, pravidla
+v `docs/datovy-model.md`, „Uživatelská vrstva nad globálními daty"). Web i mobil ho ukážou
+u řádku (u návrhu spárování „podle EAN") a předají formuláři nového zboží. Formulář pak
+zkusí Open Food Facts: název z OFF v jazyce appky nahradí zkratku z účtenky a uloží se
+přes `createProductFromOff`. Zboží, které kód v katalogu už má, formulář nabídne k použití
+místo založení duplicity. Stane se to u účtenky bez vybraného obchodu, kde server nepároval.
+Za EAN se považuje jen `isGlobalGtin` (backend `GtinNormalization`, web `shared/gtin.ts`,
+mobil `ui/common/Gtin.kt`, všude stejné pravidlo): kontrolní číslice GS1 a žádný omezený
+oběh (2x, 02, 04, kupóny 05/98/99; u GTIN-14 prefix za indikátorem balení).
+
 **Ověřeno end-to-end (2026-09-30)** na reálných účtenkách Albert a Billa (Billa 940×3430 px
 rozdělená na 5 dílů s překryvem): OCR → řádky se součtem na haléř → párování → cena s
 `RECEIPT_OCR` → naučené označení v „Názvech na účtenkách".
