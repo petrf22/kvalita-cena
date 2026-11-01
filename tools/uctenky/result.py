@@ -71,6 +71,8 @@ def to_payload(document: dict, raw_text: str | None, model: str) -> dict:
             continue
         out = {
             "label": label,
+            # EAN z účtenky — server podle něj spáruje zboží (ReceiptMatchingService.byCode).
+            "internalCode": line.get("code"),
             "quantity": line.get("quantity"),
             "quantityUnit": _BASIS_TO_UNIT.get(line.get("quantityBasis"), "PCS"),
             "unitPrice": line.get("unitPrice"),
