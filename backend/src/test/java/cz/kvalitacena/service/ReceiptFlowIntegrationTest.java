@@ -380,6 +380,90 @@ class ReceiptFlowIntegrationTest {
     return reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(line.getId()), ObservationSource.WEB);
   }
 
+  @Test
+  void confirmedLineTeachesEanToProductWithoutCodeAndNextReceiptMatchesByCode() {
+    Fixture f = fixture();
+    Product okurky = packaged(f, "Okurky");
+    String ean = randomEan13();
+    AppUser owner = persistUser();
+    Long first = uploadAndProcess(owner, f, List.of(lineWithCode("NAKL. OKURKY", ean)));
+    reviewService.updateHeader(owner.getPublicUid(), first, f.store().getId(), null);
+    ReceiptLine line = lines(first).getFirst();
+    reviewService.matchLine(owner.getPublicUid(), line.getId(), okurky.getId(), false);
+    reviewService.confirmLines(owner.getPublicUid(), first, List.of(line.getId()), ObservationSource.WEB);
+
+    assertThat(gtinsOf(okurky)).containsExactly("0" + ean);
+
+    // Jiný uživatel, jiný text řádku — spáruje se podle EAN, ne podle naučeného označení.
+    AppUser other = persistUser();
+    Long second = uploadAndProcess(other, f, List.of(lineWithCode("OKURKY STERIL.", ean)));
+    reviewService.updateHeader(other.getPublicUid(), second, f.store().getId(), null);
+    ReceiptLine auto = lines(second).getFirst();
+    assertThat(auto.getMatchSource()).isEqualTo(ReceiptMatchSource.CODE);
+    assertThat(auto.getProductId()).isEqualTo(okurky.getId());
+  }
+
+  @Test
+  void eanIsNotLearnedWhenProductHasOneOrCodeIsInvalidOrTaken() {
+    Fixture f = fixture();
+    Product withEan = packaged(f, "S kódem");
+    String existing = randomEan13();
+    jdbcTemplate.update("INSERT INTO core.product_code (product_id, code, code_type, is_primary) VALUES (?, ?, 'GTIN', true)",
+        withEan.getId(), "0" + existing);
+    Product withoutEan = packaged(f, "Bez kódu");
+    String misread = randomEan13();
+    misread = misread.substring(0, 12) + (char) ('0' + (misread.charAt(12) - '0' + 1) % 10);
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        lineWithCode("JINY EAN", randomEan13()),     // zboží už EAN má
+        lineWithCode("SPATNE PRECTENY", misread),     // kontrolní číslice nesedí
+        lineWithCode("CIZI EAN", existing),           // EAN patří jinému zboží
+        lineWithCode("ROHLIK", randomEan13())));      // bezkódová položka
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    List<ReceiptLine> lines = lines(receiptId);
+    reviewService.matchLine(owner.getPublicUid(), lines.get(0).getId(), withEan.getId(), false);
+    reviewService.matchLine(owner.getPublicUid(), lines.get(1).getId(), withoutEan.getId(), false);
+    reviewService.matchLine(owner.getPublicUid(), lines.get(2).getId(), withoutEan.getId(), false);
+    reviewService.matchLine(owner.getPublicUid(), lines.get(3).getId(), f.rohlik().getId(), false);
+
+    var result = reviewService.confirmLines(owner.getPublicUid(), receiptId,
+        lines.stream().map(ReceiptLine::getId).toList(), ObservationSource.WEB);
+
+    // Ceny se zapsaly všechny — nenaučený EAN potvrzení neshodí (druhý řádek k témuž zboží
+    // je denní duplicita, ne chyba).
+    assertThat(result.confirmed() + result.skipped().size()).isEqualTo(4);
+    assertThat(result.skipped()).allSatisfy(l -> assertThat(l.getSkipReason()).isEqualTo(ReceiptReviewService.SKIP_DUPLICATE));
+    assertThat(gtinsOf(withEan)).containsExactly("0" + existing);
+    assertThat(gtinsOf(withoutEan)).isEmpty();
+    assertThat(gtinsOf(f.rohlik())).isEmpty();
+  }
+
+  private List<String> gtinsOf(Product product) {
+    return jdbcTemplate.queryForList(
+        "SELECT code FROM core.product_code WHERE product_id = ? AND code_type = 'GTIN'", String.class, product.getId());
+  }
+
+  private Product packaged(Fixture f, String name) {
+    return productRepository.saveAndFlush(Product.builder()
+        .name(name + " " + UUID.randomUUID().toString().substring(0, 8)).category(f.rohlik().getCategory())
+        .unitBase(UnitBase.COUNT).netContentBase(BigDecimal.ONE).status(ProductStatus.ACTIVE).build());
+  }
+
+  /** Náhodný EAN-13 s platnou kontrolní číslicí a českým prefixem 859 (globální, ne omezený oběh). */
+  private static String randomEan13() {
+    String body = "859" + String.format("%09d", java.util.concurrent.ThreadLocalRandom.current().nextInt(1_000_000_000));
+    int sum = 0;
+    for (int i = body.length() - 1, weight = 3; i >= 0; i--, weight = 4 - weight) {
+      sum += (body.charAt(i) - '0') * weight;
+    }
+    return body + (10 - sum % 10) % 10;
+  }
+
+  private static WorkerReceiptResult.Line lineWithCode(String label, String code) {
+    return new WorkerReceiptResult.Line(label, code, BigDecimal.ONE, QuantityUnit.PCS, new BigDecimal("44.90"),
+        new BigDecimal("44.90"), null, PriceKind.REGULAR);
+  }
+
   private Long uploadAndProcess(AppUser owner, Fixture f, List<WorkerReceiptResult.Line> lines) {
     Receipt receipt = receiptService.upload(owner.getPublicUid(), List.of(jpeg(), jpeg()), 1, false, OffsetDateTime.now(),
         null);

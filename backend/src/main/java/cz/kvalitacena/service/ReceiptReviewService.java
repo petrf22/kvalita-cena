@@ -8,6 +8,7 @@ import cz.kvalitacena.db.entity.ObservationSource;
 import cz.kvalitacena.db.entity.PriceKind;
 import cz.kvalitacena.db.entity.PriceObservation;
 import cz.kvalitacena.db.entity.Product;
+import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.QuantityBasis;
 import cz.kvalitacena.db.entity.QuantityUnit;
 import cz.kvalitacena.db.entity.Receipt;
@@ -19,6 +20,7 @@ import cz.kvalitacena.db.entity.ReceiptReviewStatus;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
+import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ReceiptLineRepository;
 import cz.kvalitacena.db.repo.ReceiptRepository;
@@ -66,6 +68,7 @@ public class ReceiptReviewService {
   private final ReceiptLineRepository lineRepository;
   private final StoreRepository storeRepository;
   private final ProductRepository productRepository;
+  private final ProductCodeRepository productCodeRepository;
   private final AppUserRepository appUserRepository;
   private final PriceObservationRepository priceObservationRepository;
   private final ReceiptMatchingService matchingService;
@@ -253,6 +256,30 @@ public class ReceiptReviewService {
     Store store = storeRepository.findById(receipt.getStoreId()).orElse(null);
     if (product != null && store != null) {
       labelService.learnFromLine(product, store, owner.getId(), line.getLabelRaw());
+    }
+    if (product != null) {
+      learnCode(line, product);
+    }
+  }
+
+  /**
+   * EAN z potvrzeného řádku ke zboží, které EAN zatím nemá. Zapisuje se globálně, ne do
+   * osobního patche: kód, který zboží nemá vůbec, nic nepřepisuje. Je to zaplnění díry
+   * jako doplnění chybějícího jazyka názvu (docs/datovy-model.md, „Uživatelská vrstva nad
+   * globálními daty"). Zboží, které už nějaký EAN má, se nemění. Omylem spárovaný řádek by
+   * jinak přilepil cizí kód ke zboží pro všechny, a víc EAN u jednoho zboží (jiné balení,
+   * nový obal) je spíš věc moderace.
+   * Bezkódová položka ({@code generic}, třeba rohlík) EAN záměrně nemá a nedostane ho.
+   */
+  private void learnCode(ReceiptLine line, Product product) {
+    String code = line.getInternalCode();
+    if (!GtinNormalization.isGlobalGtin(code) || product.isGeneric()
+        || (product.getStatus() != ProductStatus.ACTIVE && product.getStatus() != ProductStatus.DRAFT)) {
+      return;
+    }
+    String gtin14 = GtinNormalization.toGtin14(code.trim());
+    if (productCodeRepository.insertGtinIfProductHasNone(product.getId(), gtin14) == 1) {
+      log.info("Účtenka: zboží {} dostalo EAN {} z řádku {}", product.getId(), gtin14, line.getId());
     }
   }
 
