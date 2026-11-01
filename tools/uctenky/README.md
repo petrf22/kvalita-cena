@@ -140,6 +140,14 @@ regexy se dají ladit nad uloženým `.ocr.txt` opakovaně a bez GPU. Návratov�
 Složka `uctenky/` je v `.gitignore`. Do `testdata/` patří jen anonymizovaná kopie
 (viz „Testy" a „Nový řetězec").
 
+**Chyba z Ollamy** (`!! účtenka <ID>: Ollama HTTP 400 …`) nese důvod, který Ollama vrátila.
+Podrobnosti jsou v jejím logu: `journalctl -u ollama --since "1 hour ago" | grep -B3 "| 400 |"`.
+Obrázek celé účtenky (ruční fotka bez výřezů) zabere sám ~4 050 tokenů. Výchozí kontext
+Ollamy je 4 096, proto worker posílá `num_ctx` (`ocr.DEFAULT_NUM_CTX`). Bez něj se obrázek
+buď nevejde vůbec („exceeds the available context size"), nebo se přepis potichu usekne.
+Velmi dlouhou účtenku v jednom obrázku model navíc umí přečíst dokola (opakuje tytéž
+položky, dokud nedojde kontext). Proto je lepší fotit ji po dílech.
+
 ## Testy
 
 ```bash

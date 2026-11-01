@@ -9,8 +9,10 @@ Fixtures v testdata/ jsou ANONYMIZOVANÉ — reálné účtenky do repozitáře 
 
 from __future__ import annotations
 
+import io
 import json
 import sys
+import urllib.error
 import unittest
 from decimal import Decimal
 from pathlib import Path
@@ -18,6 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import lines as lines_mod  # noqa: E402
+import ocr as ocr_mod  # noqa: E402
 import normalize  # noqa: E402
 import parse  # noqa: E402
 import replay  # noqa: E402
@@ -388,6 +391,49 @@ class NormalizeTest(unittest.TestCase):
 
     def test_pismeno_O_misto_nuly_jen_v_cisle(self):
         self.assertEqual(str(normalize.parse_amount("98O,2O")), "980.20")
+
+
+class OllamaOcrTest(unittest.TestCase):
+    """Požadavek na Ollamu — bez běžící Ollamy, urlopen je podvržený."""
+
+    def _call(self, respond):
+        sent = {}
+
+        def fake_urlopen(request, timeout):
+            sent.update(json.loads(request.data.decode("utf-8")))
+            return respond(request)
+
+        original = ocr_mod.urllib.request.urlopen
+        ocr_mod.urllib.request.urlopen = fake_urlopen
+        try:
+            return ocr_mod.OllamaOcr().ocr(b"\xff\xd8\xff"), sent
+        finally:
+            ocr_mod.urllib.request.urlopen = original
+
+    def test_kontext_unese_obrazek_cele_uctenky(self):
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+        text, sent = self._call(lambda _: Response(json.dumps({"response": "Celkem 10,00"}).encode()))
+        self.assertEqual(text, "Celkem 10,00")
+        # Výchozí kontext Ollamy (4096) se s obrázkem celé účtenky (~4050 tokenů) nevejde.
+        self.assertGreaterEqual(sent["options"]["num_ctx"], 16384)
+        self.assertEqual((sent["options"]["temperature"], sent["options"]["seed"]), (0, 0))
+
+    def test_chyba_ollamy_nese_jeji_duvod(self):
+        body = b'{"error":"request (4118 tokens) exceeds the available context size (4096 tokens)"}'
+
+        def refuse(request):
+            raise urllib.error.HTTPError(request.full_url, 400, "Bad Request", {}, io.BytesIO(body))
+
+        with self.assertRaises(ocr_mod.OcrError) as raised:
+            self._call(refuse)
+        self.assertIn("400", str(raised.exception))
+        self.assertIn("exceeds the available context size", str(raised.exception))
 
 
 if __name__ == "__main__":
