@@ -419,11 +419,32 @@ export class ProductForm {
     this.selectedCategoryId.set(id);
   }
 
-  /** Jednotka vybraná uživatelem. */
-  protected onNetContentUomChosen(uom: NetContentUomChoice | null): void {
+  /**
+   * Gramáž/objem a přepínač váhového zboží jsou jedna dvojice — jakákoli ruční změna kterékoli
+   * části z nich udělá vlastní hodnotu uživatele. Předvyplnění z řádku účtenky pak už nesmí
+   * přepsat pozdě dorazivší OFF kandidát (`applyOffCandidate`).
+   */
+  private claimNetContent(): void {
     this.unitSuggested.set(false);
     this.filledFromReceipt.delete('netContent');
+  }
+
+  /** Jednotka vybraná uživatelem. */
+  protected onNetContentUomChosen(uom: NetContentUomChoice | null): void {
+    this.claimNetContent();
     this.netContentUom.set(uom);
+  }
+
+  /** Číslo gramáže napsané uživatelem. */
+  protected onNetContentValueChosen(value: number | null): void {
+    this.claimNetContent();
+    this.netContentValue.set(value);
+  }
+
+  /** Přepínač váhového zboží přepnutý uživatelem. */
+  protected onVariableWeightChosen(value: boolean): void {
+    this.claimNetContent();
+    this.isVariableWeight.set(value);
   }
 
   private applyOffCandidate(candidate: ExternalProductCandidate): void {

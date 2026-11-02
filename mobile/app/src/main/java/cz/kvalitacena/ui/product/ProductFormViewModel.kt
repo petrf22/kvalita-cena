@@ -158,16 +158,42 @@ class ProductFormViewModel(
     categoryQuery = categoryBreadcrumb(category, categories)
   }
 
+  /**
+   * Hodnoty, které uživatel zadal sám — pozdě dorazivší OFF kandidát ani předvyplnění z řádku
+   * účtenky je už nepřepíšou. Gramáž, jednotka a přepínač váhového zboží jsou jedna dvojice,
+   * proto jeden příznak.
+   */
+  private var categoryTouched = false
+  private var netContentTouched = false
+
   /** Kategorie, kterou vybral uživatel sám — návrh modelu tím přestává být návrhem. */
   fun onCategoryChosen(category: Category) {
+    categoryTouched = true
     categorySuggested = false
     onCategorySelected(category)
   }
 
   /** Jednotka, kterou vybral uživatel sám. */
   fun onNetContentUomChosen(uom: String?) {
-    netContentUomSuggested = false
+    claimNetContent()
     netContentUom = uom
+  }
+
+  /** Číslo gramáže, které napsal uživatel sám. */
+  fun onNetContentValueChosen(value: String) {
+    claimNetContent()
+    netContentValue = value
+  }
+
+  /** Přepínač váhového zboží, který přepnul uživatel sám. */
+  fun onVariableWeightChosen(value: Boolean) {
+    claimNetContent()
+    isVariableWeight = value
+  }
+
+  private fun claimNetContent() {
+    netContentTouched = true
+    netContentUomSuggested = false
   }
 
   /** Kategorii předvyplnil lokální model (zdroj AI) — formulář to pod polem řekne. */
@@ -352,7 +378,7 @@ class ProductFormViewModel(
   private fun applyReceiptDefaults(defaults: ReceiptLineProductDefaults) {
     val off = offDefaults
     val offHasNetContent = off?.netContentUom != null
-    if (!offHasNetContent && !isVariableWeight && netContentUom == null) {
+    if (!netContentTouched && !offHasNetContent && !isVariableWeight && netContentUom == null) {
       if (defaults.isVariableWeight) {
         isVariableWeight = true
       } else if (defaults.netContentUom != null && defaults.netContentUom != "PCS") {
@@ -362,7 +388,7 @@ class ProductFormViewModel(
       }
     }
     val category = defaults.category
-    if (category != null && off?.categoryId == null && selectedCategoryId == null) {
+    if (category != null && !categoryTouched && off?.categoryId == null && selectedCategoryId == null) {
       categorySuggested = defaults.categorySource == "AI"
       val loaded = categories.find { it.id == category.id }
       if (loaded != null) onCategorySelected(loaded) else pendingCategoryId = category.id
@@ -385,13 +411,14 @@ class ProductFormViewModel(
     // zůstane zkratka — cizojazyčný se sem nikdy nedosazuje (offDefaultsFrom).
     if (!nameTouched) defaults.name?.let { name = it }
     defaults.brandName?.let { brandName = it }
-    defaults.netContentValue?.let { netContentValue = it.toString() }
-    defaults.netContentUom?.let {
-      netContentUom = it
+    // Co uživatel mezitím zadal sám, OFF nepřepíše — stejně jako u názvu (nameTouched).
+    if (!netContentTouched && defaults.netContentUom != null) {
+      netContentValue = defaults.netContentValue?.let(::formatNetContentInput).orEmpty()
+      netContentUom = defaults.netContentUom
       netContentUomSuggested = false
       isVariableWeight = false
     }
-    defaults.categoryId?.let { id ->
+    defaults.categoryId?.takeIf { !categoryTouched }?.let { id ->
       categorySuggested = false
       val category = categories.find { it.id == id }
       if (category != null) onCategorySelected(category) else pendingCategoryId = id

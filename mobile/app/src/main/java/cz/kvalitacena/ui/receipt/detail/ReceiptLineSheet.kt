@@ -88,12 +88,19 @@ internal fun ReceiptLineSheet(
       line.skipReason?.let {
         Text(skipReasonText(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
       }
+      // Chyba akce patří k řádku, na kterém panel zůstal — bez ní by výpadek sítě vypadal,
+      // jako by ťuknutí nic neudělalo (obchod bez signálu).
+      viewModel.actionError?.let {
+        Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+      }
+      val busy = line.id in viewModel.busyLineIds
 
       val product = line.product
       val offCandidate = line.offCandidate
       when {
         line.status == "IGNORED" -> Button(
-          onClick = { viewModel.unmatch(line); viewModel.advance() },
+          onClick = { viewModel.restoreFromSheet(line) },
+          enabled = !busy,
           modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.receipt_line_restore)) }
 
@@ -110,7 +117,7 @@ internal fun ReceiptLineSheet(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
-          SuggestionActions(line, viewModel)
+          SuggestionActions(line, viewModel, busy)
         }
 
         !viewModel.sheetSearching && product != null -> {
@@ -131,10 +138,10 @@ internal fun ReceiptLineSheet(
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
           }
-          SuggestionActions(line, viewModel)
+          SuggestionActions(line, viewModel, busy)
         }
 
-        else -> ProductSearch(line, viewModel, onCreateProduct)
+        else -> ProductSearch(line, viewModel, onCreateProduct, busy)
       }
     }
   }
@@ -142,21 +149,26 @@ internal fun ReceiptLineSheet(
 
 /** „Ano, je to ono" a „Jiné zboží" u návrhu; „Není zboží" jako tichá třetí možnost. */
 @Composable
-private fun SuggestionActions(line: ReceiptLine, viewModel: ReceiptDetailViewModel) {
-  Button(onClick = { viewModel.acceptSuggestion(line) }, modifier = Modifier.fillMaxWidth()) {
+private fun SuggestionActions(line: ReceiptLine, viewModel: ReceiptDetailViewModel, busy: Boolean) {
+  Button(onClick = { viewModel.acceptSuggestion(line) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
     Text(stringResource(R.string.receipt_line_sheet_accept))
   }
-  OutlinedButton(onClick = viewModel::showOtherProducts, modifier = Modifier.fillMaxWidth()) {
+  OutlinedButton(onClick = viewModel::showOtherProducts, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
     Text(stringResource(R.string.receipt_line_sheet_other))
   }
-  TextButton(onClick = { viewModel.ignoreFromSheet(line) }, modifier = Modifier.fillMaxWidth()) {
+  TextButton(onClick = { viewModel.ignoreFromSheet(line) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
     Text(stringResource(R.string.receipt_line_sheet_not_product))
   }
 }
 
 /** Hledání zboží k řádku: nejdřív podle textu z účtenky, pak podle toho, co uživatel napíše. */
 @Composable
-private fun ProductSearch(line: ReceiptLine, viewModel: ReceiptDetailViewModel, onCreateProduct: () -> Unit) {
+private fun ProductSearch(
+  line: ReceiptLine,
+  viewModel: ReceiptDetailViewModel,
+  onCreateProduct: () -> Unit,
+  busy: Boolean,
+) {
   OutlinedTextField(
     value = viewModel.suggestionQuery,
     onValueChange = viewModel::onSuggestionQueryChange,
@@ -186,16 +198,17 @@ private fun ProductSearch(line: ReceiptLine, viewModel: ReceiptDetailViewModel, 
         Text(
           productLabel(product),
           style = MaterialTheme.typography.bodyMedium,
-          modifier = Modifier.fillMaxWidth().clickable { viewModel.chooseProduct(product) }.padding(vertical = Spacing.md),
+          modifier = Modifier.fillMaxWidth().clickable(enabled = !busy) { viewModel.chooseProduct(product) }
+            .padding(vertical = Spacing.md),
         )
         HorizontalDivider()
       }
     }
   }
-  Button(onClick = onCreateProduct, modifier = Modifier.fillMaxWidth()) {
+  Button(onClick = onCreateProduct, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
     Text(stringResource(R.string.receipt_line_create))
   }
-  TextButton(onClick = { viewModel.ignoreFromSheet(line) }, modifier = Modifier.fillMaxWidth()) {
+  TextButton(onClick = { viewModel.ignoreFromSheet(line) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
     Text(stringResource(R.string.receipt_line_sheet_not_product))
   }
 }

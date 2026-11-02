@@ -469,14 +469,31 @@ export class ReceiptDetailPage {
     this.advance();
   }
 
+  /**
+   * Posun z panelu až po uložení akce — při výpadku sítě nebo chybě serveru panel zůstane na
+   * řádku a chybu ukáže u něj, ať jde akci hned zopakovat (offline v obchodě, docs/design.md).
+   * Uživatel mezitím mohl panel přepnout jinam; pak se nic neposouvá.
+   */
+  private advanceAfter(line: ReceiptLine): () => void {
+    return () => {
+      if (this.panelLineId() === line.id) this.advance();
+    };
+  }
+
   protected panelPick(line: ReceiptLine, product: ProductSummary): void {
-    this.runLineAction(line, this.receiptService.matchLine(line.id, product.id));
-    this.advance();
+    this.runLineAction(
+      line,
+      this.receiptService.matchLine(line.id, product.id),
+      this.advanceAfter(line),
+    );
   }
 
   protected panelIgnore(line: ReceiptLine): void {
-    this.ignore(line);
-    this.advance();
+    this.runLineAction(line, this.receiptService.ignoreLine(line.id), this.advanceAfter(line));
+  }
+
+  protected panelRestore(line: ReceiptLine): void {
+    this.runLineAction(line, this.receiptService.unmatchLine(line.id), this.advanceAfter(line));
   }
 
   protected openMatch(line: ReceiptLine): void {
@@ -506,15 +523,21 @@ export class ReceiptDetailPage {
   /** Právě založené zboží — spárovat s příznakem `newProduct` (zdroj NEW_PRODUCT). */
   protected onProductCreated(line: ReceiptLine, product: Product): void {
     this.createForLine.set(null);
-    this.runLineAction(line, this.receiptService.matchLine(line.id, product.id, true));
-    if (this.panelLineId() === line.id) this.advance();
+    this.runLineAction(
+      line,
+      this.receiptService.matchLine(line.id, product.id, true),
+      this.advanceAfter(line),
+    );
   }
 
   /** Formulář místo založení nabídl existující zboží a uživatel ho vybral. */
   protected onExistingMatched(line: ReceiptLine, match: ExistingProductMatch): void {
     this.createForLine.set(null);
-    this.runLineAction(line, this.receiptService.matchLine(line.id, match.product.id));
-    if (this.panelLineId() === line.id) this.advance();
+    this.runLineAction(
+      line,
+      this.receiptService.matchLine(line.id, match.product.id),
+      this.advanceAfter(line),
+    );
   }
 
   private runLineAction(

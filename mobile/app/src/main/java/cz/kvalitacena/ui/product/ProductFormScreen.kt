@@ -378,7 +378,7 @@ fun ProductFormScreen(
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier.weight(1f),
       )
-      Switch(checked = viewModel.isVariableWeight, onCheckedChange = { formDirty = true; viewModel.isVariableWeight = it })
+      Switch(checked = viewModel.isVariableWeight, onCheckedChange = { formDirty = true; viewModel.onVariableWeightChosen(it) })
     }
     Text(
       stringResource(R.string.product_form_variable_weight_hint),
@@ -403,7 +403,7 @@ fun ProductFormScreen(
         if (viewModel.netContentUom != null) {
           SingleLineTextField(
             value = viewModel.netContentValue,
-            onValueChange = { input -> if (input.matches(Regex("^\\d*[.,]?\\d*$"))) { formDirty = true; viewModel.netContentValue = input } },
+            onValueChange = { input -> if (input.matches(Regex("^\\d*[.,]?\\d*$"))) { formDirty = true; viewModel.onNetContentValueChosen(input) } },
             label = stringResource(R.string.product_form_net_content_label),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.padding(start = Spacing.sm).weight(1f),

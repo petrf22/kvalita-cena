@@ -214,7 +214,7 @@
       <nz-form-control>
         <nz-switch
           [ngModel]="isVariableWeight()"
-          (ngModelChange)="isVariableWeight.set($event)"
+          (ngModelChange)="onVariableWeightChosen($event)"
           name="isVariableWeight"
         />
         <p class="field-hint">{{ t('product-form.variableWeightHint') }}</p>
@@ -255,7 +255,7 @@
             @if (netContentUom()) {
               <nz-input-number
                 [ngModel]="netContentValue()"
-                (ngModelChange)="netContentValue.set($event)"
+                (ngModelChange)="onNetContentValueChosen($event)"
                 name="netContentValue"
                 class="net-content-value"
                 [nzMin]="0"

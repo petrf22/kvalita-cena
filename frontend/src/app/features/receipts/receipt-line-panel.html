@@ -20,7 +20,13 @@
     }
 
     @if (current.status === 'IGNORED') {
-      <button nz-button nzType="primary" type="button" (click)="restored.emit()">
+      <button
+        nz-button
+        nzType="primary"
+        type="button"
+        [nzLoading]="busy()"
+        (click)="restored.emit()"
+      >
         {{ t('receipts.line.unignore') }}
       </button>
     } @else if (!searching() && isOffSuggestion(current)) {
@@ -63,7 +69,7 @@
         (createNew)="createNew.emit()"
         (closed)="closed.emit()"
       />
-      <button nz-button nzType="text" type="button" (click)="ignored.emit()">
+      <button nz-button nzType="text" type="button" [nzLoading]="busy()" (click)="ignored.emit()">
         {{ t('receipts.panel.notProduct') }}
       </button>
     }
@@ -86,7 +92,7 @@
       <button nz-button type="button" (click)="otherRequested.emit()">
         {{ t('receipts.panel.other') }}
       </button>
-      <button nz-button nzType="text" type="button" (click)="ignored.emit()">
+      <button nz-button nzType="text" type="button" [nzLoading]="busy()" (click)="ignored.emit()">
         {{ t('receipts.panel.notProduct') }}
       </button>
     </div>

@@ -657,7 +657,7 @@
           (accepted)="acceptSuggestion(line)"
           (otherRequested)="panelSearching.set(true)"
           (ignored)="panelIgnore(line)"
-          (restored)="unmatch(line); advance()"
+          (restored)="panelRestore(line)"
           (picked)="panelPick(line, $event)"
           (createNew)="openCreate(line)"
           (skipped)="advance()"

@@ -239,6 +239,7 @@ class ReceiptDetailViewModel(
   }
 
   private fun showLine(line: ReceiptLine) {
+    actionError = null
     sheetLineId = line.id
     val searching = line.group() == LineGroup.TO_RESOLVE
     sheetSearching = searching
@@ -284,11 +285,22 @@ class ReceiptDetailViewModel(
     advance()
   }
 
-  /** Ignorovat z panelu (záloha, taška, sleva) a pokračovat. */
-  fun ignoreFromSheet(line: ReceiptLine) {
-    ignore(line)
-    advance()
+  /**
+   * Posun z panelu až po uložení akce: při výpadku sítě (obchod bez signálu) nebo chybě serveru
+   * panel zůstane na řádku a ukáže chybu ([actionError]), ať jde akci hned zopakovat. Když
+   * uživatel mezitím panel přepnul jinam, nic se neposouvá.
+   */
+  private fun advanceAfter(lineId: String): () -> Unit = {
+    if (sheetLineId == lineId) advance()
   }
+
+  /** Ignorovat z panelu (záloha, taška, sleva) a pokračovat. */
+  fun ignoreFromSheet(line: ReceiptLine) =
+    lineAction(line.id, advanceAfter(line.id)) { graphQlClient.ignoreReceiptLine(line.id) }
+
+  /** Vrátit ignorovaný řádek mezi nespárované z panelu. */
+  fun restoreFromSheet(line: ReceiptLine) =
+    lineAction(line.id, advanceAfter(line.id)) { graphQlClient.unmatchReceiptLine(line.id) }
 
   fun closeSuggestions() {
     suggestionJob?.cancel()
@@ -325,8 +337,7 @@ class ReceiptDetailViewModel(
 
   fun chooseProduct(product: ProductSummary) {
     val line = suggestionLine ?: return
-    match(line.id, product.id, newProduct = false)
-    advance()
+    match(line.id, product.id, newProduct = false, onSuccess = advanceAfter(line.id))
   }
 
   /** Formulář nového zboží se otevře jako jiná obrazovka; panel zůstane na řádku do návratu. */
@@ -338,23 +349,24 @@ class ReceiptDetailViewModel(
   fun onProductFormResult(productId: String, isNew: Boolean) {
     val lineId = newProductLineId ?: return
     newProductLineId = null
-    match(lineId, productId, newProduct = isNew)
-    if (sheetLineId == lineId) advance()
+    match(lineId, productId, newProduct = isNew, onSuccess = advanceAfter(lineId))
   }
 
-  private fun match(lineId: String, productId: String, newProduct: Boolean) =
-    lineAction(lineId) { graphQlClient.matchReceiptLine(lineId, productId, newProduct) }
+  private fun match(lineId: String, productId: String, newProduct: Boolean, onSuccess: () -> Unit = {}) =
+    lineAction(lineId, onSuccess) { graphQlClient.matchReceiptLine(lineId, productId, newProduct) }
 
   fun ignore(line: ReceiptLine) = lineAction(line.id) { graphQlClient.ignoreReceiptLine(line.id) }
 
   fun unmatch(line: ReceiptLine) = lineAction(line.id) { graphQlClient.unmatchReceiptLine(line.id) }
 
-  private fun lineAction(lineId: String, action: suspend () -> ReceiptLine) {
+  private fun lineAction(lineId: String, onSuccess: () -> Unit = {}, action: suspend () -> ReceiptLine) {
     busyLineIds = busyLineIds + lineId
     actionError = null
     viewModelScope.launch {
       try {
         replaceLine(action())
+        busyLineIds = busyLineIds - lineId
+        onSuccess()
       } catch (e: Exception) {
         actionError = e.toUiText()
       } finally {
