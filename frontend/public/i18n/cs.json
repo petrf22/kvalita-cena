@@ -233,6 +233,7 @@
     "receiptMatchSource": {
       "CODE": "podle kódu z účtenky",
       "LABEL": "podle názvu na účtence",
+      "FUZZY": "jen podle podobnosti názvu",
       "USER": "vybráno ručně",
       "NEW_PRODUCT": "nově založené zboží"
     },

@@ -281,14 +281,16 @@
                             (ngModelChange)="toggle(line.id, $event)"
                             [nzDisabled]="confirming()"
                             [attr.aria-label]="
-                              t('receipts.line.selectLabel', { label: line.labelRaw })
+                              isGuess(line)
+                                ? t('receipts.line.selectGuessLabel', { label: lineLabel(line) })
+                                : t('receipts.line.selectLabel', { label: lineLabel(line) })
                             "
                           ></label>
                         }
                       </div>
                       <div class="line-body">
                         <div class="line-top">
-                          <span class="line-label">{{ line.labelRaw }}</span>
+                          <span class="line-label">{{ lineLabel(line) }}</span>
                           @if (line.lineTotal != null) {
                             <span class="line-total">{{
                               line.lineTotal | money: receipt.currency
@@ -306,7 +308,15 @@
                               })
                             }}</span>
                           }
-                          <!-- Podle EANu server páruje — ať jde porovnat s kódem na obalu doma. -->
+                          <!--
+                            Syrový tisk vedle EANu: obojí je z účtenky. Tisk jde porovnat
+                            s obrázkem vlevo, EAN (podle něj server páruje) s kódem na obalu.
+                          -->
+                          @if (lineRawLabel(line); as raw) {
+                            <span class="raw-text line-code" [title]="t('receipts.line.raw')">{{
+                              raw
+                            }}</span>
+                          }
                           @if (lineGtin(line); as gtin) {
                             <span class="line-code">{{
                               t('receipts.line.ean', { code: gtin })
@@ -317,6 +327,19 @@
                           <nz-tag [nzColor]="lineColor(line)">{{
                             lineStatusKeys[line.status] | transloco
                           }}</nz-tag>
+                          <!-- Odhad podle podobnosti názvu: nezaškrtnutý, potvrzuje se vědomě. -->
+                          @if (isGuess(line)) {
+                            <nz-tag
+                              nzColor="warning"
+                              nz-tooltip
+                              [nzTooltipTitle]="
+                                lineGtin(line)
+                                  ? t('receipts.line.guessHintWithEan')
+                                  : t('receipts.line.guessHint')
+                              "
+                              >{{ t('receipts.line.guess') }}</nz-tag
+                            >
+                          }
                           @if (line.product; as product) {
                             <a [routerLink]="['/product', product.id]" class="line-product">
                               <app-product-thumb
@@ -456,7 +479,7 @@
                       <ul class="skipped-list">
                         @for (line of result.skipped; track line.id) {
                           <li>
-                            <strong>{{ line.labelRaw }}</strong> —
+                            <strong>{{ lineLabel(line) }}</strong> —
                             {{ skipReasonKey(line.skipReason ?? '') | transloco }}
                           </li>
                         }
@@ -527,7 +550,10 @@
           <ng-container *nzModalContent>
             @if (createForLine(); as line) {
               <p class="create-hint">
-                {{ t('receipts.create.labelPrefix') }} <strong>{{ line.labelRaw }}</strong>
+                {{ t('receipts.create.labelPrefix') }} <strong>{{ lineLabel(line) }}</strong>
+                @if (lineRawLabel(line); as raw) {
+                  <span class="raw-text line-code" [title]="t('receipts.line.raw')">{{ raw }}</span>
+                }
               </p>
               <!--
                 S EANem nevzniká lokální zboží obchodu, ale zboží do společného katalogu —
@@ -539,7 +565,7 @@
                 {{ lineGtin(line) ? t('receipts.create.hintWithCode') : t('receipts.create.hint') }}
               </p>
               <app-product-form
-                [initialName]="line.labelRaw"
+                [initialName]="lineLabel(line)"
                 [barcode]="lineGtin(line)"
                 [store]="receipt.store"
                 (created)="onProductCreated(line, $event)"
