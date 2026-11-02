@@ -148,8 +148,12 @@ public class ReceiptMatchingService {
    * a klient nabídne formulář, který si OFF dotáhne sám.
    *
    * <p>Výpadek OFF ({@code UNAVAILABLE}) není chyba účtenky, jen řádek bez návrhu.
+   *
+   * <p>Transakce je ZÁMĚRNĚ zapisovatelná: prošlý snapshot obnoví {@code OpenFoodFactsService.lookup}
+   * přes {@code repository.save} a v read-only transakci by se obnova tiše zahodila — každé
+   * otevření účtenky by pak znovu volalo OFF a pálilo sdílený limit dotazů.
    */
-  @Transactional(readOnly = true)
+  @Transactional
   public Optional<OffProduct> offCandidate(ReceiptLine line) {
     String code = line.getInternalCode();
     if (!GtinNormalization.isGlobalGtin(code)) {

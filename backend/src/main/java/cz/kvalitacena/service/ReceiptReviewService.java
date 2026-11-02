@@ -219,6 +219,12 @@ public class ReceiptReviewService {
       fresh.setSkipReason(reason);
       // Duplicita znamená, že tuhle cenu uživatel dnes už zapsal — párování samo je
       // potvrzené, jen druhá cena navíc by porušila denní limit (docs/reputace.md).
+      // OFF návrh zboží nemá a doplněné productId z transakce řádku zmizelo s jejím rollbackem.
+      // Duplicitní cenu jde zapsat jen k zboží, které už existuje — dohledá se podle EAN.
+      if (SKIP_DUPLICATE.equals(reason) && fresh.getProductId() == null
+          && fresh.getMatchSource() == ReceiptMatchSource.OFF) {
+        existingProductForCode(fresh).ifPresent(fresh::setProductId);
+      }
       if (SKIP_DUPLICATE.equals(reason) && fresh.getProductId() != null) {
         fresh.setStatus(ReceiptLineStatus.MATCHED);
         learn(fresh, receipt, owner);
@@ -272,9 +278,7 @@ public class ReceiptReviewService {
    * předem, protože výjimka z transakční metody by označila celou transakci řádku k rollbacku.
    */
   private Long productFromOff(ReceiptLine line, UUID ownerPublicUid) {
-    String gtin14 = GtinNormalization.toGtin14(line.getInternalCode().trim());
-    Optional<Long> existing = productCodeRepository.findFirstByCodeAndCodeType(gtin14, CodeType.GTIN)
-        .map(code -> code.getProduct().getId());
+    Optional<Long> existing = existingProductForCode(line);
     if (existing.isPresent()) {
       return existing.get();
     }
@@ -290,6 +294,12 @@ public class ReceiptReviewService {
         line.getInternalCode().trim(), name, lang, List.of(), null, null, null, null, null, null, null), ownerPublicUid);
     log.info("Účtenka: řádek {} založil zboží {} z Open Food Facts", line.getId(), product.getId());
     return product.getId();
+  }
+
+  private Optional<Long> existingProductForCode(ReceiptLine line) {
+    String gtin14 = GtinNormalization.toGtin14(line.getInternalCode().trim());
+    return productCodeRepository.findFirstByCodeAndCodeType(gtin14, CodeType.GTIN)
+        .map(code -> code.getProduct().getId());
   }
 
   private void learn(ReceiptLine line, Receipt receipt, AppUser owner) {

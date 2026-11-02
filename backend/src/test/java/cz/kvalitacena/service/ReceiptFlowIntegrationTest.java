@@ -103,6 +103,10 @@ class ReceiptFlowIntegrationTest {
   @Autowired private cz.kvalitacena.db.repo.OffProductRepository offProductRepository;
   @Autowired private NewProductDefaultsService productDefaultsService;
   @Autowired private cz.kvalitacena.controller.worker.WorkerReceiptController workerController;
+  @Autowired private cz.kvalitacena.config.OpenFoodFactsProperties offProperties;
+  // Skutečné Open Food Facts se nevolá nikdy — test obnovy cache si odpověď nastaví sám.
+  @org.springframework.test.context.bean.override.mockito.MockitoBean
+  private cz.kvalitacena.service.OpenFoodFactsApiClient offApiClient;
 
   @Test
   void fullFlowFromUploadToConfirmedPriceAndLearnedLabel() {
@@ -693,6 +697,52 @@ class ReceiptFlowIntegrationTest {
         ObservationSource.WEB);
 
     assertThat(lines(receiptId).getFirst().getProductId()).isEqualTo(meanwhile.getId());
+  }
+
+  @Test
+  void secondOffLineWithSameEanIsMatchedEvenWhenItsPriceIsDuplicate() {
+    Fixture f = fixture();
+    String ean = randomEan13();
+    offSnapshot(ean, f.rohlik().getCategory().getSlug(), "500", "G", Map.of("cs", "Těstoviny kolínka"));
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        lineWithCode("TESTOV.KOLINKA", ean), lineWithCode("TESTOV.KOLINKA", ean)));
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    assertThat(lines(receiptId)).extracting(ReceiptLine::getMatchSource).containsOnly(ReceiptMatchSource.OFF);
+
+    var result = reviewService.confirmLines(owner.getPublicUid(), receiptId,
+        lines(receiptId).stream().map(ReceiptLine::getId).toList(), ObservationSource.WEB);
+
+    assertThat(result.confirmed()).isEqualTo(1);
+    assertThat(result.skipped()).hasSize(1);
+    // Druhá cena téhož druhu týž den je duplicita, párování ale platí — jinak by řádek zůstal
+    // navždy SUGGESTED (doplněné zboží zmizelo s rollbackem transakce řádku) a účtenka rozpracovaná.
+    List<ReceiptLine> after = lines(receiptId);
+    assertThat(after).extracting(ReceiptLine::getStatus).containsOnly(ReceiptLineStatus.MATCHED);
+    assertThat(after).extracting(ReceiptLine::getProductId).doesNotContainNull().containsOnly(after.getFirst().getProductId());
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getReviewStatus().name()).isEqualTo("DONE");
+  }
+
+  @Test
+  void offCandidateOutsideTransactionStoresRefreshedSnapshot() {
+    Fixture f = fixture();
+    String ean = randomEan13();
+    offSnapshot(ean, f.rohlik().getCategory().getSlug(), "500", "G", Map.of("cs", "Prošlý snapshot"));
+    jdbcTemplate.update("UPDATE off.product SET fetched_at = now() - interval '400 days' WHERE gtin = ?", "0" + ean);
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(lineWithCode("PROSLY", ean)));
+    ReceiptLine line = lines(receiptId).getFirst();
+    org.mockito.Mockito.when(offApiClient.fetch(ean)).thenReturn(java.util.Optional.empty());
+    offProperties.setEnabled(true);
+    try {
+      // Stejně jako resolver ReceiptLine.offCandidate: mimo transakci volajícího.
+      assertThat(matchingService.offCandidate(line)).isEmpty();
+    } finally {
+      offProperties.setEnabled(false);
+    }
+
+    assertThat(jdbcTemplate.queryForObject("SELECT fetch_status FROM off.product WHERE gtin = ?", String.class, "0" + ean))
+        .isEqualTo("NOT_FOUND");
   }
 
   @Test
