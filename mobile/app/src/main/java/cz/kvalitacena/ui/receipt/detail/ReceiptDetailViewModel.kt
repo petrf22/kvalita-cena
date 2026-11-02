@@ -23,8 +23,10 @@ private const val SEARCH_DEBOUNCE_MS = 300L
 
 /**
  * Detail účtenky a párování řádků se zbožím. Výsledek workeru je jen návrh (docs/ai.md, „AI
- * nikdy nerozhoduje"): řádky, které server spároval sám (SUGGESTED), jsou předem zaškrtnuté,
- * ale cenu zapíše až „Potvrdit spárované".
+ * nikdy nerozhoduje"): řádky, které server spároval jistě (SUGGESTED podle kódu nebo
+ * označení), jsou předem zaškrtnuté, ale cenu zapíše až „Potvrdit spárované". Odhad podle
+ * podobnosti názvu (FUZZY) předem zaškrtnutý není — pravidla výběru jsou
+ * v `ReceiptLineSelection.kt`.
  */
 class ReceiptDetailViewModel(
   private val receiptId: String,
@@ -47,7 +49,7 @@ class ReceiptDetailViewModel(
   var headerSaving by mutableStateOf(false)
     private set
 
-  /** Řádky zaškrtnuté k potvrzení — výchozí jsou všechny SUGGESTED. */
+  /** Řádky zaškrtnuté k potvrzení — výchozí jsou SUGGESTED kromě odhadů ([defaultSelectedLineIds]). */
   var selected by mutableStateOf<Set<String>>(emptySet())
     private set
 
@@ -124,14 +126,13 @@ class ReceiptDetailViewModel(
 
   private fun apply(updated: Receipt, resetSelection: Boolean) {
     receipt = updated
-    val suggested = updated.lines.filter { it.status == "SUGGESTED" }.map { it.id }.toSet()
-    selected = if (resetSelection) suggested else selected.intersect(suggested)
+    selected = selectionAfterLoad(selected, updated.lines, reset = resetSelection)
   }
 
   private fun replaceLine(line: ReceiptLine) {
     val current = receipt ?: return
     receipt = current.copy(lines = current.lines.map { if (it.id == line.id) line else it })
-    selected = if (line.status == "SUGGESTED") selected + line.id else selected - line.id
+    selected = selectionAfterLineChange(selected, line)
   }
 
   fun toggleSelected(lineId: String) {
@@ -139,7 +140,7 @@ class ReceiptDetailViewModel(
   }
 
   val confirmableCount: Int
-    get() = receipt?.lines?.count { it.status == "SUGGESTED" && it.id in selected } ?: 0
+    get() = receipt?.lines?.count { it.isConfirmable() && it.id in selected } ?: 0
 
   // --- hlavička ---
 
@@ -272,7 +273,8 @@ class ReceiptDetailViewModel(
 
   fun confirm() {
     val current = receipt ?: return
-    val lineIds = current.lines.filter { it.status == "SUGGESTED" && it.id in selected }.map { it.id }
+    // Ručně zaškrtnutý odhad (FUZZY) jde potvrdit stejně jako jiný návrh.
+    val lineIds = current.lines.filter { it.isConfirmable() && it.id in selected }.map { it.id }
     if (lineIds.isEmpty() || confirming) return
     confirming = true
     actionError = null

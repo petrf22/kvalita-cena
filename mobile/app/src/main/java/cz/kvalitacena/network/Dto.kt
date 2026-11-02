@@ -786,14 +786,17 @@ data class ReceiptLineCounts(
 /**
  * Řádek účtenky. Enumy se jako všude jinde v appce mapují ručně na String (appka typy ze
  * schématu negeneruje, kořenový CLAUDE.md): [status] UNMATCHED/SUGGESTED/MATCHED/IGNORED,
- * [matchSource] CODE/LABEL/USER/NEW_PRODUCT, [quantityUnit] PCS/KG/L. [unitPrice] je u váhového
- * zboží cena za kg/l, ne zaplacená částka ([lineTotal]).
+ * [matchSource] CODE/LABEL/FUZZY/USER/NEW_PRODUCT (FUZZY je jen odhad podle podobnosti názvu,
+ * docs/ai.md), [quantityUnit] PCS/KG/L. [unitPrice] je u váhového zboží cena za kg/l, ne
+ * zaplacená částka ([lineTotal]). [labelDisplay] je čitelný název od workeru jen pro oči,
+ * hledání a předvyplnění — párování se učí podle [labelRaw]; u starších účtenek chybí.
  */
 @Serializable
 data class ReceiptLine(
   val id: String,
   val lineNo: Int,
   val labelRaw: String,
+  val labelDisplay: String? = null,
   val internalCode: String? = null,
   val quantity: Double? = null,
   val quantityUnit: String = "PCS",

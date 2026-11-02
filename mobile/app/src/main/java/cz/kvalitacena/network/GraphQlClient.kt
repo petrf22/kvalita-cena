@@ -143,7 +143,7 @@ internal val PUBLICATION_STATUS_FIELDS = """
 
 /** Řádek účtenky i se spárovaným zbožím (docs/datovy-model.md, „Účtenky"). */
 internal val RECEIPT_LINE_FIELDS = """
-  id lineNo labelRaw internalCode quantity quantityUnit unitPrice lineTotal discountAmount
+  id lineNo labelRaw labelDisplay internalCode quantity quantityUnit unitPrice lineTotal discountAmount
   priceKind status matchSource observationId confirmed skipReason
   product { $PRODUCT_SUMMARY_FIELDS }
 """
