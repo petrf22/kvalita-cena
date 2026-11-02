@@ -39,8 +39,8 @@ android {
         minSdk = 26
         targetSdk = 36
         // Generováno tools/version/sync.mjs z kořenového VERSION — needituj ručně.
-        versionCode = 1200
-        versionName = "0.12.0"
+        versionCode = 1300
+        versionName = "0.13.0"
 
         buildConfigField("String", "MAP_TILE_URL", "\"$mapTileUrl\"")
         buildConfigField("String", "MAP_TILE_ATTRIBUTION", "\"$mapTileAttribution\"")
