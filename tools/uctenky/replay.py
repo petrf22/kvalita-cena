@@ -23,8 +23,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import ai_pretty  # noqa: E402
 import ocr as ocr_mod  # noqa: E402
 import parse  # noqa: E402
+import pretty  # noqa: E402
+import result as result_mod  # noqa: E402
 
 TEXT_SUFFIXES = {".txt"}
 
@@ -75,6 +78,17 @@ def report(texts: list[str], profile_name: str | None = None, log=print) -> dict
     return document
 
 
+def report_names(document: dict, dictionary: pretty.Dictionary, prettifier=None, log=print) -> list[dict]:
+    """Čitelné názvy, jak je worker pošle na server (pretty.py, ai_pretty.py)."""
+    payload = result_mod.to_payload(document, None, "replay", dictionary, prettifier, log)
+    log(f"\n== čitelné názvy (slovník {result_mod.chain_of(document)})")
+    for line in payload["lines"]:
+        hint = f"{line['netContentValue']} {line['netContentUom']}" if line.get("netContentUom") else ""
+        log(f"      {line['label']:<32} -> {line.get('labelDisplay', ''):<36} "
+            f"{line.get('labelDisplaySource', ''):<5} {hint}")
+    return payload["lines"]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Offline přehrání účtenky (OCR + rozbor)")
     parser.add_argument("parts", nargs="+", type=Path, help="díly účtenky shora dolů (obrázky nebo .txt)")
@@ -83,6 +97,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--json", action="store_true", help="vypsat celý dokument z parse.build_document")
     parser.add_argument("--ollama", default=os.environ.get("OLLAMA_HOST", ocr_mod.DEFAULT_HOST))
     parser.add_argument("--model", default=os.environ.get("OCR_MODEL", ocr_mod.DEFAULT_MODEL))
+    parser.add_argument("--pretty-model", default="",
+                        help=f"dočistit čitelné názvy modelem (např. {ai_pretty.DEFAULT_MODEL}; prázdné = jen slovník)")
     args = parser.parse_args(argv)
     if args.profile and parse.profiles.by_name(args.profile) is None:
         parser.error("neznámý profil: " + args.profile)
@@ -93,6 +109,8 @@ def main(argv: list[str] | None = None) -> int:
 
     texts = read_parts(args.parts, lambda: ocr_mod.OllamaOcr(args.ollama, args.model), args.save_ocr)
     document = report(texts, args.profile)
+    prettifier = ai_pretty.OllamaPrettifier(args.ollama, args.pretty_model) if args.pretty_model else None
+    report_names(document, pretty.load_dictionary(), prettifier)
     if args.json:
         print(json.dumps(document, ensure_ascii=False, indent=2))
     return 0 if document["totalMatches"] and not document["warnings"] else 1

@@ -1,0 +1,3 @@
+# Ruční přepis celého označení z účtenky -> čitelný název (tools/uctenky/README.md).
+# Formát: označení<TAB>čitelný název[<TAB>řetězec]. Označení se porovnává jako
+# core.norm_label (bez diakritiky, interpunkce a velikosti písmen). Zapisuje i curate.py.
