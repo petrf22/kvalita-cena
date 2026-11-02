@@ -31,6 +31,9 @@ class Footer:
     # Index řádku s celkovou částkou (začátek patičky); None, když se nenašel. Podle něj
     # parse.server_text ořízne syrový text, ať patička nedorazí na server ani tudy.
     total_index: int | None = None
+    # Zaokrouhlení vytištěné NAD celkovou částkou (Penny: Mezisoučet → Zaokrouhlení → Celkem).
+    # Není to položka, ale do kontrolního součtu patří — u hotovosti až ±0,50 Kč.
+    rounding: Decimal = Decimal(0)
 
 
 @dataclass(frozen=True)

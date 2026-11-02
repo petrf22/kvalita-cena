@@ -76,8 +76,14 @@ _COLUMN_HEADER_RE = re.compile(r"^(Kč|KČ|Kc|CZK|EUR|€)$", re.IGNORECASE)
 
 
 def is_noise(line: str) -> bool:
-    """Řádek bez užitečného obsahu — oddělovač nebo hlavička sloupce."""
-    return bool(_SEPARATOR_RE.match(line)) or bool(_COLUMN_HEADER_RE.match(line))
+    """Řádek bez užitečného obsahu — oddělovač nebo hlavička sloupce.
+
+    Albert tiskne hlavičku sloupce do oddělovací linky (`-------Kč---`), OCR ji pak čte
+    jako `Kc---`, proto se hlavička hledá až po odříznutí znaků oddělovače.
+    """
+    if _SEPARATOR_RE.match(line):
+        return True
+    return bool(_COLUMN_HEADER_RE.match(line.strip(" \t-_=.·•~")))
 
 
 # Maskované číslo platební/věrnostní karty (**** 1234, XXXXXXXXXXXX1234) — pojistka pro

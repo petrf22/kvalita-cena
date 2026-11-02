@@ -53,8 +53,10 @@ SIMPLE_RE = re.compile(rf"^(?P<name>.*?)\s+(?:(?P<vatpre>[A-Z])\s+)?(?P<total>{A
 
 # 3.000 ks x 36.90 Kč /ks   — množství na SAMOSTATNÉM řádku NAD názvem (Penny). Bez něj by
 # zůstalo jen zaplacených 110,70 za tři kusy místo ceny 36,90 za kus (normalize.py).
+# 0.526 kg (E) x 109.90 Kč /kg — u váženého zboží Penny za jednotkou tiskne, jak byla
+# hmotnost zadána: (V) z pokladní váhy, (E) jinak (legenda v patičce účtenky).
 PRE_QTY_RE = re.compile(
-    rf"^(?P<qty>[0-9]+(?:[.,][0-9]+)?)\s*(?P<uom>ks|kg|g|l|ml)\s*x\s*(?P<unit>{AMOUNT})\s*"
+    rf"^(?P<qty>[0-9]+(?:[.,][0-9]+)?)\s*(?P<uom>ks|kg|g|l|ml)(?:\s*\([A-Z]\))?\s*x\s*(?P<unit>{AMOUNT})\s*"
     rf"(?:Kč|Kc|CZK)?\s*/\s*(?P<peruom>ks|kg|g|l|ml)\s*$",
     re.IGNORECASE,
 )

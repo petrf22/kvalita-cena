@@ -86,7 +86,7 @@ def build_document(texts: list[str] | str, profile_name: str | None = None) -> d
     body, footer = profile.split_body(raw_lines)
     parsed = (profile.parse_items or lines_mod.parse_item_lines)(body)
 
-    computed = sum((line.line_total for line in parsed.lines if line.line_total is not None), Decimal(0))
+    computed = sum((line.line_total for line in parsed.lines if line.line_total is not None), footer.rounding)
     warnings = list(parsed.warnings)
     if footer.printed_total is None:
         warnings.append("na účtence se nenašel řádek s celkovou částkou")
