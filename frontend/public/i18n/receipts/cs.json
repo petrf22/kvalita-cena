@@ -186,5 +186,23 @@
     "labelPrefix": "Na účtence:",
     "hint": "Zkratku z účtenky přepiš na celý název, jak ho znáš z obalu. Zboží se založí pro tenhle obchod a řádek se s ním rovnou spáruje.",
     "hintWithCode": "Zkontroluj název — má být celý, jak ho znáš z obalu, ne zkratka z účtenky. Čárový kód je převzatý z účtenky, takže zboží půjde najít i v ostatních obchodech. Řádek se s ním rovnou spáruje."
+  },
+  "guide": {
+    "start": "Doplnit nerozpoznané ({{count}})",
+    "progress": "{{index}} / {{total}}",
+    "skip": "Přeskočit"
+  },
+  "group": {
+    "toResolve": "K doplnění ({{count}})",
+    "toCheck": "Ke kontrole ({{count}})",
+    "ready": "Připraveno k potvrzení ({{count}})",
+    "done": "Hotovo ({{count}})",
+    "ignored": "Ignorováno ({{count}})"
+  },
+  "panel": {
+    "accept": "Ano, je to ono",
+    "other": "Jiné zboží",
+    "notProduct": "Není zboží — ignorovat",
+    "offHint": "Zboží podle EAN zná Open Food Facts. Do katalogu se přidá, až řádek potvrdíš."
   }
 }

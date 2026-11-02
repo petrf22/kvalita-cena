@@ -47,5 +47,7 @@
     "notFound": "Čiarový kód sa nepodarilo prečítať. Skús ostrejšiu fotku alebo kód odpíš.",
     "existing": "Tovar s týmto kódom už v katalógu je: {{name}}.",
     "useExisting": "Použiť"
-  }
+  },
+  "categorySuggested": "Kategóriu navrhol počítač podľa názvu z účtenky — skontroluj ju.",
+  "unitSuggested": "Jednotku navrhol počítač podľa názvu z účtenky — doplň číslo z obalu."
 }

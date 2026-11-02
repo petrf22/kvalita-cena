@@ -263,6 +263,17 @@ export const PriceKind = {
 } as const;
 
 export type PriceKind = typeof PriceKind[keyof typeof PriceKind];
+/** Odkud je předvyplněná hodnota formuláře nového zboží — klient u AI ukáže, že jde o návrh. */
+export const ProductDefaultSource = {
+  /** Návrh lokálního modelu — jen předvyplnění, uživatel ho má zkontrolovat. */
+  Ai: 'AI',
+  /** Shoda nejpodobnějšího zboží v katalogu. */
+  Catalog: 'CATALOG',
+  /** Přímo z řádku účtenky — váhové zboží, gramáž vytištěná v označení. */
+  Receipt: 'RECEIPT'
+} as const;
+
+export type ProductDefaultSource = typeof ProductDefaultSource[keyof typeof ProductDefaultSource];
 export const ProductLookupStatus = {
   Existing: 'EXISTING',
   NotFound: 'NOT_FOUND',
@@ -369,6 +380,11 @@ export const ReceiptMatchSource = {
   Fuzzy: 'FUZZY',
   Label: 'LABEL',
   NewProduct: 'NEW_PRODUCT',
+  /**
+   * EAN z řádku zná jen Open Food Facts — návrh BEZ zboží (product je null, náhled je v
+   * offCandidate). Zboží se založí až potvrzením řádku. Deterministické jako CODE, předem zaškrtnuté.
+   */
+  Off: 'OFF',
   User: 'USER'
 } as const;
 

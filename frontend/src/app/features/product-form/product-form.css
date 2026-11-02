@@ -100,3 +100,8 @@
 .net-content-value {
   flex: 1;
 }
+
+/* Hodnota předvyplněná lokálním modelem z řádku účtenky — návrh ke kontrole (docs/ai.md). */
+.suggested-hint {
+  color: var(--kc-brand);
+}

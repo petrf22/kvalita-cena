@@ -235,7 +235,8 @@
       "LABEL": "podle názvu na účtence",
       "FUZZY": "jen podle podobnosti názvu",
       "USER": "vybráno ručně",
-      "NEW_PRODUCT": "nově založené zboží"
+      "NEW_PRODUCT": "nově založené zboží",
+      "OFF": "podle EAN z Open Food Facts"
     },
     "quantityUnit": {
       "PCS": "ks",

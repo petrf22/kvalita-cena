@@ -47,5 +47,7 @@
     "notFound": "The barcode could not be read. Try a sharper photo, or type the code.",
     "existing": "A product with this code is already in the catalogue: {{name}}.",
     "useExisting": "Use it"
-  }
+  },
+  "categorySuggested": "The category was suggested by the computer from the receipt name — please check it.",
+  "unitSuggested": "The unit was suggested by the computer from the receipt name — fill in the number from the package."
 }

@@ -186,5 +186,23 @@
     "labelPrefix": "Na paragonie:",
     "hint": "Zamień skrót z paragonu na pełną nazwę, jaką znasz z opakowania. Produkt zostanie dodany dla tego sklepu, a pozycja od razu z nim powiązana.",
     "hintWithCode": "Sprawdź nazwę — ma być pełna, taka jak na opakowaniu, a nie skrót z paragonu. Kod kreskowy pochodzi z paragonu, więc produkt będzie można znaleźć także w innych sklepach. Pozycja zostanie od razu z nim powiązana."
+  },
+  "guide": {
+    "start": "Uzupełnij nierozpoznane ({{count}})",
+    "progress": "{{index}} / {{total}}",
+    "skip": "Pomiń"
+  },
+  "group": {
+    "toResolve": "Do uzupełnienia ({{count}})",
+    "toCheck": "Do sprawdzenia ({{count}})",
+    "ready": "Gotowe do potwierdzenia ({{count}})",
+    "done": "Gotowe ({{count}})",
+    "ignored": "Zignorowane ({{count}})"
+  },
+  "panel": {
+    "accept": "Tak, to ten",
+    "other": "Inny produkt",
+    "notProduct": "To nie produkt — ignoruj",
+    "offHint": "Open Food Facts zna ten produkt po EAN. Zostanie dodany do katalogu, gdy potwierdzisz pozycję."
   }
 }

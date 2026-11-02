@@ -47,5 +47,7 @@
     "notFound": "Nie udało się odczytać kodu kreskowego. Spróbuj ostrzejszego zdjęcia albo przepisz kod.",
     "existing": "Produkt z tym kodem już jest w katalogu: {{name}}.",
     "useExisting": "Użyj"
-  }
+  },
+  "categorySuggested": "Kategorię zaproponował komputer na podstawie nazwy z paragonu — sprawdź ją.",
+  "unitSuggested": "Jednostkę zaproponował komputer na podstawie nazwy z paragonu — uzupełnij liczbę z opakowania."
 }
