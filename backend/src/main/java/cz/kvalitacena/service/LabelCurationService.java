@@ -57,7 +57,8 @@ public class LabelCurationService {
   private final CatalogProperties catalogProperties;
 
   /** Jedno nespárované označení v jednom rozsahu. {@code sampleStoreId} slouží jen k hledání zboží v rozsahu. */
-  public record UnmatchedLabel(String label, String labelNorm, String labelDisplay, Long chainId, String chainName,
+  public record UnmatchedLabel(String label, String labelNorm, String labelDisplay, Long chainId, String chainSlug,
+      String chainName,
       Long storeId, String storeName, Long sampleStoreId, BigDecimal netContentValue, String netContentUom,
       int lineCount, LocalDate lastSeenDay) {
   }
@@ -88,7 +89,7 @@ public class LabelCurationService {
                l.label_norm,
                (array_agg(l.label_display ORDER BY l.updated_at DESC)
                  FILTER (WHERE l.label_display IS NOT NULL))[1] AS label_display,
-               s.chain_id, c.name AS chain_name,
+               s.chain_id, c.slug AS chain_slug, c.name AS chain_name,
                CASE WHEN s.chain_id IS NULL THEN s.id END AS store_id,
                CASE WHEN s.chain_id IS NULL THEN s.name END AS store_name,
                max(s.id) AS sample_store_id,
@@ -106,14 +107,14 @@ public class LabelCurationService {
           AND (l.status = 'UNMATCHED' OR (l.status = 'SUGGESTED' AND l.match_source = 'FUZZY'))
           AND COALESCE(r.purchased_at, r.created_at) >= :notBefore
           AND (CAST(:chainId AS BIGINT) IS NULL OR s.chain_id = CAST(:chainId AS BIGINT))
-        GROUP BY l.label_norm, s.chain_id, c.name,
+        GROUP BY l.label_norm, s.chain_id, c.slug, c.name,
                  CASE WHEN s.chain_id IS NULL THEN s.id END, CASE WHEN s.chain_id IS NULL THEN s.name END
         ORDER BY count(*) DESC, max(COALESCE(r.purchased_at, r.created_at)) DESC
         LIMIT :limit
         """, params, (rs, row) -> new UnmatchedLabel(
         rs.getString("label"), rs.getString("label_norm"), rs.getString("label_display"),
-        (Long) rs.getObject("chain_id", Long.class), rs.getString("chain_name"),
-        (Long) rs.getObject("store_id", Long.class), rs.getString("store_name"),
+        rs.getObject("chain_id", Long.class), rs.getString("chain_slug"), rs.getString("chain_name"),
+        rs.getObject("store_id", Long.class), rs.getString("store_name"),
         rs.getLong("sample_store_id"), rs.getBigDecimal("hint_value"), rs.getString("hint_uom"),
         rs.getInt("line_count"), toLocalDate(rs.getDate("last_seen_day"))));
   }

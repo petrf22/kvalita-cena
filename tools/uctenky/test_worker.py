@@ -21,6 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ai_pretty  # noqa: E402
+import curate  # noqa: E402
 import lines as lines_mod  # noqa: E402
 import ocr as ocr_mod  # noqa: E402
 import normalize  # noqa: E402
@@ -579,6 +580,78 @@ class AiPrettyTest(unittest.TestCase):
         document = parse.build_document(_text("albert-plny"))
         replay.report_names(document, _dictionary(), log=out.append)
         self.assertTrue(any("ROHLÍK43GR" in line and "Rohlík 43g" in line for line in out))
+
+
+class FakeCuratorApi:
+    def __init__(self, conflict_with=None):
+        self.searches = []
+        self.mapped = []
+        self.conflict_with = conflict_with
+
+    def search_products(self, query, store_id, limit=8):
+        self.searches.append((query, store_id))
+        return [{"id": 11, "name": "Gran Moravia strouhaný", "netContentValue": 100, "netContentUom": "G",
+                 "status": "ACTIVE", "score": 0.81},
+                {"id": 12, "name": "Grana Padano", "status": "ACTIVE", "score": 0.4}]
+
+    def map_label(self, label, chain_id, store_id, product_id, replace=False):
+        self.mapped.append((label, chain_id, store_id, product_id, replace))
+        if self.conflict_with and not replace:
+            return {"outcome": "CONFLICT", "existingProductId": self.conflict_with}
+        return {"outcome": "CREATED", "productId": product_id, "suggestedLines": 3}
+
+
+class CurateTest(unittest.TestCase):
+    """Kurátorství na lokální stanici (curate.py) — vstup z klávesnice nahrazený seznamem."""
+
+    ITEM = {"label": "GRAN MORAV.STR.100G", "chainId": 1, "chainSlug": "albert", "chainName": "Albert",
+            "storeId": None, "sampleStoreId": 5, "lineCount": 4, "lastSeenDay": "2026-10-30",
+            "netContentValue": 100, "netContentUom": "G"}
+
+    def _session(self, answers, api=None, directory=None):
+        out = []
+        answers = iter(answers)
+        session = curate.Session(api or FakeCuratorApi(), _dictionary(), directory or Path("/nonexistent"),
+                                 read=lambda prompt="": next(answers), write=out.append)
+        return session, out
+
+    def test_hleda_bez_cisel_a_paruje_vybrane_zbozi_v_rozsahu_retezce(self):
+        api = FakeCuratorApi()
+        session, out = self._session(["2"], api)
+        session.run([dict(self.ITEM)])
+        self.assertEqual(api.searches[0], ("Gran Moravia str.", 5))
+        self.assertEqual(api.mapped, [("GRAN MORAV.STR.100G", 1, None, 12, False)])
+        self.assertEqual(session.mapped, 1)
+
+    def test_enter_vezme_prvniho_kandidata(self):
+        api = FakeCuratorApi()
+        session, _ = self._session([""], api)
+        session.run([dict(self.ITEM)])
+        self.assertEqual(api.mapped[0][3], 11)
+
+    def test_konflikt_se_prepise_jen_po_potvrzeni(self):
+        api = FakeCuratorApi(conflict_with=99)
+        session, _ = self._session(["1", "n", "1", "a"], api)
+        session.run([dict(self.ITEM)])
+        self.assertEqual([call[4] for call in api.mapped], [False, False, True])
+
+    def test_oprava_nazvu_a_zkratka_se_zapisou_do_slovniku(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            session, out = self._session(["zr STR.=strouhaný", "e Gran Moravia strouhaný 100g", "s"],
+                                         directory=directory)
+            session.run([dict(self.ITEM)])
+            dictionary = pretty.load_dictionary(directory)
+        self.assertEqual(dictionary.abbreviation("STR.", "albert"), "strouhaný")
+        self.assertIsNone(dictionary.abbreviation("STR.", "penny"))
+        self.assertEqual(dictionary.override("GRAN MORAV.STR.100G", "albert"), "Gran Moravia strouhaný 100g")
+        self.assertIn("      čitelně: Gran Moravia strouhaný 100g", out)
+
+    def test_q_ukonci_celou_relaci(self):
+        api = FakeCuratorApi()
+        session, _ = self._session(["q"], api)
+        session.run([dict(self.ITEM), dict(self.ITEM)])
+        self.assertEqual(len(api.searches), 1)
 
 
 if __name__ == "__main__":

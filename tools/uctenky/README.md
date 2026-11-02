@@ -117,6 +117,50 @@ Slovník je v gitu a worker ho čte před každou dávkou. Doplňuje se ručně,
 `curate.py` (níž). Na offline ladění vypíše `replay.py` čitelné názvy pod rozborem
 (`--pretty-model qwen2.5:7b-instruct` přidá i model).
 
+## Kurátorství
+
+Spárovat každé označení musí dnes uživatel u své účtenky. `curate.py` to dovoluje
+provozovateli udělat najednou pro všechny účtenky. Ukáže nespárovaná označení **seskupená
+podle řetězce**: syrový tisk, čitelný název, počet výskytů a den, kdy se objevilo naposledy.
+Účtenku ani uživatele neukáže (`docs/soukromi.md`, „Účtenky"). U každého označení vypíše
+nejpodobnější zboží v rozsahu řetězce.
+
+```bash
+tools/uctenky/run-curate.sh                    # produkce, token z ~/.config/kvalitacena-curator-token
+tools/uctenky/run-curate.sh --chain 1          # jen jeden řetězec (id)
+KC_API_URL=http://localhost:8080 KC_CURATOR_TOKEN=kcw_… python3 tools/uctenky/curate.py
+```
+
+Příkazy (`?` je vypíše):
+
+- `Enter` nebo číslo: spáruje označení s kandidátem. Mapování platí hned (`ACTIVE/OPERATOR`)
+  a nespárované řádky ostatních účtenek i strojové odhady dostanou návrh. Cenu za nikoho
+  nezapisuje, tu dál potvrzuje vlastník účtenky.
+- Když označení už míří na jiné zboží, `curate.py` se zeptá, jestli ho přepsat. Tak se opravuje
+  špatně naučené označení.
+- `h [dotaz]`: hledat zboží jinak.
+- `e <název>`: opravit čitelný název. Oprava se zapíše do `slovnik/nazvy.tsv`.
+- `z ZKR=rozepsání`, resp. `zr ZKR=rozepsání`: přidá zkratku do `slovnik/zkratky.tsv` pro
+  všechny řetězce, resp. jen pro tento řetězec.
+- `s`: přeskočit, `q`: konec.
+
+**Úpravy slovníku commitni do gitu.** Worker ho čte před každou dávkou, takže oprava platí už
+při normalizaci dalších účtenek. `--pretty-model qwen2.5:7b-instruct` dočistí názvy modelem
+i tady.
+
+Token kurátora vzniká stejně jako token workeru (viz „Token" výš), jen s jiným rozsahem
+a souborem:
+
+```bash
+TOKEN="kcw_$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+echo "$TOKEN" > ~/.config/kvalitacena-curator-token && chmod 600 ~/.config/kvalitacena-curator-token
+printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1
+# na serveru: INSERT INTO auth.api_token(name, token_hash, scope)
+#             VALUES ('domaci-pc-kurator', decode('OTISK', 'hex'), 'LABEL_CURATOR');
+```
+
+Token workeru na `/api/curator` nedosáhne a naopak. Stroj s OCR tak katalog měnit nemůže.
+
 ## Dvě věci, které vypadají jako detail, a nejsou
 
 **Strukturu nesmí tahat jazykový model.** Ověřili jsme to na reálné účtence Penny: druhý
