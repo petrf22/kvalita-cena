@@ -146,6 +146,7 @@ internal val RECEIPT_LINE_FIELDS = """
   id lineNo labelRaw labelDisplay internalCode quantity quantityUnit unitPrice lineTotal discountAmount
   priceKind status matchSource observationId confirmed skipReason
   product { $PRODUCT_SUMMARY_FIELDS }
+  offCandidate { code name nameLang brandName netContentValue netContentUom image { url thumbnailUrl kind lang attribution } sourceUrl attribution }
 """
 
 /** Účtenka bez řádků — pro seznam; detail přidává `lines` (RECEIPT_DETAIL_FIELDS). */
@@ -891,6 +892,20 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     }
     return execute(gql, variables, GraphQlResponse.serializer(ReceiptLineSuggestionsData.serializer()))
       .receiptLineSuggestions
+  }
+
+  /** Předvyplnění formuláře nového zboží z řádku účtenky (kategorie, gramáž, název, kód). */
+  suspend fun receiptLineProductDefaults(lineId: String): ReceiptLineProductDefaults? {
+    val gql = """
+      query(${'$'}lineId: ID!) {
+        receiptLineProductDefaults(lineId: ${'$'}lineId) {
+          name code category { id name slug path } categorySource
+          netContentValue netContentUom isVariableWeight netContentSource
+        }
+      }
+    """
+    return execute(gql, buildJsonObject { put("lineId", lineId) },
+      GraphQlResponse.serializer(ReceiptLineProductDefaultsData.serializer())).receiptLineProductDefaults
   }
 
   /** Potvrzení/změna obchodu a data nákupu; null pole server nemění. [purchasedAt] je ISO-8601 s offsetem. */

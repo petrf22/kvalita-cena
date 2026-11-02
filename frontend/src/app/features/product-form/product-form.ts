@@ -42,6 +42,7 @@ import {
 } from '../../services/language-service';
 import { MediaService } from '../../services/media-service';
 import { ProductService } from '../../services/product-service';
+import { ReceiptService } from '../../services/receipt-service';
 import { buildCategoryTree, categoryBreadcrumb } from '../../shared/category-tree';
 import { translateError } from '../../shared/error-message';
 import { NET_CONTENT_UOM_KEYS } from '../../shared/enum-labels';
@@ -63,6 +64,7 @@ import {
   pendingPhotoUploads,
   productFormDefaults,
   visibleNetContent,
+  isNetContentUomChoice,
 } from './product-form-validation';
 import { BarcodeScanner } from './barcode-scanner';
 
@@ -114,6 +116,7 @@ export interface ExistingProductMatch {
 })
 export class ProductForm {
   private readonly productService = inject(ProductService);
+  private readonly receiptService = inject(ReceiptService);
   private readonly mediaService = inject(MediaService);
   protected readonly format = inject(FormatService);
   private readonly transloco = inject(TranslocoService);
@@ -141,6 +144,24 @@ export class ProductForm {
    * existující položky (`onNameChange`), ať nevznikne duplicita.
    */
   readonly initialName = input<string | null>(null);
+  /**
+   * Řádek účtenky, ze kterého se zboží zakládá — formulář si podle něj stáhne předvyplnění
+   * kategorie a gramáže (`receiptLineProductDefaults`, docs/ai.md, „Návrh kategorie
+   * a jednotky"). Open Food Facts má přednost: co dodá, přepíše předvyplnění z řádku.
+   */
+  readonly receiptLineId = input<string | null>(null);
+
+  /** Kategorii předvyplnil lokální model — pod polem je poznámka, ať ji uživatel zkontroluje. */
+  protected readonly categorySuggested = signal(false);
+  /** Jednotku gramáže předvyplnil lokální model, číslo nechal na uživateli. */
+  protected readonly unitSuggested = signal(false);
+  /** Pole vyplněná z řádku účtenky — OFF kandidát je smí přepsat (`applyOffCandidate`). */
+  private readonly filledFromReceipt = new Set<'category' | 'netContent'>();
+  /**
+   * Pole, na která uživatel sám sáhl — pozdě dorazivší předvyplnění z řádku účtenky je už
+   * nesmí přepsat, ani když je vrátil na „nevyplněno" (prázdná hodnota je pak jeho volba).
+   */
+  private readonly touchedByUser = new Set<'category' | 'netContent'>();
 
   @Output() readonly created = new EventEmitter<Product>();
   @Output() readonly existingMatched = new EventEmitter<ExistingProductMatch>();
@@ -279,6 +300,20 @@ export class ProductForm {
     });
 
     effect(() => {
+      const lineId = this.receiptLineId();
+      if (!lineId || this.product()) return;
+      untracked(() =>
+        this.receiptService.lineProductDefaults(lineId).subscribe({
+          next: (defaults) => {
+            if (defaults) this.applyReceiptDefaults(defaults);
+          },
+          // Bez předvyplnění jde formulář vyplnit ručně — výpadek je tichý.
+          error: () => {},
+        }),
+      );
+    });
+
+    effect(() => {
       const product = this.product();
       if (!product) return;
       const defaults = productFormDefaults(product, this.nameLang());
@@ -349,6 +384,86 @@ export class ProductForm {
    * nahradí. Když ho OFF v jazyce appky nemá, zkratka zůstane — cizojazyčný název se do pole
    * nikdy nedosazuje (docs/lokalizace.md).
    */
+  /**
+   * Předvyplnění z řádku účtenky — jen prázdná pole a nic, co už dodal OFF kandidát. Gramáž
+   * vždy jako dvojice; u návrhu modelu jen jednotka bez čísla, číslo opíše uživatel z obalu.
+   */
+  private applyReceiptDefaults(defaults: {
+    category?: { id: string } | null;
+    categorySource?: string | null;
+    netContentValue?: number | null;
+    netContentUom?: string | null;
+    isVariableWeight: boolean;
+    netContentSource?: string | null;
+  }): void {
+    const off = this.offDefaults;
+    const offHasNetContent = off?.netContentUom != null;
+    if (
+      !offHasNetContent &&
+      !this.touchedByUser.has('netContent') &&
+      !this.isVariableWeight() &&
+      this.netContentUom() === null
+    ) {
+      if (defaults.isVariableWeight) {
+        this.isVariableWeight.set(true);
+        this.filledFromReceipt.add('netContent');
+      } else if (isNetContentUomChoice(defaults.netContentUom)) {
+        this.netContentUom.set(defaults.netContentUom);
+        this.netContentValue.set(defaults.netContentValue ?? null);
+        this.unitSuggested.set(defaults.netContentSource === 'AI');
+        this.filledFromReceipt.add('netContent');
+      }
+    }
+    const category = defaults.category;
+    if (
+      category &&
+      !off?.categoryId &&
+      !this.touchedByUser.has('category') &&
+      this.selectedCategoryId() === null
+    ) {
+      this.selectedCategoryId.set(category.id);
+      this.categorySuggested.set(defaults.categorySource === 'AI');
+      this.filledFromReceipt.add('category');
+    }
+  }
+
+  /** Kategorie vybraná uživatelem — návrh modelu tím přestává být návrhem. */
+  protected onCategoryChosen(id: string | null): void {
+    this.categorySuggested.set(false);
+    this.filledFromReceipt.delete('category');
+    this.touchedByUser.add('category');
+    this.selectedCategoryId.set(id);
+  }
+
+  /**
+   * Gramáž/objem a přepínač váhového zboží jsou jedna dvojice — jakákoli ruční změna kterékoli
+   * části z nich udělá vlastní hodnotu uživatele. Předvyplnění z řádku účtenky pak už nesmí
+   * přepsat pozdě dorazivší OFF kandidát (`applyOffCandidate`).
+   */
+  private claimNetContent(): void {
+    this.unitSuggested.set(false);
+    this.filledFromReceipt.delete('netContent');
+    this.touchedByUser.add('netContent');
+  }
+
+  /** Jednotka vybraná uživatelem. */
+  protected onNetContentUomChosen(uom: NetContentUomChoice | null): void {
+    this.claimNetContent();
+    this.netContentUom.set(uom);
+  }
+
+  /** Číslo gramáže napsané uživatelem. */
+  protected onNetContentValueChosen(value: number | null): void {
+    this.claimNetContent();
+    this.netContentValue.set(value);
+  }
+
+  /** Přepínač váhového zboží přepnutý uživatelem. */
+  protected onVariableWeightChosen(value: boolean): void {
+    this.claimNetContent();
+    this.isVariableWeight.set(value);
+  }
+
   private applyOffCandidate(candidate: ExternalProductCandidate): void {
     this.offCandidate.set(candidate);
     const defaults = offCandidateDefaults(candidate, this.nameLang());
@@ -364,8 +479,21 @@ export class ProductForm {
     if (defaults.brandName && this.brandName().trim() === '') {
       this.brandName.set(defaults.brandName);
     }
-    if (defaults.categoryId && this.selectedCategoryId() === null) {
+    // Co předvyplnil řádek účtenky, OFF přepíše — kategorie a gramáž z OFF jsou přesnější
+    // než soused v katalogu nebo model, a hodnota shodná s OFF se pak neodešle jako vlastní.
+    const categoryFromReceipt = this.filledFromReceipt.has('category');
+    const netContentFromReceipt = this.filledFromReceipt.has('netContent');
+    if (defaults.categoryId && (this.selectedCategoryId() === null || categoryFromReceipt)) {
       this.selectedCategoryId.set(defaults.categoryId);
+      this.categorySuggested.set(false);
+      this.filledFromReceipt.delete('category');
+    }
+    if (netContentFromReceipt && defaults.netContentUom) {
+      this.isVariableWeight.set(false);
+      this.netContentValue.set(null);
+      this.netContentUom.set(null);
+      this.unitSuggested.set(false);
+      this.filledFromReceipt.delete('netContent');
     }
     if (defaults.netContentValue != null && this.netContentValue() === null) {
       this.netContentValue.set(defaults.netContentValue);

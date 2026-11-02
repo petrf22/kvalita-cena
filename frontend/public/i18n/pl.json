@@ -235,7 +235,8 @@
       "LABEL": "według nazwy na paragonie",
       "FUZZY": "tylko według podobnej nazwy",
       "USER": "wybrane ręcznie",
-      "NEW_PRODUCT": "nowo dodany produkt"
+      "NEW_PRODUCT": "nowo dodany produkt",
+      "OFF": "według EAN z Open Food Facts"
     },
     "quantityUnit": {
       "PCS": "szt.",

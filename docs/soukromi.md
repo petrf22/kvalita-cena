@@ -236,6 +236,10 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   `product_review` a `product_user_edit` výš: bez vazby na vlastníka by přehled neměl smysl.
   Zmírnění stejné: nikdy ven přes API cizímu, `ON DELETE CASCADE`, `pg_dump --schema=core`
   musí `owner_user_id` vynechat nebo hashovat.
+- **EAN z řádku jde do Open Food Facts jen sám.** Při zpracování účtenky se server na EAN,
+  který katalog nezná, zeptá OFF (`ReceiptMatchingService.offCandidate`, přes stejnou cache
+  a rate limit jako sken). Odchází jen veřejný kód zboží — nic o účtence, nákupu ani
+  uživateli. Dotaz vzniká i bez další akce uživatele, jen nahráním účtenky.
 - **Cenové zápisy z účtenky jsou běžné observace.** Vznikají jen potvrzením vlastníka (`docs/ai.md`,
   „AI nikdy nerozhoduje"), pseudonymizují se po 180 dnech jako každé jiné a smazání účtenky
   je nesmaže (stejná úvaha jako výmaz účtu — sdílená komunitní data). `receipt_line_id` na

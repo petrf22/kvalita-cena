@@ -812,7 +812,30 @@ data class ReceiptLine(
   val confirmed: Boolean = false,
   // DUPLICATE_SAME_DAY, nebo kód chyby (ErrorCode), proč potvrzení cenu nezapsalo.
   val skipReason: String? = null,
+  // Náhled z Open Food Facts u návrhu matchSource OFF — zboží zatím neexistuje, založí se
+  // až potvrzením řádku (docs/ai.md, „Účtenky").
+  val offCandidate: ExternalProductCandidate? = null,
 )
+
+/**
+ * Předvyplnění formuláře nového zboží z řádku účtenky (`receiptLineProductDefaults`) — zdroj
+ * RECEIPT/CATALOG/AI říká, jak moc tomu věřit; u AI formulář ukáže štítek „návrh". Gramáž
+ * chodí vždy jako dvojice, u AI může přijít jen jednotka bez čísla.
+ */
+@Serializable
+data class ReceiptLineProductDefaults(
+  val name: String? = null,
+  val code: String? = null,
+  val category: Category? = null,
+  val categorySource: String? = null,
+  val netContentValue: Double? = null,
+  val netContentUom: String? = null,
+  val isVariableWeight: Boolean = false,
+  val netContentSource: String? = null,
+)
+
+@Serializable
+data class ReceiptLineProductDefaultsData(val receiptLineProductDefaults: ReceiptLineProductDefaults? = null)
 
 /**
  * Naskenovaná účtenka — vidí ji jen vlastník. [lines] chodí jen v detailu (RECEIPT_DETAIL_FIELDS),

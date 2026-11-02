@@ -186,5 +186,23 @@
     "labelPrefix": "On the receipt:",
     "hint": "Rewrite the abbreviation from the receipt into the full name as you know it from the package. The product is added for this store and the line is matched with it right away.",
     "hintWithCode": "Check the name — it should be the full name as you know it from the package, not the abbreviation from the receipt. The barcode is taken from the receipt, so the product can be found in other stores too. The line is matched with it right away."
+  },
+  "guide": {
+    "start": "Fill in unrecognised ({{count}})",
+    "progress": "{{index}} / {{total}}",
+    "skip": "Skip"
+  },
+  "group": {
+    "toResolve": "To fill in ({{count}})",
+    "toCheck": "To check ({{count}})",
+    "ready": "Ready to confirm ({{count}})",
+    "done": "Done ({{count}})",
+    "ignored": "Ignored ({{count}})"
+  },
+  "panel": {
+    "accept": "Yes, that's it",
+    "other": "Different product",
+    "notProduct": "Not a product — ignore",
+    "offHint": "Open Food Facts knows this product by its EAN. It will be added to the catalogue when you confirm the line."
   }
 }

@@ -49,12 +49,13 @@ oddělené schémata `off`/`osm` (`docs/datovy-model.md`, „Oddělení schémat
 vlastních dat (`pg_dump --schema=core --schema=agg`) nemá obsahovat strojové odhady, které se
 můžou přepočítat jindy jinak.
 
-## Čtyři úlohy a jejich pořadí
+## Úlohy a jejich pořadí
 
 | Úloha | Kdy | Poznámka |
 |---|---|---|
 | Předfiltr fotek pro moderaci | **před spuštěním veřejného provozu** | `core.media` existuje už dnes. Míří přímo na to, co `docs/soukromi.md` („Otevřená rizika") označuje za reálný limit projektu — kapacitu moderace jednoho člověka. Práh `app.moderation.photo-flags-to-hide = 1` funguje jen tehdy, když závadnou fotku někdo uvidí — model ji jen posune ve frontě k přezkumu výš, neskryje ji sám (viz „AI nikdy nerozhoduje" výš). |
 | Vytěžení účtenky | **hotovo** (oddíl „Účtenky" níž) | Celá účtenka → obchod, datum a čas, řádky. Výsledek je návrh k potvrzení uživatelem; `core.price_observation.evidence_kind = RECEIPT_OCR` nastaví server u ceny potvrzené z řádku. |
+| Návrh kategorie a jednotky nového zboží | **hotovo** (oddíl „Účtenky" níž) | Z čitelného názvu řádku účtenky; jen předvyplní formulář, kontrolu dělá `accept` na workeru i serveru, deterministické zdroje (řádek, katalog) mají přednost. |
 | OCR ceny z fotky cedulky | s dodělaným `f_evid` (zbytek MVP — fotka jako důkaz ceny) | `docs/reputace.md` s tím už počítá (`f_evid = 1,30 účtenka+OCR / 1,15 foto cedulky`); sloupec `evidence_kind` už existuje (vznikl s účtenkami), chybí jen `PRICE_TAG_PHOTO` cesta. |
 | Kontrola textů recenzí | další rozvoj | `core.product_review.text` (max 1000 znaků) už existuje a jde nahlásit (`RecordType.REVIEW`, `docs/reputace.md`) — chybí jen tenhle strojový předfiltr, nahlašování zatím řeší jen lidský hlas. |
 | Detekce anomálií u cen | další rozvoj, jako doplněk | **Statistická pravidla zůstávají primární** — `BIASED`/`IMPOSSIBLE`/`TELEPORT`/`BURST`/`CLUSTER`/`COMMERCIAL` (`docs/reputace.md`, „Detekce zneužití") jsou deterministická a laditelná, což je u reputační váhy přednost, ne nedostatek. LLM tu má smysl jen na případy, které pravidla nezachytí, a jeho výstup je vždy poradní stejně jako u ostatních úloh výš — nikdy nový vstup do `w`. |
@@ -72,7 +73,7 @@ budoucí vstup pro čtení textu/složení z etikety, obdoba dnešní „OCR cen
 jiným polem fotky. Nemá nic společného s `f_evid` (ten je na `core.price_observation`, ne na
 `core.media`), ale stejná lekce platí obráceně: druh fotky je v datech od chvíle, kdy funkce
 vznikla, ne dopisovaný později. Cílový stav čtení etikety (nutriční tabulka, složení, alergeny)
-je zapsaný v `docs/rozvoj.md`, „Údaje z etikety" — LABEL je jeho pátá úloha v pořadí výš.
+je zapsaný v `docs/rozvoj.md`, „Údaje z etikety" — LABEL je jeho další úloha v pořadí výš.
 
 Od 2026-09 nese fotka i **jazyk** (`core.media.lang`, `docs/lokalizace.md`) a je to přímý
 předpoklad té úlohy: etiketa je fotka TEXTU, takže čtení složení musí vědět, v jakém jazyce
@@ -85,7 +86,7 @@ výš: rozlišení je v datech od chvíle, kdy funkce vznikla, ne dopisované po
 Zjištěný stroj (srpen 2026): **NVIDIA RTX 4060 Ti, 8 GB VRAM**, AMD Ryzen 9 7900 (24 vláken),
 61 GB RAM, Ollama nainstalovaná a spuštěná lokálně (2026-09: verze 0.32, `glm-ocr:bf16` pro
 OCR účtenek; 2026-11 přibyl `qwen2.5:7b-instruct`, Apache-2.0, na dočištění čitelných názvů
-řádků — model se volá jednou dávkou za účtenku až po OCR, takže se s OCR modelem ve VRAM
+řádků, a `qwen2.5:14b-instruct`, Apache-2.0, na návrh kategorie a jednotky nového zboží — model se volá jednou dávkou za účtenku až po OCR, takže se s OCR modelem ve VRAM
 střídá přes `keep_alive`, viz „Účtenky").
 
 Dvě omezení určují volbu:
@@ -175,6 +176,47 @@ Klient odhad ukáže označený „odhad" a **nezaškrtne ho předem**. Potvrzen
 označení a zboží dostane EAN z řádku, takže hromadné potvrzení omylem by chybu rozšířilo.
 Model sám cenu nezakládá a odhad není model, jen trigramová podobnost v PostgreSQL.
 
+**Návrh z Open Food Facts** (`match_source = OFF`) je deterministický jako shoda EAN. EAN
+z řádku katalog nezná, ale OFF ho zná a dodá vše, co by jinak musel vyplnit uživatel
+(kategorie namapovaná na katalog appky, gramáž; název stačí čitelný z řádku). Klient řádek
+ukáže s náhledem z OFF a zaškrtne ho předem. Zboží vznikne nad OFF snapshotem až uživatelovým
+„Potvrdit" (`ReceiptReviewService.productFromOff`), ne při zpracování účtenky. Když OFF něco
+chybí, řádek zůstane nespárovaný a formulář si OFF dotáhne sám. Odhad podle názvu má před OFF
+přednost: zboží bez EAN, které v katalogu už je, by jinak dostalo duplicitu.
+
+**Návrh kategorie a jednotky** (`tools/uctenky/ai_classify.py`, od 2026-11-03). Když řádek
+nejde spárovat a uživatel zakládá nové zboží, formulář má mít předvyplněnou kategorii
+a jednotku gramáže, aby stačilo zkontrolovat a uložit.
+
+Postup:
+1. Worker ke každému řádku pošle model `qwen2.5:14b-instruct` (Apache-2.0, ověřeno
+   `ollama show`) jednou dávkou za účtenku. Model dostane čitelné názvy a seznam kategorií
+   appky s cestou česky (`GET /api/worker/receipts/categories`).
+2. Model vrací slug kategorie a jen ROZMĚR gramáže (`G`/`KG`/`ML`/`L`). Číslo nikdy, to umí
+   jen vytištěné označení.
+3. `ai_classify.accept` výstup deterministicky zkontroluje a server totéž ověří znovu
+   (`ReceiptWorkerService.unitHint`). Zahodí se:
+   - slug mimo seznam,
+   - jiná jednotka,
+   - jednotka u váhového zboží,
+   - jednotka v rozporu s vytištěnou gramáží (hmotnost proti objemu).
+4. Výsledek se uloží do `ai.receipt_line_hint`, mimo `core`.
+
+Formulář skládá předvyplnění v `NewProductDefaultsService` v tomto pořadí; první zdroj, který
+něco dá, vyhrává:
+1. řádek sám — váhové zboží, vytištěná gramáž;
+2. kategorie, na které se shodnou aspoň 2 z 5 nejpodobnějších aktivních zboží v katalogu
+   (remíza = nic);
+3. teprve pak model.
+
+Open Food Facts si formulář dotahuje sám a jeho hodnoty předvyplnění z řádku přepíšou. Hodnotu
+od modelu formulář označí poznámkou ke kontrole. Model nikdy nezakládá zboží a nespouští
+návrh z OFF výš, i když OFF chybí jen kategorie.
+
+Na testovacích účtenkách zařazoval 7B model znatelně hůř (svíčka → pečivo, mikrovlnka →
+papírové zboží), proto 14B. Ten se do 8 GB VRAM nevejde celý a běží zčásti na CPU (~30 s za
+účtenku), což u dávkové úlohy nevadí. Ani 14B se nestrefí vždy, a proto jde jen o návrh.
+
 **Archiv obrázků** pro zlepšování rozpoznávání: `GET /api/worker/receipts/archive-candidates`
 vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DIR` a potvrdí
 `POST /{id}/archived` — teprve pak je denní retenční job smaže ze serveru.
@@ -218,6 +260,14 @@ vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DI
 | `DEFAULT_START_DELAY_SECONDS` / `START_DELAY_CHOICES` | 2 s / 1–5 s | první díl se uloží až po odpočtu, během kterého je účtenka v klidu vidět; délku si uživatel mění v Nastavení |
 | `START_MAX_DRIFT_RATIO` | 0,06 | roh rámečku ujel od začátku odpočtu o víc než 6 % šířky záběru = uživatel ještě míří, odpočet začne znovu |
 | `START_LOST_GRACE_MS` | 300 ms | tak dlouho smí účtenka z detekce vypadnout, než se odpočet zruší — jednotlivý snímek bez rámečku ho nesmí shodit |
+| `LOW_CONTRAST_CANNY_LOW` / `_HIGH` / `CLAHE_CLIP_LIMIT` | 15 / 45 / 2,0 | druhý průchod hledání obrysu, když první (Canny 50/150) nic nenajde: bílá účtenka na světlé podložce má hranu jen pár desítek úrovní jasu, po vyrovnání kontrastu (CLAHE) a s nižšími prahy vznikne; přerušený obrys spojí `MORPH_CLOSE` |
+| `MIN_TEXT_DENSITY` | 0,03 | poslední záchrana podle **hustoty textu** po sloupcích (podíl hranových pixelů po vyhlazení): sloupce s tiskem účtenky jsou nad prahem, čistá podložka pod ním — funguje bez ohledu na barvu podložky |
+| `TEXT_DENSITY_SMOOTH_RATIO` | 0,04 | šířka klouzavého průměru profilu hustoty (podíl šířky záběru) — přemostí mezery mezi slovy |
+| `TEXT_BAND_MAX_OUTSIDE_RATIO` | 0,35 | hustota mimo pruh smí být nejvýš takový podíl hustoty uvnitř — vzorovaná podložka (dřevo, ubrus) by jinak prošla jako „text" |
+| `TEXT_BAND_MARGIN_RATIO` | 0,04 | pruh textu se rozšíří o okraj papíru na každé straně (podíl šířky záběru) |
+| `QUAD_SMOOTHING` | 0,5 | váha nového rámečku při vyhlazení v čase (zbytek drží předchozí) — rámeček neposkakuje a odpočet se nerestartuje kvůli šumu detekce; skok o víc než `START_MAX_DRIFT_RATIO` vyhlazení přeskočí |
+| `QUAD_HOLD_MS` | 500 ms | jak dlouho platí poslední rámeček, když detekce na pár snímků vypadne |
+| `NO_RECEIPT_HELP_MS` | 3000 ms | po takové době ostrých snímků bez nalezené účtenky appka poradí (tmavší podložka, svítilna) a nabídne **snímání podle rámečku**: za účtenku se bere pevný rámeček na displeji (boky 14 % od okraje náhledu jako vodítko), posun a dělení na díly fungují beze změny |
 
 Proč odpočet: dřív se první díl uložil hned na prvním ostrém snímku s nalezeným rámečkem, tedy
 typicky ještě během míření — nakloněný, nebo s rámečkem chyceným za hranu stolu. Odpočet běží

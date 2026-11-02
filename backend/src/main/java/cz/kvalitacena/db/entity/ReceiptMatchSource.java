@@ -11,6 +11,13 @@ public enum ReceiptMatchSource {
    * jen odhad: klient ho ukáže označený a nezaškrtne předem, potvrdit ho musí uživatel.
    */
   FUZZY,
+  /**
+   * EAN z řádku katalog nezná, ale zná ho Open Food Facts a dodá vše potřebné k založení
+   * (ReceiptMatchingService.offCandidate) — řádek je návrh BEZ zboží, zboží se založí nad OFF
+   * snapshotem až při potvrzení (ReceiptReviewService.confirmLine). Deterministické jako CODE,
+   * klient ho proto zaškrtne předem.
+   */
+  OFF,
   /** Uživatel vybral z našeptávače. */
   USER,
   /** Uživatel pro řádek založil nové zboží. */

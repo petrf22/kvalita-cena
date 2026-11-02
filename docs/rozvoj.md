@@ -118,7 +118,7 @@ aktualizace více cen najednou a uložení účtenky jako přehledu vlastního n
 Zpracování přes lokálně nainstalovanou AI (Ollama na domácím PC, alespoň zpočátku) jako noční
 fronta úloh — náročnost a nároky na grafickou kartu se ověří až v testovacím režimu.
 
-Navazuje přímo na `docs/ai.md` (tabulka „Čtyři úlohy a jejich pořadí", řádek „OCR ceny z fotky",
+Navazuje přímo na `docs/ai.md` (tabulka „Úlohy a jejich pořadí", řádek „OCR ceny z fotky",
 a oddíl „Vazba na `f_evid`" — schéma má od začátku nést druh důkazu `RECEIPT_OCR` /
 `PRICE_TAG_PHOTO`, ne jen odkaz na fotku). Celá účtenka je přirozené rozšíření týž úlohy z jedné
 ceny na celý nákup najednou — nejde o novou architekturu.
@@ -145,6 +145,12 @@ appka jen posílá malé narovnané výřezy místo syrového videa nebo panoram
 úvaha o ML Kitu (Google, vyžaduje GMS) vs. Tesseract pro on-device OCR pro dvě distribuce
 appky (F-Droid/Play) — na klientovi žádné rozpoznávání textu neběží, takže se appka kvůli téhle
 funkci nemusí ohýbat kvůli druhé licenci ani druhé závislosti jen pro jednu z variant.
+
+Dlouhá účtenka se snímá déle, než bývá systémový limit zhasnutí displeje — obrazovka snímání
+proto drží displej rozsvícený (`KeepScreenOn`, jen příznak okna) a nabízí svítilnu proti stínu
+telefonu. Na světlé podložce, kde hrana papíru nemá kontrast, hledá detekce i pruh hustého
+tisku; když účtenku 3 s nenajde, poradí a nabídne snímání podle pevného rámečku na displeji
+(prahy `docs/ai.md`, „Snímání na klientovi").
 
 Platí i „**AI nikdy nerozhoduje**" (`docs/ai.md`): vytěžení účtenky vytvoří **návrh k potvrzení
 uživatelem**, model sám nezakládá `core.price_observation` ani nic jiného rovnou.
@@ -206,6 +212,21 @@ ve vlastním savepointu. **Pozdější párování:** když se označení aktivu
     otázka „kdo opravuje špatné mapování": provozovatel přes `curate.py`.
   - Uživatelský hlas pro jiné zboží mapování nepřepíše, stejně jako dnes u mapování od
     uživatelů.
+
+**Stav (2026-11-03):** cílem je, aby uživatel ručně řešil jen řádky, na které appka sama
+nestačí.
+
+- **EAN bez obchodu.** Krok 1 páruje globální EAN i u účtenky bez známého obchodu.
+- **Návrh z Open Food Facts.** EAN, který zná jen OFF, dá návrh `match_source = OFF` bez zboží
+  a zboží se založí potvrzením řádku (`docs/ai.md`, „Účtenky").
+- **Předvyplnění nového zboží.** Formulář dostane kategorii a gramáž z řádku, ze shody
+  podobného zboží v katalogu, nebo z návrhu lokálního modelu.
+- **Revize podle toho, co je potřeba.** Řádky jsou ve skupinách, klik nebo ťuknutí na řádek
+  otevře panel s výchozí akcí a průvodce „Doplnit nerozpoznané" projde jen to, co potřebuje
+  člověka.
+
+Naučené jméno z účtenky (krok 2) platí po prvním potvrzení (`label-confirmations = 1`), ale
+jen v rozsahu řetězce. Bez potvrzeného nebo navrženého obchodu se proto nepoužije.
 
 **Zadání:** účtenka i akční leták mluví názvoslovím obchodu, ne katalogu — na účtence je
 `ROHLIK TUZ 43G`, ne EAN a ne „Rohlík tukový 43 g". EAN na účtence prakticky nikdy není, takže
@@ -470,7 +491,7 @@ není důkaz nepřítomnosti. Patří sem i odstavec do `docs/podminky-uziti.md`
 **Vazba na fotku etikety a lokální AI:** `core.media.photo_kind = LABEL` (formulář nového zboží,
 `docs/ai.md`) je zamýšlený budoucí vstup pro čtení složení/textu z etikety — pro zboží, které OFF
 nezná, pravděpodobně jediná praktická cesta k nutričním datům bez ODbL zátěže (fotka etikety je
-vlastní data, ne cizí). Navazuje na `docs/ai.md`, „Čtyři úlohy a jejich pořadí" jako pátá úloha,
+vlastní data, ne cizí). Navazuje na `docs/ai.md`, „Úlohy a jejich pořadí" jako další úloha,
 stejnou infrastrukturou (fronta vzorem `agg.recompute_queue`, verdikty do schématu `ai`, AI nikdy
 nerozhoduje sama — jen předvyplní formulář, potvrzuje člověk).
 

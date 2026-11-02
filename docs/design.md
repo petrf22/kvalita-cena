@@ -107,7 +107,13 @@ Druhá vědomá výjimka je **kresba přes náhled kamery** (vodítko a animace 
 `ui/receipt/capture/CaptureGuide.kt`): bílá s poloprůhledným černým stínem. Podklad tu není
 povrch appky, ale obraz z kamery — a návod ke snímání chce tmavou podložku, takže barva podle
 tématu (v tmavém režimu tmavá) by na ní zmizela. Rámeček nalezené účtenky zůstává
-`colorScheme.primary`.
+`colorScheme.primary`. Rady a ovládání nad náhledem (pokyn, „Účtenku nevidím" s nabídkou
+snímání podle rámečku) jsou na `colorScheme.surface` s průhledností 0,9 — čitelné na
+jakémkoli obrazu z kamery a v obou režimech.
+
+Rozměry komponent, ne rozestupy: miniatura zboží z Open Food Facts v panelu řádku účtenky je
+56 px / 56 dp, seznam návrhů zboží v panelu má na mobilu strop výšky 320 dp, aby se panel
+vešel i s klávesnicí.
 
 **`#1890ff` z předkompilovaného CSS ng-zorro** je známá nekonzistence popsaná v
 `docs/branding.md` — tenhle dokument ji neřeší ani nepřebíjí.

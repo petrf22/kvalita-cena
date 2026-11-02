@@ -322,3 +322,8 @@
     min-height: 44px;
   }
 }
+
+/* Klik na řádek otevře panel řádku (výchozí akce, `receipt-line-panel.ts`). */
+.line-clickable {
+  cursor: pointer;
+}

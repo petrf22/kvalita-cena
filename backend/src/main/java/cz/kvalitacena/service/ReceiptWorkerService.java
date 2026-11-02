@@ -4,8 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cz.kvalitacena.config.ReceiptProperties;
 import cz.kvalitacena.controller.worker.WorkerArchiveCandidate;
+import cz.kvalitacena.controller.worker.WorkerCategory;
 import cz.kvalitacena.controller.worker.WorkerReceiptJob;
 import cz.kvalitacena.controller.worker.WorkerReceiptResult;
+import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.LabelDisplaySource;
 import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.PriceKind;
@@ -14,11 +16,14 @@ import cz.kvalitacena.db.entity.Receipt;
 import cz.kvalitacena.db.entity.ReceiptImage;
 import cz.kvalitacena.db.entity.ReceiptJob;
 import cz.kvalitacena.db.entity.ReceiptLine;
+import cz.kvalitacena.db.entity.ReceiptLineHint;
 import cz.kvalitacena.db.entity.ReceiptLineStatus;
 import cz.kvalitacena.db.entity.ReceiptMatchSource;
 import cz.kvalitacena.db.entity.ReceiptProcessingStatus;
 import cz.kvalitacena.db.entity.Store;
+import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.ReceiptImageRepository;
+import cz.kvalitacena.db.repo.ReceiptLineHintRepository;
 import cz.kvalitacena.db.repo.ReceiptJobRepository;
 import cz.kvalitacena.db.repo.ReceiptLineRepository;
 import cz.kvalitacena.db.repo.ReceiptRepository;
@@ -61,6 +66,8 @@ public class ReceiptWorkerService {
   private final ReceiptMatchingService matchingService;
   private final ReceiptService receiptService;
   private final ReceiptProperties receiptProperties;
+  private final CategoryRepository categoryRepository;
+  private final ReceiptLineHintRepository hintRepository;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Transactional
@@ -154,6 +161,7 @@ public class ReceiptWorkerService {
     receipt.setCurrency(result.currency() != null && result.currency().matches("[A-Z]{3}") ? result.currency() : null);
 
     List<ReceiptLine> lines = new ArrayList<>();
+    List<WorkerReceiptResult.Line> sources = new ArrayList<>();
     short lineNo = 0;
     for (WorkerReceiptResult.Line in : Optional.ofNullable(result.lines()).orElse(List.of())) {
       if (lineNo >= receiptProperties.getMaxLines()) {
@@ -179,12 +187,14 @@ public class ReceiptWorkerService {
           .discountAmount(amount(in.discountAmount() == null ? null : in.discountAmount().abs()))
           .priceKindGuess(in.priceKind() != null ? in.priceKind() : PriceKind.REGULAR)
           .build());
+      sources.add(in);
     }
 
     Optional<Store> store = matchingService.suggestStore(receipt);
     receipt.setSuggestedStoreId(store.map(Store::getId).orElse(null));
     matchingService.matchLines(lines, store.orElse(null), receipt.getOwnerUserId());
     lineRepository.saveAll(lines);
+    saveHints(lines, sources, job.getModel());
     finish(receipt, ReceiptProcessingStatus.PROCESSED, now);
     log.info("Účtenka {} zpracována ({} řádků, model {})", receiptId, lines.size(), job.getModel());
   }
@@ -229,6 +239,23 @@ public class ReceiptWorkerService {
       return Optional.empty();
     }
     return receiptService.loadImage(receiptId, seq);
+  }
+
+  /** Kategorie s celou cestou česky (core.category.name je čeština, docs/lokalizace.md). */
+  @Transactional(readOnly = true)
+  public List<WorkerCategory> categories() {
+    return categoryRepository.findAll().stream()
+        .map(category -> new WorkerCategory(category.getSlug(), categoryPath(category)))
+        .sorted(java.util.Comparator.comparing(WorkerCategory::path))
+        .toList();
+  }
+
+  private static String categoryPath(Category category) {
+    List<String> names = new ArrayList<>();
+    for (Category current = category; current != null && names.size() < 10; current = current.getParent()) {
+      names.addFirst(current.getName());
+    }
+    return String.join(" › ", names);
   }
 
   @Transactional(readOnly = true)
@@ -298,6 +325,45 @@ public class ReceiptWorkerService {
    * Vodítko gramáže z označení řádku — jen kladné číslo s jednotkou hmotnosti/objemu, jinak
    * nic. Hodnota a jednotka jdou vždy spolu (jako netContentValue/netContentUom u zboží).
    */
+  /**
+   * Návrh kategorie a jednotky od modelu (ai.receipt_line_hint) — jen to, co projde kontrolou
+   * i tady: existující kategorie, jednotka G/KG/ML/L, žádná jednotka u váhového zboží a žádný
+   * rozpor s vodítkem gramáže z tisku (hmotnost proti objemu). Neplatná hodnota se zahodí,
+   * nikdy neshodí výsledek účtenky (docs/ai.md, „Návrh kategorie a jednotky").
+   */
+  private void saveHints(List<ReceiptLine> lines, List<WorkerReceiptResult.Line> sources, String model) {
+    List<ReceiptLineHint> hints = new ArrayList<>();
+    for (int i = 0; i < lines.size(); i++) {
+      ReceiptLine line = lines.get(i);
+      WorkerReceiptResult.Line in = sources.get(i);
+      String slug = in.categoryHintText();
+      Long categoryId = slug == null || slug.isBlank() ? null
+          : categoryRepository.findBySlug(slug.trim()).map(Category::getId).orElse(null);
+      NetContentUom uom = unitHint(line, in.unitHintText());
+      if (categoryId != null || uom != null) {
+        hints.add(ReceiptLineHint.builder().lineId(line.getId()).categoryId(categoryId).netContentUom(uom)
+            .model(truncate(model, 100)).build());
+      }
+    }
+    hintRepository.saveAll(hints);
+  }
+
+  static NetContentUom unitHint(ReceiptLine line, String value) {
+    NetContentUom uom = enumOrNull(NetContentUom.class, value);
+    if (uom == null || uom == NetContentUom.PCS || line.getQuantityUnit() != QuantityUnit.PCS) {
+      return null;
+    }
+    NetContentUom printed = line.getNetContentHintUom();
+    if (printed != null && isMass(printed) != isMass(uom)) {
+      return null;
+    }
+    return uom;
+  }
+
+  private static boolean isMass(NetContentUom uom) {
+    return uom == NetContentUom.G || uom == NetContentUom.KG;
+  }
+
   private static NetContentUom netContentHint(WorkerReceiptResult.Line in) {
     NetContentUom uom = enumOrNull(NetContentUom.class, in.netContentUom());
     if (uom == null || uom == NetContentUom.PCS || in.netContentValue() == null

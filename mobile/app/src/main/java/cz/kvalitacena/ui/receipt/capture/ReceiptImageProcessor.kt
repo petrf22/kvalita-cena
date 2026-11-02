@@ -21,7 +21,8 @@ class EncodedPart(val jpeg: ByteArray, val width: Int, val height: Int)
 
 /**
  * Práce s obrazem přes OpenCV (docs/rozvoj.md, „Sběr snímků na klientovi"): hledání účtenky
- * (Canny + kontury + `approxPolyDP`, se záchranou podle bočních hran), posun mezi snímky
+ * (Canny + kontury + `approxPolyDP`, se záchranami podle bočních hran, slabého kontrastu
+ * a hustoty tisku — [detectReceipt]), posun mezi snímky
  * (`phaseCorrelate`), narovnání (`warpPerspective`) a JPEG. Geometrie, která jde spočítat
  * bez nativní knihovny, je v `QuadGeometry.kt` s testy — tady jen volání OpenCV kolem ní.
  *
@@ -45,32 +46,96 @@ object ReceiptImageProcessor {
   /**
    * Najde účtenku na zmenšeném šedotónovém snímku ([small], CV_8UC1 na výšku). Vrací
    * čtyřúhelník v souřadnicích [small], nebo `null`.
+   *
+   * Čtyři pokusy od nejpřesnějšího (docs/ai.md, „Snímání na klientovi"):
+   * 1. uzavřený obrys papíru (Canny 50/150),
+   * 2. světlý svislý pruh — dlouhá účtenka zblízka na tmavé podložce,
+   * 3. obrys po vyrovnání kontrastu s nižšími prahy — světlá podložka, slabá hrana papíru,
+   * 4. pruh hustého tisku — bílá na bílém, kde hrana papíru není vidět vůbec.
    */
   fun detectReceipt(small: Mat): Quad? {
     val blurred = Mat()
     val edges = Mat()
-    val hierarchy = Mat()
-    val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(3.0, 3.0))
-    val contours = ArrayList<MatOfPoint>()
     try {
       Imgproc.GaussianBlur(small, blurred, Size(5.0, 5.0), 0.0)
       Imgproc.Canny(blurred, edges, 50.0, 150.0)
-      // Přerušená hrana papíru (odlesk, stín) by konturu rozpojila.
-      Imgproc.dilate(edges, edges, kernel)
+      quadFromEdges(edges.clone(), small.cols(), small.rows(), Imgproc.MORPH_DILATE)?.let { return it }
+      detectBySideEdges(blurred)?.let { return it }
+      detectLowContrast(small)?.let { return it }
+      return detectByTextBand(edges)
+    } finally {
+      blurred.release()
+      edges.release()
+    }
+  }
+
+  /**
+   * Největší věrohodný čtyřúhelník z hranového obrazu [edges] (obraz se uvolní). [morphOp]
+   * spojí přerušenou hranu papíru (odlesk, stín) — dilatace u ostrých hran, uzavření u slabých,
+   * kde by dilatace slila text s okrajem.
+   */
+  private fun quadFromEdges(edges: Mat, width: Int, height: Int, morphOp: Int): Quad? {
+    val hierarchy = Mat()
+    val size = if (morphOp == Imgproc.MORPH_DILATE) 3.0 else 5.0
+    val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(size, size))
+    val contours = ArrayList<MatOfPoint>()
+    try {
+      Imgproc.morphologyEx(edges, edges, morphOp, kernel)
       Imgproc.findContours(edges, contours, hierarchy, Imgproc.RETR_EXTERNAL, Imgproc.CHAIN_APPROX_SIMPLE)
       val candidates = contours.sortedByDescending { Imgproc.contourArea(it) }.take(5)
       for (contour in candidates) {
         val quad = approximateQuad(contour) ?: continue
-        if (isPlausibleReceiptQuad(quad, small.cols(), small.rows())) return quad
+        if (isPlausibleReceiptQuad(quad, width, height)) return quad
       }
-      return detectBySideEdges(blurred)
+      return null
     } finally {
       contours.forEach { it.release() }
-      blurred.release()
-      edges.release()
       hierarchy.release()
       kernel.release()
+      edges.release()
     }
+  }
+
+  /** Pokus 3: vyrovnání kontrastu (CLAHE) a Canny s nižšími prahy — slabá hrana papíru na světlé podložce. */
+  private fun detectLowContrast(small: Mat): Quad? {
+    val equalized = Mat()
+    val blurred = Mat()
+    val edges = Mat()
+    val clahe = Imgproc.createCLAHE(CaptureThresholds.CLAHE_CLIP_LIMIT, Size(8.0, 8.0))
+    try {
+      clahe.apply(small, equalized)
+      Imgproc.GaussianBlur(equalized, blurred, Size(5.0, 5.0), 0.0)
+      Imgproc.Canny(blurred, edges, CaptureThresholds.LOW_CONTRAST_CANNY_LOW, CaptureThresholds.LOW_CONTRAST_CANNY_HIGH)
+      return quadFromEdges(edges.clone(), small.cols(), small.rows(), Imgproc.MORPH_CLOSE)
+    } finally {
+      equalized.release()
+      blurred.release()
+      edges.release()
+    }
+  }
+
+  /**
+   * Pokus 4: pruh hustého tisku v horní a dolní třetině záběru ([findTextBand]) z hranového
+   * obrazu [edges] — hrany dává text, ne okraj papíru, takže na barvě podložky nezáleží.
+   */
+  private fun detectByTextBand(edges: Mat): Quad? {
+    val width = edges.cols()
+    val height = edges.rows()
+    val bandHeight = height / 3
+    if (bandHeight < 4) return null
+    fun density(region: Mat): DoubleArray = columnMeans(region).also { values ->
+      for (i in values.indices) values[i] /= 255.0
+    }
+    val topBand = findTextBand(density(edges.submat(0, bandHeight, 0, width))) ?: return null
+    val bottomBand = findTextBand(density(edges.submat(height - bandHeight, height, 0, width))) ?: return null
+    val quad = quadFromSideEdges(
+      topBand,
+      bottomBand,
+      topY = bandHeight / 2.0,
+      bottomY = height - bandHeight / 2.0,
+      frameHeight = height,
+    )
+    return quad.takeIf { isPlausibleReceiptQuad(it, width, height) }
   }
 
   private fun approximateQuad(contour: MatOfPoint): Quad? {

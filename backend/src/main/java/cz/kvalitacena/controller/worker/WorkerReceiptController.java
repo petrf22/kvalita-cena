@@ -59,6 +59,16 @@ public class WorkerReceiptController {
     return ResponseEntity.noContent().build();
   }
 
+  /**
+   * Kategorie appky pro návrh kategorie nového zboží modelem (docs/ai.md, „Návrh kategorie
+   * a jednotky"). Pod stejným tokenem jako zbytek workeru — jen veřejná data katalogu, rozsah
+   * tokenu tím neroste.
+   */
+  @GetMapping("/categories")
+  public List<WorkerCategory> categories() {
+    return workerService.categories();
+  }
+
   @GetMapping("/archive-candidates")
   public List<WorkerArchiveCandidate> archiveCandidates(@RequestParam(value = "limit", required = false) Integer limit) {
     return workerService.archiveCandidates(limit);

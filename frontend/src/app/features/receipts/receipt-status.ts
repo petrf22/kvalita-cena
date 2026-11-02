@@ -146,6 +146,76 @@ export function defaultSelectedLineIds(lines: readonly ReceiptLine[]): Set<strin
   return new Set(lines.filter(isLinePreselectable).map((line) => line.id));
 }
 
+/**
+ * Návrh ze zboží, které zná jen Open Food Facts (`OFF`) — zboží zatím neexistuje (`product`
+ * je null, náhled je v `offCandidate`), založí se potvrzením řádku. Jistý jako shoda EAN.
+ */
+export function isLineOffSuggestion(
+  line: Pick<ReceiptLine, 'status' | 'confirmed' | 'matchSource'>,
+): boolean {
+  return isLineConfirmable(line) && line.matchSource === ReceiptMatchSource.Off;
+}
+
+/** Skupiny seznamu řádků — od toho, co potřebuje člověka, po hotové (zrcadlo mobilního `LineGroup`). */
+export type LineGroup = 'toResolve' | 'toCheck' | 'ready' | 'done' | 'ignored';
+
+export const LINE_GROUPS: readonly LineGroup[] = [
+  'toResolve',
+  'toCheck',
+  'ready',
+  'done',
+  'ignored',
+];
+
+type GroupSource = Pick<ReceiptLine, 'status' | 'confirmed' | 'matchSource'>;
+
+export function lineGroup(line: GroupSource): LineGroup {
+  if (line.status === ReceiptLineStatus.Ignored) return 'ignored';
+  if (line.status === ReceiptLineStatus.Matched || line.confirmed) return 'done';
+  if (isLineGuess(line)) return 'toCheck';
+  if (isLineConfirmable(line)) return 'ready';
+  return 'toResolve';
+}
+
+/** Řádky ve skupinách v pořadí `LINE_GROUPS`, prázdné vynechané, pořadí z účtenky uvnitř. */
+export function groupedLines<T extends GroupSource>(
+  lines: readonly T[],
+): { group: LineGroup; lines: T[] }[] {
+  return LINE_GROUPS.map((group) => ({
+    group,
+    lines: lines.filter((l) => lineGroup(l) === group),
+  })).filter((entry) => entry.lines.length > 0);
+}
+
+/**
+ * Fronta průvodce „Doplnit nerozpoznané": nejdřív řádky, které appka nezná, pak odhady ke
+ * kontrole. Jisté návrhy průvodce neukazuje — ty stačí hromadně potvrdit.
+ */
+export function guideQueue(lines: readonly (GroupSource & { id: string })[]): string[] {
+  return [
+    ...lines.filter((l) => lineGroup(l) === 'toResolve').map((l) => l.id),
+    ...lines.filter((l) => lineGroup(l) === 'toCheck').map((l) => l.id),
+  ];
+}
+
+/**
+ * Další řádek průvodce po `currentId`: první z fronty za ním, který pořád potřebuje člověka
+ * (mezitím ho mohlo vyřešit naučené označení). `null` = průvodce skončil.
+ */
+export function nextInGuide(
+  queue: readonly string[],
+  currentId: string | null,
+  lines: readonly (GroupSource & { id: string })[],
+): string | null {
+  const needsHuman = new Set(
+    lines
+      .filter((l) => lineGroup(l) === 'toResolve' || lineGroup(l) === 'toCheck')
+      .map((l) => l.id),
+  );
+  const start = currentId === null ? 0 : queue.indexOf(currentId) + 1;
+  return queue.slice(Math.max(start, 0)).find((id) => needsHuman.has(id)) ?? null;
+}
+
 /** Proč hromadné potvrzení teď nejde — klíč do bundlu `receipts`, nebo `null`, když jde. */
 export type ConfirmBlocker = 'notProcessed' | 'storeMissing' | 'purchaseTimeMissing' | 'nothing';
 

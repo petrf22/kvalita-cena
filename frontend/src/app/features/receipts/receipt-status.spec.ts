@@ -5,7 +5,10 @@ import {
   confirmBlocker,
   consentOutdated,
   defaultSelectedLineIds,
+  groupedLines,
+  guideQueue,
   isLineConfirmable,
+  isLineOffSuggestion,
   isLineGuess,
   isLineLocked,
   lineGtin,
@@ -13,6 +16,7 @@ import {
   lineRawLabel,
   lineSummary,
   matchSourceKey,
+  nextInGuide,
   nextSelection,
   receiptStatusColor,
   receiptStatusKey,
@@ -265,5 +269,43 @@ describe('EAN řádku', () => {
       'enum.receiptMatchSource.LABEL',
     );
     expect(matchSourceKey(line('1', { matchSource: null }))).toBeNull();
+  });
+});
+
+describe('skupiny řádků a průvodce', () => {
+  const lines = [
+    line('1', { status: 'SUGGESTED', matchSource: 'CODE' }),
+    line('2', { status: 'SUGGESTED', matchSource: 'FUZZY' }),
+    line('3', { status: 'UNMATCHED' }),
+    line('4', { status: 'MATCHED', matchSource: 'LABEL', confirmed: true }),
+    line('5', { status: 'IGNORED' }),
+    line('6', { status: 'SUGGESTED', matchSource: 'OFF' }),
+    line('7', { status: 'UNMATCHED' }),
+  ];
+
+  it('skupiny jdou od toho, co potřebuje člověka', () => {
+    expect(groupedLines(lines).map((g) => [g.group, g.lines.map((l) => l.id)])).toEqual([
+      ['toResolve', ['3', '7']],
+      ['toCheck', ['2']],
+      ['ready', ['1', '6']],
+      ['done', ['4']],
+      ['ignored', ['5']],
+    ]);
+  });
+
+  it('návrh z Open Food Facts je předem zaškrtnutý jako shoda EAN', () => {
+    expect(isLineOffSuggestion(lines[5])).toBe(true);
+    expect(defaultSelectedLineIds(lines)).toEqual(new Set(['1', '6']));
+  });
+
+  it('průvodce projde nespárované, pak odhady, a přeskočí vyřešené', () => {
+    const queue = guideQueue(lines);
+    expect(queue).toEqual(['3', '7', '2']);
+    const resolved = lines.map((l) =>
+      l.id === '7' ? { ...l, status: 'SUGGESTED' as const, matchSource: 'LABEL' as const } : l,
+    );
+    expect(nextInGuide(queue, '3', resolved)).toBe('2');
+    expect(nextInGuide(queue, null, resolved)).toBe('3');
+    expect(nextInGuide(queue, '2', resolved)).toBeNull();
   });
 });

@@ -117,6 +117,31 @@ Slovník je v gitu a worker ho čte před každou dávkou. Doplňuje se ručně,
 `curate.py` (níž). Na offline ladění vypíše `replay.py` čitelné názvy pod rozborem
 (`--pretty-model qwen2.5:7b-instruct` přidá i model).
 
+## Návrh kategorie a jednotky
+
+Když řádek nejde spárovat a uživatel zakládá nové zboží, formulář má mít předvyplněnou
+kategorii a jednotku gramáže, aby stačilo zkontrolovat a uložit. Worker k tomu ke každému
+řádku přidá návrh lokálního modelu (`ai_classify.py`, `--classify-model`, výchozí
+`qwen2.5:14b-instruct`, Apache-2.0; prázdné = vypnuto):
+
+- `categoryHint` je slug kategorie appky. Seznam s cestami česky si worker stáhne jednou za
+  dávku z `GET /api/worker/receipts/categories` (stejný token).
+- `unitHint` je jen rozměr gramáže (`G`/`KG`/`ML`/`L`). Číslo model nedodává nikdy, to umí
+  jen vytištěné označení.
+
+Výstup projde kontrolou `ai_classify.accept`, která zahodí:
+- slug mimo seznam,
+- jinou jednotku,
+- jednotku u váhového zboží,
+- jednotku, která odporuje vytištěné gramáži (hmotnost proti objemu).
+
+Server totéž ověří znovu a uloží do `ai.receipt_line_hint`. Návrh modelu má nejnižší
+přednost: před ním je vytištěná gramáž a kategorie, na které se shodne podobné zboží
+v katalogu (docs/ai.md, „Návrh kategorie a jednotky"). Výpadek modelu není chyba účtenky.
+
+Offline: `replay.py … --classify-model qwen2.5:14b-instruct --categories kategorie.json`
+vypíše návrh za čitelným názvem. Soubor `kategorie.json` je uložená odpověď endpointu výš.
+
 ## Kurátorství
 
 Spárovat každé označení musí dnes uživatel u své účtenky. `curate.py` to dovoluje

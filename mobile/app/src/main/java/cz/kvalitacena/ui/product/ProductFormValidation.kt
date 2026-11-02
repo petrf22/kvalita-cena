@@ -223,3 +223,8 @@ fun buildUpdateProductInput(
       if (netContent.isVariableWeight == defaults.isVariableWeight) null else netContent.isVariableWeight,
   )
 }
+
+/** Číslo gramáže do textového pole bez zbytečných nul („500", ne „500.0"). */
+fun formatNetContentInput(value: Double): String =
+  java.math.BigDecimal.valueOf(value).stripTrailingZeros().toPlainString()
+

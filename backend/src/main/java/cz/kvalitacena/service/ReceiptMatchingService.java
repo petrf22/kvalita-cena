@@ -4,6 +4,7 @@ import cz.kvalitacena.config.CatalogProperties;
 import cz.kvalitacena.config.ReceiptProperties;
 import cz.kvalitacena.db.entity.CodeType;
 import cz.kvalitacena.db.entity.NetContentUom;
+import cz.kvalitacena.db.entity.OffProduct;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.ProductCode;
 import cz.kvalitacena.db.entity.ProductStatus;
@@ -13,11 +14,13 @@ import cz.kvalitacena.db.entity.ReceiptLine;
 import cz.kvalitacena.db.entity.ReceiptLineStatus;
 import cz.kvalitacena.db.entity.ReceiptMatchSource;
 import cz.kvalitacena.db.entity.Store;
+import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ProductStoreLabelRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,13 +35,15 @@ import java.util.Optional;
 /**
  * Kaskáda párování účtenky (docs/rozvoj.md, „Mapování obchodního označení zboží na
  * katalogovou položku"): obchod z hlavičky a zboží pro každý řádek. Kroky 1–2 (kód, známé
- * označení) jsou strojově jisté a dají řádku {@link ReceiptLineStatus#SUGGESTED}; krok 3a
+ * označení) jsou strojově jisté a dají řádku {@link ReceiptLineStatus#SUGGESTED}, stejně jako
+ * EAN známý jen Open Food Facts ({@link ReceiptMatchSource#OFF}, zboží zatím bez záznamu); krok 3a
  * (jednoznačná podobnost názvu) dá taky SUGGESTED, ale se zdrojem
  * {@link ReceiptMatchSource#FUZZY} — klient ho ukáže jako odhad a nezaškrtne předem; krok 3
  * (podobnost) je jinak jen našeptávač {@link #suggestions}; krok 4 (nové zboží) dělá klient.
  * Nic tady nezapisuje cenu — to je výhradně potvrzení uživatele (docs/ai.md, „AI nikdy
  * nerozhoduje").
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReceiptMatchingService {
@@ -57,6 +62,9 @@ public class ReceiptMatchingService {
   private final ReceiptProperties receiptProperties;
   private final CatalogProperties catalogProperties;
   private final ProductOverlayService productOverlayService;
+  private final OpenFoodFactsService offService;
+  private final OffNetContentConverter netContentConverter;
+  private final CategoryRepository categoryRepository;
 
   /** Návrh obchodu z hlavičky — jen návrh, potvrdí ho uživatel (updateReceiptHeader). */
   @Transactional(readOnly = true)
@@ -85,9 +93,15 @@ public class ReceiptMatchingService {
   }
 
   /**
-   * Kroky 1–2 kaskády pro řádky, které ještě nikdo ručně nepotvrdil. Řádky spárované
+   * Kroky 1–3a kaskády pro řádky, které ještě nikdo ručně nepotvrdil. Řádky spárované
    * uživatelem ({@code USER}/{@code NEW_PRODUCT}), ignorované nebo s cenou se nemění — po
    * změně obchodu se tak přepočítají jen strojové návrhy.
+   *
+   * <p>Globální EAN nezávisí na obchodu, páruje se proto i bez něj; vnitroobchodní kód
+   * a naučené označení obchod (řetězec) potřebují. EAN, který katalog nezná, ale zná ho Open
+   * Food Facts, dá návrh {@link ReceiptMatchSource#OFF} bez zboží — zboží se založí až při
+   * potvrzení řádku ({@code ReceiptReviewService.confirmLine}). Odhad podle názvu má před OFF
+   * přednost: zboží bez EAN, které v katalogu už je, by jinak dostalo duplicitu.
    */
   public void matchLines(List<ReceiptLine> lines, Store store, Long viewerId) {
     Long chainId = store != null && store.getChain() != null ? store.getChain().getId() : null;
@@ -99,16 +113,12 @@ public class ReceiptMatchingService {
       if (line.getMatchSource() == ReceiptMatchSource.USER || line.getMatchSource() == ReceiptMatchSource.NEW_PRODUCT) {
         continue;
       }
-      Optional<Long> productId = Optional.empty();
-      ReceiptMatchSource source = null;
-      if (store != null) {
-        productId = byCode(line.getInternalCode(), chainId);
-        source = ReceiptMatchSource.CODE;
-        if (productId.isEmpty()) {
-          productId = labelRepository.findExact(line.getLabelRaw(), store.getId(), chainId, viewerId).stream()
-              .findFirst().map(ProductStoreLabel::getProductId);
-          source = ReceiptMatchSource.LABEL;
-        }
+      Optional<Long> productId = byCode(line.getInternalCode(), chainId);
+      ReceiptMatchSource source = ReceiptMatchSource.CODE;
+      if (productId.isEmpty() && store != null) {
+        productId = labelRepository.findExact(line.getLabelRaw(), store.getId(), chainId, viewerId).stream()
+            .findFirst().map(ProductStoreLabel::getProductId);
+        source = ReceiptMatchSource.LABEL;
       }
       if (productId.isEmpty() && store != null) {
         productId = unambiguousByName(line, store, viewerId);
@@ -118,12 +128,58 @@ public class ReceiptMatchingService {
         line.setProductId(productId.get());
         line.setMatchSource(source);
         line.setStatus(ReceiptLineStatus.SUGGESTED);
+      } else if (offCandidate(line).isPresent()) {
+        line.setProductId(null);
+        line.setMatchSource(ReceiptMatchSource.OFF);
+        line.setStatus(ReceiptLineStatus.SUGGESTED);
       } else {
         line.setProductId(null);
         line.setMatchSource(null);
         line.setStatus(ReceiptLineStatus.UNMATCHED);
       }
     }
+  }
+
+  /**
+   * Zboží z Open Food Facts, které jde pro řádek založit bez formuláře: globální EAN, který
+   * katalog nezná, OFF ho zná a dodá vše, co {@code OffProductCatalogService.create} jinak
+   * chce od uživatele — kategorii namapovanou na katalog appky a gramáž. Název stačí z řádku
+   * (čitelný název je vlastní text, ne OFF data). Čemu něco chybí, zůstane nespárované
+   * a klient nabídne formulář, který si OFF dotáhne sám.
+   *
+   * <p>Výpadek OFF ({@code UNAVAILABLE}) není chyba účtenky, jen řádek bez návrhu.
+   *
+   * <p>Transakce je ZÁMĚRNĚ zapisovatelná: prošlý snapshot obnoví {@code OpenFoodFactsService.lookup}
+   * přes {@code repository.save} a v read-only transakci by se obnova tiše zahodila — každé
+   * otevření účtenky by pak znovu volalo OFF a pálilo sdílený limit dotazů.
+   */
+  @Transactional
+  public Optional<OffProduct> offCandidate(ReceiptLine line) {
+    String code = line.getInternalCode();
+    if (!GtinNormalization.isGlobalGtin(code)) {
+      return Optional.empty();
+    }
+    OffLookupResult lookup;
+    try {
+      lookup = offService.lookup(code.trim());
+    } catch (RuntimeException e) {
+      log.warn("Účtenka: dotaz do OFF pro řádek {} selhal: {}", line.getId(), e.getMessage());
+      return Optional.empty();
+    }
+    if (lookup.status() != OffLookupStatus.FOUND || lookup.product() == null) {
+      return Optional.empty();
+    }
+    OffProduct off = lookup.product();
+    // Názvy jsou lazy kolekce — načíst je tady, ať je volající (potvrzení, náhled pro klienta)
+    // může číst i mimo tuhle transakci.
+    boolean hasName = !off.getNames().isEmpty() || off.getProductName() != null
+        || line.getLabelDisplay() != null || (line.getLabelRaw() != null && !line.getLabelRaw().isBlank());
+    boolean hasCategory = off.getMappedCategorySlug() != null
+        && categoryRepository.findBySlug(off.getMappedCategorySlug()).isPresent();
+    if (!hasName || !hasCategory || netContentConverter.convert(off) == null) {
+      return Optional.empty();
+    }
+    return Optional.of(off);
   }
 
   /**

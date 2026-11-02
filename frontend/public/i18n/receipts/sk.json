@@ -186,5 +186,23 @@
     "labelPrefix": "Na bločku:",
     "hint": "Skratku z bločku prepíš na celý názov, ako ho poznáš z obalu. Tovar sa založí pre tento obchod a riadok sa s ním rovno spáruje.",
     "hintWithCode": "Skontroluj názov — má byť celý, ako ho poznáš z obalu, nie skratka z bločku. Čiarový kód je prevzatý z bločku, takže tovar pôjde nájsť aj v ostatných obchodoch. Riadok sa s ním rovno spáruje."
+  },
+  "guide": {
+    "start": "Doplniť nerozpoznané ({{count}})",
+    "progress": "{{index}} / {{total}}",
+    "skip": "Preskočiť"
+  },
+  "group": {
+    "toResolve": "Na doplnenie ({{count}})",
+    "toCheck": "Na kontrolu ({{count}})",
+    "ready": "Pripravené na potvrdenie ({{count}})",
+    "done": "Hotovo ({{count}})",
+    "ignored": "Ignorované ({{count}})"
+  },
+  "panel": {
+    "accept": "Áno, je to ono",
+    "other": "Iný tovar",
+    "notProduct": "Nie je tovar — ignorovať",
+    "offHint": "Tovar podľa EAN pozná Open Food Facts. Do katalógu sa pridá, až riadok potvrdíš."
   }
 }

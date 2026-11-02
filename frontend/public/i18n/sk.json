@@ -235,7 +235,8 @@
       "LABEL": "podľa názvu na bločku",
       "FUZZY": "len podľa podobnosti názvu",
       "USER": "vybrané ručne",
-      "NEW_PRODUCT": "novo založený tovar"
+      "NEW_PRODUCT": "novo založený tovar",
+      "OFF": "podľa EAN z Open Food Facts"
     },
     "quantityUnit": {
       "PCS": "ks",

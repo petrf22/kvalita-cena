@@ -248,6 +248,12 @@ type Query {
   textu z účtenky.
   """
   receiptLineSuggestions(lineId: ID!, query: String, first: Int = 10): [Product!]!
+  """
+  Předvyplnění formuláře „Založit nové zboží" z řádku účtenky — název, kód, kategorie a gramáž
+  z řádku, z podobného zboží v katalogu, nebo z návrhu lokálního modelu (docs/ai.md, „Návrh
+  kategorie a jednotky"). Jen návrh; Open Food Facts si formulář dotahuje sám podle kódu.
+  """
+  receiptLineProductDefaults(lineId: ID!): ReceiptLineProductDefaults
 
   """
   Fronta nahlášených záznamů čekajících na přezkum (docs/reputace.md, "Moderace") — bez
@@ -1850,6 +1856,11 @@ enum ReceiptMatchSource {
   LABEL
   "Jednoznačná podobnost názvu — jen odhad, klient ho ukáže označený a nezaškrtne předem."
   FUZZY
+  """
+  EAN z řádku zná jen Open Food Facts — návrh BEZ zboží (product je null, náhled je v
+  offCandidate). Zboží se založí až potvrzením řádku. Deterministické jako CODE, předem zaškrtnuté.
+  """
+  OFF
   USER
   NEW_PRODUCT
 }
@@ -1917,6 +1928,11 @@ type ReceiptLine {
   status: ReceiptLineStatus!
   matchSource: ReceiptMatchSource
   product: Product
+  """
+  Náhled zboží z Open Food Facts u návrhu matchSource OFF (jinak null) — název, značka, gramáž
+  a fotka s povinnou atribucí. Null i tehdy, když OFF mezitím přestal odpovídat.
+  """
+  offCandidate: ExternalProductCandidate
   "Vyplněno, když z řádku vznikla cena — po 180 dnech se vazba pseudonymizací maže (docs/soukromi.md)."
   observationId: ID
   """
@@ -1926,6 +1942,33 @@ type ReceiptLine {
   confirmed: Boolean!
   "Proč potvrzení cenu nezapsalo — DUPLICATE_SAME_DAY, nebo kód chyby (ErrorCode)."
   skipReason: String
+}
+
+"Odkud je předvyplněná hodnota formuláře nového zboží — klient u AI ukáže, že jde o návrh."
+enum ProductDefaultSource {
+  "Přímo z řádku účtenky — váhové zboží, gramáž vytištěná v označení."
+  RECEIPT
+  "Shoda nejpodobnějšího zboží v katalogu."
+  CATALOG
+  "Návrh lokálního modelu — jen předvyplnění, uživatel ho má zkontrolovat."
+  AI
+}
+
+type ReceiptLineProductDefaults {
+  "Čitelný název řádku (jinak syrové označení) — vždy v jazyce appky."
+  name: String
+  "Globální EAN z řádku, podle kterého si formulář dotáhne Open Food Facts."
+  code: String
+  category: Category
+  categorySource: ProductDefaultSource
+  """
+  Gramáž — vždy jako dvojice. U zdroje AI může přijít jen jednotka bez čísla (číslo model
+  nedodává); formulář pak předvybere jednotku a číslo nechá na uživateli.
+  """
+  netContentValue: BigDecimal
+  netContentUom: NetContentUom
+  isVariableWeight: Boolean!
+  netContentSource: ProductDefaultSource
 }
 
 type ReceiptPage {

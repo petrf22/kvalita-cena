@@ -1,12 +1,13 @@
 import {
   Component,
   DestroyRef,
-  OnInit,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslocoDirective, TranslocoService } from '@jsverse/transloco';
@@ -43,7 +44,7 @@ const SEARCH_DEBOUNCE_MS = 300;
   templateUrl: './receipt-line-match.html',
   styleUrl: './receipt-line-match.css',
 })
-export class ReceiptLineMatch implements OnInit {
+export class ReceiptLineMatch {
   private readonly receiptService = inject(ReceiptService);
   private readonly transloco = inject(TranslocoService);
 
@@ -71,10 +72,18 @@ export class ReceiptLineMatch implements OnInit {
       clearTimeout(this.timer);
       this.request?.unsubscribe();
     });
-  }
-
-  ngOnInit(): void {
-    this.search();
+    // Hledá se znovu pro každý řádek, ne jen při vytvoření: průvodce „Doplnit nerozpoznané"
+    // přepíná řádky v téže instanci a dotaz i výsledky předchozího řádku by jinak zůstaly
+    // viditelné — výběr z nich by spároval už nový řádek s cizím zbožím.
+    effect(() => {
+      this.line().id;
+      untracked(() => {
+        this.query.set('');
+        this.results.set([]);
+        this.errorMessage.set(null);
+        this.search();
+      });
+    });
   }
 
   protected onQueryChange(value: string): void {

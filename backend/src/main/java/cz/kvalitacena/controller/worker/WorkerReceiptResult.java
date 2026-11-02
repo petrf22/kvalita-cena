@@ -41,6 +41,31 @@ public record WorkerReceiptResult(
       String labelDisplay,
       String labelDisplaySource,
       BigDecimal netContentValue,
-      String netContentUom) {
+      String netContentUom,
+      // Návrh lokálního modelu pro formulář nového zboží (tools/uctenky/ai_classify.py) —
+      // slug kategorie appky a jen rozměr gramáže (G/KG/ML/L). Poradní, server ho ještě ověří
+      // a neznámou hodnotu zahodí (docs/ai.md, „Návrh kategorie a jednotky"). Typ Object
+      // záměrně: cokoli jiného než text (seznam, objekt) se zahodí, nesmí shodit
+      // deserializaci celého výsledku účtenky.
+      Object categoryHint,
+      Object unitHint) {
+
+    /** Řádek bez návrhu modelu — starší worker, nebo model nedostupný. */
+    public Line(String label, String internalCode, BigDecimal quantity, QuantityUnit quantityUnit,
+        BigDecimal unitPrice, BigDecimal lineTotal, BigDecimal discountAmount, PriceKind priceKind,
+        String labelDisplay, String labelDisplaySource, BigDecimal netContentValue, String netContentUom) {
+      this(label, internalCode, quantity, quantityUnit, unitPrice, lineTotal, discountAmount, priceKind,
+          labelDisplay, labelDisplaySource, netContentValue, netContentUom, null, null);
+    }
+
+    /** Návrh kategorie, jen když je to text. */
+    public String categoryHintText() {
+      return categoryHint instanceof String text ? text : null;
+    }
+
+    /** Návrh jednotky, jen když je to text. */
+    public String unitHintText() {
+      return unitHint instanceof String text ? text : null;
+    }
   }
 }

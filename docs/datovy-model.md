@@ -597,7 +597,10 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   pod položkou, worker ji připojí). Stav párování `status`: `UNMATCHED` (nic),
   `SUGGESTED` (server našel zboží přes kód nebo známé označení — v UI předem zaškrtnuté;
   nebo jen odhad podle podobnosti názvu, `match_source = FUZZY` — ten klient předem
-  nezaškrtává, `docs/rozvoj.md`, krok 3a),
+  nezaškrtává, `docs/rozvoj.md`, krok 3a; nebo EAN, který zná jen Open Food Facts,
+  `match_source = OFF` — jediný `SUGGESTED` **bez** `product_id`, zboží se nad OFF snapshotem
+  založí až potvrzením řádku, ať se katalog neplní zbožím z nepotvrzených účtenek; výjimku
+  nese `chk_receipt_line_product`),
   `MATCHED` (uživatel potvrdil, `observation_id` ukazuje na vzniklou cenu — po 180 dnech ho
   pseudonymizace maže, `docs/soukromi.md`), `IGNORED` (uživatel párovat nechce).
   `skip_reason` nese, proč potvrzený řádek cenu nezapsal (typicky `DUPLICATE_SAME_DAY` —
@@ -626,6 +629,11 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   `attempts`, `FOR UPDATE SKIP LOCKED`), a syrový výstup modelu (`raw_text` bez patičky,
   `extraction` jsonb, `model`). Do `core.receipt_line` jde až normalizovaný návrh. Úloha
   s `processed_at` je ukončená — pozdní `/result` ani `/fail` ji nezmění.
+- **`ai.receipt_line_hint`** — návrh lokálního modelu k řádku účtenky pro formulář nového
+  zboží: `category_id` a jen rozměr gramáže `net_content_uom` (`G`/`KG`/`ML`/`L`, číslo model
+  nedodává). Poradní údaj mimo `core` ze stejného důvodu jako `ai.receipt_job`; smaže se
+  s řádkem. Předvyplnění skládá `NewProductDefaultsService` a návrh modelu má v něm nejnižší
+  přednost (`docs/ai.md`, „Návrh kategorie a jednotky").
 - **`auth.api_token`** — strojové tokeny (scope `RECEIPT_WORKER` pro worker, `LABEL_CURATOR`
   pro kurátorství označení; token dostane jen roli svého scope), v DB jen SHA-256, prefix
   `kcw_`. Stroj nemá `app_user`.

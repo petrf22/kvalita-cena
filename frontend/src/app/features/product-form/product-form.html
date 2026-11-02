@@ -177,7 +177,7 @@
       <nz-form-control>
         <nz-tree-select
           [ngModel]="selectedCategoryId()"
-          (ngModelChange)="selectedCategoryId.set($event)"
+          (ngModelChange)="onCategoryChosen($event)"
           name="category"
           [nzNodes]="categoryTree()"
           [nzPlaceHolder]="t('product-form.categoryPlaceholder')"
@@ -185,6 +185,9 @@
           [nzDisplayWith]="categoryDisplayWith"
           [nzDropdownStyle]="{ 'max-height': '400px', 'overflow-y': 'auto' }"
         />
+        @if (categorySuggested()) {
+          <p class="field-hint suggested-hint">{{ t('product-form.categorySuggested') }}</p>
+        }
       </nz-form-control>
     </nz-form-item>
 
@@ -211,7 +214,7 @@
       <nz-form-control>
         <nz-switch
           [ngModel]="isVariableWeight()"
-          (ngModelChange)="isVariableWeight.set($event)"
+          (ngModelChange)="onVariableWeightChosen($event)"
           name="isVariableWeight"
         />
         <p class="field-hint">{{ t('product-form.variableWeightHint') }}</p>
@@ -233,7 +236,7 @@
           <div class="net-content-row">
             <nz-select
               [ngModel]="netContentUom()"
-              (ngModelChange)="netContentUom.set($event)"
+              (ngModelChange)="onNetContentUomChosen($event)"
               name="netContentUom"
               class="net-content-uom"
               [attr.aria-label]="t('product-form.netContentUomLabel')"
@@ -252,7 +255,7 @@
             @if (netContentUom()) {
               <nz-input-number
                 [ngModel]="netContentValue()"
-                (ngModelChange)="netContentValue.set($event)"
+                (ngModelChange)="onNetContentValueChosen($event)"
                 name="netContentValue"
                 class="net-content-value"
                 [nzMin]="0"
@@ -264,6 +267,8 @@
           </div>
           @if (!netContentUom()) {
             <p class="field-hint">{{ t('product-form.netContentNoneHint') }}</p>
+          } @else if (unitSuggested()) {
+            <p class="field-hint suggested-hint">{{ t('product-form.unitSuggested') }}</p>
           }
         </nz-form-control>
       </nz-form-item>

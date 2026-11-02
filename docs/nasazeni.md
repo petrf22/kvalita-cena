@@ -52,7 +52,7 @@ ověřeno) — **aktivně nehotové jsou jen položky ze sekcí níž, shrnuté 
 - [ ] Po spuštění bety sledovat, kolik bezkódového zboží uvízne v DRAFTu (sekce 4) —
   anonymní zápisy se od teď do prahu potvrzení nepočítají (`docs/reputace.md`).
 - [ ] **Před spuštěním veřejného provozu doplnit předfiltr fotek pro moderaci** (`docs/ai.md`,
-  „Čtyři úlohy a jejich pořadí") — dnes žádný kód, jen rozhodnutí v docs. `docs/ai.md` ho sám
+  „Úlohy a jejich pořadí") — dnes žádný kód, jen rozhodnutí v docs. `docs/ai.md` ho sám
   označuje za předpoklad veřejného provozu (kapacita moderace jednoho člověka), ale dřív tu
   chyběl — nebyl vidět mezi ostatními blokátory.
 - [ ] **Nastavit retenci provozních/access logů** — appka dnes nemá definovanou politiku pro
@@ -439,6 +439,9 @@ provozovatele — na serveru se nic dalšího nespouští, appka bez běžícíh
 4. Volitelně `ARCHIVE_DIR` pro obrázky se souhlasem s archivací (mimo git, mimo cloud).
    Čitelné názvy řádků dočišťuje `qwen2.5:7b-instruct` (`ollama pull qwen2.5:7b-instruct`,
    jinak `--pretty-model ''` a zůstanou jen slovník s pravidly).
+   Kategorii a jednotku nového zboží navrhuje `qwen2.5:14b-instruct`
+   (`ollama pull qwen2.5:14b-instruct`, jinak `--classify-model ''` a formulář bude bez
+   návrhu modelu).
    Volitelně párování označení provozovatelem: `tools/uctenky/run-curate.sh`, s vlastním
    tokenem se scope `LABEL_CURATOR` v `KC_CURATOR_TOKEN` (`tools/uctenky/README.md`,
    „Kurátorství").

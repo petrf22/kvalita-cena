@@ -20,6 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import ai_classify  # noqa: E402
 import ai_pretty  # noqa: E402
 import curate  # noqa: E402
 import lines as lines_mod  # noqa: E402
@@ -656,3 +657,80 @@ class CurateTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FakeClassifier:
+    def __init__(self, answers: dict | None = None, error: Exception | None = None):
+        self.answers = answers or {}
+        self.error = error
+        self.calls = []
+
+    def complete(self, categories, items):
+        self.calls.append((categories, items))
+        if self.error:
+            raise self.error
+        return self.answers
+
+
+class ClassifyTest(unittest.TestCase):
+    CATEGORIES = [{"slug": "mleko", "path": "Potraviny › Mléčné výrobky › Mléko"},
+                  {"slug": "testoviny", "path": "Potraviny › Trvanlivé › Těstoviny"}]
+
+    def test_platny_navrh_projde(self):
+        lines = [{"label": "MLEKO POL.", "labelDisplay": "Mléko pol.", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": {"category": "mleko", "unit": "l"}}),
+                             log=lambda *_: None)
+        self.assertEqual((lines[0]["categoryHint"], lines[0]["unitHint"]), ("mleko", "L"))
+
+    def test_model_dostane_citelny_nazev_a_cesty_kategorii(self):
+        classifier = FakeClassifier({})
+        lines = [{"label": "MLEKO POL.", "labelDisplay": "Mléko pol.", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.CATEGORIES, classifier, log=lambda *_: None)
+        categories, items = classifier.calls[0]
+        self.assertEqual(items, {"0": "Mléko pol."})
+        self.assertEqual(categories["mleko"], "Potraviny › Mléčné výrobky › Mléko")
+
+    def test_neznama_kategorie_a_jednotka_se_zahodi(self):
+        lines = [{"label": "NECO", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": {"category": "vymysl", "unit": "KS"}}),
+                             log=lambda *_: None)
+        self.assertEqual((lines[0]["categoryHint"], lines[0]["unitHint"]), (None, None))
+
+    def test_jednotka_proti_vytistene_gramazi_se_zahodi(self):
+        lines = [{"label": "TESTOV. 500G", "quantityUnit": "PCS", "netContentUom": "G"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": {"category": "testoviny", "unit": "L"}}),
+                             log=lambda *_: None)
+        self.assertEqual((lines[0]["categoryHint"], lines[0]["unitHint"]), ("testoviny", None))
+
+    def test_vahove_zbozi_jednotku_nedostane(self):
+        lines = [{"label": "BANANY", "quantityUnit": "KG"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": {"category": None, "unit": "G"}}),
+                             log=lambda *_: None)
+        self.assertIsNone(lines[0]["unitHint"])
+
+    def test_vypadek_modelu_neni_chyba_uctenky(self):
+        lines = [{"label": "MLEKO", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier(error=urllib.error.URLError("down")),
+                             log=lambda *_: None)
+        self.assertNotIn("categoryHint", lines[0])
+
+    def test_payload_nese_navrh_az_po_citelnych_nazvech(self):
+        document = parse.build_document(_text("albert-plny"))
+        classifier = FakeClassifier({})
+        payload = result_mod.to_payload(document, None, "m", pretty.Dictionary(), None, lambda *_: None,
+                                        classifier, self.CATEGORIES)
+        _, items = classifier.calls[0]
+        self.assertEqual(len(items), len(payload["lines"]))
+        self.assertTrue(all("categoryHint" in line for line in payload["lines"]))
+
+    def test_jednotka_ani_kategorie_jineho_typu_nesrazi_uctenku(self):
+        lines = [{"label": "MLEKO", "quantityUnit": "PCS"}, {"label": "SIRUP", "quantityUnit": "PCS"}]
+        answers = {"0": {"category": ["mleko"], "unit": ["L"]}, "1": {"category": {"x": 1}, "unit": {"u": "L"}}}
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier(answers), log=lambda *_: None)
+        self.assertEqual([(l["categoryHint"], l["unitHint"]) for l in lines], [(None, None), (None, None)])
+
+    def test_odpoved_ktera_neni_objekt_se_zahodi(self):
+        lines = [{"label": "MLEKO", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": ["mleko", "L"]}), log=lambda *_: None)
+        self.assertEqual((lines[0]["categoryHint"], lines[0]["unitHint"]), (None, None))
+

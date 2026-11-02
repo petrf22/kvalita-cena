@@ -1,0 +1,100 @@
+<ng-container *transloco="let t">
+  @let current = line();
+  <div class="panel">
+    <div class="panel-meta">
+      @if (quantityText(); as quantity) {
+        <span>{{ quantity }}</span>
+      }
+      @if (current.lineTotal != null) {
+        <span>{{ current.lineTotal | money: currency() }}</span>
+      }
+      @if (lineRawLabel(current); as raw) {
+        <span class="panel-code">{{ raw }}</span>
+      }
+      @if (lineGtin(current); as gtin) {
+        <span class="panel-code">{{ t('receipts.line.ean', { code: gtin }) }}</span>
+      }
+    </div>
+    @if (error(); as message) {
+      <p class="panel-error" role="alert">{{ message }}</p>
+    }
+
+    @if (current.status === 'IGNORED') {
+      <button
+        nz-button
+        nzType="primary"
+        type="button"
+        [nzLoading]="busy()"
+        (click)="restored.emit()"
+      >
+        {{ t('receipts.line.unignore') }}
+      </button>
+    } @else if (!searching() && isOffSuggestion(current)) {
+      @if (current.offCandidate; as off) {
+        <div class="panel-candidate">
+          @if (off.image; as image) {
+            <img [src]="image.thumbnailUrl" alt="" class="panel-thumb" />
+          }
+          <div>
+            <strong>{{ offLabel(off) }}</strong>
+            <p class="panel-note">{{ off.attribution }}</p>
+          </div>
+        </div>
+      }
+      <p class="panel-note">{{ t('receipts.panel.offHint') }}</p>
+      <ng-container *ngTemplateOutlet="actions" />
+    } @else if (!searching() && current.product; as product) {
+      <div class="panel-candidate">
+        <app-product-thumb
+          [name]="product.name"
+          [photos]="product.photos"
+          [externalImage]="product.externalImage"
+        />
+        <strong>{{ product.name }}</strong>
+      </div>
+      @if (isGuess(current)) {
+        <p class="panel-note">
+          {{
+            lineGtin(current) ? t('receipts.line.guessHintWithEan') : t('receipts.line.guessHint')
+          }}
+        </p>
+      }
+      <ng-container *ngTemplateOutlet="actions" />
+    } @else {
+      <app-receipt-line-match
+        [line]="current"
+        [canCreate]="canCreate()"
+        [busy]="busy()"
+        (picked)="picked.emit($event)"
+        (createNew)="createNew.emit()"
+        (closed)="closed.emit()"
+      />
+      <button nz-button nzType="text" type="button" [nzLoading]="busy()" (click)="ignored.emit()">
+        {{ t('receipts.panel.notProduct') }}
+      </button>
+    }
+
+    @if (guideActive()) {
+      <div class="panel-footer">
+        <button nz-button nzType="link" type="button" (click)="skipped.emit()">
+          {{ t('receipts.guide.skip') }}
+        </button>
+      </div>
+    }
+  </div>
+
+  <ng-template #actions>
+    <div class="panel-actions">
+      <button nz-button nzType="primary" type="button" (click)="accepted.emit()">
+        <span nz-icon nzType="check"></span>
+        {{ t('receipts.panel.accept') }}
+      </button>
+      <button nz-button type="button" (click)="otherRequested.emit()">
+        {{ t('receipts.panel.other') }}
+      </button>
+      <button nz-button nzType="text" type="button" [nzLoading]="busy()" (click)="ignored.emit()">
+        {{ t('receipts.panel.notProduct') }}
+      </button>
+    </div>
+  </ng-template>
+</ng-container>

@@ -141,3 +141,125 @@ describe('ProductForm – kód předaný zvenku a ze skeneru', () => {
     expect(internals.code()).toBe('');
   });
 });
+
+describe('ProductForm – předvyplnění z řádku účtenky a pozdní OFF', () => {
+  let lookup: Subject<LookupResult>;
+  let form: ProductForm;
+  type ReceiptInternals = {
+    applyReceiptDefaults: (defaults: {
+      category?: { id: string } | null;
+      categorySource?: string | null;
+      netContentValue?: number | null;
+      netContentUom?: string | null;
+      isVariableWeight: boolean;
+      netContentSource?: string | null;
+    }) => void;
+    onNetContentValueChosen: (value: number | null) => void;
+    onVariableWeightChosen: (value: boolean) => void;
+    onNetContentUomChosen: (uom: string | null) => void;
+    onCategoryChosen: (id: string | null) => void;
+    netContentValue: () => number | null;
+    netContentUom: () => string | null;
+    isVariableWeight: () => boolean;
+    selectedCategoryId: () => string | null;
+  };
+  let internals: ReceiptInternals;
+
+  const offWithNetContent = {
+    ...candidate([{ lang: 'cs', name: 'Okurky sterilované' }]),
+    category: { id: '7' },
+    netContentValue: 680,
+    netContentUom: 'G',
+  } as unknown as ExternalProductCandidate;
+
+  beforeEach(() => {
+    lookup = new Subject<LookupResult>();
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: ProductService,
+          useValue: {
+            categories: () => of([]),
+            lookupByCode: () => lookup,
+            suggestions: () => of([]),
+          },
+        },
+        { provide: MediaService, useValue: {} },
+        { provide: FormatService, useValue: {} },
+        { provide: TranslocoService, useValue: {} },
+        { provide: LanguageService, useValue: { lang: signal('cs') } },
+        { provide: CountryService, useValue: { country: signal('CZ'), countries: signal([]) } },
+      ],
+    });
+    form = TestBed.runInInjectionContext(() => new ProductForm());
+    internals = form as unknown as ReceiptInternals;
+  });
+
+  it('OFF přepíše, co jen předvyplnil řádek účtenky', () => {
+    form.barcode = EAN;
+    internals.applyReceiptDefaults({
+      category: { id: '3' },
+      categorySource: 'AI',
+      netContentValue: 500,
+      netContentUom: 'G',
+      isVariableWeight: false,
+      netContentSource: 'RECEIPT',
+    });
+    lookup.next({ status: 'OFF_CANDIDATE', candidate: offWithNetContent });
+
+    expect(internals.netContentValue()).toBe(680);
+    expect(internals.selectedCategoryId()).toBe('7');
+  });
+
+  it('ručně opravené číslo gramáže pozdní OFF nepřepíše', () => {
+    form.barcode = EAN;
+    internals.applyReceiptDefaults({
+      netContentValue: 500,
+      netContentUom: 'G',
+      isVariableWeight: false,
+      netContentSource: 'RECEIPT',
+    });
+    internals.onNetContentValueChosen(450);
+    lookup.next({ status: 'OFF_CANDIDATE', candidate: offWithNetContent });
+
+    expect(internals.netContentValue()).toBe(450);
+    expect(internals.netContentUom()).toBe('G');
+  });
+
+  it('ručně vypnuté váhové zboží pozdní OFF nepřepne zpátky ani nevyplní', () => {
+    form.barcode = EAN;
+    internals.applyReceiptDefaults({ isVariableWeight: true, netContentSource: 'RECEIPT' });
+    internals.onVariableWeightChosen(false);
+    internals.onVariableWeightChosen(true);
+    lookup.next({ status: 'OFF_CANDIDATE', candidate: offWithNetContent });
+
+    expect(internals.isVariableWeight()).toBe(true);
+  });
+
+  it('pozdní předvyplnění z účtenky nepřepíše jednotku, kterou uživatel vrátil na nevyplněno', () => {
+    internals.onNetContentUomChosen('KG');
+    internals.onNetContentUomChosen(null);
+    internals.onCategoryChosen('5');
+    internals.onCategoryChosen(null);
+    internals.applyReceiptDefaults({
+      category: { id: '3' },
+      categorySource: 'CATALOG',
+      netContentValue: 500,
+      netContentUom: 'G',
+      isVariableWeight: false,
+      netContentSource: 'RECEIPT',
+    });
+
+    expect(internals.netContentUom()).toBeNull();
+    expect(internals.netContentValue()).toBeNull();
+    expect(internals.selectedCategoryId()).toBeNull();
+  });
+
+  it('pozdní předvyplnění z účtenky znovu nezapne ručně vypnuté váhové zboží', () => {
+    internals.onVariableWeightChosen(true);
+    internals.onVariableWeightChosen(false);
+    internals.applyReceiptDefaults({ isVariableWeight: true, netContentSource: 'RECEIPT' });
+
+    expect(internals.isVariableWeight()).toBe(false);
+  });
+});

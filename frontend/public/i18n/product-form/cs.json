@@ -47,5 +47,7 @@
     "notFound": "Čárový kód se nepodařilo přečíst. Zkus ostřejší fotku, nebo kód opiš.",
     "existing": "Zboží s tímhle kódem už v katalogu je: {{name}}.",
     "useExisting": "Použít"
-  }
+  },
+  "categorySuggested": "Kategorii navrhl počítač podle názvu z účtenky — zkontroluj ji.",
+  "unitSuggested": "Jednotku navrhl počítač podle názvu z účtenky — doplň číslo z obalu."
 }
