@@ -7,7 +7,7 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
-## [Nezveřejněno]
+## [0.13.0] – 2026-11-02
 
 ### Přidáno
 - Při skenování účtenky zůstane displej rozsvícený a jde zapnout svítilna, ať na účtenku nepadá stín (mobil)
@@ -20,6 +20,9 @@ za jednoduchost skriptu.
 
 ### Opraveno
 - Zboží s EAN z účtenky se spáruje, i když obchod účtenky ještě není potvrzený (server)
+- Účtenky Penny s váženým zbožím se přečtou správně, včetně data a zaokrouhlení (server)
+- Řádek s hlavičkou sloupce na účtenkách Albert se už nebere jako nerozpoznaná položka (server)
+- Na malém displeji nebo s otevřenou klávesnicí jdou tlačítka v panelu řádku účtenky dosáhnout posunutím (mobil)
 
 ## [0.12.0] – 2026-11-02
 

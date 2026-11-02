@@ -1,5 +1,94 @@
 [
   {
+    "version": "0.13.0",
+    "date": "2026-11-02",
+    "sections": [
+      {
+        "title": "Přidáno",
+        "items": [
+          {
+            "text": "Při skenování účtenky zůstane displej rozsvícený a jde zapnout svítilna, ať na účtenku nepadá stín",
+            "parts": [
+              "mobil"
+            ]
+          },
+          {
+            "text": "Účtenka se najde i na světlé podložce; když ji appka přesto nevidí, poradí a nabídne snímání podle rámečku na displeji",
+            "parts": [
+              "mobil"
+            ]
+          },
+          {
+            "text": "Ťuknutí na řádek účtenky rovnou nabídne, co je potřeba — vybrat zboží, potvrdit návrh, nebo řádek ignorovat",
+            "parts": [
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Průvodce „Doplnit nerozpoznané\" projde jen řádky, které appka sama nepoznala, a po každém skočí na další",
+            "parts": [
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Řádky účtenky jsou rozdělené na „k doplnění\", „ke kontrole\", „připraveno k potvrzení\" a hotové",
+            "parts": [
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Zboží, které podle EAN z účtenky zná Open Food Facts, se navrhne samo a založí se při potvrzení účtenky",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Formulář nového zboží z účtenky má předvyplněnou kategorii a gramáž — z účtenky, z podobného zboží v katalogu nebo jako návrh počítače ke kontrole",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Opraveno",
+        "items": [
+          {
+            "text": "Zboží s EAN z účtenky se spáruje, i když obchod účtenky ještě není potvrzený",
+            "parts": [
+              "server"
+            ]
+          },
+          {
+            "text": "Účtenky Penny s váženým zbožím se přečtou správně, včetně data a zaokrouhlení",
+            "parts": [
+              "server"
+            ]
+          },
+          {
+            "text": "Řádek s hlavičkou sloupce na účtenkách Albert se už nebere jako nerozpoznaná položka",
+            "parts": [
+              "server"
+            ]
+          },
+          {
+            "text": "Na malém displeji nebo s otevřenou klávesnicí jdou tlačítka v panelu řádku účtenky dosáhnout posunutím",
+            "parts": [
+              "mobil"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "0.12.0",
     "date": "2026-11-02",
     "sections": [
