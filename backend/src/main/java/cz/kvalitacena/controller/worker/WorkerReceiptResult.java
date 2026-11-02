@@ -35,6 +35,12 @@ public record WorkerReceiptResult(
       BigDecimal unitPrice,
       BigDecimal lineTotal,
       BigDecimal discountAmount,
-      PriceKind priceKind) {
+      PriceKind priceKind,
+      // Čitelný název a vodítko gramáže (tools/uctenky/pretty.py). Zdroj a jednotka jako text —
+      // neznámá hodnota od novějšího workeru nesmí shodit celý výsledek, jen se zahodí.
+      String labelDisplay,
+      String labelDisplaySource,
+      BigDecimal netContentValue,
+      String netContentUom) {
   }
 }

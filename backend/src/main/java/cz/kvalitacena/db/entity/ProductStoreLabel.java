@@ -44,6 +44,11 @@ public class ProductStoreLabel implements Persistable<Long> {
   @Builder.Default
   private ProductAliasStatus status = ProductAliasStatus.PENDING;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "source", nullable = false, length = 10)
+  @Builder.Default
+  private ProductStoreLabelSource source = ProductStoreLabelSource.USER;
+
   @Column(name = "created_at", nullable = false, columnDefinition = "TIMESTAMPTZ")
   private OffsetDateTime createdAt;
 

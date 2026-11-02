@@ -6,6 +6,11 @@ public enum ReceiptMatchSource {
   CODE,
   /** Známé označení → core.product_store_label. */
   LABEL,
+  /**
+   * Jednoznačná podobnost čitelného názvu se zbožím v katalogu (ReceiptMatchingService) —
+   * jen odhad: klient ho ukáže označený a nezaškrtne předem, potvrdit ho musí uživatel.
+   */
+  FUZZY,
   /** Uživatel vybral z našeptávače. */
   USER,
   /** Uživatel pro řádek založil nové zboží. */
