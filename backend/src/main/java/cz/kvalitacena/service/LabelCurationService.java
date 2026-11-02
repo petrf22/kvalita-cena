@@ -67,7 +67,12 @@ public class LabelCurationService {
       String netContentUom, boolean variableWeight, String catalogScope, String status, double score) {
   }
 
-  public record LabelMappingRequest(String label, Long chainId, Long storeId, Long productId, boolean replace) {
+  /** {@code replace} smí chybět (null = false) — klient ho posílá jen při vědomém přepisu. */
+  public record LabelMappingRequest(String label, Long chainId, Long storeId, Long productId, Boolean replace) {
+
+    boolean replaceExisting() {
+      return Boolean.TRUE.equals(replace);
+    }
   }
 
   public enum Outcome { CREATED, UPDATED, UNCHANGED, CONFLICT, INVALID }
@@ -194,7 +199,7 @@ public class LabelCurationService {
       labelNorm = (String) row.get("label_norm");
       params.addValue("labelId", labelId).addValue("previousProductId", previousProductId);
       if (previousProductId != product.getId()) {
-        if (!request.replace()) {
+        if (!request.replaceExisting()) {
           return new LabelMappingResult(Outcome.CONFLICT, product.getId(), previousProductId, 0,
               "označení už míří na zboží " + previousProductId + " — přepsat jen s replace=true");
         }
