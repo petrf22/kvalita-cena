@@ -96,6 +96,7 @@ fun ProductFormScreen(
   onScanCode: () -> Unit = {},
   initialName: String? = null,
   initialStoreId: String? = null,
+  receiptLineId: String? = null,
 ) {
   val viewModel: ProductFormViewModel = viewModel(
     factory = viewModelFactory {
@@ -108,6 +109,7 @@ fun ProductFormScreen(
           productId,
           initialName,
           initialStoreId,
+          receiptLineId,
         )
       }
     },
@@ -350,11 +352,12 @@ fun ProductFormScreen(
       query = viewModel.categoryQuery,
       onQueryChange = { formDirty = true; viewModel.onCategoryQueryChange(it) },
       suggestions = categoryChoices,
-      onSelect = { formDirty = true; viewModel.onCategorySelected(it.category) },
+      onSelect = { formDirty = true; viewModel.onCategoryChosen(it.category) },
       itemLabel = { it.label },
       label = stringResource(R.string.product_form_category_label),
       modifier = Modifier.fillMaxWidth(),
     )
+    if (viewModel.categorySuggested) SuggestedHint(stringResource(R.string.product_form_category_suggested))
     Gap()
 
     SingleLineTextField(
@@ -393,7 +396,7 @@ fun ProductFormScreen(
       Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
         NetContentUomDropdown(
           selected = viewModel.netContentUom,
-          onSelect = { formDirty = true; viewModel.netContentUom = it },
+          onSelect = { formDirty = true; viewModel.onNetContentUomChosen(it) },
           // Širší než jen na „g"/„ml" — vejde se i popisek prázdné volby („nevyplněno").
           modifier = Modifier.width(160.dp),
         )
@@ -413,6 +416,8 @@ fun ProductFormScreen(
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+      } else if (viewModel.netContentUomSuggested) {
+        SuggestedHint(stringResource(R.string.product_form_unit_suggested))
       }
       Gap()
     }
@@ -607,3 +612,19 @@ private fun langName(lang: String): String = when (lang) {
   "de" -> stringResource(R.string.lang_de)
   else -> lang
 }
+
+/**
+ * Poznámka pod polem, které předvyplnil lokální model podle názvu z účtenky (docs/ai.md,
+ * „Návrh kategorie a jednotky") — model nikdy nerozhoduje, uživatel má vědět, že jde
+ * o návrh ke kontrole. Po vlastní volbě zmizí.
+ */
+@Composable
+private fun SuggestedHint(text: String) {
+  Text(
+    text,
+    style = MaterialTheme.typography.bodySmall,
+    color = MaterialTheme.colorScheme.tertiary,
+    modifier = Modifier.padding(top = Spacing.xs),
+  )
+}
+

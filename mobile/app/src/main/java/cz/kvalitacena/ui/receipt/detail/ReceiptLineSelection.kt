@@ -48,3 +48,61 @@ internal val ReceiptLine.shownLabel: String
 /** Syrový tisk z pokladny jako sekundární údaj — jen když se od hlavního textu liší. */
 internal val ReceiptLine.rawLabelIfDifferent: String?
   get() = labelRaw.takeIf { it.trim() != shownLabel.trim() }
+
+/**
+ * Návrh ze zboží, které zná jen Open Food Facts (`matchSource == OFF`) — zboží zatím
+ * neexistuje, založí se potvrzením řádku. Jistý jako shoda EAN, proto předem zaškrtnutý.
+ */
+internal fun ReceiptLine.isOffSuggestion(): Boolean = isConfirmable() && matchSource == "OFF"
+
+/** Skupiny seznamu řádků — od toho, co potřebuje člověka, po hotové. */
+internal enum class LineGroup {
+  /** Appka zboží nezná — uživatel ho musí najít, založit nebo řádek ignorovat. */
+  TO_RESOLVE,
+
+  /** Odhad podle názvu — stačí potvrdit „ano, je to ono", nebo vybrat jiné. */
+  TO_CHECK,
+
+  /** Jistý návrh (kód, naučené označení, OFF) nebo vlastní párování — čeká jen na potvrzení. */
+  READY,
+
+  /** Cena zapsaná. */
+  DONE,
+
+  IGNORED,
+}
+
+internal fun ReceiptLine.group(): LineGroup = when {
+  status == "IGNORED" -> LineGroup.IGNORED
+  status == "MATCHED" || confirmed -> LineGroup.DONE
+  isFuzzyGuess() -> LineGroup.TO_CHECK
+  isConfirmable() -> LineGroup.READY
+  else -> LineGroup.TO_RESOLVE
+}
+
+/** Řádky ve skupinách v pořadí [LineGroup] — prázdné skupiny vynechané, pořadí z účtenky uvnitř. */
+internal fun groupedLines(lines: List<ReceiptLine>): List<Pair<LineGroup, List<ReceiptLine>>> =
+  LineGroup.entries.mapNotNull { group ->
+    lines.filter { it.group() == group }.takeIf { it.isNotEmpty() }?.let { group to it }
+  }
+
+/**
+ * Fronta průvodce „Doplnit nerozpoznané": nejdřív řádky, které appka nezná, pak odhady ke
+ * kontrole — jen to, na co appka sama nestačí. Jisté návrhy průvodce neukazuje, ty stačí
+ * hromadně potvrdit.
+ */
+internal fun guideQueue(lines: List<ReceiptLine>): List<String> =
+  lines.filter { it.group() == LineGroup.TO_RESOLVE }.map { it.id } +
+    lines.filter { it.group() == LineGroup.TO_CHECK }.map { it.id }
+
+/**
+ * Další řádek průvodce po [currentId]: první z [queue] za ním, který pořád potřebuje
+ * člověka (mezitím ho mohl vyřešit jiný krok — naučené označení spárovalo i další řádky).
+ * `null` = průvodce skončil.
+ */
+internal fun nextInGuide(queue: List<String>, currentId: String?, lines: List<ReceiptLine>): String? {
+  val needsHuman = lines.filter { it.group() == LineGroup.TO_RESOLVE || it.group() == LineGroup.TO_CHECK }
+    .mapTo(mutableSetOf()) { it.id }
+  val start = if (currentId == null) 0 else queue.indexOf(currentId) + 1
+  return queue.drop(start.coerceAtLeast(0)).firstOrNull { it in needsHuman }
+}

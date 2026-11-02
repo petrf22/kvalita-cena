@@ -107,4 +107,42 @@ class ReceiptLineSelectionTest {
     assertEquals("Mléko 1l", l.shownLabel)
     assertNull(l.rawLabelIfDifferent)
   }
+
+  @Test
+  fun navrhZOpenFoodFactsJePredemZaskrtnuty() {
+    val off = line("9", matchSource = "OFF")
+    assertEquals(setOf("9"), defaultSelectedLineIds(listOf(off)))
+    assertEquals(LineGroup.READY, off.group())
+  }
+
+  @Test
+  fun skupinyJdouOdToHoCoPotrebujeCloveka() {
+    val groups = groupedLines(lines).map { (group, items) -> group to items.map { it.id } }
+    assertEquals(
+      listOf(
+        LineGroup.TO_RESOLVE to listOf("6"),
+        LineGroup.TO_CHECK to listOf("3"),
+        LineGroup.READY to listOf("1", "2", "4", "5"),
+        LineGroup.DONE to listOf("7"),
+        LineGroup.IGNORED to listOf("8"),
+      ),
+      groups,
+    )
+  }
+
+  @Test
+  fun pruvodceProjdeNespárovanéAPakOdhady() {
+    val withMore = lines + line("10", status = "UNMATCHED")
+    assertEquals(listOf("6", "10", "3"), guideQueue(withMore))
+  }
+
+  @Test
+  fun pruvodcePreskociRadekKteryMezitimNekdoVyresil() {
+    val queue = listOf("6", "10", "3")
+    val resolved = lines + line("10", matchSource = "LABEL")
+    assertEquals("3", nextInGuide(queue, "6", resolved))
+    assertEquals("6", nextInGuide(queue, null, resolved))
+    assertNull(nextInGuide(queue, "3", resolved))
+  }
 }
+

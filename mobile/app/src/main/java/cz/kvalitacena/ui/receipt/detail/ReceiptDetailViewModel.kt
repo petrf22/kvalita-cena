@@ -196,13 +196,98 @@ class ReceiptDetailViewModel(
     }
   }
 
-  // --- řádky ---
+  // --- řádky: spodní panel a průvodce ---
 
-  fun openSuggestions(line: ReceiptLine) {
+  /**
+   * Řádek otevřený ve spodním panelu (ťuknutí na řádek nebo krok průvodce). Panel se při
+   * návratu z formuláře nového zboží ukáže znovu, protože stav žije ve ViewModelu.
+   */
+  var sheetLineId by mutableStateOf<String?>(null)
+    private set
+
+  /** Panel ukazuje hledání zboží — u nespárovaného řádku hned, u návrhu po „Jiné zboží". */
+  var sheetSearching by mutableStateOf(false)
+    private set
+
+  /** Průvodce „Doplnit nerozpoznané" — fronta zachycená při startu ([guideQueue]). */
+  var guideActive by mutableStateOf(false)
+    private set
+  private var guide: List<String> = emptyList()
+
+  val sheetLine: ReceiptLine?
+    get() = sheetLineId?.let { id -> receipt?.lines?.find { it.id == id } }
+
+  /** „3 / 7" v průvodci; mimo průvodce null. */
+  val guidePosition: Pair<Int, Int>?
+    get() = sheetLineId?.takeIf { guideActive }?.let { id -> guide.indexOf(id) + 1 to guide.size }
+
+  /** Kolik řádků potřebuje člověka — počet na tlačítku průvodce. */
+  val guideCount: Int
+    get() = receipt?.lines?.let { guideQueue(it).size } ?: 0
+
+  fun openLine(line: ReceiptLine) {
+    guideActive = false
+    showLine(line)
+  }
+
+  fun startGuide() {
+    val lines = receipt?.lines ?: return
+    guide = guideQueue(lines)
+    guideActive = true
+    val first = nextInGuide(guide, null, lines)
+    if (first == null) closeSheet() else lines.find { it.id == first }?.let(::showLine)
+  }
+
+  private fun showLine(line: ReceiptLine) {
+    sheetLineId = line.id
+    val searching = line.group() == LineGroup.TO_RESOLVE
+    sheetSearching = searching
     suggestionLine = line
     suggestionQuery = ""
     suggestionItems = emptyList()
-    loadSuggestions(line.id, null, debounce = false)
+    suggestionsError = null
+    suggestionJob?.cancel()
+    if (searching) loadSuggestions(line.id, null, debounce = false)
+  }
+
+  /** „Jiné zboží" u návrhu — ukáže hledání místo navrženého zboží. */
+  fun showOtherProducts() {
+    val line = sheetLine ?: return
+    sheetSearching = true
+    if (suggestionItems.isEmpty()) loadSuggestions(line.id, null, debounce = false)
+  }
+
+  fun closeSheet() {
+    sheetLineId = null
+    guideActive = false
+    closeSuggestions()
+  }
+
+  /**
+   * Další krok: v průvodci další řádek, který pořád potřebuje člověka; mimo průvodce zavře
+   * panel. Volá se hned po akci — aktuální řádek se přeskočí podle pozice ve frontě, takže
+   * nevadí, že odpověď serveru ještě nedorazila.
+   */
+  fun advance() {
+    if (!guideActive) {
+      closeSheet()
+      return
+    }
+    val lines = receipt?.lines.orEmpty()
+    val next = nextInGuide(guide, sheetLineId, lines)?.let { id -> lines.find { it.id == id } }
+    if (next == null) closeSheet() else showLine(next)
+  }
+
+  /** „Ano, je to ono" — návrh se zaškrtne k potvrzení. */
+  fun acceptSuggestion(line: ReceiptLine) {
+    selected = selected + line.id
+    advance()
+  }
+
+  /** Ignorovat z panelu (záloha, taška, sleva) a pokračovat. */
+  fun ignoreFromSheet(line: ReceiptLine) {
+    ignore(line)
+    advance()
   }
 
   fun closeSuggestions() {
@@ -232,14 +317,20 @@ class ReceiptDetailViewModel(
     }
   }
 
-  fun chooseProduct(product: ProductSummary) {
+  /** Znovu načíst návrhy po chybě (výpadek sítě v obchodě). */
+  fun retrySuggestions() {
     val line = suggestionLine ?: return
-    closeSuggestions()
-    match(line.id, product.id, newProduct = false)
+    loadSuggestions(line.id, suggestionQuery.ifBlank { null }, debounce = false)
   }
 
+  fun chooseProduct(product: ProductSummary) {
+    val line = suggestionLine ?: return
+    match(line.id, product.id, newProduct = false)
+    advance()
+  }
+
+  /** Formulář nového zboží se otevře jako jiná obrazovka; panel zůstane na řádku do návratu. */
   fun startNewProduct(line: ReceiptLine) {
-    closeSuggestions()
     newProductLineId = line.id
   }
 
@@ -248,6 +339,7 @@ class ReceiptDetailViewModel(
     val lineId = newProductLineId ?: return
     newProductLineId = null
     match(lineId, productId, newProduct = isNew)
+    if (sheetLineId == lineId) advance()
   }
 
   private fun match(lineId: String, productId: String, newProduct: Boolean) =

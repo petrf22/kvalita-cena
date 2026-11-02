@@ -12,6 +12,7 @@ import cz.kvalitacena.network.Category
 import cz.kvalitacena.network.CreateProductFromOffInput
 import cz.kvalitacena.network.CreateProductInput
 import cz.kvalitacena.network.ExternalProductCandidate
+import cz.kvalitacena.network.ReceiptLineProductDefaults
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.ProductSummary
@@ -59,6 +60,9 @@ class ProductFormViewModel(
   // účtenky a obchod z její hlavičky místo naposledy použitého obchodu.
   initialName: String? = null,
   private val initialStoreId: String? = null,
+  // Řádek účtenky, ze kterého se zboží zakládá — předvyplnění kategorie a gramáže z řádku,
+  // z podobného zboží v katalogu, nebo z návrhu modelu (receiptLineProductDefaults).
+  receiptLineId: String? = null,
 ) : ViewModel() {
 
   val isEditing: Boolean get() = editingProductId != null
@@ -154,6 +158,26 @@ class ProductFormViewModel(
     categoryQuery = categoryBreadcrumb(category, categories)
   }
 
+  /** Kategorie, kterou vybral uživatel sám — návrh modelu tím přestává být návrhem. */
+  fun onCategoryChosen(category: Category) {
+    categorySuggested = false
+    onCategorySelected(category)
+  }
+
+  /** Jednotka, kterou vybral uživatel sám. */
+  fun onNetContentUomChosen(uom: String?) {
+    netContentUomSuggested = false
+    netContentUom = uom
+  }
+
+  /** Kategorii předvyplnil lokální model (zdroj AI) — formulář to pod polem řekne. */
+  var categorySuggested by mutableStateOf(false)
+    private set
+
+  /** Jednotku gramáže předvyplnil lokální model, číslo nechal na uživateli. */
+  var netContentUomSuggested by mutableStateOf(false)
+    private set
+
   var brandName by mutableStateOf("")
   var netContentValue by mutableStateOf("")
   /**
@@ -237,6 +261,13 @@ class ProductFormViewModel(
       // tichý, poslední známá hodnota v prefs platí dál.
       runCatching { graphQlClient.countries() }.onSuccess(countryStore::applyCountries)
     }
+    if (editingProductId == null && receiptLineId != null) {
+      viewModelScope.launch {
+        // Bez předvyplnění jde formulář vyplnit ručně — výpadek je tichý.
+        runCatching { graphQlClient.receiptLineProductDefaults(receiptLineId) }
+          .getOrNull()?.let(::applyReceiptDefaults)
+      }
+    }
     if (editingProductId != null) {
       loadExisting(editingProductId)
     } else if (barcode != null) {
@@ -312,6 +343,32 @@ class ProductFormViewModel(
     )
   }
 
+  /**
+   * Předvyplnění z řádku účtenky. Open Food Facts má přednost: co už OFF kandidát vyplnil, se
+   * nepřepisuje, a dorazí-li OFF později, přepíše to sám ([applyOffCandidate]). Nepřepisuje ani
+   * nic, co mezitím vybral uživatel. Gramáž jde vždy jako dvojice — u návrhu modelu jen
+   * jednotka bez čísla, číslo opíše uživatel z obalu.
+   */
+  private fun applyReceiptDefaults(defaults: ReceiptLineProductDefaults) {
+    val off = offDefaults
+    val offHasNetContent = off?.netContentUom != null
+    if (!offHasNetContent && !isVariableWeight && netContentUom == null) {
+      if (defaults.isVariableWeight) {
+        isVariableWeight = true
+      } else if (defaults.netContentUom != null && defaults.netContentUom != "PCS") {
+        netContentUom = defaults.netContentUom
+        defaults.netContentValue?.let { netContentValue = formatNetContentInput(it) }
+        netContentUomSuggested = defaults.netContentSource == "AI"
+      }
+    }
+    val category = defaults.category
+    if (category != null && off?.categoryId == null && selectedCategoryId == null) {
+      categorySuggested = defaults.categorySource == "AI"
+      val loaded = categories.find { it.id == category.id }
+      if (loaded != null) onCategorySelected(loaded) else pendingCategoryId = category.id
+    }
+  }
+
   /** Předvyplní formulář z OFF kandidáta — nepřepisuje pole, která kandidát nemá (necháme
    *  prázdné pro ruční vyplnění). Snímek pro submit() si uloží stranou do offDefaults. */
   private fun applyOffCandidate(candidate: ExternalProductCandidate) {
@@ -329,8 +386,13 @@ class ProductFormViewModel(
     if (!nameTouched) defaults.name?.let { name = it }
     defaults.brandName?.let { brandName = it }
     defaults.netContentValue?.let { netContentValue = it.toString() }
-    defaults.netContentUom?.let { netContentUom = it }
+    defaults.netContentUom?.let {
+      netContentUom = it
+      netContentUomSuggested = false
+      isVariableWeight = false
+    }
     defaults.categoryId?.let { id ->
+      categorySuggested = false
       val category = categories.find { it.id == id }
       if (category != null) onCategorySelected(category) else pendingCategoryId = id
     }

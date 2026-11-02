@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,7 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -91,15 +89,17 @@ import java.time.ZoneOffset
 private val THUMB_WIDTH = 72.dp
 private val THUMB_HEIGHT = 96.dp
 
-/** Nejvyšší výška seznamu v našeptávači zboží, ať se dialog vejde i s klávesnicí. */
-private val SUGGESTIONS_MAX_HEIGHT = 320.dp
-
 /**
  * Detail účtenky: hlavička s obchodem a datem nákupu (obojí se stane údajem všech cen
  * z účtenky), řádky se stavem párování a akcemi, potvrzení spárovaných řádků a náhled obrázků,
  * dokud je server nesmaže (docs/soukromi.md, „Účtenky" — 30 dní od zpracování).
  *
- * `onCreateProduct` dostane čitelný název řádku ([shownLabel] — `labelDisplay`, u starších
+ * Ťuknutí na řádek otevře spodní panel ([ReceiptLineSheet]) s tím, co řádek potřebuje — hledání
+ * zboží, potvrzení návrhu, nebo ignorování; průvodce „Doplnit nerozpoznané" jím projde jen
+ * řádky, na které appka sama nestačí (`guideQueue`). Menu tří teček zůstává jako zkratka.
+ *
+ * `onCreateProduct` dostane id řádku (formulář si podle něj stáhne předvyplnění kategorie
+ * a gramáže), čitelný název řádku ([shownLabel] — `labelDisplay`, u starších
  * účtenek syrový tisk) a EAN (`barcode`), ale jen globální GTIN ([globalGtinOrNull]) —
  * `internalCode` bývá i vnitroobchodní kód řetězce nebo kód váhové etikety, který by se jinak
  * uložil jako čárový kód cizího zboží.
@@ -107,7 +107,7 @@ private val SUGGESTIONS_MAX_HEIGHT = 320.dp
 @Composable
 fun ReceiptDetailScreen(
   receiptId: String,
-  onCreateProduct: (name: String, barcode: String?, storeId: String?) -> Unit,
+  onCreateProduct: (lineId: String, name: String, barcode: String?, storeId: String?) -> Unit,
   onAddStore: () -> Unit,
   onProductClick: (String) -> Unit,
   onRescan: () -> Unit,
@@ -173,7 +173,7 @@ fun ReceiptDetailScreen(
         viewModel = viewModel,
         onCreateProduct = { line ->
           viewModel.startNewProduct(line)
-          onCreateProduct(line.shownLabel, globalGtinOrNull(line.internalCode), receipt.store?.id)
+          onCreateProduct(line.id, line.shownLabel, globalGtinOrNull(line.internalCode), receipt.store?.id)
         },
         onAddStore = onAddStore,
         onProductClick = onProductClick,
@@ -183,14 +183,16 @@ fun ReceiptDetailScreen(
     }
   }
 
-  viewModel.suggestionLine?.let { line ->
-    SuggestionsDialog(
+  viewModel.sheetLine?.let { line ->
+    ReceiptLineSheet(
       line = line,
+      currency = receipt?.currency,
       viewModel = viewModel,
       onCreateProduct = {
         viewModel.startNewProduct(line)
-        onCreateProduct(line.shownLabel, globalGtinOrNull(line.internalCode), receipt?.store?.id)
+        onCreateProduct(line.id, line.shownLabel, globalGtinOrNull(line.internalCode), receipt?.store?.id)
       },
+      onProductClick = onProductClick,
     )
   }
   viewModel.confirmResult?.let { result ->
@@ -231,6 +233,8 @@ private fun ReceiptContent(
 ) {
   var confirmDelete by remember { mutableStateOf(false) }
   var zoomedPath by remember { mutableStateOf<String?>(null) }
+  // Hotové a ignorované řádky jsou sbalené — zajímá to, co ještě potřebuje člověka.
+  var expandedGroups by remember { mutableStateOf<Set<LineGroup>>(emptySet()) }
   val processed = receipt.processingStatus == "PROCESSED"
 
   Column(modifier.fillMaxWidth()) {
@@ -262,19 +266,45 @@ private fun ReceiptContent(
             )
           }
         }
-        items(receipt.lines, key = { it.id }) { line ->
-          LineRow(
-            line = line,
-            currency = receipt.currency,
-            selected = line.id in viewModel.selected,
-            busy = line.id in viewModel.busyLineIds,
-            onToggle = { viewModel.toggleSelected(line.id) },
-            onChoose = { viewModel.openSuggestions(line) },
-            onCreate = { onCreateProduct(line) },
-            onIgnore = { viewModel.ignore(line) },
-            onUnmatch = { viewModel.unmatch(line) },
-            onProductClick = onProductClick,
-          )
+        if (viewModel.guideCount > 0) {
+          item {
+            Button(onClick = viewModel::startGuide, modifier = Modifier.fillMaxWidth()) {
+              Text(stringResource(R.string.receipt_guide_start, viewModel.guideCount))
+            }
+          }
+        }
+        groupedLines(receipt.lines).forEach { (group, groupLines) ->
+          val collapsible = group == LineGroup.DONE || group == LineGroup.IGNORED
+          val expanded = !collapsible || group in expandedGroups
+          item(key = "group-$group") {
+            GroupHeader(
+              group = group,
+              count = groupLines.size,
+              collapsible = collapsible,
+              expanded = expanded,
+              onToggle = { expandedGroups = if (group in expandedGroups) expandedGroups - group else expandedGroups + group },
+            )
+          }
+          if (expanded) {
+            items(groupLines, key = { it.id }) { line ->
+              LineRow(
+                line = line,
+                currency = receipt.currency,
+                selected = line.id in viewModel.selected,
+                busy = line.id in viewModel.busyLineIds,
+                onOpen = {
+                  val product = line.product
+                  if (line.status == "MATCHED" && product != null) onProductClick(product.id) else viewModel.openLine(line)
+                },
+                onToggle = { viewModel.toggleSelected(line.id) },
+                onChoose = { viewModel.openLine(line); viewModel.showOtherProducts() },
+                onCreate = { onCreateProduct(line) },
+                onIgnore = { viewModel.ignore(line) },
+                onUnmatch = { viewModel.unmatch(line) },
+                onProductClick = onProductClick,
+              )
+            }
+          }
         }
       }
       item {
@@ -525,6 +555,7 @@ private fun LineRow(
   currency: String?,
   selected: Boolean,
   busy: Boolean,
+  onOpen: () -> Unit,
   onToggle: () -> Unit,
   onChoose: () -> Unit,
   onCreate: () -> Unit,
@@ -534,11 +565,7 @@ private fun LineRow(
 ) {
   var menuOpen by remember { mutableStateOf(false) }
   val gtin = globalGtinOrNull(line.internalCode)
-  val money = rememberMoneyFormatter(currency)
-  val locale = LocalConfiguration.current.locales[0]
-  val quantityFormat = remember(locale) { NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = 3 } }
-
-  Card(Modifier.fillMaxWidth()) {
+  Card(onClick = onOpen, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
     Row(Modifier.padding(vertical = Spacing.sm), verticalAlignment = Alignment.Top) {
       Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
         if (line.status == "SUGGESTED") {
@@ -550,27 +577,7 @@ private fun LineRow(
         // Syrový tisk a EAN hned pod názvem — podle nich server páruje, uživatel je porovná
         // s papírovou účtenkou a obalem. Vnitroobchodní kód se jako EAN neukazuje (globalGtinOrNull).
         LineSource(line.rawLabelIfDifferent, gtin)
-        val unitPrice = line.unitPrice?.let { money.format(it) }
-        val quantity = line.quantity?.let { quantityFormat.format(it) }
-        val detail = when {
-          quantity != null && unitPrice != null -> stringResource(
-            when (line.quantityUnit) {
-              "KG" -> R.string.receipt_line_qty_kg
-              "L" -> R.string.receipt_line_qty_l
-              else -> R.string.receipt_line_qty_pcs
-            },
-            quantity,
-            unitPrice,
-          )
-          else -> null
-        }
-        val total = line.lineTotal?.let { money.format(it) }
-        listOfNotNull(detail, total).takeIf { it.isNotEmpty() }?.let {
-          Text(it.joinToString("  ·  "), style = MaterialTheme.typography.bodySmall)
-        }
-        line.discountAmount?.takeIf { it > 0 }?.let {
-          Text(stringResource(R.string.receipt_line_discount, money.format(it)), style = MaterialTheme.typography.bodySmall)
-        }
+        LinePriceSummary(line, currency)
         line.product?.let { product ->
           Text(
             productLabel(product),
@@ -578,6 +585,11 @@ private fun LineRow(
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.clickable { onProductClick(product.id) },
           )
+        }
+        if (line.product == null) {
+          line.offCandidate?.let { candidate ->
+            Text(offCandidateLabel(candidate), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+          }
         }
         LineStatusChip(line, matchedByGtin = gtin != null && line.matchSource == "CODE")
         if (line.isFuzzyGuess()) {
@@ -634,8 +646,37 @@ private fun LineRow(
   }
 }
 
+/** Množství × jednotková cena, celkem a sleva — jeden blok pro řádek i spodní panel. */
 @Composable
-private fun productLabel(product: ProductSummary): String {
+internal fun LinePriceSummary(line: ReceiptLine, currency: String?) {
+  val money = rememberMoneyFormatter(currency)
+  val locale = LocalConfiguration.current.locales[0]
+  val quantityFormat = remember(locale) { NumberFormat.getNumberInstance(locale).apply { maximumFractionDigits = 3 } }
+  val unitPrice = line.unitPrice?.let { money.format(it) }
+  val quantity = line.quantity?.let { quantityFormat.format(it) }
+  val detail = when {
+    quantity != null && unitPrice != null -> stringResource(
+      when (line.quantityUnit) {
+        "KG" -> R.string.receipt_line_qty_kg
+        "L" -> R.string.receipt_line_qty_l
+        else -> R.string.receipt_line_qty_pcs
+      },
+      quantity,
+      unitPrice,
+    )
+    else -> null
+  }
+  val total = line.lineTotal?.let { money.format(it) }
+  listOfNotNull(detail, total).takeIf { it.isNotEmpty() }?.let {
+    Text(it.joinToString("  ·  "), style = MaterialTheme.typography.bodySmall)
+  }
+  line.discountAmount?.takeIf { it > 0 }?.let {
+    Text(stringResource(R.string.receipt_line_discount, money.format(it)), style = MaterialTheme.typography.bodySmall)
+  }
+}
+
+@Composable
+internal fun productLabel(product: ProductSummary): String {
   val netContent = rememberNetContentLabeler()(product.netContentValue, product.netContentUom, product.isVariableWeight)
   return listOfNotNull(product.brand?.name, product.name, netContent).joinToString(" · ")
 }
@@ -646,7 +687,7 @@ private fun productLabel(product: ProductSummary): String {
  * nezabírají každý vlastní řádek.
  */
 @Composable
-private fun LineSource(raw: String?, gtin: String?) {
+internal fun LineSource(raw: String?, gtin: String?) {
   val parts = listOfNotNull(raw, gtin?.let { stringResource(R.string.receipt_line_ean, it) })
   if (parts.isEmpty()) return
   Text(
@@ -675,6 +716,7 @@ private fun LineStatusChip(line: ReceiptLine, matchedByGtin: Boolean) {
       stringResource(
         when {
           line.matchSource == "USER" || line.matchSource == "NEW_PRODUCT" -> R.string.receipt_line_status_matched_by_you
+          line.isOffSuggestion() -> R.string.receipt_line_status_suggested_off
           matchedByGtin -> R.string.receipt_line_status_suggested_by_ean
           else -> R.string.receipt_line_status_suggested
         },
@@ -704,7 +746,7 @@ private fun LineStatusChip(line: ReceiptLine, matchedByGtin: Boolean) {
 }
 
 @Composable
-private fun skipReasonText(reason: String?): String = stringResource(
+internal fun skipReasonText(reason: String?): String = stringResource(
   when (reason) {
     "DUPLICATE_SAME_DAY" -> R.string.receipt_skip_duplicate
     "RECEIPT_LINE_PRICE_MISSING" -> R.string.receipt_skip_price_missing
@@ -736,52 +778,4 @@ private fun ConfirmBar(receipt: Receipt, viewModel: ReceiptDetailViewModel) {
       }
     }
   }
-}
-
-/** Výběr zboží k řádku: nejdřív podle textu z účtenky, pak podle toho, co uživatel napíše. */
-@Composable
-private fun SuggestionsDialog(line: ReceiptLine, viewModel: ReceiptDetailViewModel, onCreateProduct: () -> Unit) {
-  AlertDialog(
-    onDismissRequest = viewModel::closeSuggestions,
-    title = { Text(line.shownLabel) },
-    text = {
-      Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        LineSource(line.rawLabelIfDifferent, globalGtinOrNull(line.internalCode))
-        OutlinedTextField(
-          value = viewModel.suggestionQuery,
-          onValueChange = viewModel::onSuggestionQueryChange,
-          label = { Text(stringResource(R.string.receipt_suggestions_search)) },
-          singleLine = true,
-          modifier = Modifier.fillMaxWidth(),
-        )
-        when {
-          viewModel.suggestionsLoading -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(Modifier.size(20.dp))
-          }
-          viewModel.suggestionsError != null -> Text(
-            viewModel.suggestionsError?.asString().orEmpty(),
-            color = MaterialTheme.colorScheme.error,
-            style = MaterialTheme.typography.bodySmall,
-          )
-          viewModel.suggestionItems.isEmpty() -> Text(
-            stringResource(R.string.receipt_suggestions_empty),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-          )
-          else -> LazyColumn(Modifier.heightIn(max = SUGGESTIONS_MAX_HEIGHT)) {
-            items(viewModel.suggestionItems, key = { it.id }) { product ->
-              Text(
-                productLabel(product),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.fillMaxWidth().clickable { viewModel.chooseProduct(product) }.padding(vertical = Spacing.sm),
-              )
-              HorizontalDivider()
-            }
-          }
-        }
-      }
-    },
-    confirmButton = { TextButton(onClick = onCreateProduct) { Text(stringResource(R.string.receipt_line_create)) } },
-    dismissButton = { TextButton(onClick = viewModel::closeSuggestions) { Text(stringResource(R.string.common_cancel)) } },
-  )
 }
