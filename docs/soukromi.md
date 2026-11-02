@@ -254,6 +254,13 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   dostane upozornění a cenu potvrdí sám. Do sdíleného katalogu jde jen samotné označení
   obchodu (`ROHLIK TUK 43G` → zboží), ne kdo a kdy ho koupil — `product_store_label_confirmation
   .user_id` se po 180 dnech nuluje stejně jako u aliasu.
+- **Kurátor označení vidí jen agregát.** Provozovatel v `tools/uctenky/curate.py`
+  (`/api/curator/**`, token `LABEL_CURATOR`) vidí nespárovaná označení **seskupená podle
+  označení a rozsahu**: řetězec, u samostatné prodejny prodejna. K tomu počet výskytů a den,
+  kdy se objevilo naposledy. Nevidí účtenku, uživatele, čas nákupu ani obrázek. Mapování
+  od provozovatele nezapisuje nikomu cenu, nespárované řádky jen přepne na návrh jako výš.
+  Čitelný název, který vznikl lokálním modelem (`docs/ai.md`), zůstává na stejném stroji
+  jako OCR, nic dalšího se nikam neposílá.
 - **Z hlavičky do katalogu obchodů jen přes formulář.** „Obchod tu není — přidat nový"
   předvyplní formulář nového obchodu názvem, adresou a IČO z hlavičky účtenky — to jsou údaje
   prodejce, ne kupujícího. Do veřejného `core.store` se dostane jen to, co uživatel ve

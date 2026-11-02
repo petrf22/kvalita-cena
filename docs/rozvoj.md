@@ -184,8 +184,28 @@ z účtenky duplicitní řádky **přeskočí a nahlásí** (`receipt_line.skip_
 ve vlastním savepointu. **Pozdější párování:** když se označení aktivuje, server nespárované
 řádky ostatních účtenek (mladší 180 dní) se shodným označením v rozsahu přepne na
 `SUGGESTED` a vlastník dostane upozornění — cenu nezapisuje za něj. Detail zboží má kartu
-„Názvy na účtenkách". Otevřené zůstává: leták a kdo opravuje špatné mapování (zatím
-moderátor přes SQL / `mergeProducts`).
+„Názvy na účtenkách". Otevřené zůstává leták.
+
+**Stav (2026-11-02):** přibyly tři věci.
+
+- **Čitelný název řádku.** Worker posílá `labelDisplay` („ROHLÍK43GR" → „Rohlík 43g") ze
+  slovníku, pravidel a hlídaného modelu (`docs/ai.md`, „Účtenky"). Používá se pro zobrazení,
+  hledání a předvyplnění nového zboží. Mapování se dál učí podle syrového tisku.
+- **Krok 3a: odhad (`match_source = FUZZY`).** Když nesedí kód ani naučené označení, server
+  zkusí jednoznačnou podobnost čitelného názvu se zbožím v rozsahu prodejny (prahy
+  `auto-match-*`, `docs/ai.md`). Musí sedět i gramáž a zboží nesmí mít jiný EAN. Řádek dostane
+  `SUGGESTED`, ale klient ho ukáže jako „odhad" a **nezaškrtne předem**. Naučené označení
+  odhad u jiných účtenek přebije (`suggestUnmatched`).
+- **Mapování provozovatelem** (`tools/uctenky/curate.py`, `/api/curator/**`, token
+  `LABEL_CURATOR`). Provozovatel vidí nespárovaná označení seskupená podle řetězce, opraví
+  čitelný název nebo zkratku do slovníku v gitu a spáruje označení se zbožím.
+  - Takové mapování (`product_store_label.source = OPERATOR`) platí **hned**, bez potvrzeného
+    řádku. Je to vědomá výjimka z pravidla níž: dělá ho člověk, který katalog spravuje, a cenu
+    dál zapisuje jen potvrzení vlastníka účtenky.
+  - Přepsat existující mapování jde jen výslovně (`replace`). Tím je zodpovězená otevřená
+    otázka „kdo opravuje špatné mapování": provozovatel přes `curate.py`.
+  - Uživatelský hlas pro jiné zboží mapování nepřepíše, stejně jako dnes u mapování od
+    uživatelů.
 
 **Zadání:** účtenka i akční leták mluví názvoslovím obchodu, ne katalogu — na účtence je
 `ROHLIK TUZ 43G`, ne EAN a ne „Rohlík tukový 43 g". EAN na účtence prakticky nikdy není, takže
@@ -234,6 +254,7 @@ na alias:
 
 1. vnitroobchodní kód z řádku → `core.product_code` (`STORE_INTERNAL` + `chain_id`) — jistota,
 2. přesná shoda `label_norm` v rozsahu (nejdřív provozovna, pak řetězec) → mapovací tabulka,
+3a. jednoznačná podobnost čitelného názvu → odhad `FUZZY` (od 2026-11, viz „Stav" výš),
 3. podobnost přes `pg_trgm` proti označením v rozsahu, pak proti `core.product_alias` a názvu
    zboží — stejné skóre jako `productSuggestions` (maximum ze `similarity`/`word_similarity`,
    `docs/stav-implementace.md`),
@@ -268,8 +289,8 @@ obrázku.
 **Otevřené otázky:** rozlišovat u označení, odkud se naučilo (účtenka vs. leták)? Zkratky
 z účtenky a marketingové názvy z letáku jsou jiný slovník a jeden jmenný prostor pro obojí může
 párovat nesmysly — sloučit je do jednoho pole se nedoporučuje, ale rozhodnout se má až podle
-skutečných dat z testovacího provozu. A dál: kdo smí mapování opravit, když se naučí špatně —
-moderátor, nebo stačí komunitní práh jako u aliasu.
+skutečných dat z testovacího provozu. Otázka, kdo smí mapování opravit, když se naučí špatně,
+je od 2026-11 vyřešená: provozovatel přes `curate.py` s `replace` (viz „Stav" výš).
 
 ## Zdroj ceny: kanál klienta vs. druh důkazu (ČÁSTEČNĚ)
 

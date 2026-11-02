@@ -527,8 +527,28 @@ ověřena 2026-11-01 na reálné účtence se 66 položkami v 5 dílech, součet
 EAN u každé položky, worker ho posílá jako `internalCode`, ale jen s platnou kontrolní
 číslicí (`normalize.is_valid_gtin`), protože server kontroluje jen formát.
 
+**Čitelné názvy, odhad a kurátorství (2026-11-02):**
+
+- **Čitelný název.** Worker posílá `labelDisplay`. Vzniká ze slovníku
+  `tools/uctenky/slovnik/*.tsv` a pravidel (`pretty.py`). Lokální model
+  `qwen2.5:7b-instruct` (`ai_pretty.py`) ho smí jen dočistit pod kontrolou `accept`. Výsledek
+  ukazuje `replay.py`.
+- **Odhad.** Server nespárovaný řádek zkusí spárovat jednoznačnou podobností názvu
+  (`ReceiptMatchingService.unambiguousByName`, `match_source = FUZZY`). Hlídá přitom gramáž
+  a EAN. Web i mobil odhad označí a nezaškrtnou ho předem.
+- **Kurátorství.** Provozovatel páruje označení a upravuje slovník v `tools/uctenky/curate.py`
+  přes `/api/curator/**` (`LabelCurationService`, token `LABEL_CURATOR`). Mapování
+  `source = OPERATOR` platí hned a přepsat jde jen s `replace`.
+- **Testy.** `ReceiptFlowIntegrationTest` (odhad, nejednoznačnost, rozpor EAN, kurátor),
+  `ApiTokenAuthenticationFilterTest`, `tools/uctenky/test_worker.py` (`PrettyLabelTest`,
+  `AiPrettyTest`, `CurateTest`).
+- **Kalibrace.** Prahy `auto-match-*` jsou výchozí odhad, na reálném katalogu zatím
+  nezkalibrované.
+
 **Co zbývá:** vlastní profily dalších řetězců (Penny prochází obecným), `f_evid` ve váze ceny, leták jako druhý zdroj označení,
-oprava špatně naučeného označení jinak než moderátorem v SQL / `mergeProducts`.
+kalibrace `auto-match-*` na produkčním katalogu, předvyplnění gramáže nového zboží z vodítka
+na řádku (musí jít jako dvojice `netContentValue`/`netContentUom`), čtení vnitroobchodních
+kódů řetězců (`STORE_INTERNAL`).
 
 ## Neimplementováno
 
