@@ -59,6 +59,9 @@ public class SecurityConfig {
             // Worker účtenek (docs/ai.md) — jediné místo, kde se blokuje už na URL: strojový
             // token jinam nepatří a sem nepatří nikdo jiný.
             .requestMatchers("/api/worker/receipts/**").hasRole("RECEIPT_WORKER")
+            // Kurátor označení z účtenek (tools/uctenky/curate.py) — stejně jen strojový token,
+            // jiný rozsah než worker (ApiTokenScope.LABEL_CURATOR).
+            .requestMatchers("/api/curator/**").hasRole("LABEL_CURATOR")
             .requestMatchers("/actuator/health/**", "/actuator/info/**").permitAll()
             // GraphQL běží na jednom endpointu pro anonymní (T0) i přihlášené uživatele —
             // odstupňování přístupu (docs/reputace.md) řeší predikáty v resolverech/ViewerContext,

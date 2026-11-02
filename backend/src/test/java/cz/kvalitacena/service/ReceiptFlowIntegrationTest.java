@@ -88,6 +88,7 @@ class ReceiptFlowIntegrationTest {
   @Autowired private ReceiptReviewService reviewService;
   @Autowired private ReceiptImageRetentionService retentionService;
   @Autowired private ReceiptMatchingService matchingService;
+  @Autowired private LabelCurationService curationService;
   @Autowired private PseudonymizationService pseudonymizationService;
   @Autowired private ReceiptRepository receiptRepository;
   @Autowired private ReceiptLineRepository lineRepository;
@@ -537,6 +538,70 @@ class ReceiptFlowIntegrationTest {
     ReceiptLine other = lines(otherReceipt).getFirst();
     assertThat(other.getMatchSource()).isEqualTo(ReceiptMatchSource.LABEL);
     assertThat(other.getProductId()).isEqualTo(right.getId()).isNotEqualTo(guess.getId());
+  }
+
+  @Test
+  void operatorMappingIsActiveAtOnceSuggestsOtherReceiptsAndNeedsReplaceToOverride() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        displayLine("GRAN MORAV.STR.100G", "Gran Moravia str. 100g", "100", "G", null),
+        displayLine("GRAN MORAV.STR.100G", "Gran Moravia str. 100g", "100", "G", null)));
+    assertThat(lines(receiptId)).allMatch(l -> l.getStatus() == ReceiptLineStatus.UNMATCHED);
+
+    List<LabelCurationService.UnmatchedLabel> unmatched = curationService.unmatched(f.chain().getId(), 50);
+    assertThat(unmatched).singleElement().satisfies(label -> {
+      assertThat(label.label()).isEqualTo("GRAN MORAV.STR.100G");
+      assertThat(label.labelDisplay()).isEqualTo("Gran Moravia str. 100g");
+      assertThat(label.lineCount()).isEqualTo(2);
+      assertThat(label.chainId()).isEqualTo(f.chain().getId());
+      assertThat(label.sampleStoreId()).isEqualTo(f.store().getId());
+    });
+
+    Product gran = chainProduct(f, "Grana Padano strouhaný sýr", new BigDecimal("100"), NetContentUom.G);
+    assertThat(curationService.searchProducts("Grana Padano", f.store().getId(), 5))
+        .extracting(LabelCurationService.ProductCandidate::id).contains(gran.getId());
+    var created = curationService.map(new LabelCurationService.LabelMappingRequest(
+        "GRAN MORAV.STR.100G", f.chain().getId(), null, gran.getId(), false));
+    assertThat(created.outcome()).isEqualTo(LabelCurationService.Outcome.CREATED);
+    assertThat(created.suggestedLines()).isEqualTo(2);
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT status || '/' || source FROM core.product_store_label WHERE product_id = ?", String.class, gran.getId()))
+        .isEqualTo("ACTIVE/OPERATOR");
+    assertThat(lines(receiptId)).allMatch(l -> l.getMatchSource() == ReceiptMatchSource.LABEL
+        && gran.getId().equals(l.getProductId()));
+    assertThat(curationService.unmatched(f.chain().getId(), 50)).isEmpty();
+
+    // Oprava na jiné zboží — bez replace konflikt, s replace se přesměrují i nepotvrzené návrhy.
+    Product moravia = chainProduct(f, "Gran Moravia strouhaný", new BigDecimal("100"), NetContentUom.G);
+    var conflict = curationService.map(new LabelCurationService.LabelMappingRequest(
+        "GRAN MORAV. STR. 100G", f.chain().getId(), null, moravia.getId(), false));
+    assertThat(conflict.outcome()).isEqualTo(LabelCurationService.Outcome.CONFLICT);
+    assertThat(conflict.existingProductId()).isEqualTo(gran.getId());
+    var replaced = curationService.map(new LabelCurationService.LabelMappingRequest(
+        "GRAN MORAV. STR. 100G", f.chain().getId(), null, moravia.getId(), true));
+    assertThat(replaced.outcome()).isEqualTo(LabelCurationService.Outcome.UPDATED);
+    assertThat(lines(receiptId)).allMatch(l -> moravia.getId().equals(l.getProductId()));
+
+    // Uživatel, který řádek spáruje jinak, mapování provozovatele nepřepíše.
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    ReceiptLine first = lines(receiptId).getFirst();
+    reviewService.matchLine(owner.getPublicUid(), first.getId(), gran.getId(), false);
+    reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(first.getId()), ObservationSource.WEB);
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT product_id FROM core.product_store_label WHERE label_norm = core.norm_label('GRAN MORAV.STR.100G') "
+            + "AND chain_id = ?", Long.class, f.chain().getId())).isEqualTo(moravia.getId());
+  }
+
+  @Test
+  void operatorMappingRejectsInvalidScope() {
+    Fixture f = fixture();
+    var both = curationService.map(new LabelCurationService.LabelMappingRequest(
+        "ROHLIK", f.chain().getId(), f.store().getId(), f.rohlik().getId(), false));
+    assertThat(both.outcome()).isEqualTo(LabelCurationService.Outcome.INVALID);
+    var noProduct = curationService.map(new LabelCurationService.LabelMappingRequest(
+        "ROHLIK", f.chain().getId(), null, -5L, false));
+    assertThat(noProduct.outcome()).isEqualTo(LabelCurationService.Outcome.INVALID);
   }
 
   private Product chainProduct(Fixture f, String name, BigDecimal value, NetContentUom uom) {
