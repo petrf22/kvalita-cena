@@ -266,9 +266,12 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   prodejce, ne kupujícího. Do veřejného `core.store` se dostane jen to, co uživatel ve
   formuláři nechá a uloží; účtenka, čas nákupu ani obrázek se s obchodem nespojují
   (`docs/stav-implementace.md`, „Účtenky").
-- **Stroj nemá identitu uživatele.** Worker se přihlašuje strojovým tokenem (`auth.api_token`,
-  scope `RECEIPT_WORKER`, v DB jen SHA-256), ne účtem člověka — vidí obrázky ve frontě
-  a zapisuje vytěžený text, nic víc.
+- **Stroj nemá identitu uživatele.** Stroje se přihlašují strojovým tokenem
+  (`auth.api_token`, v DB jen SHA-256), ne účtem člověka, a každý token má jen jeden scope.
+  Worker (`RECEIPT_WORKER`) vidí obrázky ve frontě a zapisuje vytěžený text, nic víc.
+  Kurátor označení (`LABEL_CURATOR`, `tools/uctenky/curate.py`) vidí jen agregovaná
+  nespárovaná označení (viz výš) a zapisuje mapování označení → zboží
+  (`core.product_store_label`). Cenu nezapisuje žádný z nich.
 - **Čekající účtenka patří účtu, který ji zařadil.** Mobilní fronta (offline odeslání) si
   k účtence uloží `publicUid` přihlášeného účtu (`sub` z access tokenu); po odhlášení
   a přihlášení někoho jiného v témže telefonu se účtenka neukáže ani neodešle, dokud se

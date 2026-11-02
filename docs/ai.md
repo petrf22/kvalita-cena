@@ -168,7 +168,8 @@ uživatelovo „Potvrdit".
 Řádek, který jistě spárovat nejde, může dostat **odhad** (`match_source = FUZZY`). Je to
 jednoznačná podobnost názvu podle prahů `auto-match-*` níž a dále platí:
 - gramáž z označení musí sedět se zbožím;
-- zboží s jiným EAN odhad nedostane.
+- zboží s jiným EAN odhad nedostane;
+- zboží ve stavu DRAFT odhad nedostane, nepotvrzený název nemá řídit párování.
 
 Klient odhad ukáže označený „odhad" a **nezaškrtne ho předem**. Potvrzený odhad se učí jako
 označení a zboží dostane EAN z řádku, takže hromadné potvrzení omylem by chybu rozšířilo.
