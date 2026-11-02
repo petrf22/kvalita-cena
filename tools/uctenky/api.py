@@ -62,6 +62,10 @@ class WorkerApi(_Client):
         body = {"error": error[:500], "leaseUntil": lease_until}
         self._request("POST", f"/api/worker/receipts/{receipt_id}/fail", body)
 
+    def categories(self) -> list[dict]:
+        """Kategorie appky pro návrh modelem ([{slug, path}], ai_classify.py)."""
+        return self._request("GET", "/api/worker/receipts/categories") or []
+
     def archive_candidates(self, limit: int = 20) -> list[dict]:
         return self._request("GET", f"/api/worker/receipts/archive-candidates?limit={limit}") or []
 

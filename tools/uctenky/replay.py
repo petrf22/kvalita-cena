@@ -23,6 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import ai_classify  # noqa: E402
 import ai_pretty  # noqa: E402
 import ocr as ocr_mod  # noqa: E402
 import parse  # noqa: E402
@@ -78,14 +79,18 @@ def report(texts: list[str], profile_name: str | None = None, log=print) -> dict
     return document
 
 
-def report_names(document: dict, dictionary: pretty.Dictionary, prettifier=None, log=print) -> list[dict]:
-    """Čitelné názvy, jak je worker pošle na server (pretty.py, ai_pretty.py)."""
-    payload = result_mod.to_payload(document, None, "replay", dictionary, prettifier, log)
+def report_names(document: dict, dictionary: pretty.Dictionary, prettifier=None, log=print,
+                 classifier=None, categories: list[dict] | None = None) -> list[dict]:
+    """Čitelné názvy (a s modelem i návrh kategorie), jak je worker pošle na server."""
+    payload = result_mod.to_payload(document, None, "replay", dictionary, prettifier, log, classifier, categories)
     log(f"\n== čitelné názvy (slovník {result_mod.chain_of(document)})")
     for line in payload["lines"]:
         hint = f"{line['netContentValue']} {line['netContentUom']}" if line.get("netContentUom") else ""
+        guess = ""
+        if line.get("categoryHint") or line.get("unitHint"):
+            guess = f"  [{line.get('categoryHint') or '-'} / {line.get('unitHint') or '-'}]"
         log(f"      {line['label']:<32} -> {line.get('labelDisplay', ''):<36} "
-            f"{line.get('labelDisplaySource', ''):<5} {hint}")
+            f"{line.get('labelDisplaySource', ''):<5} {hint}{guess}")
     return payload["lines"]
 
 
@@ -99,6 +104,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model", default=os.environ.get("OCR_MODEL", ocr_mod.DEFAULT_MODEL))
     parser.add_argument("--pretty-model", default="",
                         help=f"dočistit čitelné názvy modelem (např. {ai_pretty.DEFAULT_MODEL}; prázdné = jen slovník)")
+    parser.add_argument("--classify-model", default="",
+                        help="navrhnout kategorii a jednotku modelem (potřebuje --categories)")
+    parser.add_argument("--categories", type=Path,
+                        help="JSON [{slug, path}] — výstup GET /api/worker/receipts/categories")
     args = parser.parse_args(argv)
     if args.profile and parse.profiles.by_name(args.profile) is None:
         parser.error("neznámý profil: " + args.profile)
@@ -110,7 +119,12 @@ def main(argv: list[str] | None = None) -> int:
     texts = read_parts(args.parts, lambda: ocr_mod.OllamaOcr(args.ollama, args.model), args.save_ocr)
     document = report(texts, args.profile)
     prettifier = ai_pretty.OllamaPrettifier(args.ollama, args.pretty_model) if args.pretty_model else None
-    report_names(document, pretty.load_dictionary(), prettifier)
+    classifier = None
+    categories: list[dict] = []
+    if args.classify_model and args.categories:
+        classifier = ai_classify.OllamaClassifier(args.ollama, args.classify_model)
+        categories = json.loads(args.categories.read_text(encoding="utf-8"))
+    report_names(document, pretty.load_dictionary(), prettifier, classifier=classifier, categories=categories)
     if args.json:
         print(json.dumps(document, ensure_ascii=False, indent=2))
     return 0 if document["totalMatches"] and not document["warnings"] else 1

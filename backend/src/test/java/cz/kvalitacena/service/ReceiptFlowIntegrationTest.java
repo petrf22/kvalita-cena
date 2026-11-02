@@ -101,6 +101,8 @@ class ReceiptFlowIntegrationTest {
   @Autowired private CategoryRepository categoryRepository;
   @Autowired private JdbcTemplate jdbcTemplate;
   @Autowired private cz.kvalitacena.db.repo.OffProductRepository offProductRepository;
+  @Autowired private NewProductDefaultsService productDefaultsService;
+  @Autowired private cz.kvalitacena.controller.worker.WorkerReceiptController workerController;
 
   @Test
   void fullFlowFromUploadToConfirmedPriceAndLearnedLabel() {
@@ -691,6 +693,84 @@ class ReceiptFlowIntegrationTest {
         ObservationSource.WEB);
 
     assertThat(lines(receiptId).getFirst().getProductId()).isEqualTo(meanwhile.getId());
+  }
+
+  @Test
+  void modelHintsAreValidatedAndFillNewProductDefaultsAfterReceiptData() {
+    Fixture f = fixture();
+    String slug = f.rohlik().getCategory().getSlug();
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        // Model: kategorie i objem — vytištěná gramáž (500 g) má přednost a rozporná jednotka se zahodí.
+        hinted("TESTOV. 500G", "Těstoviny 500g", "500", "G", slug, "L"),
+        // Jen model: kategorie a jednotka bez čísla.
+        hinted("MLEKO POL.", "Mléko pol.", null, null, slug, "L"),
+        // Neexistující kategorie a nesmyslná jednotka se zahodí.
+        hinted("NECO", "Něco", null, null, "neexistuje-" + UUID.randomUUID(), "KUS"),
+        // Váhové zboží jednotku od modelu nedostane.
+        new WorkerReceiptResult.Line("BANANY", null, new BigDecimal("0.4"), QuantityUnit.KG, new BigDecimal("29.90"),
+            new BigDecimal("11.96"), null, PriceKind.REGULAR, "Banány", "RULES", null, null, null, "G")));
+    List<ReceiptLine> lines = lines(receiptId);
+
+    var pasta = productDefaultsService.forLine(lines.get(0), f.store().getId(), owner.getId());
+    assertThat(pasta.netContentValue()).isEqualByComparingTo("500");
+    assertThat(pasta.netContentUom()).isEqualTo(NetContentUom.G);
+    assertThat(pasta.netContentSource()).isEqualTo(NewProductDefaultsService.Source.RECEIPT);
+    assertThat(pasta.name()).isEqualTo("Těstoviny 500g");
+
+    var milk = productDefaultsService.forLine(lines.get(1), f.store().getId(), owner.getId());
+    assertThat(milk.netContentValue()).isNull();
+    assertThat(milk.netContentUom()).isEqualTo(NetContentUom.L);
+    assertThat(milk.netContentSource()).isEqualTo(NewProductDefaultsService.Source.AI);
+    assertThat(milk.category().getSlug()).isEqualTo(slug);
+    assertThat(milk.categorySource()).isEqualTo(NewProductDefaultsService.Source.AI);
+
+    var nothing = productDefaultsService.forLine(lines.get(2), f.store().getId(), owner.getId());
+    assertThat(nothing.category()).isNull();
+    assertThat(nothing.netContentUom()).isNull();
+
+    var bananas = productDefaultsService.forLine(lines.get(3), f.store().getId(), owner.getId());
+    assertThat(bananas.isVariableWeight()).isTrue();
+    assertThat(bananas.netContentUom()).isNull();
+    assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM ai.receipt_line_hint WHERE line_id = ?",
+        Long.class, lines.get(3).getId())).isZero();
+  }
+
+  @Test
+  void catalogNeighboursAgreeingOnCategoryWinOverModel() {
+    Fixture f = fixture();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    Category sirup = categoryRepository.saveAndFlush(Category.builder()
+        .name("Sirupy " + suffix).slug("sirupy-" + suffix).path("sirupy-" + suffix).build());
+    for (String flavour : List.of("malinový", "jahodový", "citronový")) {
+      productRepository.saveAndFlush(Product.builder().name("Sirup zbrkl " + flavour + " " + suffix).category(sirup)
+          .unitBase(UnitBase.COUNT).netContentBase(BigDecimal.ONE).status(ProductStatus.ACTIVE).build());
+    }
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        hinted("SIRUP ZBRKL MALIN", "Sirup zbrkl malinový " + suffix, null, null, f.rohlik().getCategory().getSlug(),
+            null)));
+
+    var defaults = productDefaultsService.forLine(lines(receiptId).getFirst(), f.store().getId(), owner.getId());
+    assertThat(defaults.category().getId()).isEqualTo(sirup.getId());
+    assertThat(defaults.categorySource()).isEqualTo(NewProductDefaultsService.Source.CATALOG);
+  }
+
+  @Test
+  void workerSeesCategoriesWithFullPath() {
+    Fixture f = fixture();
+    assertThat(workerController.categories())
+        .anySatisfy(c -> {
+          assertThat(c.slug()).isEqualTo(f.rohlik().getCategory().getSlug());
+          assertThat(c.path()).isEqualTo(f.rohlik().getCategory().getName());
+        });
+  }
+
+  private static WorkerReceiptResult.Line hinted(String label, String display, String hintValue, String hintUom,
+      String categoryHint, String unitHint) {
+    return new WorkerReceiptResult.Line(label, null, BigDecimal.ONE, QuantityUnit.PCS, new BigDecimal("29.90"),
+        new BigDecimal("29.90"), null, PriceKind.REGULAR, display, "RULES",
+        hintValue == null ? null : new BigDecimal(hintValue), hintUom, categoryHint, unitHint);
   }
 
   private void offSnapshot(String ean, String categorySlug, String quantity, String unit, Map<String, String> names) {

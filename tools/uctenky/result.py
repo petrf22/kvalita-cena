@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 from decimal import Decimal
 
+import ai_classify
 import ai_pretty
 import lines as lines_mod
 import pretty
@@ -34,7 +35,8 @@ def chain_of(document: dict) -> str:
 
 
 def to_payload(document: dict, raw_text: str | None, model: str,
-               dictionary: pretty.Dictionary | None = None, prettifier=None, log=print) -> dict:
+               dictionary: pretty.Dictionary | None = None, prettifier=None, log=print,
+               classifier=None, categories: list[dict] | None = None) -> dict:
     status = status_of(document)
     payload = {
         "status": status,
@@ -91,6 +93,8 @@ def to_payload(document: dict, raw_text: str | None, model: str,
         by_no[line["lineNo"]] = out
         payload["lines"].append(out)
     _add_display_names(payload["lines"], chain_of(document), dictionary, prettifier, log)
+    # Až po čitelných názvech — model zatřiďuje „Mléko polotučné", ne „MLEKO POL.".
+    ai_classify.classify(payload["lines"], categories or [], classifier, log)
     return payload
 
 

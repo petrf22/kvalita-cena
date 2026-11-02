@@ -22,6 +22,7 @@ import cz.kvalitacena.exception.NotFoundException;
 import cz.kvalitacena.security.ViewerContext;
 import cz.kvalitacena.security.ViewerContextResolver;
 import cz.kvalitacena.service.ProductOverlayService;
+import cz.kvalitacena.service.NewProductDefaultsService;
 import cz.kvalitacena.service.ReceiptMatchingService;
 import cz.kvalitacena.service.ReceiptReviewService;
 import cz.kvalitacena.service.ReceiptService;
@@ -66,6 +67,7 @@ public class ReceiptGraphQlController {
   private final StoreOverlayService storeOverlayService;
   private final ViewerContextResolver viewerContextResolver;
   private final ExternalProductCandidateFactory candidateFactory;
+  private final NewProductDefaultsService productDefaultsService;
   private final HttpServletRequest servletRequest;
 
   // --- dotazy
@@ -109,6 +111,17 @@ public class ReceiptGraphQlController {
             || Objects.equals(p.getCreatedByUserId(), viewer.userId()))
         .toList();
     return productOverlayService.applyOverlay(found, viewer.userId());
+  }
+
+  @QueryMapping
+  public NewProductDefaultsService.Defaults receiptLineProductDefaults(@Argument Long lineId,
+      Authentication authentication) {
+    ViewerContext viewer = viewer(authentication);
+    ReceiptLine line = lineRepository.findById(lineId)
+        .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_LINE_NOT_FOUND));
+    Receipt receipt = receiptService.get(viewer.publicUid(), line.getReceiptId());
+    Long storeId = receipt.getStoreId() != null ? receipt.getStoreId() : receipt.getSuggestedStoreId();
+    return productDefaultsService.forLine(line, storeId, viewer.userId());
   }
 
   // --- mutace
