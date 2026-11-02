@@ -1,16 +1,15 @@
 package cz.kvalitacena.ui.receipt.detail
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,9 +37,6 @@ import cz.kvalitacena.ui.common.globalGtinOrNull
 import cz.kvalitacena.ui.common.rememberNetContentLabeler
 import cz.kvalitacena.ui.theme.Spacing
 
-/** Nejvyšší výška seznamu návrhů v panelu, ať se vejde i s klávesnicí. */
-private val SUGGESTIONS_MAX_HEIGHT = 320.dp
-
 /** Náhled fotky z Open Food Facts — rozměr komponenty, ne rozestup (docs/design.md). */
 private val OFF_THUMB_SIZE = 56.dp
 
@@ -55,6 +51,10 @@ private val OFF_THUMB_SIZE = 56.dp
  *
  * Offline: akce selžou s chybou v panelu (návrhy) nebo nad seznamem (akce řádku), panel se
  * nezavře — v obchodě bez signálu jde zkusit znovu.
+ *
+ * Posouvá se CELÝ obsah panelu, ne jen seznam návrhů: na malém displeji nebo s otevřenou
+ * klávesnicí by jinak hlavička, hledání a návrhy vyčerpaly výšku a „Založit nové zboží"
+ * s „Není zboží" pod nimi by nešly vůbec dosáhnout.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +68,8 @@ internal fun ReceiptLineSheet(
   val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
   ModalBottomSheet(onDismissRequest = viewModel::closeSheet, sheetState = sheetState) {
     Column(
-      Modifier.fillMaxWidth().padding(horizontal = Spacing.lg).padding(bottom = Spacing.xl),
+      Modifier.fillMaxWidth().verticalScroll(rememberScrollState())
+        .padding(horizontal = Spacing.lg).padding(bottom = Spacing.xl),
       verticalArrangement = Arrangement.spacedBy(Spacing.sm),
     ) {
       viewModel.guidePosition?.let { (index, total) ->
@@ -193,8 +194,10 @@ private fun ProductSearch(
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    else -> LazyColumn(Modifier.heightIn(max = SUGGESTIONS_MAX_HEIGHT)) {
-      items(viewModel.suggestionItems, key = { it.id }) { product ->
+    // Obyčejný Column: návrhů je jen pár (server je omezuje) a uvnitř posouvaného panelu
+    // by LazyColumn potřeboval pevnou výšku — právě ta tlačila akce pod okraj.
+    else -> Column {
+      viewModel.suggestionItems.forEach { product ->
         Text(
           productLabel(product),
           style = MaterialTheme.typography.bodyMedium,
