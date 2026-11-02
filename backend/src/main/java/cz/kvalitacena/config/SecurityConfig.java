@@ -3,6 +3,7 @@ package cz.kvalitacena.config;
 import cz.kvalitacena.security.ApiTokenAuthenticationFilter;
 import cz.kvalitacena.security.ClientVersionFilter;
 import cz.kvalitacena.security.JwtAuthenticationFilter;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -44,6 +45,12 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(authz -> authz
+            // ERROR dispatch na /error jen vykresluje stav, o kterém už rozhodl původní request
+            // (včetně 401/403 z autorizace níž). Auth filtry jsou OncePerRequestFilter a ERROR
+            // dispatch přeskakují, takže by tu request byl anonymní a anyRequest().authenticated()
+            // by každou 404/400/500 přepsal na 403 bez těla. Záměrně dispatcher type, ne
+            // requestMatchers("/error") — přímý request na /error zůstává za autentizací.
+            .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
             .requestMatchers("/api/auth/**").permitAll()
             // Autorizaci (kdo smí nahrát/smazat, co je vidět skryté) řeší MediaService z
             // Authentication, kterou JwtAuthenticationFilter naplní i tady stejně jako u
@@ -59,6 +66,9 @@ public class SecurityConfig {
             // Worker účtenek (docs/ai.md) — jediné místo, kde se blokuje už na URL: strojový
             // token jinam nepatří a sem nepatří nikdo jiný.
             .requestMatchers("/api/worker/receipts/**").hasRole("RECEIPT_WORKER")
+            // Kurátor označení z účtenek (tools/uctenky/curate.py) — stejně jen strojový token,
+            // jiný rozsah než worker (ApiTokenScope.LABEL_CURATOR).
+            .requestMatchers("/api/curator/**").hasRole("LABEL_CURATOR")
             .requestMatchers("/actuator/health/**", "/actuator/info/**").permitAll()
             // GraphQL běží na jednom endpointu pro anonymní (T0) i přihlášené uživatele —
             // odstupňování přístupu (docs/reputace.md) řeší predikáty v resolverech/ViewerContext,

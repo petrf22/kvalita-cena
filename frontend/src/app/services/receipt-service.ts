@@ -37,6 +37,7 @@ export const receiptLineFieldsFragment = graphql(`
     id
     lineNo
     labelRaw
+    labelDisplay
     internalCode
     quantity
     quantityUnit
@@ -52,6 +53,23 @@ export const receiptLineFieldsFragment = graphql(`
     observationId
     confirmed
     skipReason
+    offCandidate {
+      code
+      name
+      nameLang
+      brandName
+      netContentValue
+      netContentUom
+      image {
+        url
+        thumbnailUrl
+        kind
+        lang
+        attribution
+      }
+      sourceUrl
+      attribution
+    }
   }
 `);
 
@@ -189,6 +207,33 @@ export class ReceiptService {
     return this.graphQl
       .execute(document, { lineId, query, first })
       .pipe(map((data) => data.receiptLineSuggestions));
+  }
+
+  /**
+   * Předvyplnění formuláře nového zboží z řádku účtenky — kategorie a gramáž z řádku,
+   * z podobného zboží v katalogu, nebo z návrhu lokálního modelu (docs/ai.md, „Návrh kategorie
+   * a jednotky"). Open Food Facts si formulář dotahuje sám podle kódu.
+   */
+  lineProductDefaults(lineId: string) {
+    const document = graphql(`
+      query ReceiptLineProductDefaults($lineId: ID!) {
+        receiptLineProductDefaults(lineId: $lineId) {
+          name
+          code
+          category {
+            id
+          }
+          categorySource
+          netContentValue
+          netContentUom
+          isVariableWeight
+          netContentSource
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { lineId })
+      .pipe(map((data) => data.receiptLineProductDefaults));
   }
 
   /** Změna obchodu na serveru znovu spustí strojové párování řádků (jiný řetězec = jiné zkratky). */

@@ -52,7 +52,7 @@ ověřeno) — **aktivně nehotové jsou jen položky ze sekcí níž, shrnuté 
 - [ ] Po spuštění bety sledovat, kolik bezkódového zboží uvízne v DRAFTu (sekce 4) —
   anonymní zápisy se od teď do prahu potvrzení nepočítají (`docs/reputace.md`).
 - [ ] **Před spuštěním veřejného provozu doplnit předfiltr fotek pro moderaci** (`docs/ai.md`,
-  „Čtyři úlohy a jejich pořadí") — dnes žádný kód, jen rozhodnutí v docs. `docs/ai.md` ho sám
+  „Úlohy a jejich pořadí") — dnes žádný kód, jen rozhodnutí v docs. `docs/ai.md` ho sám
   označuje za předpoklad veřejného provozu (kapacita moderace jednoho člověka), ale dřív tu
   chyběl — nebyl vidět mezi ostatními blokátory.
 - [ ] **Nastavit retenci provozních/access logů** — appka dnes nemá definovanou politiku pro
@@ -121,6 +121,32 @@ před první pozvánkou.
   **Past:** Hetzner blokuje odchozí porty **25 a 465** na všech cloud serverech (proti zneužití
   pro spam); odblokování jde žádat podporou až po měsíci provozu a první zaplacené faktuře.
   Port **587** blokovaný není — proto SMTP níž běží přes něj, ne přes 465 z údajů schránky.
+
+  **Přechod na CAX11 (2026-10-28).** Původní instance byla omylem **CPX22** (řada „Regular
+  Performance", 19,49 € + IPv4 0,50 € měsíčně bez DPH — zhruba trojnásobek odhadu výš) místo
+  doporučené CX23/CAX11. Hetzner účtuje paušálně za existenci serveru (i vypnutého), ne za
+  provoz, takže nízká návštěvnost cenu nesnižuje. Rescale na menší typ nejde — Hetzner neumí
+  zmenšit disk (CPX22 80 GB, CX23/CAX11 40 GB), proto nová instance a obnova ze zálohy. Teď
+  běží **CAX11 (ARM, Falkenstein)**; images (`postgres`, `eclipse-temurin`, `node:*-alpine`,
+  `caddy`) i nativní balíčky z `package-lock.json` mají arm64 variantu, build prošel napoprvé.
+  Primary IPv4 `178.105.119.39` se převedla na nový server (jde jen v rámci jedné lokality),
+  DNS se neměnilo; doména nemá AAAA záznam, IPv6 se proto nepřenášela. Na serveru je repo
+  klonované přes HTTPS (repo je veřejné, `deploy.sh` jen stahuje) — deploy klíč odpadl.
+  Pasti, které migrace odhalila:
+  - **Typ nejde vybrat:** v průvodci byla celá řada Cost-Optimized (CX i CAX) zašedlá s „Not
+    available. Please choose another location or type." — dostupnost se liší podle lokality
+    a pro převod IP musí nová instance stát ve STEJNÉ lokalitě jako stará. Ceny v průvodci
+    jsou včetně 21 % DPH, faktura (reverse charge) bez něj.
+  - **Záloha nešla obnovit na čistou instanci** — `core.norm_text` měla natvrdo OID slovníku
+    unaccent, opraveno migrací `2026-10-28/01-norm-text-portable.yaml`; postup pro starší
+    zálohy v `ops/README.md`, „Zkouška obnovy". Srpnová zkouška obnovy to nechytila nejspíš
+    proto, že čerstvá databáze tehdy náhodou přidělila slovníku stejný OID.
+  - **Build cache Dockeru** narostla za dva měsíce na 21,6 GB (images 1,4 GB) — na 40GB disku
+    by zaplnění jako první zastavilo zálohy; `ops/deploy.sh` ji od té doby uklízí.
+  - **Lokální `pull-backup.sh` neběžel od 2026-09-19** — repo se na PC přestěhovalo do
+    `~/pracovni/github/kvalita-cena` a crontab volal starou, neexistující cestu. Shell selhal
+    už na přesměrování logu, takže skript (a s ním i notifikace o zastaralé záloze) se vůbec
+    nespustil. Po přesunu repa na lokálu vždy zkontrolovat `crontab -l`.
 - [x] **Vybrat cíl pro offsite zálohu** (jiný poskytovatel než Hetzner výš, ať jeden výpadek
   nevezme obojí) — **rozhodnuto 2026-08-29**: místo placeného cloudu (B2/S3) putují zálohy na
   lokální PC uživatele (`ops/pull-backup.sh`, lokální cron denně ve 21:00 — viz `ops/README.md`)
@@ -142,7 +168,9 @@ domény na server (krok 4) — build appky na serveru je nejpravděpodobnější
    SSH klíčem, `ufw` (22/80/443), `unattended-upgrades`, **2 GB swap** (viz sekce 1 výš) —
    ověřeno 2026-08-28 (Hetzner IP `178.105.119.39`, uživatel `kvalitacena`, `free -h` ukazuje
    2 GB swapu, Docker 29.7.2 + Compose v5.5.0 běží). `ufw`/`unattended-upgrades` samo se
-   nedalo ověřit bez roota, ale zvenku odpovídají jen porty 22/80/443.
+   nedalo ověřit bez roota, ale zvenku odpovídají jen porty 22/80/443. **Od 2026-10-28 běží
+   appka na nové instanci CAX11** se stejnou IP (sekce 1, „Přechod na CAX11"); nastavená
+   stejně, navíc ověřeno `rrsync` a Docker 29.9.2 + Compose v5.6.1.
 2. [x] `git clone` repa na server, `cp .env.example .env`, doplnit — ověřeno 2026-08-28
    (`.env` existuje, `POSTGRES_PASSWORD` má 64 znaků = `openssl rand -hex 32`, `SITE_ADDRESS`/
    `API_ADDRESS` jsou finální `https://` domény a `SPRING_PROFILES_ACTIVE=prod,beta` — tedy
@@ -409,6 +437,14 @@ provozovatele — na serveru se nic dalšího nespouští, appka bez běžícíh
 3. Spouštět `KC_API_URL=https://api.kvalitacena.cz KC_WORKER_TOKEN=kcw_… python3
    tools/uctenky/worker.py` (smyčka), nebo `--once` ze systemd timeru.
 4. Volitelně `ARCHIVE_DIR` pro obrázky se souhlasem s archivací (mimo git, mimo cloud).
+   Čitelné názvy řádků dočišťuje `qwen2.5:7b-instruct` (`ollama pull qwen2.5:7b-instruct`,
+   jinak `--pretty-model ''` a zůstanou jen slovník s pravidly).
+   Kategorii a jednotku nového zboží navrhuje `qwen2.5:14b-instruct`
+   (`ollama pull qwen2.5:14b-instruct`, jinak `--classify-model ''` a formulář bude bez
+   návrhu modelu).
+   Volitelně párování označení provozovatelem: `tools/uctenky/run-curate.sh`, s vlastním
+   tokenem se scope `LABEL_CURATOR` v `KC_CURATOR_TOKEN` (`tools/uctenky/README.md`,
+   „Kurátorství").
 5. Volitelně `RECEIPT_NOTIFY_EMAIL=<adresa>` v `.env` na serveru a restart backendu
    (`docker compose -f compose.prod.yaml up -d --force-recreate backend`) — e-mail, když do
    prázdné fronty dorazí účtenka, a denně v 8:00, dokud fronta není prázdná (`docs/ai.md`,

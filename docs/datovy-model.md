@@ -191,7 +191,9 @@ apod.), je to signál k přehodnocení, ne důvod sahat po PostGIS hned teď.
 Dřív vstupovaly obchody do appky jen dvěma cestami: `nearbyStores` (nutná poloha) nebo
 seed. Kdo nechce sdílet polohu, nebo zapisuje ceny zpětně doma, potřebuje třetí cestu —
 napsat název/město a obchod ručně dohledat nebo založit (`searchStores`, `createStore`,
-`StoreService`). Od 2026-09 je čtvrtá: **nabídka provozoven z OpenStreetMap**
+`StoreService`). Hledání bere dotaz po slovech a každé musí být v názvu, městě nebo ulici,
+v libovolném pořadí („Lidl Brno", „Brno, Vídeňská Lidl") — přes trigramový index nad jejich
+spojením (`idx_store_search_trgm`), nejdelší slovo slouží jako předfiltr indexu. Od 2026-09 je čtvrtá: **nabídka provozoven z OpenStreetMap**
 (`nearbyOsmStores`, `OverpassPoiService`), ze které si člověk jednu vybere a ta mu předvyplní
 formulář. Vznikla proto, že katalog obchodů se záměrně nepředvyplňuje (`docs/nasazeni.md`),
 takže první uživatel v dané lokalitě jinak narazil na prázdný výběr bez nápovědy, co dál.
@@ -336,6 +338,16 @@ Rozdělení tabulek: primární název v `core.product.name` + `name_lang`, pře
 v `core.product_name (product_id, lang, name)`, osobní patch v `core.product_user_edit.name`
 + `name_lang` (jeden uživatel = jeden jazyk). Pořadí při čtení a fallback napříč jazyky jsou
 v `docs/lokalizace.md`, „Název zboží po jazycích".
+
+**EAN z účtenky je druhá výjimka stejného druhu.** Když uživatel potvrdí řádek účtenky
+s EAN a zboží žádný GTIN nemá, zapíše se kód globálně do `core.product_code`
+(`ReceiptReviewService.learnCode`). Zboží, které už EAN má, se nemění. Omylem spárovaný
+řádek by jinak přilepil cizí kód ke zboží pro všechny a víc EAN u jednoho zboží (jiné balení)
+je věc moderace. Bezkódová položka (`is_generic`) EAN nedostane nikdy. Zapisuje se jen
+`GtinNormalization.isGlobalGtin`: platná kontrolní číslice GS1 a žádný omezený oběh (prefix
+2x u etiket váhového zboží, 02/04, kupóny 98/99). OCR v čárových kódech běžně splete jednu
+číslici a etiketa z vah v obchodě nese cenu, ne zboží. EAN, který už patří jinému zboží,
+se tiše přeskočí (`ON CONFLICT DO NOTHING`), potvrzení ceny tím nespadne.
 
 **`cleared_fields TEXT[]`** na obou patch tabulkách odlišuje "pole nezměněno" (`NULL` ve
 sloupci) od "uživatel volitelné pole vědomě vymazal" (např. odstranění chybně zadaného IČO)
@@ -576,10 +588,19 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
 - **`core.receipt_image`** — části jedné účtenky v pořadí `seq`. Soubor je v `MediaStorage`
   pod `receipts/`, **ne** v `core.media` (ta je veřejná a dlouze cachovaná).
 - **`core.receipt_line`** — řádek účtenky: `label_raw` přesně jak ho obchod tiskne,
-  `label_norm` (`core.norm_text`), volitelný `internal_code`, `quantity` + `quantity_unit`
+  `label_norm` (`core.norm_label` — interpunkce na mezery, pak `core.norm_text`), volitelný
+  `internal_code`, `label_display` (čitelný název od workeru — jen pro zobrazení, hledání
+  a předvyplnění, mapování se učí podle `label_raw`; `label_display_source` `DICT`/`RULES`/`AI`),
+  `net_content_hint_value` + `net_content_hint_uom` (vodítko gramáže z označení pro odhad,
+  nikdy hodnota zboží; obojí, nebo nic), `quantity` + `quantity_unit`
   (`PCS`/`KG`/`L`), `unit_price`, `line_total`, `discount_amount` (sleva z vlastního řádku
   pod položkou, worker ji připojí). Stav párování `status`: `UNMATCHED` (nic),
-  `SUGGESTED` (server našel zboží přes kód nebo známé označení — v UI předem zaškrtnuté),
+  `SUGGESTED` (server našel zboží přes kód nebo známé označení — v UI předem zaškrtnuté;
+  nebo jen odhad podle podobnosti názvu, `match_source = FUZZY` — ten klient předem
+  nezaškrtává, `docs/rozvoj.md`, krok 3a; nebo EAN, který zná jen Open Food Facts,
+  `match_source = OFF` — jediný `SUGGESTED` **bez** `product_id`, zboží se nad OFF snapshotem
+  založí až potvrzením řádku, ať se katalog neplní zbožím z nepotvrzených účtenek; výjimku
+  nese `chk_receipt_line_product`),
   `MATCHED` (uživatel potvrdil, `observation_id` ukazuje na vzniklou cenu — po 180 dnech ho
   pseudonymizace maže, `docs/soukromi.md`), `IGNORED` (uživatel párovat nechce).
   `skip_reason` nese, proč potvrzený řádek cenu nezapsal (typicky `DUPLICATE_SAME_DAY` —
@@ -596,7 +617,9 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   označení v rozsahu míří nejvýš na jedno zboží. `PENDING` → `ACTIVE` po
   `app.receipt.label-confirmations` potvrzeních různých uživatelů, vzniká jen s úspěšným zápisem
   ceny z řádku účtenky (vzor `product_alias`), `user_id` potvrzení se po 180 dnech nuluje.
-  `last_seen_at` odliší mrtvé mapování (řetězec zboží přejmenoval) od živého. Do veřejného
+  `last_seen_at` odliší mrtvé mapování (řetězec zboží přejmenoval) od živého. `source`
+  `USER`/`OPERATOR`: mapování od provozovatele (`tools/uctenky/curate.py`) vzniká rovnou
+  `ACTIVE` bez potvrzení řádku a přepsat jde jen výslovně (`docs/rozvoj.md`). Do veřejného
   našeptávače názvů zboží **nepatří** — zkratky typu `TUK.ROHLIK` nikdo nepíše do hledání.
 - **`core.price_observation.evidence_kind`** (`NONE`/`PRICE_TAG_PHOTO`/`RECEIPT_OCR`) — druhá
   osa vedle `source` (`docs/rozvoj.md`, „Zdroj ceny"). Nastavuje výhradně server podle
@@ -606,8 +629,14 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   `attempts`, `FOR UPDATE SKIP LOCKED`), a syrový výstup modelu (`raw_text` bez patičky,
   `extraction` jsonb, `model`). Do `core.receipt_line` jde až normalizovaný návrh. Úloha
   s `processed_at` je ukončená — pozdní `/result` ani `/fail` ji nezmění.
-- **`auth.api_token`** — strojové tokeny (dnes jen scope `RECEIPT_WORKER`), v DB jen SHA-256,
-  prefix `kcw_`. Stroj nemá `app_user`.
+- **`ai.receipt_line_hint`** — návrh lokálního modelu k řádku účtenky pro formulář nového
+  zboží: `category_id` a jen rozměr gramáže `net_content_uom` (`G`/`KG`/`ML`/`L`, číslo model
+  nedodává). Poradní údaj mimo `core` ze stejného důvodu jako `ai.receipt_job`; smaže se
+  s řádkem. Předvyplnění skládá `NewProductDefaultsService` a návrh modelu má v něm nejnižší
+  přednost (`docs/ai.md`, „Návrh kategorie a jednotky").
+- **`auth.api_token`** — strojové tokeny (scope `RECEIPT_WORKER` pro worker, `LABEL_CURATOR`
+  pro kurátorství označení; token dostane jen roli svého scope), v DB jen SHA-256, prefix
+  `kcw_`. Stroj nemá `app_user`.
 
 ## Co ještě není implementováno
 

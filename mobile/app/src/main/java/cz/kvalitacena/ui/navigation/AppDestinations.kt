@@ -85,24 +85,34 @@ const val ARG_WRITE_PRICE = "writePrice"
 
 /**
  * Předvyplněný název a obchod — „Založit nové zboží" z řádku účtenky (ReceiptDetailScreen):
- * název z textu účtenky (`labelRaw`), obchod z hlavičky účtenky.
+ * čitelný název řádku (`labelDisplay`, u starších účtenek syrový tisk `labelRaw`), obchod
+ * z hlavičky účtenky. EAN řádku jde v [ARG_BARCODE], jen když je to globální GTIN
+ * (`isGlobalGtin`).
  */
 const val ARG_NAME = "name"
+
+/**
+ * Řádek účtenky, ze kterého se zboží zakládá — formulář si podle něj stáhne předvyplnění
+ * kategorie a gramáže (`receiptLineProductDefaults`, docs/ai.md, „Návrh kategorie a jednotky").
+ */
+const val ARG_RECEIPT_LINE_ID = "receiptLineId"
 const val ROUTE_PRODUCT_FORM =
   "product_form?$ARG_BARCODE={$ARG_BARCODE}&$ARG_WRITE_PRICE={$ARG_WRITE_PRICE}&$ARG_PRODUCT_ID={$ARG_PRODUCT_ID}" +
-    "&$ARG_NAME={$ARG_NAME}&$ARG_STORE_ID={$ARG_STORE_ID}"
+    "&$ARG_NAME={$ARG_NAME}&$ARG_STORE_ID={$ARG_STORE_ID}&$ARG_RECEIPT_LINE_ID={$ARG_RECEIPT_LINE_ID}"
 
 fun productFormRoute(
   barcode: String? = null,
   writePrice: Boolean = false,
   name: String? = null,
   storeId: String? = null,
+  receiptLineId: String? = null,
 ): String {
   val params = buildList {
     if (!barcode.isNullOrBlank()) add("$ARG_BARCODE=$barcode")
     if (writePrice) add("$ARG_WRITE_PRICE=true")
     if (!name.isNullOrBlank()) add("$ARG_NAME=${Uri.encode(name)}")
     if (!storeId.isNullOrBlank()) add("$ARG_STORE_ID=$storeId")
+    if (!receiptLineId.isNullOrBlank()) add("$ARG_RECEIPT_LINE_ID=$receiptLineId")
   }
   return if (params.isEmpty()) "product_form" else "product_form?" + params.joinToString("&")
 }

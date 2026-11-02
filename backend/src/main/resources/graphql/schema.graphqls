@@ -63,7 +63,8 @@ type Query {
   searchFacets(query: String, country: String): SearchFacets!
 
   """
-  Našeptávač obchodů podle názvu/města (core.norm_text, pg_trgm) — doplněk k nearbyStores pro
+  Našeptávač obchodů podle názvu, města a ulice (core.norm_text, pg_trgm) — každé slovo dotazu
+  musí být v některém z nich, v libovolném pořadí ("Lidl Brno"). Doplněk k nearbyStores pro
   zápis ceny bez sdílení polohy nebo zpětně z domova (docs/datovy-model.md, "Identita
   provozovny"). Na rozdíl od nearbyStores najde i obchody bez souřadnic.
   """
@@ -247,6 +248,12 @@ type Query {
   textu z účtenky.
   """
   receiptLineSuggestions(lineId: ID!, query: String, first: Int = 10): [Product!]!
+  """
+  Předvyplnění formuláře „Založit nové zboží" z řádku účtenky — název, kód, kategorie a gramáž
+  z řádku, z podobného zboží v katalogu, nebo z návrhu lokálního modelu (docs/ai.md, „Návrh
+  kategorie a jednotky"). Jen návrh; Open Food Facts si formulář dotahuje sám podle kódu.
+  """
+  receiptLineProductDefaults(lineId: ID!): ReceiptLineProductDefaults
 
   """
   Fronta nahlášených záznamů čekajících na přezkum (docs/reputace.md, "Moderace") — bez
@@ -1847,6 +1854,13 @@ enum ReceiptLineStatus {
 enum ReceiptMatchSource {
   CODE
   LABEL
+  "Jednoznačná podobnost názvu — jen odhad, klient ho ukáže označený a nezaškrtne předem."
+  FUZZY
+  """
+  EAN z řádku zná jen Open Food Facts — návrh BEZ zboží (product je null, náhled je v
+  offCandidate). Zboží se založí až potvrzením řádku. Deterministické jako CODE, předem zaškrtnuté.
+  """
+  OFF
   USER
   NEW_PRODUCT
 }
@@ -1898,6 +1912,11 @@ type ReceiptLine {
   lineNo: Int!
   "Text přesně tak, jak ho obchod tiskne (např. TUK.ROHLIK)."
   labelRaw: String!
+  """
+  Čitelný název od workeru (ROHLÍK43GR → Rohlík 43g) — jen pro zobrazení, hledání a předvyplnění
+  nového zboží. Párování se učí podle labelRaw. Null u účtenek zpracovaných dřív.
+  """
+  labelDisplay: String
   internalCode: String
   quantity: BigDecimal
   quantityUnit: QuantityUnit!
@@ -1909,6 +1928,11 @@ type ReceiptLine {
   status: ReceiptLineStatus!
   matchSource: ReceiptMatchSource
   product: Product
+  """
+  Náhled zboží z Open Food Facts u návrhu matchSource OFF (jinak null) — název, značka, gramáž
+  a fotka s povinnou atribucí. Null i tehdy, když OFF mezitím přestal odpovídat.
+  """
+  offCandidate: ExternalProductCandidate
   "Vyplněno, když z řádku vznikla cena — po 180 dnech se vazba pseudonymizací maže (docs/soukromi.md)."
   observationId: ID
   """
@@ -1918,6 +1942,33 @@ type ReceiptLine {
   confirmed: Boolean!
   "Proč potvrzení cenu nezapsalo — DUPLICATE_SAME_DAY, nebo kód chyby (ErrorCode)."
   skipReason: String
+}
+
+"Odkud je předvyplněná hodnota formuláře nového zboží — klient u AI ukáže, že jde o návrh."
+enum ProductDefaultSource {
+  "Přímo z řádku účtenky — váhové zboží, gramáž vytištěná v označení."
+  RECEIPT
+  "Shoda nejpodobnějšího zboží v katalogu."
+  CATALOG
+  "Návrh lokálního modelu — jen předvyplnění, uživatel ho má zkontrolovat."
+  AI
+}
+
+type ReceiptLineProductDefaults {
+  "Čitelný název řádku (jinak syrové označení) — vždy v jazyce appky."
+  name: String
+  "Globální EAN z řádku, podle kterého si formulář dotáhne Open Food Facts."
+  code: String
+  category: Category
+  categorySource: ProductDefaultSource
+  """
+  Gramáž — vždy jako dvojice. U zdroje AI může přijít jen jednotka bez čísla (číslo model
+  nedodává); formulář pak předvybere jednotku a číslo nechá na uživateli.
+  """
+  netContentValue: BigDecimal
+  netContentUom: NetContentUom
+  isVariableWeight: Boolean!
+  netContentSource: ProductDefaultSource
 }
 
 type ReceiptPage {

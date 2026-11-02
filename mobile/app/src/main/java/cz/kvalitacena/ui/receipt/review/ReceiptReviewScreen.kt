@@ -44,6 +44,7 @@ import cz.kvalitacena.AppContainer
 import cz.kvalitacena.R
 import cz.kvalitacena.receipt.DraftPart
 import cz.kvalitacena.receipt.ReceiptNotifications
+import cz.kvalitacena.ui.common.KeepScreenOn
 import cz.kvalitacena.ui.receipt.OfflineBanner
 import cz.kvalitacena.ui.receipt.ReceiptLoginRequired
 import cz.kvalitacena.ui.receipt.ReceiptStateMessage
@@ -144,6 +145,9 @@ fun ReceiptReviewScreen(
         }
       }
     }
+    // Vypálení masek a zápis dílů do fronty u dlouhé účtenky chvíli trvá — displej při tom
+    // nemá zhasnout a nechat uživatele v nejistotě, jestli se odeslání povedlo.
+    if (viewModel.submitting) KeepScreenOn()
     Column(Modifier.fillMaxWidth().padding(Spacing.lg), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
       viewModel.submitError?.let {
         Text(it.asString(), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)

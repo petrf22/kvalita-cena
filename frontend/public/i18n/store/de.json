@@ -29,6 +29,7 @@
       "RS": "Serbien"
     },
     "similarWarning": "Meinst du nicht eher eines dieser bereits vorhandenen Geschäfte?",
+    "prefilledFromReceipt": "Aus dem Kassenbon vorausgefüllt — prüfe die Angaben, die Maschine kann sich verlesen haben.",
     "saveChanges": "Änderungen speichern",
     "createStore": "Geschäft anlegen"
   },

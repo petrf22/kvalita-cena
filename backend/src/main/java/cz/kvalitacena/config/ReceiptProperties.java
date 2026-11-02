@@ -31,6 +31,13 @@ public class ReceiptProperties {
   private int maxLines = 300;
   /** Práh podobnosti pro našeptávač označení z účtenky (pg_trgm similarity). */
   private double labelSimilarity = 0.35;
+  /**
+   * Automatický odhad zboží k řádku (ReceiptMatchingService, match_source FUZZY): nejlepší
+   * kandidát musí mít aspoň tuhle podobnost názvu...
+   */
+  private double autoMatchSimilarity = 0.75;
+  /** ...a být o tolik lepší než druhý — jinak je to hádání mezi dvěma podobnými. */
+  private double autoMatchMargin = 0.2;
   /** Kam hlásit čekající účtenky (ReceiptQueueNotifier); prázdné = notifikace vypnuté. */
   private String notifyEmail;
   private String notifyReminderCron = "0 0 8 * * *";

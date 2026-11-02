@@ -125,6 +125,8 @@ export const RECEIPT_LINE_STATUS_KEYS: Record<ReceiptLineStatus, string> = {
 export const RECEIPT_MATCH_SOURCE_KEYS: Record<ReceiptMatchSource, string> = {
   [ReceiptMatchSource.Code]: 'enum.receiptMatchSource.CODE',
   [ReceiptMatchSource.Label]: 'enum.receiptMatchSource.LABEL',
+  [ReceiptMatchSource.Fuzzy]: 'enum.receiptMatchSource.FUZZY',
+  [ReceiptMatchSource.Off]: 'enum.receiptMatchSource.OFF',
   [ReceiptMatchSource.User]: 'enum.receiptMatchSource.USER',
   [ReceiptMatchSource.NewProduct]: 'enum.receiptMatchSource.NEW_PRODUCT',
 };

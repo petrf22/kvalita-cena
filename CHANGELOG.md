@@ -7,6 +7,44 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [Nezveřejněno]
+
+### Přidáno
+- Při skenování účtenky zůstane displej rozsvícený a jde zapnout svítilna, ať na účtenku nepadá stín (mobil)
+- Účtenka se najde i na světlé podložce; když ji appka přesto nevidí, poradí a nabídne snímání podle rámečku na displeji (mobil)
+- Ťuknutí na řádek účtenky rovnou nabídne, co je potřeba — vybrat zboží, potvrdit návrh, nebo řádek ignorovat (web, mobil)
+- Průvodce „Doplnit nerozpoznané" projde jen řádky, které appka sama nepoznala, a po každém skočí na další (web, mobil)
+- Řádky účtenky jsou rozdělené na „k doplnění", „ke kontrole", „připraveno k potvrzení" a hotové (web, mobil)
+- Zboží, které podle EAN z účtenky zná Open Food Facts, se navrhne samo a založí se při potvrzení účtenky (server, web, mobil)
+- Formulář nového zboží z účtenky má předvyplněnou kategorii a gramáž — z účtenky, z podobného zboží v katalogu nebo jako návrh počítače ke kontrole (server, web, mobil)
+
+### Opraveno
+- Zboží s EAN z účtenky se spáruje, i když obchod účtenky ještě není potvrzený (server)
+
+## [0.12.0] – 2026-11-02
+
+### Přidáno
+- Řádky účtenky se ukazují čitelně — místo „NUGETA ARASÍDOVÁ340G" třeba „Nugeta arašídová 340g"; původní tisk zůstává vidět vedle (server, web, mobil)
+- Když appka podle názvu na účtence jednoznačně pozná zboží, nabídne ho jako odhad; řádek zůstane nezaškrtnutý, dokud ho uživatel nezkontroluje (server, web, mobil)
+- EAN přečtený z účtenky se ukáže u řádku a předvyplní se do formuláře nového zboží (web, mobil)
+- Potvrzený řádek účtenky s EAN doplní kód zboží, které ho ještě nemá — příště se takové zboží spáruje samo (server)
+- Účtenky TAMDA FOODS se přečtou včetně EAN každé položky (server)
+- Provozovatel může názvy, které se na účtenkách často opakují, spárovat se zbožím centrálně — appka je pak nabídne všem (server)
+
+### Opraveno
+- Fotka celé účtenky se přečte celá — dřív se text dlouhé účtenky mohl potichu useknout (server)
+- Kódy s omezeným oběhem ve tvaru GTIN-14 a kupóny UPC se už neberou jako EAN zboží (server, web, mobil)
+
+## [0.11.1] – 2026-10-26
+
+### Přidáno
+- „Obchod tu není — přidat nový" v detailu účtenky předvyplní formulář nového obchodu názvem, adresou a IČO, které appka z účtenky přečetla — není potřeba je opisovat (web, mobil)
+
+### Opraveno
+- Hledání obchodu najde i víc slov naráz v libovolném pořadí — „Lidl Brno" nebo „Vídeňská Lidl" — dřív nenašlo nic (server, web, mobil)
+- Rozpracovanou účtenku nafocenou jedním účtem už po přihlášení jiného účtu v témže telefonu nikdo jiný neuvidí ani neodešle (mobil)
+- Zpracování účtenky, které trvalo déle, už nemůže omylem vrátit do fronty účtenku, na které se právě pracuje znovu (server)
+
 ## [0.11.0] – 2026-10-24
 
 ### Přidáno

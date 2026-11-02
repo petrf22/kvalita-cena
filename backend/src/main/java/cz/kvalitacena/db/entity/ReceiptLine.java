@@ -37,6 +37,22 @@ public class ReceiptLine implements Persistable<Long> {
   @Column(name = "label_norm", insertable = false, updatable = false, columnDefinition = "TEXT")
   private String labelNorm;
 
+  /** Čitelný název od workeru — jen pro oči a hledání, mapování se učí podle {@code labelRaw}. */
+  @Column(name = "label_display", length = 200)
+  private String labelDisplay;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "label_display_source", length = 5)
+  private LabelDisplaySource labelDisplaySource;
+
+  /** Vodítko gramáže z označení („340G") pro automatický odhad — nikdy hodnota zboží. */
+  @Column(name = "net_content_hint_value", precision = 12, scale = 3)
+  private BigDecimal netContentHintValue;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "net_content_hint_uom", length = 2)
+  private NetContentUom netContentHintUom;
+
   @Column(name = "internal_code", length = 40)
   private String internalCode;
 

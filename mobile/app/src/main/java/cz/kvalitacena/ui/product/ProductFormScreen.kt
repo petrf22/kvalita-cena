@@ -73,8 +73,10 @@ import cz.kvalitacena.ui.theme.Spacing
 /**
  * Založení zboží — nejdřív nabídne podobné existující položky (i bezkódové druhové, viz
  * ProductFormViewModel), teprve když se mezi nimi nic nehodí, jde založit nové. `barcode` je
- * naskenovaný kód, který se v katalogu nenašel (viz PriceEntryScreen), předvyplní pole kódu;
- * `null` zakládá bezkódovou druhovou položku (ze záložky Hledat, viz SearchScreen).
+ * naskenovaný kód, který se v katalogu nenašel (viz PriceEntryScreen), nebo EAN z řádku
+ * účtenky (ReceiptDetailScreen), předvyplní pole kódu; `null` zakládá bezkódovou druhovou
+ * položku (ze záložky Hledat, viz SearchScreen). Když kód v katalogu už nějaké zboží má,
+ * nabídne ho formulář k použití nad ostatními poli.
  *
  * `onCreated` (výchozí = zavolá `onDone`) odlišuje úspěch od zrušení — SearchScreen ho
  * přepisuje, ať po založení naskočí rovnou na zápis ceny nového zboží, místo aby se appka jen
@@ -94,6 +96,7 @@ fun ProductFormScreen(
   onScanCode: () -> Unit = {},
   initialName: String? = null,
   initialStoreId: String? = null,
+  receiptLineId: String? = null,
 ) {
   val viewModel: ProductFormViewModel = viewModel(
     factory = viewModelFactory {
@@ -106,6 +109,7 @@ fun ProductFormScreen(
           productId,
           initialName,
           initialStoreId,
+          receiptLineId,
         )
       }
     },
@@ -229,6 +233,30 @@ fun ProductFormScreen(
       "${summary.name}$kind$unconfirmed — $brand${summary.category.name}$netContent$scope"
     }
 
+    // Kód (typicky EAN z řádku účtenky) už v katalogu nějaké zboží má — nové se stejným kódem
+    // server nezaloží (DUPLICATE_PRODUCT_CODE), proto nabídka stojí nad formulářem a vzhledem
+    // odpovídá nabídce obchodu níž. Po klepnutí se vrací jako existující, ne nově založené
+    // (NavigationResults.newProductCreated = false), takže řádek účtenky se jen spáruje.
+    viewModel.existingForCode?.let { existing ->
+      Text(
+        stringResource(R.string.product_form_existing_by_code_title),
+        style = MaterialTheme.typography.titleSmall,
+      )
+      OutlinedButton(
+        onClick = { viewModel.useExistingByCode() },
+        enabled = !viewModel.saving,
+        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xs),
+      ) {
+        Text(summaryLabel(existing), style = MaterialTheme.typography.bodyMedium)
+      }
+      Text(
+        stringResource(R.string.product_form_existing_by_code_hint),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+      Gap()
+    }
+
     // Nabídka obchodu se ukáže JEŠTĚ NEŽ uživatel začne psát — u bezkódového zboží vznikají
     // duplicity hlavně tím, že člověk nevidí, co v obchodě už je, a název si vymyslí
     // (docs/reputace.md, "Zboží bez čárového kódu"). Dropdown níž se otevře až při psaní,
@@ -324,11 +352,12 @@ fun ProductFormScreen(
       query = viewModel.categoryQuery,
       onQueryChange = { formDirty = true; viewModel.onCategoryQueryChange(it) },
       suggestions = categoryChoices,
-      onSelect = { formDirty = true; viewModel.onCategorySelected(it.category) },
+      onSelect = { formDirty = true; viewModel.onCategoryChosen(it.category) },
       itemLabel = { it.label },
       label = stringResource(R.string.product_form_category_label),
       modifier = Modifier.fillMaxWidth(),
     )
+    if (viewModel.categorySuggested) SuggestedHint(stringResource(R.string.product_form_category_suggested))
     Gap()
 
     SingleLineTextField(
@@ -349,7 +378,7 @@ fun ProductFormScreen(
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier.weight(1f),
       )
-      Switch(checked = viewModel.isVariableWeight, onCheckedChange = { formDirty = true; viewModel.isVariableWeight = it })
+      Switch(checked = viewModel.isVariableWeight, onCheckedChange = { formDirty = true; viewModel.onVariableWeightChosen(it) })
     }
     Text(
       stringResource(R.string.product_form_variable_weight_hint),
@@ -367,14 +396,14 @@ fun ProductFormScreen(
       Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
         NetContentUomDropdown(
           selected = viewModel.netContentUom,
-          onSelect = { formDirty = true; viewModel.netContentUom = it },
+          onSelect = { formDirty = true; viewModel.onNetContentUomChosen(it) },
           // Širší než jen na „g"/„ml" — vejde se i popisek prázdné volby („nevyplněno").
           modifier = Modifier.width(160.dp),
         )
         if (viewModel.netContentUom != null) {
           SingleLineTextField(
             value = viewModel.netContentValue,
-            onValueChange = { input -> if (input.matches(Regex("^\\d*[.,]?\\d*$"))) { formDirty = true; viewModel.netContentValue = input } },
+            onValueChange = { input -> if (input.matches(Regex("^\\d*[.,]?\\d*$"))) { formDirty = true; viewModel.onNetContentValueChosen(input) } },
             label = stringResource(R.string.product_form_net_content_label),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.padding(start = Spacing.sm).weight(1f),
@@ -387,6 +416,8 @@ fun ProductFormScreen(
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+      } else if (viewModel.netContentUomSuggested) {
+        SuggestedHint(stringResource(R.string.product_form_unit_suggested))
       }
       Gap()
     }
@@ -581,3 +612,19 @@ private fun langName(lang: String): String = when (lang) {
   "de" -> stringResource(R.string.lang_de)
   else -> lang
 }
+
+/**
+ * Poznámka pod polem, které předvyplnil lokální model podle názvu z účtenky (docs/ai.md,
+ * „Návrh kategorie a jednotky") — model nikdy nerozhoduje, uživatel má vědět, že jde
+ * o návrh ke kontrole. Po vlastní volbě zmizí.
+ */
+@Composable
+private fun SuggestedHint(text: String) {
+  Text(
+    text,
+    style = MaterialTheme.typography.bodySmall,
+    color = MaterialTheme.colorScheme.tertiary,
+    modifier = Modifier.padding(top = Spacing.xs),
+  )
+}
+

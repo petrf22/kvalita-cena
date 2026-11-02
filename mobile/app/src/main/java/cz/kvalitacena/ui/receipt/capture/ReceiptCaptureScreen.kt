@@ -6,6 +6,7 @@ import android.util.Size
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
@@ -51,10 +52,12 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -65,6 +68,7 @@ import cz.kvalitacena.AppContainer
 import cz.kvalitacena.BuildConfig
 import cz.kvalitacena.R
 import cz.kvalitacena.crash.AppLog
+import cz.kvalitacena.ui.common.KeepScreenOn
 import cz.kvalitacena.ui.receipt.OfflineBanner
 import cz.kvalitacena.ui.receipt.ReceiptLoginRequired
 import cz.kvalitacena.ui.receipt.ReceiptStateMessage
@@ -103,7 +107,12 @@ fun ReceiptCaptureScreen(
   val viewModel: ReceiptCaptureViewModel = viewModel(
     factory = viewModelFactory {
       initializer {
-        ReceiptCaptureViewModel(AppContainer.receiptDraft, retakeIndex, AppContainer.receiptPrefs.captureStartDelaySeconds)
+        ReceiptCaptureViewModel(
+          AppContainer.receiptDraft,
+          retakeIndex,
+          AppContainer.receiptPrefs.captureStartDelaySeconds,
+          AppContainer.authRepository::currentUserUid,
+        )
       }
     },
   )
@@ -119,6 +128,7 @@ fun ReceiptCaptureScreen(
   }
   val online by AppContainer.networkMonitor.online.collectAsState()
   val draft by viewModel.draft.collectAsState()
+  KeepScreenOn()
   var showTips by rememberSaveable {
     mutableStateOf(!viewModel.isRetake && !AppContainer.receiptPrefs.captureTipsSeen)
   }
@@ -214,9 +224,30 @@ private fun CameraWithOverlay(viewModel: ReceiptCaptureViewModel) {
     lastPartCount = partCount
   }
 
-  Box(Modifier.fillMaxSize()) {
+  // Pevný rámeček se počítá z velikosti náhledu — FILL_CENTER snímek po stranách ořezává, takže
+  // boky musí sedět s tím, co uživatel vidí, ne s okrajem snímku.
+  var viewSize by remember { mutableStateOf(IntSize.Zero) }
+  val frameWidth = frame?.frameWidth ?: 0
+  val frameHeight = frame?.frameHeight ?: 0
+  LaunchedEffect(viewModel.frameMode, viewSize, frameWidth, frameHeight) {
+    viewModel.analyzer.fixedQuad =
+      if (viewModel.frameMode && viewSize != IntSize.Zero && frameWidth > 0 && frameHeight > 0) {
+        frameModeQuad(frameWidth, frameHeight, viewSize.width.toDouble(), viewSize.height.toDouble())
+      } else {
+        null
+      }
+  }
+  // Rada „účtenku nevidím" zůstane, dokud se účtenka nenajde — jeden rozmazaný snímek ji nesmí
+  // schovat zrovna ve chvíli, kdy se na ni uživatel chystá ťuknout.
+  var showNotFoundHelp by remember { mutableStateOf(false) }
+  LaunchedEffect(frame?.receiptMissingLong, frame?.quad != null) {
+    if (frame?.receiptMissingLong == true) showNotFoundHelp = true
+    if (frame?.quad != null) showNotFoundHelp = false
+  }
+
+  Box(Modifier.fillMaxSize().onSizeChanged { viewSize = it }) {
     ReceiptCameraPreview(viewModel)
-    if (beforeStart && !viewModel.isRetake) {
+    if (beforeStart && !viewModel.isRetake && !viewModel.frameMode) {
       StartGuideOverlay(receiptFound = frame?.quad != null, modifier = Modifier.fillMaxSize())
     }
     Canvas(Modifier.fillMaxSize()) {
@@ -245,10 +276,33 @@ private fun CameraWithOverlay(viewModel: ReceiptCaptureViewModel) {
         shape = MaterialTheme.shapes.medium,
       ) {
         Text(
-          hintText(frame?.hint ?: CaptureHint.FIND_RECEIPT, viewModel.isRetake),
+          if (viewModel.frameMode && frame?.hint == CaptureHint.STARTING) {
+            stringResource(R.string.receipt_capture_hint_frame_mode)
+          } else {
+            hintText(frame?.hint ?: CaptureHint.FIND_RECEIPT, viewModel.isRetake)
+          },
           style = MaterialTheme.typography.bodyMedium,
           modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm),
         )
+      }
+      if (showNotFoundHelp && !viewModel.frameMode) {
+        Surface(
+          color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+          contentColor = MaterialTheme.colorScheme.onSurface,
+          shape = MaterialTheme.shapes.medium,
+        ) {
+          Column(Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm)) {
+            Text(stringResource(R.string.receipt_capture_not_found_help), style = MaterialTheme.typography.bodyMedium)
+            TextButton(onClick = { viewModel.frameMode = true }, modifier = Modifier.align(Alignment.End)) {
+              Text(stringResource(R.string.receipt_capture_frame_mode_on))
+            }
+          }
+        }
+      }
+      if (viewModel.frameMode) {
+        TextButton(onClick = { viewModel.frameMode = false }) {
+          Text(stringResource(R.string.receipt_capture_frame_mode_off))
+        }
       }
       val current = frame
       when {
@@ -300,6 +354,11 @@ private fun CaptureControls(
         )
         // Návod patří k začátku, smazání dílu až k rozdělanému snímání — střídají se na jednom
         // místě, ať se řádek na úzkém displeji nepřeplní.
+        if (viewModel.torchAvailable) {
+          TextButton(onClick = { viewModel.torchEnabled = !viewModel.torchEnabled }) {
+            Text(stringResource(if (viewModel.torchEnabled) R.string.scan_flashlight_off else R.string.scan_flashlight_on))
+          }
+        }
         if (partCount > 0) {
           TextButton(onClick = viewModel::undoLastPart, enabled = !viewModel.processing) {
             Text(stringResource(R.string.receipt_capture_undo))
@@ -357,6 +416,12 @@ private fun ReceiptCameraPreview(viewModel: ReceiptCaptureViewModel) {
   val previewView = remember {
     PreviewView(context).apply { scaleType = PreviewView.ScaleType.FILL_CENTER }
   }
+  var boundCamera by remember { mutableStateOf<Camera?>(null) }
+  // Stejný vzor jako sken čárového kódu (ScanScreen): svítilna jde přes CameraControl svázané
+  // kamery, ne přes blesk ImageCapture — ten by při ruční spoušti přepálil termopapír.
+  LaunchedEffect(viewModel.torchEnabled, boundCamera) {
+    boundCamera?.cameraControl?.enableTorch(viewModel.torchEnabled)
+  }
   DisposableEffect(lifecycleOwner) {
     val analysisExecutor: ExecutorService = Executors.newSingleThreadExecutor()
     val providerFuture = ProcessCameraProvider.getInstance(context)
@@ -400,6 +465,8 @@ private fun ReceiptCameraPreview(viewModel: ReceiptCaptureViewModel) {
           AppLog.e("Camera could not be bound", bound.exceptionOrNull())
           viewModel.cameraError = true
         }
+        boundCamera = bound.getOrNull()
+        viewModel.torchAvailable = boundCamera?.cameraInfo?.hasFlashUnit() == true
       },
       ContextCompat.getMainExecutor(context),
     )
@@ -424,6 +491,8 @@ private fun ReceiptCameraPreview(viewModel: ReceiptCaptureViewModel) {
 
     onDispose {
       ManualShutter.trigger = null
+      runCatching { boundCamera?.cameraControl?.enableTorch(false) }
+      boundCamera = null
       // Jen vlastní use case — onDispose může doběhnout až po svázání kamery na další
       // obrazovce (sken čárového kódu) a unbindAll by jí kameru vzal.
       runCatching { ProcessCameraProvider.getInstance(context).get().unbind(*boundUseCases.toTypedArray()) }

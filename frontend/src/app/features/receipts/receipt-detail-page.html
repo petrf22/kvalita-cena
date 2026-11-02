@@ -131,6 +131,7 @@
                   <app-store-picker
                     [restoreLast]="false"
                     [selectedStoreId]="pendingStore()?.id ?? null"
+                    [prefill]="storePrefill()"
                     (selectedStoreChange)="pendingStore.set($event)"
                   />
                   <div class="actions">
@@ -265,161 +266,232 @@
                   <p class="muted">{{ t('receipts.lines.empty') }}</p>
                 }
 
-                <ol class="line-list">
-                  @for (line of receipt.lines; track line.id) {
-                    <li
-                      class="line"
-                      [class.line-ignored]="line.status === 'IGNORED'"
-                      [class.line-done]="isLocked(line)"
-                    >
-                      <div class="line-check">
-                        @if (isConfirmable(line)) {
-                          <label
-                            nz-checkbox
-                            [ngModel]="selected().has(line.id)"
-                            (ngModelChange)="toggle(line.id, $event)"
-                            [nzDisabled]="confirming()"
-                            [attr.aria-label]="
-                              t('receipts.line.selectLabel', { label: line.labelRaw })
-                            "
-                          ></label>
-                        }
-                      </div>
-                      <div class="line-body">
-                        <div class="line-top">
-                          <span class="line-label">{{ line.labelRaw }}</span>
-                          @if (line.lineTotal != null) {
-                            <span class="line-total">{{
-                              line.lineTotal | money: receipt.currency
-                            }}</span>
-                          }
-                        </div>
-                        <div class="line-meta">
-                          {{ quantityText(line) }}
-                          @if (line.discountAmount) {
-                            <span class="line-discount">{{
-                              t('receipts.line.discount', {
-                                amount: format.money(line.discountAmount, receipt.currency),
-                              })
-                            }}</span>
-                          }
-                        </div>
-                        <div class="line-status">
-                          <nz-tag [nzColor]="lineColor(line)">{{
-                            lineStatusKeys[line.status] | transloco
-                          }}</nz-tag>
-                          @if (line.product; as product) {
-                            <a [routerLink]="['/product', product.id]" class="line-product">
-                              <app-product-thumb
-                                [name]="product.name"
-                                [photos]="product.photos"
-                                [externalImage]="product.externalImage"
-                              />
-                              <span>{{ product.name }}</span>
-                            </a>
-                          }
-                          @if (line.status === 'SUGGESTED' && line.matchSource) {
-                            <span class="muted">{{
-                              matchSourceKeys[line.matchSource] | transloco
-                            }}</span>
-                          }
-                          @if (line.confirmed) {
-                            <span class="line-recorded">
-                              <span nz-icon nzType="check-circle"></span>
-                              {{ t('receipts.line.recorded') }}
-                            </span>
-                          }
-                        </div>
-                        @if (line.skipReason) {
-                          <p class="line-skip">{{ skipReasonKey(line.skipReason) | transloco }}</p>
-                        }
-                        @if (lineErrors()[line.id]; as error) {
-                          <p class="line-error" role="alert">{{ error }}</p>
-                        }
+                @if (guideCount() > 0) {
+                  <button
+                    nz-button
+                    nzType="primary"
+                    nzBlock
+                    type="button"
+                    class="block"
+                    [disabled]="!connectivity.online()"
+                    (click)="startGuide()"
+                  >
+                    <span nz-icon nzType="edit"></span>
+                    {{ t('receipts.guide.start', { count: guideCount() }) }}
+                  </button>
+                }
 
-                        @if (!isLocked(line)) {
-                          <div class="line-actions">
-                            @if (line.status === 'UNMATCHED' || line.status === 'SUGGESTED') {
-                              <button
-                                nz-button
-                                nzSize="small"
-                                type="button"
-                                [attr.aria-expanded]="matchingLineId() === line.id"
-                                [disabled]="busyLineId() === line.id || !connectivity.online()"
-                                (click)="openMatch(line)"
-                              >
-                                <span nz-icon nzType="search"></span>
-                                {{
-                                  line.status === 'SUGGESTED'
-                                    ? t('receipts.line.changeProduct')
-                                    : t('receipts.line.findProduct')
-                                }}
-                              </button>
-                            }
-                            @if (line.status === 'UNMATCHED') {
-                              <button
-                                nz-button
-                                nzSize="small"
-                                type="button"
-                                [disabled]="
-                                  !receipt.store ||
-                                  busyLineId() === line.id ||
-                                  !connectivity.online()
+                @for (entry of groups(); track entry.group) {
+                  <app-receipt-line-group-header
+                    [group]="entry.group"
+                    [count]="entry.lines.length"
+                    [collapsible]="isCollapsible(entry.group)"
+                    [expanded]="isExpanded(entry.group)"
+                    (toggled)="toggleGroup(entry.group)"
+                  />
+                  @if (isExpanded(entry.group)) {
+                    <ol class="line-list">
+                      @for (line of entry.lines; track line.id) {
+                        <li
+                          class="line"
+                          [class.line-ignored]="line.status === 'IGNORED'"
+                          [class.line-done]="isLocked(line)"
+                          [class.line-clickable]="!isLocked(line)"
+                          (click)="onLineClick(line, $event)"
+                        >
+                          <div class="line-check">
+                            @if (isConfirmable(line)) {
+                              <label
+                                nz-checkbox
+                                [ngModel]="selected().has(line.id)"
+                                (ngModelChange)="toggle(line.id, $event)"
+                                [nzDisabled]="confirming()"
+                                [attr.aria-label]="
+                                  isGuess(line)
+                                    ? t('receipts.line.selectGuessLabel', {
+                                        label: lineLabel(line),
+                                      })
+                                    : t('receipts.line.selectLabel', { label: lineLabel(line) })
                                 "
-                                [title]="receipt.store ? '' : t('receipts.line.createNeedsStore')"
-                                (click)="openCreate(line)"
-                              >
-                                <span nz-icon nzType="plus"></span>
-                                {{ t('receipts.line.createProduct') }}
-                              </button>
-                            }
-                            @if (line.status !== 'IGNORED') {
-                              <button
-                                nz-button
-                                nzSize="small"
-                                nzType="text"
-                                type="button"
-                                [nzLoading]="busyLineId() === line.id"
-                                [disabled]="!connectivity.online()"
-                                (click)="ignore(line)"
-                              >
-                                {{ t('receipts.line.ignore') }}
-                              </button>
-                            }
-                            @if (line.status !== 'UNMATCHED') {
-                              <button
-                                nz-button
-                                nzSize="small"
-                                nzType="text"
-                                type="button"
-                                [nzLoading]="busyLineId() === line.id"
-                                [disabled]="!connectivity.online()"
-                                (click)="unmatch(line)"
-                              >
-                                {{
-                                  line.status === 'IGNORED'
-                                    ? t('receipts.line.unignore')
-                                    : t('receipts.line.unmatch')
-                                }}
-                              </button>
+                              ></label>
                             }
                           </div>
-                        }
+                          <div class="line-body">
+                            <div class="line-top">
+                              <span class="line-label">{{ lineLabel(line) }}</span>
+                              @if (line.lineTotal != null) {
+                                <span class="line-total">{{
+                                  line.lineTotal | money: receipt.currency
+                                }}</span>
+                              }
+                            </div>
+                            <div class="line-meta">
+                              @if (quantityText(line); as quantity) {
+                                <span>{{ quantity }}</span>
+                              }
+                              @if (line.discountAmount) {
+                                <span class="line-discount">{{
+                                  t('receipts.line.discount', {
+                                    amount: format.money(line.discountAmount, receipt.currency),
+                                  })
+                                }}</span>
+                              }
+                              <!--
+                            Syrový tisk vedle EANu: obojí je z účtenky. Tisk jde porovnat
+                            s obrázkem vlevo, EAN (podle něj server páruje) s kódem na obalu.
+                          -->
+                              @if (lineRawLabel(line); as raw) {
+                                <span class="raw-text line-code" [title]="t('receipts.line.raw')">{{
+                                  raw
+                                }}</span>
+                              }
+                              @if (lineGtin(line); as gtin) {
+                                <span class="line-code">{{
+                                  t('receipts.line.ean', { code: gtin })
+                                }}</span>
+                              }
+                            </div>
+                            <div class="line-status">
+                              <nz-tag [nzColor]="lineColor(line)">{{
+                                lineStatusKeys[line.status] | transloco
+                              }}</nz-tag>
+                              <!-- Odhad podle podobnosti názvu: nezaškrtnutý, potvrzuje se vědomě. -->
+                              @if (isGuess(line)) {
+                                <nz-tag
+                                  nzColor="warning"
+                                  nz-tooltip
+                                  [nzTooltipTitle]="
+                                    lineGtin(line)
+                                      ? t('receipts.line.guessHintWithEan')
+                                      : t('receipts.line.guessHint')
+                                  "
+                                  >{{ t('receipts.line.guess') }}</nz-tag
+                                >
+                              }
+                              @if (line.product; as product) {
+                                <a [routerLink]="['/product', product.id]" class="line-product">
+                                  <app-product-thumb
+                                    [name]="product.name"
+                                    [photos]="product.photos"
+                                    [externalImage]="product.externalImage"
+                                  />
+                                  <span>{{ product.name }}</span>
+                                </a>
+                              }
+                              @if (!line.product && line.offCandidate; as off) {
+                                <span class="line-product">
+                                  {{ offLabel(off) }}
+                                  <span class="muted small">{{ off.attribution }}</span>
+                                </span>
+                              }
+                              @if (line.status === 'SUGGESTED') {
+                                @if (matchSourceKey(line); as sourceKey) {
+                                  <span class="muted">{{ sourceKey | transloco }}</span>
+                                }
+                              }
+                              @if (line.confirmed) {
+                                <span class="line-recorded">
+                                  <span nz-icon nzType="check-circle"></span>
+                                  {{ t('receipts.line.recorded') }}
+                                </span>
+                              }
+                            </div>
+                            @if (line.skipReason) {
+                              <p class="line-skip">
+                                {{ skipReasonKey(line.skipReason) | transloco }}
+                              </p>
+                            }
+                            @if (lineErrors()[line.id]; as error) {
+                              <p class="line-error" role="alert">{{ error }}</p>
+                            }
 
-                        @if (matchingLineId() === line.id) {
-                          <app-receipt-line-match
-                            [line]="line"
-                            [canCreate]="!!receipt.store"
-                            [busy]="busyLineId() === line.id"
-                            (picked)="pickProduct(line, $event)"
-                            (createNew)="openCreate(line)"
-                            (closed)="matchingLineId.set(null)"
-                          />
-                        }
-                      </div>
-                    </li>
+                            @if (!isLocked(line)) {
+                              <div class="line-actions">
+                                @if (line.status === 'UNMATCHED' || line.status === 'SUGGESTED') {
+                                  <button
+                                    nz-button
+                                    nzSize="small"
+                                    type="button"
+                                    [attr.aria-expanded]="matchingLineId() === line.id"
+                                    [disabled]="busyLineId() === line.id || !connectivity.online()"
+                                    (click)="openMatch(line)"
+                                  >
+                                    <span nz-icon nzType="search"></span>
+                                    {{
+                                      line.status === 'SUGGESTED'
+                                        ? t('receipts.line.changeProduct')
+                                        : t('receipts.line.findProduct')
+                                    }}
+                                  </button>
+                                }
+                                @if (line.status === 'UNMATCHED') {
+                                  <button
+                                    nz-button
+                                    nzSize="small"
+                                    type="button"
+                                    [disabled]="
+                                      !receipt.store ||
+                                      busyLineId() === line.id ||
+                                      !connectivity.online()
+                                    "
+                                    [title]="
+                                      receipt.store ? '' : t('receipts.line.createNeedsStore')
+                                    "
+                                    (click)="openCreate(line)"
+                                  >
+                                    <span nz-icon nzType="plus"></span>
+                                    {{ t('receipts.line.createProduct') }}
+                                  </button>
+                                }
+                                @if (line.status !== 'IGNORED') {
+                                  <button
+                                    nz-button
+                                    nzSize="small"
+                                    nzType="text"
+                                    type="button"
+                                    [nzLoading]="busyLineId() === line.id"
+                                    [disabled]="!connectivity.online()"
+                                    (click)="ignore(line)"
+                                  >
+                                    {{ t('receipts.line.ignore') }}
+                                  </button>
+                                }
+                                @if (line.status !== 'UNMATCHED') {
+                                  <button
+                                    nz-button
+                                    nzSize="small"
+                                    nzType="text"
+                                    type="button"
+                                    [nzLoading]="busyLineId() === line.id"
+                                    [disabled]="!connectivity.online()"
+                                    (click)="unmatch(line)"
+                                  >
+                                    {{
+                                      line.status === 'IGNORED'
+                                        ? t('receipts.line.unignore')
+                                        : t('receipts.line.unmatch')
+                                    }}
+                                  </button>
+                                }
+                              </div>
+                            }
+
+                            @if (matchingLineId() === line.id) {
+                              <app-receipt-line-match
+                                [line]="line"
+                                [canCreate]="!!receipt.store"
+                                [busy]="busyLineId() === line.id"
+                                (picked)="pickProduct(line, $event)"
+                                (createNew)="openCreate(line)"
+                                (closed)="matchingLineId.set(null)"
+                              />
+                            }
+                          </div>
+                        </li>
+                      }
+                    </ol>
                   }
-                </ol>
+                }
                 @if (showExternalImageNote()) {
                   <p class="muted small">{{ t('receipts.externalImageNote') }}</p>
                 }
@@ -447,7 +519,7 @@
                       <ul class="skipped-list">
                         @for (line of result.skipped; track line.id) {
                           <li>
-                            <strong>{{ line.labelRaw }}</strong> —
+                            <strong>{{ lineLabel(line) }}</strong> —
                             {{ skipReasonKey(line.skipReason ?? '') | transloco }}
                           </li>
                         }
@@ -518,11 +590,24 @@
           <ng-container *nzModalContent>
             @if (createForLine(); as line) {
               <p class="create-hint">
-                {{ t('receipts.create.labelPrefix') }} <strong>{{ line.labelRaw }}</strong>
+                {{ t('receipts.create.labelPrefix') }} <strong>{{ lineLabel(line) }}</strong>
+                @if (lineRawLabel(line); as raw) {
+                  <span class="raw-text line-code" [title]="t('receipts.line.raw')">{{ raw }}</span>
+                }
               </p>
-              <p class="create-hint">{{ t('receipts.create.hint') }}</p>
+              <!--
+                S EANem nevzniká lokální zboží obchodu, ale zboží do společného katalogu —
+                proto jiná nápověda. Formulář se podle kódu zeptá katalogu i Open Food Facts:
+                existující zboží nabídne k použití, OFF předvyplní název v jazyce appky místo
+                zkratky z pokladny.
+              -->
+              <p class="create-hint">
+                {{ lineGtin(line) ? t('receipts.create.hintWithCode') : t('receipts.create.hint') }}
+              </p>
               <app-product-form
-                [initialName]="line.labelRaw"
+                [initialName]="lineLabel(line)"
+                [barcode]="lineGtin(line)"
+                [receiptLineId]="line.id"
                 [store]="receipt.store"
                 (created)="onProductCreated(line, $event)"
                 (existingMatched)="onExistingMatched(line, $event)"
@@ -534,6 +619,53 @@
       }
     }
   }
+
+  <!--
+    Panel řádku: výchozí akce po kliknutí na řádek a zároveň krok průvodce „Doplnit
+    nerozpoznané". Ukazuje jen to, co řádek potřebuje — hledání u nespárovaného, „Ano, je to
+    ono" / „Jiné zboží" u návrhu, náhled z Open Food Facts s atribucí u návrhu OFF. Během
+    zakládání nového zboží ustoupí formuláři (jeden modál naráz).
+  -->
+  <nz-modal
+    [nzVisible]="panelLine() !== null && createForLine() === null"
+    [nzTitle]="panelTitle"
+    [nzFooter]="null"
+    (nzOnCancel)="closePanel()"
+  >
+    <ng-template #panelTitle>
+      @if (panelLine(); as line) {
+        <span>{{ lineLabel(line) }}</span>
+        @if (guidePosition(); as position) {
+          <span class="muted small">
+            ·
+            {{ t('receipts.guide.progress', { index: position.index, total: position.total }) }}
+          </span>
+        }
+      }
+    </ng-template>
+    <ng-container *nzModalContent>
+      @if (panelLine(); as line) {
+        <app-receipt-line-panel
+          [line]="line"
+          [currency]="receipt()?.currency"
+          [quantityText]="quantityText(line)"
+          [searching]="panelSearching()"
+          [guideActive]="guideActive()"
+          [busy]="busyLineId() === line.id"
+          [error]="lineErrors()[line.id] ?? null"
+          [canCreate]="!!receipt()?.store"
+          (accepted)="acceptSuggestion(line)"
+          (otherRequested)="panelSearching.set(true)"
+          (ignored)="panelIgnore(line)"
+          (restored)="panelRestore(line)"
+          (picked)="panelPick(line, $event)"
+          (createNew)="openCreate(line)"
+          (skipped)="advance()"
+          (closed)="closePanel()"
+        />
+      }
+    </ng-container>
+  </nz-modal>
 
   <ng-template #retryAction>
     <button nz-button nzSize="small" type="button" (click)="load()">

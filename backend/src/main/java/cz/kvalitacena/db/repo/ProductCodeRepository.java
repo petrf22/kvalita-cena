@@ -25,4 +25,20 @@ public interface ProductCodeRepository extends JpaRepository<ProductCode, Long> 
       nativeQuery = true)
   Optional<Long> findStoreInternalProductId(@org.springframework.data.repository.query.Param("code") String code,
       @org.springframework.data.repository.query.Param("chainId") Long chainId);
+
+  /**
+   * EAN z potvrzeného řádku účtenky ke zboží, které žádný GTIN nemá (ReceiptReviewService).
+   * Jeden příkaz bez výjimek: ON CONFLICT DO NOTHING pokryje EAN, který už patří jinému
+   * zboží (uq_product_code_code_type_chain), a NOT EXISTS zboží, které mezitím kód dostalo.
+   * Výjimka by tu shodila savepoint potvrzení řádku, takže by se nezapsala ani cena.
+   *
+   * @return 1, když se kód zapsal, jinak 0
+   */
+  @org.springframework.data.jpa.repository.Modifying
+  @org.springframework.data.jpa.repository.Query(value = "INSERT INTO core.product_code (product_id, code, code_type, is_primary) "
+      + "SELECT :productId, :gtin14, 'GTIN', true "
+      + "WHERE NOT EXISTS (SELECT 1 FROM core.product_code WHERE product_id = :productId AND code_type = 'GTIN') "
+      + "ON CONFLICT DO NOTHING", nativeQuery = true)
+  int insertGtinIfProductHasNone(@org.springframework.data.repository.query.Param("productId") Long productId,
+      @org.springframework.data.repository.query.Param("gtin14") String gtin14);
 }

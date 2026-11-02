@@ -1,0 +1,33 @@
+# 01-receipt-line-off.yaml — návrh řádku účtenky ze zboží, které zná jen Open Food Facts
+# (docs/ai.md, „Účtenky"; docs/datovy-model.md, „Účtenky").
+#
+# match_source OFF = EAN z řádku katalog nezná, OFF ho zná a dodá vše potřebné k založení.
+# Řádek je SUGGESTED BEZ product_id — zboží se založí nad OFF snapshotem až při potvrzení
+# (ReceiptReviewService.confirmLine), ať se katalog neplní zbožím z účtenek, které nikdo
+# nepotvrdil. Jediná výjimka z pravidla „SUGGESTED má zboží".
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-03-01-receipt-line-off
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.receipt_line DROP CONSTRAINT chk_receipt_line_match_source;
+              ALTER TABLE core.receipt_line ADD CONSTRAINT chk_receipt_line_match_source CHECK (match_source IS NULL
+                OR match_source IN ('CODE','LABEL','FUZZY','OFF','USER','NEW_PRODUCT'));
+              ALTER TABLE core.receipt_line DROP CONSTRAINT chk_receipt_line_product;
+              ALTER TABLE core.receipt_line ADD CONSTRAINT chk_receipt_line_product CHECK (
+                status NOT IN ('SUGGESTED','MATCHED') OR product_id IS NOT NULL
+                OR (status = 'SUGGESTED' AND match_source = 'OFF'));
+      rollback:
+        - sql:
+            sql: |
+              UPDATE core.receipt_line SET match_source = NULL, status = 'UNMATCHED'
+                WHERE match_source = 'OFF' AND product_id IS NULL;
+              UPDATE core.receipt_line SET match_source = 'NEW_PRODUCT' WHERE match_source = 'OFF';
+              ALTER TABLE core.receipt_line DROP CONSTRAINT chk_receipt_line_product;
+              ALTER TABLE core.receipt_line ADD CONSTRAINT chk_receipt_line_product CHECK (
+                status NOT IN ('SUGGESTED','MATCHED') OR product_id IS NOT NULL);
+              ALTER TABLE core.receipt_line DROP CONSTRAINT chk_receipt_line_match_source;
+              ALTER TABLE core.receipt_line ADD CONSTRAINT chk_receipt_line_match_source CHECK (match_source IS NULL
+                OR match_source IN ('CODE','LABEL','FUZZY','USER','NEW_PRODUCT'));

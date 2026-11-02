@@ -91,4 +91,43 @@ object CaptureThresholds {
 
   /** Jak dlouho smí účtenka z detekce vypadnout, než se odpočet zruší (docs/ai.md). */
   const val START_LOST_GRACE_MS = 300L
+
+  /**
+   * Druhý průchod hledání obrysu (docs/ai.md): bílá účtenka na světlé podložce má hranu jen
+   * pár desítek úrovní jasu — po vyrovnání kontrastu ([CLAHE_CLIP_LIMIT]) a s nižšími prahy
+   * Cannyho detektoru vznikne. Jen když první průchod (50/150) nic nenajde.
+   */
+  const val LOW_CONTRAST_CANNY_LOW = 15.0
+  const val LOW_CONTRAST_CANNY_HIGH = 45.0
+  const val CLAHE_CLIP_LIMIT = 2.0
+
+  /**
+   * Záchrana podle hustoty textu (docs/ai.md): sloupec s tiskem účtenky má po vyhlazení aspoň
+   * tolik hranových pixelů (podíl výšky pásu), čistá podložka méně — nezáleží na její barvě.
+   */
+  const val MIN_TEXT_DENSITY = 0.03
+
+  /** Šířka klouzavého průměru profilu hustoty textu (podíl šířky záběru) — přemostí mezery mezi slovy. */
+  const val TEXT_DENSITY_SMOOTH_RATIO = 0.04
+
+  /** Hustota mimo pruh textu smí být nejvýš takový podíl hustoty uvnitř — vzorovaná podložka neprojde. */
+  const val TEXT_BAND_MAX_OUTSIDE_RATIO = 0.35
+
+  /** O kolik (podíl šířky záběru) se pruh textu rozšíří na každou stranu — okraj papíru kolem tisku. */
+  const val TEXT_BAND_MARGIN_RATIO = 0.04
+
+  /** Váha nového rámečku při vyhlazení v čase, zbytek drží předchozí (docs/ai.md). */
+  const val QUAD_SMOOTHING = 0.5
+
+  /** Jak dlouho platí poslední rámeček, když detekce na pár snímků vypadne (docs/ai.md). */
+  const val QUAD_HOLD_MS = 500L
+
+  /**
+   * Po takové době ostrých snímků bez nalezené účtenky appka poradí a nabídne snímání podle
+   * pevného rámečku (docs/ai.md).
+   */
+  const val NO_RECEIPT_HELP_MS = 3000L
+
+  /** Boky pevného rámečku od okraje náhledu — stejně jako vodítko (`CaptureGuide.kt`). */
+  const val FRAME_MODE_SIDE_RATIO = 0.14
 }

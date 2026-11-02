@@ -9,17 +9,26 @@ Fixtures v testdata/ jsou ANONYMIZOVANÉ — reálné účtenky do repozitáře 
 
 from __future__ import annotations
 
+import io
 import json
 import sys
+import tempfile
+import urllib.error
 import unittest
 from decimal import Decimal
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import ai_classify  # noqa: E402
+import ai_pretty  # noqa: E402
+import curate  # noqa: E402
 import lines as lines_mod  # noqa: E402
+import ocr as ocr_mod  # noqa: E402
 import normalize  # noqa: E402
 import parse  # noqa: E402
+import pretty  # noqa: E402
+import replay  # noqa: E402
 import result as result_mod  # noqa: E402
 import worker  # noqa: E402
 
@@ -177,6 +186,46 @@ xxxx xxxx xxxx 0000
         self.assertEqual(document["purchasedAt"], "2026-09-06T13:07:00+02:00")
         self.assertNotIn("xxxx", json.dumps(document))
 
+    # Vážené zboží se značkou zadání hmotnosti, datum a čas na dvou řádcích, mezisoučet
+    # a zaokrouhlení nad celkovou částkou (hotovost) — anonymizovaný tvar reálné účtenky.
+    WEIGHED = """PENNY.
+PENNY MARKET S.R.O.
+Nádražní 1, 10000 Vzorov
+000 VZOROV
+IČO: 12345678
+DIČ: CZ12345678
+MĚST. SOUD PRAHA C/00000
+Datum: 07.09.2026
+Cas: 10:15:00
+Kč
+0.526 kg (E) x 109.90 Kč /kg
+Kuř. prs.řízkyDM C 57.81
+0.575 kg (V) x 109.90 Kč /kg
+Kuř. prs.řízkyDM C 63.19
+6.000 ks x 2.90 Kč /ks
+Rohlík 43g C 17.40
+Mezisoučet Kč 138.40
+Zaokrouhlení Kč -0.40
+Celkem Kč 138.00
+PRIJATO v hotovosti 200.00
+VRACENO Kč 62.00
+Vážená položka byla zadána:
+(V) = z pokladní váhy
+"""
+
+    def test_vazene_zbozi_se_znackou_zadani_a_zaokrouhleni(self):
+        document = parse.build_document(self.WEIGHED)
+        self.assertEqual(document["warnings"], [])
+        # Zaokrouhlení (-0,40) je víc než tolerance součtu — musí se připočíst, ne tolerovat.
+        self.assertTrue(document["totalMatches"])
+        self.assertEqual((document["computedTotal"], document["printedTotal"]), ("138.00", "138.00"))
+        items = document["lines"]
+        self.assertEqual([line["kind"] for line in items], [lines_mod.ITEM] * 3)
+        self.assertEqual([(line["quantity"], line["quantityBasis"], line["unitPrice"]) for line in items],
+                         [("0.526", "PER_KG", "109.90"), ("0.575", "PER_KG", "109.90"),
+                          ("6", "PACKAGE", "2.90")])
+        self.assertEqual(document["purchasedAt"], "2026-09-07T10:15:00+02:00")
+
 
 class SegmentsTest(unittest.TestCase):
     def test_prekryv_dvou_casti_se_nezapocita_dvakrat(self):
@@ -226,8 +275,8 @@ class FakeApi:
     def result(self, receipt_id, payload):
         self.results[receipt_id] = payload
 
-    def fail(self, receipt_id, error):
-        self.failed[receipt_id] = error
+    def fail(self, receipt_id, error, lease_until=None):
+        self.failed[receipt_id] = (error, lease_until)
 
 
 class FakeOcr:
@@ -239,16 +288,144 @@ class FakeOcr:
 
 class WorkerLoopTest(unittest.TestCase):
     def test_vadna_uctenka_nezastavi_davku(self):
-        api = FakeApi([{"receiptId": 1, "imagePaths": ["/x/broken"]},
+        api = FakeApi([{"receiptId": 1, "imagePaths": ["/x/broken"], "leaseUntil": "2026-10-24T10:15:00.123+02:00"},
                        {"receiptId": 2, "imagePaths": ["/x/ok"]}])
         worker.run_batch(api, FakeOcr(), 5, log=lambda *_: None)
-        self.assertIn(1, api.failed)
+        # Chyba nese pronájem, ke kterému patří — server podle něj ignoruje opožděná hlášení.
+        self.assertEqual(api.failed[1][1], "2026-10-24T10:15:00.123+02:00")
         self.assertEqual(api.results[2]["status"], "PROCESSED")
         self.assertTrue(all(isinstance(v, (str, type(None))) for line in api.results[2]["lines"]
                             for v in (line["unitPrice"], line["quantity"])))
 
 
+def _parts(prefix: str) -> list[str]:
+    return [path.read_text(encoding="utf-8") for path in sorted(TESTDATA.glob(f"{prefix}-dil*.ocr.txt"))]
+
+
+class TamdaProfileTest(unittest.TestCase):
+    """Číslované položky s EAN na druhém řádku, účtenka focená po třech dílech s překryvem."""
+
+    def setUp(self):
+        self.document = parse.build_document(_parts("tamda"))
+        self.by_no = {line["lineNo"]: line for line in self.document["lines"]}
+
+    def test_prekryv_dilu_se_nezapocita_dvakrat(self):
+        self.assertEqual(self.document["profile"], "tamda")
+        self.assertEqual(len(self.document["lines"]), 10)
+        self.assertTrue(self.document["totalMatches"], self.document["warnings"])
+        self.assertEqual(self.document["warnings"], [])
+
+    def test_hlavicka_ico_i_pres_spatne_prectene_JCO_a_datum_z_hlavicky(self):
+        merchant = self.document["merchant"]
+        self.assertEqual((merchant["ico"], merchant["street"], merchant["postalCode"], merchant["city"]),
+                         ("27160840", "Nádražní 1", "100 00", "Vzorov"))
+        # OCR přečetlo „IMDA FOODS" — podle IČO profil ví, čí účtenka to je.
+        self.assertEqual(merchant["rawName"], "TAMDA FOODS s.r.o.")
+        self.assertEqual(self.document["purchasedAt"], "2026-09-07T10:15:00+02:00")
+
+    def test_ze_dvou_cteni_vyhraje_ean_s_platnou_kontrolni_cislici(self):
+        self.assertEqual(self.by_no[4]["code"], "8594001740659")   # díl 2: ...658
+        self.assertEqual(self.by_no[6]["code"], "5906927034812")   # díl 2: ...612
+
+    def test_cteni_kde_mnozstvi_krat_cena_nesedi_prohraje(self):
+        finish = self.by_no[7]                                     # díl 3: 679,00 a ...796297
+        self.assertEqual((finish["lineTotal"], finish["code"]), ("679.80", "5997321736297"))
+        self.assertEqual((finish["quantity"], finish["unitPrice"]), ("2", "339.90"))
+
+    def test_osirely_radek_s_ean_na_zacatku_dilu_se_neprilepi_k_cizi_polozce(self):
+        avokado = self.by_no[8]
+        self.assertEqual((avokado["code"], avokado["quantity"], avokado["unitPrice"]),
+                         ("8595012035352", "4", "9.50"))
+
+    def test_cislice_pred_cenou_neni_oddelovac_tisicu_ale_tisice_se_poznaji(self):
+        self.assertEqual(self.by_no[7]["rawLabel"], "Finish Allin1 Max tablety do myčky nádobi 8")
+        trouba = self.by_no[9]
+        self.assertEqual((trouba["rawLabel"], trouba["lineTotal"], trouba["unitPrice"]),
+                         ("Mikrovlnná trouba 20L", "2599.80", "1299.90"))
+
+    def test_cena_na_radku_s_ean(self):
+        self.assertEqual(self.by_no[1]["lineTotal"], "950.00")
+
+    def test_ean_jde_na_server_jako_internal_code(self):
+        payload = result_mod.to_payload(self.document, None, "test")
+        self.assertEqual(payload["lines"][0]["internalCode"], "8851212221408")
+        self.assertTrue(all(line["internalCode"] for line in payload["lines"]))
+
+    def test_syrovy_text_konci_celkovou_castkou(self):
+        text = parse.server_text(_parts("tamda"))
+        self.assertTrue(text.endswith("Celkem: 5 983,60"))
+        self.assertNotIn("Přijatá", text)
+
+    def test_chybejici_poradove_cislo_se_hlasi(self):
+        document = parse.build_document("""TAMDA FOODS s.r.o.
+1 12 Garak Udon @3x213g Kimchi 79,90
+8800242940117
+3 12 Varmuža pomazánka 135g tuňáková 27,90
+8594002060138
+Celkem: 107,80
+""")
+        self.assertEqual(len(document["lines"]), 2)
+        self.assertTrue(any("chybí položka č. 2" in warning for warning in document["warnings"]))
+
+    def test_neplatny_ean_se_neposle(self):
+        document = parse.build_document("""TAMDA FOODS s.r.o.
+1 12 Garak Udon @3x213g Kimchi 79,90
+8800242940118
+Celkem: 79,90
+""")
+        line = document["lines"][0]
+        self.assertNotIn("code", line)
+        self.assertIn("kontrolní číslicí", line["note"])
+
+
+class ReplayTest(unittest.TestCase):
+    """Offline přehrání (replay.py) — stejný rozbor jako worker, jen nad lokálními soubory."""
+
+    def _run(self, paths, **kwargs):
+        out = []
+        texts = replay.read_parts(paths, self._no_ocr, kwargs.pop("save_ocr", False),
+                                  log=lambda *a, **k: out.append(" ".join(map(str, a))))
+        document = replay.report(texts, log=lambda *a, **k: out.append(" ".join(map(str, a))), **kwargs)
+        return document, "\n".join(out)
+
+    @staticmethod
+    def _no_ocr():
+        raise AssertionError("textový vstup nesmí volat OCR")
+
+    def test_textovy_vstup_bez_ollamy(self):
+        document, output = self._run([TESTDATA / "albert-plny.ocr.txt"])
+        self.assertEqual(document, parse.build_document(_text("albert-plny")))
+        self.assertIn("profil albert", output)
+        self.assertIn("OK součet 387.45 / tištěno 387.45", output)
+        self.assertIn("Celkem 387,45  <- celková částka", output)
+
+    def test_varovani_jako_ve_workeru(self):
+        _, output = self._run([TESTDATA / "albert-nesedi.ocr.txt"])
+        self.assertIn("! nerozpoznaný tvar řádku: 'ROZMAZANÝ ŘÁDEK BEZ CENY'", output)
+
+    def test_obrazek_jde_pres_ocr_a_ulozi_text(self):
+        import tempfile
+
+        class FakeOcr:
+            model = "fake"
+
+            def ocr(self, image):
+                return _text("albert-plny")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            image = Path(tmp) / "00.jpg"
+            image.write_bytes(b"jpg")
+            texts = replay.read_parts([image], FakeOcr, True, log=lambda *a, **k: None)
+            self.assertEqual((Path(tmp) / "00.ocr.txt").read_text(encoding="utf-8"), texts[0])
+
+
 class NormalizeTest(unittest.TestCase):
+    def test_kontrolni_cislice_gtin(self):
+        for code in ("8594001740659", "90169588", "011210617001", "08594001740659"):
+            self.assertTrue(normalize.is_valid_gtin(code), code)
+        for code in ("5997321796297", "400990052165", "859400174065", "85940017406599", "8594O01740659"):
+            self.assertFalse(normalize.is_valid_gtin(code), code)
+
     def test_castka_s_mezerou_v_tisicich(self):
         self.assertEqual(str(normalize.parse_amount("1 369,20")), "1369.20")
 
@@ -257,9 +434,350 @@ class NormalizeTest(unittest.TestCase):
         line = lines_mod.parse_item_lines(["TELEVIZE 12990,00 A"]).lines[0]
         self.assertEqual((line.kind, line.line_total), (lines_mod.ITEM, Decimal("12990.00")))
 
+    def test_hlavicka_sloupce_v_oddelovaci_je_sum(self):
+        # Albert tiskne „-------Kč---", OCR z toho přečte „Kc---".
+        for line in ("Kc---", "-------Kč---", "--- Kč ---", "Kč", "-----"):
+            self.assertTrue(normalize.is_noise(line), line)
+        for line in ("Kč 19,90", "UNI TWIST ZEL.80ML 19,90 A", "Kc--- 5,90"):
+            self.assertFalse(normalize.is_noise(line), line)
+
     def test_pismeno_O_misto_nuly_jen_v_cisle(self):
         self.assertEqual(str(normalize.parse_amount("98O,2O")), "980.20")
 
 
+class OllamaOcrTest(unittest.TestCase):
+    """Požadavek na Ollamu — bez běžící Ollamy, urlopen je podvržený."""
+
+    def _call(self, respond):
+        sent = {}
+
+        def fake_urlopen(request, timeout):
+            sent.update(json.loads(request.data.decode("utf-8")))
+            return respond(request)
+
+        original = ocr_mod.urllib.request.urlopen
+        ocr_mod.urllib.request.urlopen = fake_urlopen
+        try:
+            return ocr_mod.OllamaOcr().ocr(b"\xff\xd8\xff"), sent
+        finally:
+            ocr_mod.urllib.request.urlopen = original
+
+    def test_kontext_unese_obrazek_cele_uctenky(self):
+        class Response(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+        text, sent = self._call(lambda _: Response(json.dumps({"response": "Celkem 10,00"}).encode()))
+        self.assertEqual(text, "Celkem 10,00")
+        # Výchozí kontext Ollamy (4096) se s obrázkem celé účtenky (~4050 tokenů) nevejde.
+        self.assertGreaterEqual(sent["options"]["num_ctx"], 16384)
+        self.assertEqual((sent["options"]["temperature"], sent["options"]["seed"]), (0, 0))
+
+    def test_chyba_ollamy_nese_jeji_duvod(self):
+        body = b'{"error":"request (4118 tokens) exceeds the available context size (4096 tokens)"}'
+
+        def refuse(request):
+            raise urllib.error.HTTPError(request.full_url, 400, "Bad Request", {}, io.BytesIO(body))
+
+        with self.assertRaises(ocr_mod.OcrError) as raised:
+            self._call(refuse)
+        self.assertIn("400", str(raised.exception))
+        self.assertIn("exceeds the available context size", str(raised.exception))
+
+
+def _dictionary() -> pretty.Dictionary:
+    """Pevný slovník pro testy — skutečný slovnik/*.tsv se mění s provozem."""
+    dictionary = pretty.Dictionary()
+    dictionary.add_abbreviation("SELS.", "Selské")
+    dictionary.add_abbreviation("MLÉ.", "mléko")
+    dictionary.add_abbreviation("ARAŠÍDOVÁ", "arašídová")
+    dictionary.add_abbreviation("MORAV.", "Moravia", "albert")
+    dictionary.add_abbreviation("BIO", "BIO")
+    dictionary.add_abbreviation("ROHLÍK", "rohlík")
+    return dictionary
+
+
+class PrettyLabelTest(unittest.TestCase):
+    """Čitelný název řádku (pretty.py) — příklady ze zadání a pasti tokenizace."""
+
+    def _pretty(self, raw, chain="albert"):
+        return pretty.pretty_label(raw, chain, _dictionary())
+
+    def test_priklady_ze_zadani(self):
+        self.assertEqual(self._pretty("ROHLÍK43GR").text, "Rohlík 43g")
+        self.assertEqual(self._pretty("NUGETA ARASÍDOVÁ340G").text, "Nugeta arašídová 340g")
+        self.assertEqual(self._pretty("OLMA SELS.MLÉ.3,9%1L").text, "Olma Selské mléko 3,9% 1l")
+
+    def test_vodítko_gramaze_jen_z_hmotnosti_a_objemu(self):
+        self.assertEqual(self._pretty("ROHLÍK43GR").net_content, ("43", "G"))
+        self.assertEqual(self._pretty("RED BULL 0,25L").net_content, ("0.25", "L"))
+        self.assertIsNone(self._pretty("WM TORTILLA 25CM").net_content)
+        # Násobné balení — gramáž by platila jen pro jeden kus.
+        self.assertIsNone(self._pretty("UNI TWISTER 8X50ML").net_content)
+        self.assertEqual(self._pretty("UNI TWISTER 8X50ML").text, "Uni twister 8x50ml")
+
+    def test_zkratka_retezce_plati_jen_pro_nej(self):
+        self.assertEqual(self._pretty("GRAN MORAV.100G", "albert").text, "Gran Moravia 100g")
+        self.assertEqual(self._pretty("GRAN MORAV.100G", "obecny").text, "Gran morav. 100g")
+
+    def test_nevyresena_slova_jdou_modelu(self):
+        result = self._pretty("CHOC.SM.BÍLY330G")
+        self.assertEqual(result.source, pretty.SOURCE_RULES)
+        self.assertEqual(result.unresolved, ("CHOC.", "SM.", "BÍLY"))
+
+    def test_citelny_popisek_obchodu_se_nemeni(self):
+        raw = "Lenor aviváž 1239ml 59PD Sensitive"
+        result = self._pretty(raw, "tamda")
+        self.assertEqual(result.text, raw)
+        self.assertEqual(result.unresolved, ())
+        self.assertEqual(result.net_content, ("1239", "ML"))
+
+    def test_cislo_slepene_s_pismeny_neni_jednotka(self):
+        self.assertEqual(pretty.tokenize("PRACI GEL 4L 80PD"), ["PRACI", "GEL", "4L", "80", "PD"])
+
+    def test_rucni_prepis_celeho_oznaceni_vyhraje(self):
+        dictionary = _dictionary()
+        dictionary.add_override("TAPAS SPIAN.ROM.70G", "Tapas Spianata Romana 70g", "albert")
+        result = pretty.pretty_label("TAPAS SPIAN. ROM.70G", "albert", dictionary)
+        self.assertEqual((result.text, result.source), ("Tapas Spianata Romana 70g", pretty.SOURCE_DICT))
+        self.assertEqual(result.net_content, ("70", "G"))
+
+    def test_norm_label_jako_v_databazi(self):
+        # core.norm_label: interpunkce -> mezera, bez diakritiky, malými, sloučené mezery.
+        self.assertEqual(pretty.norm_label("TUK.ROHLIK"), "tuk rohlik")
+        self.assertEqual(pretty.norm_label(" GRAN MORAV.STR.100G "), "gran morav str 100g")
+        self.assertEqual(pretty.norm_label("KUŘ.PRSNÍ  ŘÍZKY"), "kur prsni rizky")
+        self.assertEqual(pretty.norm_label("ÖLZ_SANDWICH"), "olz sandwich")
+
+    def test_slovnik_v_repozitari_jde_nacist(self):
+        dictionary = pretty.load_dictionary()
+        self.assertEqual(dictionary.abbreviation("sels.", None), "Selské")
+
+    def test_zapis_do_slovniku_a_zpet(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            pretty.append_row(directory / pretty.ABBREVIATIONS_FILE, ["KVAS.", "kváskem", "albert"])
+            pretty.append_row(directory / pretty.OVERRIDES_FILE, ["ROHLÍK43GR", "Rohlík tukový 43g", ""])
+            dictionary = pretty.load_dictionary(directory)
+        self.assertEqual(dictionary.abbreviation("KVAS.", "albert"), "kváskem")
+        self.assertEqual(dictionary.override("rohlík43gr", "penny"), "Rohlík tukový 43g")
+
+
+class AiPrettyTest(unittest.TestCase):
+    """Kontrola výstupu modelu (ai_pretty.accept) — jen kosmetika projde."""
+
+    def test_doplnena_diakritika_a_rozepsana_zkratka_projde(self):
+        self.assertIsNone(ai_pretty.accept("Nugeta arasidova 340g", "Nugeta arašídová 340g"))
+        self.assertIsNone(ai_pretty.accept("Olma sels. mlé. 3,9% 1l", "Olma Selské mléko 3,9% 1l"))
+        self.assertIsNone(ai_pretty.accept("Choc. jogurt bíly 330g", "Choc. jogurt bílý 330g"))
+
+    def test_zmena_cisla_neprojde(self):
+        self.assertIn("číslo", ai_pretty.accept("Rohlík 43g", "Rohlík 45g"))
+        self.assertIn("číslo", ai_pretty.accept("Mléko 3,9% 1l", "Mléko 3.9% 1l"))
+
+    def test_prejmenovani_a_zmena_poctu_slov_neprojde(self):
+        self.assertIn("slovo", ai_pretty.accept("Gran str. 100g", "Gran Padano 100g"))
+        self.assertIn("počet", ai_pretty.accept("Rohlík 43g", "Rohlík tukový 43g"))
+        self.assertIn("počet", ai_pretty.accept("Pilsner Urquell ležák 0,5l", "Pilsner ležák 0,5l"))
+
+    def test_vytistenou_diakritiku_model_neodebere(self):
+        self.assertIn("slovo", ai_pretty.accept("Ölz sandwich 750g", "Olz sandwich 750g"))
+
+    def test_polish_vezme_jen_co_projde_a_vypadek_neni_chyba(self):
+        items = [pretty.pretty_label(raw, "albert", _dictionary())
+                 for raw in ("NUGETA LISKOVA 340G", "ROHLÍK43GR", "GRAN STR.100G")]
+
+        class Model:
+            def complete(self, names):
+                self.sent = names
+                return {"0": "Nugeta lísková 340g", "2": "Gran Padano 100g"}
+
+        model = Model()
+        log = []
+        polished = ai_pretty.polish(items, model, log.append)
+        # „Rohlík 43g" pravidla vyřešila celé — modelu se neposílá.
+        self.assertEqual(set(model.sent), {"0", "2"})
+        self.assertEqual((polished[0].text, polished[0].source), ("Nugeta lísková 340g", pretty.SOURCE_AI))
+        self.assertEqual((polished[2].text, polished[2].source), ("Gran str. 100g", pretty.SOURCE_RULES))
+        self.assertTrue(any("zamítnut" in line for line in log))
+
+        class Down:
+            def complete(self, names):
+                raise OSError("connection refused")
+
+        self.assertEqual(ai_pretty.polish(items, Down(), log.append), items)
+
+    def test_payload_nese_citelny_nazev_vedle_syroveho(self):
+        document = parse.build_document(_text("albert-plny"))
+        payload = result_mod.to_payload(document, None, "test", _dictionary())
+        rohlik = next(line for line in payload["lines"] if line["label"] == "ROHLÍK43GR")
+        self.assertEqual(rohlik["labelDisplay"], "Rohlík 43g")
+        self.assertEqual(rohlik["labelDisplaySource"], "RULES")
+        self.assertEqual((rohlik["netContentValue"], rohlik["netContentUom"]), ("43", "G"))
+
+    def test_bez_slovniku_payload_beze_zmeny(self):
+        document = parse.build_document(_text("albert-plny"))
+        payload = result_mod.to_payload(document, None, "test")
+        self.assertNotIn("labelDisplay", payload["lines"][0])
+
+    def test_replay_vypise_citelne_nazvy(self):
+        out = []
+        document = parse.build_document(_text("albert-plny"))
+        replay.report_names(document, _dictionary(), log=out.append)
+        self.assertTrue(any("ROHLÍK43GR" in line and "Rohlík 43g" in line for line in out))
+
+
+class FakeCuratorApi:
+    def __init__(self, conflict_with=None):
+        self.searches = []
+        self.mapped = []
+        self.conflict_with = conflict_with
+
+    def search_products(self, query, store_id, limit=8):
+        self.searches.append((query, store_id))
+        return [{"id": 11, "name": "Gran Moravia strouhaný", "netContentValue": 100, "netContentUom": "G",
+                 "status": "ACTIVE", "score": 0.81},
+                {"id": 12, "name": "Grana Padano", "status": "ACTIVE", "score": 0.4}]
+
+    def map_label(self, label, chain_id, store_id, product_id, replace=False):
+        self.mapped.append((label, chain_id, store_id, product_id, replace))
+        if self.conflict_with and not replace:
+            return {"outcome": "CONFLICT", "existingProductId": self.conflict_with}
+        return {"outcome": "CREATED", "productId": product_id, "suggestedLines": 3}
+
+
+class CurateTest(unittest.TestCase):
+    """Kurátorství na lokální stanici (curate.py) — vstup z klávesnice nahrazený seznamem."""
+
+    ITEM = {"label": "GRAN MORAV.STR.100G", "chainId": 1, "chainSlug": "albert", "chainName": "Albert",
+            "storeId": None, "sampleStoreId": 5, "lineCount": 4, "lastSeenDay": "2026-10-30",
+            "netContentValue": 100, "netContentUom": "G"}
+
+    def _session(self, answers, api=None, directory=None):
+        out = []
+        answers = iter(answers)
+        session = curate.Session(api or FakeCuratorApi(), _dictionary(), directory or Path("/nonexistent"),
+                                 read=lambda prompt="": next(answers), write=out.append)
+        return session, out
+
+    def test_hleda_bez_cisel_a_paruje_vybrane_zbozi_v_rozsahu_retezce(self):
+        api = FakeCuratorApi()
+        session, out = self._session(["2"], api)
+        session.run([dict(self.ITEM)])
+        self.assertEqual(api.searches[0], ("Gran Moravia str.", 5))
+        self.assertEqual(api.mapped, [("GRAN MORAV.STR.100G", 1, None, 12, False)])
+        self.assertEqual(session.mapped, 1)
+
+    def test_enter_vezme_prvniho_kandidata(self):
+        api = FakeCuratorApi()
+        session, _ = self._session([""], api)
+        session.run([dict(self.ITEM)])
+        self.assertEqual(api.mapped[0][3], 11)
+
+    def test_konflikt_se_prepise_jen_po_potvrzeni(self):
+        api = FakeCuratorApi(conflict_with=99)
+        session, _ = self._session(["1", "n", "1", "a"], api)
+        session.run([dict(self.ITEM)])
+        self.assertEqual([call[4] for call in api.mapped], [False, False, True])
+
+    def test_oprava_nazvu_a_zkratka_se_zapisou_do_slovniku(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            session, out = self._session(["zr STR.=strouhaný", "e Gran Moravia strouhaný 100g", "s"],
+                                         directory=directory)
+            session.run([dict(self.ITEM)])
+            dictionary = pretty.load_dictionary(directory)
+        self.assertEqual(dictionary.abbreviation("STR.", "albert"), "strouhaný")
+        self.assertIsNone(dictionary.abbreviation("STR.", "penny"))
+        self.assertEqual(dictionary.override("GRAN MORAV.STR.100G", "albert"), "Gran Moravia strouhaný 100g")
+        self.assertIn("      čitelně: Gran Moravia strouhaný 100g", out)
+
+    def test_q_ukonci_celou_relaci(self):
+        api = FakeCuratorApi()
+        session, _ = self._session(["q"], api)
+        session.run([dict(self.ITEM), dict(self.ITEM)])
+        self.assertEqual(len(api.searches), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+class FakeClassifier:
+    def __init__(self, answers: dict | None = None, error: Exception | None = None):
+        self.answers = answers or {}
+        self.error = error
+        self.calls = []
+
+    def complete(self, categories, items):
+        self.calls.append((categories, items))
+        if self.error:
+            raise self.error
+        return self.answers
+
+
+class ClassifyTest(unittest.TestCase):
+    CATEGORIES = [{"slug": "mleko", "path": "Potraviny › Mléčné výrobky › Mléko"},
+                  {"slug": "testoviny", "path": "Potraviny › Trvanlivé › Těstoviny"}]
+
+    def test_platny_navrh_projde(self):
+        lines = [{"label": "MLEKO POL.", "labelDisplay": "Mléko pol.", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": {"category": "mleko", "unit": "l"}}),
+                             log=lambda *_: None)
+        self.assertEqual((lines[0]["categoryHint"], lines[0]["unitHint"]), ("mleko", "L"))
+
+    def test_model_dostane_citelny_nazev_a_cesty_kategorii(self):
+        classifier = FakeClassifier({})
+        lines = [{"label": "MLEKO POL.", "labelDisplay": "Mléko pol.", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.CATEGORIES, classifier, log=lambda *_: None)
+        categories, items = classifier.calls[0]
+        self.assertEqual(items, {"0": "Mléko pol."})
+        self.assertEqual(categories["mleko"], "Potraviny › Mléčné výrobky › Mléko")
+
+    def test_neznama_kategorie_a_jednotka_se_zahodi(self):
+        lines = [{"label": "NECO", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": {"category": "vymysl", "unit": "KS"}}),
+                             log=lambda *_: None)
+        self.assertEqual((lines[0]["categoryHint"], lines[0]["unitHint"]), (None, None))
+
+    def test_jednotka_proti_vytistene_gramazi_se_zahodi(self):
+        lines = [{"label": "TESTOV. 500G", "quantityUnit": "PCS", "netContentUom": "G"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": {"category": "testoviny", "unit": "L"}}),
+                             log=lambda *_: None)
+        self.assertEqual((lines[0]["categoryHint"], lines[0]["unitHint"]), ("testoviny", None))
+
+    def test_vahove_zbozi_jednotku_nedostane(self):
+        lines = [{"label": "BANANY", "quantityUnit": "KG"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": {"category": None, "unit": "G"}}),
+                             log=lambda *_: None)
+        self.assertIsNone(lines[0]["unitHint"])
+
+    def test_vypadek_modelu_neni_chyba_uctenky(self):
+        lines = [{"label": "MLEKO", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier(error=urllib.error.URLError("down")),
+                             log=lambda *_: None)
+        self.assertNotIn("categoryHint", lines[0])
+
+    def test_payload_nese_navrh_az_po_citelnych_nazvech(self):
+        document = parse.build_document(_text("albert-plny"))
+        classifier = FakeClassifier({})
+        payload = result_mod.to_payload(document, None, "m", pretty.Dictionary(), None, lambda *_: None,
+                                        classifier, self.CATEGORIES)
+        _, items = classifier.calls[0]
+        self.assertEqual(len(items), len(payload["lines"]))
+        self.assertTrue(all("categoryHint" in line for line in payload["lines"]))
+
+    def test_jednotka_ani_kategorie_jineho_typu_nesrazi_uctenku(self):
+        lines = [{"label": "MLEKO", "quantityUnit": "PCS"}, {"label": "SIRUP", "quantityUnit": "PCS"}]
+        answers = {"0": {"category": ["mleko"], "unit": ["L"]}, "1": {"category": {"x": 1}, "unit": {"u": "L"}}}
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier(answers), log=lambda *_: None)
+        self.assertEqual([(l["categoryHint"], l["unitHint"]) for l in lines], [(None, None), (None, None)])
+
+    def test_odpoved_ktera_neni_objekt_se_zahodi(self):
+        lines = [{"label": "MLEKO", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": ["mleko", "L"]}), log=lambda *_: None)
+        self.assertEqual((lines[0]["categoryHint"], lines[0]["unitHint"]), (None, None))
+

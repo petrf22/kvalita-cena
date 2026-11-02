@@ -1,0 +1,55 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kc-space-3);
+}
+
+.panel-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kc-space-1) var(--kc-space-3);
+  color: var(--kc-text-secondary);
+  font-size: var(--kc-font-sm);
+}
+
+.panel-code {
+  font-family: monospace;
+}
+
+.panel-error {
+  margin: 0;
+  color: var(--kc-danger);
+}
+
+.panel-note {
+  margin: 0;
+  color: var(--kc-text-muted);
+  font-size: var(--kc-font-sm);
+}
+
+.panel-candidate {
+  display: flex;
+  gap: var(--kc-space-3);
+  align-items: center;
+  padding: var(--kc-space-3);
+  border: 1px solid var(--kc-border-split);
+  border-radius: 8px;
+}
+
+/* Náhled fotky z Open Food Facts — rozměr komponenty, ne rozestup (docs/design.md). */
+.panel-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+}
+
+.panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kc-space-2);
+}
+
+.panel-footer {
+  display: flex;
+  justify-content: flex-end;
+}

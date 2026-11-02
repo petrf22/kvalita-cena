@@ -35,9 +35,6 @@ import cz.kvalitacena.service.MediaService;
 import cz.kvalitacena.service.MyPriceService;
 import cz.kvalitacena.service.OffLookupResult;
 import cz.kvalitacena.service.OffLookupStatus;
-import cz.kvalitacena.service.OffNetContent;
-import cz.kvalitacena.service.OffImageResolver;
-import cz.kvalitacena.service.OffNetContentConverter;
 import cz.kvalitacena.service.OffProductCatalogService;
 import cz.kvalitacena.service.OpenFoodFactsService;
 import cz.kvalitacena.service.ProductCatalogService;
@@ -83,6 +80,7 @@ public class ProductGraphQlController {
   private static final int MAX_SUGGESTIONS = 30;
 
   private final CatalogProperties catalogProperties;
+  private final ExternalProductCandidateFactory candidateFactory;
   private final ProductRepository productRepository;
   private final PriceCurrentRepository priceCurrentRepository;
   private final ProductCodeRepository productCodeRepository;
@@ -95,10 +93,8 @@ public class ProductGraphQlController {
   private final ProductCatalogService productCatalogService;
   private final OffProductCatalogService offProductCatalogService;
   private final OpenFoodFactsService openFoodFactsService;
-  private final OffNetContentConverter offNetContentConverter;
   private final ProductOverlayService productOverlayService;
   private final ProductNameResolver productNameResolver;
-  private final OffImageResolver offImageResolver;
   private final ProductNameRepository productNameRepository;
   private final ProductUserEditRepository productUserEditRepository;
   private final CatalogEditService catalogEditService;
@@ -173,25 +169,7 @@ public class ProductGraphQlController {
     if (lookup.status() == OffLookupStatus.UNAVAILABLE) {
       return new ProductLookupResult(ProductLookupStatus.OFF_UNAVAILABLE, null, null);
     }
-    var off = lookup.product();
-    Category category = off.getMappedCategorySlug() == null ? null
-        : categoryRepository.findBySlug(off.getMappedCategorySlug()).orElse(null);
-    OffNetContent content = offNetContentConverter.convert(off);
-    String attribution = messages.get("attribution.off");
-    // Název i fotka se vybírají podle jazyka klienta, ne podle "hlavní" varianty z OFF —
-    // jinak formulář nabídne německou Magnesii česky mluvícímu uživateli (docs/lokalizace.md).
-    ResolvedProductName offName = productNameResolver.effectiveOffName(off);
-    List<ExternalProductImage> images = externalImages(off, attribution);
-    ExternalProductCandidate candidate = new ExternalProductCandidate(
-        stripLeadingZeros(off.getGtin()),
-        offName == null ? null : offName.name(), offName == null ? null : offName.lang(),
-        productNameResolver.offNames(off), off.getBrandName(), category,
-        content == null ? null : content.unitBase(), content == null ? null : content.value(),
-        content == null ? null : content.uom(),
-        images.stream().filter(image -> image.kind() == PhotoKind.ITEM).findFirst().orElse(null),
-        images,
-        externalLinkProperties.getOpenFoodFacts().getProductUrlTemplate()
-            .replace("{barcode}", stripLeadingZeros(off.getGtin())), attribution);
+    ExternalProductCandidate candidate = candidateFactory.fromOff(lookup.product());
     return new ProductLookupResult(ProductLookupStatus.OFF_CANDIDATE, null, candidate);
   }
 
@@ -238,7 +216,7 @@ public class ProductGraphQlController {
 
   @SchemaMapping(typeName = "Product", field = "externalImage")
   public ExternalProductImage externalImage(Product product) {
-    return externalImage(product.getOffImageFrontUrl(), product.getOffImageFrontSmallUrl(),
+    return candidateFactory.image(product.getOffImageFrontUrl(), product.getOffImageFrontSmallUrl(),
         PhotoKind.ITEM, product.getOffImageLang(), messages.get("attribution.off"));
   }
 
@@ -247,7 +225,7 @@ public class ProductGraphQlController {
   public List<ExternalProductImage> externalImages(Product product) {
     String attribution = messages.get("attribution.off");
     return product.getOffImages().stream()
-        .map(image -> externalImage(image.getUrl(), image.getSmallUrl(),
+        .map(image -> candidateFactory.image(image.getUrl(), image.getSmallUrl(),
             image.getKind().toPhotoKind(), image.getLang(), attribution))
         .filter(Objects::nonNull).toList();
   }
@@ -562,21 +540,6 @@ public class ProductGraphQlController {
         .or(() -> codes.stream().filter(c -> c.getCodeType() == CodeType.GTIN).findFirst())
         .map(ProductCode::getCode)
         .orElse(null);
-  }
-
-  private ExternalProductImage externalImage(String url, String thumbnailUrl, PhotoKind kind,
-      String lang, String attribution) {
-    String effectiveUrl = url != null ? url : thumbnailUrl;
-    if (effectiveUrl == null) return null;
-    return new ExternalProductImage(effectiveUrl, thumbnailUrl != null ? thumbnailUrl : effectiveUrl,
-        kind, lang, attribution);
-  }
-
-  private List<ExternalProductImage> externalImages(OffProduct off, String attribution) {
-    return offImageResolver.all(off).stream()
-        .map(image -> externalImage(image.getUrl(), image.getSmallUrl(),
-            image.getKind().toPhotoKind(), image.getLang(), attribution))
-        .filter(Objects::nonNull).toList();
   }
 
   /**

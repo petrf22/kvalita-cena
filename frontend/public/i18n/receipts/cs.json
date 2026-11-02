@@ -145,10 +145,17 @@
   },
   "line": {
     "selectLabel": "Zapsat cenu z řádku {{label}}",
+    "selectGuessLabel": "Zapsat cenu z řádku {{label}} (zboží je jen odhad podle názvu, zkontroluj ho)",
     "quantityPieces": "{{quantity}} {{unit}} × {{price}}",
     "quantityWeighed": "{{quantity}} {{unit}} × {{price}} za {{unit}}",
     "pricePerUnit": "{{price}} za {{unit}}",
     "discount": "sleva −{{amount}}",
+    "ean": "EAN {{code}}",
+    "raw": "Takhle je položka vytištěná na účtence",
+    "matchedByEan": "podle EAN z účtenky",
+    "guess": "odhad",
+    "guessHint": "Zboží je navržené jen podle podobnosti názvu. Zkontroluj, že sedí, a teprve pak řádek zaškrtni — appka si potvrzení zapamatuje i pro další účtenky.",
+    "guessHintWithEan": "Zboží je navržené jen podle podobnosti názvu. Zkontroluj, že sedí, a teprve pak řádek zaškrtni — potvrzením zboží dostane i EAN z účtenky a appka si ho zapamatuje pro další účtenky.",
     "recorded": "Cena zapsána",
     "findProduct": "Najít zboží",
     "changeProduct": "Změnit zboží",
@@ -177,6 +184,25 @@
   "create": {
     "title": "Nové zboží z účtenky",
     "labelPrefix": "Na účtence:",
-    "hint": "Zkratku z účtenky přepiš na celý název, jak ho znáš z obalu. Zboží se založí pro tenhle obchod a řádek se s ním rovnou spáruje."
+    "hint": "Zkratku z účtenky přepiš na celý název, jak ho znáš z obalu. Zboží se založí pro tenhle obchod a řádek se s ním rovnou spáruje.",
+    "hintWithCode": "Zkontroluj název — má být celý, jak ho znáš z obalu, ne zkratka z účtenky. Čárový kód je převzatý z účtenky, takže zboží půjde najít i v ostatních obchodech. Řádek se s ním rovnou spáruje."
+  },
+  "guide": {
+    "start": "Doplnit nerozpoznané ({{count}})",
+    "progress": "{{index}} / {{total}}",
+    "skip": "Přeskočit"
+  },
+  "group": {
+    "toResolve": "K doplnění ({{count}})",
+    "toCheck": "Ke kontrole ({{count}})",
+    "ready": "Připraveno k potvrzení ({{count}})",
+    "done": "Hotovo ({{count}})",
+    "ignored": "Ignorováno ({{count}})"
+  },
+  "panel": {
+    "accept": "Ano, je to ono",
+    "other": "Jiné zboží",
+    "notProduct": "Není zboží — ignorovat",
+    "offHint": "Zboží podle EAN zná Open Food Facts. Do katalogu se přidá, až řádek potvrdíš."
   }
 }

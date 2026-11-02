@@ -34,19 +34,38 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
       @Param("radiusMeters") double radiusMeters, @Param("viewerId") Long viewerId);
 
   /**
-   * Našeptávač obchodů podle názvu NEBO města (idx_store_name_trgm/idx_store_city_trgm) —
-   * doplněk k {@link #findNearby}, pro zápis ceny bez sdílení polohy nebo zpětně z domova
-   * (docs/datovy-model.md, "Identita provozovny"). Jedno textové pole v UI musí najít obchod
-   * napsáním buď jeho jména, nebo města, proto {@code query} matchuje OBOJÍ (ne jen název) —
-   * {@code city} zůstává samostatný nepovinný přesný filtr navíc, kdyby ho někdy klient chtěl
-   * poslat odděleně (v etapě 1 to žádný klient nedělá, oba parametry se prostě neuplatní,
-   * když jsou null).
+   * Prohledávaný text obchodu — název, město a ulice v jednom řetězci, aby slova dotazu mohla
+   * ležet v různých polích. Musí znak po znaku odpovídat výrazu {@code idx_store_search_trgm}
+   * (2026-10-26/01-store-search-trgm.yaml), jinak ho plánovač nepozná; {@code ||} místo
+   * {@code concat_ws}, protože ta je jen STABLE a do indexu nesmí.
+   */
+  String SEARCH_TEXT = "core.norm_text(s.name || ' ' || s.city || ' ' || COALESCE(s.street, ''))";
+
+  /**
+   * Shoda textového hledání: KAŽDÉ slovo dotazu musí být v názvu, městě nebo ulici, v libovolném
+   * pořadí („Lidl Brno", „Brno, Vídeňská Lidl"). {@code longestWord} (nejdelší slovo, vybírá ho
+   * {@code StoreSearchService}) je jen předfiltr pro trigramový index — vzor spočtený až
+   * uvnitř SQL plánovač při plánování nezná a index by nepoužil; samotnou shodu rozhoduje
+   * {@code LIKE ALL} nad všemi slovy. Sdílí ho seznam i počet, ať {@code totalCount} sedí na
+   * stránkování.
+   */
+  String TEXT_MATCH = "(:query IS NULL OR ("
+      + SEARCH_TEXT + " LIKE '%' || core.norm_text(CAST(:longestWord AS TEXT)) || '%' "
+      + "AND " + SEARCH_TEXT + " LIKE ALL (ARRAY(SELECT '%' || w || '%' FROM "
+      + "unnest(regexp_split_to_array(core.norm_text(CAST(:query AS TEXT)), '[[:space:],]+')) w "
+      + "WHERE w <> '')))) ";
+
+  /**
+   * Našeptávač obchodů podle názvu, města a ulice ({@link #TEXT_MATCH}) — doplněk
+   * k {@link #findNearby}, pro zápis ceny bez sdílení polohy nebo zpětně z domova
+   * (docs/datovy-model.md, "Identita provozovny"). {@code city} zůstává samostatný nepovinný
+   * přesný filtr navíc, kdyby ho někdy klient chtěl poslat odděleně (dnes to žádný klient
+   * nedělá, parametr se prostě neuplatní, když je null).
    */
   @Query(value = "SELECT * FROM core.store s WHERE "
       + "(s.status = 'ACTIVE' OR (s.status = 'PENDING' AND s.created_by_user_id = CAST(:viewerId AS BIGINT))) "
       + "AND s.hidden_at IS NULL "
-      + "AND (:query IS NULL OR core.norm_text(s.name) LIKE '%' || core.norm_text(:query) || '%' "
-      + "     OR core.norm_text(s.city) LIKE '%' || core.norm_text(:query) || '%') "
+      + "AND " + TEXT_MATCH
       + "AND (:city IS NULL OR core.norm_text(s.city) = core.norm_text(:city)) "
       + "ORDER BY CASE WHEN :query IS NULL THEN 0 ELSE "
       + "  GREATEST(similarity(core.norm_text(s.name), core.norm_text(:query)), "
@@ -54,17 +73,18 @@ public interface StoreRepository extends JpaRepository<Store, Long> {
       + "         s.name "
       + "LIMIT :limit OFFSET :offset",
       nativeQuery = true)
-  List<Store> searchByText(@Param("query") String query, @Param("city") String city,
-      @Param("limit") int limit, @Param("offset") int offset, @Param("viewerId") Long viewerId);
+  List<Store> searchByText(@Param("query") String query, @Param("longestWord") String longestWord,
+      @Param("city") String city, @Param("limit") int limit, @Param("offset") int offset,
+      @Param("viewerId") Long viewerId);
 
   @Query(value = "SELECT count(*) FROM core.store s WHERE "
       + "(s.status = 'ACTIVE' OR (s.status = 'PENDING' AND s.created_by_user_id = CAST(:viewerId AS BIGINT))) "
       + "AND s.hidden_at IS NULL "
-      + "AND (:query IS NULL OR core.norm_text(s.name) LIKE '%' || core.norm_text(:query) || '%' "
-      + "     OR core.norm_text(s.city) LIKE '%' || core.norm_text(:query) || '%') "
+      + "AND " + TEXT_MATCH
       + "AND (:city IS NULL OR core.norm_text(s.city) = core.norm_text(:city))",
       nativeQuery = true)
-  long countByText(@Param("query") String query, @Param("city") String city, @Param("viewerId") Long viewerId);
+  long countByText(@Param("query") String query, @Param("longestWord") String longestWord,
+      @Param("city") String city, @Param("viewerId") Long viewerId);
 
   /**
    * "Našli jsme podobné" kontrola před založením nové provozovny — nezávisle na

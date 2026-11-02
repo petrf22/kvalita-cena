@@ -20,6 +20,31 @@ enum class UploadFailureAction {
 const val CODE_CONSENT_REQUIRED = "RECEIPT_CONSENT_REQUIRED"
 const val CODE_REQUIRES_LOGIN = "RECEIPT_REQUIRES_LOGIN"
 
+/** Co s rozpracovaným konceptem, když ho otevře účet [currentUid] ([draftClaim]). */
+enum class DraftClaim {
+  /** Koncept patří přihlášenému účtu, nebo appka zatím neví, kdo je přihlášený. */
+  KEEP,
+
+  /** Koncept zatím nikomu nepatří (prázdný, nebo z verze appky před vlastníkem) — převezme ho přihlášený. */
+  ADOPT,
+
+  /** Rozpracované díly jiného účtu — zahodit, ať je nikdo jiný neuvidí ani neodešle pod sebou. */
+  DISCARD,
+}
+
+/**
+ * Komu patří rozpracovaný koncept účtenky (docs/soukromi.md, „Účtenky"). Vlastník fronty se
+ * určuje až při zařazení ([PendingReceiptStore.commitDraft]), takže bez téhle kontroly by
+ * nafocenou účtenku jednoho účtu po přepnutí účtu odeslal ten druhý jako svou.
+ * Neznámý přihlášený účet ([currentUid] `null` — přihlášení ze starší verze, dokud obnova
+ * tokenu uid neuloží) koncept nechá být: zahodit cizí nejde poznat, zahodit vlastní by byla ztráta.
+ */
+fun draftClaim(draftOwner: String?, hasParts: Boolean, currentUid: String?): DraftClaim = when {
+  currentUid == null || draftOwner == currentUid -> DraftClaim.KEEP
+  draftOwner == null || !hasParts -> DraftClaim.ADOPT
+  else -> DraftClaim.DISCARD
+}
+
 /**
  * [status] je HTTP status odpovědi, 0 = odpověď vůbec nepřišla (bez signálu v obchodě — přesně
  * případ, kvůli kterému se účtenka odesílá přes WorkManager). Denní limit (`RECEIPT_DAILY_LIMIT`,

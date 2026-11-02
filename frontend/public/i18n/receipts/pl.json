@@ -145,10 +145,17 @@
   },
   "line": {
     "selectLabel": "Zapisz cenę z pozycji {{label}}",
+    "selectGuessLabel": "Zapisz cenę z pozycji {{label}} (produkt to tylko domysł na podstawie nazwy, sprawdź go)",
     "quantityPieces": "{{quantity}} {{unit}} × {{price}}",
     "quantityWeighed": "{{quantity}} {{unit}} × {{price}} za {{unit}}",
     "pricePerUnit": "{{price}} za {{unit}}",
     "discount": "rabat −{{amount}}",
+    "ean": "EAN {{code}}",
+    "raw": "Tak pozycja jest wydrukowana na paragonie",
+    "matchedByEan": "według EAN z paragonu",
+    "guess": "domysł",
+    "guessHint": "Produkt zaproponowano tylko na podstawie podobnej nazwy. Sprawdź, czy się zgadza, i dopiero wtedy zaznacz pozycję — aplikacja zapamięta potwierdzenie także dla kolejnych paragonów.",
+    "guessHintWithEan": "Produkt zaproponowano tylko na podstawie podobnej nazwy. Sprawdź, czy się zgadza, i dopiero wtedy zaznacz pozycję — po potwierdzeniu produkt otrzyma też EAN z paragonu, a aplikacja zapamięta go dla kolejnych paragonów.",
     "recorded": "Cena zapisana",
     "findProduct": "Znajdź produkt",
     "changeProduct": "Zmień produkt",
@@ -177,6 +184,25 @@
   "create": {
     "title": "Nowy produkt z paragonu",
     "labelPrefix": "Na paragonie:",
-    "hint": "Zamień skrót z paragonu na pełną nazwę, jaką znasz z opakowania. Produkt zostanie dodany dla tego sklepu, a pozycja od razu z nim powiązana."
+    "hint": "Zamień skrót z paragonu na pełną nazwę, jaką znasz z opakowania. Produkt zostanie dodany dla tego sklepu, a pozycja od razu z nim powiązana.",
+    "hintWithCode": "Sprawdź nazwę — ma być pełna, taka jak na opakowaniu, a nie skrót z paragonu. Kod kreskowy pochodzi z paragonu, więc produkt będzie można znaleźć także w innych sklepach. Pozycja zostanie od razu z nim powiązana."
+  },
+  "guide": {
+    "start": "Uzupełnij nierozpoznane ({{count}})",
+    "progress": "{{index}} / {{total}}",
+    "skip": "Pomiń"
+  },
+  "group": {
+    "toResolve": "Do uzupełnienia ({{count}})",
+    "toCheck": "Do sprawdzenia ({{count}})",
+    "ready": "Gotowe do potwierdzenia ({{count}})",
+    "done": "Gotowe ({{count}})",
+    "ignored": "Zignorowane ({{count}})"
+  },
+  "panel": {
+    "accept": "Tak, to ten",
+    "other": "Inny produkt",
+    "notProduct": "To nie produkt — ignoruj",
+    "offHint": "Open Food Facts zna ten produkt po EAN. Zostanie dodany do katalogu, gdy potwierdzisz pozycję."
   }
 }

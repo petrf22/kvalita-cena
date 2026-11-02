@@ -1,0 +1,29 @@
+# 02-receipt-line-hint.yaml — návrh kategorie a jednotky nového zboží z řádku účtenky
+# od lokálního modelu (docs/ai.md, „Účtenky", „Návrh kategorie a jednotky").
+#
+# Výstup modelu je poradní údaj, ne stav řádku (docs/ai.md, „AI nikdy nerozhoduje") — proto
+# vlastní tabulka ve schématu ai, mimo core: čistý export vlastních dat nemá nést strojové
+# odhady, které se dají přepočítat jindy jinak. Jen předvyplní formulář nového zboží, nikdy
+# sám zboží nezakládá. Smaže se s řádkem (nový výsledek workeru řádky přepisuje).
+#
+# net_content_uom je jen ROZMĚR (g/kg/ml/l), číslo model nikdy nedodává — gramáž bez čísla
+# do zboží neodejde (dvojice netContentValue/netContentUom, kořenový CLAUDE.md).
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-03-02-receipt-line-hint
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE ai.receipt_line_hint (
+                line_id         BIGINT PRIMARY KEY REFERENCES core.receipt_line(id) ON DELETE CASCADE,
+                category_id     BIGINT REFERENCES core.category(id) ON DELETE SET NULL,
+                net_content_uom VARCHAR(2),
+                model           VARCHAR(100),
+                created_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT chk_receipt_line_hint_uom CHECK (net_content_uom IS NULL
+                  OR net_content_uom IN ('G','KG','ML','L'))
+              );
+      rollback:
+        - sql:
+            sql: DROP TABLE IF EXISTS ai.receipt_line_hint;

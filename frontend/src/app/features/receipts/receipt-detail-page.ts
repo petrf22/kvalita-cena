@@ -17,6 +17,7 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { Observable } from 'rxjs';
 import {
   ConfirmReceiptLinesResult,
@@ -31,11 +32,7 @@ import { AuthService } from '../../services/auth-service';
 import { ConnectivityService, isNetworkError } from '../../services/connectivity-service';
 import { FormatService } from '../../services/format-service';
 import { ReceiptService } from '../../services/receipt-service';
-import {
-  QUANTITY_UNIT_KEYS,
-  RECEIPT_LINE_STATUS_KEYS,
-  RECEIPT_MATCH_SOURCE_KEYS,
-} from '../../shared/enum-labels';
+import { QUANTITY_UNIT_KEYS, RECEIPT_LINE_STATUS_KEYS } from '../../shared/enum-labels';
 import { translateError } from '../../shared/error-message';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { ProductThumb, usesExternalImageFallback } from '../../shared/product-thumb';
@@ -44,14 +41,25 @@ import { ExistingProductMatch, ProductForm } from '../product-form/product-form'
 import { loginRedirect, requiresLogin } from './receipt-auth';
 import { ReceiptImages } from './receipt-images';
 import { ReceiptLineMatch } from './receipt-line-match';
+import { ReceiptLineGroupHeader } from './receipt-line-group-header';
+import { ReceiptLinePanel, offCandidateLabel } from './receipt-line-panel';
 import {
   confirmBlocker,
   defaultSelectedLineIds,
+  groupedLines,
+  guideQueue,
   isAwaitingProcessing,
   isLineConfirmable,
+  isLineGuess,
   isLineLocked,
   isProcessingDeadEnd,
+  type LineGroup,
+  lineGtin,
+  lineLabel,
+  lineRawLabel,
   lineSummary,
+  matchSourceKey,
+  nextInGuide,
   nextSelection,
   purchasedAtToDate,
   receiptStatusColor,
@@ -61,6 +69,7 @@ import {
   samePurchaseTime,
   skipReasonKey,
 } from './receipt-status';
+import { receiptStorePrefill } from './receipt-store-prefill';
 
 /** Stejná perioda jako seznam (`receipts-page.ts`) — dokud stroj účtenku nezpracoval. */
 const PENDING_POLL_MS = 30_000;
@@ -91,11 +100,14 @@ type PageState = 'loading' | 'ready' | 'notFound' | 'error' | 'offline';
     NzPopconfirmModule,
     NzSpinModule,
     NzTagModule,
+    NzTooltipModule,
     MoneyPipe,
     ProductForm,
     ProductThumb,
     ReceiptImages,
     ReceiptLineMatch,
+    ReceiptLineGroupHeader,
+    ReceiptLinePanel,
     StorePicker,
   ],
   providers: [provideTranslocoScope('receipts')],
@@ -113,7 +125,11 @@ export class ReceiptDetailPage {
   private readonly receiptId = inject(ActivatedRoute).snapshot.paramMap.get('id') ?? '';
 
   protected readonly lineStatusKeys = RECEIPT_LINE_STATUS_KEYS;
-  protected readonly matchSourceKeys = RECEIPT_MATCH_SOURCE_KEYS;
+  protected readonly matchSourceKey = matchSourceKey;
+  protected readonly lineGtin = lineGtin;
+  protected readonly lineLabel = lineLabel;
+  protected readonly lineRawLabel = lineRawLabel;
+  protected readonly isGuess = isLineGuess;
   protected readonly statusKey = receiptStatusKey;
   protected readonly statusColor = receiptStatusColor;
   protected readonly isLocked = isLineLocked;
@@ -127,6 +143,11 @@ export class ReceiptDetailPage {
   protected readonly storeName = computed(() => {
     const receipt = this.receipt();
     return receipt ? receiptStoreName(receipt) : null;
+  });
+  /** „Přidat nový obchod" se předvyplní z hlavičky účtenky, ať uživatel neopisuje. */
+  protected readonly storePrefill = computed(() => {
+    const receipt = this.receipt();
+    return receipt ? receiptStorePrefill(receipt) : null;
   });
   protected readonly awaiting = computed(() => {
     const receipt = this.receipt();
@@ -168,6 +189,26 @@ export class ReceiptDetailPage {
   protected readonly lineErrors = signal<Record<string, string>>({});
   protected readonly matchingLineId = signal<string | null>(null);
   protected readonly createForLine = signal<ReceiptLine | null>(null);
+
+  // --- skupiny a panel řádku (výchozí akce po kliknutí, krok průvodce)
+  protected readonly groups = computed(() => groupedLines(this.receipt()?.lines ?? []));
+  /** Hotové a ignorované řádky jsou sbalené — zajímá to, co ještě potřebuje člověka. */
+  protected readonly expandedGroups = signal<ReadonlySet<LineGroup>>(new Set());
+  protected readonly panelLineId = signal<string | null>(null);
+  /** Panel ukazuje hledání zboží — u nespárovaného řádku hned, u návrhu po „Jiné zboží". */
+  protected readonly panelSearching = signal(false);
+  protected readonly guideActive = signal(false);
+  private guide: string[] = [];
+  protected readonly panelLine = computed(() => {
+    const id = this.panelLineId();
+    return id ? (this.receipt()?.lines.find((l) => l.id === id) ?? null) : null;
+  });
+  protected readonly guidePosition = computed(() => {
+    const id = this.panelLineId();
+    if (!this.guideActive() || !id) return null;
+    return { index: this.guide.indexOf(id) + 1, total: this.guide.length };
+  });
+  protected readonly guideCount = computed(() => guideQueue(this.receipt()?.lines ?? []).length);
 
   // --- potvrzení a smazání
   protected readonly confirming = signal(false);
@@ -343,6 +384,10 @@ export class ReceiptDetailPage {
     return quantity ? `${quantity} ${unit}` : '';
   }
 
+  protected offLabel(candidate: NonNullable<ReceiptLine['offCandidate']>): string {
+    return offCandidateLabel(candidate, this.format, this.transloco);
+  }
+
   protected lineColor(line: ReceiptLine): string {
     switch (line.status) {
       case ReceiptLineStatus.Suggested:
@@ -352,6 +397,103 @@ export class ReceiptDetailPage {
       default:
         return 'default';
     }
+  }
+
+  protected isCollapsible(group: LineGroup): boolean {
+    return group === 'done' || group === 'ignored';
+  }
+
+  protected isExpanded(group: LineGroup): boolean {
+    return !this.isCollapsible(group) || this.expandedGroups().has(group);
+  }
+
+  protected toggleGroup(group: LineGroup): void {
+    this.expandedGroups.update((current) => {
+      const next = new Set(current);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
+  }
+
+  /**
+   * Klik na řádek = výchozí akce: panel s tím, co řádek potřebuje. Klik na tlačítko, odkaz
+   * nebo zaškrtávátko uvnitř řádku dělá dál svou vlastní věc.
+   */
+  protected onLineClick(line: ReceiptLine, event: MouseEvent): void {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('button, a, label, input, app-receipt-line-match')) return;
+    if (this.isLocked(line)) return;
+    this.guideActive.set(false);
+    this.showInPanel(line);
+  }
+
+  protected startGuide(): void {
+    const lines = this.receipt()?.lines ?? [];
+    this.guide = guideQueue(lines);
+    this.guideActive.set(true);
+    const first = nextInGuide(this.guide, null, lines);
+    const line = lines.find((l) => l.id === first);
+    if (line) this.showInPanel(line);
+    else this.closePanel();
+  }
+
+  private showInPanel(line: ReceiptLine): void {
+    this.clearLineError(line.id);
+    this.matchingLineId.set(null);
+    this.panelLineId.set(line.id);
+    this.panelSearching.set(line.status === ReceiptLineStatus.Unmatched);
+  }
+
+  protected closePanel(): void {
+    this.panelLineId.set(null);
+    this.guideActive.set(false);
+  }
+
+  /** Další krok průvodce (mimo průvodce zavře panel); aktuální řádek se přeskočí podle fronty. */
+  protected advance(): void {
+    if (!this.guideActive()) {
+      this.closePanel();
+      return;
+    }
+    const lines = this.receipt()?.lines ?? [];
+    const next = nextInGuide(this.guide, this.panelLineId(), lines);
+    const line = lines.find((l) => l.id === next);
+    if (line) this.showInPanel(line);
+    else this.closePanel();
+  }
+
+  /** „Ano, je to ono" — návrh se zaškrtne k potvrzení. */
+  protected acceptSuggestion(line: ReceiptLine): void {
+    this.toggle(line.id, true);
+    this.advance();
+  }
+
+  /**
+   * Posun z panelu až po uložení akce — při výpadku sítě nebo chybě serveru panel zůstane na
+   * řádku a chybu ukáže u něj, ať jde akci hned zopakovat (offline v obchodě, docs/design.md).
+   * Uživatel mezitím mohl panel přepnout jinam; pak se nic neposouvá.
+   */
+  private advanceAfter(line: ReceiptLine): () => void {
+    return () => {
+      if (this.panelLineId() === line.id) this.advance();
+    };
+  }
+
+  protected panelPick(line: ReceiptLine, product: ProductSummary): void {
+    this.runLineAction(
+      line,
+      this.receiptService.matchLine(line.id, product.id),
+      this.advanceAfter(line),
+    );
+  }
+
+  protected panelIgnore(line: ReceiptLine): void {
+    this.runLineAction(line, this.receiptService.ignoreLine(line.id), this.advanceAfter(line));
+  }
+
+  protected panelRestore(line: ReceiptLine): void {
+    this.runLineAction(line, this.receiptService.unmatchLine(line.id), this.advanceAfter(line));
   }
 
   protected openMatch(line: ReceiptLine): void {
@@ -381,13 +523,21 @@ export class ReceiptDetailPage {
   /** Právě založené zboží — spárovat s příznakem `newProduct` (zdroj NEW_PRODUCT). */
   protected onProductCreated(line: ReceiptLine, product: Product): void {
     this.createForLine.set(null);
-    this.runLineAction(line, this.receiptService.matchLine(line.id, product.id, true));
+    this.runLineAction(
+      line,
+      this.receiptService.matchLine(line.id, product.id, true),
+      this.advanceAfter(line),
+    );
   }
 
   /** Formulář místo založení nabídl existující zboží a uživatel ho vybral. */
   protected onExistingMatched(line: ReceiptLine, match: ExistingProductMatch): void {
     this.createForLine.set(null);
-    this.runLineAction(line, this.receiptService.matchLine(line.id, match.product.id));
+    this.runLineAction(
+      line,
+      this.receiptService.matchLine(line.id, match.product.id),
+      this.advanceAfter(line),
+    );
   }
 
   private runLineAction(

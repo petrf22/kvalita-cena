@@ -70,7 +70,17 @@ class ReceiptReviewViewModel(
    * dílu, i když se poslední díl mezitím změnil (ReceiptDraftStore.proposeDefaultMask).
    */
   fun onShown() {
-    draftStore.proposeDefaultMask()
+    viewModelScope.launch {
+      // ViewModel přežívá v back stacku i odhlášení a přihlášení jiného účtu — kontroluje se
+      // proto při každém zobrazení, ne jen při vzniku (docs/soukromi.md, „Účtenky").
+      claimDraft()
+      draftStore.proposeDefaultMask()
+    }
+  }
+
+  /** Koncept pro přihlášený účet ([ReceiptDraftStore.claimFor]); vrací jeho `publicUid`. */
+  private suspend fun claimDraft(): String? = withContext(Dispatchers.IO) {
+    authRepository.currentUserUid().also { draftStore.claimFor(it) }
   }
 
   fun moveUp(index: Int) = draftStore.movePart(index, index - 1)
@@ -113,7 +123,8 @@ class ReceiptReviewViewModel(
     submitError = null
     viewModelScope.launch {
       try {
-        val owner = withContext(Dispatchers.IO) { authRepository.currentUserUid() }
+        // Cizí koncept se zahodí i těsně před zařazením — prázdný pak commitDraft odmítne.
+        val owner = claimDraft()
         val pending = pendingStore.commitDraft(draftStore, version, archive, owner)
         ReceiptNotifications.ensureChannel(appContext)
         ReceiptWork.enqueueUpload(appContext, pending.id)

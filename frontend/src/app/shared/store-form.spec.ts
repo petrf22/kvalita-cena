@@ -143,3 +143,54 @@ describe('StoreForm – propojení adresy a mapy', () => {
     expect(form['locationMessage']()).toBeNull();
   });
 });
+
+describe('StoreForm – předvyplnění z účtenky', () => {
+  const prefill = {
+    name: 'ALBERT',
+    street: 'Nádražní 1',
+    postalCode: '100 00',
+    city: 'Vzorov',
+    ico: '12345678',
+  };
+  let service: { chains: ReturnType<typeof vi.fn>; search: ReturnType<typeof vi.fn> };
+  let form: StoreForm;
+
+  beforeEach(() => {
+    service = { chains: vi.fn(() => of([])), search: vi.fn(() => of({ items: [] })) };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: StoreService, useValue: service },
+        { provide: CountryService, useValue: { country: signal('CZ'), countries: signal([]) } },
+        { provide: TranslocoService, useValue: { translate: (key: string) => key } },
+      ],
+    });
+    form = TestBed.runInInjectionContext(() => new StoreForm());
+  });
+
+  it('vyplní pole a řetězec převezme z číselníku i se zápisem názvu', () => {
+    service.chains.mockReturnValue(of([{ id: '7', name: 'Albert' }]));
+    form['applyPrefill'](prefill);
+    expect(form['prefilled']()).toBe(true);
+    expect(form['street']()).toBe('Nádražní 1');
+    expect(form['postalCode']()).toBe('100 00');
+    expect(form['city']()).toBe('Vzorov');
+    expect(form['ico']()).toBe('12345678');
+    expect(service.chains).toHaveBeenCalledWith('ALBERT', 'CZ');
+    expect(form['chainId']()).toBe('7');
+    expect(form['name']()).toBe('Albert');
+  });
+
+  it('bez shody s číselníkem nechá název, jak ho stroj přečetl', () => {
+    service.chains.mockReturnValue(of([{ id: '8', name: 'Albert Hypermarket' }]));
+    form['applyPrefill'](prefill);
+    expect(form['chainId']()).toBeNull();
+    expect(form['name']()).toBe('ALBERT');
+  });
+
+  it('podruhé už rozepsaný formulář nepřepíše', () => {
+    form['applyPrefill'](prefill);
+    form['city'].set('Jinde');
+    form['applyPrefill'](prefill);
+    expect(form['city']()).toBe('Jinde');
+  });
+});

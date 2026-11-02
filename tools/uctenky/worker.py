@@ -24,19 +24,25 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import ai_classify  # noqa: E402
+import ai_pretty  # noqa: E402
 import api as api_mod  # noqa: E402
 import ocr as ocr_mod  # noqa: E402
 import parse  # noqa: E402
+import pretty  # noqa: E402
 import result as result_mod  # noqa: E402
 
 
-def process_job(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, job: dict, log=print) -> str:
+def process_job(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, job: dict, log=print,
+                dictionary: pretty.Dictionary | None = None, prettifier=None,
+                classifier=None, categories: list[dict] | None = None) -> str:
     receipt_id = job["receiptId"]
     texts = []
     for path in job["imagePaths"]:
         texts.append(extractor.ocr(api.image(path)))
     document = parse.build_document(texts)
-    payload = result_mod.to_payload(document, parse.server_text(texts), extractor.model)
+    payload = result_mod.to_payload(document, parse.server_text(texts), extractor.model,
+                                    dictionary, prettifier, log, classifier, categories)
     api.result(receipt_id, payload)
     items = sum(1 for line in payload["lines"])
     mark = "OK " if document["totalMatches"] else "!! "
@@ -47,18 +53,29 @@ def process_job(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, job: dict,
     return payload["status"]
 
 
-def run_batch(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, limit: int, log=print) -> int:
+def run_batch(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, limit: int, log=print,
+              dictionary: pretty.Dictionary | None = None, prettifier=None, classifier=None) -> int:
     jobs = api.lease(limit)
+    categories = _categories(api, log) if jobs and classifier is not None else []
     for job in jobs:
         try:
-            process_job(api, extractor, job, log)
+            process_job(api, extractor, job, log, dictionary, prettifier, classifier, categories)
         except Exception as error:  # noqa: BLE001 — jedna vadná účtenka nesmí zastavit dávku
             log(f"!! účtenka {job.get('receiptId')}: {error}")
             try:
-                api.fail(job["receiptId"], f"{type(error).__name__}: {error}")
+                api.fail(job["receiptId"], f"{type(error).__name__}: {error}", job.get("leaseUntil"))
             except Exception as report_error:  # noqa: BLE001
                 log(f"!! nepodařilo se nahlásit chybu: {report_error}")
     return len(jobs)
+
+
+def _categories(api: api_mod.WorkerApi, log=print) -> list[dict]:
+    """Kategorie pro návrh modelem — jednou za dávku; výpadek = účtenky bez návrhu, ne chyba."""
+    try:
+        return api.categories()
+    except (api_mod.ApiError, OSError, ValueError) as error:
+        log(f"~ kategorie nedostupné ({error}), účtenky půjdou bez návrhu kategorie")
+        return []
 
 
 def archive(api: api_mod.WorkerApi, target: Path, log=print) -> int:
@@ -83,6 +100,10 @@ def main() -> int:
     parser.add_argument("--token", default=os.environ.get("KC_WORKER_TOKEN"))
     parser.add_argument("--ollama", default=os.environ.get("OLLAMA_HOST", ocr_mod.DEFAULT_HOST))
     parser.add_argument("--model", default=os.environ.get("OCR_MODEL", ocr_mod.DEFAULT_MODEL))
+    parser.add_argument("--pretty-model", default=os.environ.get("PRETTY_MODEL", ai_pretty.DEFAULT_MODEL),
+                        help="model pro dočištění čitelných názvů (prázdné = jen slovník a pravidla)")
+    parser.add_argument("--classify-model", default=os.environ.get("CLASSIFY_MODEL", ai_classify.DEFAULT_MODEL),
+                        help="model pro návrh kategorie a jednotky nového zboží (prázdné = bez návrhu)")
     parser.add_argument("--archive-dir", type=Path,
                         default=Path(os.environ["ARCHIVE_DIR"]) if os.environ.get("ARCHIVE_DIR") else None)
     parser.add_argument("--batch", type=int, default=5)
@@ -94,9 +115,14 @@ def main() -> int:
 
     api = api_mod.WorkerApi(args.api, args.token)
     extractor = ocr_mod.OllamaOcr(args.ollama, args.model)
+    prettifier = ai_pretty.OllamaPrettifier(args.ollama, args.pretty_model) if args.pretty_model else None
+    classifier = ai_classify.OllamaClassifier(args.ollama, args.classify_model) if args.classify_model else None
     while True:
+        # Slovník se načítá před každou dávkou — úprava z curate.py platí bez restartu workeru.
+        dictionary = pretty.load_dictionary()
         try:
-            processed = run_batch(api, extractor, args.batch)
+            processed = run_batch(api, extractor, args.batch, dictionary=dictionary, prettifier=prettifier,
+                                  classifier=classifier)
             if args.archive_dir:
                 archive(api, args.archive_dir)
         except (api_mod.ApiError, OSError) as error:

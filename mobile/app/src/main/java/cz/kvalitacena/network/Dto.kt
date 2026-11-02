@@ -786,14 +786,17 @@ data class ReceiptLineCounts(
 /**
  * Řádek účtenky. Enumy se jako všude jinde v appce mapují ručně na String (appka typy ze
  * schématu negeneruje, kořenový CLAUDE.md): [status] UNMATCHED/SUGGESTED/MATCHED/IGNORED,
- * [matchSource] CODE/LABEL/USER/NEW_PRODUCT, [quantityUnit] PCS/KG/L. [unitPrice] je u váhového
- * zboží cena za kg/l, ne zaplacená částka ([lineTotal]).
+ * [matchSource] CODE/LABEL/FUZZY/USER/NEW_PRODUCT (FUZZY je jen odhad podle podobnosti názvu,
+ * docs/ai.md), [quantityUnit] PCS/KG/L. [unitPrice] je u váhového zboží cena za kg/l, ne
+ * zaplacená částka ([lineTotal]). [labelDisplay] je čitelný název od workeru jen pro oči,
+ * hledání a předvyplnění — párování se učí podle [labelRaw]; u starších účtenek chybí.
  */
 @Serializable
 data class ReceiptLine(
   val id: String,
   val lineNo: Int,
   val labelRaw: String,
+  val labelDisplay: String? = null,
   val internalCode: String? = null,
   val quantity: Double? = null,
   val quantityUnit: String = "PCS",
@@ -809,7 +812,30 @@ data class ReceiptLine(
   val confirmed: Boolean = false,
   // DUPLICATE_SAME_DAY, nebo kód chyby (ErrorCode), proč potvrzení cenu nezapsalo.
   val skipReason: String? = null,
+  // Náhled z Open Food Facts u návrhu matchSource OFF — zboží zatím neexistuje, založí se
+  // až potvrzením řádku (docs/ai.md, „Účtenky").
+  val offCandidate: ExternalProductCandidate? = null,
 )
+
+/**
+ * Předvyplnění formuláře nového zboží z řádku účtenky (`receiptLineProductDefaults`) — zdroj
+ * RECEIPT/CATALOG/AI říká, jak moc tomu věřit; u AI formulář ukáže štítek „návrh". Gramáž
+ * chodí vždy jako dvojice, u AI může přijít jen jednotka bez čísla.
+ */
+@Serializable
+data class ReceiptLineProductDefaults(
+  val name: String? = null,
+  val code: String? = null,
+  val category: Category? = null,
+  val categorySource: String? = null,
+  val netContentValue: Double? = null,
+  val netContentUom: String? = null,
+  val isVariableWeight: Boolean = false,
+  val netContentSource: String? = null,
+)
+
+@Serializable
+data class ReceiptLineProductDefaultsData(val receiptLineProductDefaults: ReceiptLineProductDefaults? = null)
 
 /**
  * Naskenovaná účtenka — vidí ji jen vlastník. [lines] chodí jen v detailu (RECEIPT_DETAIL_FIELDS),

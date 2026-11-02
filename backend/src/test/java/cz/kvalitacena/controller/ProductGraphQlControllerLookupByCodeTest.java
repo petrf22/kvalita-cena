@@ -101,11 +101,14 @@ class ProductGraphQlControllerLookupByCodeTest {
   }
 
   private ProductGraphQlController controller() {
-    return new ProductGraphQlController(catalogProperties, productRepository, priceCurrentRepository,
+    ExternalProductCandidateFactory candidateFactory = new ExternalProductCandidateFactory(categoryRepository,
+        offNetContentConverter, TestI18n.nameResolver(), TestI18n.imageResolver(), externalLinkProperties,
+        TestMessages.instance());
+    return new ProductGraphQlController(catalogProperties, candidateFactory, productRepository, priceCurrentRepository,
         productCodeRepository, offProductRepository, storeRepository, categoryRepository, categoryI18nRepository,
         productSearchService,
         reviewService, productCatalogService, offProductCatalogService, openFoodFactsService,
-        offNetContentConverter, productOverlayService, TestI18n.nameResolver(), TestI18n.imageResolver(),
+        productOverlayService, TestI18n.nameResolver(),
         productNameRepository, productUserEditRepository, catalogEditService, myPriceService, mediaService,
         viewerContextResolver, externalLinkProperties, TestMessages.instance(), countryResolver, fxRateService);
   }

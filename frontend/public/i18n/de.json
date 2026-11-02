@@ -233,8 +233,10 @@
     "receiptMatchSource": {
       "CODE": "nach dem Code auf dem Kassenbon",
       "LABEL": "nach dem Namen auf dem Kassenbon",
+      "FUZZY": "nur nach ähnlichem Namen",
       "USER": "von Hand gewählt",
-      "NEW_PRODUCT": "neu angelegtes Produkt"
+      "NEW_PRODUCT": "neu angelegtes Produkt",
+      "OFF": "nach EAN aus Open Food Facts"
     },
     "quantityUnit": {
       "PCS": "Stk.",

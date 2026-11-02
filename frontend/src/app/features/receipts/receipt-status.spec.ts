@@ -5,9 +5,18 @@ import {
   confirmBlocker,
   consentOutdated,
   defaultSelectedLineIds,
+  groupedLines,
+  guideQueue,
   isLineConfirmable,
+  isLineOffSuggestion,
+  isLineGuess,
   isLineLocked,
+  lineGtin,
+  lineLabel,
+  lineRawLabel,
   lineSummary,
+  matchSourceKey,
+  nextInGuide,
   nextSelection,
   receiptStatusColor,
   receiptStatusKey,
@@ -21,6 +30,7 @@ function line(id: string, overrides: Partial<ReceiptLine> = {}): ReceiptLine {
     id,
     lineNo: Number(id),
     labelRaw: `RADEK ${id}`,
+    labelDisplay: null,
     internalCode: null,
     quantity: 1,
     quantityUnit: 'PCS',
@@ -105,6 +115,86 @@ describe('výběr řádků k potvrzení', () => {
   });
 });
 
+describe('odhad zboží podle podobnosti názvu (FUZZY)', () => {
+  const product = (id: string) => ({ id }) as ReceiptLine['product'];
+  const guess = (id: string, productId = 'p1') =>
+    line(id, { status: 'SUGGESTED', matchSource: 'FUZZY', product: product(productId) });
+
+  it('odhad jde potvrdit, ale je označený jako odhad; potvrzený už odhad není', () => {
+    expect(isLineConfirmable(guess('1'))).toBe(true);
+    expect(isLineGuess(guess('1'))).toBe(true);
+    expect(matchSourceKey(guess('1'))).toBe('enum.receiptMatchSource.FUZZY');
+    expect(isLineGuess(line('1', { status: 'SUGGESTED', matchSource: 'LABEL' }))).toBe(false);
+    expect(
+      isLineGuess(
+        line('1', { status: 'MATCHED', matchSource: 'FUZZY', observationId: '3', confirmed: true }),
+      ),
+    ).toBe(false);
+  });
+
+  it('předem se nezaškrtne, jisté návrhy ano', () => {
+    const lines = [
+      line('1', { status: 'SUGGESTED', matchSource: 'CODE' }),
+      guess('2'),
+      line('3', { status: 'SUGGESTED', matchSource: 'LABEL' }),
+    ];
+    expect([...defaultSelectedLineIds(lines)]).toEqual(['1', '3']);
+  });
+
+  it('nový odhad od serveru se po obnově nezaškrtne', () => {
+    const before = [line('1')];
+    const after = [guess('1')];
+    expect([...nextSelection(new Set(), before, after)]).toEqual([]);
+  });
+
+  it('odhad, který si uživatel zaškrtl sám, zůstane zaškrtnutý', () => {
+    const lines = [guess('1')];
+    expect([...nextSelection(new Set(['1']), lines, lines)]).toEqual(['1']);
+  });
+
+  it('jiný odhad po změně obchodu zaškrtnutí ztratí — nové zboží uživatel neviděl', () => {
+    const before = [guess('1', 'p1')];
+    const after = [guess('1', 'p2')];
+    expect([...nextSelection(new Set(['1']), before, after)]).toEqual([]);
+  });
+
+  it('jistý návrh, ze kterého se stal odhad, zaškrtnutí ztratí', () => {
+    const before = [
+      line('1', { status: 'SUGGESTED', matchSource: 'LABEL', product: product('p1') }),
+    ];
+    const after = [guess('1', 'p2')];
+    expect([...nextSelection(new Set(['1']), before, after)]).toEqual([]);
+  });
+
+  it('když uživatel u odhadu vybere zboží ručně, nebo ho přebije naučené označení, zaškrtne se', () => {
+    const before = [guess('1'), guess('2')];
+    const after = [
+      line('1', { status: 'SUGGESTED', matchSource: 'USER', product: product('p1') }),
+      line('2', { status: 'SUGGESTED', matchSource: 'LABEL', product: product('p1') }),
+    ];
+    expect([...nextSelection(new Set(), before, after)]).toEqual(['1', '2']);
+  });
+});
+
+describe('název řádku', () => {
+  it('ukazuje čitelný název a syrový tisk jen tehdy, když se liší', () => {
+    const pretty = line('1', { labelRaw: 'ROHLÍK43GR', labelDisplay: 'Rohlík 43g' });
+    expect(lineLabel(pretty)).toBe('Rohlík 43g');
+    expect(lineRawLabel(pretty)).toBe('ROHLÍK43GR');
+  });
+
+  it('starší účtenka bez čitelného názvu ukáže syrový tisk jen jednou', () => {
+    const old = line('1', { labelRaw: 'ROHLÍK43GR', labelDisplay: null });
+    expect(lineLabel(old)).toBe('ROHLÍK43GR');
+    expect(lineRawLabel(old)).toBeNull();
+  });
+
+  it('prázdný čitelný název se nebere, shodný se syrovým se neopakuje', () => {
+    expect(lineLabel(line('1', { labelRaw: 'MLEKO', labelDisplay: '  ' }))).toBe('MLEKO');
+    expect(lineRawLabel(line('1', { labelRaw: 'Mléko', labelDisplay: 'Mléko' }))).toBeNull();
+  });
+});
+
 describe('proč potvrzení nejde', () => {
   const ready = {
     processingStatus: 'PROCESSED',
@@ -149,5 +239,73 @@ describe('verze souhlasu', () => {
     expect(consentOutdated(null)).toBe(false);
     expect(consentOutdated(RECEIPT_CONSENT_VERSION)).toBe(false);
     expect(consentOutdated(RECEIPT_CONSENT_VERSION + 1)).toBe(true);
+  });
+});
+
+describe('EAN řádku', () => {
+  it('vrátí globální EAN z účtenky', () => {
+    expect(lineGtin(line('1', { internalCode: '8594001740659' }))).toBe('8594001740659');
+    expect(lineGtin(line('1', { internalCode: ' 8594001740659 ' }))).toBe('8594001740659');
+  });
+
+  it('vnitroobchodní kód, etiketu váhového zboží ani špatnou kontrolní číslici za EAN nevydává', () => {
+    expect(lineGtin(line('1', { internalCode: null }))).toBeNull();
+    expect(lineGtin(line('1', { internalCode: '123456' }))).toBeNull();
+    expect(lineGtin(line('1', { internalCode: '2012345678903' }))).toBeNull();
+    expect(lineGtin(line('1', { internalCode: '5997321796297' }))).toBeNull();
+  });
+
+  it('párování podle kódu s EANem popíše jako „podle EAN"', () => {
+    expect(matchSourceKey(line('1', { matchSource: 'CODE', internalCode: '8594001740659' }))).toBe(
+      'receipts.line.matchedByEan',
+    );
+  });
+
+  it('ostatní zdroje párování nechá u obecného popisku', () => {
+    expect(matchSourceKey(line('1', { matchSource: 'CODE', internalCode: '123456' }))).toBe(
+      'enum.receiptMatchSource.CODE',
+    );
+    expect(matchSourceKey(line('1', { matchSource: 'LABEL', internalCode: '8594001740659' }))).toBe(
+      'enum.receiptMatchSource.LABEL',
+    );
+    expect(matchSourceKey(line('1', { matchSource: null }))).toBeNull();
+  });
+});
+
+describe('skupiny řádků a průvodce', () => {
+  const lines = [
+    line('1', { status: 'SUGGESTED', matchSource: 'CODE' }),
+    line('2', { status: 'SUGGESTED', matchSource: 'FUZZY' }),
+    line('3', { status: 'UNMATCHED' }),
+    line('4', { status: 'MATCHED', matchSource: 'LABEL', confirmed: true }),
+    line('5', { status: 'IGNORED' }),
+    line('6', { status: 'SUGGESTED', matchSource: 'OFF' }),
+    line('7', { status: 'UNMATCHED' }),
+  ];
+
+  it('skupiny jdou od toho, co potřebuje člověka', () => {
+    expect(groupedLines(lines).map((g) => [g.group, g.lines.map((l) => l.id)])).toEqual([
+      ['toResolve', ['3', '7']],
+      ['toCheck', ['2']],
+      ['ready', ['1', '6']],
+      ['done', ['4']],
+      ['ignored', ['5']],
+    ]);
+  });
+
+  it('návrh z Open Food Facts je předem zaškrtnutý jako shoda EAN', () => {
+    expect(isLineOffSuggestion(lines[5])).toBe(true);
+    expect(defaultSelectedLineIds(lines)).toEqual(new Set(['1', '6']));
+  });
+
+  it('průvodce projde nespárované, pak odhady, a přeskočí vyřešené', () => {
+    const queue = guideQueue(lines);
+    expect(queue).toEqual(['3', '7', '2']);
+    const resolved = lines.map((l) =>
+      l.id === '7' ? { ...l, status: 'SUGGESTED' as const, matchSource: 'LABEL' as const } : l,
+    );
+    expect(nextInGuide(queue, '3', resolved)).toBe('2');
+    expect(nextInGuide(queue, null, resolved)).toBe('3');
+    expect(nextInGuide(queue, '2', resolved)).toBeNull();
   });
 });

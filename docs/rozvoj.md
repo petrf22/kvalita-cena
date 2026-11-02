@@ -118,7 +118,7 @@ aktualizace více cen najednou a uložení účtenky jako přehledu vlastního n
 Zpracování přes lokálně nainstalovanou AI (Ollama na domácím PC, alespoň zpočátku) jako noční
 fronta úloh — náročnost a nároky na grafickou kartu se ověří až v testovacím režimu.
 
-Navazuje přímo na `docs/ai.md` (tabulka „Čtyři úlohy a jejich pořadí", řádek „OCR ceny z fotky",
+Navazuje přímo na `docs/ai.md` (tabulka „Úlohy a jejich pořadí", řádek „OCR ceny z fotky",
 a oddíl „Vazba na `f_evid`" — schéma má od začátku nést druh důkazu `RECEIPT_OCR` /
 `PRICE_TAG_PHOTO`, ne jen odkaz na fotku). Celá účtenka je přirozené rozšíření týž úlohy z jedné
 ceny na celý nákup najednou — nejde o novou architekturu.
@@ -145,6 +145,12 @@ appka jen posílá malé narovnané výřezy místo syrového videa nebo panoram
 úvaha o ML Kitu (Google, vyžaduje GMS) vs. Tesseract pro on-device OCR pro dvě distribuce
 appky (F-Droid/Play) — na klientovi žádné rozpoznávání textu neběží, takže se appka kvůli téhle
 funkci nemusí ohýbat kvůli druhé licenci ani druhé závislosti jen pro jednu z variant.
+
+Dlouhá účtenka se snímá déle, než bývá systémový limit zhasnutí displeje — obrazovka snímání
+proto drží displej rozsvícený (`KeepScreenOn`, jen příznak okna) a nabízí svítilnu proti stínu
+telefonu. Na světlé podložce, kde hrana papíru nemá kontrast, hledá detekce i pruh hustého
+tisku; když účtenku 3 s nenajde, poradí a nabídne snímání podle pevného rámečku na displeji
+(prahy `docs/ai.md`, „Snímání na klientovi").
 
 Platí i „**AI nikdy nerozhoduje**" (`docs/ai.md`): vytěžení účtenky vytvoří **návrh k potvrzení
 uživatelem**, model sám nezakládá `core.price_observation` ani nic jiného rovnou.
@@ -184,8 +190,43 @@ z účtenky duplicitní řádky **přeskočí a nahlásí** (`receipt_line.skip_
 ve vlastním savepointu. **Pozdější párování:** když se označení aktivuje, server nespárované
 řádky ostatních účtenek (mladší 180 dní) se shodným označením v rozsahu přepne na
 `SUGGESTED` a vlastník dostane upozornění — cenu nezapisuje za něj. Detail zboží má kartu
-„Názvy na účtenkách". Otevřené zůstává: leták a kdo opravuje špatné mapování (zatím
-moderátor přes SQL / `mergeProducts`).
+„Názvy na účtenkách". Otevřené zůstává leták.
+
+**Stav (2026-11-02):** přibyly tři věci.
+
+- **Čitelný název řádku.** Worker posílá `labelDisplay` („ROHLÍK43GR" → „Rohlík 43g") ze
+  slovníku, pravidel a hlídaného modelu (`docs/ai.md`, „Účtenky"). Používá se pro zobrazení,
+  hledání a předvyplnění nového zboží. Mapování se dál učí podle syrového tisku.
+- **Krok 3a: odhad (`match_source = FUZZY`).** Když nesedí kód ani naučené označení, server
+  zkusí jednoznačnou podobnost čitelného názvu se zbožím v rozsahu prodejny (prahy
+  `auto-match-*`, `docs/ai.md`). Musí sedět i gramáž a zboží nesmí mít jiný EAN. Řádek dostane
+  `SUGGESTED`, ale klient ho ukáže jako „odhad" a **nezaškrtne předem**. Naučené označení
+  odhad u jiných účtenek přebije (`suggestUnmatched`).
+- **Mapování provozovatelem** (`tools/uctenky/curate.py`, `/api/curator/**`, token
+  `LABEL_CURATOR`). Provozovatel vidí nespárovaná označení seskupená podle řetězce, opraví
+  čitelný název nebo zkratku do slovníku v gitu a spáruje označení se zbožím.
+  - Takové mapování (`product_store_label.source = OPERATOR`) platí **hned**, bez potvrzeného
+    řádku. Je to vědomá výjimka z pravidla níž: dělá ho člověk, který katalog spravuje, a cenu
+    dál zapisuje jen potvrzení vlastníka účtenky.
+  - Přepsat existující mapování jde jen výslovně (`replace`). Tím je zodpovězená otevřená
+    otázka „kdo opravuje špatné mapování": provozovatel přes `curate.py`.
+  - Uživatelský hlas pro jiné zboží mapování nepřepíše, stejně jako dnes u mapování od
+    uživatelů.
+
+**Stav (2026-11-03):** cílem je, aby uživatel ručně řešil jen řádky, na které appka sama
+nestačí.
+
+- **EAN bez obchodu.** Krok 1 páruje globální EAN i u účtenky bez známého obchodu.
+- **Návrh z Open Food Facts.** EAN, který zná jen OFF, dá návrh `match_source = OFF` bez zboží
+  a zboží se založí potvrzením řádku (`docs/ai.md`, „Účtenky").
+- **Předvyplnění nového zboží.** Formulář dostane kategorii a gramáž z řádku, ze shody
+  podobného zboží v katalogu, nebo z návrhu lokálního modelu.
+- **Revize podle toho, co je potřeba.** Řádky jsou ve skupinách, klik nebo ťuknutí na řádek
+  otevře panel s výchozí akcí a průvodce „Doplnit nerozpoznané" projde jen to, co potřebuje
+  člověka.
+
+Naučené jméno z účtenky (krok 2) platí po prvním potvrzení (`label-confirmations = 1`), ale
+jen v rozsahu řetězce. Bez potvrzeného nebo navrženého obchodu se proto nepoužije.
 
 **Zadání:** účtenka i akční leták mluví názvoslovím obchodu, ne katalogu — na účtence je
 `ROHLIK TUZ 43G`, ne EAN a ne „Rohlík tukový 43 g". EAN na účtence prakticky nikdy není, takže
@@ -234,6 +275,7 @@ na alias:
 
 1. vnitroobchodní kód z řádku → `core.product_code` (`STORE_INTERNAL` + `chain_id`) — jistota,
 2. přesná shoda `label_norm` v rozsahu (nejdřív provozovna, pak řetězec) → mapovací tabulka,
+3a. jednoznačná podobnost čitelného názvu → odhad `FUZZY` (od 2026-11, viz „Stav" výš),
 3. podobnost přes `pg_trgm` proti označením v rozsahu, pak proti `core.product_alias` a názvu
    zboží — stejné skóre jako `productSuggestions` (maximum ze `similarity`/`word_similarity`,
    `docs/stav-implementace.md`),
@@ -268,8 +310,8 @@ obrázku.
 **Otevřené otázky:** rozlišovat u označení, odkud se naučilo (účtenka vs. leták)? Zkratky
 z účtenky a marketingové názvy z letáku jsou jiný slovník a jeden jmenný prostor pro obojí může
 párovat nesmysly — sloučit je do jednoho pole se nedoporučuje, ale rozhodnout se má až podle
-skutečných dat z testovacího provozu. A dál: kdo smí mapování opravit, když se naučí špatně —
-moderátor, nebo stačí komunitní práh jako u aliasu.
+skutečných dat z testovacího provozu. Otázka, kdo smí mapování opravit, když se naučí špatně,
+je od 2026-11 vyřešená: provozovatel přes `curate.py` s `replace` (viz „Stav" výš).
 
 ## Zdroj ceny: kanál klienta vs. druh důkazu (ČÁSTEČNĚ)
 
@@ -449,7 +491,7 @@ není důkaz nepřítomnosti. Patří sem i odstavec do `docs/podminky-uziti.md`
 **Vazba na fotku etikety a lokální AI:** `core.media.photo_kind = LABEL` (formulář nového zboží,
 `docs/ai.md`) je zamýšlený budoucí vstup pro čtení složení/textu z etikety — pro zboží, které OFF
 nezná, pravděpodobně jediná praktická cesta k nutričním datům bez ODbL zátěže (fotka etikety je
-vlastní data, ne cizí). Navazuje na `docs/ai.md`, „Čtyři úlohy a jejich pořadí" jako pátá úloha,
+vlastní data, ne cizí). Navazuje na `docs/ai.md`, „Úlohy a jejich pořadí" jako další úloha,
 stejnou infrastrukturou (fronta vzorem `agg.recompute_queue`, verdikty do schématu `ai`, AI nikdy
 nerozhoduje sama — jen předvyplní formulář, potvrzuje člověk).
 

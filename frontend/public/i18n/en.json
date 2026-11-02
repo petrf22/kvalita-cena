@@ -233,8 +233,10 @@
     "receiptMatchSource": {
       "CODE": "by the code on the receipt",
       "LABEL": "by the name on the receipt",
+      "FUZZY": "only by a similar name",
       "USER": "chosen by hand",
-      "NEW_PRODUCT": "newly added product"
+      "NEW_PRODUCT": "newly added product",
+      "OFF": "by EAN from Open Food Facts"
     },
     "quantityUnit": {
       "PCS": "pcs",

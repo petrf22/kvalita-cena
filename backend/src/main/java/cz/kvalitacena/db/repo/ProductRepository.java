@@ -25,6 +25,48 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
   List<Product> findWithBrandAndCategoryByIdIn(Collection<Long> ids);
 
   /**
+   * Společný základ podobnosti podle názvu pro {@link #findSimilarByName}
+   * a {@link #findSimilarByNameScored} — jedna definice, ať automatický odhad z účtenky
+   * a našeptávač nikdy neměří jinak.
+   */
+  String SIMILAR_BY_NAME_FROM = """
+      FROM core.product p
+      LEFT JOIN core.product_code pc ON pc.product_id=p.id AND pc.code_type='GTIN'
+      LEFT JOIN off.product op ON op.gtin=pc.code AND op.fetch_status='FOUND'
+      LEFT JOIN core.product_alias pa ON pa.product_id=p.id
+        AND (pa.status='ACTIVE' OR EXISTS (SELECT 1 FROM core.product_alias_confirmation pac
+             WHERE pac.alias_id=pa.id AND pac.user_id=:viewerId))
+      LEFT JOIN core.product_name pn ON pn.product_id=p.id
+      LEFT JOIN off.product_name opn ON opn.gtin=op.gtin
+      WHERE p.status IN ('ACTIVE', 'DRAFT')
+      AND (:storeId IS NULL OR p.catalog_scope IN ('GLOBAL', 'LEGACY_GLOBAL')
+        OR (p.catalog_scope='STORE' AND p.scope_store_id=:storeId)
+        OR (p.catalog_scope='CHAIN' AND p.scope_chain_id=(SELECT s.chain_id FROM core.store s WHERE s.id=:storeId)))
+      AND (GREATEST(similarity(core.norm_text(COALESCE(op.product_name,p.name)), core.norm_text(:name)),
+                    word_similarity(core.norm_text(:name), core.norm_text(COALESCE(op.product_name,p.name)))) > :threshold
+        OR GREATEST(similarity(core.norm_text(pa.name), core.norm_text(:name)),
+                    word_similarity(core.norm_text(:name), core.norm_text(pa.name))) > :threshold
+        OR GREATEST(similarity(core.norm_text(pn.name), core.norm_text(:name)),
+                    word_similarity(core.norm_text(:name), core.norm_text(pn.name))) > :threshold
+        OR GREATEST(similarity(core.norm_text(opn.name), core.norm_text(:name)),
+                    word_similarity(core.norm_text(:name), core.norm_text(opn.name))) > :threshold)
+      GROUP BY p.id, op.product_name
+      """;
+
+  /** Skóre podobnosti (0–1) k {@link #SIMILAR_BY_NAME_FROM}: nejlepší shoda přes všechny názvy zboží. */
+  String SIMILAR_BY_NAME_SCORE = """
+      GREATEST(
+        GREATEST(similarity(core.norm_text(COALESCE(op.product_name,p.name)), core.norm_text(:name)),
+                 word_similarity(core.norm_text(:name), core.norm_text(COALESCE(op.product_name,p.name)))),
+        COALESCE(MAX(GREATEST(similarity(core.norm_text(pa.name), core.norm_text(:name)),
+                              word_similarity(core.norm_text(:name), core.norm_text(pa.name)))), 0),
+        COALESCE(MAX(GREATEST(similarity(core.norm_text(pn.name), core.norm_text(:name)),
+                              word_similarity(core.norm_text(:name), core.norm_text(pn.name)))), 0),
+        COALESCE(MAX(GREATEST(similarity(core.norm_text(opn.name), core.norm_text(:name)),
+                              word_similarity(core.norm_text(:name), core.norm_text(opn.name)))), 0))
+      """;
+
+  /**
    * Podobné zboží podle názvu (idx_product_name_trgm, idx_product_alias_name_trgm) — slouží
    * jako první nabídka pro bezkódový zápis (existující druhové položky nahoru) i jako povinná
    * kontrola duplicit před založením nového zboží (docs/reputace.md, "Zboží bez čárového kódu").
@@ -46,46 +88,35 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
    * kdo potvrdit (docs/reputace.md, "Práh důvěry pro zveřejnění nového záznamu" — najít je
    * cíleně musí jít i jiným přispěvatelům), ale nepotvrzený název nemá stát nad zavedeným.
    */
-  @Query(value = """
-      SELECT p.* FROM core.product p
-      LEFT JOIN core.product_code pc ON pc.product_id=p.id AND pc.code_type='GTIN'
-      LEFT JOIN off.product op ON op.gtin=pc.code AND op.fetch_status='FOUND'
-      LEFT JOIN core.product_alias pa ON pa.product_id=p.id
-        AND (pa.status='ACTIVE' OR EXISTS (SELECT 1 FROM core.product_alias_confirmation pac
-             WHERE pac.alias_id=pa.id AND pac.user_id=:viewerId))
-      LEFT JOIN core.product_name pn ON pn.product_id=p.id
-      LEFT JOIN off.product_name opn ON opn.gtin=op.gtin
-      WHERE p.status IN ('ACTIVE', 'DRAFT')
-      AND (:storeId IS NULL OR p.catalog_scope IN ('GLOBAL', 'LEGACY_GLOBAL')
-        OR (p.catalog_scope='STORE' AND p.scope_store_id=:storeId)
-        OR (p.catalog_scope='CHAIN' AND p.scope_chain_id=(SELECT s.chain_id FROM core.store s WHERE s.id=:storeId)))
-      AND (GREATEST(similarity(core.norm_text(COALESCE(op.product_name,p.name)), core.norm_text(:name)),
-                    word_similarity(core.norm_text(:name), core.norm_text(COALESCE(op.product_name,p.name)))) > :threshold
-        OR GREATEST(similarity(core.norm_text(pa.name), core.norm_text(:name)),
-                    word_similarity(core.norm_text(:name), core.norm_text(pa.name))) > :threshold
-        OR GREATEST(similarity(core.norm_text(pn.name), core.norm_text(:name)),
-                    word_similarity(core.norm_text(:name), core.norm_text(pn.name))) > :threshold
-        OR GREATEST(similarity(core.norm_text(opn.name), core.norm_text(:name)),
-                    word_similarity(core.norm_text(:name), core.norm_text(opn.name))) > :threshold)
-      GROUP BY p.id, op.product_name
+  @Query(value = "SELECT p.* " + SIMILAR_BY_NAME_FROM + """
       ORDER BY CASE WHEN p.scope_store_id=:storeId THEN 0
         WHEN p.scope_chain_id=(SELECT s.chain_id FROM core.store s WHERE s.id=:storeId) THEN 1
         WHEN p.catalog_scope='GLOBAL' THEN 2 ELSE 3 END,
       p.is_generic DESC,
       CASE WHEN p.status='DRAFT' THEN 1 ELSE 0 END,
-      GREATEST(
-        GREATEST(similarity(core.norm_text(COALESCE(op.product_name,p.name)), core.norm_text(:name)),
-                 word_similarity(core.norm_text(:name), core.norm_text(COALESCE(op.product_name,p.name)))),
-        COALESCE(MAX(GREATEST(similarity(core.norm_text(pa.name), core.norm_text(:name)),
-                              word_similarity(core.norm_text(:name), core.norm_text(pa.name)))), 0),
-        COALESCE(MAX(GREATEST(similarity(core.norm_text(pn.name), core.norm_text(:name)),
-                              word_similarity(core.norm_text(:name), core.norm_text(pn.name)))), 0),
-        COALESCE(MAX(GREATEST(similarity(core.norm_text(opn.name), core.norm_text(:name)),
-                              word_similarity(core.norm_text(:name), core.norm_text(opn.name)))), 0)) DESC
-      LIMIT :limit
-      """, nativeQuery = true)
+      """ + SIMILAR_BY_NAME_SCORE + " DESC LIMIT :limit", nativeQuery = true)
   List<Product> findSimilarByName(@Param("name") String name, @Param("storeId") Long storeId,
       @Param("viewerId") Long viewerId, @Param("threshold") double threshold, @Param("limit") int limit);
+
+  /**
+   * Totéž měření jako {@link #findSimilarByName}, ale s číselným skóre a řazené jen podle něj —
+   * podklad pro automatický odhad zboží k řádku účtenky ({@code ReceiptMatchingService}), kde
+   * rozhoduje odstup nejlepšího kandidáta od druhého. Jedno zboží s víc GTIN se může vrátit
+   * víckrát (seskupuje se i podle názvu z OFF), volající si ho sloučí.
+   */
+  @Query(value = "SELECT p.id AS id, p.status AS status, " + SIMILAR_BY_NAME_SCORE + " AS score "
+      + SIMILAR_BY_NAME_FROM + " ORDER BY score DESC, p.id LIMIT :limit", nativeQuery = true)
+  List<ScoredProduct> findSimilarByNameScored(@Param("name") String name, @Param("storeId") Long storeId,
+      @Param("viewerId") Long viewerId, @Param("threshold") double threshold, @Param("limit") int limit);
+
+  /** Řádek {@link #findSimilarByNameScored}. */
+  interface ScoredProduct {
+    Long getId();
+
+    String getStatus();
+
+    Double getScore();
+  }
 
   /**
    * Celá lokální nabídka jedné provozovny BEZ zadaného názvu — aby uživatel viděl, co v obchodě

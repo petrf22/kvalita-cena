@@ -20,7 +20,7 @@ import { CountryService } from '../services/country-service';
 import { StoreService } from '../services/store-service';
 import { LastStoreService } from '../services/last-store-service';
 import { translateError } from './error-message';
-import { StoreForm } from './store-form';
+import { StoreForm, StorePrefill } from './store-form';
 import { storeLabel } from './store-label';
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -56,6 +56,8 @@ export class StorePicker implements OnInit {
   protected readonly storeLabel = storeLabel;
 
   readonly selectedStoreId = input<string | null>(null);
+  /** Čím předvyplnit formulář nového obchodu (detail účtenky), jinak se otevře prázdný. */
+  readonly prefill = input<StorePrefill | null>(null);
   /**
    * Bez výběru od rodiče obnovit naposledy použitý obchod. U zápisu ceny je to zkratka (člověk
    * zapisuje v tomtéž obchodě), u účtenky past: účtenka je odjinud a předvybraný obchod by

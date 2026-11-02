@@ -145,10 +145,17 @@
   },
   "line": {
     "selectLabel": "Zapísať cenu z riadku {{label}}",
+    "selectGuessLabel": "Zapísať cenu z riadku {{label}} (tovar je len odhad podľa názvu, skontroluj ho)",
     "quantityPieces": "{{quantity}} {{unit}} × {{price}}",
     "quantityWeighed": "{{quantity}} {{unit}} × {{price}} za {{unit}}",
     "pricePerUnit": "{{price}} za {{unit}}",
     "discount": "zľava −{{amount}}",
+    "ean": "EAN {{code}}",
+    "raw": "Takto je položka vytlačená na bločku",
+    "matchedByEan": "podľa EAN z bločku",
+    "guess": "odhad",
+    "guessHint": "Tovar je navrhnutý len podľa podobnosti názvu. Skontroluj, že sedí, a až potom riadok zaškrtni — appka si potvrdenie zapamätá aj pre ďalšie bločky.",
+    "guessHintWithEan": "Tovar je navrhnutý len podľa podobnosti názvu. Skontroluj, že sedí, a až potom riadok zaškrtni — potvrdením tovar dostane aj EAN z bločku a appka si ho zapamätá pre ďalšie bločky.",
     "recorded": "Cena zapísaná",
     "findProduct": "Nájsť tovar",
     "changeProduct": "Zmeniť tovar",
@@ -177,6 +184,25 @@
   "create": {
     "title": "Nový tovar z bločku",
     "labelPrefix": "Na bločku:",
-    "hint": "Skratku z bločku prepíš na celý názov, ako ho poznáš z obalu. Tovar sa založí pre tento obchod a riadok sa s ním rovno spáruje."
+    "hint": "Skratku z bločku prepíš na celý názov, ako ho poznáš z obalu. Tovar sa založí pre tento obchod a riadok sa s ním rovno spáruje.",
+    "hintWithCode": "Skontroluj názov — má byť celý, ako ho poznáš z obalu, nie skratka z bločku. Čiarový kód je prevzatý z bločku, takže tovar pôjde nájsť aj v ostatných obchodoch. Riadok sa s ním rovno spáruje."
+  },
+  "guide": {
+    "start": "Doplniť nerozpoznané ({{count}})",
+    "progress": "{{index}} / {{total}}",
+    "skip": "Preskočiť"
+  },
+  "group": {
+    "toResolve": "Na doplnenie ({{count}})",
+    "toCheck": "Na kontrolu ({{count}})",
+    "ready": "Pripravené na potvrdenie ({{count}})",
+    "done": "Hotovo ({{count}})",
+    "ignored": "Ignorované ({{count}})"
+  },
+  "panel": {
+    "accept": "Áno, je to ono",
+    "other": "Iný tovar",
+    "notProduct": "Nie je tovar — ignorovať",
+    "offHint": "Tovar podľa EAN pozná Open Food Facts. Do katalógu sa pridá, až riadok potvrdíš."
   }
 }

@@ -1,0 +1,44 @@
+# Zkratky a opravy slov z účtenek -> čitelná podoba (tools/uctenky/README.md, „Čitelné názvy").
+# Formát: zkratka<TAB>rozepsání[<TAB>řetězec]. Klíč se porovnává bez diakritiky a velikosti
+# písmen; tečka na konci patří ke klíči (zkratka). Rozepsání se zapíše přesně, jak je tady.
+# Prázdný řetězec = platí pro všechny řetězce, jinak jen pro daný profil (albert, tamda…).
+# Prázdné rozepsání token vypustí.
+#
+# Obecné zkratky
+SELS.	Selské
+MLÉ.	mléko
+STROUH.	strouhaný
+TUČ.	tučný
+TVAR.	tvaroh
+HOV.	hovězí
+KUŘ.	kuřecí
+CELOZ.	celozrnné
+ČERST.	čerstvé
+JOG.	jogurt
+# Slova, kterým OCR nebo pokladna bere diakritiku
+ARAŠÍDOVÁ	arašídová
+BORŮVKY	borůvky
+ŘÍZKY	řízky
+BANÁNY	banány
+TATARSKÝ	tatarský
+TVAROHOVÝ	tvarohový
+SÝR	sýr
+VÁŽENÝ	vážený
+STÁČENÝ	stáčený
+KUŘECÍ	kuřecí
+PRSNÍ	prsní
+ROHLÍK	rohlík
+MLÉKO	mléko
+LEŽÁK	ležák
+# Značky a certifikace, které mají zůstat velkými písmeny
+ASC	ASC
+BIO	BIO
+# Albert
+PILS.	Pilsner	albert
+URQ.	Urquell	albert
+MORAV.	Moravia	albert
+SPIAN.	Spianata	albert
+ROM.	Romana	albert
+JAROM.	Jaroměřický	albert
+NP	NP	albert
+WM	WM	albert

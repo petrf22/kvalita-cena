@@ -27,6 +27,31 @@
     </ng-template>
   }
 
+  <!--
+    Nabídka existujícího zboží ke kódu — jedna šablona, dvě místa: kód předaný zvenku (EAN
+    z řádku účtenky) ji ukáže nahoře, sken pod polem kódu (viz `existingByCode`).
+  -->
+  <ng-template #existingAlert let-product>
+    <nz-alert
+      nzType="info"
+      nzShowIcon
+      [nzMessage]="t('product-form.scan.existing', { name: product.name })"
+      [nzAction]="useExistingAction"
+      class="form-alert"
+    />
+  </ng-template>
+  <ng-template #useExistingAction>
+    <button nz-button nzSize="small" type="button" (click)="useExistingByCode()">
+      {{ t('product-form.scan.useExisting') }}
+    </button>
+  </ng-template>
+
+  @if (existingByCode(); as existing) {
+    @if (existing.fromInput) {
+      <ng-container *ngTemplateOutlet="existingAlert; context: { $implicit: existing.product }" />
+    }
+  }
+
   <form nz-form nzLayout="vertical" (ngSubmit)="submit()">
     <!--
       Pole "Název" je vždy v jazyce appky (docs/lokalizace.md) — proto v popisku svítí jazyk.
@@ -152,7 +177,7 @@
       <nz-form-control>
         <nz-tree-select
           [ngModel]="selectedCategoryId()"
-          (ngModelChange)="selectedCategoryId.set($event)"
+          (ngModelChange)="onCategoryChosen($event)"
           name="category"
           [nzNodes]="categoryTree()"
           [nzPlaceHolder]="t('product-form.categoryPlaceholder')"
@@ -160,6 +185,9 @@
           [nzDisplayWith]="categoryDisplayWith"
           [nzDropdownStyle]="{ 'max-height': '400px', 'overflow-y': 'auto' }"
         />
+        @if (categorySuggested()) {
+          <p class="field-hint suggested-hint">{{ t('product-form.categorySuggested') }}</p>
+        }
       </nz-form-control>
     </nz-form-item>
 
@@ -186,7 +214,7 @@
       <nz-form-control>
         <nz-switch
           [ngModel]="isVariableWeight()"
-          (ngModelChange)="isVariableWeight.set($event)"
+          (ngModelChange)="onVariableWeightChosen($event)"
           name="isVariableWeight"
         />
         <p class="field-hint">{{ t('product-form.variableWeightHint') }}</p>
@@ -208,7 +236,7 @@
           <div class="net-content-row">
             <nz-select
               [ngModel]="netContentUom()"
-              (ngModelChange)="netContentUom.set($event)"
+              (ngModelChange)="onNetContentUomChosen($event)"
               name="netContentUom"
               class="net-content-uom"
               [attr.aria-label]="t('product-form.netContentUomLabel')"
@@ -227,7 +255,7 @@
             @if (netContentUom()) {
               <nz-input-number
                 [ngModel]="netContentValue()"
-                (ngModelChange)="netContentValue.set($event)"
+                (ngModelChange)="onNetContentValueChosen($event)"
                 name="netContentValue"
                 class="net-content-value"
                 [nzMin]="0"
@@ -239,6 +267,8 @@
           </div>
           @if (!netContentUom()) {
             <p class="field-hint">{{ t('product-form.netContentNoneHint') }}</p>
+          } @else if (unitSuggested()) {
+            <p class="field-hint suggested-hint">{{ t('product-form.unitSuggested') }}</p>
           }
         </nz-form-control>
       </nz-form-item>
@@ -267,7 +297,7 @@
             nz-input
             name="code"
             [ngModel]="code()"
-            (ngModelChange)="code.set($event); scannedExisting.set(null)"
+            (ngModelChange)="onCodeChange($event)"
             [disabled]="!!product()"
           />
           <!-- Sken jen u prázdného pole — přepsat vyplněný kód omylem by bylo horší než psát. -->
@@ -294,19 +324,10 @@
       </nz-form-control>
     </nz-form-item>
 
-    @if (scannedExisting(); as existing) {
-      <nz-alert
-        nzType="info"
-        nzShowIcon
-        [nzMessage]="t('product-form.scan.existing', { name: existing.name })"
-        [nzAction]="useExistingAction"
-        class="form-alert"
-      />
-      <ng-template #useExistingAction>
-        <button nz-button nzSize="small" type="button" (click)="useScannedExisting()">
-          {{ t('product-form.scan.useExisting') }}
-        </button>
-      </ng-template>
+    @if (existingByCode(); as existing) {
+      @if (!existing.fromInput) {
+        <ng-container *ngTemplateOutlet="existingAlert; context: { $implicit: existing.product }" />
+      }
     }
 
     @if (!product()) {

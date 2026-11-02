@@ -20,6 +20,30 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.12.0", date: "2026-11-02", sections: [
+      { title: "Přidáno", items: [
+        { text: "Řádky účtenky se ukazují čitelně — místo „NUGETA ARASÍDOVÁ340G\" třeba „Nugeta arašídová 340g\"; původní tisk zůstává vidět vedle", parts: ["server", "web", "mobil"] },
+        { text: "Když appka podle názvu na účtence jednoznačně pozná zboží, nabídne ho jako odhad; řádek zůstane nezaškrtnutý, dokud ho uživatel nezkontroluje", parts: ["server", "web", "mobil"] },
+        { text: "EAN přečtený z účtenky se ukáže u řádku a předvyplní se do formuláře nového zboží", parts: ["web", "mobil"] },
+        { text: "Potvrzený řádek účtenky s EAN doplní kód zboží, které ho ještě nemá — příště se takové zboží spáruje samo", parts: ["server"] },
+        { text: "Účtenky TAMDA FOODS se přečtou včetně EAN každé položky", parts: ["server"] },
+        { text: "Provozovatel může názvy, které se na účtenkách často opakují, spárovat se zbožím centrálně — appka je pak nabídne všem", parts: ["server"] },
+      ] },
+      { title: "Opraveno", items: [
+        { text: "Fotka celé účtenky se přečte celá — dřív se text dlouhé účtenky mohl potichu useknout", parts: ["server"] },
+        { text: "Kódy s omezeným oběhem ve tvaru GTIN-14 a kupóny UPC se už neberou jako EAN zboží", parts: ["server", "web", "mobil"] },
+      ] },
+  ] },
+  { version: "0.11.1", date: "2026-10-26", sections: [
+      { title: "Přidáno", items: [
+        { text: "„Obchod tu není — přidat nový\" v detailu účtenky předvyplní formulář nového obchodu názvem, adresou a IČO, které appka z účtenky přečetla — není potřeba je opisovat", parts: ["web", "mobil"] },
+      ] },
+      { title: "Opraveno", items: [
+        { text: "Hledání obchodu najde i víc slov naráz v libovolném pořadí — „Lidl Brno\" nebo „Vídeňská Lidl\" — dřív nenašlo nic", parts: ["server", "web", "mobil"] },
+        { text: "Rozpracovanou účtenku nafocenou jedním účtem už po přihlášení jiného účtu v témže telefonu nikdo jiný neuvidí ani neodešle", parts: ["mobil"] },
+        { text: "Zpracování účtenky, které trvalo déle, už nemůže omylem vrátit do fronty účtenku, na které se právě pracuje znovu", parts: ["server"] },
+      ] },
+  ] },
   { version: "0.11.0", date: "2026-10-24", sections: [
       { title: "Přidáno", items: [
         { text: "Před snímáním účtenky appka ukáže čáru, ke které srovnat horní okraj, a animací naznačí posun telefonu dolů; první díl se uloží až po krátkém odpočtu v klidu, takže už nevyjde nakloněný ani s kusem stolu", parts: ["mobil"] },

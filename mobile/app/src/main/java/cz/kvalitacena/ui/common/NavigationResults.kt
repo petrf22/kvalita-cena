@@ -3,6 +3,7 @@ package cz.kvalitacena.ui.common
 import cz.kvalitacena.network.OsmStoreCandidate
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.Store
+import cz.kvalitacena.ui.receipt.StorePrefill
 
 /**
  * Přenos výsledku "právě založeno" z formulářů katalogu (StoreFormScreen/ProductFormScreen)
@@ -38,6 +39,12 @@ object NavigationResults {
 
   /** Povinný text zdroje/licence (ODbL) k [osmStoreCandidate] — formulář ho MUSÍ zobrazit. */
   var osmStoreAttribution: String? = null
+
+  /**
+   * Hlavička účtenky, ze které se zakládá nový obchod — StoreFormScreen z ní předvyplní
+   * formulář (StoreFormViewModel.applyReceiptPrefill). Stejný směr jako [osmStoreCandidate].
+   */
+  var storePrefill: StorePrefill? = null
 
   /** Stejný vzor, ale pro editaci existující provozovny (StoreFormScreen storeId != null) — StoreDetailScreen ho vyzvedne. */
   var updatedStore: Store? = null

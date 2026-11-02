@@ -154,6 +154,98 @@ fun findBrightBand(
 }
 
 /**
+ * Pruh potištěného papíru v profilu hustoty hran po sloupcích ([density], podíl hranových
+ * pixelů sloupce 0–1) — poslední záchrana detekce, když účtenka nemá proti podložce kontrast
+ * (bílá na bílém stole): tisk dává hrany, čistá podložka ne, takže na barvě podložky nezáleží.
+ *
+ * Profil se vyhladí klouzavým průměrem (mezery mezi slovy), pruh je souvislý rozsah od prvního
+ * po poslední sloupec nad [minDensity]. Neplatí, když je úzký, když vyplňuje celý záběr (není
+ * s čím porovnat — moc blízko, nebo vzorovaná podložka) nebo když je mimo něj hustota srovnatelná
+ * (vzor podložky). Výsledek se rozšíří o [marginRatio] šířky na každou stranu — okraj papíru.
+ *
+ * Vrací rozsah sloupců papíru (včetně), nebo `null`.
+ */
+fun findTextBand(
+  density: DoubleArray,
+  minWidthRatio: Double = CaptureThresholds.MIN_BAND_WIDTH_RATIO,
+  minDensity: Double = CaptureThresholds.MIN_TEXT_DENSITY,
+  smoothRatio: Double = CaptureThresholds.TEXT_DENSITY_SMOOTH_RATIO,
+  maxOutsideRatio: Double = CaptureThresholds.TEXT_BAND_MAX_OUTSIDE_RATIO,
+  marginRatio: Double = CaptureThresholds.TEXT_BAND_MARGIN_RATIO,
+): IntRange? {
+  val n = density.size
+  if (n < 8) return null
+  val smoothed = movingAverage(density, max(1, (n * smoothRatio).roundToInt()))
+  val left = smoothed.indexOfFirst { it >= minDensity }
+  if (left < 0) return null
+  val right = smoothed.indexOfLast { it >= minDensity }
+  if (right - left + 1 < minWidthRatio * n) return null
+  // Uvnitř pruhu musí tisk převažovat — dva vzdálené shluky (hrnek, kus jiného papíru) nejsou
+  // jedna účtenka.
+  val inside = smoothed.sliceArray(left..right)
+  if (inside.count { it >= minDensity } < inside.size / 2) return null
+  val outside = smoothed.sliceArray(0 until left) + smoothed.sliceArray(right + 1 until n)
+  if (outside.isEmpty()) return null
+  if (outside.average() > maxOutsideRatio * inside.average()) return null
+  val margin = (n * marginRatio).roundToInt()
+  return (left - margin).coerceAtLeast(0)..(right + margin).coerceAtMost(n - 1)
+}
+
+private fun movingAverage(values: DoubleArray, window: Int): DoubleArray {
+  val half = window / 2
+  val prefix = DoubleArray(values.size + 1)
+  for (i in values.indices) prefix[i + 1] = prefix[i] + values[i]
+  return DoubleArray(values.size) { i ->
+    val from = (i - half).coerceAtLeast(0)
+    val to = (i + half).coerceAtMost(values.lastIndex)
+    (prefix[to + 1] - prefix[from]) / (to - from + 1)
+  }
+}
+
+/**
+ * Vyhlazení rámečku účtenky v čase: nový rámeček se smíchá s předchozím ([smoothing] = váha
+ * nového), takže neposkakuje a odpočet před prvním dílem se kvůli šumu detekce nerestartuje.
+ * Skok o víc než [maxDriftRatio] šířky záběru se nevyhlazuje (uživatel opravdu pohnul). Když
+ * detekce vypadne, platí poslední rámeček ještě [holdMillis] — jednotlivé snímky bez rámečku
+ * nesmí snímání přerušit.
+ */
+class QuadStabilizer(
+  private val smoothing: Double = CaptureThresholds.QUAD_SMOOTHING,
+  private val holdMillis: Long = CaptureThresholds.QUAD_HOLD_MS,
+  private val maxDriftRatio: Double = CaptureThresholds.START_MAX_DRIFT_RATIO,
+) {
+  private var last: Quad? = null
+  private var lastSeenNanos = 0L
+
+  fun update(quad: Quad?, frameWidth: Int, timestampNanos: Long): Quad? {
+    val previous = last
+    if (quad == null) {
+      if (previous == null) return null
+      if (timestampNanos - lastSeenNanos <= holdMillis * 1_000_000L) return previous
+      last = null
+      return null
+    }
+    val next = if (previous != null && maxCornerDrift(previous, quad) <= maxDriftRatio * frameWidth) {
+      blend(previous, quad)
+    } else {
+      quad
+    }
+    last = next
+    lastSeenNanos = timestampNanos
+    return next
+  }
+
+  fun reset() {
+    last = null
+  }
+
+  private fun blend(old: Quad, new: Quad): Quad {
+    fun mix(a: Pt, b: Pt) = Pt(a.x + (b.x - a.x) * smoothing, a.y + (b.y - a.y) * smoothing)
+    return Quad(mix(old.tl, new.tl), mix(old.tr, new.tr), mix(old.br, new.br), mix(old.bl, new.bl))
+  }
+}
+
+/**
  * Čtyřúhelník dlouhé účtenky z bočních hran nalezených zvlášť v horním a dolním pásu záběru
  * ([topBand] kolem řádku [topY], [bottomBand] kolem řádku [bottomY]) — hrany se protáhnou na
  * celou výšku záběru, takže mírně natočená účtenka se narovná i bez viditelného horního
@@ -206,6 +298,40 @@ fun imageToFillCenterView(p: Pt, imageWidth: Int, imageHeight: Int, viewWidth: D
   val offsetX = (viewWidth - imageWidth * scale) / 2.0
   val offsetY = (viewHeight - imageHeight * scale) / 2.0
   return Pt(p.x * scale + offsetX, p.y * scale + offsetY)
+}
+
+/** Opak [imageToFillCenterView]: bod náhledu v souřadnicích snímku. */
+fun fillCenterViewToImage(p: Pt, imageWidth: Int, imageHeight: Int, viewWidth: Double, viewHeight: Double): Pt {
+  val scale = max(viewWidth / imageWidth, viewHeight / imageHeight)
+  val offsetX = (viewWidth - imageWidth * scale) / 2.0
+  val offsetY = (viewHeight - imageHeight * scale) / 2.0
+  return Pt((p.x - offsetX) / scale, (p.y - offsetY) / scale)
+}
+
+/**
+ * Pevný rámeček pro snímání bez detekce okrajů (docs/ai.md, `NO_RECEIPT_HELP_MS`): boky
+ * [sideRatio] od okraje NÁHLEDU (tam, kde je uživatel vidí — `FILL_CENTER` snímek po stranách
+ * ořezává), na celou viditelnou výšku. Vrací ho v souřadnicích snímku.
+ */
+fun frameModeQuad(
+  imageWidth: Int,
+  imageHeight: Int,
+  viewWidth: Double,
+  viewHeight: Double,
+  sideRatio: Double = CaptureThresholds.FRAME_MODE_SIDE_RATIO,
+): Quad {
+  fun toImage(x: Double, y: Double): Pt {
+    val p = fillCenterViewToImage(Pt(x, y), imageWidth, imageHeight, viewWidth, viewHeight)
+    return Pt(p.x.coerceIn(0.0, imageWidth.toDouble()), p.y.coerceIn(0.0, imageHeight.toDouble()))
+  }
+  val left = viewWidth * sideRatio
+  val right = viewWidth * (1 - sideRatio)
+  return Quad(
+    tl = toImage(left, 0.0),
+    tr = toImage(right, 0.0),
+    br = toImage(right, viewHeight),
+    bl = toImage(left, viewHeight),
+  )
 }
 
 /**

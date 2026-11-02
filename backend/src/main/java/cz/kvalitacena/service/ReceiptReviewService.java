@@ -1,13 +1,17 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.controller.CreateProductFromOffInput;
 import cz.kvalitacena.controller.ObservationPriceInput;
 import cz.kvalitacena.controller.SubmitObservationsInput;
 import cz.kvalitacena.db.entity.AppUser;
+import cz.kvalitacena.db.entity.CodeType;
 import cz.kvalitacena.db.entity.EvidenceKind;
 import cz.kvalitacena.db.entity.ObservationSource;
+import cz.kvalitacena.db.entity.OffProduct;
 import cz.kvalitacena.db.entity.PriceKind;
 import cz.kvalitacena.db.entity.PriceObservation;
 import cz.kvalitacena.db.entity.Product;
+import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.QuantityBasis;
 import cz.kvalitacena.db.entity.QuantityUnit;
 import cz.kvalitacena.db.entity.Receipt;
@@ -19,6 +23,7 @@ import cz.kvalitacena.db.entity.ReceiptReviewStatus;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
+import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ReceiptLineRepository;
 import cz.kvalitacena.db.repo.ReceiptRepository;
@@ -42,6 +47,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -66,11 +72,14 @@ public class ReceiptReviewService {
   private final ReceiptLineRepository lineRepository;
   private final StoreRepository storeRepository;
   private final ProductRepository productRepository;
+  private final ProductCodeRepository productCodeRepository;
   private final AppUserRepository appUserRepository;
   private final PriceObservationRepository priceObservationRepository;
   private final ReceiptMatchingService matchingService;
   private final PriceObservationService priceObservationService;
   private final ProductStoreLabelService labelService;
+  private final OffProductCatalogService offProductCatalogService;
+  private final ProductNameResolver productNameResolver;
   private final PlatformTransactionManager transactionManager;
 
   public record ConfirmResult(Receipt receipt, int confirmed, List<ReceiptLine> skipped) {
@@ -210,6 +219,12 @@ public class ReceiptReviewService {
       fresh.setSkipReason(reason);
       // Duplicita znamená, že tuhle cenu uživatel dnes už zapsal — párování samo je
       // potvrzené, jen druhá cena navíc by porušila denní limit (docs/reputace.md).
+      // OFF návrh zboží nemá a doplněné productId z transakce řádku zmizelo s jejím rollbackem.
+      // Duplicitní cenu jde zapsat jen k zboží, které už existuje — dohledá se podle EAN.
+      if (SKIP_DUPLICATE.equals(reason) && fresh.getProductId() == null
+          && fresh.getMatchSource() == ReceiptMatchSource.OFF) {
+        existingProductForCode(fresh).ifPresent(fresh::setProductId);
+      }
       if (SKIP_DUPLICATE.equals(reason) && fresh.getProductId() != null) {
         fresh.setStatus(ReceiptLineStatus.MATCHED);
         learn(fresh, receipt, owner);
@@ -220,6 +235,9 @@ public class ReceiptReviewService {
 
   private void confirmLine(Long lineId, Receipt receipt, AppUser owner, UUID ownerPublicUid, ObservationSource source) {
     ReceiptLine line = lineRepository.findById(lineId).orElseThrow();
+    if (line.getProductId() == null && line.getMatchSource() == ReceiptMatchSource.OFF) {
+      line.setProductId(productFromOff(line, ownerPublicUid));
+    }
     if (line.getProductId() == null) {
       throw new ValidationException(ErrorCode.RECEIPT_LINE_NOT_MATCHED);
     }
@@ -248,11 +266,71 @@ public class ReceiptReviewService {
     learn(line, receipt, owner);
   }
 
+  /**
+   * Zboží pro OFF návrh (ReceiptMatchingService.offCandidate) — založené až teď, na pokyn
+   * vlastníka účtenky, přes {@link OffProductCatalogService#create}: v {@code core.product}
+   * zůstanou OFF hodnoty {@code NULL} (ODbL, docs/datovy-model.md), posílá se jen kód.
+   *
+   * <p>Název z řádku (čitelný název, je to vlastní text) se pošle jen tehdy, když OFF název
+   * v jazyce appky nemá — stejné pravidlo jako formulář: cizojazyčný název z OFF se nikdy
+   * nevydává za český, a poslat název, který OFF v jazyce appky má, by z něj udělalo osobní
+   * patch. Zboží, které mezitím někdo s tímhle EAN založil, se použije místo nového — kontrola
+   * předem, protože výjimka z transakční metody by označila celou transakci řádku k rollbacku.
+   */
+  private Long productFromOff(ReceiptLine line, UUID ownerPublicUid) {
+    Optional<Long> existing = existingProductForCode(line);
+    if (existing.isPresent()) {
+      return existing.get();
+    }
+    OffProduct off = matchingService.offCandidate(line)
+        .orElseThrow(() -> new ValidationException(ErrorCode.OFF_PRODUCT_NOT_FOUND));
+    String lang = productNameResolver.requestLanguage();
+    boolean offHasAnyName = off.getProductName() != null || !off.getNames().isEmpty();
+    String name = null;
+    if (!off.getNames().containsKey(lang)) {
+      name = line.getLabelDisplay() != null ? line.getLabelDisplay() : offHasAnyName ? null : line.getLabelRaw();
+    }
+    Product product = offProductCatalogService.create(new CreateProductFromOffInput(
+        line.getInternalCode().trim(), name, lang, List.of(), null, null, null, null, null, null, null), ownerPublicUid);
+    log.info("Účtenka: řádek {} založil zboží {} z Open Food Facts", line.getId(), product.getId());
+    return product.getId();
+  }
+
+  private Optional<Long> existingProductForCode(ReceiptLine line) {
+    String gtin14 = GtinNormalization.toGtin14(line.getInternalCode().trim());
+    return productCodeRepository.findFirstByCodeAndCodeType(gtin14, CodeType.GTIN)
+        .map(code -> code.getProduct().getId());
+  }
+
   private void learn(ReceiptLine line, Receipt receipt, AppUser owner) {
     Product product = productRepository.findById(line.getProductId()).orElse(null);
     Store store = storeRepository.findById(receipt.getStoreId()).orElse(null);
     if (product != null && store != null) {
       labelService.learnFromLine(product, store, owner.getId(), line.getLabelRaw());
+    }
+    if (product != null) {
+      learnCode(line, product);
+    }
+  }
+
+  /**
+   * EAN z potvrzeného řádku ke zboží, které EAN zatím nemá. Zapisuje se globálně, ne do
+   * osobního patche: kód, který zboží nemá vůbec, nic nepřepisuje. Je to zaplnění díry
+   * jako doplnění chybějícího jazyka názvu (docs/datovy-model.md, „Uživatelská vrstva nad
+   * globálními daty"). Zboží, které už nějaký EAN má, se nemění. Omylem spárovaný řádek by
+   * jinak přilepil cizí kód ke zboží pro všechny, a víc EAN u jednoho zboží (jiné balení,
+   * nový obal) je spíš věc moderace.
+   * Bezkódová položka ({@code generic}, třeba rohlík) EAN záměrně nemá a nedostane ho.
+   */
+  private void learnCode(ReceiptLine line, Product product) {
+    String code = line.getInternalCode();
+    if (!GtinNormalization.isGlobalGtin(code) || product.isGeneric()
+        || (product.getStatus() != ProductStatus.ACTIVE && product.getStatus() != ProductStatus.DRAFT)) {
+      return;
+    }
+    String gtin14 = GtinNormalization.toGtin14(code.trim());
+    if (productCodeRepository.insertGtinIfProductHasNone(product.getId(), gtin14) == 1) {
+      log.info("Účtenka: zboží {} dostalo EAN {} z řádku {}", product.getId(), gtin14, line.getId());
     }
   }
 

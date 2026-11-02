@@ -31,6 +31,9 @@ class Footer:
     # Index řádku s celkovou částkou (začátek patičky); None, když se nenašel. Podle něj
     # parse.server_text ořízne syrový text, ať patička nedorazí na server ani tudy.
     total_index: int | None = None
+    # Zaokrouhlení vytištěné NAD celkovou částkou (Penny: Mezisoučet → Zaokrouhlení → Celkem).
+    # Není to položka, ale do kontrolního součtu patří — u hotovosti až ±0,50 Kč.
+    rounding: Decimal = Decimal(0)
 
 
 @dataclass(frozen=True)
@@ -41,3 +44,7 @@ class Profile:
     read_header: Callable[[list[str]], ReceiptHeader]
     # Vrátí (řádky bloku položek, patička).
     split_body: Callable[[list[str]], tuple[list[str], Footer]]
+    # Vlastní rozbor bloku položek (vrací lines.ParseResult). Jen pro účtenky, jejichž
+    # položky společné skládání (lines.parse_item_lines) neumí — typicky číslované položky
+    # s EAN na druhém řádku. None = společné skládání.
+    parse_items: Callable[[list[str]], object] | None = None

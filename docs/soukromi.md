@@ -236,6 +236,10 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   `product_review` a `product_user_edit` výš: bez vazby na vlastníka by přehled neměl smysl.
   Zmírnění stejné: nikdy ven přes API cizímu, `ON DELETE CASCADE`, `pg_dump --schema=core`
   musí `owner_user_id` vynechat nebo hashovat.
+- **EAN z řádku jde do Open Food Facts jen sám.** Při zpracování účtenky se server na EAN,
+  který katalog nezná, zeptá OFF (`ReceiptMatchingService.offCandidate`, přes stejnou cache
+  a rate limit jako sken). Odchází jen veřejný kód zboží — nic o účtence, nákupu ani
+  uživateli. Dotaz vzniká i bez další akce uživatele, jen nahráním účtenky.
 - **Cenové zápisy z účtenky jsou běžné observace.** Vznikají jen potvrzením vlastníka (`docs/ai.md`,
   „AI nikdy nerozhoduje"), pseudonymizují se po 180 dnech jako každé jiné a smazání účtenky
   je nesmaže (stejná úvaha jako výmaz účtu — sdílená komunitní data). `receipt_line_id` na
@@ -254,13 +258,34 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   dostane upozornění a cenu potvrdí sám. Do sdíleného katalogu jde jen samotné označení
   obchodu (`ROHLIK TUK 43G` → zboží), ne kdo a kdy ho koupil — `product_store_label_confirmation
   .user_id` se po 180 dnech nuluje stejně jako u aliasu.
-- **Stroj nemá identitu uživatele.** Worker se přihlašuje strojovým tokenem (`auth.api_token`,
-  scope `RECEIPT_WORKER`, v DB jen SHA-256), ne účtem člověka — vidí obrázky ve frontě
-  a zapisuje vytěžený text, nic víc.
+- **Kurátor označení vidí jen agregát.** Provozovatel v `tools/uctenky/curate.py`
+  (`/api/curator/**`, token `LABEL_CURATOR`) vidí nespárovaná označení **seskupená podle
+  označení a rozsahu**: řetězec, u samostatné prodejny prodejna. K tomu počet výskytů a den,
+  kdy se objevilo naposledy. Nevidí účtenku, uživatele, čas nákupu ani obrázek. Mapování
+  od provozovatele nezapisuje nikomu cenu, nespárované řádky jen přepne na návrh jako výš.
+  Čitelný název, který vznikl lokálním modelem (`docs/ai.md`), zůstává na stejném stroji
+  jako OCR, nic dalšího se nikam neposílá.
+- **Z hlavičky do katalogu obchodů jen přes formulář.** „Obchod tu není — přidat nový"
+  předvyplní formulář nového obchodu názvem, adresou a IČO z hlavičky účtenky — to jsou údaje
+  prodejce, ne kupujícího. Do veřejného `core.store` se dostane jen to, co uživatel ve
+  formuláři nechá a uloží; účtenka, čas nákupu ani obrázek se s obchodem nespojují
+  (`docs/stav-implementace.md`, „Účtenky").
+- **Stroj nemá identitu uživatele.** Stroje se přihlašují strojovým tokenem
+  (`auth.api_token`, v DB jen SHA-256), ne účtem člověka, a každý token má jen jeden scope.
+  Worker (`RECEIPT_WORKER`) vidí obrázky ve frontě a zapisuje vytěžený text, nic víc.
+  Kurátor označení (`LABEL_CURATOR`, `tools/uctenky/curate.py`) vidí jen agregovaná
+  nespárovaná označení (viz výš) a zapisuje mapování označení → zboží
+  (`core.product_store_label`). Cenu nezapisuje žádný z nich.
 - **Čekající účtenka patří účtu, který ji zařadil.** Mobilní fronta (offline odeslání) si
   k účtence uloží `publicUid` přihlášeného účtu (`sub` z access tokenu); po odhlášení
   a přihlášení někoho jiného v témže telefonu se účtenka neukáže ani neodešle, dokud se
-  vlastník nepřihlásí zpátky — nákup jednoho člověka nesmí skončit v účtu druhého.
+  vlastník nepřihlásí zpátky — nákup jednoho člověka nesmí skončit v účtu druhého. Totéž platí
+  pro rozpracovaný koncept ještě před zařazením: nese `publicUid` účtu, který ho fotí, a když
+  snímání nebo kontrolu otevře jiný přihlášený účet, nafocené díly se zahodí
+  (`draftClaim`, `ReceiptDraftStore.claimFor`) — jinak by je druhý účet odeslal jako svou
+  účtenku, vlastník fronty se totiž určuje až při zařazení. Koncept bez vlastníka (z verze
+  appky před touto pojistkou) převezme ten, kdo je přihlášený; dokud appka uid účtu nezná
+  (přihlášení starší verzí, než doběhne obnova tokenu), koncept nechá být.
 - **Verze souhlasu je verze textu, který klient ukázal.** Klient posílá a ukládá vlastní
   `RECEIPT_CONSENT_VERSION` svázanou s textem v aplikaci, ne číslo ze serveru. Když server
   chce jinou verzi, klient souhlas neukáže a vyzve k aktualizaci (web k obnovení stránky) —

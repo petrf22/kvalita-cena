@@ -29,6 +29,7 @@
       "RS": "Serbia"
     },
     "similarWarning": "Czy nie masz na myśli jednego z już istniejących sklepów?",
+    "prefilledFromReceipt": "Wypełnione wstępnie z paragonu — sprawdź dane, maszyna mogła je źle odczytać.",
     "saveChanges": "Zapisz zmiany",
     "createStore": "Dodaj sklep"
   },

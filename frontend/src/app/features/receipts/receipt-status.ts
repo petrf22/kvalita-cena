@@ -1,13 +1,16 @@
 import type { ReceiptDetail, ReceiptLine, ReceiptListItem } from '../../models/catalog';
 import {
   ReceiptLineStatus,
+  ReceiptMatchSource,
   ReceiptProcessingStatus,
   ReceiptReviewStatus,
 } from '../../models/generated/enums';
 import {
+  RECEIPT_MATCH_SOURCE_KEYS,
   RECEIPT_PROCESSING_STATUS_KEYS,
   RECEIPT_REVIEW_STATUS_KEYS,
 } from '../../shared/enum-labels';
+import { isGlobalGtin } from '../../shared/gtin';
 
 /**
  * Stavová logika účtenky bez UI — obrazovky seznamu i detailu z ní jen čtou. Dvě osy stavu
@@ -78,9 +81,139 @@ export function isLineConfirmable(line: Pick<ReceiptLine, 'status' | 'confirmed'
   return line.status === ReceiptLineStatus.Suggested && !isLineLocked(line);
 }
 
-/** Výchozí zaškrtnutí — přesně řádky, které server (nebo uživatel) připravil jako návrh. */
+/**
+ * Návrh je jen odhad podle podobnosti názvu (`FUZZY`), ne jistá shoda kódu nebo naučeného
+ * označení. Potvrdit ho jde, ale jen vědomě: potvrzený odhad se naučí jako označení a zboží
+ * dostane EAN z řádku, takže hromadné potvrzení omylem by chybu rozšířilo (docs/ai.md).
+ */
+export function isLineGuess(
+  line: Pick<ReceiptLine, 'status' | 'confirmed' | 'matchSource'>,
+): boolean {
+  return isLineConfirmable(line) && line.matchSource === ReceiptMatchSource.Fuzzy;
+}
+
+/** Řádek appka smí zaškrtnout sama: potvrditelný návrh, který není jen odhad. */
+function isLinePreselectable(
+  line: Pick<ReceiptLine, 'status' | 'confirmed' | 'matchSource'>,
+): boolean {
+  return isLineConfirmable(line) && !isLineGuess(line);
+}
+
+/**
+ * Název řádku pro oči: čitelný název od workeru („Rohlík 43g"), jinak syrový tisk
+ * („ROHLÍK43GR") — starší účtenky čitelný název nemají. Párování se učí vždy podle syrového.
+ */
+export function lineLabel(line: Pick<ReceiptLine, 'labelRaw' | 'labelDisplay'>): string {
+  return line.labelDisplay?.trim() || line.labelRaw;
+}
+
+/** Syrový tisk z účtenky, když se od zobrazeného názvu liší (k porovnání s obrázkem) — jinak `null`. */
+export function lineRawLabel(line: Pick<ReceiptLine, 'labelRaw' | 'labelDisplay'>): string | null {
+  return lineLabel(line) === line.labelRaw ? null : line.labelRaw;
+}
+
+/**
+ * EAN řádku, pokud ho účtenka tiskne — jinak `null`. `internalCode` nese i vnitroobchodní kód
+ * (platí jen v rámci řetězce) nebo etiketu váhového zboží s cenou uvnitř; jako čárový kód se
+ * smí použít, předvyplnit do nového zboží i ukázat jako „EAN" jen globální GTIN
+ * (`isGlobalGtin`, stejné pravidlo jako server).
+ */
+export function lineGtin(line: Pick<ReceiptLine, 'internalCode'>): string | null {
+  const code = line.internalCode?.trim() ?? '';
+  return isGlobalGtin(code) ? code : null;
+}
+
+/**
+ * Popisek, podle čeho server zboží navrhl. U `CODE` s EANem na řádku řekne „podle EAN" —
+ * uživatel ho vidí hned nad tím a může ho porovnat s obalem; vnitroobchodní kód zůstává
+ * u obecného „podle kódu".
+ */
+export function matchSourceKey(
+  line: Pick<ReceiptLine, 'matchSource' | 'internalCode'>,
+): string | null {
+  if (!line.matchSource) return null;
+  if (line.matchSource === ReceiptMatchSource.Code && lineGtin(line)) {
+    return 'receipts.line.matchedByEan';
+  }
+  return RECEIPT_MATCH_SOURCE_KEYS[line.matchSource];
+}
+
+/**
+ * Výchozí zaškrtnutí — řádky, které server (nebo uživatel) připravil jako návrh. Odhad
+ * (`isLineGuess`) ne: ten zaškrtává jen uživatel sám, až zboží zkontroluje.
+ */
 export function defaultSelectedLineIds(lines: readonly ReceiptLine[]): Set<string> {
-  return new Set(lines.filter(isLineConfirmable).map((line) => line.id));
+  return new Set(lines.filter(isLinePreselectable).map((line) => line.id));
+}
+
+/**
+ * Návrh ze zboží, které zná jen Open Food Facts (`OFF`) — zboží zatím neexistuje (`product`
+ * je null, náhled je v `offCandidate`), založí se potvrzením řádku. Jistý jako shoda EAN.
+ */
+export function isLineOffSuggestion(
+  line: Pick<ReceiptLine, 'status' | 'confirmed' | 'matchSource'>,
+): boolean {
+  return isLineConfirmable(line) && line.matchSource === ReceiptMatchSource.Off;
+}
+
+/** Skupiny seznamu řádků — od toho, co potřebuje člověka, po hotové (zrcadlo mobilního `LineGroup`). */
+export type LineGroup = 'toResolve' | 'toCheck' | 'ready' | 'done' | 'ignored';
+
+export const LINE_GROUPS: readonly LineGroup[] = [
+  'toResolve',
+  'toCheck',
+  'ready',
+  'done',
+  'ignored',
+];
+
+type GroupSource = Pick<ReceiptLine, 'status' | 'confirmed' | 'matchSource'>;
+
+export function lineGroup(line: GroupSource): LineGroup {
+  if (line.status === ReceiptLineStatus.Ignored) return 'ignored';
+  if (line.status === ReceiptLineStatus.Matched || line.confirmed) return 'done';
+  if (isLineGuess(line)) return 'toCheck';
+  if (isLineConfirmable(line)) return 'ready';
+  return 'toResolve';
+}
+
+/** Řádky ve skupinách v pořadí `LINE_GROUPS`, prázdné vynechané, pořadí z účtenky uvnitř. */
+export function groupedLines<T extends GroupSource>(
+  lines: readonly T[],
+): { group: LineGroup; lines: T[] }[] {
+  return LINE_GROUPS.map((group) => ({
+    group,
+    lines: lines.filter((l) => lineGroup(l) === group),
+  })).filter((entry) => entry.lines.length > 0);
+}
+
+/**
+ * Fronta průvodce „Doplnit nerozpoznané": nejdřív řádky, které appka nezná, pak odhady ke
+ * kontrole. Jisté návrhy průvodce neukazuje — ty stačí hromadně potvrdit.
+ */
+export function guideQueue(lines: readonly (GroupSource & { id: string })[]): string[] {
+  return [
+    ...lines.filter((l) => lineGroup(l) === 'toResolve').map((l) => l.id),
+    ...lines.filter((l) => lineGroup(l) === 'toCheck').map((l) => l.id),
+  ];
+}
+
+/**
+ * Další řádek průvodce po `currentId`: první z fronty za ním, který pořád potřebuje člověka
+ * (mezitím ho mohlo vyřešit naučené označení). `null` = průvodce skončil.
+ */
+export function nextInGuide(
+  queue: readonly string[],
+  currentId: string | null,
+  lines: readonly (GroupSource & { id: string })[],
+): string | null {
+  const needsHuman = new Set(
+    lines
+      .filter((l) => lineGroup(l) === 'toResolve' || lineGroup(l) === 'toCheck')
+      .map((l) => l.id),
+  );
+  const start = currentId === null ? 0 : queue.indexOf(currentId) + 1;
+  return queue.slice(Math.max(start, 0)).find((id) => needsHuman.has(id)) ?? null;
 }
 
 /** Proč hromadné potvrzení teď nejde — klíč do bundlu `receipts`, nebo `null`, když jde. */
@@ -150,21 +283,35 @@ export function samePurchaseTime(a: Date | null, iso: string | null | undefined)
 }
 
 /**
- * Zaškrtnutí po změně řádků (mutace, obnova ze serveru): řádek, který se NOVĚ stal
- * potvrditelným (uživatel ho právě spároval, server přidal návrh), se zaškrtne; řádek, který
- * potvrditelný být přestal, se odškrtne. Co si uživatel u beze změny potvrditelných řádků
- * odškrtl, zůstane odškrtnuté.
+ * Zaškrtnutí po změně řádků (mutace, obnova ze serveru): řádek, který se NOVĚ stal jistým
+ * návrhem (uživatel ho právě spároval, server přidal návrh, odhad nahradilo naučené označení),
+ * se zaškrtne; řádek, který potvrditelný být přestal, se odškrtne. Co si uživatel u beze změny
+ * potvrditelných řádků odškrtl, zůstane odškrtnuté.
+ *
+ * Odhad se sám nezaškrtne nikdy. Zaškrtnutí, které mu dal uživatel, vydrží jen do té doby,
+ * dokud jde o tentýž odhad — když server po změně obchodu navrhne jiné zboží, uživatel ho
+ * ještě neviděl.
  */
 export function nextSelection(
   selected: ReadonlySet<string>,
   previousLines: readonly ReceiptLine[],
   nextLines: readonly ReceiptLine[],
 ): Set<string> {
-  const wasConfirmable = new Set(previousLines.filter(isLineConfirmable).map((line) => line.id));
+  const previousById = new Map(previousLines.map((line) => [line.id, line]));
   const result = new Set<string>();
   for (const line of nextLines) {
     if (!isLineConfirmable(line)) continue;
-    if (!wasConfirmable.has(line.id) || selected.has(line.id)) result.add(line.id);
+    const previous = previousById.get(line.id);
+    if (isLineGuess(line)) {
+      const sameGuess =
+        previous !== undefined &&
+        isLineGuess(previous) &&
+        previous.product?.id === line.product?.id;
+      if (sameGuess && selected.has(line.id)) result.add(line.id);
+      continue;
+    }
+    const wasPreselectable = previous !== undefined && isLinePreselectable(previous);
+    if (!wasPreselectable || selected.has(line.id)) result.add(line.id);
   }
   return result;
 }

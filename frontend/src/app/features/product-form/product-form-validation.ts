@@ -67,6 +67,13 @@ export type NetContentUomChoice = 'G' | 'KG' | 'ML' | 'L' | 'PCS';
  */
 export const NET_CONTENT_UOM_CHOICES: readonly NetContentUomChoice[] = ['G', 'KG', 'ML', 'L'];
 
+/** Jednotka, kterou nabízí combobox gramáže (bez `PCS`) — pro předvyplnění z cizího zdroje. */
+export function isNetContentUomChoice(
+  value: string | null | undefined,
+): value is Exclude<NetContentUomChoice, 'PCS'> {
+  return NET_CONTENT_UOM_CHOICES.includes(value as NetContentUomChoice);
+}
+
 /**
  * Základní jednotka odvozená z toho, co uživatel vybral v comboboxu jednotky — jediné místo,
  * kde `unitBase` vzniká. Formulář se na něj od 2026-09 neptá vlastní otázkou („Kus / Hmotnost /

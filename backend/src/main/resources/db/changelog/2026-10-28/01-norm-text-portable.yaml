@@ -1,0 +1,56 @@
+# 01-norm-text-portable.yaml — core.norm_text bez natvrdo vloženého OID slovníku unaccent.
+#
+# Původní definice (2026-08-06/01-text-normalization.yaml) vkládala do těla funkce numerický
+# OID slovníku ('16819'::regdictionary), aby obešla selhání inliningu při CREATE INDEX. OID ale
+# platí jen v databázi, kde vznikl: pg_dump ho přenese jako text a v čerstvé databázi patří
+# jinému (nebo žádnému) objektu. Obnova zálohy na novou instanci pak padala na „cache lookup
+# failed for text search dictionary 16819" u COPY do každé tabulky s indexem nad norm_text
+# (obchody, zboží, účtenky) — zjištěno 2026-10-28 při přechodu produkce na nový server
+# (ops/README.md, „Zkouška obnovy").
+#
+# Jméno slovníku kvalifikované schématem rozšíření ('public.unaccent'::regdictionary) řeší obě
+# pasti naráz: nezávisí na search_path (pg_dump obnovuje s prázdným search_path, inlining v
+# CREATE INDEX taky) a v každé databázi ukazuje na správný slovník. Výsledek funkce se nemění,
+# takže indexy nad ní zůstávají platné a reindex není potřeba.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-10-28-01-norm-text-portable
+      author: Petr F.
+      changes:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $outer$
+              DECLARE
+                ext_schema text;
+              BEGIN
+                SELECT nspname INTO ext_schema
+                  FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
+                  WHERE e.extname = 'unaccent';
+                EXECUTE format(
+                  'CREATE OR REPLACE FUNCTION core.norm_text(t TEXT) RETURNS TEXT
+                     LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS
+                     $body$ SELECT lower(%I.unaccent(%L::regdictionary, regexp_replace(trim($1), ''\s+'', '' '', ''g''))) $body$',
+                  ext_schema, quote_ident(ext_schema) || '.unaccent');
+              END
+              $outer$;
+      rollback:
+        - sql:
+            splitStatements: false
+            sql: |
+              DO $outer$
+              DECLARE
+                dict_oid oid;
+                ext_schema text;
+              BEGIN
+                SELECT oid INTO dict_oid FROM pg_ts_dict WHERE dictname = 'unaccent';
+                SELECT nspname INTO ext_schema
+                  FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
+                  WHERE e.extname = 'unaccent';
+                EXECUTE format(
+                  'CREATE OR REPLACE FUNCTION core.norm_text(t TEXT) RETURNS TEXT
+                     LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS
+                     $body$ SELECT lower(%I.unaccent(%L::regdictionary, regexp_replace(trim($1), ''\s+'', '' '', ''g''))) $body$',
+                  ext_schema, dict_oid);
+              END
+              $outer$;

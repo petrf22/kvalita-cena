@@ -22,6 +22,11 @@ data class FrameResult(
   /** Průběh odpočtu před prvním dílem (0–1); 0, dokud odpočet neběží ([startCountdownRunning]). */
   val startProgress: Float,
   val startCountdownRunning: Boolean,
+  /**
+   * Ostré snímky už [CaptureThresholds.NO_RECEIPT_HELP_MS] účtenku nenacházejí — appka poradí
+   * a nabídne snímání podle pevného rámečku.
+   */
+  val receiptMissingLong: Boolean = false,
 )
 
 /**
@@ -53,6 +58,19 @@ class ReceiptFrameAnalyzer(
    */
   @Volatile
   var paused: Boolean = false
+
+  /**
+   * Snímání podle pevného rámečku (docs/ai.md, `NO_RECEIPT_HELP_MS`): čtyřúhelník v souřadnicích
+   * zmenšeného snímku, který nahradí detekci — pro účtenku, kterou detekce na podložce nenajde.
+   * `null` = běžná detekce.
+   */
+  @Volatile
+  var fixedQuad: Quad? = null
+
+  private val stabilizer = QuadStabilizer()
+
+  /** Čas posledního snímku s nalezenou účtenkou (nebo začátku hledání), pro [FrameResult.receiptMissingLong]. */
+  private var lastFoundNanos = -1L
 
   /**
    * Reset z hlavního vlákna pro vlákno analyzátoru. Atomické převzetí (`getAndSet`) — při
@@ -109,14 +127,25 @@ class ReceiptFrameAnalyzer(
       small.get(0, 0, pixels)
       val sharpness = laplacianVariance(pixels, small.cols(), small.rows())
       val sharp = isSharpEnough(sharpness)
-      val quad = ReceiptImageProcessor.detectReceipt(small)
+      val timestamp = image.imageInfo.timestamp
+      val fixed = fixedQuad
+      val quad = if (fixed != null) {
+        stabilizer.reset()
+        fixed
+      } else {
+        stabilizer.update(ReceiptImageProcessor.detectReceipt(small), small.cols(), timestamp)
+      }
       trackShift(small)
+      // Rada se ukáže jen nad ostrým snímkem — u rozmazaného je nenalezení vinou pohybu, ne podložky.
+      if (quad != null || lastFoundNanos < 0 || paused) lastFoundNanos = timestamp
+      val missingLong = quad == null && sharp &&
+        timestamp - lastFoundNanos > CaptureThresholds.NO_RECEIPT_HELP_MS * 1_000_000L
 
       val found = quad != null
       if (paused) {
         tracker.cancelStart()
       } else {
-        tracker.updateStart(quad, small.cols(), image.imageInfo.timestamp)
+        tracker.updateStart(quad, small.cols(), timestamp)
       }
       if (autoCapture && !paused && quad != null && tracker.shouldCapture(found, sharp)) {
         val fullQuad = quad.scaled(1.0 / scale)
@@ -149,6 +178,7 @@ class ReceiptFrameAnalyzer(
           partCount = tracker.partCount,
           startProgress = tracker.startProgress,
           startCountdownRunning = tracker.startCountdownRunning,
+          receiptMissingLong = missingLong,
         ),
       )
       small.release()

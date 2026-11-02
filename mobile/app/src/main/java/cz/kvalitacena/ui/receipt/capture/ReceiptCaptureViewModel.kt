@@ -28,6 +28,7 @@ class ReceiptCaptureViewModel(
   private val draftStore: ReceiptDraftStore,
   private val retakeIndex: Int?,
   startDelaySeconds: Int,
+  currentUserUid: () -> String?,
 ) : ViewModel() {
 
   val isRetake: Boolean get() = retakeIndex != null
@@ -52,6 +53,22 @@ class ReceiptCaptureViewModel(
   /** Kamera se nepodařila spustit (obsazená, zakázaná politikou zařízení…). */
   var cameraError by mutableStateOf(false)
 
+  /** Svázaná kamera má přisvícení — bez něj se tlačítko svítilny nezobrazí. */
+  var torchAvailable by mutableStateOf(false)
+
+  /**
+   * Svítilna zapnutá uživatelem. Při šeru padá na účtenku stín telefonu, přisvícení ho vyruší
+   * a zvedne kontrast hrany papíru proti podložce.
+   */
+  var torchEnabled by mutableStateOf(false)
+
+  /**
+   * Snímání podle pevného rámečku místo hledání okrajů (docs/ai.md, `NO_RECEIPT_HELP_MS`) —
+   * rámeček v souřadnicích snímku dopočítá obrazovka podle velikosti náhledu a předá ho
+   * analyzátoru ([ReceiptFrameAnalyzer.fixedQuad]).
+   */
+  var frameMode by mutableStateOf(false)
+
   val analyzer = ReceiptFrameAnalyzer(
     onFrame = { _frame.value = it },
     onPart = ::onAutoPart,
@@ -59,6 +76,15 @@ class ReceiptCaptureViewModel(
     maxParts = if (retakeIndex != null) 1 else CaptureThresholds.MAX_PARTS,
     startDelayMillis = startDelaySeconds * 1000L,
   )
+
+  init {
+    // Rozpracovaný koncept jiného účtu se zahodí dřív, než do něj přibude díl (docs/soukromi.md,
+    // „Účtenky"). Uid se čte z Keystore, proto mimo hlavní vlákno.
+    viewModelScope.launch {
+      val discarded = withContext(Dispatchers.IO) { draftStore.claimFor(currentUserUid()) }
+      if (discarded && retakeIndex == null) analyzer.resetParts(0)
+    }
+  }
 
   /**
    * Díl z analyzátoru — volá se na jeho vlákně (soubor je malý a zápis rychlý), stav obrazovky

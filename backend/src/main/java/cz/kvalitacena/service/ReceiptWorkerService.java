@@ -4,19 +4,26 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cz.kvalitacena.config.ReceiptProperties;
 import cz.kvalitacena.controller.worker.WorkerArchiveCandidate;
+import cz.kvalitacena.controller.worker.WorkerCategory;
 import cz.kvalitacena.controller.worker.WorkerReceiptJob;
 import cz.kvalitacena.controller.worker.WorkerReceiptResult;
+import cz.kvalitacena.db.entity.Category;
+import cz.kvalitacena.db.entity.LabelDisplaySource;
+import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.PriceKind;
 import cz.kvalitacena.db.entity.QuantityUnit;
 import cz.kvalitacena.db.entity.Receipt;
 import cz.kvalitacena.db.entity.ReceiptImage;
 import cz.kvalitacena.db.entity.ReceiptJob;
 import cz.kvalitacena.db.entity.ReceiptLine;
+import cz.kvalitacena.db.entity.ReceiptLineHint;
 import cz.kvalitacena.db.entity.ReceiptLineStatus;
 import cz.kvalitacena.db.entity.ReceiptMatchSource;
 import cz.kvalitacena.db.entity.ReceiptProcessingStatus;
 import cz.kvalitacena.db.entity.Store;
+import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.ReceiptImageRepository;
+import cz.kvalitacena.db.repo.ReceiptLineHintRepository;
 import cz.kvalitacena.db.repo.ReceiptJobRepository;
 import cz.kvalitacena.db.repo.ReceiptLineRepository;
 import cz.kvalitacena.db.repo.ReceiptRepository;
@@ -31,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +54,8 @@ import java.util.Optional;
 public class ReceiptWorkerService {
 
   private static final int MAX_TEXT = 200;
+  /** NUMERIC(12,3) u net_content_hint_value — větší číslo je chyba čtení, ne gramáž. */
+  private static final BigDecimal MAX_NET_CONTENT_HINT = new BigDecimal("1000000");
   private static final BigDecimal MAX_AMOUNT = new BigDecimal("99999999.99");
 
   private final ReceiptJobRepository jobRepository;
@@ -56,13 +66,17 @@ public class ReceiptWorkerService {
   private final ReceiptMatchingService matchingService;
   private final ReceiptService receiptService;
   private final ReceiptProperties receiptProperties;
+  private final CategoryRepository categoryRepository;
+  private final ReceiptLineHintRepository hintRepository;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Transactional
   public List<WorkerReceiptJob> lease(Integer requested) {
     int limit = Math.max(1, Math.min(requested == null ? 1 : requested, receiptProperties.getMaxLeaseBatch()));
     OffsetDateTime now = OffsetDateTime.now();
-    OffsetDateTime leaseUntil = now.plusMinutes(receiptProperties.getLeaseMinutes());
+    // Na milisekundy: konec lease se workeru vrací jako identifikátor pronájmu (fail) a musí
+    // se po cestě JSON → DB (mikrosekundy) porovnat přesně.
+    OffsetDateTime leaseUntil = now.plusMinutes(receiptProperties.getLeaseMinutes()).truncatedTo(ChronoUnit.MILLIS);
     List<WorkerReceiptJob> result = new ArrayList<>();
     for (ReceiptJob job : jobRepository.lockAvailable(now, limit)) {
       Optional<Receipt> receipt = receiptRepository.findById(job.getReceiptId());
@@ -147,6 +161,7 @@ public class ReceiptWorkerService {
     receipt.setCurrency(result.currency() != null && result.currency().matches("[A-Z]{3}") ? result.currency() : null);
 
     List<ReceiptLine> lines = new ArrayList<>();
+    List<WorkerReceiptResult.Line> sources = new ArrayList<>();
     short lineNo = 0;
     for (WorkerReceiptResult.Line in : Optional.ofNullable(result.lines()).orElse(List.of())) {
       if (lineNo >= receiptProperties.getMaxLines()) {
@@ -160,6 +175,10 @@ public class ReceiptWorkerService {
           .receiptId(receiptId)
           .lineNo(lineNo++)
           .labelRaw(label.trim())
+          .labelDisplay(blankToNull(truncate(in.labelDisplay(), MAX_TEXT)))
+          .labelDisplaySource(enumOrNull(LabelDisplaySource.class, in.labelDisplaySource()))
+          .netContentHintValue(netContentHint(in) != null ? in.netContentValue() : null)
+          .netContentHintUom(netContentHint(in))
           .internalCode(truncate(in.internalCode(), 40))
           .quantity(quantity(in.quantity()))
           .quantityUnit(in.quantityUnit() != null ? in.quantityUnit() : QuantityUnit.PCS)
@@ -168,24 +187,33 @@ public class ReceiptWorkerService {
           .discountAmount(amount(in.discountAmount() == null ? null : in.discountAmount().abs()))
           .priceKindGuess(in.priceKind() != null ? in.priceKind() : PriceKind.REGULAR)
           .build());
+      sources.add(in);
     }
 
     Optional<Store> store = matchingService.suggestStore(receipt);
     receipt.setSuggestedStoreId(store.map(Store::getId).orElse(null));
     matchingService.matchLines(lines, store.orElse(null), receipt.getOwnerUserId());
     lineRepository.saveAll(lines);
+    saveHints(lines, sources, job.getModel());
     finish(receipt, ReceiptProcessingStatus.PROCESSED, now);
     log.info("Účtenka {} zpracována ({} řádků, model {})", receiptId, lines.size(), job.getModel());
   }
 
   @Transactional
-  public void fail(Long receiptId, String error) {
+  public void fail(Long receiptId, String error, OffsetDateTime leaseUntil) {
     ReceiptJob job = jobRepository.findForUpdateByReceiptId(receiptId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_NOT_FOUND));
     if (job.getProcessedAt() != null) {
       // Výsledek už je uložený, jen worker nedostal odpověď na /result a hlásí chybu —
       // hotovou účtenku nesmí vrátit do fronty (processed_at by ji z lockAvailable vyřadil).
       log.warn("Chyba účtenky {} nahlášená k už ukončené úloze — ignoruje se", receiptId);
+      return;
+    }
+    if (leaseUntil != null && (job.getLeaseUntil() == null || !leaseUntil.isEqual(job.getLeaseUntil()))) {
+      // Hlášení ze staršího, mezitím vypršelého pronájmu — úlohu už má jiný pokus a ten by
+      // chyba cizího pokusu vrátila do fronty uprostřed práce. Bez leaseUntil (starší worker)
+      // platí jen kontrola dokončení výš.
+      log.warn("Chyba účtenky {} z neplatného pronájmu — ignoruje se", receiptId);
       return;
     }
     job.setLeaseUntil(null);
@@ -211,6 +239,23 @@ public class ReceiptWorkerService {
       return Optional.empty();
     }
     return receiptService.loadImage(receiptId, seq);
+  }
+
+  /** Kategorie s celou cestou česky (core.category.name je čeština, docs/lokalizace.md). */
+  @Transactional(readOnly = true)
+  public List<WorkerCategory> categories() {
+    return categoryRepository.findAll().stream()
+        .map(category -> new WorkerCategory(category.getSlug(), categoryPath(category)))
+        .sorted(java.util.Comparator.comparing(WorkerCategory::path))
+        .toList();
+  }
+
+  private static String categoryPath(Category category) {
+    List<String> names = new ArrayList<>();
+    for (Category current = category; current != null && names.size() < 10; current = current.getParent()) {
+      names.addFirst(current.getName());
+    }
+    return String.join(" › ", names);
   }
 
   @Transactional(readOnly = true)
@@ -274,5 +319,72 @@ public class ReceiptWorkerService {
       return null;
     }
     return value.setScale(3, java.math.RoundingMode.HALF_UP);
+  }
+
+  /**
+   * Vodítko gramáže z označení řádku — jen kladné číslo s jednotkou hmotnosti/objemu, jinak
+   * nic. Hodnota a jednotka jdou vždy spolu (jako netContentValue/netContentUom u zboží).
+   */
+  /**
+   * Návrh kategorie a jednotky od modelu (ai.receipt_line_hint) — jen to, co projde kontrolou
+   * i tady: existující kategorie, jednotka G/KG/ML/L, žádná jednotka u váhového zboží a žádný
+   * rozpor s vodítkem gramáže z tisku (hmotnost proti objemu). Neplatná hodnota se zahodí,
+   * nikdy neshodí výsledek účtenky (docs/ai.md, „Návrh kategorie a jednotky").
+   */
+  private void saveHints(List<ReceiptLine> lines, List<WorkerReceiptResult.Line> sources, String model) {
+    List<ReceiptLineHint> hints = new ArrayList<>();
+    for (int i = 0; i < lines.size(); i++) {
+      ReceiptLine line = lines.get(i);
+      WorkerReceiptResult.Line in = sources.get(i);
+      String slug = in.categoryHintText();
+      Long categoryId = slug == null || slug.isBlank() ? null
+          : categoryRepository.findBySlug(slug.trim()).map(Category::getId).orElse(null);
+      NetContentUom uom = unitHint(line, in.unitHintText());
+      if (categoryId != null || uom != null) {
+        hints.add(ReceiptLineHint.builder().lineId(line.getId()).categoryId(categoryId).netContentUom(uom)
+            .model(truncate(model, 100)).build());
+      }
+    }
+    hintRepository.saveAll(hints);
+  }
+
+  static NetContentUom unitHint(ReceiptLine line, String value) {
+    NetContentUom uom = enumOrNull(NetContentUom.class, value);
+    if (uom == null || uom == NetContentUom.PCS || line.getQuantityUnit() != QuantityUnit.PCS) {
+      return null;
+    }
+    NetContentUom printed = line.getNetContentHintUom();
+    if (printed != null && isMass(printed) != isMass(uom)) {
+      return null;
+    }
+    return uom;
+  }
+
+  private static boolean isMass(NetContentUom uom) {
+    return uom == NetContentUom.G || uom == NetContentUom.KG;
+  }
+
+  private static NetContentUom netContentHint(WorkerReceiptResult.Line in) {
+    NetContentUom uom = enumOrNull(NetContentUom.class, in.netContentUom());
+    if (uom == null || uom == NetContentUom.PCS || in.netContentValue() == null
+        || in.netContentValue().signum() <= 0 || in.netContentValue().compareTo(MAX_NET_CONTENT_HINT) >= 0) {
+      return null;
+    }
+    return uom;
+  }
+
+  private static <E extends Enum<E>> E enumOrNull(Class<E> type, String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    try {
+      return Enum.valueOf(type, value.trim());
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
+  }
+
+  private static String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
   }
 }

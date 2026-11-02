@@ -29,6 +29,7 @@
       "RS": "Srbsko"
     },
     "similarWarning": "Nemyslíš spíš některý z už existujících obchodů?",
+    "prefilledFromReceipt": "Předvyplněno z účtenky — údaje zkontroluj, stroj se mohl přečíst.",
     "saveChanges": "Uložit změny",
     "createStore": "Založit obchod"
   },

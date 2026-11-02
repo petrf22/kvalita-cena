@@ -69,6 +69,7 @@ import cz.kvalitacena.ui.receipt.list.ReceiptListScreen
 import cz.kvalitacena.ui.receipt.review.ReceiptReviewScreen
 import cz.kvalitacena.ui.navigation.ARG_FEEDBACK_SOURCE
 import cz.kvalitacena.ui.navigation.ARG_PRODUCT_ID
+import cz.kvalitacena.ui.navigation.ARG_RECEIPT_LINE_ID
 import cz.kvalitacena.ui.navigation.ARG_STORE_ID
 import cz.kvalitacena.ui.navigation.ARG_WRITE_PRICE
 import cz.kvalitacena.ui.navigation.ROUTE_ABOUT
@@ -380,6 +381,7 @@ private fun AppScaffold() {
           navArgument(ARG_PRODUCT_ID) { type = NavType.StringType; nullable = true; defaultValue = null },
           navArgument(ARG_NAME) { type = NavType.StringType; nullable = true; defaultValue = null },
           navArgument(ARG_STORE_ID) { type = NavType.StringType; nullable = true; defaultValue = null },
+          navArgument(ARG_RECEIPT_LINE_ID) { type = NavType.StringType; nullable = true; defaultValue = null },
         ),
       ) { backStackEntry ->
         val barcode = backStackEntry.arguments?.getString(ARG_BARCODE)
@@ -390,6 +392,7 @@ private fun AppScaffold() {
           productId = productId,
           initialName = backStackEntry.arguments?.getString(ARG_NAME),
           initialStoreId = backStackEntry.arguments?.getString(ARG_STORE_ID),
+          receiptLineId = backStackEntry.arguments?.getString(ARG_RECEIPT_LINE_ID),
           onScanCode = { navController.navigate(ROUTE_SCAN_CODE) },
           onDone = { navController.popBackStack() },
           onAddStore = { navController.navigate(storeFormRouteForCreate()) },
@@ -430,7 +433,11 @@ private fun AppScaffold() {
         val receiptId = backStackEntry.arguments?.getString(ARG_RECEIPT_ID).orEmpty()
         ReceiptDetailScreen(
           receiptId = receiptId,
-          onCreateProduct = { name, storeId -> navController.navigate(productFormRoute(name = name, storeId = storeId)) },
+          onCreateProduct = { lineId, name, barcode, storeId ->
+            navController.navigate(
+              productFormRoute(barcode = barcode, name = name, storeId = storeId, receiptLineId = lineId),
+            )
+          },
           onAddStore = { navController.navigate(storeFormRouteForCreate()) },
           onProductClick = { id -> navController.navigate(productDetailRoute(id)) },
           onRescan = { navController.navigate(receiptCaptureRoute()) },

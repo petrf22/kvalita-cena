@@ -165,7 +165,7 @@ WHERE po.source = 'IMPORT'
 -- Pár hodnocení kvality — jen pokud už existuje aspoň jeden uživatel (seed běží typicky i před
 -- prvním přihlášením, kdy je auth.app_user prázdná; anonymní hodnocení kvality API nedovolí,
 -- vyžaduje přihlášení stejně jako submitObservation ho nevyžaduje). Hvězdičky, 5 nejlepší.
-INSERT INTO core.product_quality_rating (product_id, user_id, stars)
+INSERT INTO core.product_review (product_id, user_id, stars)
 SELECT p.id, u.id, g.stars
 FROM (VALUES
   ('Máslo čerstvé', 5),

@@ -12,6 +12,7 @@ import cz.kvalitacena.network.Category
 import cz.kvalitacena.network.CreateProductFromOffInput
 import cz.kvalitacena.network.CreateProductInput
 import cz.kvalitacena.network.ExternalProductCandidate
+import cz.kvalitacena.network.ReceiptLineProductDefaults
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.ProductSummary
@@ -39,7 +40,10 @@ private const val STORE_SEARCH_DEBOUNCE_MS = 300L
  * založí jako DRAFT/isGeneric a confidence zastropuje na MEDIUM, appka tu nic z toho neřeší.
  *
  * `barcode` z konstruktoru je naskenovaný/zadaný kód, který uživatel nenašel (viz
- * PriceEntryScreen "Založit zboží") — předvyplní pole kódu, ale jde ho smazat pro bezkódový zápis.
+ * PriceEntryScreen "Založit zboží"), nebo EAN z řádku účtenky (ReceiptDetailScreen, jen
+ * globální GTIN — `isGlobalGtin`) — předvyplní pole kódu, ale jde ho smazat pro bezkódový
+ * zápis. Formulář se na kód zeptá `productLookupByCode`: OFF kandidát formulář předvyplní,
+ * zboží, které kód v katalogu už má, nabídne k použití ([existingByCode]).
  *
  * Se zadaným [editingProductId] přejde do režimu editace existujícího zboží (patch nad
  * core.product_user_edit, `updateProduct`) — používá ji ProductDetailScreen. V editaci appka
@@ -56,6 +60,9 @@ class ProductFormViewModel(
   // účtenky a obchod z její hlavičky místo naposledy použitého obchodu.
   initialName: String? = null,
   private val initialStoreId: String? = null,
+  // Řádek účtenky, ze kterého se zboží zakládá — předvyplnění kategorie a gramáže z řádku,
+  // z podobného zboží v katalogu, nebo z návrhu modelu (receiptLineProductDefaults).
+  receiptLineId: String? = null,
 ) : ViewModel() {
 
   val isEditing: Boolean get() = editingProductId != null
@@ -151,6 +158,52 @@ class ProductFormViewModel(
     categoryQuery = categoryBreadcrumb(category, categories)
   }
 
+  /**
+   * Hodnoty, které uživatel zadal sám — pozdě dorazivší OFF kandidát ani předvyplnění z řádku
+   * účtenky je už nepřepíšou. Gramáž, jednotka a přepínač váhového zboží jsou jedna dvojice,
+   * proto jeden příznak.
+   */
+  private var categoryTouched = false
+  private var netContentTouched = false
+
+  /** Kategorie, kterou vybral uživatel sám — návrh modelu tím přestává být návrhem. */
+  fun onCategoryChosen(category: Category) {
+    categoryTouched = true
+    categorySuggested = false
+    onCategorySelected(category)
+  }
+
+  /** Jednotka, kterou vybral uživatel sám. */
+  fun onNetContentUomChosen(uom: String?) {
+    claimNetContent()
+    netContentUom = uom
+  }
+
+  /** Číslo gramáže, které napsal uživatel sám. */
+  fun onNetContentValueChosen(value: String) {
+    claimNetContent()
+    netContentValue = value
+  }
+
+  /** Přepínač váhového zboží, který přepnul uživatel sám. */
+  fun onVariableWeightChosen(value: Boolean) {
+    claimNetContent()
+    isVariableWeight = value
+  }
+
+  private fun claimNetContent() {
+    netContentTouched = true
+    netContentUomSuggested = false
+  }
+
+  /** Kategorii předvyplnil lokální model (zdroj AI) — formulář to pod polem řekne. */
+  var categorySuggested by mutableStateOf(false)
+    private set
+
+  /** Jednotku gramáže předvyplnil lokální model, číslo nechal na uživateli. */
+  var netContentUomSuggested by mutableStateOf(false)
+    private set
+
   var brandName by mutableStateOf("")
   var netContentValue by mutableStateOf("")
   /**
@@ -186,6 +239,23 @@ class ProductFormViewModel(
   var matchedAlias by mutableStateOf<String?>(null)
     private set
 
+  /**
+   * Zboží, které má kód z konstruktoru (`barcode`) v katalogu už přiřazený
+   * (`productLookupByCode` → EXISTING). U skenu je to vzácnost (PriceEntryScreen by ho rovnou
+   * ukázal), u řádku účtenky běžný případ: server páruje podle EANu jen s vybraným obchodem
+   * a zboží mohlo mezitím přibýt. Založit nové zboží se stejným kódem server odmítne
+   * (DUPLICATE_PRODUCT_CODE), proto ho formulář nabídne k použití — viz [existingForCode].
+   */
+  private var existingByCode by mutableStateOf<ProductSummary?>(null)
+  private val lookedUpCode: String? = barcode
+
+  /** [existingByCode], dokud pole kódu pořád obsahuje kód, pro který appka zboží našla. */
+  val existingForCode: ProductSummary?
+    get() = existingByCode?.takeIf { lookedUpCode != null && sameCode(code, lookedUpCode) }
+
+  /** Uživatel název už sám upravil — dorazivší OFF kandidát mu ho nesmí přepsat. */
+  private var nameTouched = false
+
   /** Nabídnutý OFF kandidát pro banner nad formulářem — null, dokud appka nic nenašla/nehledala. */
   var offCandidate by mutableStateOf<ExternalProductCandidate?>(null)
     private set
@@ -217,6 +287,13 @@ class ProductFormViewModel(
       // tichý, poslední známá hodnota v prefs platí dál.
       runCatching { graphQlClient.countries() }.onSuccess(countryStore::applyCountries)
     }
+    if (editingProductId == null && receiptLineId != null) {
+      viewModelScope.launch {
+        // Bez předvyplnění jde formulář vyplnit ručně — výpadek je tichý.
+        runCatching { graphQlClient.receiptLineProductDefaults(receiptLineId) }
+          .getOrNull()?.let(::applyReceiptDefaults)
+      }
+    }
     if (editingProductId != null) {
       loadExisting(editingProductId)
     } else if (barcode != null) {
@@ -227,8 +304,9 @@ class ProductFormViewModel(
       viewModelScope.launch {
         try {
           val result = graphQlClient.productLookupByCode(barcode)
-          if (result.status == "OFF_CANDIDATE" && result.candidate != null) {
-            applyOffCandidate(result.candidate)
+          when {
+            result.status == "OFF_CANDIDATE" && result.candidate != null -> applyOffCandidate(result.candidate)
+            result.status == "EXISTING" && result.product != null -> existingByCode = result.product.toSummary()
           }
         } catch (e: Exception) {
           // Tichý no-op — viz komentář výš.
@@ -291,6 +369,32 @@ class ProductFormViewModel(
     )
   }
 
+  /**
+   * Předvyplnění z řádku účtenky. Open Food Facts má přednost: co už OFF kandidát vyplnil, se
+   * nepřepisuje, a dorazí-li OFF později, přepíše to sám ([applyOffCandidate]). Nepřepisuje ani
+   * nic, co mezitím vybral uživatel. Gramáž jde vždy jako dvojice — u návrhu modelu jen
+   * jednotka bez čísla, číslo opíše uživatel z obalu.
+   */
+  private fun applyReceiptDefaults(defaults: ReceiptLineProductDefaults) {
+    val off = offDefaults
+    val offHasNetContent = off?.netContentUom != null
+    if (!netContentTouched && !offHasNetContent && !isVariableWeight && netContentUom == null) {
+      if (defaults.isVariableWeight) {
+        isVariableWeight = true
+      } else if (defaults.netContentUom != null && defaults.netContentUom != "PCS") {
+        netContentUom = defaults.netContentUom
+        defaults.netContentValue?.let { netContentValue = formatNetContentInput(it) }
+        netContentUomSuggested = defaults.netContentSource == "AI"
+      }
+    }
+    val category = defaults.category
+    if (category != null && !categoryTouched && off?.categoryId == null && selectedCategoryId == null) {
+      categorySuggested = defaults.categorySource == "AI"
+      val loaded = categories.find { it.id == category.id }
+      if (loaded != null) onCategorySelected(loaded) else pendingCategoryId = category.id
+    }
+  }
+
   /** Předvyplní formulář z OFF kandidáta — nepřepisuje pole, která kandidát nemá (necháme
    *  prázdné pro ruční vyplnění). Snímek pro submit() si uloží stranou do offDefaults. */
   private fun applyOffCandidate(candidate: ExternalProductCandidate) {
@@ -302,11 +406,20 @@ class ProductFormViewModel(
     // Sekce ostatních jazyků se ZÁMĚRNĚ nerozbaluje sama, ani když OFF zná zboží jen
     // cizojazyčně — ten název je vidět v upozornění pod polem "Název" a rozbalená sekce by
     // místo toho ukázala hlavně prázdná pole jazyků, které nikdo nevyplní.
-    defaults.name?.let { name = it }
+    // Název z OFF v jazyce appky má přednost před předvyplněnou zkratkou z účtenky („Nakl.
+    // okurky 680g…"), ne ale před tím, co uživatel mezitím sám napsal. Bez názvu v jazyce appky
+    // zůstane zkratka — cizojazyčný se sem nikdy nedosazuje (offDefaultsFrom).
+    if (!nameTouched) defaults.name?.let { name = it }
     defaults.brandName?.let { brandName = it }
-    defaults.netContentValue?.let { netContentValue = it.toString() }
-    defaults.netContentUom?.let { netContentUom = it }
-    defaults.categoryId?.let { id ->
+    // Co uživatel mezitím zadal sám, OFF nepřepíše — stejně jako u názvu (nameTouched).
+    if (!netContentTouched && defaults.netContentUom != null) {
+      netContentValue = defaults.netContentValue?.let(::formatNetContentInput).orEmpty()
+      netContentUom = defaults.netContentUom
+      netContentUomSuggested = false
+      isVariableWeight = false
+    }
+    defaults.categoryId?.takeIf { !categoryTouched }?.let { id ->
+      categorySuggested = false
       val category = categories.find { it.id == id }
       if (category != null) onCategorySelected(category) else pendingCategoryId = id
     }
@@ -325,6 +438,7 @@ class ProductFormViewModel(
   }
 
   fun onNameChange(value: String) {
+    nameTouched = true
     name = value
     loadSuggestions(value)
   }
@@ -359,14 +473,26 @@ class ProductFormViewModel(
   }
 
   /** Uživatel si vybral existující nabídnutou položku místo založení nové (docs/reputace.md). */
-  fun useExisting(summary: ProductSummary) {
+  fun useExisting(summary: ProductSummary) = useExistingProduct(summary.id, alias = name.trim().ifBlank { null })
+
+  /**
+   * Uživatel použil zboží, které už kód má ([existingForCode]). Bez aliasu: položku nenašel
+   * názvem, ale kódem, takže napsaný název není označení, pod kterým ji v obchodě zná
+   * (NavigationResults.productAlias).
+   */
+  fun useExistingByCode() {
+    val existing = existingForCode ?: return
+    useExistingProduct(existing.id, alias = null)
+  }
+
+  private fun useExistingProduct(productId: String, alias: String?) {
     usingExisting = true
     saving = true
     saveError = null
-    matchedAlias = name.trim().ifBlank { null }
+    matchedAlias = alias
     viewModelScope.launch {
       try {
-        created = graphQlClient.productById(summary.id)
+        created = graphQlClient.productById(productId)
       } catch (e: Exception) {
         saveError = e.toUiText()
         usingExisting = false
@@ -476,7 +602,7 @@ class ProductFormViewModel(
         // Kód se od nabídky kandidáta pořád musí shodovat — jinak uživatel kód smazal/přepsal
         // (bezkódová položka, jiné zboží) a appka musí uložit přes createProduct, ne
         // createProductFromOff (OFF hodnoty se nesmí zapsat do core.product jako vlastní).
-        val product = if (candidate != null && defaults != null && codeMatchesOffCandidate(code, candidate.code)) {
+        val product = if (candidate != null && defaults != null && sameCode(code, candidate.code)) {
           graphQlClient.createProductFromOff(buildOffInput(candidate, defaults, categoryId))
         } else {
           val visible = submittedNetContent()
@@ -622,12 +748,28 @@ class ProductFormViewModel(
     return if (!changed) null to null else currentValue to current.netContentUom
   }
 
-  /** Naskenovaný/zadaný kód pořád patří k nabídnutému OFF kandidátovi — jinak uživatel kód
-   *  smazal nebo přepsal (bezkódová položka, jiné zboží) a appka musí uložit přes createProduct,
-   *  ne createProductFromOff. */
-  private fun codeMatchesOffCandidate(code: String, candidateCode: String): Boolean {
+  /** Kód v poli pořád patří k nabídnutému OFF kandidátovi / nalezenému zboží — jinak ho
+   *  uživatel smazal nebo přepsal (bezkódová položka, jiné zboží) a appka musí uložit přes
+   *  createProduct, ne createProductFromOff, a nalezené zboží už nenabízet. */
+  private fun sameCode(code: String, otherCode: String): Boolean {
     val normalized = normalizeCode(code)
-    return normalized.isNotEmpty() && normalized == normalizeCode(candidateCode)
+    return normalized.isNotEmpty() && normalized == normalizeCode(otherCode)
   }
 
 }
+
+/** Řádek nabídky z plného zboží (`productLookupByCode` vrací Product, nabídka umí ProductSummary). */
+private fun Product.toSummary() = ProductSummary(
+  id = id,
+  name = name,
+  brand = brand,
+  category = category,
+  netContentValue = netContentValue,
+  netContentUom = netContentUom,
+  isVariableWeight = isVariableWeight,
+  isGeneric = isGeneric,
+  status = status,
+  catalogScope = catalogScope,
+  scopeChain = scopeChain,
+  scopeStore = scopeStore,
+)
