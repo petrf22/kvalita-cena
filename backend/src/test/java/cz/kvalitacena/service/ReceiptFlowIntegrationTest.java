@@ -81,6 +81,8 @@ class ReceiptFlowIntegrationTest {
     registry.add("spring.datasource.password", postgres::getPassword);
     registry.add("spring.docker.compose.enabled", () -> false);
     registry.add("app.media.root", () -> mediaRoot.toString());
+    // Testy nesmí volat skutečné Open Food Facts — snapshot si zakládají samy (offSnapshot).
+    registry.add("app.external.open-food-facts.enabled", () -> false);
   }
 
   @Autowired private ReceiptService receiptService;
@@ -98,6 +100,7 @@ class ReceiptFlowIntegrationTest {
   @Autowired private ProductRepository productRepository;
   @Autowired private CategoryRepository categoryRepository;
   @Autowired private JdbcTemplate jdbcTemplate;
+  @Autowired private cz.kvalitacena.db.repo.OffProductRepository offProductRepository;
 
   @Test
   void fullFlowFromUploadToConfirmedPriceAndLearnedLabel() {
@@ -602,6 +605,100 @@ class ReceiptFlowIntegrationTest {
     var noProduct = curationService.map(new LabelCurationService.LabelMappingRequest(
         "ROHLIK", f.chain().getId(), null, -5L, false));
     assertThat(noProduct.outcome()).isEqualTo(LabelCurationService.Outcome.INVALID);
+  }
+
+  @Test
+  void eanMatchesCatalogEvenWithoutKnownStore() {
+    Fixture f = fixture();
+    Product okurky = packaged(f, "Okurky bez obchodu");
+    String ean = randomEan13();
+    jdbcTemplate.update("INSERT INTO core.product_code (product_id, code, code_type, is_primary) VALUES (?, ?, 'GTIN', true)",
+        okurky.getId(), "0" + ean);
+    AppUser owner = persistUser();
+    Receipt receipt = receiptService.upload(owner.getPublicUid(), List.of(jpeg()), 1, false, OffsetDateTime.now(), null);
+    workerService.lease(10);
+    // Hlavička bez obchodu, který by šel navrhnout — EAN je globální a obchod nepotřebuje.
+    workerService.submitResult(receipt.getId(), new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED,
+        "test-model", "raw", Map.of("k", "v"), null, null, null, OffsetDateTime.now().minusHours(2),
+        new BigDecimal("44.90"), "CZK", List.of(lineWithCode("NAKL. OKURKY", ean))));
+
+    ReceiptLine line = lines(receipt.getId()).getFirst();
+    assertThat(line.getMatchSource()).isEqualTo(ReceiptMatchSource.CODE);
+    assertThat(line.getProductId()).isEqualTo(okurky.getId());
+  }
+
+  @Test
+  void eanKnownOnlyToOffIsSuggestedAndConfirmationCreatesProduct() {
+    Fixture f = fixture();
+    String ean = randomEan13();
+    offSnapshot(ean, f.rohlik().getCategory().getSlug(), "500", "G", Map.of("cs", "Těstoviny vřetena"));
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        displayLine("TESTOV.VRETENA 500G", "Těstoviny vřetena 500g", "500", "G", ean)));
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+
+    ReceiptLine line = lines(receiptId).getFirst();
+    assertThat(line.getStatus()).isEqualTo(ReceiptLineStatus.SUGGESTED);
+    assertThat(line.getMatchSource()).isEqualTo(ReceiptMatchSource.OFF);
+    assertThat(line.getProductId()).isNull();
+    assertThat(matchingService.offCandidate(line)).isPresent();
+
+    var result = reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(line.getId()),
+        ObservationSource.MOBILE);
+
+    assertThat(result.confirmed()).isEqualTo(1);
+    ReceiptLine confirmed = lines(receiptId).getFirst();
+    assertThat(confirmed.getStatus()).isEqualTo(ReceiptLineStatus.MATCHED);
+    assertThat(confirmed.getProductId()).isNotNull();
+    assertThat(gtinsOf(productRepository.findById(confirmed.getProductId()).orElseThrow())).containsExactly("0" + ean);
+    // ODbL: OFF hodnoty se do core.product nekopírují — název OFF má česky, takže zůstane NULL.
+    Map<String, Object> stored = jdbcTemplate.queryForMap(
+        "SELECT name, net_content_value, category_id FROM core.product WHERE id = ?", confirmed.getProductId());
+    assertThat(stored.get("name")).isNull();
+    assertThat(stored.get("net_content_value")).isNull();
+    assertThat(stored.get("category_id")).isNull();
+  }
+
+  @Test
+  void offProductWithoutCategoryOrNetContentStaysUnmatched() {
+    Fixture f = fixture();
+    String noCategory = randomEan13();
+    offSnapshot(noCategory, null, "500", "G", Map.of("cs", "Bez kategorie"));
+    String noContent = randomEan13();
+    offSnapshot(noContent, f.rohlik().getCategory().getSlug(), null, null, Map.of("cs", "Bez gramáže"));
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        lineWithCode("BEZ KATEGORIE", noCategory), lineWithCode("BEZ GRAMAZE", noContent)));
+
+    assertThat(lines(receiptId)).extracting(ReceiptLine::getStatus)
+        .containsOnly(ReceiptLineStatus.UNMATCHED);
+  }
+
+  @Test
+  void offSuggestionUsesProductCreatedMeanwhileWithSameEan() {
+    Fixture f = fixture();
+    String ean = randomEan13();
+    offSnapshot(ean, f.rohlik().getCategory().getSlug(), "1", "L", Map.of("de", "Milch"));
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(lineWithCode("MLEKO 1L", ean)));
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    assertThat(lines(receiptId).getFirst().getMatchSource()).isEqualTo(ReceiptMatchSource.OFF);
+    Product meanwhile = packaged(f, "Mléko mezitím");
+    jdbcTemplate.update("INSERT INTO core.product_code (product_id, code, code_type, is_primary) VALUES (?, ?, 'GTIN', true)",
+        meanwhile.getId(), "0" + ean);
+
+    reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(lines(receiptId).getFirst().getId()),
+        ObservationSource.WEB);
+
+    assertThat(lines(receiptId).getFirst().getProductId()).isEqualTo(meanwhile.getId());
+  }
+
+  private void offSnapshot(String ean, String categorySlug, String quantity, String unit, Map<String, String> names) {
+    offProductRepository.saveAndFlush(cz.kvalitacena.db.entity.OffProduct.builder()
+        .gtin("0" + ean).fetchStatus(cz.kvalitacena.db.entity.OffFetchStatus.FOUND)
+        .names(new java.util.LinkedHashMap<>(names)).nameLocales(new java.util.ArrayList<>(List.of("cs", "sk", "en", "pl", "de")))
+        .productQuantity(quantity == null ? null : new BigDecimal(quantity)).productQuantityUnit(unit)
+        .mappedCategorySlug(categorySlug).fetchedAt(OffsetDateTime.now()).build());
   }
 
   private Product chainProduct(Fixture f, String name, BigDecimal value, NetContentUom uom) {

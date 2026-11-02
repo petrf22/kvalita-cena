@@ -7,6 +7,7 @@ import cz.kvalitacena.db.entity.ProductAliasStatus;
 import cz.kvalitacena.db.entity.ProductStoreLabel;
 import cz.kvalitacena.db.entity.Receipt;
 import cz.kvalitacena.db.entity.ReceiptLine;
+import cz.kvalitacena.db.entity.ReceiptMatchSource;
 import cz.kvalitacena.db.entity.ReceiptLineStatus;
 import cz.kvalitacena.db.entity.RetailChain;
 import cz.kvalitacena.db.entity.Store;
@@ -64,6 +65,7 @@ public class ReceiptGraphQlController {
   private final ProductOverlayService productOverlayService;
   private final StoreOverlayService storeOverlayService;
   private final ViewerContextResolver viewerContextResolver;
+  private final ExternalProductCandidateFactory candidateFactory;
   private final HttpServletRequest servletRequest;
 
   // --- dotazy
@@ -211,6 +213,14 @@ public class ReceiptGraphQlController {
   @SchemaMapping(typeName = "ReceiptLine", field = "priceKind")
   public PriceKind priceKind(ReceiptLine line) {
     return line.getPriceKindGuess();
+  }
+
+  @SchemaMapping(typeName = "ReceiptLine", field = "offCandidate")
+  public ExternalProductCandidate offCandidate(ReceiptLine line) {
+    if (line.getMatchSource() != ReceiptMatchSource.OFF || line.getProductId() != null) {
+      return null;
+    }
+    return matchingService.offCandidate(line).map(candidateFactory::fromOff).orElse(null);
   }
 
   @BatchMapping(typeName = "ReceiptLine", field = "product")

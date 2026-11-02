@@ -1850,6 +1850,11 @@ enum ReceiptMatchSource {
   LABEL
   "Jednoznačná podobnost názvu — jen odhad, klient ho ukáže označený a nezaškrtne předem."
   FUZZY
+  """
+  EAN z řádku zná jen Open Food Facts — návrh BEZ zboží (product je null, náhled je v
+  offCandidate). Zboží se založí až potvrzením řádku. Deterministické jako CODE, předem zaškrtnuté.
+  """
+  OFF
   USER
   NEW_PRODUCT
 }
@@ -1917,6 +1922,11 @@ type ReceiptLine {
   status: ReceiptLineStatus!
   matchSource: ReceiptMatchSource
   product: Product
+  """
+  Náhled zboží z Open Food Facts u návrhu matchSource OFF (jinak null) — název, značka, gramáž
+  a fotka s povinnou atribucí. Null i tehdy, když OFF mezitím přestal odpovídat.
+  """
+  offCandidate: ExternalProductCandidate
   "Vyplněno, když z řádku vznikla cena — po 180 dnech se vazba pseudonymizací maže (docs/soukromi.md)."
   observationId: ID
   """
