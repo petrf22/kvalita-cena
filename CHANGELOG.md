@@ -7,6 +7,20 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [0.12.0] – 2026-11-02
+
+### Přidáno
+- Řádky účtenky se ukazují čitelně — místo „NUGETA ARASÍDOVÁ340G" třeba „Nugeta arašídová 340g"; původní tisk zůstává vidět vedle (server, web, mobil)
+- Když appka podle názvu na účtence jednoznačně pozná zboží, nabídne ho jako odhad; řádek zůstane nezaškrtnutý, dokud ho uživatel nezkontroluje (server, web, mobil)
+- EAN přečtený z účtenky se ukáže u řádku a předvyplní se do formuláře nového zboží (web, mobil)
+- Potvrzený řádek účtenky s EAN doplní kód zboží, které ho ještě nemá — příště se takové zboží spáruje samo (server)
+- Účtenky TAMDA FOODS se přečtou včetně EAN každé položky (server)
+- Provozovatel může názvy, které se na účtenkách často opakují, spárovat se zbožím centrálně — appka je pak nabídne všem (server)
+
+### Opraveno
+- Fotka celé účtenky se přečte celá — dřív se text dlouhé účtenky mohl potichu useknout (server)
+- Kódy s omezeným oběhem ve tvaru GTIN-14 a kupóny UPC se už neberou jako EAN zboží (server, web, mobil)
+
 ## [0.11.1] – 2026-10-26
 
 ### Přidáno
