@@ -255,6 +255,9 @@ položky, dokud nedojde kontext). Proto je lepší fotit ji po dílech.
 python3 -m unittest discover -s tools/uctenky -p 'test_*.py'
 ```
 
+Stejný příkaz spouští CI (job „Worker účtenek“ v `.github/workflows/ci.yml`) u každého PR.
+Testy proto nesmí sahat na Ollamu ani na server, obojí se podvrhuje (`FakeOcr`, `FakeApi`).
+
 Fixtures v `testdata/` jsou **anonymizované**. Reálné účtenky (složka `uctenky/` v kořeni,
 mimo git) do repozitáře nepatří.
 
