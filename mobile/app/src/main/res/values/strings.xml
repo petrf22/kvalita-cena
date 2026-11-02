@@ -792,6 +792,7 @@
     <string name="receipt_line_sheet_accept">Ano, je to ono</string>
     <string name="receipt_line_sheet_other">Jiné zboží</string>
     <string name="receipt_line_sheet_not_product">Není zboží — ignorovat</string>
+    <string name="receipt_line_sheet_fuzzy_hint">Zboží je navržené jen podle podobného názvu — potvrďte ho, jen když sedí.</string>
     <string name="receipt_group_to_resolve">K doplnění (%d)</string>
     <string name="receipt_group_to_check">Ke kontrole (%d)</string>
     <string name="receipt_group_ready">Připraveno k potvrzení (%d)</string>

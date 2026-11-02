@@ -91,6 +91,11 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   do serveru se z ní posílá jen to, co uživatel změnil (`changedNames`), protože poslat zpátky
   nezměněnou hodnotu z OFF by znamenalo zapsat cizí data do `core.product_name` (ODbL). Pořadí
   vrstev a fallback napříč jazyky: `docs/lokalizace.md`, „Název zboží po jazycích".
+- **Řádek účtenky s `matchSource = OFF` je `SUGGESTED` BEZ `product`** — jediná výjimka
+  z `chk_receipt_line_product`. Zboží se nad OFF snapshotem založí až potvrzením řádku
+  (`ReceiptReviewService.productFromOff` → `OffProductCatalogService.create`), nikdy při
+  zpracování účtenky, ať se katalog neplní zbožím z nepotvrzených účtenek. Klient u `SUGGESTED`
+  nesmí spoléhat na `product != null` — náhled nese `offCandidate`.
 - **Prošlý access token není chyba, kterou by šlo počkat** — `JwtAuthenticationFilter` ho mlčky
   zahodí a request doběhne jako ANONYMNÍ (HTTP 200, žádné `errors`), takže dotaz s anonymní
   variantou (`me` vrátí `null`, hledání zamlčí vlastní DRAFTy, graf zkrátí okno) vypadá jako

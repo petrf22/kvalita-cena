@@ -707,6 +707,7 @@
     <string name="receipt_line_sheet_accept">Yes, that\'s it</string>
     <string name="receipt_line_sheet_other">Different product</string>
     <string name="receipt_line_sheet_not_product">Not a product — ignore</string>
+    <string name="receipt_line_sheet_fuzzy_hint">The product is only suggested by a similar name — confirm it only if it matches.</string>
     <string name="receipt_group_to_resolve">To fill in (%d)</string>
     <string name="receipt_group_to_check">To check (%d)</string>
     <string name="receipt_group_ready">Ready to confirm (%d)</string>

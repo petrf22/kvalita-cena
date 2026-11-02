@@ -507,13 +507,14 @@ provozovna). Souřadnice se z adresy dohledají samy jen na mobilu (`scheduleGeo
 jako u ručně vyplněné adresy hledá až tlačítkem. Data jsou vlastní, `data_origin` zůstává `OWN`.
 
 **EAN z účtenky** (`ReceiptLine.internalCode`, u účtenek, které ho tisknou): server podle něj
-spáruje zboží (`ReceiptMatchingService.byCode`, jen s vybraným obchodem). Po potvrzení řádku
+spáruje zboží (`ReceiptMatchingService.byCode`) — od 2026-11-03 i bez známého obchodu, protože
+globální EAN na obchodu nezávisí (vnitroobchodní kód obchod dál potřebuje). Po potvrzení řádku
 ho připíše zboží, které EAN nemá (`ReceiptReviewService.learnCode`, pravidla
 v `docs/datovy-model.md`, „Uživatelská vrstva nad globálními daty"). Web i mobil ho ukážou
 u řádku (u návrhu spárování „podle EAN") a předají formuláři nového zboží. Formulář pak
 zkusí Open Food Facts: název z OFF v jazyce appky nahradí zkratku z účtenky a uloží se
 přes `createProductFromOff`. Zboží, které kód v katalogu už má, formulář nabídne k použití
-místo založení duplicity. Stane se to u účtenky bez vybraného obchodu, kde server nepároval.
+místo založení duplicity (zboží mohlo přibýt až po zpracování účtenky).
 Za EAN se považuje jen `isGlobalGtin` (backend `GtinNormalization`, web `shared/gtin.ts`,
 mobil `ui/common/Gtin.kt`, všude stejné pravidlo): kontrolní číslice GS1 a žádný omezený
 oběh (2x, 02, 04, kupóny 05/98/99; u GTIN-14 prefix za indikátorem balení).
@@ -545,10 +546,48 @@ EAN u každé položky, worker ho posílá jako `internalCode`, ale jen s platno
 - **Kalibrace.** Prahy `auto-match-*` jsou výchozí odhad, na reálném katalogu zatím
   nezkalibrované.
 
-**Co zbývá:** vlastní profily dalších řetězců (Penny prochází obecným), `f_evid` ve váze ceny, leták jako druhý zdroj označení,
-kalibrace `auto-match-*` na produkčním katalogu, předvyplnění gramáže nového zboží z vodítka
-na řádku (musí jít jako dvojice `netContentValue`/`netContentUom`), čtení vnitroobchodních
-kódů řetězců (`STORE_INTERNAL`).
+**Co nejméně práce s účtenkou (2026-11-03):**
+
+- **Návrh z Open Food Facts.** EAN, který katalog nezná, ale OFF ho zná i s kategorií
+  a gramáží, dá řádku návrh `match_source = OFF` bez zboží (`ReceiptMatchingService.offCandidate`).
+  Klient ho ukáže s náhledem a atribucí (`ReceiptLine.offCandidate`) a zaškrtne předem. Zboží
+  se založí až při „Potvrdit spárované" (`ReceiptReviewService.productFromOff` →
+  `OffProductCatalogService.create`, OFF hodnoty v `core.product` zůstávají `NULL`). Odhad
+  podle názvu má přednost, aby nevznikla duplicita zboží, které v katalogu už je bez EAN.
+- **Předvyplnění nového zboží** (`receiptLineProductDefaults`, `NewProductDefaultsService`).
+  Kategorie a gramáž se berou v tomto pořadí:
+  1. řádek sám (váhové zboží, vytištěná gramáž),
+  2. kategorie, na které se shodnou podobná zboží v katalogu,
+  3. návrh lokálního modelu (`tools/uctenky/ai_classify.py`, `ai.receipt_line_hint`).
+
+  OFF si formulář dotahuje sám a má přednost. Návrh modelu formulář označí poznámkou ke
+  kontrole.
+- **Revize na webu i v mobilu.** Řádky jsou ve skupinách (k doplnění, ke kontrole,
+  připravené, hotové, ignorované). Ťuknutí nebo klik na řádek otevře panel s výchozí akcí
+  (mobil `ReceiptLineSheet`, web `ReceiptLinePanel`). Průvodce „Doplnit nerozpoznané" projde
+  jen řádky, na které appka sama nestačí (`guideQueue`/`nextInGuide`, testy
+  `ReceiptLineSelectionTest`, `receipt-status.spec.ts`).
+- **Snímání v mobilu.**
+  - Displej nezhasne (`KeepScreenOn`).
+  - Svítilna jde zapnout tlačítkem.
+  - Detekce má dva nové pokusy pro světlou podložku: CLAHE + nižší Canny, a pruh hustého
+    tisku `findTextBand`.
+  - Rámeček se vyhlazuje v čase (`QuadStabilizer`).
+  - Po 3 s bez nalezené účtenky appka nabídne snímání podle pevného rámečku.
+  - Prahy jsou v `docs/ai.md`.
+- **Testy.** `ReceiptFlowIntegrationTest` (EAN bez obchodu, OFF návrh a potvrzení, duplicita
+  kódu, návrhy modelu, sousedé v katalogu), `NewProductDefaultsServiceTest`,
+  `QuadGeometryTest`, `test_worker.py` (`ClassifyTest`).
+
+**Co zbývá:**
+- vlastní profily dalších řetězců (Penny prochází obecným),
+- `f_evid` ve váze ceny,
+- leták jako druhý zdroj označení,
+- kalibrace `auto-match-*` na produkčním katalogu,
+- čtení vnitroobchodních kódů řetězců (`STORE_INTERNAL`),
+- ověření detekce účtenky na světlé podložce na skutečných telefonech,
+- kalibrace návrhu kategorie na víc účtenkách (model 14B na testovacích datech pořád občas
+  sáhne vedle, proto je to jen návrh).
 
 ## Neimplementováno
 

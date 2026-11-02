@@ -126,7 +126,7 @@ internal fun ReceiptLineSheet(
           }
           if (line.isFuzzyGuess()) {
             Text(
-              stringResource(R.string.receipt_line_fuzzy_hint),
+              stringResource(R.string.receipt_line_sheet_fuzzy_hint),
               style = MaterialTheme.typography.bodySmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

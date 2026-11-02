@@ -7,6 +7,20 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [Nezveřejněno]
+
+### Přidáno
+- Při skenování účtenky zůstane displej rozsvícený a jde zapnout svítilna, ať na účtenku nepadá stín (mobil)
+- Účtenka se najde i na světlé podložce; když ji appka přesto nevidí, poradí a nabídne snímání podle rámečku na displeji (mobil)
+- Ťuknutí na řádek účtenky rovnou nabídne, co je potřeba — vybrat zboží, potvrdit návrh, nebo řádek ignorovat (web, mobil)
+- Průvodce „Doplnit nerozpoznané" projde jen řádky, které appka sama nepoznala, a po každém skočí na další (web, mobil)
+- Řádky účtenky jsou rozdělené na „k doplnění", „ke kontrole", „připraveno k potvrzení" a hotové (web, mobil)
+- Zboží, které podle EAN z účtenky zná Open Food Facts, se navrhne samo a založí se při potvrzení účtenky (server, web, mobil)
+- Formulář nového zboží z účtenky má předvyplněnou kategorii a gramáž — z účtenky, z podobného zboží v katalogu nebo jako návrh počítače ke kontrole (server, web, mobil)
+
+### Opraveno
+- Zboží s EAN z účtenky se spáruje, i když obchod účtenky ještě není potvrzený (server)
+
 ## [0.12.0] – 2026-11-02
 
 ### Přidáno

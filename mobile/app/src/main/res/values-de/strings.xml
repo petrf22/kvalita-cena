@@ -709,6 +709,7 @@
     <string name="receipt_line_sheet_accept">Ja, das ist es</string>
     <string name="receipt_line_sheet_other">Anderes Produkt</string>
     <string name="receipt_line_sheet_not_product">Kein Produkt — ignorieren</string>
+    <string name="receipt_line_sheet_fuzzy_hint">Das Produkt ist nur nach einem ähnlichen Namen vorgeschlagen — bestätigen Sie es nur, wenn es passt.</string>
     <string name="receipt_group_to_resolve">Zu ergänzen (%d)</string>
     <string name="receipt_group_to_check">Zu prüfen (%d)</string>
     <string name="receipt_group_ready">Bereit zur Bestätigung (%d)</string>
