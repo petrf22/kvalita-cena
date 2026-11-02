@@ -156,6 +156,8 @@ describe('ProductForm – předvyplnění z řádku účtenky a pozdní OFF', ()
     }) => void;
     onNetContentValueChosen: (value: number | null) => void;
     onVariableWeightChosen: (value: boolean) => void;
+    onNetContentUomChosen: (uom: string | null) => void;
+    onCategoryChosen: (id: string | null) => void;
     netContentValue: () => number | null;
     netContentUom: () => string | null;
     isVariableWeight: () => boolean;
@@ -232,5 +234,32 @@ describe('ProductForm – předvyplnění z řádku účtenky a pozdní OFF', ()
     lookup.next({ status: 'OFF_CANDIDATE', candidate: offWithNetContent });
 
     expect(internals.isVariableWeight()).toBe(true);
+  });
+
+  it('pozdní předvyplnění z účtenky nepřepíše jednotku, kterou uživatel vrátil na nevyplněno', () => {
+    internals.onNetContentUomChosen('KG');
+    internals.onNetContentUomChosen(null);
+    internals.onCategoryChosen('5');
+    internals.onCategoryChosen(null);
+    internals.applyReceiptDefaults({
+      category: { id: '3' },
+      categorySource: 'CATALOG',
+      netContentValue: 500,
+      netContentUom: 'G',
+      isVariableWeight: false,
+      netContentSource: 'RECEIPT',
+    });
+
+    expect(internals.netContentUom()).toBeNull();
+    expect(internals.netContentValue()).toBeNull();
+    expect(internals.selectedCategoryId()).toBeNull();
+  });
+
+  it('pozdní předvyplnění z účtenky znovu nezapne ručně vypnuté váhové zboží', () => {
+    internals.onVariableWeightChosen(true);
+    internals.onVariableWeightChosen(false);
+    internals.applyReceiptDefaults({ isVariableWeight: true, netContentSource: 'RECEIPT' });
+
+    expect(internals.isVariableWeight()).toBe(false);
   });
 });

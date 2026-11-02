@@ -157,6 +157,11 @@ export class ProductForm {
   protected readonly unitSuggested = signal(false);
   /** Pole vyplněná z řádku účtenky — OFF kandidát je smí přepsat (`applyOffCandidate`). */
   private readonly filledFromReceipt = new Set<'category' | 'netContent'>();
+  /**
+   * Pole, na která uživatel sám sáhl — pozdě dorazivší předvyplnění z řádku účtenky je už
+   * nesmí přepsat, ani když je vrátil na „nevyplněno" (prázdná hodnota je pak jeho volba).
+   */
+  private readonly touchedByUser = new Set<'category' | 'netContent'>();
 
   @Output() readonly created = new EventEmitter<Product>();
   @Output() readonly existingMatched = new EventEmitter<ExistingProductMatch>();
@@ -393,7 +398,12 @@ export class ProductForm {
   }): void {
     const off = this.offDefaults;
     const offHasNetContent = off?.netContentUom != null;
-    if (!offHasNetContent && !this.isVariableWeight() && this.netContentUom() === null) {
+    if (
+      !offHasNetContent &&
+      !this.touchedByUser.has('netContent') &&
+      !this.isVariableWeight() &&
+      this.netContentUom() === null
+    ) {
       if (defaults.isVariableWeight) {
         this.isVariableWeight.set(true);
         this.filledFromReceipt.add('netContent');
@@ -405,7 +415,12 @@ export class ProductForm {
       }
     }
     const category = defaults.category;
-    if (category && !off?.categoryId && this.selectedCategoryId() === null) {
+    if (
+      category &&
+      !off?.categoryId &&
+      !this.touchedByUser.has('category') &&
+      this.selectedCategoryId() === null
+    ) {
       this.selectedCategoryId.set(category.id);
       this.categorySuggested.set(defaults.categorySource === 'AI');
       this.filledFromReceipt.add('category');
@@ -416,6 +431,7 @@ export class ProductForm {
   protected onCategoryChosen(id: string | null): void {
     this.categorySuggested.set(false);
     this.filledFromReceipt.delete('category');
+    this.touchedByUser.add('category');
     this.selectedCategoryId.set(id);
   }
 
@@ -427,6 +443,7 @@ export class ProductForm {
   private claimNetContent(): void {
     this.unitSuggested.set(false);
     this.filledFromReceipt.delete('netContent');
+    this.touchedByUser.add('netContent');
   }
 
   /** Jednotka vybraná uživatelem. */
