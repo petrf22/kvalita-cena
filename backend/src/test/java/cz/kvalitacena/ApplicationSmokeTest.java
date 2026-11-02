@@ -1,7 +1,12 @@
 package cz.kvalitacena;
 
+import cz.kvalitacena.db.entity.ApiToken;
+import cz.kvalitacena.db.entity.ApiTokenScope;
+import cz.kvalitacena.db.repo.ApiTokenRepository;
+import cz.kvalitacena.security.ApiTokenAuthenticationFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.MediaType;
@@ -13,6 +18,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Jediné místo v repu, kde appka nastartuje CELÝ Spring kontext proti reálné Postgres DB —
@@ -41,6 +47,9 @@ class ApplicationSmokeTest {
   @LocalServerPort
   private int port;
 
+  @Autowired
+  private ApiTokenRepository apiTokenRepository;
+
   private RestTestClient client;
 
   @BeforeEach
@@ -67,5 +76,49 @@ class ApplicationSmokeTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.errors").doesNotExist();
+  }
+
+  /**
+   * Chyba vykreslená přes {@code sendError} jde ERROR dispatchem na {@code /error}, kde už
+   * auth filtry neběží — bez {@code dispatcherTypeMatchers(ERROR).permitAll()} ze
+   * SecurityConfig by se každá 404/400/500 navenek tvářila jako 403 bez těla.
+   */
+  @Test
+  void unknownPathReturnsRealStatusInsteadOfForbidden() {
+    client.get().uri("/api/me/neexistuje")
+        .exchange()
+        .expectStatus().isNotFound()
+        .expectBody()
+        .jsonPath("$.status").isEqualTo(404);
+  }
+
+  @Test
+  void workerSeesRealErrorStatus() {
+    String token = ApiTokenAuthenticationFilter.TOKEN_PREFIX + UUID.randomUUID();
+    apiTokenRepository.save(ApiToken.builder()
+        .name("smoke-test")
+        .tokenHash(ApiTokenAuthenticationFilter.sha256(token))
+        .scope(ApiTokenScope.RECEIPT_WORKER)
+        .build());
+
+    client.get().uri("/api/worker/receipts/neexistuje/x")
+        .header("Authorization", "Bearer " + token)
+        .exchange()
+        .expectStatus().isNotFound();
+
+    client.post().uri("/api/worker/receipts/1/result")
+        .header("Authorization", "Bearer " + token)
+        .contentType(MediaType.APPLICATION_JSON)
+        .body("{rozbitý json")
+        .exchange()
+        .expectStatus().isBadRequest();
+  }
+
+  /** Povolený ERROR dispatch nesmí otevřít samotné URL — worker endpoint dál jen se strojovým tokenem. */
+  @Test
+  void anonymousStillForbiddenOnWorkerEndpoint() {
+    client.post().uri("/api/worker/receipts/lease")
+        .exchange()
+        .expectStatus().isForbidden();
   }
 }

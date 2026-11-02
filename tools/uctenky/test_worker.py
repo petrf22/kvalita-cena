@@ -186,6 +186,46 @@ xxxx xxxx xxxx 0000
         self.assertEqual(document["purchasedAt"], "2026-09-06T13:07:00+02:00")
         self.assertNotIn("xxxx", json.dumps(document))
 
+    # Vážené zboží se značkou zadání hmotnosti, datum a čas na dvou řádcích, mezisoučet
+    # a zaokrouhlení nad celkovou částkou (hotovost) — anonymizovaný tvar reálné účtenky.
+    WEIGHED = """PENNY.
+PENNY MARKET S.R.O.
+Nádražní 1, 10000 Vzorov
+000 VZOROV
+IČO: 12345678
+DIČ: CZ12345678
+MĚST. SOUD PRAHA C/00000
+Datum: 07.09.2026
+Cas: 10:15:00
+Kč
+0.526 kg (E) x 109.90 Kč /kg
+Kuř. prs.řízkyDM C 57.81
+0.575 kg (V) x 109.90 Kč /kg
+Kuř. prs.řízkyDM C 63.19
+6.000 ks x 2.90 Kč /ks
+Rohlík 43g C 17.40
+Mezisoučet Kč 138.40
+Zaokrouhlení Kč -0.40
+Celkem Kč 138.00
+PRIJATO v hotovosti 200.00
+VRACENO Kč 62.00
+Vážená položka byla zadána:
+(V) = z pokladní váhy
+"""
+
+    def test_vazene_zbozi_se_znackou_zadani_a_zaokrouhleni(self):
+        document = parse.build_document(self.WEIGHED)
+        self.assertEqual(document["warnings"], [])
+        # Zaokrouhlení (-0,40) je víc než tolerance součtu — musí se připočíst, ne tolerovat.
+        self.assertTrue(document["totalMatches"])
+        self.assertEqual((document["computedTotal"], document["printedTotal"]), ("138.00", "138.00"))
+        items = document["lines"]
+        self.assertEqual([line["kind"] for line in items], [lines_mod.ITEM] * 3)
+        self.assertEqual([(line["quantity"], line["quantityBasis"], line["unitPrice"]) for line in items],
+                         [("0.526", "PER_KG", "109.90"), ("0.575", "PER_KG", "109.90"),
+                          ("6", "PACKAGE", "2.90")])
+        self.assertEqual(document["purchasedAt"], "2026-09-07T10:15:00+02:00")
+
 
 class SegmentsTest(unittest.TestCase):
     def test_prekryv_dvou_casti_se_nezapocita_dvakrat(self):
@@ -393,6 +433,13 @@ class NormalizeTest(unittest.TestCase):
         self.assertEqual(normalize.AMOUNT_RE.findall("CELKEM 1526,70"), ["1526,70"])
         line = lines_mod.parse_item_lines(["TELEVIZE 12990,00 A"]).lines[0]
         self.assertEqual((line.kind, line.line_total), (lines_mod.ITEM, Decimal("12990.00")))
+
+    def test_hlavicka_sloupce_v_oddelovaci_je_sum(self):
+        # Albert tiskne „-------Kč---", OCR z toho přečte „Kc---".
+        for line in ("Kc---", "-------Kč---", "--- Kč ---", "Kč", "-----"):
+            self.assertTrue(normalize.is_noise(line), line)
+        for line in ("Kč 19,90", "UNI TWIST ZEL.80ML 19,90 A", "Kc--- 5,90"):
+            self.assertFalse(normalize.is_noise(line), line)
 
     def test_pismeno_O_misto_nuly_jen_v_cisle(self):
         self.assertEqual(str(normalize.parse_amount("98O,2O")), "980.20")

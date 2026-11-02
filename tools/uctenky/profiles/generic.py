@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
+from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from normalize import AMOUNT, AMOUNT_RE, parse_amount
@@ -28,7 +29,7 @@ _POSTAL_CITY_RE = re.compile(r"^(?P<postal>\d{3}\s?\d{2})\s+(?P<city>\D.*)$")
 _ICO_RE = re.compile(r"\b(?:IČO?|ICO?)\s*[:.]?\s*(?P<ico>\d{8})\b", re.IGNORECASE)
 _DIC_RE = re.compile(r"\bDIČ\s*[:.]?\s*(?:CZ)?\s*(?P<ico>\d{8,10})\b", re.IGNORECASE)
 _COMPANY_LINE_RE = re.compile(
-    r"\b(IČO?|DIČ|ICO?|s\.\s?r\.\s?o\.|a\.\s?s\.|spol\.|soud|spis\.?\s*zn|zaps[aá]n|datum|čas|"
+    r"\b(IČO?|DIČ|ICO?|s\.\s?r\.\s?o\.|a\.\s?s\.|spol\.|soud|spis\.?\s*zn|zaps[aá]n|datum|čas|cas\s*:|"
     r"pokladn|provozovna|filiálka|tel\.?|www\.)",
     re.IGNORECASE,
 )
@@ -37,6 +38,13 @@ _TOTAL_RE = re.compile(
     rf"(?P<total>{AMOUNT})\s*(?:Kč|Kc|CZK)?\s*$",
     re.IGNORECASE,
 )
+# Mezisoučet a zaokrouhlení NAD celkovou částkou (Penny) — nejsou to položky, blok položek
+# jimi končí. Zaokrouhlení se ale do kontrolního součtu připočte (Footer.rounding).
+_SUBTOTAL_RE = re.compile(r"^(?:mezisou[čc]et|zaokrouhlen[ií])\b", re.IGNORECASE)
+_ROUNDING_RE = re.compile(rf"^zaokrouhlen[ií]\b\D*?(?P<amount>{AMOUNT})\s*(?:Kč|Kc|CZK)?\s*$", re.IGNORECASE)
+# Datum a čas na dvou řádcích (Penny): „Datum: 20.09.2026" a pod ním „Čas: 08:22:39".
+_DATE_ONLY_RE = re.compile(r"\b(?P<day>\d{1,2})[./](?P<month>\d{1,2})[./](?P<year>\d{4}|\d{2})\b")
+_TIME_ONLY_RE = re.compile(r"^(?:[čc]as\b\s*:?\s*)?(?P<hour>\d{1,2}):(?P<minute>\d{2})(?::\d{2})?\b", re.IGNORECASE)
 # 30.09.2026 18:42(:05) | 30.09.26 18:42 | 30/09/26 18:42 | 2026-09-30 18:42
 _DATETIME_RES = (
     re.compile(r"\b(?P<day>\d{1,2})[./](?P<month>\d{1,2})[./](?P<year>\d{2}|\d{4})\s+(?P<hour>\d{1,2}):(?P<minute>\d{2})"),
@@ -99,6 +107,22 @@ def parse_datetime(line: str) -> datetime | None:
     return None
 
 
+def parse_split_datetime(lines: list[str]) -> datetime | None:
+    """Datum na jednom řádku a čas hned na dalším („Datum: 20.09.2026" / „Čas: 08:22:39")."""
+    for index, line in enumerate(lines[:-1]):
+        date = _DATE_ONLY_RE.search(line)
+        time = _TIME_ONLY_RE.match(lines[index + 1])
+        if not date or not time:
+            continue
+        year = int(date["year"])
+        try:
+            return datetime(2000 + year if year < 100 else year, int(date["month"]), int(date["day"]),
+                            int(time["hour"]), int(time["minute"]), tzinfo=TIMEZONE)
+        except ValueError:
+            continue
+    return None
+
+
 def split_body(raw_lines: list[str]) -> tuple[list[str], Footer]:
     start = _header_end(raw_lines)
     end, printed_total = len(raw_lines), None
@@ -108,14 +132,27 @@ def split_body(raw_lines: list[str]) -> tuple[list[str], Footer]:
             end, printed_total = index, parse_amount(total["total"])
             break
 
+    body_end, rounding = end, Decimal(0)
+    if printed_total is not None:
+        for index in range(start, end):
+            if _SUBTOTAL_RE.match(raw_lines[index]):
+                body_end = min(body_end, index)
+                rounded = _ROUNDING_RE.match(raw_lines[index])
+                if rounded:
+                    rounding += parse_amount(rounded["amount"])
+
     purchased_at = None
     # Datum bývá v patičce; některé pokladny ho tisknou do hlavičky.
-    for line in [*raw_lines[end:], *raw_lines[:start]]:
+    outside = [*raw_lines[end:], *raw_lines[:start]]
+    for line in outside:
         purchased_at = parse_datetime(line)
         if purchased_at:
             break
-    return raw_lines[start:end], Footer(purchased_at=purchased_at, printed_total=printed_total,
-                                        total_index=end if printed_total is not None else None)
+    if purchased_at is None:
+        purchased_at = parse_split_datetime(raw_lines[end:]) or parse_split_datetime(raw_lines[:start])
+    return raw_lines[start:body_end], Footer(purchased_at=purchased_at, printed_total=printed_total,
+                                             total_index=end if printed_total is not None else None,
+                                             rounding=rounding)
 
 
 PROFILE = Profile(

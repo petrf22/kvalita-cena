@@ -526,7 +526,11 @@ rozdělená na 5 dílů s překryvem): OCR → řádky se součtem na haléř �
 **Profily řetězců** (`tools/uctenky/profiles/`): Albert, TAMDA FOODS a obecný profil. Tamda
 ověřena 2026-11-01 na reálné účtence se 66 položkami v 5 dílech, součet sedí na haléř. Tiskne
 EAN u každé položky, worker ho posílá jako `internalCode`, ale jen s platnou kontrolní
-číslicí (`normalize.is_valid_gtin`), protože server kontroluje jen formát.
+číslicí (`normalize.is_valid_gtin`), protože server kontroluje jen formát. Penny jde přes
+obecný profil (ověřeno 2026-11-02 na účtence s váženým zbožím). Ten umí množství nad názvem
+i se značkou zadání hmotnosti `0.526 kg (E) x …`, datum a čas na dvou řádcích
+a mezisoučet se zaokrouhlením nad „Celkem“. Zaokrouhlení není položka, ale do kontrolního
+součtu se připočte (`Footer.rounding`), protože u hotovosti dosahuje až ±0,50 Kč.
 
 **Čitelné názvy, odhad a kurátorství (2026-11-02):**
 
