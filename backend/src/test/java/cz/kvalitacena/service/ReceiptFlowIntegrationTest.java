@@ -707,6 +707,10 @@ class ReceiptFlowIntegrationTest {
         hinted("MLEKO POL.", "Mléko pol.", null, null, slug, "L"),
         // Neexistující kategorie a nesmyslná jednotka se zahodí.
         hinted("NECO", "Něco", null, null, "neexistuje-" + UUID.randomUUID(), "KUS"),
+        // Hodnota jiného typu než text se zahodí a výsledek účtenky neshodí.
+        new WorkerReceiptResult.Line("JINE", null, BigDecimal.ONE, QuantityUnit.PCS, new BigDecimal("9.90"),
+            new BigDecimal("9.90"), null, PriceKind.REGULAR, "Jiné", "RULES", null, null, List.of(slug),
+            Map.of("unit", "L")),
         // Váhové zboží jednotku od modelu nedostane.
         new WorkerReceiptResult.Line("BANANY", null, new BigDecimal("0.4"), QuantityUnit.KG, new BigDecimal("29.90"),
             new BigDecimal("11.96"), null, PriceKind.REGULAR, "Banány", "RULES", null, null, null, "G")));
@@ -729,11 +733,15 @@ class ReceiptFlowIntegrationTest {
     assertThat(nothing.category()).isNull();
     assertThat(nothing.netContentUom()).isNull();
 
-    var bananas = productDefaultsService.forLine(lines.get(3), f.store().getId(), owner.getId());
+    var other = productDefaultsService.forLine(lines.get(3), f.store().getId(), owner.getId());
+    assertThat(other.category()).isNull();
+    assertThat(other.netContentUom()).isNull();
+
+    var bananas = productDefaultsService.forLine(lines.get(4), f.store().getId(), owner.getId());
     assertThat(bananas.isVariableWeight()).isTrue();
     assertThat(bananas.netContentUom()).isNull();
     assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM ai.receipt_line_hint WHERE line_id = ?",
-        Long.class, lines.get(3).getId())).isZero();
+        Long.class, lines.get(4).getId())).isZero();
   }
 
   @Test

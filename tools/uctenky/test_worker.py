@@ -723,3 +723,14 @@ class ClassifyTest(unittest.TestCase):
         self.assertEqual(len(items), len(payload["lines"]))
         self.assertTrue(all("categoryHint" in line for line in payload["lines"]))
 
+    def test_jednotka_ani_kategorie_jineho_typu_nesrazi_uctenku(self):
+        lines = [{"label": "MLEKO", "quantityUnit": "PCS"}, {"label": "SIRUP", "quantityUnit": "PCS"}]
+        answers = {"0": {"category": ["mleko"], "unit": ["L"]}, "1": {"category": {"x": 1}, "unit": {"u": "L"}}}
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier(answers), log=lambda *_: None)
+        self.assertEqual([(l["categoryHint"], l["unitHint"]) for l in lines], [(None, None), (None, None)])
+
+    def test_odpoved_ktera_neni_objekt_se_zahodi(self):
+        lines = [{"label": "MLEKO", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": ["mleko", "L"]}), log=lambda *_: None)
+        self.assertEqual((lines[0]["categoryHint"], lines[0]["unitHint"]), (None, None))
+

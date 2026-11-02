@@ -43,11 +43,16 @@ def accept(answer, line: dict, slugs: set[str]) -> tuple[str | None, str | None,
     reasons: list[str] = []
     if not isinstance(answer, dict):
         return None, None, ["odpověď není objekt"]
+    # Model vrací platný JSON, ale ne nutně tvar, o který si řekl („unit": ["L"], objekt…) —
+    # cokoli jiného než řetězec se zahodí, nesmí to shodit celou účtenku (seznam není hashovatelný).
     category = answer.get("category")
     if category is not None and (not isinstance(category, str) or category not in slugs):
         reasons.append(f"neznámá kategorie „{category}“")
         category = None
     unit = answer.get("unit")
+    if unit is not None and not isinstance(unit, str):
+        reasons.append(f"jednotka není text: {unit!r}")
+        unit = None
     if isinstance(unit, str):
         unit = unit.strip().upper()
     if unit is not None and unit not in UNITS:
@@ -112,7 +117,11 @@ def classify(out_lines: list[dict], categories: list[dict], classifier, log=prin
     slugs = set(by_slug)
     for key, name in items.items():
         line = out_lines[int(key)]
-        category, unit, reasons = accept(answers.get(key), line, slugs)
+        try:
+            category, unit, reasons = accept(answers.get(key), line, slugs)
+        except (TypeError, ValueError, AttributeError) as error:
+            # Poradní výstup — nečekaný tvar odpovědi je jen řádek bez návrhu, ne chyba účtenky.
+            category, unit, reasons = None, None, [f"nečekaný tvar odpovědi ({error})"]
         for reason in reasons:
             log(f"     ~ kategorie „{name}“: model zamítnut — {reason}")
         line["categoryHint"] = category

@@ -336,9 +336,10 @@ public class ReceiptWorkerService {
     for (int i = 0; i < lines.size(); i++) {
       ReceiptLine line = lines.get(i);
       WorkerReceiptResult.Line in = sources.get(i);
-      Long categoryId = in.categoryHint() == null || in.categoryHint().isBlank() ? null
-          : categoryRepository.findBySlug(in.categoryHint().trim()).map(Category::getId).orElse(null);
-      NetContentUom uom = unitHint(line, in.unitHint());
+      String slug = in.categoryHintText();
+      Long categoryId = slug == null || slug.isBlank() ? null
+          : categoryRepository.findBySlug(slug.trim()).map(Category::getId).orElse(null);
+      NetContentUom uom = unitHint(line, in.unitHintText());
       if (categoryId != null || uom != null) {
         hints.add(ReceiptLineHint.builder().lineId(line.getId()).categoryId(categoryId).netContentUom(uom)
             .model(truncate(model, 100)).build());
