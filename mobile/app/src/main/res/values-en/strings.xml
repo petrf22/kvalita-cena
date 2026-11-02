@@ -569,6 +569,10 @@
     <string name="receipt_capture_hint_retake">Point the phone at the part you want to retake</string>
     <string name="receipt_capture_hint_hold_still">Hold the phone still</string>
     <string name="receipt_capture_hint_starting">Hold still — scanning starts in a moment</string>
+    <string name="receipt_capture_not_found_help">I can\'t see the receipt. A darker surface or the flashlight helps — or line it up with the frame.</string>
+    <string name="receipt_capture_frame_mode_on">Scan using the frame</string>
+    <string name="receipt_capture_frame_mode_off">Detect receipt edges</string>
+    <string name="receipt_capture_hint_frame_mode">Fit the receipt between the sides of the frame and hold still</string>
     <string name="receipt_capture_hint_move_down">Move the phone down</string>
     <string name="receipt_capture_hint_move_back">Too fast — move the phone back up a little</string>
     <string name="receipt_capture_hint_limit">A receipt cannot have more parts — tap Done</string>

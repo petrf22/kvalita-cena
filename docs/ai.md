@@ -218,6 +218,14 @@ vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DI
 | `DEFAULT_START_DELAY_SECONDS` / `START_DELAY_CHOICES` | 2 s / 1–5 s | první díl se uloží až po odpočtu, během kterého je účtenka v klidu vidět; délku si uživatel mění v Nastavení |
 | `START_MAX_DRIFT_RATIO` | 0,06 | roh rámečku ujel od začátku odpočtu o víc než 6 % šířky záběru = uživatel ještě míří, odpočet začne znovu |
 | `START_LOST_GRACE_MS` | 300 ms | tak dlouho smí účtenka z detekce vypadnout, než se odpočet zruší — jednotlivý snímek bez rámečku ho nesmí shodit |
+| `LOW_CONTRAST_CANNY_LOW` / `_HIGH` / `CLAHE_CLIP_LIMIT` | 15 / 45 / 2,0 | druhý průchod hledání obrysu, když první (Canny 50/150) nic nenajde: bílá účtenka na světlé podložce má hranu jen pár desítek úrovní jasu, po vyrovnání kontrastu (CLAHE) a s nižšími prahy vznikne; přerušený obrys spojí `MORPH_CLOSE` |
+| `MIN_TEXT_DENSITY` | 0,03 | poslední záchrana podle **hustoty textu** po sloupcích (podíl hranových pixelů po vyhlazení): sloupce s tiskem účtenky jsou nad prahem, čistá podložka pod ním — funguje bez ohledu na barvu podložky |
+| `TEXT_DENSITY_SMOOTH_RATIO` | 0,04 | šířka klouzavého průměru profilu hustoty (podíl šířky záběru) — přemostí mezery mezi slovy |
+| `TEXT_BAND_MAX_OUTSIDE_RATIO` | 0,35 | hustota mimo pruh smí být nejvýš takový podíl hustoty uvnitř — vzorovaná podložka (dřevo, ubrus) by jinak prošla jako „text" |
+| `TEXT_BAND_MARGIN_RATIO` | 0,04 | pruh textu se rozšíří o okraj papíru na každé straně (podíl šířky záběru) |
+| `QUAD_SMOOTHING` | 0,5 | váha nového rámečku při vyhlazení v čase (zbytek drží předchozí) — rámeček neposkakuje a odpočet se nerestartuje kvůli šumu detekce; skok o víc než `START_MAX_DRIFT_RATIO` vyhlazení přeskočí |
+| `QUAD_HOLD_MS` | 500 ms | jak dlouho platí poslední rámeček, když detekce na pár snímků vypadne |
+| `NO_RECEIPT_HELP_MS` | 3000 ms | po takové době ostrých snímků bez nalezené účtenky appka poradí (tmavší podložka, svítilna) a nabídne **snímání podle rámečku**: za účtenku se bere pevný rámeček na displeji (boky 14 % od okraje náhledu jako vodítko), posun a dělení na díly fungují beze změny |
 
 Proč odpočet: dřív se první díl uložil hned na prvním ostrém snímku s nalezeným rámečkem, tedy
 typicky ještě během míření — nakloněný, nebo s rámečkem chyceným za hranu stolu. Odpočet běží

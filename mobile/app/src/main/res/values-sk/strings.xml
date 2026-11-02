@@ -569,6 +569,10 @@
     <string name="receipt_capture_hint_retake">Namierte telefón na diel, ktorý chcete odfotiť znova</string>
     <string name="receipt_capture_hint_hold_still">Držte telefón v pokoji</string>
     <string name="receipt_capture_hint_starting">Držte v pokoji — snímanie o chvíľu začne</string>
+    <string name="receipt_capture_not_found_help">Účtenku nevidím. Pomôže tmavšia podložka alebo svietidlo — alebo ju zarovnajte do rámčeka.</string>
+    <string name="receipt_capture_frame_mode_on">Snímať podľa rámčeka</string>
+    <string name="receipt_capture_frame_mode_off">Hľadať okraje účtenky</string>
+    <string name="receipt_capture_hint_frame_mode">Zarovnajte účtenku medzi boky rámčeka a držte v pokoji</string>
     <string name="receipt_capture_hint_move_down">Posuňte telefón nižšie</string>
     <string name="receipt_capture_hint_move_back">Príliš rýchlo — vráťte telefón kúsok vyššie</string>
     <string name="receipt_capture_hint_limit">Viac dielov jedna účtenka mať nemôže — ťuknite na Hotovo</string>

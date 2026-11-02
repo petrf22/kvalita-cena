@@ -571,6 +571,10 @@
     <string name="receipt_capture_hint_retake">Richten Sie das Handy auf den Teil, den Sie neu aufnehmen möchten</string>
     <string name="receipt_capture_hint_hold_still">Halten Sie das Handy ruhig</string>
     <string name="receipt_capture_hint_starting">Ruhig halten — das Scannen beginnt gleich</string>
+    <string name="receipt_capture_not_found_help">Ich sehe den Kassenbon nicht. Eine dunklere Unterlage oder die Taschenlampe hilft — oder richten Sie ihn am Rahmen aus.</string>
+    <string name="receipt_capture_frame_mode_on">Nach Rahmen scannen</string>
+    <string name="receipt_capture_frame_mode_off">Ränder des Kassenbons erkennen</string>
+    <string name="receipt_capture_hint_frame_mode">Legen Sie den Kassenbon zwischen die Seiten des Rahmens und halten Sie still</string>
     <string name="receipt_capture_hint_move_down">Bewegen Sie das Handy nach unten</string>
     <string name="receipt_capture_hint_move_back">Zu schnell — bewegen Sie das Handy ein Stück zurück nach oben</string>
     <string name="receipt_capture_hint_limit">Mehr Teile sind nicht möglich — tippen Sie auf Fertig</string>

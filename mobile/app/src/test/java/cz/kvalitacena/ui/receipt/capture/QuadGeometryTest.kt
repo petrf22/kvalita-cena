@@ -171,4 +171,92 @@ class QuadGeometryTest {
     assertTrue(kept.first > 0)
     assertTrue(kept.last < 394)
   }
+
+  // --- findTextBand: bílá účtenka na bílém stole, kde jas nepomůže ---
+
+  /** Profil hustoty hran: tisk ve sloupcích [from, to), jinde [background]. */
+  private fun textProfile(n: Int, from: Int, to: Int, inside: Double = 0.12, background: Double = 0.0) =
+    DoubleArray(n) { x -> if (x in from until to) inside else background }
+
+  @Test
+  fun pruhTiskuNaCistePodlozceSeNajdeIOkraj() {
+    val band = findTextBand(textProfile(480, 140, 340))
+    assertNotNull(band)
+    // Pruh zahrne tisk a rozšíří se o okraj papíru (4 % z 480 ≈ 19 px) na každou stranu.
+    assertTrue(band!!.first in 110..140)
+    assertTrue(band.last in 339..370)
+  }
+
+  @Test
+  fun mezeryMeziSlovyPruhNeroztrhnou() {
+    val profile = textProfile(480, 140, 340)
+    // Mezera mezi názvem a cenou — užší než vyhlazovací okno.
+    for (x in 230 until 245) profile[x] = 0.0
+    val band = findTextBand(profile)
+    assertNotNull(band)
+    assertTrue(band!!.first < 140 && band.last > 339)
+  }
+
+  @Test
+  fun prazdnaPodlozkaPruhNema() {
+    assertNull(findTextBand(DoubleArray(480)))
+  }
+
+  @Test
+  fun vzorovanaPodlozkaNeniUctenka() {
+    // Dřevo: hrany všude, uvnitř jen o málo hustší.
+    assertNull(findTextBand(textProfile(480, 140, 340, inside = 0.12, background = 0.08)))
+  }
+
+  @Test
+  fun tiskPresCelyZaberNeniSKymPorovnat() {
+    assertNull(findTextBand(textProfile(480, 0, 480)))
+  }
+
+  @Test
+  fun uzkyShlukNeniUctenka() {
+    assertNull(findTextBand(textProfile(480, 200, 240)))
+  }
+
+  // --- QuadStabilizer ---
+
+  private val rect = Quad(Pt(100.0, 0.0), Pt(380.0, 0.0), Pt(380.0, 640.0), Pt(100.0, 640.0))
+
+  @Test
+  fun malyPosunSeVyhladi() {
+    val stabilizer = QuadStabilizer(smoothing = 0.5, holdMillis = 500, maxDriftRatio = 0.06)
+    stabilizer.update(rect, 480, 0)
+    val moved = rect.map { Pt(it.x + 10, it.y) }
+    val result = stabilizer.update(moved, 480, 33_000_000)!!
+    assertEquals(105.0, result.tl.x, 1e-9)
+  }
+
+  @Test
+  fun velkySkokSeNevyhlazuje() {
+    val stabilizer = QuadStabilizer(smoothing = 0.5, holdMillis = 500, maxDriftRatio = 0.06)
+    stabilizer.update(rect, 480, 0)
+    val moved = rect.map { Pt(it.x + 100, it.y) }
+    assertEquals(moved, stabilizer.update(moved, 480, 33_000_000))
+  }
+
+  @Test
+  fun kratkyVypadekDetekcePrecka() {
+    val stabilizer = QuadStabilizer(smoothing = 0.5, holdMillis = 500, maxDriftRatio = 0.06)
+    stabilizer.update(rect, 480, 0)
+    assertEquals(rect, stabilizer.update(null, 480, 400_000_000))
+    assertNull(stabilizer.update(null, 480, 600_000_000))
+  }
+
+  // --- frameModeQuad ---
+
+  @Test
+  fun pevnyRamecekSediSNahledemKteryOrezavaBoky() {
+    // Snímek 480 × 640 (3:4) na náhledu 1080 × 2340: FILL_CENTER zvětší podle výšky a boky ořízne.
+    val quad = frameModeQuad(480, 640, 1080.0, 2340.0, sideRatio = 0.14)
+    val back = imageToFillCenterView(quad.tl, 480, 640, 1080.0, 2340.0)
+    assertEquals(1080 * 0.14, back.x, 1e-6)
+    assertEquals(0.0, quad.tl.y, 1e-6)
+    assertEquals(640.0, quad.bl.y, 1e-6)
+    assertTrue(isPlausibleReceiptQuad(quad, 480, 640))
+  }
 }

@@ -569,6 +569,10 @@
     <string name="receipt_capture_hint_retake">Skieruj telefon na część, którą chcesz sfotografować ponownie</string>
     <string name="receipt_capture_hint_hold_still">Trzymaj telefon nieruchomo</string>
     <string name="receipt_capture_hint_starting">Nie ruszaj — skanowanie za chwilę się zacznie</string>
+    <string name="receipt_capture_not_found_help">Nie widzę paragonu. Pomoże ciemniejsze podłoże lub latarka — albo wyrównaj go do ramki.</string>
+    <string name="receipt_capture_frame_mode_on">Skanuj według ramki</string>
+    <string name="receipt_capture_frame_mode_off">Wykrywaj krawędzie paragonu</string>
+    <string name="receipt_capture_hint_frame_mode">Umieść paragon między bokami ramki i nie ruszaj</string>
     <string name="receipt_capture_hint_move_down">Przesuń telefon niżej</string>
     <string name="receipt_capture_hint_move_back">Za szybko — przesuń telefon trochę wyżej</string>
     <string name="receipt_capture_hint_limit">Paragon nie może mieć więcej części — dotknij Gotowe</string>

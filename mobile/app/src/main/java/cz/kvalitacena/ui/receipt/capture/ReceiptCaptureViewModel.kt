@@ -53,6 +53,22 @@ class ReceiptCaptureViewModel(
   /** Kamera se nepodařila spustit (obsazená, zakázaná politikou zařízení…). */
   var cameraError by mutableStateOf(false)
 
+  /** Svázaná kamera má přisvícení — bez něj se tlačítko svítilny nezobrazí. */
+  var torchAvailable by mutableStateOf(false)
+
+  /**
+   * Svítilna zapnutá uživatelem. Při šeru padá na účtenku stín telefonu, přisvícení ho vyruší
+   * a zvedne kontrast hrany papíru proti podložce.
+   */
+  var torchEnabled by mutableStateOf(false)
+
+  /**
+   * Snímání podle pevného rámečku místo hledání okrajů (docs/ai.md, `NO_RECEIPT_HELP_MS`) —
+   * rámeček v souřadnicích snímku dopočítá obrazovka podle velikosti náhledu a předá ho
+   * analyzátoru ([ReceiptFrameAnalyzer.fixedQuad]).
+   */
+  var frameMode by mutableStateOf(false)
+
   val analyzer = ReceiptFrameAnalyzer(
     onFrame = { _frame.value = it },
     onPart = ::onAutoPart,

@@ -654,6 +654,10 @@
     <string name="receipt_capture_hint_retake">Namiřte telefon na díl, který chcete nafotit znovu</string>
     <string name="receipt_capture_hint_hold_still">Držte telefon v klidu</string>
     <string name="receipt_capture_hint_starting">Držte v klidu — snímání za chvíli začne</string>
+    <string name="receipt_capture_not_found_help">Účtenku nevidím. Pomůže tmavší podložka nebo svítilna — nebo ji srovnejte do rámečku.</string>
+    <string name="receipt_capture_frame_mode_on">Snímat podle rámečku</string>
+    <string name="receipt_capture_frame_mode_off">Hledat okraje účtenky</string>
+    <string name="receipt_capture_hint_frame_mode">Srovnejte účtenku mezi boky rámečku a držte v klidu</string>
     <string name="receipt_capture_hint_move_down">Posuňte telefon níž</string>
     <string name="receipt_capture_hint_move_back">Příliš rychle — vraťte telefon kousek výš</string>
     <string name="receipt_capture_hint_limit">Víc dílů jedna účtenka mít nemůže — klepněte na Hotovo</string>
