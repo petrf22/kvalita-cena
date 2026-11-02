@@ -254,14 +254,24 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   dostane upozornění a cenu potvrdí sám. Do sdíleného katalogu jde jen samotné označení
   obchodu (`ROHLIK TUK 43G` → zboží), ne kdo a kdy ho koupil — `product_store_label_confirmation
   .user_id` se po 180 dnech nuluje stejně jako u aliasu.
+- **Kurátor označení vidí jen agregát.** Provozovatel v `tools/uctenky/curate.py`
+  (`/api/curator/**`, token `LABEL_CURATOR`) vidí nespárovaná označení **seskupená podle
+  označení a rozsahu**: řetězec, u samostatné prodejny prodejna. K tomu počet výskytů a den,
+  kdy se objevilo naposledy. Nevidí účtenku, uživatele, čas nákupu ani obrázek. Mapování
+  od provozovatele nezapisuje nikomu cenu, nespárované řádky jen přepne na návrh jako výš.
+  Čitelný název, který vznikl lokálním modelem (`docs/ai.md`), zůstává na stejném stroji
+  jako OCR, nic dalšího se nikam neposílá.
 - **Z hlavičky do katalogu obchodů jen přes formulář.** „Obchod tu není — přidat nový"
   předvyplní formulář nového obchodu názvem, adresou a IČO z hlavičky účtenky — to jsou údaje
   prodejce, ne kupujícího. Do veřejného `core.store` se dostane jen to, co uživatel ve
   formuláři nechá a uloží; účtenka, čas nákupu ani obrázek se s obchodem nespojují
   (`docs/stav-implementace.md`, „Účtenky").
-- **Stroj nemá identitu uživatele.** Worker se přihlašuje strojovým tokenem (`auth.api_token`,
-  scope `RECEIPT_WORKER`, v DB jen SHA-256), ne účtem člověka — vidí obrázky ve frontě
-  a zapisuje vytěžený text, nic víc.
+- **Stroj nemá identitu uživatele.** Stroje se přihlašují strojovým tokenem
+  (`auth.api_token`, v DB jen SHA-256), ne účtem člověka, a každý token má jen jeden scope.
+  Worker (`RECEIPT_WORKER`) vidí obrázky ve frontě a zapisuje vytěžený text, nic víc.
+  Kurátor označení (`LABEL_CURATOR`, `tools/uctenky/curate.py`) vidí jen agregovaná
+  nespárovaná označení (viz výš) a zapisuje mapování označení → zboží
+  (`core.product_store_label`). Cenu nezapisuje žádný z nich.
 - **Čekající účtenka patří účtu, který ji zařadil.** Mobilní fronta (offline odeslání) si
   k účtence uloží `publicUid` přihlášeného účtu (`sub` z access tokenu); po odhlášení
   a přihlášení někoho jiného v témže telefonu se účtenka neukáže ani neodešle, dokud se

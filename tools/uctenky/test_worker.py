@@ -12,6 +12,7 @@ from __future__ import annotations
 import io
 import json
 import sys
+import tempfile
 import urllib.error
 import unittest
 from decimal import Decimal
@@ -19,10 +20,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import ai_pretty  # noqa: E402
+import curate  # noqa: E402
 import lines as lines_mod  # noqa: E402
 import ocr as ocr_mod  # noqa: E402
 import normalize  # noqa: E402
 import parse  # noqa: E402
+import pretty  # noqa: E402
 import replay  # noqa: E402
 import result as result_mod  # noqa: E402
 import worker  # noqa: E402
@@ -434,6 +438,220 @@ class OllamaOcrTest(unittest.TestCase):
             self._call(refuse)
         self.assertIn("400", str(raised.exception))
         self.assertIn("exceeds the available context size", str(raised.exception))
+
+
+def _dictionary() -> pretty.Dictionary:
+    """Pevný slovník pro testy — skutečný slovnik/*.tsv se mění s provozem."""
+    dictionary = pretty.Dictionary()
+    dictionary.add_abbreviation("SELS.", "Selské")
+    dictionary.add_abbreviation("MLÉ.", "mléko")
+    dictionary.add_abbreviation("ARAŠÍDOVÁ", "arašídová")
+    dictionary.add_abbreviation("MORAV.", "Moravia", "albert")
+    dictionary.add_abbreviation("BIO", "BIO")
+    dictionary.add_abbreviation("ROHLÍK", "rohlík")
+    return dictionary
+
+
+class PrettyLabelTest(unittest.TestCase):
+    """Čitelný název řádku (pretty.py) — příklady ze zadání a pasti tokenizace."""
+
+    def _pretty(self, raw, chain="albert"):
+        return pretty.pretty_label(raw, chain, _dictionary())
+
+    def test_priklady_ze_zadani(self):
+        self.assertEqual(self._pretty("ROHLÍK43GR").text, "Rohlík 43g")
+        self.assertEqual(self._pretty("NUGETA ARASÍDOVÁ340G").text, "Nugeta arašídová 340g")
+        self.assertEqual(self._pretty("OLMA SELS.MLÉ.3,9%1L").text, "Olma Selské mléko 3,9% 1l")
+
+    def test_vodítko_gramaze_jen_z_hmotnosti_a_objemu(self):
+        self.assertEqual(self._pretty("ROHLÍK43GR").net_content, ("43", "G"))
+        self.assertEqual(self._pretty("RED BULL 0,25L").net_content, ("0.25", "L"))
+        self.assertIsNone(self._pretty("WM TORTILLA 25CM").net_content)
+        # Násobné balení — gramáž by platila jen pro jeden kus.
+        self.assertIsNone(self._pretty("UNI TWISTER 8X50ML").net_content)
+        self.assertEqual(self._pretty("UNI TWISTER 8X50ML").text, "Uni twister 8x50ml")
+
+    def test_zkratka_retezce_plati_jen_pro_nej(self):
+        self.assertEqual(self._pretty("GRAN MORAV.100G", "albert").text, "Gran Moravia 100g")
+        self.assertEqual(self._pretty("GRAN MORAV.100G", "obecny").text, "Gran morav. 100g")
+
+    def test_nevyresena_slova_jdou_modelu(self):
+        result = self._pretty("CHOC.SM.BÍLY330G")
+        self.assertEqual(result.source, pretty.SOURCE_RULES)
+        self.assertEqual(result.unresolved, ("CHOC.", "SM.", "BÍLY"))
+
+    def test_citelny_popisek_obchodu_se_nemeni(self):
+        raw = "Lenor aviváž 1239ml 59PD Sensitive"
+        result = self._pretty(raw, "tamda")
+        self.assertEqual(result.text, raw)
+        self.assertEqual(result.unresolved, ())
+        self.assertEqual(result.net_content, ("1239", "ML"))
+
+    def test_cislo_slepene_s_pismeny_neni_jednotka(self):
+        self.assertEqual(pretty.tokenize("PRACI GEL 4L 80PD"), ["PRACI", "GEL", "4L", "80", "PD"])
+
+    def test_rucni_prepis_celeho_oznaceni_vyhraje(self):
+        dictionary = _dictionary()
+        dictionary.add_override("TAPAS SPIAN.ROM.70G", "Tapas Spianata Romana 70g", "albert")
+        result = pretty.pretty_label("TAPAS SPIAN. ROM.70G", "albert", dictionary)
+        self.assertEqual((result.text, result.source), ("Tapas Spianata Romana 70g", pretty.SOURCE_DICT))
+        self.assertEqual(result.net_content, ("70", "G"))
+
+    def test_norm_label_jako_v_databazi(self):
+        # core.norm_label: interpunkce -> mezera, bez diakritiky, malými, sloučené mezery.
+        self.assertEqual(pretty.norm_label("TUK.ROHLIK"), "tuk rohlik")
+        self.assertEqual(pretty.norm_label(" GRAN MORAV.STR.100G "), "gran morav str 100g")
+        self.assertEqual(pretty.norm_label("KUŘ.PRSNÍ  ŘÍZKY"), "kur prsni rizky")
+        self.assertEqual(pretty.norm_label("ÖLZ_SANDWICH"), "olz sandwich")
+
+    def test_slovnik_v_repozitari_jde_nacist(self):
+        dictionary = pretty.load_dictionary()
+        self.assertEqual(dictionary.abbreviation("sels.", None), "Selské")
+
+    def test_zapis_do_slovniku_a_zpet(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            pretty.append_row(directory / pretty.ABBREVIATIONS_FILE, ["KVAS.", "kváskem", "albert"])
+            pretty.append_row(directory / pretty.OVERRIDES_FILE, ["ROHLÍK43GR", "Rohlík tukový 43g", ""])
+            dictionary = pretty.load_dictionary(directory)
+        self.assertEqual(dictionary.abbreviation("KVAS.", "albert"), "kváskem")
+        self.assertEqual(dictionary.override("rohlík43gr", "penny"), "Rohlík tukový 43g")
+
+
+class AiPrettyTest(unittest.TestCase):
+    """Kontrola výstupu modelu (ai_pretty.accept) — jen kosmetika projde."""
+
+    def test_doplnena_diakritika_a_rozepsana_zkratka_projde(self):
+        self.assertIsNone(ai_pretty.accept("Nugeta arasidova 340g", "Nugeta arašídová 340g"))
+        self.assertIsNone(ai_pretty.accept("Olma sels. mlé. 3,9% 1l", "Olma Selské mléko 3,9% 1l"))
+        self.assertIsNone(ai_pretty.accept("Choc. jogurt bíly 330g", "Choc. jogurt bílý 330g"))
+
+    def test_zmena_cisla_neprojde(self):
+        self.assertIn("číslo", ai_pretty.accept("Rohlík 43g", "Rohlík 45g"))
+        self.assertIn("číslo", ai_pretty.accept("Mléko 3,9% 1l", "Mléko 3.9% 1l"))
+
+    def test_prejmenovani_a_zmena_poctu_slov_neprojde(self):
+        self.assertIn("slovo", ai_pretty.accept("Gran str. 100g", "Gran Padano 100g"))
+        self.assertIn("počet", ai_pretty.accept("Rohlík 43g", "Rohlík tukový 43g"))
+        self.assertIn("počet", ai_pretty.accept("Pilsner Urquell ležák 0,5l", "Pilsner ležák 0,5l"))
+
+    def test_vytistenou_diakritiku_model_neodebere(self):
+        self.assertIn("slovo", ai_pretty.accept("Ölz sandwich 750g", "Olz sandwich 750g"))
+
+    def test_polish_vezme_jen_co_projde_a_vypadek_neni_chyba(self):
+        items = [pretty.pretty_label(raw, "albert", _dictionary())
+                 for raw in ("NUGETA LISKOVA 340G", "ROHLÍK43GR", "GRAN STR.100G")]
+
+        class Model:
+            def complete(self, names):
+                self.sent = names
+                return {"0": "Nugeta lísková 340g", "2": "Gran Padano 100g"}
+
+        model = Model()
+        log = []
+        polished = ai_pretty.polish(items, model, log.append)
+        # „Rohlík 43g" pravidla vyřešila celé — modelu se neposílá.
+        self.assertEqual(set(model.sent), {"0", "2"})
+        self.assertEqual((polished[0].text, polished[0].source), ("Nugeta lísková 340g", pretty.SOURCE_AI))
+        self.assertEqual((polished[2].text, polished[2].source), ("Gran str. 100g", pretty.SOURCE_RULES))
+        self.assertTrue(any("zamítnut" in line for line in log))
+
+        class Down:
+            def complete(self, names):
+                raise OSError("connection refused")
+
+        self.assertEqual(ai_pretty.polish(items, Down(), log.append), items)
+
+    def test_payload_nese_citelny_nazev_vedle_syroveho(self):
+        document = parse.build_document(_text("albert-plny"))
+        payload = result_mod.to_payload(document, None, "test", _dictionary())
+        rohlik = next(line for line in payload["lines"] if line["label"] == "ROHLÍK43GR")
+        self.assertEqual(rohlik["labelDisplay"], "Rohlík 43g")
+        self.assertEqual(rohlik["labelDisplaySource"], "RULES")
+        self.assertEqual((rohlik["netContentValue"], rohlik["netContentUom"]), ("43", "G"))
+
+    def test_bez_slovniku_payload_beze_zmeny(self):
+        document = parse.build_document(_text("albert-plny"))
+        payload = result_mod.to_payload(document, None, "test")
+        self.assertNotIn("labelDisplay", payload["lines"][0])
+
+    def test_replay_vypise_citelne_nazvy(self):
+        out = []
+        document = parse.build_document(_text("albert-plny"))
+        replay.report_names(document, _dictionary(), log=out.append)
+        self.assertTrue(any("ROHLÍK43GR" in line and "Rohlík 43g" in line for line in out))
+
+
+class FakeCuratorApi:
+    def __init__(self, conflict_with=None):
+        self.searches = []
+        self.mapped = []
+        self.conflict_with = conflict_with
+
+    def search_products(self, query, store_id, limit=8):
+        self.searches.append((query, store_id))
+        return [{"id": 11, "name": "Gran Moravia strouhaný", "netContentValue": 100, "netContentUom": "G",
+                 "status": "ACTIVE", "score": 0.81},
+                {"id": 12, "name": "Grana Padano", "status": "ACTIVE", "score": 0.4}]
+
+    def map_label(self, label, chain_id, store_id, product_id, replace=False):
+        self.mapped.append((label, chain_id, store_id, product_id, replace))
+        if self.conflict_with and not replace:
+            return {"outcome": "CONFLICT", "existingProductId": self.conflict_with}
+        return {"outcome": "CREATED", "productId": product_id, "suggestedLines": 3}
+
+
+class CurateTest(unittest.TestCase):
+    """Kurátorství na lokální stanici (curate.py) — vstup z klávesnice nahrazený seznamem."""
+
+    ITEM = {"label": "GRAN MORAV.STR.100G", "chainId": 1, "chainSlug": "albert", "chainName": "Albert",
+            "storeId": None, "sampleStoreId": 5, "lineCount": 4, "lastSeenDay": "2026-10-30",
+            "netContentValue": 100, "netContentUom": "G"}
+
+    def _session(self, answers, api=None, directory=None):
+        out = []
+        answers = iter(answers)
+        session = curate.Session(api or FakeCuratorApi(), _dictionary(), directory or Path("/nonexistent"),
+                                 read=lambda prompt="": next(answers), write=out.append)
+        return session, out
+
+    def test_hleda_bez_cisel_a_paruje_vybrane_zbozi_v_rozsahu_retezce(self):
+        api = FakeCuratorApi()
+        session, out = self._session(["2"], api)
+        session.run([dict(self.ITEM)])
+        self.assertEqual(api.searches[0], ("Gran Moravia str.", 5))
+        self.assertEqual(api.mapped, [("GRAN MORAV.STR.100G", 1, None, 12, False)])
+        self.assertEqual(session.mapped, 1)
+
+    def test_enter_vezme_prvniho_kandidata(self):
+        api = FakeCuratorApi()
+        session, _ = self._session([""], api)
+        session.run([dict(self.ITEM)])
+        self.assertEqual(api.mapped[0][3], 11)
+
+    def test_konflikt_se_prepise_jen_po_potvrzeni(self):
+        api = FakeCuratorApi(conflict_with=99)
+        session, _ = self._session(["1", "n", "1", "a"], api)
+        session.run([dict(self.ITEM)])
+        self.assertEqual([call[4] for call in api.mapped], [False, False, True])
+
+    def test_oprava_nazvu_a_zkratka_se_zapisou_do_slovniku(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            session, out = self._session(["zr STR.=strouhaný", "e Gran Moravia strouhaný 100g", "s"],
+                                         directory=directory)
+            session.run([dict(self.ITEM)])
+            dictionary = pretty.load_dictionary(directory)
+        self.assertEqual(dictionary.abbreviation("STR.", "albert"), "strouhaný")
+        self.assertIsNone(dictionary.abbreviation("STR.", "penny"))
+        self.assertEqual(dictionary.override("GRAN MORAV.STR.100G", "albert"), "Gran Moravia strouhaný 100g")
+        self.assertIn("      čitelně: Gran Moravia strouhaný 100g", out)
+
+    def test_q_ukonci_celou_relaci(self):
+        api = FakeCuratorApi()
+        session, _ = self._session(["q"], api)
+        session.run([dict(self.ITEM), dict(self.ITEM)])
+        self.assertEqual(len(api.searches), 1)
 
 
 if __name__ == "__main__":

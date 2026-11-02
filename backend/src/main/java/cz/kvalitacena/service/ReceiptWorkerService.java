@@ -6,6 +6,8 @@ import cz.kvalitacena.config.ReceiptProperties;
 import cz.kvalitacena.controller.worker.WorkerArchiveCandidate;
 import cz.kvalitacena.controller.worker.WorkerReceiptJob;
 import cz.kvalitacena.controller.worker.WorkerReceiptResult;
+import cz.kvalitacena.db.entity.LabelDisplaySource;
+import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.PriceKind;
 import cz.kvalitacena.db.entity.QuantityUnit;
 import cz.kvalitacena.db.entity.Receipt;
@@ -47,6 +49,8 @@ import java.util.Optional;
 public class ReceiptWorkerService {
 
   private static final int MAX_TEXT = 200;
+  /** NUMERIC(12,3) u net_content_hint_value — větší číslo je chyba čtení, ne gramáž. */
+  private static final BigDecimal MAX_NET_CONTENT_HINT = new BigDecimal("1000000");
   private static final BigDecimal MAX_AMOUNT = new BigDecimal("99999999.99");
 
   private final ReceiptJobRepository jobRepository;
@@ -163,6 +167,10 @@ public class ReceiptWorkerService {
           .receiptId(receiptId)
           .lineNo(lineNo++)
           .labelRaw(label.trim())
+          .labelDisplay(blankToNull(truncate(in.labelDisplay(), MAX_TEXT)))
+          .labelDisplaySource(enumOrNull(LabelDisplaySource.class, in.labelDisplaySource()))
+          .netContentHintValue(netContentHint(in) != null ? in.netContentValue() : null)
+          .netContentHintUom(netContentHint(in))
           .internalCode(truncate(in.internalCode(), 40))
           .quantity(quantity(in.quantity()))
           .quantityUnit(in.quantityUnit() != null ? in.quantityUnit() : QuantityUnit.PCS)
@@ -284,5 +292,33 @@ public class ReceiptWorkerService {
       return null;
     }
     return value.setScale(3, java.math.RoundingMode.HALF_UP);
+  }
+
+  /**
+   * Vodítko gramáže z označení řádku — jen kladné číslo s jednotkou hmotnosti/objemu, jinak
+   * nic. Hodnota a jednotka jdou vždy spolu (jako netContentValue/netContentUom u zboží).
+   */
+  private static NetContentUom netContentHint(WorkerReceiptResult.Line in) {
+    NetContentUom uom = enumOrNull(NetContentUom.class, in.netContentUom());
+    if (uom == null || uom == NetContentUom.PCS || in.netContentValue() == null
+        || in.netContentValue().signum() <= 0 || in.netContentValue().compareTo(MAX_NET_CONTENT_HINT) >= 0) {
+      return null;
+    }
+    return uom;
+  }
+
+  private static <E extends Enum<E>> E enumOrNull(Class<E> type, String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    try {
+      return Enum.valueOf(type, value.trim());
+    } catch (IllegalArgumentException e) {
+      return null;
+    }
+  }
+
+  private static String blankToNull(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
   }
 }

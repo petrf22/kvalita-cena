@@ -1,0 +1,66 @@
+# 01-receipt-line-display.yaml — čitelný název řádku účtenky, automatický odhad párování
+# a mapování označení provozovatelem (docs/rozvoj.md, „Mapování obchodního označení zboží na
+# katalogovou položku"; docs/ai.md, „Účtenky").
+#
+# label_display je JEN pro oči a hledání (worker: tools/uctenky/pretty.py). Mapování se dál
+# učí podle label_raw/label_norm — čitelný název smí model dočistit, syrový tisk nikdy.
+# net_content_hint_* je vodítko gramáže z označení pro automatický odhad, nikdy hodnota zboží.
+#
+# match_source FUZZY = jednoznačná podobnost názvu, ukáže se jako „odhad" a klient ho
+# nezaškrtává předem. product_store_label.source OPERATOR = mapování z curate.py
+# (provozovatel), platí hned, uživatelský hlas ho nepřebije.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-02-01-receipt-line-display
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.receipt_line
+                ADD COLUMN label_display VARCHAR(200),
+                ADD COLUMN label_display_source VARCHAR(5),
+                ADD COLUMN net_content_hint_value NUMERIC(12,3),
+                ADD COLUMN net_content_hint_uom VARCHAR(2),
+                ADD CONSTRAINT chk_receipt_line_display_source CHECK (label_display_source IS NULL
+                  OR label_display_source IN ('DICT','RULES','AI')),
+                ADD CONSTRAINT chk_receipt_line_hint CHECK ((net_content_hint_value IS NULL) = (net_content_hint_uom IS NULL)
+                  AND (net_content_hint_uom IS NULL OR net_content_hint_uom IN ('G','KG','ML','L')));
+
+              ALTER TABLE core.receipt_line DROP CONSTRAINT chk_receipt_line_match_source;
+              ALTER TABLE core.receipt_line ADD CONSTRAINT chk_receipt_line_match_source CHECK (match_source IS NULL
+                OR match_source IN ('CODE','LABEL','FUZZY','USER','NEW_PRODUCT'));
+
+              ALTER TABLE core.product_store_label
+                ADD COLUMN source VARCHAR(10) NOT NULL DEFAULT 'USER',
+                ADD CONSTRAINT chk_product_store_label_source CHECK (source IN ('USER','OPERATOR'));
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE core.product_store_label DROP CONSTRAINT chk_product_store_label_source,
+                DROP COLUMN source;
+              UPDATE core.receipt_line SET match_source = NULL, product_id = NULL, status = 'UNMATCHED'
+                WHERE match_source = 'FUZZY';
+              ALTER TABLE core.receipt_line DROP CONSTRAINT chk_receipt_line_match_source;
+              ALTER TABLE core.receipt_line ADD CONSTRAINT chk_receipt_line_match_source CHECK (match_source IS NULL
+                OR match_source IN ('CODE','LABEL','USER','NEW_PRODUCT'));
+              ALTER TABLE core.receipt_line DROP CONSTRAINT chk_receipt_line_hint,
+                DROP CONSTRAINT chk_receipt_line_display_source,
+                DROP COLUMN net_content_hint_uom, DROP COLUMN net_content_hint_value,
+                DROP COLUMN label_display_source, DROP COLUMN label_display;
+  - changeSet:
+      id: 2026-11-02-02-api-token-curator-scope
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              -- Token kurátora označení (tools/uctenky/curate.py) — oddělený od workeru, ať token
+              -- na stroji s OCR nemůže měnit katalog (ApiTokenScope.LABEL_CURATOR).
+              ALTER TABLE auth.api_token DROP CONSTRAINT chk_api_token_scope;
+              ALTER TABLE auth.api_token ADD CONSTRAINT chk_api_token_scope
+                CHECK (scope IN ('RECEIPT_WORKER','LABEL_CURATOR'));
+      rollback:
+        - sql:
+            sql: |
+              DELETE FROM auth.api_token WHERE scope = 'LABEL_CURATOR';
+              ALTER TABLE auth.api_token DROP CONSTRAINT chk_api_token_scope;
+              ALTER TABLE auth.api_token ADD CONSTRAINT chk_api_token_scope CHECK (scope IN ('RECEIPT_WORKER'));

@@ -588,10 +588,16 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
 - **`core.receipt_image`** — části jedné účtenky v pořadí `seq`. Soubor je v `MediaStorage`
   pod `receipts/`, **ne** v `core.media` (ta je veřejná a dlouze cachovaná).
 - **`core.receipt_line`** — řádek účtenky: `label_raw` přesně jak ho obchod tiskne,
-  `label_norm` (`core.norm_text`), volitelný `internal_code`, `quantity` + `quantity_unit`
+  `label_norm` (`core.norm_label` — interpunkce na mezery, pak `core.norm_text`), volitelný
+  `internal_code`, `label_display` (čitelný název od workeru — jen pro zobrazení, hledání
+  a předvyplnění, mapování se učí podle `label_raw`; `label_display_source` `DICT`/`RULES`/`AI`),
+  `net_content_hint_value` + `net_content_hint_uom` (vodítko gramáže z označení pro odhad,
+  nikdy hodnota zboží; obojí, nebo nic), `quantity` + `quantity_unit`
   (`PCS`/`KG`/`L`), `unit_price`, `line_total`, `discount_amount` (sleva z vlastního řádku
   pod položkou, worker ji připojí). Stav párování `status`: `UNMATCHED` (nic),
-  `SUGGESTED` (server našel zboží přes kód nebo známé označení — v UI předem zaškrtnuté),
+  `SUGGESTED` (server našel zboží přes kód nebo známé označení — v UI předem zaškrtnuté;
+  nebo jen odhad podle podobnosti názvu, `match_source = FUZZY` — ten klient předem
+  nezaškrtává, `docs/rozvoj.md`, krok 3a),
   `MATCHED` (uživatel potvrdil, `observation_id` ukazuje na vzniklou cenu — po 180 dnech ho
   pseudonymizace maže, `docs/soukromi.md`), `IGNORED` (uživatel párovat nechce).
   `skip_reason` nese, proč potvrzený řádek cenu nezapsal (typicky `DUPLICATE_SAME_DAY` —
@@ -608,7 +614,9 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   označení v rozsahu míří nejvýš na jedno zboží. `PENDING` → `ACTIVE` po
   `app.receipt.label-confirmations` potvrzeních různých uživatelů, vzniká jen s úspěšným zápisem
   ceny z řádku účtenky (vzor `product_alias`), `user_id` potvrzení se po 180 dnech nuluje.
-  `last_seen_at` odliší mrtvé mapování (řetězec zboží přejmenoval) od živého. Do veřejného
+  `last_seen_at` odliší mrtvé mapování (řetězec zboží přejmenoval) od živého. `source`
+  `USER`/`OPERATOR`: mapování od provozovatele (`tools/uctenky/curate.py`) vzniká rovnou
+  `ACTIVE` bez potvrzení řádku a přepsat jde jen výslovně (`docs/rozvoj.md`). Do veřejného
   našeptávače názvů zboží **nepatří** — zkratky typu `TUK.ROHLIK` nikdo nepíše do hledání.
 - **`core.price_observation.evidence_kind`** (`NONE`/`PRICE_TAG_PHOTO`/`RECEIPT_OCR`) — druhá
   osa vedle `source` (`docs/rozvoj.md`, „Zdroj ceny"). Nastavuje výhradně server podle
@@ -618,8 +626,9 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   `attempts`, `FOR UPDATE SKIP LOCKED`), a syrový výstup modelu (`raw_text` bez patičky,
   `extraction` jsonb, `model`). Do `core.receipt_line` jde až normalizovaný návrh. Úloha
   s `processed_at` je ukončená — pozdní `/result` ani `/fail` ji nezmění.
-- **`auth.api_token`** — strojové tokeny (dnes jen scope `RECEIPT_WORKER`), v DB jen SHA-256,
-  prefix `kcw_`. Stroj nemá `app_user`.
+- **`auth.api_token`** — strojové tokeny (scope `RECEIPT_WORKER` pro worker, `LABEL_CURATOR`
+  pro kurátorství označení; token dostane jen roli svého scope), v DB jen SHA-256, prefix
+  `kcw_`. Stroj nemá `app_user`.
 
 ## Co ještě není implementováno
 

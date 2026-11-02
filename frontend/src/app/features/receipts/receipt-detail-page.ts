@@ -17,6 +17,7 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { Observable } from 'rxjs';
 import {
   ConfirmReceiptLinesResult,
@@ -45,9 +46,12 @@ import {
   defaultSelectedLineIds,
   isAwaitingProcessing,
   isLineConfirmable,
+  isLineGuess,
   isLineLocked,
   isProcessingDeadEnd,
   lineGtin,
+  lineLabel,
+  lineRawLabel,
   lineSummary,
   matchSourceKey,
   nextSelection,
@@ -90,6 +94,7 @@ type PageState = 'loading' | 'ready' | 'notFound' | 'error' | 'offline';
     NzPopconfirmModule,
     NzSpinModule,
     NzTagModule,
+    NzTooltipModule,
     MoneyPipe,
     ProductForm,
     ProductThumb,
@@ -114,6 +119,9 @@ export class ReceiptDetailPage {
   protected readonly lineStatusKeys = RECEIPT_LINE_STATUS_KEYS;
   protected readonly matchSourceKey = matchSourceKey;
   protected readonly lineGtin = lineGtin;
+  protected readonly lineLabel = lineLabel;
+  protected readonly lineRawLabel = lineRawLabel;
+  protected readonly isGuess = isLineGuess;
   protected readonly statusKey = receiptStatusKey;
   protected readonly statusColor = receiptStatusColor;
   protected readonly isLocked = isLineLocked;

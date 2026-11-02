@@ -10,7 +10,9 @@ from __future__ import annotations
 import re
 from decimal import Decimal
 
+import ai_pretty
 import lines as lines_mod
+import pretty
 
 _BASIS_TO_UNIT = {lines_mod.PER_KG: "KG", lines_mod.PER_L: "L", lines_mod.PACKAGE: "PCS"}
 _CLUB_RE = re.compile(r"klub|club|karta|card|lidl\s*plus|moje\s*billa|albert\s*plus|penny\s*karta",
@@ -26,7 +28,13 @@ def status_of(document: dict) -> str:
     return "PROCESSED"
 
 
-def to_payload(document: dict, raw_text: str | None, model: str) -> dict:
+def chain_of(document: dict) -> str:
+    """Klíč řetězce pro slovník čitelných názvů — slug z hlavičky, jinak název profilu."""
+    return document["merchant"].get("chainSlug") or document["profile"]
+
+
+def to_payload(document: dict, raw_text: str | None, model: str,
+               dictionary: pretty.Dictionary | None = None, prettifier=None, log=print) -> dict:
     status = status_of(document)
     payload = {
         "status": status,
@@ -82,4 +90,23 @@ def to_payload(document: dict, raw_text: str | None, model: str) -> dict:
         }
         by_no[line["lineNo"]] = out
         payload["lines"].append(out)
+    _add_display_names(payload["lines"], chain_of(document), dictionary, prettifier, log)
     return payload
+
+
+def _add_display_names(out_lines: list[dict], chain: str, dictionary: pretty.Dictionary | None,
+                       prettifier, log) -> None:
+    """Čitelný název a vodítko gramáže ke každému řádku (pretty.py, ai_pretty.py).
+
+    Jen návrh pro oči a hledání — `label` (syrový tisk) zůstává beze změny, podle něj se na
+    serveru učí mapování na zboží.
+    """
+    if dictionary is None:
+        return
+    items = [pretty.pretty_label(line["label"], chain, dictionary) for line in out_lines]
+    items = ai_pretty.polish(items, prettifier, log)
+    for line, item in zip(out_lines, items):
+        line["labelDisplay"] = item.text
+        line["labelDisplaySource"] = item.source
+        line["netContentValue"] = item.net_content[0] if item.net_content else None
+        line["netContentUom"] = item.net_content[1] if item.net_content else None

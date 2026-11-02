@@ -365,6 +365,8 @@ export const ReceiptLineStatus = {
 export type ReceiptLineStatus = typeof ReceiptLineStatus[keyof typeof ReceiptLineStatus];
 export const ReceiptMatchSource = {
   Code: 'CODE',
+  /** Jednoznačná podobnost názvu — jen odhad, klient ho ukáže označený a nezaškrtne předem. */
+  Fuzzy: 'FUZZY',
   Label: 'LABEL',
   NewProduct: 'NEW_PRODUCT',
   User: 'USER'

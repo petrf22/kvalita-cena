@@ -37,6 +37,7 @@ export const receiptLineFieldsFragment = graphql(`
     id
     lineNo
     labelRaw
+    labelDisplay
     internalCode
     quantity
     quantityUnit

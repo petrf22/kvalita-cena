@@ -6,6 +6,8 @@ import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.AppUserStatus;
 import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.EvidenceKind;
+import cz.kvalitacena.db.entity.LabelDisplaySource;
+import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.ObservationSource;
 import cz.kvalitacena.db.entity.PriceKind;
 import cz.kvalitacena.db.entity.Product;
@@ -86,6 +88,7 @@ class ReceiptFlowIntegrationTest {
   @Autowired private ReceiptReviewService reviewService;
   @Autowired private ReceiptImageRetentionService retentionService;
   @Autowired private ReceiptMatchingService matchingService;
+  @Autowired private LabelCurationService curationService;
   @Autowired private PseudonymizationService pseudonymizationService;
   @Autowired private ReceiptRepository receiptRepository;
   @Autowired private ReceiptLineRepository lineRepository;
@@ -108,8 +111,12 @@ class ReceiptFlowIntegrationTest {
     Receipt receipt = receiptRepository.findById(receiptId).orElseThrow();
     assertThat(receipt.getProcessingStatus()).isEqualTo(ReceiptProcessingStatus.PROCESSED);
     assertThat(receipt.getSuggestedStoreId()).isEqualTo(f.store().getId());
-    // Nic není strojově spárované — obchod zatím nikdo neučil.
-    assertThat(lines(receiptId)).allMatch(l -> l.getStatus() == ReceiptLineStatus.UNMATCHED);
+    // Žádné označení se zatím nikdo neučil. Rohlík a banány mají v katalogu řetězce jediného
+    // podobného kandidáta, takže dostanou jen odhad (FUZZY), mléko nic.
+    assertThat(lines(receiptId)).extracting(ReceiptLine::getMatchSource)
+        .containsExactly(ReceiptMatchSource.FUZZY, ReceiptMatchSource.FUZZY, null);
+    assertThat(lines(receiptId)).extracting(ReceiptLine::getProductId)
+        .containsExactly(f.rohlik().getId(), f.banany().getId(), null);
 
     reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     List<ReceiptLine> lines = lines(receiptId);
@@ -449,6 +456,171 @@ class ReceiptFlowIntegrationTest {
         .unitBase(UnitBase.COUNT).netContentBase(BigDecimal.ONE).status(ProductStatus.ACTIVE).build());
   }
 
+  @Test
+  void unambiguousNameSuggestsProductAsFuzzyAndStoresDisplayName() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Product nugeta = chainProduct(f, "Nugeta arašídová", new BigDecimal("340"), NetContentUom.G);
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        displayLine("NUGETA ARASÍDOVÁ340G", "Nugeta arašídová 340g", "340", "G", null),
+        displayLine("NUGETA ARASÍDOVÁ400G", "Nugeta arašídová 400g", "400", "G", null)));
+
+    List<ReceiptLine> lines = lines(receiptId);
+    assertThat(lines.get(0).getLabelDisplay()).isEqualTo("Nugeta arašídová 340g");
+    assertThat(lines.get(0).getLabelDisplaySource()).isEqualTo(LabelDisplaySource.RULES);
+    assertThat(lines.get(0).getNetContentHintUom()).isEqualTo(NetContentUom.G);
+    assertThat(lines.get(0).getStatus()).isEqualTo(ReceiptLineStatus.SUGGESTED);
+    assertThat(lines.get(0).getMatchSource()).isEqualTo(ReceiptMatchSource.FUZZY);
+    assertThat(lines.get(0).getProductId()).isEqualTo(nugeta.getId());
+    // Jiná gramáž = jiné zboží (jiné balení), odhad by tiše zapsal cenu ke špatnému.
+    assertThat(lines.get(1).getStatus()).isEqualTo(ReceiptLineStatus.UNMATCHED);
+  }
+
+  @Test
+  void twoSimilarProductsGiveNoFuzzySuggestion() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    chainProduct(f, "Arašídy solené pražené", new BigDecimal("200"), NetContentUom.G);
+    chainProduct(f, "Arašídy solené pražené", new BigDecimal("200"), NetContentUom.G);
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        displayLine("ARAŠ.SOL.PRAŽ.200G", "Arašídy solené pražené 200g", "200", "G", null)));
+
+    assertThat(lines(receiptId).getFirst().getStatus()).isEqualTo(ReceiptLineStatus.UNMATCHED);
+  }
+
+  @Test
+  void fuzzyWithEanTeachesCodeOnlyAfterConfirmationAndConflictingEanBlocksIt() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Product kesu = chainProduct(f, "Kešu ořechy natural", new BigDecimal("150"), NetContentUom.G);
+    Product mandle = chainProduct(f, "Mandle loupané natural", new BigDecimal("100"), NetContentUom.G);
+    jdbcTemplate.update("INSERT INTO core.product_code (product_id, code, code_type, is_primary) VALUES (?, ?, 'GTIN', true)",
+        mandle.getId(), GtinNormalization.toGtin14(randomEan13()));
+    String kesuEan = randomEan13();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        displayLine("KEŠU OŘ.NAT.150G", "Kešu ořechy natural 150g", "150", "G", kesuEan),
+        displayLine("MANDLE LOUP.NAT.100G", "Mandle loupané natural 100g", "100", "G", randomEan13())));
+
+    List<ReceiptLine> lines = lines(receiptId);
+    assertThat(lines.get(0).getMatchSource()).isEqualTo(ReceiptMatchSource.FUZZY);
+    // Zboží už EAN má a řádek nese jiný — rozpor, ne odhad.
+    assertThat(lines.get(1).getStatus()).isEqualTo(ReceiptLineStatus.UNMATCHED);
+    assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM core.product_code WHERE product_id = ?",
+        Integer.class, kesu.getId())).isZero();
+
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    assertThat(lines(receiptId).get(0).getMatchSource()).isEqualTo(ReceiptMatchSource.FUZZY);
+    var result = reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(lines.get(0).getId()),
+        ObservationSource.WEB);
+    assertThat(result.confirmed()).isEqualTo(1);
+    assertThat(jdbcTemplate.queryForObject("SELECT code FROM core.product_code WHERE product_id = ?",
+        String.class, kesu.getId())).isEqualTo(GtinNormalization.toGtin14(kesuEan));
+  }
+
+  @Test
+  void learnedLabelReplacesFuzzyGuessOnOtherReceipts() {
+    Fixture f = fixture();
+    AppUser first = persistUser();
+    AppUser second = persistUser();
+    Product guess = chainProduct(f, "Olma Selské mléko", new BigDecimal("1"), NetContentUom.L);
+    Long otherReceipt = uploadAndProcess(second, f, List.of(
+        displayLine("OLMA SELS.MLÉ.3,9%1L", "Olma Selské mléko 3,9% 1l", "1", "L", null)));
+    assertThat(lines(otherReceipt).getFirst().getMatchSource()).isEqualTo(ReceiptMatchSource.FUZZY);
+
+    Product right = chainProduct(f, "Plnotučné mléko 3,9 %", new BigDecimal("1"), NetContentUom.L);
+    Long receiptId = uploadAndProcess(first, f, List.of(
+        displayLine("OLMA SELS.MLÉ.3,9%1L", "Olma Selské mléko 3,9% 1l", "1", "L", null)));
+    reviewService.updateHeader(first.getPublicUid(), receiptId, f.store().getId(), null);
+    ReceiptLine line = lines(receiptId).getFirst();
+    reviewService.matchLine(first.getPublicUid(), line.getId(), right.getId(), false);
+    reviewService.confirmLines(first.getPublicUid(), receiptId, List.of(line.getId()), ObservationSource.WEB);
+
+    ReceiptLine other = lines(otherReceipt).getFirst();
+    assertThat(other.getMatchSource()).isEqualTo(ReceiptMatchSource.LABEL);
+    assertThat(other.getProductId()).isEqualTo(right.getId()).isNotEqualTo(guess.getId());
+  }
+
+  @Test
+  void operatorMappingIsActiveAtOnceSuggestsOtherReceiptsAndNeedsReplaceToOverride() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        displayLine("GRAN MORAV.STR.100G", "Gran Moravia str. 100g", "100", "G", null),
+        displayLine("GRAN MORAV.STR.100G", "Gran Moravia str. 100g", "100", "G", null)));
+    assertThat(lines(receiptId)).allMatch(l -> l.getStatus() == ReceiptLineStatus.UNMATCHED);
+
+    List<LabelCurationService.UnmatchedLabel> unmatched = curationService.unmatched(f.chain().getId(), 50);
+    assertThat(unmatched).singleElement().satisfies(label -> {
+      assertThat(label.label()).isEqualTo("GRAN MORAV.STR.100G");
+      assertThat(label.labelDisplay()).isEqualTo("Gran Moravia str. 100g");
+      assertThat(label.lineCount()).isEqualTo(2);
+      assertThat(label.chainId()).isEqualTo(f.chain().getId());
+      assertThat(label.sampleStoreId()).isEqualTo(f.store().getId());
+    });
+
+    Product gran = chainProduct(f, "Grana Padano strouhaný sýr", new BigDecimal("100"), NetContentUom.G);
+    assertThat(curationService.searchProducts("Grana Padano", f.store().getId(), 5))
+        .extracting(LabelCurationService.ProductCandidate::id).contains(gran.getId());
+    var created = curationService.map(new LabelCurationService.LabelMappingRequest(
+        "GRAN MORAV.STR.100G", f.chain().getId(), null, gran.getId(), false));
+    assertThat(created.outcome()).isEqualTo(LabelCurationService.Outcome.CREATED);
+    assertThat(created.suggestedLines()).isEqualTo(2);
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT status || '/' || source FROM core.product_store_label WHERE product_id = ?", String.class, gran.getId()))
+        .isEqualTo("ACTIVE/OPERATOR");
+    assertThat(lines(receiptId)).allMatch(l -> l.getMatchSource() == ReceiptMatchSource.LABEL
+        && gran.getId().equals(l.getProductId()));
+    assertThat(curationService.unmatched(f.chain().getId(), 50)).isEmpty();
+
+    // Oprava na jiné zboží — bez replace konflikt, s replace se přesměrují i nepotvrzené návrhy.
+    Product moravia = chainProduct(f, "Gran Moravia strouhaný", new BigDecimal("100"), NetContentUom.G);
+    var conflict = curationService.map(new LabelCurationService.LabelMappingRequest(
+        "GRAN MORAV. STR. 100G", f.chain().getId(), null, moravia.getId(), false));
+    assertThat(conflict.outcome()).isEqualTo(LabelCurationService.Outcome.CONFLICT);
+    assertThat(conflict.existingProductId()).isEqualTo(gran.getId());
+    var replaced = curationService.map(new LabelCurationService.LabelMappingRequest(
+        "GRAN MORAV. STR. 100G", f.chain().getId(), null, moravia.getId(), true));
+    assertThat(replaced.outcome()).isEqualTo(LabelCurationService.Outcome.UPDATED);
+    assertThat(lines(receiptId)).allMatch(l -> moravia.getId().equals(l.getProductId()));
+
+    // Uživatel, který řádek spáruje jinak, mapování provozovatele nepřepíše.
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    ReceiptLine first = lines(receiptId).getFirst();
+    reviewService.matchLine(owner.getPublicUid(), first.getId(), gran.getId(), false);
+    reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(first.getId()), ObservationSource.WEB);
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT product_id FROM core.product_store_label WHERE label_norm = core.norm_label('GRAN MORAV.STR.100G') "
+            + "AND chain_id = ?", Long.class, f.chain().getId())).isEqualTo(moravia.getId());
+  }
+
+  @Test
+  void operatorMappingRejectsInvalidScope() {
+    Fixture f = fixture();
+    var both = curationService.map(new LabelCurationService.LabelMappingRequest(
+        "ROHLIK", f.chain().getId(), f.store().getId(), f.rohlik().getId(), false));
+    assertThat(both.outcome()).isEqualTo(LabelCurationService.Outcome.INVALID);
+    var noProduct = curationService.map(new LabelCurationService.LabelMappingRequest(
+        "ROHLIK", f.chain().getId(), null, -5L, false));
+    assertThat(noProduct.outcome()).isEqualTo(LabelCurationService.Outcome.INVALID);
+  }
+
+  private Product chainProduct(Fixture f, String name, BigDecimal value, NetContentUom uom) {
+    UnitBase unitBase = uom == NetContentUom.G || uom == NetContentUom.KG ? UnitBase.MASS : UnitBase.VOLUME;
+    BigDecimal base = uom == NetContentUom.G || uom == NetContentUom.ML
+        ? value.divide(BigDecimal.valueOf(1000), 6, java.math.RoundingMode.HALF_UP) : value;
+    return productRepository.saveAndFlush(Product.builder()
+        .name(name).category(f.rohlik().getCategory()).unitBase(unitBase).netContentValue(value).netContentUom(uom)
+        .netContentBase(base).catalogScope(ProductScope.CHAIN).scopeChain(f.chain()).status(ProductStatus.ACTIVE)
+        .build());
+  }
+
+  private static WorkerReceiptResult.Line displayLine(String label, String display, String hintValue, String hintUom,
+      String code) {
+    return new WorkerReceiptResult.Line(label, code, BigDecimal.ONE, QuantityUnit.PCS, new BigDecimal("49.90"),
+        new BigDecimal("49.90"), null, PriceKind.REGULAR, display, "RULES",
+        hintValue == null ? null : new BigDecimal(hintValue), hintUom);
+  }
+
   /** Náhodný EAN-13 s platnou kontrolní číslicí a českým prefixem 859 (globální, ne omezený oběh). */
   private static String randomEan13() {
     String body = "859" + String.format("%09d", java.util.concurrent.ThreadLocalRandom.current().nextInt(1_000_000_000));
@@ -461,7 +633,7 @@ class ReceiptFlowIntegrationTest {
 
   private static WorkerReceiptResult.Line lineWithCode(String label, String code) {
     return new WorkerReceiptResult.Line(label, code, BigDecimal.ONE, QuantityUnit.PCS, new BigDecimal("44.90"),
-        new BigDecimal("44.90"), null, PriceKind.REGULAR);
+        new BigDecimal("44.90"), null, PriceKind.REGULAR, null, null, null, null);
   }
 
   private Long uploadAndProcess(AppUser owner, Fixture f, List<WorkerReceiptResult.Line> lines) {
@@ -481,7 +653,7 @@ class ReceiptFlowIntegrationTest {
   private static WorkerReceiptResult.Line line(String label, String qty, QuantityUnit unit, String unitPrice,
       String total, String discount, PriceKind kind) {
     return new WorkerReceiptResult.Line(label, null, new BigDecimal(qty), unit, new BigDecimal(unitPrice),
-        new BigDecimal(total), discount == null ? null : new BigDecimal(discount), kind);
+        new BigDecimal(total), discount == null ? null : new BigDecimal(discount), kind, null, null, null, null);
   }
 
   private List<ReceiptLine> lines(Long receiptId) {

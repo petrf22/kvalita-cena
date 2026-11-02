@@ -693,6 +693,9 @@
     <string name="receipt_line_status_unmatched">Not matched</string>
     <string name="receipt_line_status_suggested">Suggestion — check and confirm</string>
     <string name="receipt_line_status_suggested_by_ean">Suggestion by EAN — check and confirm</string>
+    <string name="receipt_line_status_fuzzy">Guess — check the product</string>
+    <string name="receipt_line_fuzzy_hint">The product was suggested only because of a similar name. Tick the line only if it matches.</string>
+    <string name="receipt_line_fuzzy_hint_ean">The product was suggested only because of a similar name. Tick the line only if it matches — confirming also adds the EAN from the receipt to the product.</string>
     <string name="receipt_line_status_matched_by_you">Matched by you — awaiting confirmation</string>
     <string name="receipt_line_status_confirmed">Price saved</string>
     <string name="receipt_line_status_matched">Matched</string>

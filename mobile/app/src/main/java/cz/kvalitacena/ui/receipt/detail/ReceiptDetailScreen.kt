@@ -99,9 +99,10 @@ private val SUGGESTIONS_MAX_HEIGHT = 320.dp
  * z účtenky), řádky se stavem párování a akcemi, potvrzení spárovaných řádků a náhled obrázků,
  * dokud je server nesmaže (docs/soukromi.md, „Účtenky" — 30 dní od zpracování).
  *
- * `onCreateProduct` dostane kromě textu řádku i jeho EAN (`barcode`), ale jen globální GTIN
- * ([globalGtinOrNull]) — `internalCode` bývá i vnitroobchodní kód řetězce nebo kód váhové
- * etikety, který by se jinak uložil jako čárový kód cizího zboží.
+ * `onCreateProduct` dostane čitelný název řádku ([shownLabel] — `labelDisplay`, u starších
+ * účtenek syrový tisk) a EAN (`barcode`), ale jen globální GTIN ([globalGtinOrNull]) —
+ * `internalCode` bývá i vnitroobchodní kód řetězce nebo kód váhové etikety, který by se jinak
+ * uložil jako čárový kód cizího zboží.
  */
 @Composable
 fun ReceiptDetailScreen(
@@ -172,7 +173,7 @@ fun ReceiptDetailScreen(
         viewModel = viewModel,
         onCreateProduct = { line ->
           viewModel.startNewProduct(line)
-          onCreateProduct(line.labelRaw, globalGtinOrNull(line.internalCode), receipt.store?.id)
+          onCreateProduct(line.shownLabel, globalGtinOrNull(line.internalCode), receipt.store?.id)
         },
         onAddStore = onAddStore,
         onProductClick = onProductClick,
@@ -188,7 +189,7 @@ fun ReceiptDetailScreen(
       viewModel = viewModel,
       onCreateProduct = {
         viewModel.startNewProduct(line)
-        onCreateProduct(line.labelRaw, globalGtinOrNull(line.internalCode), receipt?.store?.id)
+        onCreateProduct(line.shownLabel, globalGtinOrNull(line.internalCode), receipt?.store?.id)
       },
     )
   }
@@ -206,7 +207,7 @@ fun ReceiptDetailScreen(
             )
             result.skipped.forEach { line ->
               Text(
-                "${line.labelRaw} — ${skipReasonText(line.skipReason)}",
+                "${line.shownLabel} — ${skipReasonText(line.skipReason)}",
                 style = MaterialTheme.typography.bodySmall,
               )
             }
@@ -545,10 +546,10 @@ private fun LineRow(
         }
       }
       Column(Modifier.weight(1f).padding(top = Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-        Text(line.labelRaw, style = MaterialTheme.typography.titleSmall)
-        // EAN hned pod textem z pokladny — podle něj server páruje, a uživatel ho může porovnat
-        // s obalem doma. Vnitroobchodní kód se jako EAN neukazuje (globalGtinOrNull).
-        gtin?.let { LineGtin(it) }
+        Text(line.shownLabel, style = MaterialTheme.typography.titleSmall)
+        // Syrový tisk a EAN hned pod názvem — podle nich server páruje, uživatel je porovná
+        // s papírovou účtenkou a obalem. Vnitroobchodní kód se jako EAN neukazuje (globalGtinOrNull).
+        LineSource(line.rawLabelIfDifferent, gtin)
         val unitPrice = line.unitPrice?.let { money.format(it) }
         val quantity = line.quantity?.let { quantityFormat.format(it) }
         val detail = when {
@@ -579,6 +580,15 @@ private fun LineRow(
           )
         }
         LineStatusChip(line, matchedByGtin = gtin != null && line.matchSource == "CODE")
+        if (line.isFuzzyGuess()) {
+          // Odhad není předem zaškrtnutý (ReceiptLineSelection.kt) — řádek musí říct proč a co
+          // potvrzení udělá, jinak prázdné zaškrtávátko vypadá jako chyba.
+          Text(
+            stringResource(if (gtin != null) R.string.receipt_line_fuzzy_hint_ean else R.string.receipt_line_fuzzy_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
         line.skipReason?.let {
           Text(skipReasonText(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }
@@ -630,11 +640,17 @@ private fun productLabel(product: ProductSummary): String {
   return listOfNotNull(product.brand?.name, product.name, netContent).joinToString(" · ")
 }
 
-/** EAN řádku jako sekundární údaj — stejná role jako množství a cena pod textem řádku. */
+/**
+ * Syrový tisk z pokladny ([raw], jen když se liší od čitelného názvu) a EAN řádku v jednom
+ * sekundárním řádku — stejná role jako množství a cena pod názvem, ať údaje o původu řádku
+ * nezabírají každý vlastní řádek.
+ */
 @Composable
-private fun LineGtin(gtin: String) {
+private fun LineSource(raw: String?, gtin: String?) {
+  val parts = listOfNotNull(raw, gtin?.let { stringResource(R.string.receipt_line_ean, it) })
+  if (parts.isEmpty()) return
   Text(
-    stringResource(R.string.receipt_line_ean, gtin),
+    parts.joinToString("  ·  "),
     style = MaterialTheme.typography.bodySmall,
     color = MaterialTheme.colorScheme.onSurfaceVariant,
   )
@@ -643,12 +659,19 @@ private fun LineGtin(gtin: String) {
 /**
  * Stav řádku jako čip — barvy z tématu, fungují ve světlém i tmavém režimu. [matchedByGtin]
  * rozliší návrh podle EANu od návrhu podle textu účtenky: `matchSource == CODE` znamená i shodu
- * vnitroobchodního kódu řetězce, proto „podle EAN" jen u kódu, který je globální GTIN.
+ * vnitroobchodního kódu řetězce, proto „podle EAN" jen u kódu, který je globální GTIN. Odhad
+ * podle podobnosti názvu (FUZZY) má tón „vyžaduje pozornost" jako nespárovaný řádek, ne tón
+ * jistého návrhu.
  */
 @Composable
 private fun LineStatusChip(line: ReceiptLine, matchedByGtin: Boolean) {
-  val (label, container, content) = when (line.status) {
-    "SUGGESTED" -> Triple(
+  val (label, container, content) = when {
+    line.isFuzzyGuess() -> Triple(
+      stringResource(R.string.receipt_line_status_fuzzy),
+      MaterialTheme.colorScheme.tertiaryContainer,
+      MaterialTheme.colorScheme.onTertiaryContainer,
+    )
+    line.status == "SUGGESTED" -> Triple(
       stringResource(
         when {
           line.matchSource == "USER" || line.matchSource == "NEW_PRODUCT" -> R.string.receipt_line_status_matched_by_you
@@ -659,12 +682,12 @@ private fun LineStatusChip(line: ReceiptLine, matchedByGtin: Boolean) {
       MaterialTheme.colorScheme.secondaryContainer,
       MaterialTheme.colorScheme.onSecondaryContainer,
     )
-    "MATCHED" -> Triple(
+    line.status == "MATCHED" -> Triple(
       stringResource(if (line.confirmed) R.string.receipt_line_status_confirmed else R.string.receipt_line_status_matched),
       MaterialTheme.colorScheme.primaryContainer,
       MaterialTheme.colorScheme.onPrimaryContainer,
     )
-    "IGNORED" -> Triple(
+    line.status == "IGNORED" -> Triple(
       stringResource(R.string.receipt_line_status_ignored),
       MaterialTheme.colorScheme.surfaceVariant,
       MaterialTheme.colorScheme.onSurfaceVariant,
@@ -720,10 +743,10 @@ private fun ConfirmBar(receipt: Receipt, viewModel: ReceiptDetailViewModel) {
 private fun SuggestionsDialog(line: ReceiptLine, viewModel: ReceiptDetailViewModel, onCreateProduct: () -> Unit) {
   AlertDialog(
     onDismissRequest = viewModel::closeSuggestions,
-    title = { Text(line.labelRaw) },
+    title = { Text(line.shownLabel) },
     text = {
       Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        globalGtinOrNull(line.internalCode)?.let { LineGtin(it) }
+        LineSource(line.rawLabelIfDifferent, globalGtinOrNull(line.internalCode))
         OutlinedTextField(
           value = viewModel.suggestionQuery,
           onValueChange = viewModel::onSuggestionQueryChange,

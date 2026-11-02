@@ -1848,6 +1848,8 @@ enum ReceiptLineStatus {
 enum ReceiptMatchSource {
   CODE
   LABEL
+  "Jednoznačná podobnost názvu — jen odhad, klient ho ukáže označený a nezaškrtne předem."
+  FUZZY
   USER
   NEW_PRODUCT
 }
@@ -1899,6 +1901,11 @@ type ReceiptLine {
   lineNo: Int!
   "Text přesně tak, jak ho obchod tiskne (např. TUK.ROHLIK)."
   labelRaw: String!
+  """
+  Čitelný název od workeru (ROHLÍK43GR → Rohlík 43g) — jen pro zobrazení, hledání a předvyplnění
+  nového zboží. Párování se učí podle labelRaw. Null u účtenek zpracovaných dřív.
+  """
+  labelDisplay: String
   internalCode: String
   quantity: BigDecimal
   quantityUnit: QuantityUnit!

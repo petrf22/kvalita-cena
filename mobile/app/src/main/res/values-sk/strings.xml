@@ -693,6 +693,9 @@
     <string name="receipt_line_status_unmatched">Nespárované</string>
     <string name="receipt_line_status_suggested">Návrh — skontrolujte a potvrďte</string>
     <string name="receipt_line_status_suggested_by_ean">Návrh podľa EAN — skontrolujte a potvrďte</string>
+    <string name="receipt_line_status_fuzzy">Odhad — skontrolujte tovar</string>
+    <string name="receipt_line_fuzzy_hint">Tovar je navrhnutý len podľa podobného názvu. Zaškrtnite riadok, len keď sedí.</string>
+    <string name="receipt_line_fuzzy_hint_ean">Tovar je navrhnutý len podľa podobného názvu. Zaškrtnite riadok, len keď sedí — potvrdenie priradí tovaru aj EAN z účtenky.</string>
     <string name="receipt_line_status_matched_by_you">Spárované vami — čaká na potvrdenie</string>
     <string name="receipt_line_status_confirmed">Cena zapísaná</string>
     <string name="receipt_line_status_matched">Spárované</string>

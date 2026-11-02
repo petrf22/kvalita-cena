@@ -84,7 +84,9 @@ výš: rozlišení je v datech od chvíle, kdy funkce vznikla, ne dopisované po
 
 Zjištěný stroj (srpen 2026): **NVIDIA RTX 4060 Ti, 8 GB VRAM**, AMD Ryzen 9 7900 (24 vláken),
 61 GB RAM, Ollama nainstalovaná a spuštěná lokálně (2026-09: verze 0.32, `glm-ocr:bf16` pro
-OCR účtenek).
+OCR účtenek; 2026-11 přibyl `qwen2.5:7b-instruct`, Apache-2.0, na dočištění čitelných názvů
+řádků — model se volá jednou dávkou za účtenku až po OCR, takže se s OCR modelem ve VRAM
+střídá přes `keep_alive`, viz „Účtenky").
 
 Dvě omezení určují volbu:
 
@@ -133,15 +135,45 @@ OCR modelu padala uprostřed (Billa 940×3430 px → 4 řádky textu); stejná �
 rozhraním `Extractor` (`ocr.py`) — jiný model nebo služba jde vyměnit bez zásahu do zbytku,
 ale **cloud jen s novou verzí souhlasu** (`app.receipt.consent-version`) a změnou zásad.
 
+**Čitelný název řádku** (`tools/uctenky/pretty.py`, `ai_pretty.py`, od 2026-11): worker ke
+každému řádku přidá `labelDisplay` („ROHLÍK43GR" → „Rohlík 43g") a vodítko gramáže. Postup:
+
+1. Ruční přepis celého označení ze slovníku provozovatele (`slovnik/nazvy.tsv`).
+2. Jinak deterministická pravidla: jednotky kompaktně česky a zkratky ze slovníku
+   (`slovnik/zkratky.tsv`).
+3. Teprve zbytek smí dočistit lokální model `qwen2.5:7b-instruct`. Má licenci Apache-2.0;
+   pozor, varianty 3B a 72B mají vlastní licenci Qwen.
+
+Model tu dělá **jen kosmetiku pod deterministickou kontrolou** (`ai_pretty.accept`). Smí
+doplnit diakritiku, opravit velikost písmen a rozepsat zkratku s tečkou. Kontrola zamítne
+jiný počet slov, změněné číslo nebo jednotku, změněné písmeno i odebranou vytištěnou
+diakritiku („Ölz" → „Olz"). Zamítnutý výstup se zahodí. Výpadek modelu není chyba účtenky.
+
+Struktura řádku (množství, cena) a syrový tisk (`label_raw`, podle kterého se učí mapování)
+se tím nemění. Pravidlo „strukturu netahá model" tedy platí dál. Čitelný název je jen pro
+oči, hledání a předvyplnění nového zboží.
+
 **Autentizace workeru:** strojový token `auth.api_token` (scope `RECEIPT_WORKER`, prefix
 `kcw_`, v DB jen SHA-256), hlavička `Authorization: Bearer kcw_…`. Vydání tokenu:
 `tools/uctenky/README.md`, „Token" (odkazuje i `docs/nasazeni.md`). Token nemá identitu uživatele a na nic mimo
-`/api/worker/receipts/**` a obrázky účtenek ve frontě nedosáhne.
+`/api/worker/receipts/**` a obrázky účtenek ve frontě nedosáhne. Kurátorství označení
+(`tools/uctenky/curate.py`, `/api/curator/**`) má vlastní token se scope `LABEL_CURATOR`.
+Token workeru na něj nedosáhne a naopak, takže stroj s OCR nemůže měnit katalog.
 
 **AI nikdy nerozhoduje ani tady:** výsledek workeru zapíše jen řádky účtenky (návrh).
-Server pak deterministicky spáruje, co jde (vnitroobchodní kód, známé označení z
-`product_store_label`) — takové řádky jsou v UI předem zaškrtnuté, ale cenu zapíše až
-uživatelovo „Potvrdit". Model sám cenu nezakládá.
+Server pak deterministicky spáruje, co jde (vnitroobchodní kód nebo EAN, známé označení
+z `product_store_label`). Takové řádky jsou v UI předem zaškrtnuté, ale cenu zapíše až
+uživatelovo „Potvrdit".
+
+Řádek, který jistě spárovat nejde, může dostat **odhad** (`match_source = FUZZY`). Je to
+jednoznačná podobnost názvu podle prahů `auto-match-*` níž a dále platí:
+- gramáž z označení musí sedět se zbožím;
+- zboží s jiným EAN odhad nedostane;
+- zboží ve stavu DRAFT odhad nedostane, nepotvrzený název nemá řídit párování.
+
+Klient odhad ukáže označený „odhad" a **nezaškrtne ho předem**. Potvrzený odhad se učí jako
+označení a zboží dostane EAN z řádku, takže hromadné potvrzení omylem by chybu rozšířilo.
+Model sám cenu nezakládá a odhad není model, jen trigramová podobnost v PostgreSQL.
 
 **Archiv obrázků** pro zlepšování rozpoznávání: `GET /api/worker/receipts/archive-candidates`
 vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DIR` a potvrdí
@@ -162,6 +194,8 @@ vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DI
 | `max-attempts` | 3 | pak `FAILED` — počítá se každé vyzvednutí, i to, po kterém worker spadl bez `/fail` |
 | `label-confirmations` | 1 | aktivace označení; 1, dokud je přispěvatelů málo, pak zvednout na 2 (vzor alias) |
 | `rematch-max-age-days` | 180 | pozdější návrh spárování jen u účtenek mladších než pseudonymizační okno |
+| `auto-match-similarity` | 0,75 | odhad (FUZZY) jen nad touhle podobností názvu (`ProductRepository.SIMILAR_BY_NAME_SCORE`, stejné měření jako našeptávač; čísla se z dotazu vynechávají, gramáž hlídá vodítko zvlášť). Výchozí hodnota, kalibrovat na reálných účtenkách |
+| `auto-match-margin` | 0,2 | nejlepší kandidát musí být o tolik před druhým — dvě podobné položky (duplicita, jiná příchuť) jsou hádání, ne odhad |
 | `notify-email` | prázdné (prod: `RECEIPT_NOTIFY_EMAIL` v `.env`) | kam `ReceiptQueueNotifier` hlásí čekající účtenky; prázdné = vypnuto. Worker se spouští ručně, takže bez e-mailu by provozovatel o frontě nevěděl |
 | `notify-reminder-cron` / `-zone` | `0 0 8 * * *`, `Europe/Prague` | denní připomínka, dokud fronta není prázdná. Okamžitý e-mail chodí jen u první účtenky do prázdné fronty, aby víc nahrávajících lidí neznamenalo víc e-mailů. Text nese jen počet a čas nejstarší účtenky, nic o uživateli |
 

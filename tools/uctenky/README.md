@@ -85,6 +85,81 @@ Změna se projeví do 60 s.
 5. **Výsledek**: [`result.py`](result.py) sestaví výsledek. Slevy připojí k položce, které se
    týkají, a klubovou slevu pozná podle textu. Obrázek bez částek dostane stav `NOT_A_RECEIPT`.
    Když jsou na obrázku částky, ale žádná položka, stav je `UNREADABLE`.
+6. **Čitelný název**: [`pretty.py`](pretty.py) a [`ai_pretty.py`](ai_pretty.py). Ke každému
+   řádku přidá `labelDisplay` („ROHLÍK43GR" → „Rohlík 43g") a vodítko gramáže pro párování.
+   Podrobně „Čitelné názvy" níž.
+
+## Čitelné názvy
+
+Účtenka tiskne „NUGETA ARASÍDOVÁ340G", uživatel chce vidět „Nugeta arašídová 340g". Čitelný
+název je **jen pro oči a hledání**: server ho uloží vedle syrového tisku
+(`receipt_line.label_display`), ale mapování označení → zboží se dál učí podle syrového tisku.
+Postup:
+
+1. **Ruční přepis celého označení**: [`slovnik/nazvy.tsv`](slovnik/nazvy.tsv)
+   (`označení<TAB>název[<TAB>řetězec]`). Označení se porovnává jako `core.norm_label`, tedy bez
+   diakritiky, interpunkce a velikosti písmen. Zdroj `DICT`.
+2. **Pravidla a zkratky**: rozdělí slepené tokeny („BÍLY330G" → „BÍLY 330G") a zapíše jednotky
+   kompaktně česky („0,5l", „43g", „3,9%"). Zkratky a opravy slov bere ze slovníku
+   [`slovnik/zkratky.tsv`](slovnik/zkratky.tsv) (`zkratka<TAB>rozepsání[<TAB>řetězec]`,
+   klíč bez diakritiky; „SELS." → „Selské", „RIZKY" → „řízky"). Slova mimo slovník převede na
+   malá písmena, první slovo velkým. Zdroj `RULES`. Popisek, který obchod tiskne malými
+   písmeny (TAMDA), zůstane, jak je.
+3. **Lokální model** (`--pretty-model`, výchozí `qwen2.5:7b-instruct`, Apache-2.0; prázdné
+   = vypnuto): dostane jen názvy se slovy, která slovník nevyřešil, jednou dávkou za účtenku.
+   Smí doplnit diakritiku, opravit velikost písmen a rozepsat zkratku s tečkou.
+   **Každý výstup projde kontrolou** `ai_pretty.accept`: stejný počet slov, čísla a jednotky
+   beze změny, písmena beze změny kromě PŘIDANÉ diakritiky, zkratka smí jen pokračovat
+   („sels." → „Selské"). Co neprojde, se zahodí (worker to zapíše do logu) a platí verze
+   z pravidel. Zdroj `AI`. Výpadek modelu není chyba účtenky.
+
+Slovník je v gitu a worker ho čte před každou dávkou. Doplňuje se ručně, nebo přes
+`curate.py` (níž). Na offline ladění vypíše `replay.py` čitelné názvy pod rozborem
+(`--pretty-model qwen2.5:7b-instruct` přidá i model).
+
+## Kurátorství
+
+Spárovat každé označení musí dnes uživatel u své účtenky. `curate.py` to dovoluje
+provozovateli udělat najednou pro všechny účtenky. Ukáže nespárovaná označení **seskupená
+podle řetězce**: syrový tisk, čitelný název, počet výskytů a den, kdy se objevilo naposledy.
+Účtenku ani uživatele neukáže (`docs/soukromi.md`, „Účtenky"). U každého označení vypíše
+nejpodobnější zboží v rozsahu řetězce.
+
+```bash
+tools/uctenky/run-curate.sh                    # produkce, token z ~/.config/kvalitacena-curator-token
+tools/uctenky/run-curate.sh --chain 1          # jen jeden řetězec (id)
+KC_API_URL=http://localhost:8080 KC_CURATOR_TOKEN=kcw_… python3 tools/uctenky/curate.py
+```
+
+Příkazy (`?` je vypíše):
+
+- `Enter` nebo číslo: spáruje označení s kandidátem. Mapování platí hned (`ACTIVE/OPERATOR`)
+  a nespárované řádky ostatních účtenek i strojové odhady dostanou návrh. Cenu za nikoho
+  nezapisuje, tu dál potvrzuje vlastník účtenky.
+- Když označení už míří na jiné zboží, `curate.py` se zeptá, jestli ho přepsat. Tak se opravuje
+  špatně naučené označení.
+- `h [dotaz]`: hledat zboží jinak.
+- `e <název>`: opravit čitelný název. Oprava se zapíše do `slovnik/nazvy.tsv`.
+- `z ZKR=rozepsání`, resp. `zr ZKR=rozepsání`: přidá zkratku do `slovnik/zkratky.tsv` pro
+  všechny řetězce, resp. jen pro tento řetězec.
+- `s`: přeskočit, `q`: konec.
+
+**Úpravy slovníku commitni do gitu.** Worker ho čte před každou dávkou, takže oprava platí už
+při normalizaci dalších účtenek. `--pretty-model qwen2.5:7b-instruct` dočistí názvy modelem
+i tady.
+
+Token kurátora vzniká stejně jako token workeru (viz „Token" výš), jen s jiným rozsahem
+a souborem:
+
+```bash
+TOKEN="kcw_$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+echo "$TOKEN" > ~/.config/kvalitacena-curator-token && chmod 600 ~/.config/kvalitacena-curator-token
+printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1
+# na serveru: INSERT INTO auth.api_token(name, token_hash, scope)
+#             VALUES ('domaci-pc-kurator', decode('OTISK', 'hex'), 'LABEL_CURATOR');
+```
+
+Token workeru na `/api/curator` nedosáhne a naopak. Stroj s OCR tak katalog měnit nemůže.
 
 ## Dvě věci, které vypadají jako detail, a nejsou
 
@@ -92,7 +167,8 @@ Změna se projeví do 60 s.
 průchod přes `qwen2.5:14b-instruct` zahodil řádek `3.000 ks x 36.90 Kč /ks`. Zůstalo jen
 zaplacených 110,70, tedy trojnásobek ceny z regálu. Jindy tentýž model přejmenoval zboží,
 a to kontrolní součet nezachytí. Proto model dělá jen OCR (podrobně
-[`normalize.py`](normalize.py)).
+[`normalize.py`](normalize.py)). Jedinou výjimkou je kosmetika čitelného názvu: ta nemění
+strukturu ani syrový tisk a hlídá ji deterministická kontrola (`ai_pretty.accept`).
 
 **U váhového zboží je cena za kg/l, nikdy zaplacená částka.** Z řádku
 `0,302 kg x 289,00 Kč/kg 87,30` jde na server cena 289,00 za kg.

@@ -28,7 +28,8 @@ import java.util.Optional;
  * Strojový token workeru účtenek (auth.api_token, docs/ai.md, „Účtenky") — {@code Bearer kcw_…}.
  * Principal je {@link WorkerPrincipal}, ne UUID uživatele, takže {@link ViewerContextResolver}
  * z něj udělá anonyma: stroj nesmí zdědit nic z toho, co smí přihlášený člověk (zápis cen,
- * recenze). Jediné, na co dosáhne, je {@code ROLE_RECEIPT_WORKER}.
+ * recenze). Jediné, na co dosáhne, je role svého rozsahu ({@link ApiTokenScope#role()}):
+ * {@code ROLE_RECEIPT_WORKER} nebo {@code ROLE_LABEL_CURATOR}, nikdy obojí.
  *
  * <p>Revokovaný token přestane platit nejpozději za 60 s (cache), stejně jako pozastavený
  * účet u {@link JwtAuthenticationFilter}.
@@ -66,10 +67,10 @@ public class ApiTokenAuthenticationFilter extends OncePerRequestFilter {
                 apiTokenRepository.touch(t.getId());
                 return new CachedToken(t.getId(), t.getName(), t.getScope());
               }));
-      cached.filter(t -> t.scope() == ApiTokenScope.RECEIPT_WORKER).ifPresent(t -> {
+      cached.ifPresent(t -> {
         var authentication = new UsernamePasswordAuthenticationToken(
             new WorkerPrincipal(t.id(), t.name()), null,
-            List.of(new SimpleGrantedAuthority("ROLE_RECEIPT_WORKER")));
+            List.of(new SimpleGrantedAuthority(t.scope().role())));
         SecurityContextHolder.getContext().setAuthentication(authentication);
       });
     }

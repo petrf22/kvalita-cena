@@ -173,8 +173,11 @@
   gap: var(--kc-space-3);
 }
 
+/*
+ * Hlavní text je název (čitelný od workeru, u starších účtenek syrový tisk), proto běžné
+ * písmo. Strojopisem se píše jen syrový tisk ve vedlejším řádku, kde se porovnává s obrázkem.
+ */
 .line-label {
-  font-family: monospace;
   font-weight: 600;
   overflow-wrap: anywhere;
 }
@@ -185,8 +188,8 @@
 }
 
 /*
- * Množství, sleva a EAN vedle sebe. Na úzkém displeji se zalomí po celých kusech (flex-wrap),
- * EAN se tak nikdy nerozdělí mezi dva řádky.
+ * Množství, sleva, syrový tisk a EAN vedle sebe. Na úzkém displeji se zalomí po celých kusech
+ * (flex-wrap), EAN se tak nikdy nerozdělí mezi dva řádky.
  */
 .line-meta {
   display: flex;
@@ -197,7 +200,11 @@
   color: var(--kc-text-secondary);
 }
 
-/* EAN je metadata, ne hlavní údaj — strojopis jako text účtenky, ať jdou číslice porovnat. */
+/*
+ * EAN a syrový tisk řádku jsou metadata, ne hlavní údaj — strojopis jako text účtenky, ať jdou
+ * písmena a číslice porovnat s obrázkem a s obalem. Syrový tisk má navíc `.raw-text`, aby
+ * dlouhé označení bez mezer na úzkém displeji nepřeteklo.
+ */
 .line-code {
   font-family: monospace;
   font-size: var(--kc-font-xs);

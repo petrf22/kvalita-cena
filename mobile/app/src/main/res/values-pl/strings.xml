@@ -693,6 +693,9 @@
     <string name="receipt_line_status_unmatched">Niedopasowane</string>
     <string name="receipt_line_status_suggested">Propozycja — sprawdź i potwierdź</string>
     <string name="receipt_line_status_suggested_by_ean">Propozycja według EAN — sprawdź i potwierdź</string>
+    <string name="receipt_line_status_fuzzy">Przypuszczenie — sprawdź produkt</string>
+    <string name="receipt_line_fuzzy_hint">Produkt zaproponowano tylko na podstawie podobnej nazwy. Zaznacz pozycję tylko wtedy, gdy się zgadza.</string>
+    <string name="receipt_line_fuzzy_hint_ean">Produkt zaproponowano tylko na podstawie podobnej nazwy. Zaznacz pozycję tylko wtedy, gdy się zgadza — potwierdzenie przypisze produktowi także EAN z paragonu.</string>
     <string name="receipt_line_status_matched_by_you">Dopasowane przez ciebie — czeka na potwierdzenie</string>
     <string name="receipt_line_status_confirmed">Cena zapisana</string>
     <string name="receipt_line_status_matched">Dopasowano</string>
