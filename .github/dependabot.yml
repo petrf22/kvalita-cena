@@ -16,14 +16,24 @@ updates:
         patterns:
           - 'androidx.*'
       # Pluginy compose a serialization musí mít stejnou verzi jako kompilátor Kotlinu —
-      # po jednom by v main zůstala nesourodá dvojice.
+      # po jednom by v main zůstala nesourodá dvojice. Vzor s tečkou ZÁMĚRNĚ nechytá
+      # knihovny org.jetbrains.kotlinx:* — ty mají vlastní číslování nezávislé na
+      # kompilátoru a ve skupině by jedna rozbitá verze zablokovala celé PR (#104:
+      # neexistující kotlinx-coroutines 1.12.0 vedle skutečné kotlinx-serialization 1.12.0).
       kotlin:
         patterns:
-          - 'org.jetbrains.kotlin*'
+          - 'org.jetbrains.kotlin.*'
       # coil-compose a coil-network-okhttp vycházejí spolu, jinak dvě PR se stejným diffem.
       coil:
         patterns:
           - 'io.coil-kt*'
+    ignore:
+      # OpenCV 5 přesunul contourArea/arcLength/approxPolyDP/getPerspectiveTransform
+      # z Imgproc do org.opencv.geometry.Geometry a mění interpolaci warpPerspective;
+      # nativní knihovna arm64 je o ~8 MB větší a pro detekci účtenky nic nového nepřináší.
+      # Řada 4.x se dál vydává (4.14 vyšla po 5.0). Odemknout, až 4.x skončí. (#107)
+      - dependency-name: 'org.opencv:opencv'
+        versions: ['>=5.0.0']
 
   - package-ecosystem: npm
     directory: /frontend
