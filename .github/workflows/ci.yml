@@ -39,6 +39,19 @@ jobs:
       # docs/README.md a tools/docs/check-links.mjs.
       - run: node tools/docs/check-links.mjs
 
+  receipt-worker:
+    name: Worker účtenek (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      # Worker (tools/uctenky/README.md) je jen standardní knihovna, nic se neinstaluje.
+      # Testy nepotřebují Ollamu ani server — OCR, API i model jsou v nich podvržené.
+      # Bez tohoto jobu změny regexů rozboru účtenek prošly PR jen s lokálním ověřením.
+      - run: python3 -m unittest discover -s tools/uctenky -p 'test_*.py' -v
+
   backend:
     name: Backend (Spring Boot)
     runs-on: ubuntu-latest
