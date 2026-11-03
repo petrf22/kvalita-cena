@@ -588,6 +588,14 @@ součtu se připočte (`Footer.rounding`), protože u hotovosti dosahuje až ±0
   kódu, návrhy modelu, sousedé v katalogu), `NewProductDefaultsServiceTest`,
   `QuadGeometryTest`, `test_worker.py` (`ClassifyTest`).
 
+**Nové rozpoznání (2026-11-03):** provozovatel vrátí zpracované účtenky do fronty
+(`worker.py --requeue`/`--requeue-since` → `POST /api/worker/receipts/requeue`,
+`ReceiptWorkerService.requeue`). `PROCESSED` účtenka zůstane `PROCESSED`, řádky, na které
+uživatel sáhl, zůstanou (`ReceiptLineMerger`), po retenci obrázků se znovu rozebere uložený
+`raw_text`. Podrobně `docs/ai.md`, „Nové rozpoznání". Testy `ReceiptLineMergerTest`,
+`ReceiptFlowIntegrationTest` (`reprocessing*`, `requeuedFailedReceipt*`), `test_worker.py`
+(`ReprocessTest`). Vlastník sám nové rozpoznání spustit nemůže (web ani mobil tlačítko nemají).
+
 **Co zbývá:**
 - vlastní profily dalších řetězců (Penny prochází obecným),
 - `f_evid` ve váze ceny,

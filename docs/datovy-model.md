@@ -628,7 +628,10 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
 - **`ai.receipt_job`** — fronta pro pull worker (`docs/ai.md`) s leasem (`lease_until`,
   `attempts`, `FOR UPDATE SKIP LOCKED`), a syrový výstup modelu (`raw_text` bez patičky,
   `extraction` jsonb, `model`). Do `core.receipt_line` jde až normalizovaný návrh. Úloha
-  s `processed_at` je ukončená — pozdní `/result` ani `/fail` ji nezmění.
+  s `processed_at` je ukončená — pozdní `/result` ani `/fail` ji nezmění. Znovu ji otevře jen
+  provozovatel novým rozpoznáním (`POST /api/worker/receipts/requeue`, `requeued_at` je kdy
+  naposled; `docs/ai.md`, „Nové rozpoznání"). `raw_text` proto zůstává i po retenci obrázků:
+  je jediný vstup pro nový rozbor, když obrázky už nejsou.
 - **`ai.receipt_line_hint`** — návrh lokálního modelu k řádku účtenky pro formulář nového
   zboží: `category_id` a jen rozměr gramáže `net_content_uom` (`G`/`KG`/`ML`/`L`, číslo model
   nedodává). Poradní údaj mimo `core` ze stejného důvodu jako `ai.receipt_job`; smaže se

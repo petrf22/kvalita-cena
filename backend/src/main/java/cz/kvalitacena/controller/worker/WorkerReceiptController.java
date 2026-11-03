@@ -47,6 +47,18 @@ public class WorkerReceiptController {
         .orElseGet(() -> ResponseEntity.notFound().build());
   }
 
+  /**
+   * Nové rozpoznání už zpracovaných účtenek (docs/ai.md, „Nové rozpoznání"): konkrétní ID
+   * a/nebo všechny zpracované od {@code processedSince}.
+   */
+  public record RequeueRequest(List<Long> receiptIds, OffsetDateTime processedSince) {
+  }
+
+  @PostMapping("/requeue")
+  public ReceiptWorkerService.RequeueResult requeue(@RequestBody RequeueRequest request) {
+    return workerService.requeue(request.receiptIds(), request.processedSince());
+  }
+
   @PostMapping("/{id}/result")
   public ResponseEntity<Void> result(@PathVariable Long id, @RequestBody WorkerReceiptResult result) {
     workerService.submitResult(id, result);

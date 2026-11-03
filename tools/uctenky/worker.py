@@ -11,6 +11,9 @@ další — po několika pokusech ji server označí FAILED.
 
 Volitelně (ARCHIVE_DIR) stáhne obrázky účtenek, u kterých uživatel souhlasil s archivací,
 dřív než je server smaže (docs/soukromi.md).
+
+Po opravě OCR nebo normalizace vrátí --requeue / --requeue-since už zpracované účtenky
+k novému rozpoznání (README.md, „Nové rozpoznání").
 """
 
 from __future__ import annotations
@@ -20,6 +23,7 @@ import json
 import os
 import sys
 import time
+from datetime import date, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -37,11 +41,16 @@ def process_job(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, job: dict,
                 dictionary: pretty.Dictionary | None = None, prettifier=None,
                 classifier=None, categories: list[dict] | None = None) -> str:
     receipt_id = job["receiptId"]
-    texts = []
-    for path in job["imagePaths"]:
-        texts.append(extractor.ocr(api.image(path)))
+    if not job.get("imagePaths") and job.get("rawText"):
+        # Nové rozpoznání po retenci obrázků: server pošle uložený syrový text, OCR se nedělá
+        # a model se neposílá (na serveru zůstane ten, který text kdysi přečetl).
+        texts, model = [job["rawText"]], None
+        log(f"~  účtenka {receipt_id}: obrázky už nejsou, znovu z uloženého textu")
+    else:
+        texts = [extractor.ocr(api.image(path)) for path in job["imagePaths"]]
+        model = extractor.model
     document = parse.build_document(texts)
-    payload = result_mod.to_payload(document, parse.server_text(texts), extractor.model,
+    payload = result_mod.to_payload(document, parse.server_text(texts), model,
                                     dictionary, prettifier, log, classifier, categories)
     api.result(receipt_id, payload)
     items = sum(1 for line in payload["lines"])
@@ -78,6 +87,17 @@ def _categories(api: api_mod.WorkerApi, log=print) -> list[dict]:
         return []
 
 
+def requeue(api: api_mod.WorkerApi, receipt_ids: list[int], since: date | None, log=print) -> int:
+    """Vrátí účtenky k novému rozpoznání; vypíše, co se vrátilo a co server přeskočil."""
+    processed_since = datetime.combine(since, datetime.min.time()).astimezone().isoformat() if since else None
+    answer = api.requeue(receipt_ids, processed_since)
+    requeued = answer.get("requeued") or []
+    log(f"vráceno k novému rozpoznání: {len(requeued)} {requeued if requeued else ''}".rstrip())
+    for skipped in answer.get("skipped") or []:
+        log(f"   přeskočeno {skipped.get('receiptId')}: {skipped.get('reason')}")
+    return len(requeued)
+
+
 def archive(api: api_mod.WorkerApi, target: Path, log=print) -> int:
     """Obrázky účtenek se souhlasem s archivací do lokální složky (mimo git)."""
     done = 0
@@ -109,11 +129,21 @@ def main() -> int:
     parser.add_argument("--batch", type=int, default=5)
     parser.add_argument("--interval", type=int, default=300, help="sekund mezi dávkami, když je fronta prázdná")
     parser.add_argument("--once", action="store_true", help="jedna dávka a konec")
+    parser.add_argument("--requeue", type=int, nargs="+", default=[], metavar="ID",
+                        help="před dávkou vrátit tyto zpracované účtenky k novému rozpoznání")
+    parser.add_argument("--requeue-since", type=date.fromisoformat, metavar="YYYY-MM-DD",
+                        help="před dávkou vrátit k novému rozpoznání všechny zpracované od data (max 500)")
     args = parser.parse_args()
     if not args.token:
         parser.error("chybí token (--token nebo KC_WORKER_TOKEN) — viz docs/nasazeni.md, „Worker účtenek“")
 
     api = api_mod.WorkerApi(args.api, args.token)
+    if args.requeue or args.requeue_since:
+        try:
+            requeue(api, args.requeue, args.requeue_since)
+        except (api_mod.ApiError, OSError) as error:
+            print(f"!! nové rozpoznání se nepodařilo zařadit: {error}", file=sys.stderr)
+            return 1
     extractor = ocr_mod.OllamaOcr(args.ollama, args.model)
     prettifier = ai_pretty.OllamaPrettifier(args.ollama, args.pretty_model) if args.pretty_model else None
     classifier = ai_classify.OllamaClassifier(args.ollama, args.classify_model) if args.classify_model else None

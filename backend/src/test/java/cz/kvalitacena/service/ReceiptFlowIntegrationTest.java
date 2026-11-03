@@ -94,6 +94,7 @@ class ReceiptFlowIntegrationTest {
   @Autowired private PseudonymizationService pseudonymizationService;
   @Autowired private ReceiptRepository receiptRepository;
   @Autowired private ReceiptLineRepository lineRepository;
+  @Autowired private cz.kvalitacena.db.repo.ReceiptJobRepository jobRepository;
   @Autowired private AppUserRepository appUserRepository;
   @Autowired private StoreRepository storeRepository;
   @Autowired private RetailChainRepository chainRepository;
@@ -387,6 +388,130 @@ class ReceiptFlowIntegrationTest {
         f.banany().getName(), null, 1);
 
     assertThat(found).extracting(Product::getId).containsExactly(f.banany().getId());
+  }
+
+  @Test
+  void reprocessingKeepsConfirmedLineAndReplacesTheRest() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR),
+        line("XYZ 5OOG", "1", QuantityUnit.PCS, "9.00", "9.00", null, PriceKind.REGULAR)));
+    OffsetDateTime purchasedAt = receiptRepository.findById(receiptId).orElseThrow().getPurchasedAt();
+    confirmSingle(owner, f, receiptId, f.rohlik());
+    ReceiptLine confirmed = lines(receiptId).getFirst();
+    Long replacedId = lines(receiptId).get(1).getId();
+    assertThat(confirmed.isConfirmed()).isTrue();
+
+    var requeued = workerService.requeue(List.of(receiptId), null);
+
+    assertThat(requeued.requeued()).containsExactly(receiptId);
+    // Vlastník s účtenkou pracuje dál, worker na obrázky dosáhne.
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getProcessingStatus())
+        .isEqualTo(ReceiptProcessingStatus.PROCESSED);
+    assertThat(workerService.image(receiptId, 0)).isPresent();
+    assertThat(workerService.lease(10)).anySatisfy(j -> {
+      assertThat(j.receiptId()).isEqualTo(receiptId);
+      assertThat(j.imagePaths()).hasSize(2);
+      assertThat(j.rawText()).isNull();
+    });
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getProcessingStatus())
+        .isEqualTo(ReceiptProcessingStatus.PROCESSED);
+
+    workerService.submitResult(receiptId, new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED,
+        "test-model-2", "raw2", null, f.store().getName(), null, null, null, new BigDecimal("12.00"), "CZK", List.of(
+            line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR),
+            line("XYZ 500G", "1", QuantityUnit.PCS, "9.00", "9.00", null, PriceKind.REGULAR),
+            line("NOVA POLOZKA", "1", QuantityUnit.PCS, "4.00", "4.00", null, PriceKind.REGULAR))));
+
+    List<ReceiptLine> after = lines(receiptId);
+    assertThat(after).extracting(ReceiptLine::getLabelRaw).containsExactly("ROHLIK", "XYZ 500G", "NOVA POLOZKA");
+    assertThat(after.getFirst().getId()).isEqualTo(confirmed.getId());
+    assertThat(after.getFirst().getObservationId()).isEqualTo(confirmed.getObservationId());
+    assertThat(after).extracting(ReceiptLine::getId).doesNotContain(replacedId);
+    Receipt receipt = receiptRepository.findById(receiptId).orElseThrow();
+    // Datum nákupu (patička) v novém výsledku chybí — zůstává původní, obchod potvrzený uživatelem taky.
+    assertThat(receipt.getPurchasedAt()).isEqualTo(purchasedAt);
+    assertThat(receipt.getStoreId()).isEqualTo(f.store().getId());
+    assertThat(receipt.getStoreAddressRaw()).isEqualTo("Hlavní 1, Praha");
+    assertThat(receipt.getTotalAmount()).isEqualByComparingTo("12.00");
+    assertThat(receipt.getReviewStatus().name()).isEqualTo("IN_PROGRESS");
+    assertThat(receipt.getSeenAt()).isNull();
+    assertThat(workerService.image(receiptId, 0)).isEmpty();
+  }
+
+  @Test
+  void reprocessingAfterRetentionUsesStoredTextAndWorseResultChangesNothing() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR)));
+    Long lineId = lines(receiptId).getFirst().getId();
+    jdbcTemplate.update("UPDATE core.receipt SET processed_at = now() - interval '40 days' WHERE id = ?", receiptId);
+    retentionService.deleteExpiredImages();
+
+    assertThat(workerService.requeue(List.of(receiptId), null).requeued()).containsExactly(receiptId);
+    assertThat(workerService.lease(10)).anySatisfy(j -> {
+      assertThat(j.receiptId()).isEqualTo(receiptId);
+      assertThat(j.imagePaths()).isEmpty();
+      assertThat(j.rawText()).isEqualTo("raw");
+    });
+    workerService.submitResult(receiptId, new WorkerReceiptResult(ReceiptProcessingStatus.UNREADABLE,
+        null, null, null, null, null, null, null, null, null, List.of()));
+
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getProcessingStatus())
+        .isEqualTo(ReceiptProcessingStatus.PROCESSED);
+    assertThat(lines(receiptId)).extracting(ReceiptLine::getId).containsExactly(lineId);
+    assertThat(jdbcTemplate.queryForObject("SELECT last_error FROM ai.receipt_job WHERE receipt_id = ?",
+        String.class, receiptId)).contains("UNREADABLE");
+
+    // Stejný výsledek podruhé: řádky se nemění a účtenka se vlastníkovi nerozsvítí.
+    receiptService.markSeen(owner.getPublicUid(), receiptId);
+    workerService.requeue(List.of(receiptId), null);
+    workerService.lease(10);
+    workerService.submitResult(receiptId, new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED,
+        null, null, null, null, null, null, null, null, null, List.of(
+            line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR))));
+
+    assertThat(lines(receiptId)).extracting(ReceiptLine::getId).containsExactly(lineId);
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getSeenAt()).isNotNull();
+    assertThat(jdbcTemplate.queryForObject("SELECT raw_text FROM ai.receipt_job WHERE receipt_id = ?",
+        String.class, receiptId)).isEqualTo("raw");
+  }
+
+  @Test
+  void requeuedFailedReceiptIsProcessedFromScratch() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Receipt receipt = receiptService.upload(owner.getPublicUid(), List.of(jpeg()), 1, false, null, null);
+    jdbcTemplate.update("UPDATE ai.receipt_job SET attempts = 3, lease_until = now() - interval '1 minute' "
+        + "WHERE receipt_id = ?", receipt.getId());
+    workerService.lease(10);
+    assertThat(receiptRepository.findById(receipt.getId()).orElseThrow().getProcessingStatus())
+        .isEqualTo(ReceiptProcessingStatus.FAILED);
+
+    var first = workerService.requeue(List.of(receipt.getId(), Long.MAX_VALUE), null);
+    var second = workerService.requeue(List.of(receipt.getId()), null);
+
+    assertThat(first.requeued()).containsExactly(receipt.getId());
+    assertThat(first.skipped()).extracting(ReceiptWorkerService.RequeueResult.Skipped::reason).containsExactly("not found");
+    assertThat(second.skipped()).extracting(ReceiptWorkerService.RequeueResult.Skipped::reason)
+        .containsExactly("already queued");
+    assertThat(receiptRepository.findById(receipt.getId()).orElseThrow().getProcessingStatus())
+        .isEqualTo(ReceiptProcessingStatus.QUEUED);
+
+    assertThat(workerService.lease(10)).anySatisfy(j -> assertThat(j.receiptId()).isEqualTo(receipt.getId()));
+    assertThat(receiptRepository.findById(receipt.getId()).orElseThrow().getProcessingStatus())
+        .isEqualTo(ReceiptProcessingStatus.PROCESSING);
+    workerService.submitResult(receipt.getId(), new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED,
+        "test-model", "raw", null, f.store().getName(), null, "CZ" + f.ico(), null, null, "CZK", List.of(
+            line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR))));
+
+    assertThat(receiptRepository.findById(receipt.getId()).orElseThrow().getProcessingStatus())
+        .isEqualTo(ReceiptProcessingStatus.PROCESSED);
+    assertThat(lines(receipt.getId())).hasSize(1);
+    assertThat(jobRepository.findFinishedReceiptIdsSince(OffsetDateTime.now().minusMinutes(5), 500))
+        .contains(receipt.getId());
   }
 
   private ReceiptReviewService.ConfirmResult confirmSingle(AppUser owner, Fixture f, Long receiptId, Product product) {

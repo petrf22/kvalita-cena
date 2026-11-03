@@ -57,6 +57,10 @@ public class ReceiptJob implements Persistable<Long> {
   @Column(name = "last_error", length = 500)
   private String lastError;
 
+  /** Kdy provozovatel úlohu vrátil k novému rozpoznání (jen audit, docs/ai.md). */
+  @Column(name = "requeued_at", columnDefinition = "TIMESTAMPTZ")
+  private OffsetDateTime requeuedAt;
+
   @PrePersist
   void onCreate() {
     if (enqueuedAt == null) {

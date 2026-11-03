@@ -402,12 +402,16 @@ public class ReceiptReviewService {
 
   /** DONE, když už žádný řádek nečeká na rozhodnutí (spárováno se zápisem, nebo ignorováno). */
   private void updateReviewStatus(Receipt receipt) {
-    List<ReceiptLine> lines = lineRepository.findByReceiptIdOrderByLineNoAsc(receipt.getId());
-    boolean open = lines.stream().anyMatch(l -> l.getStatus() == ReceiptLineStatus.UNMATCHED
-        || l.getStatus() == ReceiptLineStatus.SUGGESTED);
-    receipt.setReviewStatus(open ? ReceiptReviewStatus.IN_PROGRESS : ReceiptReviewStatus.DONE);
+    receipt.setReviewStatus(reviewStatusOf(lineRepository.findByReceiptIdOrderByLineNoAsc(receipt.getId())));
     receipt.setSeenAt(OffsetDateTime.now());
     receiptRepository.save(receipt);
+  }
+
+  /** Stav revize rozpracované účtenky podle řádků — sdílí ho i nové rozpoznání (ReceiptWorkerService). */
+  static ReceiptReviewStatus reviewStatusOf(List<ReceiptLine> lines) {
+    boolean open = lines.stream().anyMatch(l -> l.getStatus() == ReceiptLineStatus.UNMATCHED
+        || l.getStatus() == ReceiptLineStatus.SUGGESTED);
+    return open ? ReceiptReviewStatus.IN_PROGRESS : ReceiptReviewStatus.DONE;
   }
 
   private ReceiptLine editableLine(Long lineId, AppUser owner) {
