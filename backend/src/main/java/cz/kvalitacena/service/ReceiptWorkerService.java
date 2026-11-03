@@ -17,9 +17,8 @@ import cz.kvalitacena.db.entity.ReceiptImage;
 import cz.kvalitacena.db.entity.ReceiptJob;
 import cz.kvalitacena.db.entity.ReceiptLine;
 import cz.kvalitacena.db.entity.ReceiptLineHint;
-import cz.kvalitacena.db.entity.ReceiptLineStatus;
-import cz.kvalitacena.db.entity.ReceiptMatchSource;
 import cz.kvalitacena.db.entity.ReceiptProcessingStatus;
+import cz.kvalitacena.db.entity.ReceiptReviewStatus;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.ReceiptImageRepository;
@@ -57,6 +56,8 @@ public class ReceiptWorkerService {
   /** NUMERIC(12,3) u net_content_hint_value — větší číslo je chyba čtení, ne gramáž. */
   private static final BigDecimal MAX_NET_CONTENT_HINT = new BigDecimal("1000000");
   private static final BigDecimal MAX_AMOUNT = new BigDecimal("99999999.99");
+  /** Strop jednoho requeue — hromadné nové rozpoznání nesmí zahltit frontu na dny. */
+  static final int MAX_REQUEUE = 500;
 
   private final ReceiptJobRepository jobRepository;
   private final ReceiptRepository receiptRepository;
@@ -80,11 +81,12 @@ public class ReceiptWorkerService {
     List<WorkerReceiptJob> result = new ArrayList<>();
     for (ReceiptJob job : jobRepository.lockAvailable(now, limit)) {
       Optional<Receipt> receipt = receiptRepository.findById(job.getReceiptId());
-      if (receipt.isEmpty() || receipt.get().getImagesDeletedAt() != null) {
-        // Obrázky zmizely (retence nezpracované účtenky) — není co číst.
+      boolean imagesGone = receipt.isEmpty() || receipt.get().getImagesDeletedAt() != null;
+      if (imagesGone && (receipt.isEmpty() || job.getRawText() == null)) {
+        // Obrázky zmizely (retence) a uložený text k novému rozboru není — není co číst.
         job.setProcessedAt(now);
         job.setLastError("images gone");
-        receipt.ifPresent(r -> finish(r, ReceiptProcessingStatus.FAILED, now));
+        receipt.ifPresent(r -> failUnlessReprocessing(r, now));
         continue;
       }
       if (job.getAttempts() >= receiptProperties.getMaxAttempts()) {
@@ -93,18 +95,83 @@ public class ReceiptWorkerService {
         job.setProcessedAt(now);
         job.setLeaseUntil(null);
         job.setLastError("lease expired after " + job.getAttempts() + " attempts");
-        finish(receipt.get(), ReceiptProcessingStatus.FAILED, now);
+        failUnlessReprocessing(receipt.get(), now);
         continue;
       }
       job.setLeasedAt(now);
       job.setLeaseUntil(leaseUntil);
       job.setAttempts((short) (job.getAttempts() + 1));
       Receipt r = receipt.get();
-      r.setProcessingStatus(ReceiptProcessingStatus.PROCESSING);
-      result.add(new WorkerReceiptJob(r.getId(), r.getCapturedAt(), leaseUntil,
-          imagePaths(r.getId(), imageRepository.findByReceiptIdOrderBySeqAsc(r.getId()))));
+      if (!isReprocessing(r)) {
+        // Přepracovávaná účtenka zůstává PROCESSED — vlastník s ní dál pracuje, dokud nedorazí
+        // nová verze (docs/ai.md, „Nové rozpoznání").
+        r.setProcessingStatus(ReceiptProcessingStatus.PROCESSING);
+      }
+      result.add(imagesGone
+          ? new WorkerReceiptJob(r.getId(), r.getCapturedAt(), leaseUntil, List.of(), job.getRawText())
+          : new WorkerReceiptJob(r.getId(), r.getCapturedAt(), leaseUntil,
+              imagePaths(r.getId(), imageRepository.findByReceiptIdOrderBySeqAsc(r.getId())), null));
     }
     return result;
+  }
+
+  /** Výsledek {@link #requeue}: co se vrátilo do fronty a co ne (s důvodem pro výpis workeru). */
+  public record RequeueResult(List<Long> requeued, List<Skipped> skipped) {
+    public record Skipped(Long receiptId, String reason) {
+    }
+  }
+
+  /**
+   * Vrátí už zpracované účtenky k novému rozpoznání — po opravě OCR nebo normalizace ve workeru
+   * (docs/ai.md, „Nové rozpoznání"). Spouští provozovatel tokenem workeru, vlastníka to
+   * nezatěžuje: PROCESSED účtenka zůstává PROCESSED se starými řádky, dokud nedorazí nová verze,
+   * a řádky, na které uživatel sáhl, nová verze nepřepíše ({@link ReceiptLineMerger}). Účtenka
+   * bez řádků (FAILED, UNREADABLE, NOT_A_RECEIPT) se zpracuje od nuly. Bez obrázků (retence)
+   * worker znovu rozebere jen uložený syrový text.
+   *
+   * @param receiptIds     konkrétní účtenky (ID z logu workeru)
+   * @param processedSince nebo všechny zpracované od tohoto okamžiku (nejvýš {@code MAX_REQUEUE})
+   */
+  @Transactional
+  public RequeueResult requeue(List<Long> receiptIds, OffsetDateTime processedSince) {
+    List<Long> ids = new ArrayList<>(Optional.ofNullable(receiptIds).orElse(List.of()));
+    if (processedSince != null) {
+      ids.addAll(jobRepository.findFinishedReceiptIdsSince(processedSince, MAX_REQUEUE));
+    }
+    OffsetDateTime now = OffsetDateTime.now();
+    List<Long> requeued = new ArrayList<>();
+    List<RequeueResult.Skipped> skipped = new ArrayList<>();
+    for (Long receiptId : ids.stream().distinct().limit(MAX_REQUEUE).toList()) {
+      Optional<ReceiptJob> job = jobRepository.findForUpdateByReceiptId(receiptId);
+      Optional<Receipt> receipt = receiptRepository.findById(receiptId);
+      if (job.isEmpty() || receipt.isEmpty()) {
+        skipped.add(new RequeueResult.Skipped(receiptId, "not found"));
+        continue;
+      }
+      if (job.get().getProcessedAt() == null) {
+        skipped.add(new RequeueResult.Skipped(receiptId, "already queued"));
+        continue;
+      }
+      if (receipt.get().getImagesDeletedAt() != null && job.get().getRawText() == null) {
+        skipped.add(new RequeueResult.Skipped(receiptId, "images deleted and no stored text"));
+        continue;
+      }
+      ReceiptJob j = job.get();
+      j.setProcessedAt(null);
+      j.setLeaseUntil(null);
+      j.setAttempts((short) 0);
+      j.setEnqueuedAt(now);
+      j.setRequeuedAt(now);
+      j.setLastError(null);
+      if (receipt.get().getProcessingStatus() != ReceiptProcessingStatus.PROCESSED) {
+        receipt.get().setProcessingStatus(ReceiptProcessingStatus.QUEUED);
+      }
+      requeued.add(receiptId);
+    }
+    // queueNotifier se nevolá: frontu naplnil sám provozovatel, e-mail by ho jen upozornil na to,
+    // co právě udělal.
+    log.info("Nové rozpoznání: do fronty {} účtenek, přeskočeno {}", requeued.size(), skipped.size());
+    return new RequeueResult(requeued, skipped);
   }
 
   @Transactional
@@ -124,47 +191,61 @@ public class ReceiptWorkerService {
       return;
     }
     OffsetDateTime now = OffsetDateTime.now();
+    boolean reprocessing = isReprocessing(receipt);
     job.setProcessedAt(now);
     job.setLeaseUntil(null);
-    job.setModel(truncate(result.model(), 100));
-    job.setRawText(result.rawText());
-    job.setExtraction(toJson(result.extraction()));
     job.setLastError(null);
-
-    // Druhá pojistka k processedAt výš: řádky, na které uživatel sáhl, stroj nikdy nepřepisuje.
-    List<ReceiptLine> existing = lineRepository.findByReceiptIdOrderByLineNoAsc(receiptId);
-    boolean userTouched = existing.stream().anyMatch(l -> l.isConfirmed()
-        || l.getStatus() == ReceiptLineStatus.MATCHED
-        || l.getMatchSource() == ReceiptMatchSource.USER
-        || l.getMatchSource() == ReceiptMatchSource.NEW_PRODUCT
-        || l.getStatus() == ReceiptLineStatus.IGNORED);
-    if (userTouched) {
-      log.warn("Výsledek účtenky {} přišel znovu po zásahu uživatele — řádky se nemění", receiptId);
+    if (reprocessing && result.status() != ReceiptProcessingStatus.PROCESSED) {
+      // Nová verze workeru účtenku nepřečetla — horší výsledek nesmí smazat ten, se kterým
+      // vlastník pracuje.
+      job.setLastError(truncate("nové rozpoznání dalo " + result.status() + ", platí původní výsledek", 500));
+      log.warn("Nové rozpoznání účtenky {} dalo {} — ponechán původní výsledek", receiptId, result.status());
       return;
     }
-    lineRepository.deleteAll(existing);
-    lineRepository.flush();
+    // Textový režim (obrázky po retenci) model neposílá a syrový text nemusí po novém rozboru
+    // vzniknout — přepracování proto starou hodnotu nahradí jen novou, ne prázdnem.
+    if (!reprocessing || result.model() != null) {
+      job.setModel(truncate(result.model(), 100));
+    }
+    if (!reprocessing || result.rawText() != null) {
+      job.setRawText(result.rawText());
+    }
+    job.setExtraction(toJson(result.extraction()));
+
+    // Zámek řádků: souběžné potvrzení nesmí zapsat cenu z řádku, který se právě nahrazuje.
+    List<ReceiptLine> existing = lineRepository.findForUpdateByReceiptId(receiptId);
 
     if (result.status() != ReceiptProcessingStatus.PROCESSED) {
+      // Řádky, na které uživatel sáhl, stroj nikdy nemaže — ani tady.
+      lineRepository.deleteAll(ReceiptLineMerger.merge(existing, List.of()).removed());
       finish(receipt, result.status(), now);
       return;
     }
 
-    receipt.setStoreNameRaw(truncate(result.storeName(), 200));
-    receipt.setStoreAddressRaw(truncate(result.storeAddress(), 300));
-    receipt.setStoreIcoRaw(truncate(result.storeIco(), 20));
-    // Budoucí datum je chyba čtení (nebo špatné hodiny pokladny) — lepší prázdné pole, které
-    // uživatel doplní, než cena zapsaná „zítra".
-    receipt.setPurchasedAt(result.purchasedAt() != null && result.purchasedAt().isAfter(now.plusHours(1))
-        ? null : result.purchasedAt());
-    receipt.setTotalAmount(amount(result.totalAmount()));
-    receipt.setCurrency(result.currency() != null && result.currency().matches("[A-Z]{3}") ? result.currency() : null);
+    if (reprocessing) {
+      // Údaje, které potvrzuje uživatel (obchod, čas nákupu), se jen doplňují; syrová hlavička
+      // se nahradí jen novou hodnotou — z textu bez patičky by např. datum nákupu chybělo.
+      receipt.setStoreNameRaw(firstNonNull(truncate(result.storeName(), 200), receipt.getStoreNameRaw()));
+      receipt.setStoreAddressRaw(firstNonNull(truncate(result.storeAddress(), 300), receipt.getStoreAddressRaw()));
+      receipt.setStoreIcoRaw(firstNonNull(truncate(result.storeIco(), 20), receipt.getStoreIcoRaw()));
+      if (receipt.getPurchasedAt() == null) {
+        receipt.setPurchasedAt(purchasedAt(result, now));
+      }
+      receipt.setTotalAmount(firstNonNull(amount(result.totalAmount()), receipt.getTotalAmount()));
+      receipt.setCurrency(firstNonNull(currency(result.currency()), receipt.getCurrency()));
+    } else {
+      receipt.setStoreNameRaw(truncate(result.storeName(), 200));
+      receipt.setStoreAddressRaw(truncate(result.storeAddress(), 300));
+      receipt.setStoreIcoRaw(truncate(result.storeIco(), 20));
+      receipt.setPurchasedAt(purchasedAt(result, now));
+      receipt.setTotalAmount(amount(result.totalAmount()));
+      receipt.setCurrency(currency(result.currency()));
+    }
 
     List<ReceiptLine> lines = new ArrayList<>();
     List<WorkerReceiptResult.Line> sources = new ArrayList<>();
-    short lineNo = 0;
     for (WorkerReceiptResult.Line in : Optional.ofNullable(result.lines()).orElse(List.of())) {
-      if (lineNo >= receiptProperties.getMaxLines()) {
+      if (lines.size() >= receiptProperties.getMaxLines()) {
         break;
       }
       String label = in == null ? null : truncate(in.label(), MAX_TEXT);
@@ -173,7 +254,6 @@ public class ReceiptWorkerService {
       }
       lines.add(ReceiptLine.builder()
           .receiptId(receiptId)
-          .lineNo(lineNo++)
           .labelRaw(label.trim())
           .labelDisplay(blankToNull(truncate(in.labelDisplay(), MAX_TEXT)))
           .labelDisplaySource(enumOrNull(LabelDisplaySource.class, in.labelDisplaySource()))
@@ -190,13 +270,60 @@ public class ReceiptWorkerService {
       sources.add(in);
     }
 
-    Optional<Store> store = matchingService.suggestStore(receipt);
-    receipt.setSuggestedStoreId(store.map(Store::getId).orElse(null));
-    matchingService.matchLines(lines, store.orElse(null), receipt.getOwnerUserId());
-    lineRepository.saveAll(lines);
-    saveHints(lines, sources, job.getModel());
-    finish(receipt, ReceiptProcessingStatus.PROCESSED, now);
-    log.info("Účtenka {} zpracována ({} řádků, model {})", receiptId, lines.size(), job.getModel());
+    // Obchod potvrzený uživatelem má přednost před návrhem — návrh se přepočítá jen bez něj.
+    Store store;
+    if (receipt.getStoreId() != null) {
+      store = storeRepository.findById(receipt.getStoreId()).orElse(null);
+    } else {
+      Optional<Store> suggested = matchingService.suggestStore(receipt);
+      receipt.setSuggestedStoreId(suggested.map(Store::getId).orElse(null));
+      store = suggested.orElse(null);
+    }
+    matchingService.matchLines(lines, store, receipt.getOwnerUserId());
+
+    ReceiptLineMerger.Result merged = ReceiptLineMerger.merge(existing, lines);
+    List<ReceiptLine> added = merged.added().stream().map(lines::get).toList();
+    if (reprocessing && ReceiptLineMerger.sameContent(merged.removed(), added)) {
+      // Nová verze dala totéž — řádky zůstanou, ať se účtenka vlastníkovi nerozsvítí jako nová.
+      log.info("Nové rozpoznání účtenky {} beze změny řádků (model {})", receiptId, job.getModel());
+      return;
+    }
+    replaceLines(merged);
+    saveHints(added, merged.added().stream().map(sources::get).toList(), job.getModel());
+    if (reprocessing) {
+      if (receipt.getReviewStatus() != ReceiptReviewStatus.PENDING) {
+        receipt.setReviewStatus(ReceiptReviewService.reviewStatusOf(merged.ordered()));
+      }
+      receipt.setSeenAt(null);
+      log.info("Účtenka {} znovu rozpoznána ({} řádků nahrazeno, {} ponecháno, model {})", receiptId,
+          merged.removed().size(), merged.ordered().size() - added.size(), job.getModel());
+    } else {
+      finish(receipt, ReceiptProcessingStatus.PROCESSED, now);
+      log.info("Účtenka {} zpracována ({} řádků, model {})", receiptId, merged.ordered().size(), job.getModel());
+    }
+  }
+
+  /**
+   * Smaže nahrazené řádky a přečísluje výsledné pořadí. {@code uq_receipt_line_no} není
+   * deferrable a Hibernate při flush dělá inserty před updaty a delety, proto po krocích:
+   * smazat, ponechaným dočasně záporná čísla, pak finální čísla a vložení nových.
+   */
+  private void replaceLines(ReceiptLineMerger.Result merged) {
+    lineRepository.deleteAll(merged.removed());
+    lineRepository.flush();
+    short temporary = -1;
+    for (ReceiptLine line : merged.ordered()) {
+      if (!line.isNew()) {
+        line.setLineNo(temporary--);
+      }
+    }
+    lineRepository.flush();
+    short lineNo = 0;
+    for (ReceiptLine line : merged.ordered()) {
+      line.setLineNo(lineNo++);
+    }
+    lineRepository.saveAll(merged.ordered());
+    lineRepository.flush();
   }
 
   @Transactional
@@ -222,18 +349,22 @@ public class ReceiptWorkerService {
     if (job.getAttempts() >= receiptProperties.getMaxAttempts()) {
       job.setProcessedAt(OffsetDateTime.now());
       if (receipt != null) {
-        finish(receipt, ReceiptProcessingStatus.FAILED, OffsetDateTime.now());
+        failUnlessReprocessing(receipt, OffsetDateTime.now());
       }
-    } else if (receipt != null) {
+    } else if (receipt != null && !isReprocessing(receipt)) {
       receipt.setProcessingStatus(ReceiptProcessingStatus.QUEUED);
     }
   }
 
-  /** Obrázek pro worker — jen u účtenky, která je ve frontě nebo čeká na archivaci. */
+  /**
+   * Obrázek pro worker — jen u účtenky, která je ve frontě (včetně nového rozpoznání, kdy
+   * účtenka zůstává PROCESSED) nebo čeká na archivaci.
+   */
   @Transactional(readOnly = true)
   public Optional<byte[]> image(Long receiptId, int seq) {
     Optional<Receipt> receipt = receiptRepository.findById(receiptId);
-    boolean inQueue = receipt.map(r -> !r.getProcessingStatus().isFinished()).orElse(false);
+    boolean inQueue = receipt.isPresent()
+        && jobRepository.findByReceiptId(receiptId).map(j -> j.getProcessedAt() == null).orElse(false);
     boolean forArchive = receipt.map(r -> r.isArchiveConsent() && r.getArchivedAt() == null).orElse(false);
     if (!inQueue && !forArchive) {
       return Optional.empty();
@@ -273,6 +404,39 @@ public class ReceiptWorkerService {
         .filter(Receipt::isArchiveConsent)
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_NOT_FOUND));
     receipt.setArchivedAt(OffsetDateTime.now());
+  }
+
+  /**
+   * Nové rozpoznání už zpracované účtenky: úloha je znovu ve frontě, účtenka ale zůstává
+   * PROCESSED se starými řádky (docs/ai.md, „Nové rozpoznání").
+   */
+  private static boolean isReprocessing(Receipt receipt) {
+    return receipt.getProcessingStatus() == ReceiptProcessingStatus.PROCESSED;
+  }
+
+  /** Selhání nového rozpoznání nechá platit původní výsledek; jinak účtenka končí FAILED. */
+  private void failUnlessReprocessing(Receipt receipt, OffsetDateTime now) {
+    if (isReprocessing(receipt)) {
+      log.warn("Nové rozpoznání účtenky {} selhalo — ponechán původní výsledek", receipt.getId());
+      return;
+    }
+    finish(receipt, ReceiptProcessingStatus.FAILED, now);
+  }
+
+  /**
+   * Budoucí datum je chyba čtení (nebo špatné hodiny pokladny) — lepší prázdné pole, které
+   * uživatel doplní, než cena zapsaná „zítra".
+   */
+  private static OffsetDateTime purchasedAt(WorkerReceiptResult result, OffsetDateTime now) {
+    return result.purchasedAt() != null && result.purchasedAt().isAfter(now.plusHours(1)) ? null : result.purchasedAt();
+  }
+
+  private static String currency(String value) {
+    return value != null && value.matches("[A-Z]{3}") ? value : null;
+  }
+
+  private static <T> T firstNonNull(T value, T fallback) {
+    return value != null ? value : fallback;
   }
 
   private void finish(Receipt receipt, ReceiptProcessingStatus status, OffsetDateTime now) {

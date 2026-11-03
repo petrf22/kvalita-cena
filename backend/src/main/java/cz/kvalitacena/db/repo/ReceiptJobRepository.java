@@ -40,4 +40,16 @@ public interface ReceiptJobRepository extends JpaRepository<ReceiptJob, Long> {
       FOR UPDATE SKIP LOCKED
       """, nativeQuery = true)
   List<ReceiptJob> lockAvailable(@Param("now") OffsetDateTime now, @Param("limit") int limit);
+
+  /**
+   * Hromadné nové rozpoznání (docs/ai.md, „Nové rozpoznání"): účtenky s ukončenou úlohou
+   * zpracované od {@code since}, nejstarší první.
+   */
+  @Query(value = """
+      SELECT j.receipt_id FROM ai.receipt_job j JOIN core.receipt r ON r.id = j.receipt_id
+      WHERE j.processed_at IS NOT NULL AND r.processed_at >= :since
+      ORDER BY r.processed_at, r.id
+      LIMIT :limit
+      """, nativeQuery = true)
+  List<Long> findFinishedReceiptIdsSince(@Param("since") OffsetDateTime since, @Param("limit") int limit);
 }
