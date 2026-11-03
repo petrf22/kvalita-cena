@@ -22,6 +22,8 @@ TOTAL_TOLERANCE = Decimal("0.02")
 MAX_OVERLAP = 40
 # Podobnost dvou čtení téhož řádku v překryvu (difflib ratio), viz _same_line.
 LINE_SIMILARITY = 0.8
+# Kolik řádků překryvu se musí shodovat celé, když je řádek na okraji snímku useknutý.
+MIN_CUT_OVERLAP = 2
 
 
 def merge_segments(texts: list[str]) -> list[str]:
@@ -34,13 +36,38 @@ def merge_segments(texts: list[str]) -> list[str]:
     merged: list[str] = []
     for text in texts:
         current = normalize.clean_lines(text)
-        overlap = 0
-        for size in range(min(len(merged), len(current), MAX_OVERLAP), 0, -1):
-            if all(_same_line(a, b) for a, b in zip(merged[-size:], current[:size])):
-                overlap = size
-                break
+        overlap, replace_last = _overlap(merged, current)
+        if replace_last:
+            # Spodní okraj předchozího dílu řádek usekl, nový díl ho má celý.
+            merged.pop()
+            overlap -= 1
         merged.extend(current[overlap:])
     return merged
+
+
+def _overlap(merged: list[str], current: list[str]) -> tuple[int, bool]:
+    """Kolik řádků ze začátku `current` už je v `merged` a zda nahradit poslední řádek `merged`.
+
+    Okraj snímku umí řádek na hranici useknout („SLEVA -35,00" se v dalším dílu přečte jen
+    jako „SLEVA") a přesná shoda celého okna by pak překryv nenašla vůbec — položky na hranici
+    by se započítaly dvakrát (ověřeno na Bille). Useknutý proto smí být jen řádek na samém
+    okraji: první řádek nového dílu (horní okraj snímku) nebo poslední řádek předchozího
+    (spodní okraj). Zbytek okna se musí shodovat jako dřív a takových řádků musí být aspoň
+    MIN_CUT_OVERLAP, ať se useknutý řádek nespáruje s náhodnou shodou jednoho řádku.
+    """
+    for size in range(min(len(merged), len(current), MAX_OVERLAP), 0, -1):
+        pairs = list(zip(merged[-size:], current[:size]))
+        same = [_same_line(a, b) for a, b in pairs]
+        if all(same):
+            return size, False
+        if sum(same) < MIN_CUT_OVERLAP:
+            continue
+        first_cut = not same[0] and _cut_line(pairs[0][1], pairs[0][0])
+        last_cut = not same[-1] and _cut_line(pairs[-1][0], pairs[-1][1])
+        inner_same = all(same[1:-1])
+        if inner_same and (same[0] or first_cut) and (same[-1] or last_cut):
+            return size, last_cut
+    return 0, False
 
 
 def _same_line(a: str, b: str) -> bool:
@@ -53,6 +80,29 @@ def _same_line(a: str, b: str) -> bool:
     if normalize.AMOUNT_RE.findall(a) != normalize.AMOUNT_RE.findall(b):
         return False
     return SequenceMatcher(None, a, b).ratio() >= LINE_SIMILARITY
+
+
+def _cut_line(fragment: str, full: str) -> bool:
+    """`fragment` je řádek `full` useknutý okrajem snímku — chybí mu část částek, nic víc.
+
+    Částky, které ve fragmentu zůstaly, musí v plném řádku být (jiná cena = jiný řádek, stejně
+    jako u _same_line) a aspoň jedna musí chybět, jinak by to byl obyčejný nesedící řádek.
+    Text bez částek se porovná stejně tolerantně jako dva čtení téhož řádku.
+    """
+    fragment_amounts = normalize.AMOUNT_RE.findall(fragment)
+    full_amounts = normalize.AMOUNT_RE.findall(full)
+    remaining = list(full_amounts)
+    for amount in fragment_amounts:
+        if amount not in remaining:
+            return False
+        remaining.remove(amount)
+    if not remaining:
+        return False
+    fragment_text = normalize.AMOUNT_RE.sub("", fragment).strip()
+    full_text = normalize.AMOUNT_RE.sub("", full).strip()
+    if not fragment_text:
+        return False
+    return SequenceMatcher(None, fragment_text, full_text).ratio() >= LINE_SIMILARITY
 
 
 def _profile_for(raw_lines: list[str], profile_name: str | None):

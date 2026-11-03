@@ -76,6 +76,8 @@ Změna se projeví do 60 s.
    účtenky se čte zvlášť.
 2. **Spojení částí**: `parse.merge_segments`. Mobil fotí dlouhou účtenku po dílech
    s překryvem, takže řádky zopakované na hranici dvou dílů se zahodí.
+   Řádek na samém okraji snímku smí být useknutý (chybí mu částka), ostatní řádky
+   překryvu se musí shodovat.
 3. **Struktura z textu**: [`normalize.py`](normalize.py), [`lines.py`](lines.py)
    a [`profiles/`](profiles/). Vzniká deterministicky, regexy. Každý řetězec má vlastní profil
    (hlavička, patička, vymezení bloku položek); co profil nemá, jde přes obecný profil.
