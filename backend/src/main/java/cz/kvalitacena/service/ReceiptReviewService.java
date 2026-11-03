@@ -77,6 +77,7 @@ public class ReceiptReviewService {
   private final PriceObservationRepository priceObservationRepository;
   private final ReceiptMatchingService matchingService;
   private final PriceObservationService priceObservationService;
+  private final CurrencyResolver currencyResolver;
   private final ProductStoreLabelService labelService;
   private final OffProductCatalogService offProductCatalogService;
   private final ProductNameResolver productNameResolver;
@@ -99,6 +100,8 @@ public class ReceiptReviewService {
       Store store = storeRepository.findById(storeId)
           .orElseThrow(() -> new NotFoundException(ErrorCode.STORE_NOT_FOUND));
       receipt.setStoreId(store.getId());
+      // Součet účtenky se zobrazuje v měně obchodu — stejné, v jaké se pak zapíšou ceny.
+      receipt.setCurrency(currencyResolver.forStore(store));
       // Jiný obchod = jiný rozsah označení i vnitroobchodních kódů — strojové návrhy znovu.
       if (receipt.getProcessingStatus() == ReceiptProcessingStatus.PROCESSED) {
         List<ReceiptLine> lines = lineRepository.findByReceiptIdOrderByLineNoAsc(receiptId);
@@ -255,8 +258,11 @@ public class ReceiptReviewService {
       throw new ValidationException(ErrorCode.OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY,
           rows.prices().getFirst().priceKind().name());
     }
+    // Měna null = měna provozovny (CurrencyResolver.forStore). receipt.currency NE: měnu
+    // z tisku worker nečte, profil ji jen předpokládá (CZK), a jako input.currency by prošla
+    // whitelistem a přebila zemi obchodu — 1,29 € ze slovenské účtenky by se zapsalo jako Kč.
     List<PriceObservation> saved = priceObservationService.submit(new SubmitObservationsInput(
-            product.getId(), receipt.getStoreId(), rows.basis(), receipt.getPurchasedAt(), receipt.getCurrency(),
+            product.getId(), receipt.getStoreId(), rows.basis(), receipt.getPurchasedAt(), null,
             null, prices),
         ownerPublicUid, source, EvidenceKind.RECEIPT_OCR, line.getId());
     line.setObservationId(saved.getFirst().getId());

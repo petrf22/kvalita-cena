@@ -165,6 +165,38 @@ class ReceiptFlowIntegrationTest {
   }
 
   @Test
+  void priceCurrencyFollowsStoreNotWorkerAssumption() {
+    // Worker zatím čte jen české účtenky a CZK posílá napevno (tools/uctenky/profiles). Cena
+    // ze slovenského obchodu se přesto musí zapsat v eurech, ne jako stejné číslo v Kč.
+    Fixture f = fixture();
+    Store slovak = storeRepository.saveAndFlush(Store.builder()
+        .name("Predajňa " + f.ico()).street("Hlavná 1").city("Bratislava").country("SK").chain(f.chain())
+        .status(StoreStatus.ACTIVE).build());
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "0.15", "0.15", null, PriceKind.REGULAR)));
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getCurrency()).isEqualTo("CZK");
+
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, slovak.getId(), null);
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getCurrency()).isEqualTo("EUR");
+    ReceiptLine line = lines(receiptId).getFirst();
+    reviewService.matchLine(owner.getPublicUid(), line.getId(), f.rohlik().getId(), false);
+    reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(line.getId()), ObservationSource.WEB);
+
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT currency FROM core.price_observation WHERE product_id = ? AND store_id = ?",
+        String.class, f.rohlik().getId(), slovak.getId())).isEqualTo("EUR");
+
+    // Nové rozpoznání měnu potvrzeného obchodu nepřepíše.
+    workerService.requeue(List.of(receiptId), null);
+    workerService.lease(10);
+    workerService.submitResult(receiptId, new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED,
+        "test-model-2", "raw2", null, null, null, null, null, new BigDecimal("0.15"), "CZK", List.of(
+            line("ROHLIK", "1", QuantityUnit.PCS, "0.15", "0.15", null, PriceKind.REGULAR))));
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getCurrency()).isEqualTo("EUR");
+  }
+
+  @Test
   void duplicateSameDayIsSkippedWithoutFailingOtherLines() {
     Fixture f = fixture();
     AppUser owner = persistUser();
