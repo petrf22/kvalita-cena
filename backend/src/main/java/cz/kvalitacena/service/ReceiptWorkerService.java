@@ -232,14 +232,19 @@ public class ReceiptWorkerService {
         receipt.setPurchasedAt(purchasedAt(result, now));
       }
       receipt.setTotalAmount(firstNonNull(amount(result.totalAmount()), receipt.getTotalAmount()));
-      receipt.setCurrency(firstNonNull(currency(result.currency()), receipt.getCurrency()));
     } else {
       receipt.setStoreNameRaw(truncate(result.storeName(), 200));
       receipt.setStoreAddressRaw(truncate(result.storeAddress(), 300));
       receipt.setStoreIcoRaw(truncate(result.storeIco(), 20));
       receipt.setPurchasedAt(purchasedAt(result, now));
       receipt.setTotalAmount(amount(result.totalAmount()));
-      receipt.setCurrency(currency(result.currency()));
+    }
+    // Měnu z workeru jen předpokládá profil (dnes vždy CZK, tools/uctenky/README.md), kdežto
+    // obchod potvrzený uživatelem ji určuje (ReceiptReviewService.updateHeader) — ta se nepřepisuje.
+    if (receipt.getStoreId() == null) {
+      receipt.setCurrency(reprocessing
+          ? firstNonNull(currency(result.currency()), receipt.getCurrency())
+          : currency(result.currency()));
     }
 
     List<ReceiptLine> lines = new ArrayList<>();

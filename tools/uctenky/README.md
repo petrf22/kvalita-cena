@@ -219,6 +219,13 @@ strukturu ani syrový tisk a hlídá ji deterministická kontrola (`ai_pretty.ac
 **U váhového zboží je cena za kg/l, nikdy zaplacená částka.** Z řádku
 `0,302 kg x 289,00 Kč/kg 87,30` jde na server cena 289,00 za kg.
 
+**Worker čte jen české účtenky.** Profily mají napevno zemi CZ, měnu CZK a pásmo
+`Europe/Prague`. Česky je i OCR prompt a regexy (celková částka, „Kč“ u položek, PSČ, IČO).
+Cizí účtenka se proto přečte špatně, nebo vůbec. Se špatnou měnou se ale neuloží: měnu
+ceny určuje obchod, který uživatel u účtenky potvrdí, ne `currency` z workeru
+(`docs/lokalizace.md`, „Multi-měna“). Profil další země potřebuje vlastní zemi, měnu
+i časové pásmo a reálnou anonymizovanou účtenku jako fixture.
+
 ## Soukromí
 
 Z patičky účtenky parser vezme jen datum, čas a celkovou částku. Číslo karty, autorizační

@@ -119,6 +119,13 @@ provozovny (`CurrencyResolver.forStore`). Výjimka: `SubmitObservationInput.curr
 (volitelné, pro příhraniční prodejny cenící v jiné měně, než je země obchodu) — server hodnotu
 validuje proti podporovaným měnám, neplatnou tiše ignoruje.
 
+Cena z účtenky tuhle výjimku nepoužívá: `ReceiptReviewService.confirmLines` posílá měnu
+`null`, takže platí měna obchodu, který uživatel u účtenky potvrdil. Worker zatím čte jen
+české účtenky a `currency: CZK` posílá napevno podle profilu, nečte ji z tisku. Kdyby prošla
+jako výjimka, přebila by zemi obchodu a 1,29 € ze slovenské účtenky by se zapsalo jako
+1,29 Kč. `receipt.currency` (měna zobrazeného součtu) se proto při výběru obchodu přepíše na
+měnu obchodu a nové rozpoznání ji už nezmění.
+
 `currency` je **součástí primárního klíče** `agg.price_current`/`agg.price_daily`
 (`(product_id, store_id, price_kind, currency[, day])`) — jinak by vážený medián mísil CZK/EUR/
 PLN do jednoho čísla, tichá datová korupce bez jakékoli chyby při zápisu. Index má `currency`
