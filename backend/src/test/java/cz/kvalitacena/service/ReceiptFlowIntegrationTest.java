@@ -512,6 +512,49 @@ class ReceiptFlowIntegrationTest {
   }
 
   @Test
+  void reprocessingWithSameLinesRefreshesNetContentAndModelHints() {
+    Fixture f = fixture();
+    String slug = f.rohlik().getCategory().getSlug();
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(hinted("TESTOV.", "Těstoviny", null, null, null, null)));
+    Long lineId = lines(receiptId).getFirst().getId();
+    receiptService.markSeen(owner.getPublicUid(), receiptId);
+    OffsetDateTime lineUpdatedAt = lineUpdatedAt(lineId);
+
+    // Nová verze přečte gramáž z tisku a model navrhne kategorii — řádky jinak stejné.
+    reprocess(receiptId, f, List.of(hinted("TESTOV.", "Těstoviny", "500", "G", slug, null)));
+
+    ReceiptLine line = lines(receiptId).getFirst();
+    assertThat(line.getId()).isEqualTo(lineId);
+    // Vlastníkovi se nic viditelného nezměnilo: účtenka se nerozsvítí (seen_at ani updated_at řádku).
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getSeenAt()).isNotNull();
+    assertThat(lineUpdatedAt(lineId)).isEqualTo(lineUpdatedAt);
+    var refreshed = productDefaultsService.forLine(line, f.store().getId(), owner.getId());
+    assertThat(refreshed.netContentValue()).isEqualByComparingTo("500");
+    assertThat(refreshed.netContentUom()).isEqualTo(NetContentUom.G);
+    assertThat(refreshed.netContentSource()).isEqualTo(NewProductDefaultsService.Source.RECEIPT);
+    assertThat(refreshed.category().getSlug()).isEqualTo(slug);
+    assertThat(refreshed.categorySource()).isEqualTo(NewProductDefaultsService.Source.AI);
+
+    // Další verze gramáž z tisku nepřečte a model navrhne jen jednotku — stará vodítka neplatí.
+    reprocess(receiptId, f, List.of(hinted("TESTOV.", "Těstoviny", null, null, null, "KG")));
+
+    var unitOnly = productDefaultsService.forLine(lines(receiptId).getFirst(), f.store().getId(), owner.getId());
+    assertThat(unitOnly.netContentValue()).isNull();
+    assertThat(unitOnly.netContentUom()).isEqualTo(NetContentUom.KG);
+    assertThat(unitOnly.netContentSource()).isEqualTo(NewProductDefaultsService.Source.AI);
+    assertThat(unitOnly.category()).isNull();
+
+    // Bez vodítek zmizí i návrh modelu.
+    reprocess(receiptId, f, List.of(hinted("TESTOV.", "Těstoviny", null, null, null, null)));
+
+    assertThat(lines(receiptId)).extracting(ReceiptLine::getId).containsExactly(lineId);
+    assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM ai.receipt_line_hint WHERE line_id = ?",
+        Long.class, lineId)).isZero();
+    assertThat(lineUpdatedAt(lineId)).isEqualTo(lineUpdatedAt);
+  }
+
+  @Test
   void requeuedFailedReceiptIsProcessedFromScratch() {
     Fixture f = fixture();
     AppUser owner = persistUser();
@@ -1050,6 +1093,19 @@ class ReceiptFlowIntegrationTest {
 
   private List<ReceiptLine> lines(Long receiptId) {
     return lineRepository.findByReceiptIdOrderByLineNoAsc(receiptId);
+  }
+
+  /** Nové rozpoznání: requeue → lease → výsledek s novými řádky (syrová hlavička bez patičky). */
+  private void reprocess(Long receiptId, Fixture f, List<WorkerReceiptResult.Line> lines) {
+    assertThat(workerService.requeue(List.of(receiptId), null).requeued()).containsExactly(receiptId);
+    assertThat(workerService.lease(10)).anySatisfy(j -> assertThat(j.receiptId()).isEqualTo(receiptId));
+    workerService.submitResult(receiptId, new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED,
+        "test-model-2", "raw2", null, f.store().getName(), null, null, null, null, "CZK", lines));
+  }
+
+  private OffsetDateTime lineUpdatedAt(Long lineId) {
+    return jdbcTemplate.queryForObject("SELECT updated_at FROM core.receipt_line WHERE id = ?",
+        OffsetDateTime.class, lineId);
   }
 
   record Fixture(RetailChain chain, Store store, String ico, Product rohlik, Product banany) {
