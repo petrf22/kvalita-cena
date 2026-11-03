@@ -20,6 +20,12 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.13.2", date: "2026-11-03", sections: [
+      { title: "Opraveno", items: [
+        { text: "Nové přečtení účtenky doplní do formuláře nového zboží gramáž a návrh kategorie, i když se řádky účtenky nezměnily", parts: ["server"] },
+        { text: "Oprava obchodu nebo data nákupu u účtenky se neztratí, když ji zrovna ve stejnou chvíli server znovu čte", parts: ["server"] },
+      ] },
+  ] },
   { version: "0.13.1", date: "2026-11-03", sections: [
       { title: "Přidáno", items: [
         { text: "Po zlepšení rozpoznávání jde už zpracovanou účtenku přečíst znovu; potvrzené, ručně spárované i ignorované řádky zůstanou, jak byly", parts: ["server"] },

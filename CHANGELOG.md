@@ -7,6 +7,12 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [0.13.2] – 2026-11-03
+
+### Opraveno
+- Nové přečtení účtenky doplní do formuláře nového zboží gramáž a návrh kategorie, i když se řádky účtenky nezměnily (server)
+- Oprava obchodu nebo data nákupu u účtenky se neztratí, když ji zrovna ve stejnou chvíli server znovu čte (server)
+
 ## [0.13.1] – 2026-11-03
 
 ### Přidáno
