@@ -92,7 +92,7 @@ def requeue(api: api_mod.WorkerApi, receipt_ids: list[int], since: date | None, 
     processed_since = datetime.combine(since, datetime.min.time()).astimezone().isoformat() if since else None
     answer = api.requeue(receipt_ids, processed_since)
     requeued = answer.get("requeued") or []
-    log(f"znovu do fronty: {len(requeued)} účtenek {requeued if requeued else ''}".rstrip())
+    log(f"vráceno k novému rozpoznání: {len(requeued)} {requeued if requeued else ''}".rstrip())
     for skipped in answer.get("skipped") or []:
         log(f"   přeskočeno {skipped.get('receiptId')}: {skipped.get('reason')}")
     return len(requeued)

@@ -170,7 +170,7 @@ public class ReceiptWorkerService {
     }
     // queueNotifier se nevolá: frontu naplnil sám provozovatel, e-mail by ho jen upozornil na to,
     // co právě udělal.
-    log.info("Nové rozpoznání: do fronty {} účtenek, přeskočeno {}", requeued.size(), skipped.size());
+    log.info("Nové rozpoznání — vráceno do fronty: {}, přeskočeno: {}", requeued.size(), skipped.size());
     return new RequeueResult(requeued, skipped);
   }
 
@@ -295,7 +295,7 @@ public class ReceiptWorkerService {
         receipt.setReviewStatus(ReceiptReviewService.reviewStatusOf(merged.ordered()));
       }
       receipt.setSeenAt(null);
-      log.info("Účtenka {} znovu rozpoznána ({} řádků nahrazeno, {} ponecháno, model {})", receiptId,
+      log.info("Účtenka {} znovu rozpoznána (nahrazeno řádků: {}, ponecháno: {}, model {})", receiptId,
           merged.removed().size(), merged.ordered().size() - added.size(), job.getModel());
     } else {
       finish(receipt, ReceiptProcessingStatus.PROCESSED, now);
