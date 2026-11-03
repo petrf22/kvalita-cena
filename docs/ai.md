@@ -233,12 +233,18 @@ nepřijde:
   označení a částka, pak jednoznačně stejné částky — oprava OCR mění právě označení);
   ponechaný z něj převezme jen čitelný název. Nespárovaný ponechaný řádek zůstane na konci.
 - **Hlavička:** obchod a datum nákupu potvrzuje uživatel, proto se jen doplní, když chybí;
-  syrová hlavička a součet se nahradí jen novou neprázdnou hodnotou.
+  syrová hlavička a součet se nahradí jen novou neprázdnou hodnotou. Zápis workeru i úpravy
+  vlastníka (`updateHeader`, párování řádků, potvrzení) berou účtenku se zámkem řádku
+  (`ReceiptRepository.findForUpdateById`) a entita má `@DynamicUpdate` — jinak by worker
+  souběžnou opravu obchodu nebo data přepsal hodnotou z dřív načteného snapshotu.
 - **Bez obrázků** (po retenci) dostane worker místo nich uložený `raw_text` a rozebere ho
   znovu bez OCR. Ten končí řádkem „Celkem", takže co profil čte z patičky (datum nákupu,
   adresa prodejny COOP z bloku terminálu), opravit nejde a zůstane původní.
 - Nová verze se stejným obsahem řádky nemění. Jinak se účtenka vlastníkovi ukáže jako nová
-  (`seen_at = NULL`) a stav revize se přepočítá.
+  (`seen_at = NULL`) a stav revize se přepočítá. Vodítka formuláře nového zboží (gramáž
+  z tisku, návrh kategorie a jednotky v `ai.receipt_line_hint`) se ale obnoví i u řádků beze
+  změny — včetně jejich zmizení; gramáž cíleným UPDATE, ať posun `updated_at` účtenku
+  nerozsvítí (`countUnseen`).
 
 **Archiv obrázků** pro zlepšování rozpoznávání: `GET /api/worker/receipts/archive-candidates`
 vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DIR` a potvrdí

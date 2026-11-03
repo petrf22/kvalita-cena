@@ -1,7 +1,9 @@
 package cz.kvalitacena.db.repo;
 
 import cz.kvalitacena.db.entity.Receipt;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -13,6 +15,21 @@ import java.util.UUID;
 public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
 
   Optional<Receipt> findByIdAndOwnerUserId(Long id, Long ownerUserId);
+
+  /**
+   * Účtenka se zámkem — zápisy workeru (nové rozpoznání) a úpravy vlastníka se nad ní řadí za
+   * sebe. Bez něj by zápis z dřív načteného snapshotu přepsal souběžnou úpravu hlavičky
+   * (docs/ai.md, „Nové rozpoznání"). Musí to být PRVNÍ načtení účtenky v transakci — už
+   * načtenou entitu Hibernate dotazem neobnoví, jen zamkne.
+   */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT r FROM Receipt r WHERE r.id = :id")
+  Optional<Receipt> findForUpdateById(@Param("id") Long id);
+
+  /** {@link #findForUpdateById} jen pro vlastníka. */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT r FROM Receipt r WHERE r.id = :id AND r.ownerUserId = :ownerUserId")
+  Optional<Receipt> findForUpdateByIdAndOwnerUserId(@Param("id") Long id, @Param("ownerUserId") Long ownerUserId);
 
   @Query(value = "SELECT * FROM core.receipt WHERE owner_user_id = :ownerId "
       + "ORDER BY created_at DESC, id DESC LIMIT :limit OFFSET :offset", nativeQuery = true)

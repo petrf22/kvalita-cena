@@ -39,7 +39,11 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -80,7 +84,7 @@ public class ReceiptWorkerService {
     OffsetDateTime leaseUntil = now.plusMinutes(receiptProperties.getLeaseMinutes()).truncatedTo(ChronoUnit.MILLIS);
     List<WorkerReceiptJob> result = new ArrayList<>();
     for (ReceiptJob job : jobRepository.lockAvailable(now, limit)) {
-      Optional<Receipt> receipt = receiptRepository.findById(job.getReceiptId());
+      Optional<Receipt> receipt = receiptRepository.findForUpdateById(job.getReceiptId());
       boolean imagesGone = receipt.isEmpty() || receipt.get().getImagesDeletedAt() != null;
       if (imagesGone && (receipt.isEmpty() || job.getRawText() == null)) {
         // Obrázky zmizely (retence) a uložený text k novému rozboru není — není co číst.
@@ -143,7 +147,7 @@ public class ReceiptWorkerService {
     List<RequeueResult.Skipped> skipped = new ArrayList<>();
     for (Long receiptId : ids.stream().distinct().limit(MAX_REQUEUE).toList()) {
       Optional<ReceiptJob> job = jobRepository.findForUpdateByReceiptId(receiptId);
-      Optional<Receipt> receipt = receiptRepository.findById(receiptId);
+      Optional<Receipt> receipt = receiptRepository.findForUpdateById(receiptId);
       if (job.isEmpty() || receipt.isEmpty()) {
         skipped.add(new RequeueResult.Skipped(receiptId, "not found"));
         continue;
@@ -178,7 +182,10 @@ public class ReceiptWorkerService {
   public void submitResult(Long receiptId, WorkerReceiptResult result) {
     ReceiptJob job = jobRepository.findForUpdateByReceiptId(receiptId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_NOT_FOUND));
-    Receipt receipt = receiptRepository.findById(receiptId)
+    // Zámek účtenky: souběžná úprava hlavičky vlastníkem (ReceiptReviewService.updateHeader) se
+    // nesmí ztratit pod zápisem z dřív načteného snapshotu — rozhodnutí „doplnit jen, když chybí"
+    // níž tak platí nad čerstvým stavem. Pořadí zámků: úloha → účtenka → řádky.
+    Receipt receipt = receiptRepository.findForUpdateById(receiptId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_NOT_FOUND));
     if (result == null || result.status() == null || !result.status().isFinished()
         || result.status() == ReceiptProcessingStatus.FAILED) {
@@ -290,7 +297,13 @@ public class ReceiptWorkerService {
     List<ReceiptLine> added = merged.added().stream().map(lines::get).toList();
     if (reprocessing && ReceiptLineMerger.sameContent(merged.removed(), added)) {
       // Nová verze dala totéž — řádky zůstanou, ať se účtenka vlastníkovi nerozsvítí jako nová.
-      log.info("Nové rozpoznání účtenky {} beze změny řádků (model {})", receiptId, job.getModel());
+      // Vodítka formuláře nového zboží (gramáž z tisku, návrh modelu) signatura řádku nezná,
+      // takže se obnoví zvlášť; párování je stejné jako v sameContent.
+      List<ReceiptLine> before = merged.removed().stream().sorted(Comparator.comparing(ReceiptLine::getLineNo))
+          .toList();
+      refreshGuidance(before, added, merged.added().stream().map(sources::get).toList(), job.getModel());
+      log.info("Nové rozpoznání účtenky {} beze změny řádků, vodítka obnovena (model {})", receiptId,
+          job.getModel());
       return;
     }
     replaceLines(merged);
@@ -350,7 +363,7 @@ public class ReceiptWorkerService {
     }
     job.setLeaseUntil(null);
     job.setLastError(truncate(error, 500));
-    Receipt receipt = receiptRepository.findById(receiptId).orElse(null);
+    Receipt receipt = receiptRepository.findForUpdateById(receiptId).orElse(null);
     if (job.getAttempts() >= receiptProperties.getMaxAttempts()) {
       job.setProcessedAt(OffsetDateTime.now());
       if (receipt != null) {
@@ -382,7 +395,7 @@ public class ReceiptWorkerService {
   public List<WorkerCategory> categories() {
     return categoryRepository.findAll().stream()
         .map(category -> new WorkerCategory(category.getSlug(), categoryPath(category)))
-        .sorted(java.util.Comparator.comparing(WorkerCategory::path))
+        .sorted(Comparator.comparing(WorkerCategory::path))
         .toList();
   }
 
@@ -491,10 +504,6 @@ public class ReceiptWorkerService {
   }
 
   /**
-   * Vodítko gramáže z označení řádku — jen kladné číslo s jednotkou hmotnosti/objemu, jinak
-   * nic. Hodnota a jednotka jdou vždy spolu (jako netContentValue/netContentUom u zboží).
-   */
-  /**
    * Návrh kategorie a jednotky od modelu (ai.receipt_line_hint) — jen to, co projde kontrolou
    * i tady: existující kategorie, jednotka G/KG/ML/L, žádná jednotka u váhového zboží a žádný
    * rozpor s vodítkem gramáže z tisku (hmotnost proti objemu). Neplatná hodnota se zahodí,
@@ -503,18 +512,60 @@ public class ReceiptWorkerService {
   private void saveHints(List<ReceiptLine> lines, List<WorkerReceiptResult.Line> sources, String model) {
     List<ReceiptLineHint> hints = new ArrayList<>();
     for (int i = 0; i < lines.size(); i++) {
-      ReceiptLine line = lines.get(i);
-      WorkerReceiptResult.Line in = sources.get(i);
-      String slug = in.categoryHintText();
-      Long categoryId = slug == null || slug.isBlank() ? null
-          : categoryRepository.findBySlug(slug.trim()).map(Category::getId).orElse(null);
-      NetContentUom uom = unitHint(line, in.unitHintText());
-      if (categoryId != null || uom != null) {
-        hints.add(ReceiptLineHint.builder().lineId(line.getId()).categoryId(categoryId).netContentUom(uom)
-            .model(truncate(model, 100)).build());
-      }
+      hintFor(lines.get(i).getId(), lines.get(i), sources.get(i), model).ifPresent(hints::add);
     }
     hintRepository.saveAll(hints);
+  }
+
+  /**
+   * Nové rozpoznání beze změny řádků: stávající řádky dostanou gramáž z tisku a návrh modelu
+   * z nové verze — včetně jejich zmizení, stejně jako by se řádky nahradily.
+   *
+   * @param targets stávající řádky (zůstávají, mění se jen vodítka)
+   * @param fresh   odpovídající nové řádky (zdroj gramáže a kontrola jednotky v {@link #unitHint})
+   */
+  private void refreshGuidance(List<ReceiptLine> targets, List<ReceiptLine> fresh,
+      List<WorkerReceiptResult.Line> sources, String model) {
+    Map<Long, ReceiptLineHint> stored = new HashMap<>();
+    hintRepository.findAllById(targets.stream().map(ReceiptLine::getId).toList())
+        .forEach(h -> stored.put(h.getLineId(), h));
+    for (int i = 0; i < targets.size(); i++) {
+      ReceiptLine target = targets.get(i);
+      ReceiptLine next = fresh.get(i);
+      if (!Objects.equals(num(target.getNetContentHintValue()), num(next.getNetContentHintValue()))
+          || target.getNetContentHintUom() != next.getNetContentHintUom()) {
+        lineRepository.updateNetContentHint(target.getId(), next.getNetContentHintValue(), next.getNetContentHintUom());
+      }
+      Optional<ReceiptLineHint> hint = hintFor(target.getId(), next, sources.get(i), model);
+      ReceiptLineHint old = stored.get(target.getId());
+      if (old == null) {
+        hint.ifPresent(hintRepository::save);
+      } else if (hint.isEmpty()) {
+        hintRepository.delete(old);
+      } else {
+        old.setCategoryId(hint.get().getCategoryId());
+        old.setNetContentUom(hint.get().getNetContentUom());
+        old.setModel(hint.get().getModel());
+      }
+    }
+  }
+
+  /** Návrh modelu k řádku, jen když z kontroly něco zbude ({@code line} nese gramáž z tisku). */
+  private Optional<ReceiptLineHint> hintFor(Long lineId, ReceiptLine line, WorkerReceiptResult.Line in,
+      String model) {
+    String slug = in.categoryHintText();
+    Long categoryId = slug == null || slug.isBlank() ? null
+        : categoryRepository.findBySlug(slug.trim()).map(Category::getId).orElse(null);
+    NetContentUom uom = unitHint(line, in.unitHintText());
+    if (categoryId == null && uom == null) {
+      return Optional.empty();
+    }
+    return Optional.of(ReceiptLineHint.builder().lineId(lineId).categoryId(categoryId).netContentUom(uom)
+        .model(truncate(model, 100)).build());
+  }
+
+  private static BigDecimal num(BigDecimal value) {
+    return value == null ? null : value.stripTrailingZeros();
   }
 
   static NetContentUom unitHint(ReceiptLine line, String value) {
@@ -533,6 +584,10 @@ public class ReceiptWorkerService {
     return uom == NetContentUom.G || uom == NetContentUom.KG;
   }
 
+  /**
+   * Vodítko gramáže z označení řádku — jen kladné číslo s jednotkou hmotnosti/objemu, jinak
+   * nic. Hodnota a jednotka jdou vždy spolu (jako netContentValue/netContentUom u zboží).
+   */
   private static NetContentUom netContentHint(WorkerReceiptResult.Line in) {
     NetContentUom uom = enumOrNull(NetContentUom.class, in.netContentUom());
     if (uom == null || uom == NetContentUom.PCS || in.netContentValue() == null

@@ -1,5 +1,6 @@
 package cz.kvalitacena.db.repo;
 
+import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.ReceiptLine;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,6 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -23,6 +25,17 @@ public interface ReceiptLineRepository extends JpaRepository<ReceiptLine, Long> 
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query("SELECT l FROM ReceiptLine l WHERE l.receiptId = :receiptId ORDER BY l.lineNo")
   List<ReceiptLine> findForUpdateByReceiptId(@Param("receiptId") Long receiptId);
+
+  /**
+   * Vodítko gramáže z nového rozpoznání u jinak nezměněného řádku — hodnota a jednotka vždy
+   * spolu. Mimo entitu, protože {@code @PreUpdate} by posunul {@code updated_at} a podle něj
+   * {@link ReceiptRepository#countUnseen} rozsvítí účtenku jako novou, i když se vlastníkovi
+   * nic viditelného nezměnilo.
+   */
+  @Modifying
+  @Query("UPDATE ReceiptLine l SET l.netContentHintValue = :value, l.netContentHintUom = :uom WHERE l.id = :id")
+  int updateNetContentHint(@Param("id") Long id, @Param("value") BigDecimal value,
+      @Param("uom") NetContentUom uom);
 
   List<ReceiptLine> findByReceiptIdInOrderByLineNoAsc(Collection<Long> receiptIds);
 
