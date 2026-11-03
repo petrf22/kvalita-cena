@@ -7,7 +7,8 @@ u vlastních profilů (lines.py). Když něco nesedí, pozná se to na kontroln�
 a uživatel řádky stejně potvrzuje jeden po druhém.
 
 Z patičky se stejně jako u vlastních profilů bere JEN datum, čas a celková částka
-(docs/soukromi.md, „Účtenky") — číslo karty ani věrnostní údaje dál nejdou.
+(docs/soukromi.md, „Účtenky") — číslo karty ani věrnostní údaje dál nejdou. Jedinou výjimkou
+je adresa prodejny v profilu coop.
 """
 
 from __future__ import annotations

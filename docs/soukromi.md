@@ -270,6 +270,14 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   prodejce, ne kupujícího. Do veřejného `core.store` se dostane jen to, co uživatel ve
   formuláři nechá a uloží; účtenka, čas nákupu ani obrázek se s obchodem nespojují
   (`docs/stav-implementace.md`, „Účtenky").
+- **Adresa prodejny z patičky — jediná výjimka z „z patičky jen datum a součet".** COOP
+  tiskne do hlavičky sídlo družstva a IČO sdílí všechny jeho prodejny, takže prodejnu
+  pozná jen podle bloku platebního terminálu pod celkovou částkou. Profil `coop`
+  (`tools/uctenky/profiles/coop.py`) z něj vezme výhradně název prodejny, ulici, PSČ
+  a město. Jsou to údaje prodejce stejně jako hlavička. Čtení končí na řádku IČO/terminálu
+  nebo na prvním řádku s maskovaným číslem karty. Do syrového textu se patička dál
+  nedostane (`parse.server_text`). Když uživatel blok zakryje (výchozí maska je pás pod
+  celkovou částkou) nebo platí hotově, adresa se nepošle a obchod vybere sám.
 - **Stroj nemá identitu uživatele.** Stroje se přihlašují strojovým tokenem
   (`auth.api_token`, v DB jen SHA-256), ne účtem člověka, a každý token má jen jeden scope.
   Worker (`RECEIPT_WORKER`) vidí obrázky ve frontě a zapisuje vytěžený text, nic víc.

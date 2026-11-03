@@ -523,7 +523,12 @@ oběh (2x, 02, 04, kupóny 05/98/99; u GTIN-14 prefix za indikátorem balení).
 rozdělená na 5 dílů s překryvem): OCR → řádky se součtem na haléř → párování → cena s
 `RECEIPT_OCR` → naučené označení v „Názvech na účtenkách".
 
-**Profily řetězců** (`tools/uctenky/profiles/`): Albert, TAMDA FOODS a obecný profil. Tamda
+**Profily řetězců** (`tools/uctenky/profiles/`): Albert, TAMDA FOODS, COOP a obecný profil.
+COOP ověřen 2026-11-03 na reálné účtence (COOP Hořovice, formát TIP, 2 díly). Sazba DPH
+stojí před názvem a jde do `vatCode`, množství a `váhový kód:` stojí pod názvem. Váhový kód
+se neposílá: není to globální GTIN a mění se s hmotností. Adresa prodejny se bere z bloku
+terminálu, protože hlavička nese sídlo družstva (`docs/soukromi.md`, „Účtenky"). Řádek `PJ:`
+dá formát prodejny, a tím `chainSlug` (`coop-tip`…). Tamda
 ověřena 2026-11-01 na reálné účtence se 66 položkami v 5 dílech, součet sedí na haléř. Tiskne
 EAN u každé položky, worker ho posílá jako `internalCode`, ale jen s platnou kontrolní
 číslicí (`normalize.is_valid_gtin`), protože server kontroluje jen formát. Penny jde přes
