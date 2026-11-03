@@ -593,7 +593,8 @@ součtu se připočte (`Footer.rounding`), protože u hotovosti dosahuje až ±0
 `ReceiptWorkerService.requeue`). `PROCESSED` účtenka zůstane `PROCESSED`, řádky, na které
 uživatel sáhl, zůstanou (`ReceiptLineMerger`), po retenci obrázků se znovu rozebere uložený
 `raw_text`. Podrobně `docs/ai.md`, „Nové rozpoznání". Testy `ReceiptLineMergerTest`,
-`ReceiptFlowIntegrationTest` (`reprocessing*`, `requeuedFailedReceipt*`), `test_worker.py`
+`ReceiptFlowIntegrationTest` (`reprocessing*`, `requeuedFailedReceipt*`,
+`workerResultDoesNotOverwriteHeaderSavedByOwnerMeanwhile`), `test_worker.py`
 (`ReprocessTest`). Vlastník sám nové rozpoznání spustit nemůže (web ani mobil tlačítko nemají).
 
 **Co zbývá:**

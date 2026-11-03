@@ -84,7 +84,7 @@ public class ReceiptWorkerService {
     OffsetDateTime leaseUntil = now.plusMinutes(receiptProperties.getLeaseMinutes()).truncatedTo(ChronoUnit.MILLIS);
     List<WorkerReceiptJob> result = new ArrayList<>();
     for (ReceiptJob job : jobRepository.lockAvailable(now, limit)) {
-      Optional<Receipt> receipt = receiptRepository.findById(job.getReceiptId());
+      Optional<Receipt> receipt = receiptRepository.findForUpdateById(job.getReceiptId());
       boolean imagesGone = receipt.isEmpty() || receipt.get().getImagesDeletedAt() != null;
       if (imagesGone && (receipt.isEmpty() || job.getRawText() == null)) {
         // Obrázky zmizely (retence) a uložený text k novému rozboru není — není co číst.
@@ -147,7 +147,7 @@ public class ReceiptWorkerService {
     List<RequeueResult.Skipped> skipped = new ArrayList<>();
     for (Long receiptId : ids.stream().distinct().limit(MAX_REQUEUE).toList()) {
       Optional<ReceiptJob> job = jobRepository.findForUpdateByReceiptId(receiptId);
-      Optional<Receipt> receipt = receiptRepository.findById(receiptId);
+      Optional<Receipt> receipt = receiptRepository.findForUpdateById(receiptId);
       if (job.isEmpty() || receipt.isEmpty()) {
         skipped.add(new RequeueResult.Skipped(receiptId, "not found"));
         continue;
@@ -182,7 +182,10 @@ public class ReceiptWorkerService {
   public void submitResult(Long receiptId, WorkerReceiptResult result) {
     ReceiptJob job = jobRepository.findForUpdateByReceiptId(receiptId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_NOT_FOUND));
-    Receipt receipt = receiptRepository.findById(receiptId)
+    // Zámek účtenky: souběžná úprava hlavičky vlastníkem (ReceiptReviewService.updateHeader) se
+    // nesmí ztratit pod zápisem z dřív načteného snapshotu — rozhodnutí „doplnit jen, když chybí"
+    // níž tak platí nad čerstvým stavem. Pořadí zámků: úloha → účtenka → řádky.
+    Receipt receipt = receiptRepository.findForUpdateById(receiptId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_NOT_FOUND));
     if (result == null || result.status() == null || !result.status().isFinished()
         || result.status() == ReceiptProcessingStatus.FAILED) {
@@ -360,7 +363,7 @@ public class ReceiptWorkerService {
     }
     job.setLeaseUntil(null);
     job.setLastError(truncate(error, 500));
-    Receipt receipt = receiptRepository.findById(receiptId).orElse(null);
+    Receipt receipt = receiptRepository.findForUpdateById(receiptId).orElse(null);
     if (job.getAttempts() >= receiptProperties.getMaxAttempts()) {
       job.setProcessedAt(OffsetDateTime.now());
       if (receipt != null) {

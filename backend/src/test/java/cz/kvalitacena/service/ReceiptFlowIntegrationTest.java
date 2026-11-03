@@ -101,6 +101,7 @@ class ReceiptFlowIntegrationTest {
   @Autowired private ProductRepository productRepository;
   @Autowired private CategoryRepository categoryRepository;
   @Autowired private JdbcTemplate jdbcTemplate;
+  @Autowired private org.springframework.transaction.PlatformTransactionManager transactionManager;
   @Autowired private cz.kvalitacena.db.repo.OffProductRepository offProductRepository;
   @Autowired private NewProductDefaultsService productDefaultsService;
   @Autowired private cz.kvalitacena.controller.worker.WorkerReceiptController workerController;
@@ -552,6 +553,45 @@ class ReceiptFlowIntegrationTest {
     assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM ai.receipt_line_hint WHERE line_id = ?",
         Long.class, lineId)).isZero();
     assertThat(lineUpdatedAt(lineId)).isEqualTo(lineUpdatedAt);
+  }
+
+  @Test
+  void workerResultDoesNotOverwriteHeaderSavedByOwnerMeanwhile() throws Exception {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR)));
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getStoreId()).isNull();
+    assertThat(workerService.requeue(List.of(receiptId), null).requeued()).containsExactly(receiptId);
+    assertThat(workerService.lease(10)).anySatisfy(j -> assertThat(j.receiptId()).isEqualTo(receiptId));
+    OffsetDateTime ownersTime = OffsetDateTime.now().minusDays(1).truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+
+    // Vlastník opravuje obchod a datum ve chvíli, kdy worker odevzdává nové rozpoznání.
+    var worker = new org.springframework.transaction.support.TransactionTemplate(transactionManager).execute(tx -> {
+      reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), ownersTime);
+      var submit = java.util.concurrent.CompletableFuture.runAsync(() -> workerService.submitResult(receiptId,
+          new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED, "test-model-2", "raw2", null,
+              f.store().getName(), "Nová 2, Brno", null, null, null, "EUR", List.of(
+                  line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR),
+                  line("NOVA POLOZKA", "1", QuantityUnit.PCS, "4.00", "4.00", null, PriceKind.REGULAR)))));
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      // Worker čeká na zámek účtenky, dokud úprava vlastníka nedoběhne.
+      assertThat(submit.isDone()).isFalse();
+      return submit;
+    });
+    worker.get(30, java.util.concurrent.TimeUnit.SECONDS);
+
+    Receipt receipt = receiptRepository.findById(receiptId).orElseThrow();
+    assertThat(receipt.getStoreId()).isEqualTo(f.store().getId());
+    assertThat(receipt.getPurchasedAt()).isAtSameInstantAs(ownersTime);
+    assertThat(receipt.getCurrency()).isEqualTo("CZK");
+    // Zápis workeru po úpravě vlastníka platí taky — nová syrová hlavička i řádky.
+    assertThat(receipt.getStoreAddressRaw()).isEqualTo("Nová 2, Brno");
+    assertThat(lines(receiptId)).extracting(ReceiptLine::getLabelRaw).containsExactly("ROHLIK", "NOVA POLOZKA");
   }
 
   @Test

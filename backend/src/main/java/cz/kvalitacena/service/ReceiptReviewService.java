@@ -89,7 +89,7 @@ public class ReceiptReviewService {
   @Transactional
   public Receipt updateHeader(UUID ownerPublicUid, Long receiptId, Long storeId, OffsetDateTime purchasedAt) {
     AppUser owner = requireUser(ownerPublicUid);
-    Receipt receipt = ownedReceipt(receiptId, owner);
+    Receipt receipt = ownedReceiptForUpdate(receiptId, owner);
     if (purchasedAt != null) {
       if (purchasedAt.isAfter(OffsetDateTime.now().plusHours(1))) {
         throw new ValidationException(ErrorCode.RECEIPT_PURCHASE_TIME_IN_FUTURE);
@@ -208,7 +208,7 @@ public class ReceiptReviewService {
       }
     }
     Receipt result = new TransactionTemplate(transactionManager).execute(status -> {
-      Receipt fresh = receiptRepository.findById(receiptId).orElseThrow();
+      Receipt fresh = receiptRepository.findForUpdateById(receiptId).orElseThrow();
       updateReviewStatus(fresh);
       return fresh;
     });
@@ -423,7 +423,8 @@ public class ReceiptReviewService {
   private ReceiptLine editableLine(Long lineId, AppUser owner) {
     ReceiptLine line = lineRepository.findById(lineId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_LINE_NOT_FOUND));
-    ownedReceipt(line.getReceiptId(), owner);
+    // Se zámkem: úprava řádku pak zapisuje stav revize účtenky (touchReview/updateReviewStatus).
+    ownedReceiptForUpdate(line.getReceiptId(), owner);
     if (line.isConfirmed()) {
       // Cena už je zapsaná — přepárování by ji nechalo viset u jiného zboží než řádek.
       throw new ValidationException(ErrorCode.RECEIPT_LINE_ALREADY_CONFIRMED);
@@ -433,6 +434,15 @@ public class ReceiptReviewService {
 
   private Receipt ownedReceipt(Long receiptId, AppUser owner) {
     return receiptRepository.findByIdAndOwnerUserId(receiptId, owner.getId())
+        .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_NOT_FOUND));
+  }
+
+  /**
+   * Účtenka vlastníka se zámkem — úprava se řadí za souběžný zápis workeru (nové rozpoznání),
+   * ať jeden nepřepíše druhému hlavičku (ReceiptRepository.findForUpdateById).
+   */
+  private Receipt ownedReceiptForUpdate(Long receiptId, AppUser owner) {
+    return receiptRepository.findForUpdateByIdAndOwnerUserId(receiptId, owner.getId())
         .orElseThrow(() -> new NotFoundException(ErrorCode.RECEIPT_NOT_FOUND));
   }
 

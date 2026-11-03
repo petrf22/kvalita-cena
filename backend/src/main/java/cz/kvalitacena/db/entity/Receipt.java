@@ -12,8 +12,13 @@ import java.util.UUID;
  * Naskenovaná účtenka — soukromý přehled nákupu vlastníka (docs/soukromi.md, „Účtenky"), nikdy
  * veřejná. Hlavička z workeru je syrový text; {@code storeId} je obchod, který potvrdil
  * uživatel, {@code suggestedStoreId} jen návrh serveru.
+ *
+ * <p>{@code @DynamicUpdate}: účtenku zapisuje worker, vlastník i retenční job — každý jen svoje
+ * sloupce, aby zápis z dřív načtené entity nepřepsal cizí změnu (pojistka k zámku
+ * {@code ReceiptRepository.findForUpdateById}).
  */
 @Entity
+@org.hibernate.annotations.DynamicUpdate
 @Table(name = "receipt", schema = "core")
 @Getter
 @Setter
