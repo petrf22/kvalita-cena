@@ -304,6 +304,31 @@ class SegmentsTest(unittest.TestCase):
         merged = parse.merge_segments(["A\nROHLIK 3,90 A", "ROHLIK 4,90 A\nB"])
         self.assertEqual(merged, ["A", "ROHLIK 3,90 A", "ROHLIK 4,90 A", "B"])
 
+    def test_horni_okraj_dilu_useknul_castku(self):
+        # Druhý díl začíná řádkem, kterému okraj snímku usekl částku slevy (Billa).
+        first = "BILLA\n251 01 Vzorov\nSIRUP B 94,90\nSLEVA -35,00\nKOLONÁDA B 104,90\nLAZ. OP. B 104,90"
+        second = "SLEVA\nKOLONADA B 104,90\nLAZ. OP. B 104,90\nPIZZA B 19,90\nCelkem 289,60\n30.08.2026 11:10"
+        document = parse.build_document([first, second])
+        self.assertTrue(document["totalMatches"], document["warnings"])
+        self.assertEqual(document["warnings"], [])
+        self.assertEqual([line["rawLabel"] for line in document["lines"]],
+                         ["SIRUP", "SLEVA", "KOLONÁDA", "LAZ. OP.", "PIZZA"])
+
+    def test_spodni_okraj_dilu_useknul_castku(self):
+        merged = parse.merge_segments(["A\nROHLIK 3,90 A\nMLEKO 24,90 A\nSLEVA",
+                                       "ROHLIK 3,90 A\nMLEKO 24,90 A\nSLEVA -5,00\nB"])
+        self.assertEqual(merged, ["A", "ROHLIK 3,90 A", "MLEKO 24,90 A", "SLEVA -5,00", "B"])
+
+    def test_useknuty_radek_s_jinou_castkou_neni_prekryv(self):
+        merged = parse.merge_segments(["A\nSLEVA -35,00\nROHLIK 3,90 A\nMLEKO 24,90 A",
+                                       "SLEVA -20,00\nROHLIK 3,90 A\nMLEKO 24,90 A\nB"])
+        self.assertEqual(len(merged), 8)
+
+    def test_useknuty_radek_s_jedinou_shodou_neni_prekryv(self):
+        # Jeden shodný řádek je na spárování useknutého okraje málo — mohla by to být náhoda.
+        merged = parse.merge_segments(["A\nSLEVA -35,00\nROHLIK 3,90 A", "SLEVA\nROHLIK 3,90 A\nB"])
+        self.assertEqual(merged, ["A", "SLEVA -35,00", "ROHLIK 3,90 A", "SLEVA", "ROHLIK 3,90 A", "B"])
+
 
 class StatusTest(unittest.TestCase):
     def test_obrazek_bez_castek_neni_uctenka(self):
