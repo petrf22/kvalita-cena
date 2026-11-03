@@ -201,7 +201,9 @@ strukturu ani syrový tisk a hlídá ji deterministická kontrola (`ai_pretty.ac
 ## Soukromí
 
 Z patičky účtenky parser vezme jen datum, čas a celkovou částku. Číslo karty, autorizační
-kód, čísla pokladny ani věrnostní údaje se na server nevrátí. Hlídají to testy.
+kód, čísla pokladny ani věrnostní údaje se na server nevrátí. Hlídají to testy. Jedinou
+výjimkou je adresa prodejny COOP z bloku platebního terminálu (`profiles/coop.py`,
+`docs/soukromi.md`, „Účtenky“).
 
 Obrázky na serveru navíc uživatel před odesláním maskuje na zařízení.
 
@@ -232,6 +234,11 @@ python3 tools/uctenky/replay.py uctenky/123/*.ocr.txt          # jen rozbor, bez
 python3 tools/uctenky/replay.py --profile albert uctenky/123/*.ocr.txt
 python3 tools/uctenky/replay.py --json uctenky/123/*.ocr.txt   # celý dokument
 ```
+
+Díly se předávají v pořadí shora dolů. Obrázky stažené z webu nebo archivu mají jako
+název UUID a glob je seřadí abecedně, tedy náhodně vzhledem k pořadí na účtence. Pak je
+vyjmenuj ručně nebo je přejmenuj na `00.jpg`, `01.jpg`… Se špatným pořadím vyjde jiný
+rozbor než ve workeru.
 
 Vypíše řádky po spojení dílů (s vyznačeným řádkem celkové částky), rozebrané položky,
 kontrolní součet a varování ve stejném tvaru jako worker. Rozbor dělá tentýž kód, takže
@@ -271,7 +278,10 @@ anonymizovaná fixture v `testdata/` a test. Dlouhou účtenku dej do fixture po
 Čtvrtá funkce `parse_items` je volitelná. Patří jen účtenkám, jejichž položky společné
 skládání neumí. Příklad je [`profiles/tamda.py`](profiles/tamda.py): číslované položky
 s EAN na druhém řádku a překryvy dílů, které `merge_segments` nepozná. Duplicity se tam
-poznají podle pořadového čísla.
+poznají podle pořadového čísla. Druhý příklad je [`profiles/coop.py`](profiles/coop.py).
+COOP tiskne množství POD název, kdežto společné skládání (Penny) ho čeká NAD názvem.
+Bez vlastního rozboru by se množství přilepilo k sousední položce a kontrolní součet by
+to nepoznal.
 
 **EAN z účtenky** jde na server jako `internalCode` a server podle něj spáruje zboží
 (`ReceiptMatchingService.byCode`). Server kontroluje jen formát, proto worker posílá jen

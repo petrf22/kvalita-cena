@@ -24,7 +24,10 @@ class ReceiptHeader:
 
 @dataclass(frozen=True)
 class Footer:
-    """Jediné, co se z patičky bere. Zbytek se zahazuje — viz docs/soukromi.md."""
+    """Jediné, co se z patičky bere. Zbytek se zahazuje — viz docs/soukromi.md.
+
+    Výjimka: adresu prodejny z bloku terminálu čte profil coop v read_header, ne tady.
+    """
 
     purchased_at: datetime | None = None
     printed_total: Decimal | None = None

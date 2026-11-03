@@ -378,6 +378,99 @@ Celkem: 79,90
         self.assertIn("kontrolní číslicí", line["note"])
 
 
+COOP_RECEIPT = """COOP Vzorov družstvo,
+Náměstí 1
+100 00 Vzorov
+IČO: 12345678 DIČ: CZ12345678
+PJ:007 Prodejna 7 Lhota TIP
+Daňový doklad č. F007P1P00000001 (kopie)
+07.09.2026 10:15:20
+pokladna 1
+%D Zboží Množství Kč/MJ Cena Kč
+12 Dušená šunka výběrová 57,08
+váhový kód: 2801234003020
+0,302 kg x 189,00 Kč/kg
+12 MONTE KELÍMEK 150g 19,90
+21 Red bull summer 250ml 36,90
+12 **Rohlík Hořovický 43g 19,20
+6 ks x 3,20 Kč/ks
+12 MILENA TYČINKA 32G 19,80
+2 KS x 9,90 Kč/KS
+Celkem: 152,88
+Zaokrouhlení: 0,00
+Platební karta 152,88
+07/09/26 10:15 Účtenka číslo 00001
+COOP Vzorov,družstvo
+Coop Lhota 007
+Lhotská 12
+111 11 Lhota u Vzorova
+IČO: 12345678
+Terminál: COOP0001 (M1COOP0001-00000000)
+**** **** **** 1234 / 00 (L) VISA
+"""
+
+
+class CoopProfileTest(unittest.TestCase):
+    """Sazba DPH před názvem, množství a váhový kód POD názvem, adresa prodejny v bloku terminálu."""
+
+    def setUp(self):
+        self.document = parse.build_document(COOP_RECEIPT)
+        self.lines = self.document["lines"]
+
+    def test_hlavicka_nepropadne_do_polozek(self):
+        self.assertEqual(self.document["profile"], "coop")
+        self.assertEqual(self.document["warnings"], [])
+        self.assertTrue(self.document["totalMatches"])
+        self.assertEqual([line["kind"] for line in self.lines], ["ITEM"] * 5)
+        self.assertEqual(self.document["purchasedAt"], "2026-09-07T10:15:00+02:00")
+
+    def test_mnozstvi_patri_k_polozce_nad_nim(self):
+        sunka, kelimek, _, rohlik, milena = self.lines
+        self.assertEqual((sunka["quantity"], sunka["quantityBasis"], sunka["unitPrice"]), ("0.302", "PER_KG", "189.00"))
+        self.assertEqual((kelimek["quantity"], kelimek["quantityBasis"], kelimek["unitPrice"]), ("1", "PACKAGE", "19.90"))
+        self.assertEqual((rohlik["quantity"], rohlik["unitPrice"]), ("6", "3.20"))
+        self.assertEqual((milena["quantity"], milena["unitPrice"]), ("2", "9.90"))
+
+    def test_sazba_dph_neni_v_nazvu(self):
+        self.assertEqual(self.lines[0]["rawLabel"], "Dušená šunka výběrová")
+        self.assertEqual(self.lines[2]["vatCode"], "21")
+
+    def test_vahovy_kod_se_neposila(self):
+        self.assertNotIn("code", self.lines[0])
+        self.assertNotIn("note", self.lines[0])
+        payload = result_mod.to_payload(self.document, None, "test")
+        self.assertIsNone(payload["lines"][0]["internalCode"])
+
+    def test_vahovy_kod_s_jinou_hmotnosti_se_poznamena(self):
+        document = parse.build_document(COOP_RECEIPT.replace("2801234003020", "2801234004020"))
+        self.assertIn("0.402 kg nesedí s 0.302 kg", document["lines"][0]["note"])
+
+    def test_mnozstvi_ktere_nesedi_s_cenou_se_neprilepi(self):
+        document = parse.build_document(COOP_RECEIPT.replace("6 ks x 3,20", "6 ks x 3,30"))
+        rohlik = document["lines"][3]
+        self.assertEqual((rohlik["quantity"], rohlik["quantityBasis"], rohlik["unitPrice"]), ("1", "PACKAGE", "19.20"))
+        self.assertTrue(any("nesedí s cenou řádku" in warning for warning in document["warnings"]))
+
+    def test_adresa_prodejny_z_bloku_terminalu(self):
+        merchant = self.document["merchant"]
+        self.assertEqual(merchant["rawName"], "COOP Vzorov družstvo – Prodejna 7 Lhota")
+        self.assertEqual(merchant["chainSlug"], "coop-tip")
+        self.assertEqual((merchant["street"], merchant["postalCode"], merchant["city"], merchant["ico"]),
+                         ("Lhotská 12", "111 11", "Lhota u Vzorova", "12345678"))
+
+    def test_bez_bloku_terminalu_se_adresa_sidla_neposle(self):
+        cash = COOP_RECEIPT.split("Platební karta")[0] + "Hotově 160,00\n"
+        merchant = parse.build_document(cash)["merchant"]
+        self.assertEqual(merchant["ico"], "12345678")
+        for key in ("street", "postalCode", "city"):
+            self.assertNotIn(key, merchant)
+
+    def test_syrovy_text_konci_celkovou_castkou(self):
+        text = parse.server_text(COOP_RECEIPT)
+        self.assertTrue(text.endswith("Celkem: 152,88"))
+        self.assertNotIn("Lhotská", text)
+
+
 class ReplayTest(unittest.TestCase):
     """Offline přehrání (replay.py) — stejný rozbor jako worker, jen nad lokálními soubory."""
 
