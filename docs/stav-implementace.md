@@ -528,7 +528,7 @@ COOP ověřen 2026-11-03 na reálné účtence (COOP Hořovice, formát TIP, 2 d
 stojí před názvem a jde do `vatCode`, množství a `váhový kód:` stojí pod názvem. Váhový kód
 se neposílá: není to globální GTIN a mění se s hmotností. Adresa prodejny se bere z bloku
 terminálu, protože hlavička nese sídlo družstva (`docs/soukromi.md`, „Účtenky"). Řádek `PJ:`
-dá formát prodejny, a tím `chainSlug` (`coop-tip`…). Tamda
+dá formát prodejny, a tím `chainSlug` (`coop-tip`…). Profil pozná i „C00P" s nulami, jak ho OCR občas přečte (ověřeno 2026-11-03 na `glm-ocr`); název obchodu pak dostane zpět „COOP". Tamda
 ověřena 2026-11-01 na reálné účtence se 66 položkami v 5 dílech, součet sedí na haléř. Tiskne
 EAN u každé položky, worker ho posílá jako `internalCode`, ale jen s platnou kontrolní
 číslicí (`normalize.is_valid_gtin`), protože server kontroluje jen formát. Penny jde přes

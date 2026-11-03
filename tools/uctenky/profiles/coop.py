@@ -55,8 +55,11 @@ FORMAT_TO_CHAIN = {
     "JEDNOTA": "coop-jednota",
 }
 
-_COOP_RE = re.compile(r"\bcoop\b", re.IGNORECASE)
-_COOP_COMPANY_RE = re.compile(r"^coop\b.*dru[žz]stvo", re.IGNORECASE)
+# OCR čte „COOP" i jako „C00P" (nuly místo O, ověřeno na glm-ocr 2026-11-03) — bez toho by
+# účtenka šla obecným profilem. Do názvu obchodu se pak vrací „COOP" (_fix_coop).
+_COOP_WORD = r"c[o0]{2}p"
+_COOP_RE = re.compile(rf"\b{_COOP_WORD}\b", re.IGNORECASE)
+_COOP_COMPANY_RE = re.compile(rf"^{_COOP_WORD}\b.*dru[žz]stvo", re.IGNORECASE)
 # „SD Zboží Množství Kč/MJ Cena Kč" — OCR čte první sloupec jako „%D", „5D"…
 _COLUMN_HEADER_RE = re.compile(r"^\S{1,2}\s+zbo[žz][ií]\s+mno[žz]stv[ií]", re.IGNORECASE)
 _STORE_RE = re.compile(r"^PJ\s*:\s*\d+\s+(?P<store>.+?)(?:\s+(?P<format>[A-Z]{3,}))?\s*$")
@@ -68,6 +71,11 @@ _BLOCK_END_RE = re.compile(r"^(?:I[ČC]O?|DI[ČC]|termin[aá]l)\b", re.IGNORECAS
 _VAT = r"0|10|12|15|21"
 ITEM_HEAD_RE = re.compile(rf"^(?:(?P<vat>{_VAT})\s+)?(?P<name>.+?)\s+(?P<total>{AMOUNT})\s*$")
 WEIGHT_CODE_RE = re.compile(r"^v[aá]hov[ýy]\s*k[oó]d\s*:?\s*(?P<code>\d{8,14})\s*$", re.IGNORECASE)
+
+
+def _fix_coop(text: str) -> str:
+    """„C00P Vzorov" → „COOP Vzorov", „C00p Lhota" → „Coop Lhota" — nuly jen uvnitř slova COOP."""
+    return _COOP_RE.sub(lambda m: m.group().replace("0", "O" if m.group()[-1].isupper() else "o"), text)
 
 
 def matches(raw_lines: list[str]) -> bool:
@@ -108,7 +116,7 @@ def _store_block(footer: list[str]) -> tuple[str | None, str | None, str | None,
             if postal is None:
                 continue
             # block[0] je název prodejny („Coop Hrádek 034"), ulice je řádek těsně nad PSČ.
-            store = block[0] if position > 0 else None
+            store = _fix_coop(block[0]) if position > 0 else None
             street = block[position - 1] if position > 1 else None
             return store, street, postal["postal"], postal["city"].strip()
     return None, None, None, None
@@ -116,7 +124,7 @@ def _store_block(footer: list[str]) -> tuple[str | None, str | None, str | None,
 
 def read_header(raw_lines: list[str]) -> ReceiptHeader:
     header = raw_lines[: _items_start(raw_lines)]
-    company = header[0].strip(" ,") if header else None
+    company = _fix_coop(header[0].strip(" ,")) if header else None
     store_label, chain_slug = None, None
     for line in header:
         store = _STORE_RE.match(line)
