@@ -131,6 +131,62 @@ Platební karta **** 1234
         self.assertNotIn("1234", text)
 
 
+class InfoLineTest(unittest.TestCase):
+    """Tištěné poznámky bez údaje o zboží nejsou položky ani varování."""
+
+    BILLA = """OBCHOD VZOR
+Hlavní 12
+123 45 Vzorov
+IČ: 12345678
+SIRUP CERNY BEZ B 94,90
+SLEVA -35,00
+(SIRUP CERNY BEZ 59,90)
+SIRUP CERNY BEZ B 94,90
+SLEVA -35,00
+(SIRUP CERNY BEZ 59,90)
+KOLONÁDA B 104,90
+Celkem Kč 224,70
+30.09.2026 07:42:11
+"""
+
+    ALBERT = """albert
+Hlavní 12
+123 45 Vzorov
+WHISKY 0,7L
+2 x 499,00 Kč 998,00 B
+Věkový limit
+Celkem 998,00
+30/09/26 07:42 Účtenka číslo 00001
+"""
+
+    def _kinds(self, document: dict) -> list[str]:
+        return [line["kind"] for line in document["lines"]]
+
+    def test_cena_po_sleve_v_zavorce_neni_polozka(self):
+        document = parse.build_document(self.BILLA)
+        self.assertTrue(document["totalMatches"], document["warnings"])
+        self.assertEqual(document["warnings"], [])
+        self.assertNotIn(lines_mod.UNKNOWN, self._kinds(document))
+        payload = result_mod.to_payload(document, self.BILLA, "glm-ocr")
+        self.assertEqual([line["discountAmount"] for line in payload["lines"]], ["35.00", "35.00", None])
+
+    def test_nesedici_cena_po_sleve_se_hlasi(self):
+        document = parse.build_document(self.BILLA.replace("(SIRUP CERNY BEZ 59,90)", "(SIRUP CERNY BEZ 50,00)", 1))
+        self.assertEqual(document["warnings"], ["cena po slevě '(SIRUP CERNY BEZ 50,00)' nesedí s položkou nad ní"])
+
+    def test_vekovy_limit_neni_polozka(self):
+        document = parse.build_document(self.ALBERT)
+        self.assertEqual(document["profile"], "albert")
+        self.assertTrue(document["totalMatches"], document["warnings"])
+        self.assertEqual(document["warnings"], [])
+        self.assertEqual(self._kinds(document), [lines_mod.ITEM])
+
+    def test_vekovy_limit_neschova_nazev_bez_ceny(self):
+        document = parse.build_document(self.ALBERT.replace("2 x 499,00 Kč 998,00 B\n", ""))
+        self.assertEqual(self._kinds(document), [lines_mod.UNKNOWN])
+        self.assertEqual(document["warnings"][0], "nerozpoznaný tvar řádku: 'WHISKY 0,7L'")
+
+
 class WeightUnitTest(unittest.TestCase):
     """Základ PER_KG/PER_L znamená cenu za kg/l — g a ml se převádí v množství i v ceně."""
 

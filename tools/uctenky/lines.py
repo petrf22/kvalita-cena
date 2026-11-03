@@ -6,6 +6,10 @@ co je jednotková cena.
 
 POZOR na nejpravděpodobnější tichou chybu celé funkce (docs/rozvoj.md): u váhového
 zboží je jednotková cena 289,00 Kč/kg, NIKDY zaplacených 87,30 Kč za 0,302 kg.
+
+Tištěné poznámky bez údaje o zboží (cena po slevě v závorce, „Věkový limit") se přeskakují
+záměrně a JEN podle pevného výčtu tvarů — každý jiný řádek bez ceny se dál hlásí jako
+nerozpoznaný, aby se položka nemohla ztratit potichu.
 """
 
 from __future__ import annotations
@@ -60,6 +64,14 @@ PRE_QTY_RE = re.compile(
     rf"(?:Kč|Kc|CZK)?\s*/\s*(?P<peruom>ks|kg|g|l|ml)\s*$",
     re.IGNORECASE,
 )
+
+# (YO SIRUP CERNY BEZ 59,90)   — cena po slevě, kterou Billa tiskne pod řádek „SLEVA -35,00".
+# Není to položka; částka se jen porovná s položkou a slevou nad ní.
+AFTER_DISCOUNT_RE = re.compile(rf"^\((?P<name>.*?)\s*(?P<total>{AMOUNT})\)$")
+
+# Poznámky pokladny bez údaje o zboží. Věkový limit tiskne Albert pod alkoholem; OCR občas
+# ztratí diakritiku.
+_INFO_LINE_RE = re.compile(r"^v[eě]kov[yý]\s+limit$", re.IGNORECASE)
 
 # Osamocené velké písmeno na konci řádku s názvem (E, P) je značka váhového zboží,
 # ne součást názvu — na účtence stojí v cenovém sloupci.
@@ -126,10 +138,17 @@ def parse_item_lines(raw_lines: list[str]) -> ParseResult:
     # (množství, základ, jednotková cena, poznámka) z řádku NAD názvem
     pending_qty: tuple[Decimal, str, Decimal, str | None] | None = None
     last_item_no: int | None = None
+    # Zaplaceno za poslední položku po odečtení jejích slev — pro kontrolu ceny po slevě.
+    last_item_net: Decimal | None = None
 
     def append(line: ParsedLine) -> ParsedLine:
+        nonlocal last_item_net
         line.line_no = len(result.lines) + 1
         result.lines.append(line)
+        if line.kind == ITEM:
+            last_item_net = line.line_total
+        elif line.kind == DISCOUNT and line.applies_to_line_no is not None and last_item_net is not None:
+            last_item_net += line.line_total
         return line
 
     def flush_pending() -> None:
@@ -151,6 +170,17 @@ def parse_item_lines(raw_lines: list[str]) -> ParseResult:
         return name
 
     for raw in raw_lines:
+        if _INFO_LINE_RE.match(raw):
+            # Rozpracovaný název nad poznámkou zůstává čekat na svou cenu.
+            continue
+
+        after_discount = AFTER_DISCOUNT_RE.match(raw)
+        if after_discount:
+            # Celkový součet nepozná slevu připojenou ke špatné položce — tahle kontrola ano.
+            if last_item_net is None or parse_amount(after_discount["total"]) != last_item_net:
+                result.warnings.append(f"cena po slevě {raw!r} nesedí s položkou nad ní")
+            continue
+
         pre_qty = PRE_QTY_RE.match(raw)
         if pre_qty:
             qty = parse_amount_or_number(pre_qty["qty"])
