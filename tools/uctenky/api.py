@@ -62,6 +62,14 @@ class WorkerApi(_Client):
         body = {"error": error[:500], "leaseUntil": lease_until}
         self._request("POST", f"/api/worker/receipts/{receipt_id}/fail", body)
 
+    def requeue(self, receipt_ids: list[int], processed_since: str | None = None) -> dict:
+        """Vrátí zpracované účtenky k novému rozpoznání (README.md, „Nové rozpoznání").
+
+        Vrací {requeued: [id], skipped: [{receiptId, reason}]}. processed_since je ISO okamžik.
+        """
+        body = {"receiptIds": receipt_ids, "processedSince": processed_since}
+        return self._request("POST", "/api/worker/receipts/requeue", body) or {}
+
     def categories(self) -> list[dict]:
         """Kategorie appky pro návrh modelem ([{slug, path}], ai_classify.py)."""
         return self._request("GET", "/api/worker/receipts/categories") or []

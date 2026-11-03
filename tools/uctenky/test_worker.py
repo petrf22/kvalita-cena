@@ -15,6 +15,7 @@ import sys
 import tempfile
 import urllib.error
 import unittest
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -296,6 +297,36 @@ class WorkerLoopTest(unittest.TestCase):
         self.assertEqual(api.results[2]["status"], "PROCESSED")
         self.assertTrue(all(isinstance(v, (str, type(None))) for line in api.results[2]["lines"]
                             for v in (line["unitPrice"], line["quantity"])))
+
+
+class ReprocessTest(unittest.TestCase):
+    """Nové rozpoznání (README.md, „Nové rozpoznání")."""
+
+    def test_bez_obrazku_se_znovu_rozebere_ulozeny_text_bez_ocr(self):
+        class NoOcr:
+            model = "nesmí se volat"
+
+            def ocr(self, image):
+                raise AssertionError("OCR v textovém režimu")
+
+        raw_text = parse.server_text(_text("albert-plny"))
+        api = FakeApi([{"receiptId": 7, "imagePaths": [], "rawText": raw_text}])
+        worker.run_batch(api, NoOcr(), 5, log=lambda *_: None)
+        self.assertEqual(api.results[7]["status"], "PROCESSED")
+        self.assertIsNone(api.results[7]["model"])
+        self.assertTrue(api.results[7]["lines"])
+
+    def test_requeue_vypise_vracene_i_preskocene(self):
+        class RequeueApi:
+            def requeue(self, receipt_ids, processed_since=None):
+                self.args = (receipt_ids, processed_since)
+                return {"requeued": [1], "skipped": [{"receiptId": 2, "reason": "already queued"}]}
+
+        api, logged = RequeueApi(), []
+        self.assertEqual(worker.requeue(api, [1, 2], date(2026, 10, 1), log=logged.append), 1)
+        self.assertEqual(api.args[0], [1, 2])
+        self.assertTrue(api.args[1].startswith("2026-10-01T00:00:00"))
+        self.assertIn("already queued", logged[-1])
 
 
 def _parts(prefix: str) -> list[str]:

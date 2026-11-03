@@ -1,0 +1,15 @@
+# 03-receipt-job-requeue.yaml — kdy provozovatel vrátil už zpracovanou účtenku do fronty
+# k novému rozpoznání (docs/ai.md, „Účtenky", „Nové rozpoznání").
+#
+# Jen audit: režim (přepracování PROCESSED účtenky vs. zpracování od nuly) se odvozuje ze
+# stavu účtenky, ne z tohoto sloupce. Po dokončení úlohy hodnota zůstává — poslední requeue.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-03-03-receipt-job-requeue
+      author: Petr F.
+      changes:
+        - sql:
+            sql: ALTER TABLE ai.receipt_job ADD COLUMN requeued_at TIMESTAMPTZ;
+      rollback:
+        - sql:
+            sql: ALTER TABLE ai.receipt_job DROP COLUMN IF EXISTS requeued_at;

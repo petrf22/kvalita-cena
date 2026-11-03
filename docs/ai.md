@@ -217,6 +217,29 @@ Na testovacích účtenkách zařazoval 7B model znatelně hůř (svíčka → p
 papírové zboží), proto 14B. Ten se do 8 GB VRAM nevejde celý a běží zčásti na CPU (~30 s za
 účtenku), což u dávkové úlohy nevadí. Ani 14B se nestrefí vždy, a proto jde jen o návrh.
 
+**Nové rozpoznání** (od 2026-11-03). Po opravě OCR nebo normalizace ve workeru vrátí
+provozovatel už zpracované účtenky do fronty: `worker.py --requeue ID…` nebo
+`--requeue-since DATUM` → `POST /api/worker/receipts/requeue` (token `RECEIPT_WORKER`,
+nejvýš 500 účtenek najednou, `ReceiptWorkerService.requeue`). Vlastník nic nedělá a o nic
+nepřijde:
+
+- **`PROCESSED` účtenka zůstává `PROCESSED`** se starými řádky, dokud nedorazí nová verze —
+  dál s ní pracuje a potvrzuje. Selhání, `UNREADABLE` nebo `NOT_A_RECEIPT` v tomto režimu nic
+  nemění, jen se zapíše do `ai.receipt_job.last_error`. Účtenka bez řádků (`FAILED`,
+  `UNREADABLE`, `NOT_A_RECEIPT`) se zpracuje od nuly jako nová.
+- **Řádky, na které uživatel sáhl** (`ReceiptLine.isUserTouched`: potvrzená cena, ručně
+  vybrané nebo založené zboží, ignorovaný řádek), stroj nepřepíše. Ostatní nahradí nová verze.
+  Nový řádek, který odpovídá ponechanému, se zahodí (`ReceiptLineMerger`: nejdřív stejné
+  označení a částka, pak jednoznačně stejné částky — oprava OCR mění právě označení);
+  ponechaný z něj převezme jen čitelný název. Nespárovaný ponechaný řádek zůstane na konci.
+- **Hlavička:** obchod a datum nákupu potvrzuje uživatel, proto se jen doplní, když chybí;
+  syrová hlavička a součet se nahradí jen novou neprázdnou hodnotou.
+- **Bez obrázků** (po retenci) dostane worker místo nich uložený `raw_text` a rozebere ho
+  znovu bez OCR. Ten končí řádkem „Celkem", takže co profil čte z patičky (datum nákupu,
+  adresa prodejny COOP z bloku terminálu), opravit nejde a zůstane původní.
+- Nová verze se stejným obsahem řádky nemění. Jinak se účtenka vlastníkovi ukáže jako nová
+  (`seen_at = NULL`) a stav revize se přepočítá.
+
 **Archiv obrázků** pro zlepšování rozpoznávání: `GET /api/worker/receipts/archive-candidates`
 vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DIR` a potvrdí
 `POST /{id}/archived` — teprve pak je denní retenční job smaže ze serveru.

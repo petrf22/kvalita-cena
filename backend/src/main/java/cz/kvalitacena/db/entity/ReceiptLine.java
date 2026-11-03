@@ -115,6 +115,19 @@ public class ReceiptLine implements Persistable<Long> {
     return observationId != null || (status == ReceiptLineStatus.MATCHED && skipReason == null);
   }
 
+  /**
+   * Na řádek sáhl uživatel — potvrdil cenu, vybral nebo založil zboží, nebo ho ignoruje.
+   * Takový řádek stroj nikdy nepřepisuje, ani při novém rozpoznání účtenky (docs/ai.md,
+   * „Nové rozpoznání").
+   */
+  public boolean isUserTouched() {
+    return isConfirmed()
+        || status == ReceiptLineStatus.MATCHED
+        || status == ReceiptLineStatus.IGNORED
+        || matchSource == ReceiptMatchSource.USER
+        || matchSource == ReceiptMatchSource.NEW_PRODUCT;
+  }
+
   @Override
   public boolean isNew() {
     return id == null;

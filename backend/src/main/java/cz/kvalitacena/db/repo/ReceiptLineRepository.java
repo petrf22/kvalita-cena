@@ -1,7 +1,9 @@
 package cz.kvalitacena.db.repo;
 
 import cz.kvalitacena.db.entity.ReceiptLine;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +15,14 @@ import java.util.List;
 public interface ReceiptLineRepository extends JpaRepository<ReceiptLine, Long> {
 
   List<ReceiptLine> findByReceiptIdOrderByLineNoAsc(Long receiptId);
+
+  /**
+   * Řádky účtenky se zámkem — nový výsledek workeru je slučuje se stávajícími a souběžné
+   * potvrzení nesmí zapsat cenu z řádku, který se právě maže (docs/ai.md, „Nové rozpoznání").
+   */
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("SELECT l FROM ReceiptLine l WHERE l.receiptId = :receiptId ORDER BY l.lineNo")
+  List<ReceiptLine> findForUpdateByReceiptId(@Param("receiptId") Long receiptId);
 
   List<ReceiptLine> findByReceiptIdInOrderByLineNoAsc(Collection<Long> receiptIds);
 
