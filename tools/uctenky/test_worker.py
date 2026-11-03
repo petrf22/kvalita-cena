@@ -32,6 +32,7 @@ import pretty  # noqa: E402
 import replay  # noqa: E402
 import result as result_mod  # noqa: E402
 import worker  # noqa: E402
+from profiles import coop as coop_profile  # noqa: E402
 
 TESTDATA = Path(__file__).resolve().parent / "testdata"
 
@@ -495,6 +496,18 @@ class CoopProfileTest(unittest.TestCase):
         self.assertEqual(merchant["ico"], "12345678")
         for key in ("street", "postalCode", "city"):
             self.assertNotIn(key, merchant)
+
+    def test_coop_s_nulami_z_ocr_se_pozna_a_nazev_se_opravi(self):
+        document = parse.build_document(COOP_RECEIPT.replace("COOP Vzorov družstvo,", "C00P Vzorov družstvo,")
+                                        .replace("COOP Vzorov,družstvo\nCoop Lhota", "C00P Vzorov,družstvo\nC00p Lhota"))
+        self.assertEqual(document["profile"], "coop")
+        self.assertEqual(document["merchant"]["rawName"], "COOP Vzorov družstvo – Prodejna 7 Lhota")
+        self.assertEqual(document["merchant"]["street"], "Lhotská 12")
+        self.assertEqual(len(document["lines"]), 5)
+
+    def test_slovo_s_nulami_mimo_coop_se_nemeni(self):
+        self.assertEqual(coop_profile._fix_coop("C00P Lhota, kód C0P 100"), "COOP Lhota, kód C0P 100")
+        self.assertEqual(coop_profile._fix_coop("C00p Lhota"), "Coop Lhota")
 
     def test_syrovy_text_konci_celkovou_castkou(self):
         text = parse.server_text(COOP_RECEIPT)
