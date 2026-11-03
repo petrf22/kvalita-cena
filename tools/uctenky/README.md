@@ -186,6 +186,27 @@ printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1
 
 Token workeru na `/api/curator` nedosáhne a naopak. Stroj s OCR tak katalog měnit nemůže.
 
+## Nové rozpoznání
+
+Po opravě OCR, profilu, pravidel nebo slovníku jde už zpracovanou účtenku přečíst znovu.
+Nejdřív opravu ověř offline (`replay.py` nad archivem nebo uloženým `.ocr.txt`, „Ladění
+účtenky" níž), pak účtenky vrať do fronty:
+
+```bash
+tools/uctenky/run-worker.sh --requeue 123 456              # konkrétní účtenky (ID z logu workeru)
+tools/uctenky/run-worker.sh --requeue-since 2026-10-01     # všechny zpracované od data (max 500)
+```
+
+Worker je vrátí do fronty a hned zpracuje. Vlastník mezitím s účtenkou pracuje dál
+a o nic nepřijde: řádky, které potvrdil, ručně spároval nebo ignoroval, zůstanou. Ostatní
+nahradí nová verze. Když nová verze účtenku nepřečte, platí ta stará. Podrobně
+[`docs/ai.md`](../../docs/ai.md), „Nové rozpoznání".
+
+Dokud má server obrázky (30 dní po zpracování), dělá se nové OCR i rozbor. Potom už jen
+nový rozbor uloženého textu, bez OCR. Ten končí řádkem s celkovou částkou, takže oprava
+čtení patičky se na něm neprojeví: datum nákupu ani adresa prodejny COOP z bloku terminálu
+se tím nezmění.
+
 ## Dvě věci, které vypadají jako detail, a nejsou
 
 **Strukturu nesmí tahat jazykový model.** Ověřili jsme to na reálné účtence Penny: druhý

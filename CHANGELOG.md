@@ -7,6 +7,11 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [Nezveřejněno]
+
+### Přidáno
+- Po zlepšení rozpoznávání jde už zpracovanou účtenku přečíst znovu; potvrzené, ručně spárované i ignorované řádky zůstanou, jak byly (server)
+
 ## [0.13.0] – 2026-11-02
 
 ### Přidáno
