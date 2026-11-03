@@ -79,6 +79,9 @@ Změna se projeví do 60 s.
 3. **Struktura z textu**: [`normalize.py`](normalize.py), [`lines.py`](lines.py)
    a [`profiles/`](profiles/). Vzniká deterministicky, regexy. Každý řetězec má vlastní profil
    (hlavička, patička, vymezení bloku položek); co profil nemá, jde přes obecný profil.
+   Známé tištěné poznámky se přeskakují: cena po slevě v závorce (Billa) se jen porovná
+   s položkou a slevou nad ní, „Věkový limit" (Albert) se zahodí. Každý jiný řádek bez ceny
+   zůstane vidět jako nerozpoznaný a vyvolá varování.
 4. **Kontrolní součet**: součet položek a slev se porovná s vytištěnou částkou „Celkem"
    (`totalMatches`). Když nesedí, výsledek se přesto pošle. Uživatel řádky potvrzuje jednotlivě
    a varování zůstane v `extraction` u úlohy.
