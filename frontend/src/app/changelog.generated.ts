@@ -20,6 +20,15 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.13.1", date: "2026-11-03", sections: [
+      { title: "Přidáno", items: [
+        { text: "Po zlepšení rozpoznávání jde už zpracovanou účtenku přečíst znovu; potvrzené, ručně spárované i ignorované řádky zůstanou, jak byly", parts: ["server"] },
+      ] },
+      { title: "Opraveno", items: [
+        { text: "Účtenky z prodejen COOP se čtou správně — množství patří ke správné položce a pozná se prodejna", parts: ["server"] },
+        { text: "Cena z účtenky se zapíše v měně obchodu, ne vždy v korunách", parts: ["server"] },
+      ] },
+  ] },
   { version: "0.13.0", date: "2026-11-02", sections: [
       { title: "Přidáno", items: [
         { text: "Při skenování účtenky zůstane displej rozsvícený a jde zapnout svítilna, ať na účtenku nepadá stín", parts: ["mobil"] },
