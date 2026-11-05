@@ -1237,6 +1237,28 @@ class ReceiptFlowIntegrationTest {
   }
 
   @Test
+  void othersSuggestedLineDoesNotBlockImmediateMergeAndFollowsTarget() {
+    Fixture f = fixture();
+    AppUser other = persistUser();
+    String label = "SYR GOUDA PLATKY " + f.ico();
+    // Cizí starší účtenka se stejným řádkem — zatím nespárovaná, obchod bez návrhu.
+    Long otherReceipt = uploadAndProcess(other, f, List.of(
+        line(label, "1", QuantityUnit.PCS, "45.90", "45.90", null, PriceKind.REGULAR)));
+    reviewService.updateHeader(other.getPublicUid(), otherReceipt, f.store().getId(), null);
+    AppUser owner = persistUser();
+    Long itemId = publishedItem(owner, f, label);
+    // Naučené označení dalo cizímu řádku návrh na zboží z účtenky — cena z něj nevznikla.
+    ReceiptLine suggested = lines(otherReceipt).getFirst();
+    assertThat(suggested.getStatus()).isEqualTo(ReceiptLineStatus.SUGGESTED);
+    assertThat(suggested.getProductId()).isEqualTo(itemId);
+
+    var result = rematchService.rematch(owner.getPublicUid(), itemId, f.rohlik().getId());
+
+    assertThat(result.merged()).isTrue();
+    assertThat(lineRepository.findById(suggested.getId()).orElseThrow().getProductId()).isEqualTo(f.rohlik().getId());
+  }
+
+  @Test
   void rematchWithOthersPricesMovesOwnDataAndMergesOnlyAfterAgreeingVote() {
     Fixture f = fixture();
     AppUser a = persistUser();

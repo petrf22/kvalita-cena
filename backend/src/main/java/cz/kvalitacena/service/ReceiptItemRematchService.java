@@ -159,8 +159,10 @@ public class ReceiptItemRematchService {
   }
 
   /**
-   * Ceny, řádky účtenek nebo hlas někoho jiného. Cena bez autora (pseudonymizovaná po 180 dnech)
-   * je taky cizí — nikdo už nemůže doložit, že je jeho. Cizí hlas se počítá proto, že kdo
+   * Ceny, potvrzené řádky účtenek nebo hlas někoho jiného. Cizí řádek, který je jen návrh
+   * ({@code SUGGESTED} — naučené označení ho po zveřejnění přepnulo na tohle zboží), se
+   * nepočítá: cena z něj nevznikla a se sloučením se jen přesune na cíl.
+   * Cena bez autora (pseudonymizovaná po 180 dnech) je taky cizí — nikdo už nemůže doložit, že je jeho. Cizí hlas se počítá proto, že kdo
    * hlasoval, už svá data přesunul: bez něj by druhý hlas pro JINÝ cíl našel zboží „bez cizích
    * dat" a sloučil ho sám, i s označením z účtenek, o kterém se ti dva neshodli.
    */
@@ -169,7 +171,7 @@ public class ReceiptItemRematchService {
         SELECT EXISTS (SELECT 1 FROM core.price_observation
                         WHERE product_id = ? AND submitter_id IS DISTINCT FROM ?)
             OR EXISTS (SELECT 1 FROM core.receipt_line l JOIN core.receipt r ON r.id = l.receipt_id
-                        WHERE l.product_id = ? AND r.owner_user_id <> ?)
+                        WHERE l.product_id = ? AND r.owner_user_id <> ? AND l.status = 'MATCHED')
             OR EXISTS (SELECT 1 FROM core.product_merge_vote
                         WHERE source_product_id = ? AND user_id IS DISTINCT FROM ?)
         """, Boolean.class, sourceId, userId, sourceId, userId, sourceId, userId);

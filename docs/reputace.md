@@ -509,8 +509,10 @@ zboží nejsou a nezveřejňují se (`app.receipt.non-product-pattern`, `RECEIPT
 `ReceiptItemRematchService`):
 
 - Vlastní ceny a vlastní řádky účtenek uživatele se přesunou na vybrané zboží **hned** — nikomu
-  jinému tím nic nemění. Když na zboží z účtenky nejsou data ani hlas nikoho jiného, sloučí se
-  celé hned (`ProductMergeService.mergeReceiptItem`).
+  jinému tím nic nemění. Když na zboží z účtenky nejsou ceny, potvrzené řádky ani hlas nikoho
+  jiného, sloučí se celé hned (`ProductMergeService.mergeReceiptItem`). Cizí řádek, který je
+  jen návrh (naučené označení ho po zveřejnění přepnulo na tohle zboží), sloučení neblokuje —
+  cena z něj nevznikla a přesune se s ním na cíl.
 - Jinak vznikne hlas `zdroj → cíl` (`core.product_merge_vote`, jeden účet jeden hlas, změna
   názoru hlas přepíše). Sloučení všeho, co zbylo — cizí ceny, označení z účtenek, spárované
   řádky — proběhne, až pro **stejný** cíl hlasuje `app.receipt.item-merge-confirmations`
