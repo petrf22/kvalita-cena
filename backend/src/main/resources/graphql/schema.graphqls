@@ -459,7 +459,7 @@ type Mutation {
   """
   resolveFlags(recordType: RecordType!, recordId: ID!, resolution: FlagResolution!): Boolean!
 
-  "Sloučí duplicitní bezkódový produkt sourceId do kanonického targetId. Jen moderátor."
+  "Sloučí duplicitní bezkódový produkt sourceId do kanonického targetId (zboží z účtenky i do zboží s EAN). Jen moderátor."
   mergeProducts(sourceId: ID!, targetId: ID!): Product!
 
   """

@@ -60,8 +60,9 @@ public class ProductMergeService {
         .orElseThrow(() -> new NotFoundException(ErrorCode.MODERATION_RECORD_NOT_FOUND));
     Product target = productRepository.findById(targetId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.MODERATION_RECORD_NOT_FOUND));
-    boolean targetAllowed = target.isGeneric()
-        || (receiptItem && source.getCreatedVia() == ProductCreatedVia.RECEIPT);
+    // Zboží z účtenky je jen zástupce, dokud někdo nepozná, co to je — smí se sloučit i do
+    // zboží s EAN, po hlasování (receiptItem) i rukou moderátora, když se hlasy neshodnou.
+    boolean targetAllowed = target.isGeneric() || source.getCreatedVia() == ProductCreatedVia.RECEIPT;
     if (!source.isGeneric() || !targetAllowed
         || source.getStatus() == ProductStatus.MERGED || target.getStatus() == ProductStatus.MERGED
         || source.getStatus() == ProductStatus.REJECTED || target.getStatus() == ProductStatus.REJECTED) {
