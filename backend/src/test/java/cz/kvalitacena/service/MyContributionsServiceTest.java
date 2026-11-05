@@ -138,6 +138,22 @@ class MyContributionsServiceTest {
   }
 
   @Test
+  void mergedProductAndStoreAreReportedAsMerged() {
+    passthroughOverlays();
+    Product merged = product(5L, ProductStatus.MERGED, null);
+    when(productRepository.findByCreatedByUserId(USER_ID, 20, 0)).thenReturn(List.of(merged));
+    when(productRepository.countByCreatedByUserId(USER_ID)).thenReturn(1L);
+    Store mergedStore = store(6L, StoreStatus.MERGED, null);
+    when(storeRepository.findByCreatedByUserId(USER_ID, 20, 0)).thenReturn(List.of(mergedStore));
+    when(storeRepository.countByCreatedByUserId(USER_ID)).thenReturn(1L);
+
+    assertThat(service().myProducts(USER_ID, null, null).items().get(0).publication().state())
+        .isEqualTo(PublicationState.MERGED);
+    assertThat(service().myStores(USER_ID, null, null).items().get(0).publication().state())
+        .isEqualTo(PublicationState.MERGED);
+  }
+
+  @Test
   void pendingStoreReportsExactConfirmationCount() {
     passthroughOverlays();
     Store pending = store(4L, StoreStatus.PENDING, null);

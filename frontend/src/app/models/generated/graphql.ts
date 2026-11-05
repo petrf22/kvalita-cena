@@ -292,6 +292,8 @@ export type PublicationState =
   | 'AWAITING_CONFIRMATIONS'
   /** hidden_at != null po nahlášení (core.record_flag) — čeká na přezkum, vidí ho dál jen autor. */
   | 'HIDDEN_AFTER_FLAGS'
+  /** Sloučeno do jiného záznamu (status MERGED) — data žijí u cíle, product(id) vrací rovnou cíl. Starší klient ho ukáže jako PUBLIC. */
+  | 'MERGED'
   /** Patch v core.product_user_edit/core.store_user_edit — konsolidační job zatím neběží, vidí ho jen autor. */
   | 'PENDING_MERGE'
   /** Vidí každý (status ACTIVE). */

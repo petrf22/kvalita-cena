@@ -8,5 +8,10 @@ public enum PublicationState {
   PUBLIC,
   AWAITING_CONFIRMATIONS,
   HIDDEN_AFTER_FLAGS,
-  PENDING_MERGE
+  PENDING_MERGE,
+  /**
+   * Sloučeno do jiného záznamu (status MERGED) — data i historie žijí u cíle, proklik na
+   * {@code product(id)} vede rovnou tam. Nejčastěji zboží z účtenky po dopárování.
+   */
+  MERGED
 }

@@ -166,7 +166,7 @@ kg/l/kus se cena označuje až při zápisu ceny (`QuantityBasis`).
 `myEdits` (`MyContributionsGraphQlController`, `MyContributionsService`, vyžadují přihlášení)
 vrací vlastní založené zboží/obchody, vlastní zapsané ceny a vlastní úpravy cizích záznamů,
 každý s `PublicationStatus` (`state` PUBLIC/AWAITING_CONFIRMATIONS/HIDDEN_AFTER_FLAGS/
-PENDING_MERGE + konkrétní `confirmationsReceived`/`confirmationsRequired`, dopočítané dávkově
+PENDING_MERGE/MERGED + konkrétní `confirmationsReceived`/`confirmationsRequired`, dopočítané dávkově
 přes `PriceObservationRepository.countDistinctProductContributorsExcludingBatch`/
 `countDistinctContributorsExcludingBatch`, které počítají jen registrované přispěvatele) — cíl
 je, aby uživatel viděl „zatím 1 ze 3", ne jen štítek „čeká na potvrzení" bez kontextu.

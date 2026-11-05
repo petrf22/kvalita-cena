@@ -510,10 +510,14 @@
     <string name="my_contributions_state_awaiting_confirmations">Wartet auf Bestätigung</string>
     <string name="my_contributions_state_hidden_after_flags">Nach Meldung ausgeblendet</string>
     <string name="my_contributions_state_pending_merge">Deine Bearbeitung</string>
+    <string name="my_contributions_state_merged">Zusammengeführt</string>
     <string name="my_contributions_status_public_product">Veröffentlicht — für alle sichtbar.</string>
     <string name="my_contributions_status_public_store">Veröffentlicht — für alle sichtbar.</string>
     <string name="my_contributions_status_public_observation">Wird in den Community-Durchschnitt eingerechnet (Aktualisierung innerhalb weniger Sekunden).</string>
     <string name="my_contributions_status_awaiting_product">In der Suche siehst vorerst nur du es. Andere finden es trotzdem durch Scannen des Codes. Es wird für alle sichtbar, sobald %1$d weitere Personen dafür einen Preis erfassen — bisher %2$d.</string>
+    <string name="my_contributions_status_awaiting_generic_product">In der Suche siehst vorerst nur du es. Andere finden es beim Erfassen eines Preises im Sortiment des Geschäfts. Es wird für alle sichtbar, sobald %1$d weitere Personen dafür einen Preis erfassen — bisher %2$d.</string>
+    <string name="my_contributions_status_merged_product">Mit einem anderen Produkt zusammengeführt — Preise und Bewertungen liegen jetzt dort, der Link führt direkt dorthin.</string>
+    <string name="my_contributions_status_merged_store">Mit einem anderen Geschäft zusammengeführt — die Preise liegen jetzt dort.</string>
     <string name="my_contributions_status_awaiting_store">Vorerst siehst nur du es. Es wird sichtbar, sobald %1$d weitere Personen dort einen Preis erfassen — bisher %2$d.</string>
     <string name="my_contributions_status_awaiting_observation">Andere sehen diesen Preis erst, wenn das zugrunde liegende Produkt oder Geschäft veröffentlicht ist — bisher %2$d von %1$d nötigen Bestätigungen.</string>
     <string name="my_contributions_status_hidden_product">Nach einer Meldung ausgeblendet, wartet auf Prüfung. Vorerst siehst nur du es.</string>

@@ -33,6 +33,8 @@ export class PublicationStatusBadge {
 
   readonly status = input.required<PublicationStatus>();
   readonly kind = input.required<PublicationRecordKind>();
+  /** Bezkódové zboží — u čekajícího na potvrzení jiná věta, sken ho nenajde. */
+  readonly generic = input(false);
 
   protected tagColor(): string {
     switch (this.status().state) {
@@ -44,6 +46,8 @@ export class PublicationStatusBadge {
         return 'red';
       case PublicationState.PendingMerge:
         return 'blue';
+      case PublicationState.Merged:
+        return 'default';
       default:
         return 'default';
     }
@@ -54,7 +58,9 @@ export class PublicationStatusBadge {
   }
 
   protected sentence(): string {
-    const { key, params } = publicationStatusText(this.status(), this.kind());
+    const { key, params } = publicationStatusText(this.status(), this.kind(), {
+      generic: this.generic(),
+    });
     return this.transloco.translate(key, params);
   }
 }

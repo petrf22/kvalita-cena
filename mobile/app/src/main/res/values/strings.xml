@@ -593,10 +593,14 @@
     <string name="my_contributions_state_awaiting_confirmations">Čeká na potvrzení</string>
     <string name="my_contributions_state_hidden_after_flags">Skryto po nahlášení</string>
     <string name="my_contributions_state_pending_merge">Vaše úprava</string>
+    <string name="my_contributions_state_merged">Sloučeno</string>
     <string name="my_contributions_status_public_product">Zveřejněno — vidí ho každý.</string>
     <string name="my_contributions_status_public_store">Zveřejněno — vidí ho každý.</string>
     <string name="my_contributions_status_public_observation">Započítává se do komunitního průměru (přepočet do pár sekund).</string>
     <string name="my_contributions_status_awaiting_product">V hledání ho zatím vidíte jen vy. Ostatní ho najdou naskenováním kódu. Zveřejní se všem, až u něj zapíše cenu %1$d dalších lidí — zatím %2$d.</string>
+    <string name="my_contributions_status_awaiting_generic_product">V hledání ho zatím vidíte jen vy. Ostatní ho najdou v nabídce obchodu při zápisu ceny. Zveřejní se všem, až u něj zapíše cenu %1$d dalších lidí — zatím %2$d.</string>
+    <string name="my_contributions_status_merged_product">Sloučeno s jiným zbožím — ceny a recenze jsou teď u něj a proklik vede rovnou tam.</string>
+    <string name="my_contributions_status_merged_store">Sloučeno s jiným obchodem — ceny jsou teď u něj.</string>
     <string name="my_contributions_status_awaiting_store">Zatím ho vidíte jen vy. Zveřejní se, až v něm zapíše cenu %1$d dalších lidí — zatím %2$d.</string>
     <string name="my_contributions_status_awaiting_observation">Ostatním se cena ukáže, až se zveřejní podkladové zboží nebo obchod — zatím %2$d z %1$d potřebných potvrzení.</string>
     <string name="my_contributions_status_hidden_product">Skryto po nahlášení, čeká na přezkum. Zatím ho vidíte jen vy.</string>

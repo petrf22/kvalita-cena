@@ -428,6 +428,11 @@ poslední jmenované se ve výpisu vždy označí `PublicationState.PENDING_MERG
 konsolidační job (viz výš) zatím neběží. `myProducts`/`myStores` k tomu dopočítají i konkrétní
 `confirmationsReceived`/`confirmationsRequired` (viz `docs/reputace.md`, "Práh důvěry pro
 zveřejnění nového záznamu") — bez toho by uživatel viděl jen "čeká na potvrzení" bez čísel.
+Sloučené zboží/obchod (status `MERGED`, nejčastěji zboží z účtenky po dopárování) má
+`PublicationState.MERGED`, ne `PUBLIC` — data žijí u cíle a `product(id)` vrací rovnou cíl.
+Starší mobilní klient neznámý stav ukáže jako „Zveřejněno". Text u čekajícího zboží rozlišuje
+klient podle `isGeneric`: zboží s kódem najdou ostatní skenem, bezkódové jen v nabídce obchodu
+při zápisu ceny (`productSuggestions`).
 
 ## Fotky zboží a provozoven
 

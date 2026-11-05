@@ -289,6 +289,7 @@ public class ProductCatalogService {
    * {@code MyContributionsService} sem, kam nepatří.
    */
   public PublicationStatus productStatus(Product product, long confirmationsReceived) {
+    if (product.getStatus() == ProductStatus.MERGED) return PublicationStatus.merged();
     if (product.getHiddenAt() != null) return PublicationStatus.hiddenAfterFlags();
     if (product.getStatus() == ProductStatus.DRAFT) {
       return PublicationStatus.awaitingConfirmations((int) confirmationsReceived, catalogProperties.getDraftConfirmations());

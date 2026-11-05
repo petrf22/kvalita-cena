@@ -10,8 +10,10 @@ import cz.kvalitacena.ui.common.UiText
  * JUnitem bez instrumentace (stejný vzor jako PriceChartGeometry/StoreLabel). Webový protějšek:
  * frontend shared/publication-status-text.ts.
  *
- * PRODUCT/STORE mají u AWAITING_CONFIRMATIONS jiný text (bezkódové zboží najde kdokoli skenem
- * kódu, PENDING obchod nenajde nikdo) — viz docs/reputace.md. OBSERVATION nese vlastní text pro
+ * PRODUCT/STORE mají u AWAITING_CONFIRMATIONS jiný text (zboží s kódem najde kdokoli skenem,
+ * PENDING obchod nenajde nikdo) — viz docs/reputace.md. Bezkódové zboží (`generic`) kód nemá,
+ * ostatní ho najdou jen v nabídce obchodu při zápisu ceny, proto vlastní věta. MERGED (sloučeno
+ * do jiného záznamu, typicky zboží z účtenky po dopárování) odkazuje na cíl. OBSERVATION nese vlastní text pro
  * PUBLIC/AWAITING, protože cena sama žádný práh nemá, jen dědí stav od blokujícího zboží/
  * obchodu. EDIT (úprava cizího záznamu) je ve výpisu vždy PENDING_MERGE.
  */
@@ -21,16 +23,19 @@ fun publicationStateLabel(state: String): Int = when (state) {
   "AWAITING_CONFIRMATIONS" -> R.string.my_contributions_state_awaiting_confirmations
   "HIDDEN_AFTER_FLAGS" -> R.string.my_contributions_state_hidden_after_flags
   "PENDING_MERGE" -> R.string.my_contributions_state_pending_merge
+  "MERGED" -> R.string.my_contributions_state_merged
   else -> R.string.my_contributions_state_public
 }
 
-fun publicationStatusText(status: PublicationStatus, kind: PublicationRecordKind): UiText {
+fun publicationStatusText(status: PublicationStatus, kind: PublicationRecordKind, generic: Boolean = false): UiText {
   return when (status.state) {
     "AWAITING_CONFIRMATIONS" -> {
       val required = status.confirmationsRequired ?: 0
       val received = status.confirmationsReceived ?: 0
       val resId = when (kind) {
-        PublicationRecordKind.PRODUCT -> R.string.my_contributions_status_awaiting_product
+        PublicationRecordKind.PRODUCT ->
+          if (generic) R.string.my_contributions_status_awaiting_generic_product
+          else R.string.my_contributions_status_awaiting_product
         PublicationRecordKind.STORE -> R.string.my_contributions_status_awaiting_store
         PublicationRecordKind.OBSERVATION -> R.string.my_contributions_status_awaiting_observation
         PublicationRecordKind.EDIT -> R.string.my_contributions_status_pending_merge_edit
@@ -46,6 +51,10 @@ fun publicationStatusText(status: PublicationStatus, kind: PublicationRecordKind
       },
     )
     "PENDING_MERGE" -> UiText.Res(R.string.my_contributions_status_pending_merge_edit)
+    "MERGED" -> UiText.Res(
+      if (kind == PublicationRecordKind.STORE) R.string.my_contributions_status_merged_store
+      else R.string.my_contributions_status_merged_product,
+    )
     else -> UiText.Res(
       when (kind) {
         PublicationRecordKind.PRODUCT -> R.string.my_contributions_status_public_product

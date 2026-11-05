@@ -1106,6 +1106,8 @@ enum PublicationState {
   HIDDEN_AFTER_FLAGS
   "Patch v core.product_user_edit/core.store_user_edit — konsolidační job zatím neběží, vidí ho jen autor."
   PENDING_MERGE
+  "Sloučeno do jiného záznamu (status MERGED) — data žijí u cíle, product(id) vrací rovnou cíl. Starší klient ho ukáže jako PUBLIC."
+  MERGED
 }
 
 type PublicationStatus {

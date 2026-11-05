@@ -159,7 +159,7 @@ private fun ProductsTab(viewModel: MyContributionsViewModel, onProductClick: (St
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
-      PublicationStatusRow(item.publication, PublicationRecordKind.PRODUCT)
+      PublicationStatusRow(item.publication, PublicationRecordKind.PRODUCT, generic = item.product.isGeneric)
     }
   }
 }
@@ -325,12 +325,12 @@ private fun ReviewsTab(viewModel: MyContributionsViewModel, onProductClick: (Str
 }
 
 @Composable
-private fun PublicationStatusRow(status: PublicationStatus, kind: PublicationRecordKind) {
+private fun PublicationStatusRow(status: PublicationStatus, kind: PublicationRecordKind, generic: Boolean = false) {
   Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
     AssistChip(onClick = {}, label = { Text(stringResource(publicationStateLabel(status.state))) })
   }
   Text(
-    publicationStatusText(status, kind).asString(),
+    publicationStatusText(status, kind, generic).asString(),
     style = MaterialTheme.typography.bodySmall,
     color = MaterialTheme.colorScheme.onSurfaceVariant,
     modifier = Modifier.padding(top = 2.dp),

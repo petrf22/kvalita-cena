@@ -48,7 +48,8 @@
     "PUBLIC": "Veröffentlicht",
     "AWAITING_CONFIRMATIONS": "Wartet auf Bestätigung",
     "HIDDEN_AFTER_FLAGS": "Nach Meldung ausgeblendet",
-    "PENDING_MERGE": "Deine Bearbeitung"
+    "PENDING_MERGE": "Deine Bearbeitung",
+    "MERGED": "Zusammengeführt"
   },
   "status": {
     "public": {
@@ -58,6 +59,7 @@
     },
     "awaitingConfirmations": {
       "product": "In der Suche siehst vorerst nur du es. Andere finden es trotzdem durch Scannen des Codes. Es wird für alle sichtbar, sobald {{required}} weitere Personen dafür einen Preis erfassen — bisher {{received}}.",
+      "genericProduct": "In der Suche sehen nur Sie es vorerst. Andere finden es beim Eintragen eines Preises im Sortiment des Geschäfts. Für alle sichtbar wird es, sobald {{required}} weitere Personen einen Preis dafür eintragen — bisher {{received}}.",
       "store": "Vorerst siehst nur du es. Es wird sichtbar, sobald {{required}} weitere Personen dort einen Preis erfassen — bisher {{received}}.",
       "observation": "Andere sehen diesen Preis erst, wenn das zugrunde liegende Produkt oder Geschäft veröffentlicht ist — bisher {{received}} von {{required}} nötigen Bestätigungen."
     },
@@ -68,6 +70,10 @@
     },
     "pendingMerge": {
       "edit": "Deine Bearbeitung siehst vorerst nur du — die Zusammenführung mit dem öffentlichen Eintrag ist noch nicht erfolgt."
+    },
+    "merged": {
+      "product": "Mit einem anderen Produkt zusammengeführt — Preise und Bewertungen liegen jetzt dort, der Link führt direkt dorthin.",
+      "store": "Mit einem anderen Geschäft zusammengeführt — die Preise liegen jetzt dort."
     }
   }
 }

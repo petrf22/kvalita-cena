@@ -508,10 +508,14 @@
     <string name="my_contributions_state_awaiting_confirmations">Czeka na potwierdzenie</string>
     <string name="my_contributions_state_hidden_after_flags">Ukryto po zgłoszeniu</string>
     <string name="my_contributions_state_pending_merge">Twoja edycja</string>
+    <string name="my_contributions_state_merged">Scalono</string>
     <string name="my_contributions_status_public_product">Opublikowano — widzi go każdy.</string>
     <string name="my_contributions_status_public_store">Opublikowano — widzi go każdy.</string>
     <string name="my_contributions_status_public_observation">Wliczana do średniej społeczności (przeliczenie w ciągu kilku sekund).</string>
     <string name="my_contributions_status_awaiting_product">W wyszukiwaniu na razie widzisz go tylko Ty. Inni znajdą go, skanując kod. Upubliczni się dla wszystkich, gdy zapisze przy nim cenę %1$d innych osób — na razie %2$d.</string>
+    <string name="my_contributions_status_awaiting_generic_product">W wyszukiwaniu na razie widzisz go tylko Ty. Inni znajdą go na liście produktów sklepu przy wpisywaniu ceny. Upubliczni się dla wszystkich, gdy zapisze przy nim cenę %1$d innych osób — na razie %2$d.</string>
+    <string name="my_contributions_status_merged_product">Scalono z innym produktem — ceny i recenzje są teraz przy nim, a link prowadzi prosto do niego.</string>
+    <string name="my_contributions_status_merged_store">Scalono z innym sklepem — ceny są teraz przy nim.</string>
     <string name="my_contributions_status_awaiting_store">Na razie widzisz go tylko Ty. Upubliczni się, gdy zapisze w nim cenę %1$d innych osób — na razie %2$d.</string>
     <string name="my_contributions_status_awaiting_observation">Inni zobaczą tę cenę, gdy opublikowany zostanie powiązany produkt lub sklep — na razie %2$d z %1$d potrzebnych potwierdzeń.</string>
     <string name="my_contributions_status_hidden_product">Ukryto po zgłoszeniu, czeka na przegląd. Na razie widzisz go tylko Ty.</string>

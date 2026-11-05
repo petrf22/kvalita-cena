@@ -508,10 +508,14 @@
     <string name="my_contributions_state_awaiting_confirmations">Awaiting confirmation</string>
     <string name="my_contributions_state_hidden_after_flags">Hidden after reports</string>
     <string name="my_contributions_state_pending_merge">Your edit</string>
+    <string name="my_contributions_state_merged">Merged</string>
     <string name="my_contributions_status_public_product">Published — visible to everyone.</string>
     <string name="my_contributions_status_public_store">Published — visible to everyone.</string>
     <string name="my_contributions_status_public_observation">Counted into the community average (updates within a few seconds).</string>
     <string name="my_contributions_status_awaiting_product">Only you can find it in search for now. Others can still find it by scanning the code. It becomes visible to everyone once %1$d other people log a price for it — so far %2$d.</string>
+    <string name="my_contributions_status_awaiting_generic_product">Only you can find it in search for now. Others will find it in the store\'s product list when logging a price. It becomes visible to everyone once %1$d other people log a price for it — so far %2$d.</string>
+    <string name="my_contributions_status_merged_product">Merged into another product — its prices and reviews now live there, and the link takes you straight to it.</string>
+    <string name="my_contributions_status_merged_store">Merged into another store — its prices now live there.</string>
     <string name="my_contributions_status_awaiting_store">Only you can see it for now. It becomes visible once %1$d other people log a price at it — so far %2$d.</string>
     <string name="my_contributions_status_awaiting_observation">Others will see this price once the underlying product or store is published — so far %2$d of %1$d confirmations needed.</string>
     <string name="my_contributions_status_hidden_product">Hidden after being reported, awaiting review. Only you can see it for now.</string>
