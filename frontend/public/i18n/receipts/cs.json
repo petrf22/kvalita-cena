@@ -163,23 +163,31 @@
     "createNeedsStore": "Nové zboží půjde založit po potvrzení obchodu.",
     "ignore": "Ignorovat",
     "unmatch": "Zrušit párování",
-    "unignore": "Zrušit ignorování"
+    "unignore": "Zrušit ignorování",
+    "selectReceiptItemLabel": "Zveřejnit řádek {{label}} jako zboží z účtenky",
+    "publishAsReceiptItem": "zveřejní se jako zboží z účtenky",
+    "nonProduct": "záloha nebo obal — nezveřejní se",
+    "verify": "Zkontrolovat",
+    "verifyHint": "Řádek vypadá na chybu čtení: chybí cena, množství × cena nedává částku, nebo je název nečitelný. Porovnej ho s obrázkem účtenky."
   },
   "skip": {
-    "duplicateSameDay": "Tuhle cenu jsi pro den nákupu už zapsal/a — druhý záznam se nepřidal."
+    "duplicateSameDay": "Tuhle cenu jsi pro den nákupu už zapsal/a — druhý záznam se nepřidal.",
+    "itemLimit": "Máš moc nepotvrzených položek z účtenek. Další půjde zveřejnit, až některé z nich potvrdí i ostatní."
   },
   "confirm": {
-    "button": "Potvrdit spárované ({{count}})",
-    "hint": "Zapíše ceny zaškrtnutých řádků s datem a časem nákupu z účtenky.",
+    "button": "Zveřejnit vybrané ({{count}})",
+    "hint": "Zapíše ceny zaškrtnutých řádků s datem a časem nákupu z účtenky. Nespárované se zveřejní jako zboží z účtenky.",
     "blocker": {
       "notProcessed": "Účtenka ještě není zpracovaná.",
       "storeMissing": "Nejdřív potvrď obchod nahoře.",
       "purchaseTimeMissing": "Nejdřív doplň datum a čas nákupu nahoře.",
-      "nothing": "Zaškrtni aspoň jeden spárovaný řádek."
+      "nothing": "Zaškrtni aspoň jeden řádek."
     },
-    "done": "{count, plural, one {# cena je zapsaná.} few {# ceny jsou zapsané.} other {# cen je zapsaných.}}",
-    "doneNone": "Žádná nová cena se nezapsala.",
-    "skipped": "{count, plural, one {# řádek se přeskočil:} few {# řádky se přeskočily:} other {# řádků se přeskočilo:}}"
+    "done": "{count, plural, one {# položka je zveřejněná.} few {# položky jsou zveřejněné.} other {# položek je zveřejněných.}}",
+    "doneNone": "Nezveřejnila se žádná položka.",
+    "skipped": "{count, plural, one {# řádek se přeskočil:} few {# řádky se přeskočily:} other {# řádků se přeskočilo:}}",
+    "doneReceiptItems": "{count, plural, one {# z nich jako zboží z účtenky — spárovat ho jde i později na stránce zboží.} few {# z nich jako zboží z účtenky — spárovat je jde i později na stránce zboží.} other {# z nich jako zboží z účtenky — spárovat je jde i později na stránce zboží.}}",
+    "guessesLeft": "{count, plural, one {# odhad ke kontrole se nezveřejní, dokud ho nezaškrtneš. Když zboží nesedí, zruš párování — zveřejní se pak jako zboží z účtenky.} few {# odhady ke kontrole se nezveřejní, dokud je nezaškrtneš. Když zboží nesedí, zruš párování — zveřejní se pak jako zboží z účtenky.} other {# odhadů ke kontrole se nezveřejní, dokud je nezaškrtneš. Když zboží nesedí, zruš párování — zveřejní se pak jako zboží z účtenky.}}"
   },
   "create": {
     "title": "Nové zboží z účtenky",
@@ -193,16 +201,25 @@
     "skip": "Přeskočit"
   },
   "group": {
-    "toResolve": "K doplnění ({{count}})",
+    "toResolve": "Nespárované ({{count}})",
     "toCheck": "Ke kontrole ({{count}})",
     "ready": "Připraveno k potvrzení ({{count}})",
     "done": "Hotovo ({{count}})",
-    "ignored": "Ignorováno ({{count}})"
+    "ignored": "Ignorováno ({{count}})",
+    "toResolveHint": "Zaškrtnuté se zveřejní jako zboží z účtenky — s názvem a cenou, jak jsou na účtence. Když zboží najdeš v katalogu a spáruješ, cena se zapíše k němu."
   },
   "panel": {
     "accept": "Ano, je to ono",
     "other": "Jiné zboží",
     "notProduct": "Není zboží — ignorovat",
-    "offHint": "Zboží podle EAN zná Open Food Facts. Do katalogu se přidá, až řádek potvrdíš."
+    "offHint": "Zboží podle EAN zná Open Food Facts. Do katalogu se přidá, až řádek potvrdíš.",
+    "receiptItemHint": "Zboží nemusíš hledat ani zakládat — zaškrtnutý řádek se zveřejní jako zboží z účtenky. Když ho ale najdeš, cena se zapíše ke skutečnému zboží.",
+    "nonProductHint": "Vypadá to na zálohu nebo vratný obal — takový řádek se nezveřejní. Když je to zboží, najdi ho a spáruj."
+  },
+  "sum": {
+    "mismatchTitle": "Součet položek {{computed}} neodpovídá částce na účtence {{total}}",
+    "mismatchText": "Rozdíl je {{difference}}. Některá položka se mohla přečíst špatně nebo chybí — projdi řádky se štítkem „Zkontrolovat“ a odškrtni, co zveřejnit nechceš.",
+    "unknownTitle": "Součet nešlo ověřit, zkontroluj položky",
+    "unknownText": "Appka nemá s čím součet položek porovnat — celková částka se na účtence nenašla, nebo ji četla starší verze. Projdi položky (hlavně se štítkem „Zkontrolovat“) a odškrtni, co zveřejnit nechceš."
   }
 }

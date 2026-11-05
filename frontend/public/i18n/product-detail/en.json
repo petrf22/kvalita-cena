@@ -61,5 +61,34 @@
     "title": "Names on receipts",
     "hint": "This is how stores print the product on receipts — scanned receipts are matched automatically based on it.",
     "unknownScope": "unknown store"
+  },
+  "retry": "Try again",
+  "offlineTitle": "You are offline",
+  "offlineText": "The product will load as soon as you reconnect.",
+  "loadFailed": "The product could not be loaded.",
+  "receiptItem": {
+    "title": "Receipt item",
+    "text": "Created from a receipt line nobody matched with a product in the catalogue. The name, price, store and time of purchase come from the receipt — brand, size and barcode are not verified.",
+    "rematch": "Match with a product",
+    "loginHint": "Do you know which product this is? Sign in to match it with a product in the catalogue."
+  },
+  "rematch": {
+    "title": "Match with a product",
+    "intro": "Choose the catalogue product this receipt item really is.",
+    "introScope": "Choose the catalogue product this receipt item really is. Products with a barcode and products sold by {{scope}} are offered.",
+    "placeholder": "Search products by name",
+    "empty": "Nothing similar found. Try a different name.",
+    "typeName": "Type the product name.",
+    "offline": "You are offline — searching and matching will work once you reconnect.",
+    "offlineAction": "You are not connected to the internet — the match was not saved. Try again once you reconnect.",
+    "unconfirmed": "not confirmed yet",
+    "confirmQuestion": "Match “{{source}}” with this product?",
+    "confirmNote": "Your prices move right away. Other people’s prices move once more people confirm the same match — so a single mistake never rewrites anyone’s history.",
+    "submit": "Match",
+    "back": "Choose another",
+    "mergedTitle": "Products merged",
+    "mergedText": "Prices from the receipt item “{{name}}” are now on this product.",
+    "pendingTitle": "Your prices have been moved",
+    "pendingText": "Merging for everyone is waiting for confirmation from other people ({{votes}} of {{required}}). Your prices are now on:"
   }
 }

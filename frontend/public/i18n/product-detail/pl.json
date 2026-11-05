@@ -61,5 +61,34 @@
     "title": "Nazwy na paragonach",
     "hint": "Tak sklepy drukują produkt na paragonie — na tej podstawie wczytany paragon powiąże się sam.",
     "unknownScope": "nieznany sklep"
+  },
+  "retry": "Spróbuj ponownie",
+  "offlineTitle": "Jesteś offline",
+  "offlineText": "Produkt załaduje się sam, gdy tylko się połączysz.",
+  "loadFailed": "Nie udało się załadować produktu.",
+  "receiptItem": {
+    "title": "Produkt z paragonu",
+    "text": "Powstał z pozycji paragonu, której nikt nie powiązał z produktem z katalogu. Nazwa, cena, sklep i czas zakupu pochodzą z paragonu — marka, gramatura ani kod kreskowy nie są zweryfikowane.",
+    "rematch": "Powiąż z produktem",
+    "loginHint": "Wiesz, jaki to produkt? Po zalogowaniu możesz powiązać go z produktem z katalogu."
+  },
+  "rematch": {
+    "title": "Powiąż z produktem",
+    "intro": "Wybierz produkt z katalogu, którym ta pozycja z paragonu jest naprawdę.",
+    "introScope": "Wybierz produkt z katalogu, którym ta pozycja z paragonu jest naprawdę. Proponowane są produkty z kodem kreskowym i produkty z oferty {{scope}}.",
+    "placeholder": "Szukaj produktu po nazwie",
+    "empty": "Nie znaleźliśmy nic podobnego. Spróbuj innej nazwy.",
+    "typeName": "Wpisz nazwę produktu.",
+    "offline": "Jesteś offline — wyszukiwanie i powiązanie zadziałają po połączeniu.",
+    "offlineAction": "Nie masz połączenia z internetem — powiązanie nie zostało zapisane. Spróbuj ponownie po połączeniu.",
+    "unconfirmed": "jeszcze niepotwierdzony",
+    "confirmQuestion": "Powiązać „{{source}}” z tym produktem?",
+    "confirmNote": "Twoje ceny zostaną przeniesione od razu. Ceny innych osób zostaną przeniesione, gdy to samo powiązanie potwierdzą kolejne osoby — pojedyncza pomyłka nikomu nie nadpisze historii.",
+    "submit": "Powiąż",
+    "back": "Wybierz inny",
+    "mergedTitle": "Produkty scalone",
+    "mergedText": "Ceny z produktu z paragonu „{{name}}” są teraz przy tym produkcie.",
+    "pendingTitle": "Twoje ceny zostały przeniesione",
+    "pendingText": "Scalenie dla wszystkich czeka na potwierdzenie innych osób ({{votes}} z {{required}}). Twoje ceny znajdziesz przy produkcie:"
   }
 }

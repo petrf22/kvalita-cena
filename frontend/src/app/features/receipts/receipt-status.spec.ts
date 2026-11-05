@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ReceiptDetail, ReceiptLine } from '../../models/catalog';
+import type { ConfirmReceiptLinesResult, ReceiptDetail, ReceiptLine } from '../../models/catalog';
 import {
   RECEIPT_CONSENT_VERSION,
   confirmBlocker,
@@ -8,9 +8,13 @@ import {
   groupedLines,
   guideQueue,
   isLineConfirmable,
+  isLineNonProduct,
   isLineOffSuggestion,
   isLineGuess,
   isLineLocked,
+  isLineReceiptItemCandidate,
+  isLineSelectable,
+  isLineToVerify,
   lineGtin,
   lineLabel,
   lineRawLabel,
@@ -18,11 +22,15 @@ import {
   matchSourceKey,
   nextInGuide,
   nextSelection,
+  publishSummary,
   receiptStatusColor,
   receiptStatusKey,
   receiptStoreName,
   samePurchaseTime,
+  selectLabelKey,
   skipReasonKey,
+  sumCheck,
+  unselectedGuessCount,
 } from './receipt-status';
 
 function line(id: string, overrides: Partial<ReceiptLine> = {}): ReceiptLine {
@@ -44,6 +52,8 @@ function line(id: string, overrides: Partial<ReceiptLine> = {}): ReceiptLine {
     observationId: null,
     confirmed: false,
     skipReason: null,
+    nonProduct: false,
+    suspicious: false,
     ...overrides,
   } as ReceiptLine;
 }
@@ -97,9 +107,9 @@ describe('výběr řádků k potvrzení', () => {
     expect(isLineConfirmable(pseudonymized)).toBe(false);
   });
 
-  it('předem zaškrtnuté jsou právě návrhy', () => {
+  it('předem zaškrtnuté jsou návrhy i nespárované řádky, ignorované ne', () => {
     const lines = [line('1', { status: 'SUGGESTED' }), line('2'), line('3', { status: 'IGNORED' })];
-    expect([...defaultSelectedLineIds(lines)]).toEqual(['1']);
+    expect([...defaultSelectedLineIds(lines)]).toEqual(['1', '2']);
   });
 
   it('nově spárovaný řádek se zaškrtne, odškrtnutý návrh zůstane odškrtnutý', () => {
@@ -293,9 +303,10 @@ describe('skupiny řádků a průvodce', () => {
     ]);
   });
 
-  it('návrh z Open Food Facts je předem zaškrtnutý jako shoda EAN', () => {
+  it('návrh z Open Food Facts je předem zaškrtnutý jako shoda EAN, odhad ne', () => {
     expect(isLineOffSuggestion(lines[5])).toBe(true);
-    expect(defaultSelectedLineIds(lines)).toEqual(new Set(['1', '6']));
+    // 3 a 7 jsou nespárované — zveřejní se jako zboží z účtenky.
+    expect(defaultSelectedLineIds(lines)).toEqual(new Set(['1', '3', '6', '7']));
   });
 
   it('průvodce projde nespárované, pak odhady, a přeskočí vyřešené', () => {
@@ -307,5 +318,209 @@ describe('skupiny řádků a průvodce', () => {
     expect(nextInGuide(queue, '3', resolved)).toBe('2');
     expect(nextInGuide(queue, null, resolved)).toBe('3');
     expect(nextInGuide(queue, '2', resolved)).toBeNull();
+  });
+});
+
+describe('zveřejnění nespárovaných řádků jako zboží z účtenky', () => {
+  it('nespárovaný řádek jde zveřejnit, záloha ani ignorovaný ne', () => {
+    expect(isLineSelectable(line('1'))).toBe(true);
+    expect(isLineReceiptItemCandidate(line('1'))).toBe(true);
+    expect(isLineSelectable(line('1', { nonProduct: true }))).toBe(false);
+    expect(isLineNonProduct(line('1', { nonProduct: true }))).toBe(true);
+    expect(isLineSelectable(line('1', { status: 'IGNORED' }))).toBe(false);
+    expect(isLineSelectable(line('1', { status: 'MATCHED', confirmed: true }))).toBe(false);
+  });
+
+  it('zálohu spárovanou se zbožím zveřejnit jde, ale předem se nezaškrtne', () => {
+    const deposit = line('1', { status: 'SUGGESTED', matchSource: 'USER', nonProduct: true });
+    expect(isLineSelectable(deposit)).toBe(true);
+    expect(isLineNonProduct(deposit)).toBe(false);
+    expect([...defaultSelectedLineIds([deposit])]).toEqual([]);
+  });
+
+  it('předvýběr: všechno kromě zálohy, odhadu, ignorovaných a už zveřejněných', () => {
+    const lines = [
+      line('1'),
+      line('2', { nonProduct: true }),
+      line('3', { status: 'SUGGESTED', matchSource: 'FUZZY' }),
+      line('4', { status: 'IGNORED' }),
+      line('5', { status: 'MATCHED', matchSource: 'RECEIPT_ITEM', confirmed: true }),
+      line('6', { status: 'SUGGESTED', matchSource: 'CODE', suspicious: true }),
+    ];
+    expect([...defaultSelectedLineIds(lines)]).toEqual(['1', '6']);
+  });
+
+  it('řádek, který server minule přeskočil, se předem nezaškrtne', () => {
+    const lines = [
+      line('1', { skipReason: 'RECEIPT_LINE_PRICE_MISSING' }),
+      line('2', { skipReason: 'RECEIPT_ITEM_LIMIT' }),
+      line('3'),
+    ];
+    expect([...defaultSelectedLineIds(lines)]).toEqual(['3']);
+  });
+
+  it('odškrtnutý nespárovaný řádek zůstane po obnově odškrtnutý', () => {
+    const lines = [line('1'), line('2')];
+    expect([...nextSelection(new Set(['2']), lines, lines)]).toEqual(['2']);
+  });
+
+  it('nespárovaný řádek, který uživatel spároval, se zaškrtne, i když byl odškrtnutý', () => {
+    const product = { id: 'p1' } as ReceiptLine['product'];
+    const before = [line('1')];
+    const after = [line('1', { status: 'SUGGESTED', matchSource: 'USER', product })];
+    expect([...nextSelection(new Set(), before, after)]).toEqual(['1']);
+  });
+
+  it('odhad se zrušeným párováním se zaškrtne jako zboží z účtenky', () => {
+    const product = { id: 'p1' } as ReceiptLine['product'];
+    const before = [line('1', { status: 'SUGGESTED', matchSource: 'FUZZY', product })];
+    const after = [line('1')];
+    expect([...nextSelection(new Set(), before, after)]).toEqual(['1']);
+  });
+
+  it('řádek vrácený z ignorovaných se zaškrtne', () => {
+    const before = [line('1', { status: 'IGNORED' })];
+    const after = [line('1')];
+    expect([...nextSelection(new Set(), before, after)]).toEqual(['1']);
+  });
+
+  it('zálohu, kterou si uživatel zaškrtl sám, nechá zaškrtnutou, sama ji nezaškrtne', () => {
+    const deposit = [line('1', { status: 'SUGGESTED', matchSource: 'USER', nonProduct: true })];
+    const before = [line('1', { nonProduct: true })];
+    expect([...nextSelection(new Set(), before, deposit)]).toEqual([]);
+    expect([...nextSelection(new Set(['1']), deposit, deposit)]).toEqual(['1']);
+  });
+
+  it('popisek zaškrtávátka řekne, že se řádek zveřejní jako zboží z účtenky', () => {
+    expect(selectLabelKey(line('1'))).toBe('receipts.line.selectReceiptItemLabel');
+    expect(selectLabelKey(line('1', { status: 'SUGGESTED', matchSource: 'FUZZY' }))).toBe(
+      'receipts.line.selectGuessLabel',
+    );
+    expect(selectLabelKey(line('1', { status: 'SUGGESTED', matchSource: 'CODE' }))).toBe(
+      'receipts.line.selectLabel',
+    );
+  });
+
+  it('spočítá odhady, které se bez zaškrtnutí nezveřejní', () => {
+    const lines = [
+      line('1', { status: 'SUGGESTED', matchSource: 'FUZZY' }),
+      line('2', { status: 'SUGGESTED', matchSource: 'FUZZY' }),
+      line('3'),
+    ];
+    expect(unselectedGuessCount(lines, new Set(['2', '3']))).toBe(1);
+  });
+});
+
+describe('kontrolní součet účtenky', () => {
+  const receipt = (overrides: Partial<ReceiptDetail> = {}) =>
+    ({
+      sumStatus: 'MATCH',
+      totalAmount: 245.9,
+      computedTotal: 245.9,
+      lines: [line('1')],
+      ...overrides,
+    }) as ReceiptDetail;
+
+  it('když součet sedí, neupozorňuje na nic', () => {
+    expect(sumCheck(receipt())).toBeNull();
+  });
+
+  it('nesouhlas ukáže obě částky a rozdíl bez znaménka a bez plovoucí chyby', () => {
+    expect(sumCheck(receipt({ sumStatus: 'MISMATCH', computedTotal: 232.8 }))).toEqual({
+      kind: 'mismatch',
+      computed: 232.8,
+      total: 245.9,
+      difference: 13.1,
+    });
+    // Položky dávají víc, než je vytištěné „Celkem" — rozdíl je pořád kladný.
+    expect(sumCheck(receipt({ sumStatus: 'MISMATCH', computedTotal: 250.1 }))).toMatchObject({
+      kind: 'mismatch',
+      difference: 4.2,
+    });
+  });
+
+  it('nesouhlas bez jedné z částek a neznámý součet jsou obecná výzva ke kontrole', () => {
+    expect(sumCheck(receipt({ sumStatus: 'MISMATCH', totalAmount: null }))).toEqual({
+      kind: 'unknown',
+    });
+    expect(sumCheck(receipt({ sumStatus: 'UNKNOWN', totalAmount: null }))).toEqual({
+      kind: 'unknown',
+    });
+  });
+
+  it('u účtenky, kde už není co zveřejnit, mlčí', () => {
+    const done = [
+      line('1', { status: 'MATCHED', confirmed: true }),
+      line('2', { status: 'IGNORED' }),
+      line('3', { nonProduct: true }),
+    ];
+    expect(sumCheck(receipt({ sumStatus: 'UNKNOWN', lines: done }))).toBeNull();
+  });
+
+  it('podezřelý řádek se zvýrazní jen při nesouhlasu a jen dokud není zveřejněný', () => {
+    const suspicious = line('1', { suspicious: true });
+    const check = sumCheck(receipt({ sumStatus: 'UNKNOWN' }));
+    expect(isLineToVerify(suspicious, check)).toBe(true);
+    expect(isLineToVerify(suspicious, null)).toBe(false);
+    expect(isLineToVerify(line('2'), check)).toBe(false);
+    expect(
+      isLineToVerify(line('3', { suspicious: true, status: 'MATCHED', confirmed: true }), check),
+    ).toBe(false);
+  });
+});
+
+describe('souhrn po zveřejnění', () => {
+  const result = (
+    lines: ReceiptLine[],
+    confirmed: number,
+    skipped: ReceiptLine[] = [],
+  ): ConfirmReceiptLinesResult =>
+    ({ receipt: { lines }, confirmed, skipped }) as unknown as ConfirmReceiptLinesResult;
+
+  it('jako zboží z účtenky počítá jen řádky z tohoto zveřejnění', () => {
+    const lines = [
+      line('1', { status: 'MATCHED', matchSource: 'RECEIPT_ITEM', confirmed: true }),
+      line('2', { status: 'MATCHED', matchSource: 'RECEIPT_ITEM', confirmed: true }),
+      line('3', { status: 'MATCHED', matchSource: 'LABEL', confirmed: true }),
+      line('4', { status: 'MATCHED', matchSource: 'CODE', confirmed: true }),
+      line('5', {
+        status: 'MATCHED',
+        matchSource: 'LABEL',
+        confirmed: true,
+        product: { createdVia: 'RECEIPT' } as ReceiptLine['product'],
+      }),
+    ];
+    // Řádek 1 se zveřejnil už dřív; řádky 3 a 5 mezitím spárovalo naučené označení, 5 na
+    // existující zboží z účtenky — to se počítá, 3 míří na běžné zboží.
+    expect(publishSummary(['2', '3', '4', '5'], result(lines, 4))).toEqual({
+      published: 4,
+      receiptItems: 2,
+      skippedCount: 0,
+      skipped: [],
+    });
+  });
+
+  it('přeskočené řádky seskupí podle důvodu v pořadí, jak přišly', () => {
+    const skipped = [
+      line('1', { labelDisplay: 'Záloha lahev', skipReason: 'RECEIPT_LINE_NOT_PRODUCT' }),
+      line('2', { labelDisplay: 'Rohlík', skipReason: 'DUPLICATE_SAME_DAY' }),
+      line('3', { labelDisplay: 'Vratný obal', skipReason: 'RECEIPT_LINE_NOT_PRODUCT' }),
+      line('4', { labelDisplay: 'Mléko', skipReason: 'RECEIPT_ITEM_LIMIT' }),
+    ];
+    expect(publishSummary(['1', '2', '3', '4'], result([], 0, skipped))).toEqual({
+      published: 0,
+      receiptItems: 0,
+      skippedCount: 4,
+      skipped: [
+        { reasonKey: 'errors.RECEIPT_LINE_NOT_PRODUCT', labels: ['Záloha lahev', 'Vratný obal'] },
+        { reasonKey: 'receipts.skip.duplicateSameDay', labels: ['Rohlík'] },
+        { reasonKey: 'receipts.skip.itemLimit', labels: ['Mléko'] },
+      ],
+    });
+  });
+
+  it('strop zboží z účtenek má text bez čísla, chybějící důvod je obecné selhání', () => {
+    expect(skipReasonKey('RECEIPT_ITEM_LIMIT')).toBe('receipts.skip.itemLimit');
+    expect(skipReasonKey(null)).toBe('errors.RECEIPT_LINE_CONFIRM_FAILED');
   });
 });

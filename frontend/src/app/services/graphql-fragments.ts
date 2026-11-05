@@ -152,6 +152,9 @@ export const productFieldsFragment = graphql(`
     status
     isGeneric
     catalogScope
+    # RECEIPT = „zboží z účtenky" — bez ověřených náležitostí, kreslí se jinak a jde dopárovat
+    # (shared/receipt-item-tag.ts, product-detail/receipt-item-rematch.ts).
+    createdVia
     scopeChain {
       id
       name
@@ -265,6 +268,8 @@ export const productSummaryFieldsFragment = graphql(`
     # bez tohohle pole ji klient nemá jak odlišit (docs/reputace.md, "Zboží bez čárového kódu").
     status
     catalogScope
+    # Zboží z účtenky se v nabídce i výsledcích hledání označí (shared/receipt-item-tag.ts).
+    createdVia
     scopeChain {
       id
       name

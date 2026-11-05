@@ -39,6 +39,9 @@
               <nz-list-item>
                 <div class="item-main">
                   <a [routerLink]="['/product', item.product.id]">{{ item.product.name }}</a>
+                  @if (isReceiptItem(item.product)) {
+                    <app-receipt-item-tag />
+                  }
                   <span class="item-date">
                     {{ t('my-contributions.createdAtLabel') }} {{ item.createdAt | relativeDate }}
                   </span>

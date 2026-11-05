@@ -262,6 +262,39 @@
                   />
                 }
 
+                <!--
+                  Kontrolní součet: předvýběr řádků se podle něj nemění (zaškrtnuté je dál všechno),
+                  jen se řekne, že něco nesedí, a podezřelé řádky dostanou štítek ke kontrole.
+                -->
+                @if (sumWarning(); as check) {
+                  @if (check.kind === 'mismatch') {
+                    <nz-alert
+                      nzType="warning"
+                      nzShowIcon
+                      [nzMessage]="
+                        t('receipts.sum.mismatchTitle', {
+                          computed: format.money(check.computed, receipt.currency),
+                          total: format.money(check.total, receipt.currency),
+                        })
+                      "
+                      [nzDescription]="
+                        t('receipts.sum.mismatchText', {
+                          difference: format.money(check.difference, receipt.currency),
+                        })
+                      "
+                      class="block"
+                    />
+                  } @else {
+                    <nz-alert
+                      nzType="info"
+                      nzShowIcon
+                      [nzMessage]="t('receipts.sum.unknownTitle')"
+                      [nzDescription]="t('receipts.sum.unknownText')"
+                      class="block"
+                    />
+                  }
+                }
+
                 @if (receipt.lines.length === 0) {
                   <p class="muted">{{ t('receipts.lines.empty') }}</p>
                 }
@@ -287,6 +320,11 @@
                     [count]="entry.lines.length"
                     [collapsible]="isCollapsible(entry.group)"
                     [expanded]="isExpanded(entry.group)"
+                    [hint]="
+                      entry.group === 'toResolve' && entry.lines.some(isReceiptItemCandidate)
+                        ? t('receipts.group.toResolveHint')
+                        : null
+                    "
                     (toggled)="toggleGroup(entry.group)"
                   />
                   @if (isExpanded(entry.group)) {
@@ -300,18 +338,14 @@
                           (click)="onLineClick(line, $event)"
                         >
                           <div class="line-check">
-                            @if (isConfirmable(line)) {
+                            @if (isSelectable(line)) {
                               <label
                                 nz-checkbox
                                 [ngModel]="selected().has(line.id)"
                                 (ngModelChange)="toggle(line.id, $event)"
                                 [nzDisabled]="confirming()"
                                 [attr.aria-label]="
-                                  isGuess(line)
-                                    ? t('receipts.line.selectGuessLabel', {
-                                        label: lineLabel(line),
-                                      })
-                                    : t('receipts.line.selectLabel', { label: lineLabel(line) })
+                                  t(selectLabelKey(line), { label: lineLabel(line) })
                                 "
                               ></label>
                             }
@@ -352,6 +386,18 @@
                               }
                             </div>
                             <div class="line-status">
+                              <!--
+                                Kontrolní součet nesedí a řádek vypadá na chybu čtení — štítek je
+                                první, ať jde v dlouhé účtence najít očima (zvýraznění řádku).
+                              -->
+                              @if (isToVerify(line, sumWarning())) {
+                                <nz-tag
+                                  nzColor="warning"
+                                  nz-tooltip
+                                  [nzTooltipTitle]="t('receipts.line.verifyHint')"
+                                  >{{ t('receipts.line.verify') }}</nz-tag
+                                >
+                              }
                               <nz-tag [nzColor]="lineColor(line)">{{
                                 lineStatusKeys[line.status] | transloco
                               }}</nz-tag>
@@ -377,6 +423,9 @@
                                   />
                                   <span>{{ product.name }}</span>
                                 </a>
+                                @if (isReceiptItem(product)) {
+                                  <app-receipt-item-tag />
+                                }
                               }
                               @if (!line.product && line.offCandidate; as off) {
                                 <span class="line-product">
@@ -388,6 +437,14 @@
                                 @if (matchSourceKey(line); as sourceKey) {
                                   <span class="muted">{{ sourceKey | transloco }}</span>
                                 }
+                              }
+                              @if (isReceiptItemCandidate(line) && selected().has(line.id)) {
+                                <span class="muted">{{
+                                  t('receipts.line.publishAsReceiptItem')
+                                }}</span>
+                              }
+                              @if (isNonProduct(line)) {
+                                <span class="muted">{{ t('receipts.line.nonProduct') }}</span>
                               }
                               @if (line.confirmed) {
                                 <span class="line-recorded">
@@ -498,32 +555,43 @@
 
                 <!-- Výsledek patří k liště: na širokém displeji je přilepená dole, kde se klikalo. -->
                 <div class="confirm-bar">
-                  @if (confirmResult(); as result) {
+                  @if (publishResult(); as result) {
                     <nz-alert
-                      [nzType]="result.skipped.length > 0 ? 'warning' : 'success'"
+                      [nzType]="result.skippedCount > 0 ? 'warning' : 'success'"
                       nzShowIcon
                       nzCloseable
                       [nzMessage]="
-                        result.confirmed === 0
+                        result.published === 0
                           ? t('receipts.confirm.doneNone')
-                          : t('receipts.confirm.done', { count: result.confirmed })
+                          : t('receipts.confirm.done', { count: result.published })
                       "
-                      [nzDescription]="result.skipped.length > 0 ? skippedTemplate : null"
-                      (nzOnClose)="confirmResult.set(null)"
+                      [nzDescription]="
+                        result.receiptItems > 0 || result.skippedCount > 0 ? resultTemplate : null
+                      "
+                      (nzOnClose)="publishResult.set(null)"
                       class="block"
                     />
-                    <ng-template #skippedTemplate>
-                      <p class="skipped-title">
-                        {{ t('receipts.confirm.skipped', { count: result.skipped.length }) }}
-                      </p>
-                      <ul class="skipped-list">
-                        @for (line of result.skipped; track line.id) {
-                          <li>
-                            <strong>{{ lineLabel(line) }}</strong> —
-                            {{ skipReasonKey(line.skipReason ?? '') | transloco }}
-                          </li>
-                        }
-                      </ul>
+                    <ng-template #resultTemplate>
+                      @if (result.receiptItems > 0) {
+                        <p class="result-title">
+                          {{
+                            t('receipts.confirm.doneReceiptItems', { count: result.receiptItems })
+                          }}
+                        </p>
+                      }
+                      @if (result.skippedCount > 0) {
+                        <p class="result-title">
+                          {{ t('receipts.confirm.skipped', { count: result.skippedCount }) }}
+                        </p>
+                        <ul class="skipped-list">
+                          @for (group of result.skipped; track group.reasonKey) {
+                            <li>
+                              {{ group.reasonKey | transloco }}
+                              <div class="muted small">{{ group.labels.join(', ') }}</div>
+                            </li>
+                          }
+                        </ul>
+                      }
                     </ng-template>
                   }
                   @if (confirmError()) {
@@ -552,6 +620,11 @@
                       <span class="blocker">{{ t('receipts.confirm.hint') }}</span>
                     }
                   </div>
+                  @if (guessesLeft() > 0) {
+                    <div class="blocker">
+                      {{ t('receipts.confirm.guessesLeft', { count: guessesLeft() }) }}
+                    </div>
+                  }
                 </div>
               </section>
             }

@@ -61,5 +61,34 @@
     "title": "Názvy na účtenkách",
     "hint": "Takhle zboží tisknou obchody na účtenku — podle toho se při načtení účtenky spáruje samo.",
     "unknownScope": "neznámý obchod"
+  },
+  "retry": "Zkusit znovu",
+  "offlineTitle": "Jste offline",
+  "offlineText": "Zboží se načte samo, jakmile se připojíte.",
+  "loadFailed": "Zboží se nepodařilo načíst.",
+  "receiptItem": {
+    "title": "Zboží z účtenky",
+    "text": "Vzniklo z položky účtenky, kterou nikdo nespároval se zbožím v katalogu. Název, cena, obchod a čas nákupu jsou z účtenky — značka, gramáž ani čárový kód ověřené nejsou.",
+    "rematch": "Spárovat se zbožím",
+    "loginHint": "Víte, o jaké zboží jde? Po přihlášení ho můžete spárovat se zbožím v katalogu."
+  },
+  "rematch": {
+    "title": "Spárovat se zbožím",
+    "intro": "Vyberte zboží z katalogu, kterým tahle položka z účtenky ve skutečnosti je.",
+    "introScope": "Vyberte zboží z katalogu, kterým tahle položka z účtenky ve skutečnosti je. Nabízí se zboží s čárovým kódem a zboží, které má v nabídce {{scope}}.",
+    "placeholder": "Hledat zboží podle názvu",
+    "empty": "Nic podobného jsme nenašli. Zkuste jiný název.",
+    "typeName": "Napište název zboží.",
+    "offline": "Jste offline — hledat a párovat půjde po připojení.",
+    "offlineAction": "Nejste připojeni k internetu — spárování se neuložilo. Zkuste to po připojení znovu.",
+    "unconfirmed": "zatím nepotvrzeno",
+    "confirmQuestion": "Spárovat „{{source}}“ s tímhle zbožím?",
+    "confirmNote": "Vaše ceny se přesunou hned. Ceny ostatních se přesunou, až stejné spárování potvrdí další lidé — jeden omyl tak nikomu historii nepřepíše.",
+    "submit": "Spárovat",
+    "back": "Vybrat jiné",
+    "mergedTitle": "Zboží sloučeno",
+    "mergedText": "Ceny ze zboží z účtenky „{{name}}“ jsou teď u tohoto zboží.",
+    "pendingTitle": "Vaše ceny jsou přesunuté",
+    "pendingText": "Sloučení pro všechny čeká na potvrzení dalších lidí ({{votes}} z {{required}}). Vaše ceny najdete u zboží:"
   }
 }

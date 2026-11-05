@@ -53,6 +53,10 @@ export const receiptLineFieldsFragment = graphql(`
     observationId
     confirmed
     skipReason
+    # Záloha a vratný obal — předem se nezaškrtnou a jako zboží z účtenky se nezveřejní.
+    nonProduct
+    # Vypadá na chybu čtení — při nesouhlasícím součtu se řádek zvýrazní ke kontrole.
+    suspicious
     offCandidate {
       code
       name
@@ -78,6 +82,9 @@ export const receiptDetailFieldsFragment = graphql(`
     ...ReceiptListFields
     storeAddressRaw
     storeIcoRaw
+    # Kontrolní součet workeru — řídí jen upozornění nad seznamem řádků (receipt-status.ts, sumCheck).
+    sumStatus
+    computedTotal
     suggestedStore {
       ...StoreFields
     }
@@ -288,12 +295,18 @@ export class ReceiptService {
 
   /**
    * Zapíše ceny z vybraných řádků — každý řádek zvlášť, kolize jednoho (stejná cena týž den)
-   * ostatní neshodí a vrátí se ve `skipped` se `skipReason`.
+   * ostatní neshodí a vrátí se ve `skipped` se `skipReason`. S `publishUnmatched` (web ho posílá
+   * vždy) se zveřejní i nespárované řádky: cena se zapíše na „zboží z účtenky"
+   * (`matchSource: RECEIPT_ITEM`), záloha a vratný obal se přeskočí s `RECEIPT_LINE_NOT_PRODUCT`.
    */
-  confirmLines(receiptId: string, lineIds: string[]) {
+  confirmLines(receiptId: string, lineIds: string[], publishUnmatched = true) {
     const document = graphql(`
-      mutation ConfirmReceiptLines($receiptId: ID!, $lineIds: [ID!]!) {
-        confirmReceiptLines(receiptId: $receiptId, lineIds: $lineIds) {
+      mutation ConfirmReceiptLines($receiptId: ID!, $lineIds: [ID!]!, $publishUnmatched: Boolean) {
+        confirmReceiptLines(
+          receiptId: $receiptId
+          lineIds: $lineIds
+          publishUnmatched: $publishUnmatched
+        ) {
           receipt {
             ...ReceiptDetailFields
           }
@@ -305,7 +318,7 @@ export class ReceiptService {
       }
     `);
     return this.graphQl
-      .execute(document, { receiptId, lineIds })
+      .execute(document, { receiptId, lineIds, publishUnmatched })
       .pipe(map((data) => data.confirmReceiptLines));
   }
 

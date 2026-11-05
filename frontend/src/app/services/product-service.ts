@@ -280,6 +280,30 @@ export class ProductService {
     return this.graphQl.execute(document, { id, input }).pipe(map((data) => data.updateProduct));
   }
 
+  /**
+   * Dopárování „zboží z účtenky" (`createdVia: RECEIPT`) na skutečné zboží. Vlastní ceny se
+   * přesunou hned; cizí až po `votesRequired` souhlasných hlasech různých lidí — `merged` řekne,
+   * jestli se zboží sloučilo celé (docs/reputace.md, „Zboží z účtenky"). Vyžaduje přihlášení.
+   */
+  rematchReceiptItem(productId: string, targetId: string) {
+    const document = graphql(`
+      mutation RematchReceiptItem($productId: ID!, $targetId: ID!) {
+        rematchReceiptItem(productId: $productId, targetId: $targetId) {
+          product {
+            id
+            name
+          }
+          merged
+          votes
+          votesRequired
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { productId, targetId })
+      .pipe(map((data) => data.rematchReceiptItem));
+  }
+
   /** Nahlášení zboží jako podezřelého/nesmyslného — hlasuje se o faktu, ne o člověku (docs/reputace.md). */
   flagProduct(id: string, reason?: string) {
     const document = graphql(`

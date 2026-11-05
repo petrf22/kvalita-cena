@@ -32,6 +32,7 @@ import { ViewerService } from '../../services/viewer-service';
 import { PRICE_KIND_KEYS, RECORD_TYPE_KEYS } from '../../shared/enum-labels';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { PublicationStatusBadge } from '../../shared/publication-status';
+import { ReceiptItemTag, isReceiptItem } from '../../shared/receipt-item-tag';
 import { RelativeDatePipe } from '../../shared/relative-date.pipe';
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -122,6 +123,7 @@ function createSection<T>(fetch: Section<T>['fetch']): Section<T> {
     MoneyPipe,
     RelativeDatePipe,
     PublicationStatusBadge,
+    ReceiptItemTag,
   ],
   providers: [provideTranslocoScope('my-contributions')],
   templateUrl: './my-contributions-page.html',
@@ -133,6 +135,7 @@ export class MyContributionsPage {
   private readonly myContributionsService = inject(MyContributionsService);
   private readonly transloco = inject(TranslocoService);
   protected readonly format = inject(FormatService);
+  protected readonly isReceiptItem = isReceiptItem;
 
   protected readonly viewer = signal<Viewer | null>(null);
 

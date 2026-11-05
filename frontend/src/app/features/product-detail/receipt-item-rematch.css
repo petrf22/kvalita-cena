@@ -1,0 +1,106 @@
+.rematch {
+  display: grid;
+  gap: var(--kc-space-3);
+}
+
+.rematch-question,
+.rematch-note,
+.rematch-error {
+  margin: 0;
+}
+
+.rematch-question {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.rematch-note {
+  font-size: var(--kc-font-sm);
+  color: var(--kc-text-secondary);
+}
+
+.rematch-error {
+  color: var(--kc-danger);
+}
+
+.rematch-candidate {
+  display: flex;
+  align-items: center;
+  gap: var(--kc-space-3);
+  padding: var(--kc-space-3);
+  border: 1px solid var(--kc-border-split);
+  background: var(--kc-bg-subtle);
+}
+
+.rematch-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--kc-space-2);
+  padding: var(--kc-space-2) 0;
+}
+
+.rematch-message {
+  margin: 0;
+  font-size: var(--kc-font-sm);
+  color: var(--kc-text-secondary);
+}
+
+.rematch-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--kc-border-split);
+}
+
+/* Celý řádek je dotykový cíl — min. 44 px (docs/design.md). */
+.rematch-item {
+  display: flex;
+  align-items: center;
+  gap: var(--kc-space-3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--kc-space-2);
+  border: 0;
+  border-bottom: 1px solid var(--kc-border-split);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rematch-item:hover,
+.rematch-item:focus-visible {
+  background: var(--kc-bg-subtle);
+}
+
+.rematch-text {
+  display: grid;
+  gap: var(--kc-space-1);
+  min-width: 0;
+}
+
+.rematch-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--kc-space-2);
+  color: var(--kc-text);
+  overflow-wrap: anywhere;
+}
+
+.rematch-meta {
+  font-size: var(--kc-font-xs);
+  color: var(--kc-text-muted);
+}
+
+.rematch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--kc-space-2);
+}
+
+.rematch-actions button {
+  min-height: 44px;
+}

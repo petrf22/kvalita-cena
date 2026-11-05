@@ -21,6 +21,7 @@ import { isNetworkError } from '../../services/connectivity-service';
 import { ReceiptService } from '../../services/receipt-service';
 import { translateError } from '../../shared/error-message';
 import { ProductThumb, usesExternalImageFallback } from '../../shared/product-thumb';
+import { ReceiptItemTag, isReceiptItem } from '../../shared/receipt-item-tag';
 
 /** Stejný debounce jako našeptávač názvu v `product-form` a `price-entry-page`. */
 const SEARCH_DEBOUNCE_MS = 300;
@@ -40,6 +41,7 @@ const SEARCH_DEBOUNCE_MS = 300;
     NzInputModule,
     NzSpinModule,
     ProductThumb,
+    ReceiptItemTag,
   ],
   templateUrl: './receipt-line-match.html',
   styleUrl: './receipt-line-match.css',
@@ -56,6 +58,7 @@ export class ReceiptLineMatch {
   readonly createNew = output<void>();
   readonly closed = output<void>();
 
+  protected readonly isReceiptItem = isReceiptItem;
   protected readonly query = signal('');
   protected readonly results = signal<ProductSummary[]>([]);
   protected readonly state = signal<'loading' | 'ready' | 'error' | 'offline'>('loading');

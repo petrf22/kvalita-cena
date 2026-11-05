@@ -102,7 +102,10 @@
                   — {{ item.brand!.name }}
                 }
                 · {{ item.category.name }}
-                @if (item.status === 'DRAFT') {
+                <!-- Zboží z účtenky je vždy nepotvrzené — štítek „Z účtenky" řekne víc. -->
+                @if (isReceiptItem(item)) {
+                  <app-receipt-item-tag class="draft-tag" />
+                } @else if (item.status === 'DRAFT') {
                   <span class="draft-tag">{{ t('price-entry.unconfirmedTag') }}</span>
                 }
               </span>

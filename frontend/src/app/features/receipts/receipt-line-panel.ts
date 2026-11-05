@@ -8,6 +8,7 @@ import { FormatService } from '../../services/format-service';
 import { NET_CONTENT_UOM_KEYS } from '../../shared/enum-labels';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { ProductThumb } from '../../shared/product-thumb';
+import { ReceiptItemTag, isReceiptItem } from '../../shared/receipt-item-tag';
 import { ReceiptLineMatch } from './receipt-line-match';
 import { isLineGuess, isLineOffSuggestion, lineGtin, lineRawLabel } from './receipt-status';
 
@@ -31,6 +32,7 @@ import { isLineGuess, isLineOffSuggestion, lineGtin, lineRawLabel } from './rece
     NzIconModule,
     MoneyPipe,
     ProductThumb,
+    ReceiptItemTag,
     ReceiptLineMatch,
   ],
   templateUrl: './receipt-line-panel.html',
@@ -60,6 +62,7 @@ export class ReceiptLinePanel {
   readonly closed = output<void>();
 
   protected readonly isGuess = isLineGuess;
+  protected readonly isReceiptItem = isReceiptItem;
   protected readonly isOffSuggestion = isLineOffSuggestion;
   protected readonly lineGtin = lineGtin;
   protected readonly lineRawLabel = lineRawLabel;

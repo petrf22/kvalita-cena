@@ -18,6 +18,7 @@ import { ProductService } from '../../services/product-service';
 import { PRICE_KIND_KEYS } from '../../shared/enum-labels';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { PriceEntryForm } from '../../shared/price-entry-form';
+import { ReceiptItemTag, isReceiptItem } from '../../shared/receipt-item-tag';
 import {
   ProductPreview,
   ProductThumb,
@@ -49,6 +50,7 @@ const SUGGESTIONS_DEBOUNCE_MS = 300;
     ProductForm,
     ProductPreview,
     ProductThumb,
+    ReceiptItemTag,
     StorePicker,
     TranslocoDirective,
     TranslocoPipe,
@@ -62,6 +64,7 @@ export class PriceEntryPage {
   private readonly productService = inject(ProductService);
   private readonly transloco = inject(TranslocoService);
   protected readonly auth = inject(AuthService);
+  protected readonly isReceiptItem = isReceiptItem;
 
   protected readonly priceKindKeys = PRICE_KIND_KEYS;
 

@@ -98,6 +98,9 @@
     "RECEIPT_RESULT_INVALID": "Výsledok spracovania bločku je neplatný.",
     "RECEIPT_LINE_ALREADY_CONFIRMED": "Cena z tohto riadku je už zapísaná.",
     "RECEIPT_LINE_CONFIRM_FAILED": "Cenu z tohto riadku sa nepodarilo zapísať, skúste to znova.",
+    "RECEIPT_ITEM_LIMIT": "Máš už {{p0}} nepotvrdených položiek z bločkov. Ďalšie pôjde zverejniť, až niektoré z nich potvrdia aj ostatní.",
+    "RECEIPT_LINE_NOT_PRODUCT": "Tento riadok nie je tovar (záloha, vratný obal) a nezverejňuje sa.",
+    "RECEIPT_ITEM_REMATCH_INVALID": "Tento tovar z bločku sa už spárovať nedá alebo vybraný tovar nepatrí do rovnakého obchodu.",
     "RECEIPT_UPLOAD_TOO_LARGE": "Bloček je na odoslanie príliš veľký — odfoťte ho na menej častí.",
     "QUALITY_REQUIRES_LOGIN": "Hodnotenie kvality vyžaduje prihlásenie",
     "QUALITY_STARS_OUT_OF_RANGE": "Hodnotenie musí byť {{p0}} až {{p1}} hviezdičiek",
@@ -236,12 +239,17 @@
       "FUZZY": "len podľa podobnosti názvu",
       "USER": "vybrané ručne",
       "NEW_PRODUCT": "novo založený tovar",
-      "OFF": "podľa EAN z Open Food Facts"
+      "OFF": "podľa EAN z Open Food Facts",
+      "RECEIPT_ITEM": "zverejnené ako tovar z bločku"
     },
     "quantityUnit": {
       "PCS": "ks",
       "KG": "kg",
       "L": "l"
     }
+  },
+  "receiptItem": {
+    "tag": "Z bločku",
+    "hint": "Tovar vznikol z nespárovanej položky bločku. Názov, cena, obchod a čas nákupu sú z bločku — značka, gramáž ani čiarový kód overené nie sú."
   }
 }

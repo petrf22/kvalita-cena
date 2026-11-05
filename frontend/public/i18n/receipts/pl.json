@@ -163,23 +163,31 @@
     "createNeedsStore": "Nowy produkt będzie można dodać po potwierdzeniu sklepu.",
     "ignore": "Pomiń",
     "unmatch": "Anuluj powiązanie",
-    "unignore": "Nie pomijaj"
+    "unignore": "Nie pomijaj",
+    "selectReceiptItemLabel": "Opublikuj pozycję {{label}} jako produkt z paragonu",
+    "publishAsReceiptItem": "zostanie opublikowana jako produkt z paragonu",
+    "nonProduct": "kaucja lub opakowanie — nie zostanie opublikowana",
+    "verify": "Sprawdź",
+    "verifyHint": "Pozycja wygląda na błąd odczytu: brakuje ceny, ilość × cena nie daje kwoty albo nazwa jest nieczytelna. Porównaj ją ze zdjęciem paragonu."
   },
   "skip": {
-    "duplicateSameDay": "Tę cenę już zapisałeś/aś dla dnia zakupu — drugi wpis nie został dodany."
+    "duplicateSameDay": "Tę cenę już zapisałeś/aś dla dnia zakupu — drugi wpis nie został dodany.",
+    "itemLimit": "Masz zbyt wiele niepotwierdzonych pozycji z paragonów. Kolejne będzie można opublikować, gdy inni potwierdzą część z nich."
   },
   "confirm": {
-    "button": "Potwierdź powiązane ({{count}})",
-    "hint": "Zapisze ceny zaznaczonych pozycji z datą i godziną zakupu z paragonu.",
+    "button": "Opublikuj zaznaczone ({{count}})",
+    "hint": "Zapisze ceny zaznaczonych pozycji z datą i godziną zakupu z paragonu. Niepowiązane zostaną opublikowane jako produkty z paragonu.",
     "blocker": {
       "notProcessed": "Paragon nie został jeszcze przetworzony.",
       "storeMissing": "Najpierw potwierdź sklep powyżej.",
       "purchaseTimeMissing": "Najpierw uzupełnij datę i godzinę zakupu powyżej.",
-      "nothing": "Zaznacz co najmniej jedną powiązaną pozycję."
+      "nothing": "Zaznacz co najmniej jedną pozycję."
     },
-    "done": "{count, plural, one {# cena zapisana.} few {# ceny zapisane.} many {# cen zapisanych.} other {# ceny zapisanej.}}",
-    "doneNone": "Nie zapisano żadnej nowej ceny.",
-    "skipped": "{count, plural, one {# pozycja pominięta:} few {# pozycje pominięte:} many {# pozycji pominiętych:} other {# pozycji pominiętej:}}"
+    "done": "{count, plural, one {# pozycja opublikowana.} few {# pozycje opublikowane.} many {# pozycji opublikowanych.} other {# pozycji opublikowanej.}}",
+    "doneNone": "Nie opublikowano żadnej pozycji.",
+    "skipped": "{count, plural, one {# pozycja pominięta:} few {# pozycje pominięte:} many {# pozycji pominiętych:} other {# pozycji pominiętej:}}",
+    "doneReceiptItems": "{count, plural, one {# z nich jako produkt z paragonu — powiązać go możesz później na stronie produktu.} few {# z nich jako produkty z paragonu — powiązać je możesz później na stronie produktu.} many {# z nich jako produkty z paragonu — powiązać je możesz później na stronie produktu.} other {# z nich jako produkty z paragonu — powiązać je możesz później na stronie produktu.}}",
+    "guessesLeft": "{count, plural, one {# domysł do sprawdzenia nie zostanie opublikowany, dopóki go nie zaznaczysz. Jeśli produkt się nie zgadza, anuluj powiązanie — pozycja zostanie wtedy opublikowana jako produkt z paragonu.} few {# domysły do sprawdzenia nie zostaną opublikowane, dopóki ich nie zaznaczysz. Jeśli produkt się nie zgadza, anuluj powiązanie — pozycja zostanie wtedy opublikowana jako produkt z paragonu.} many {# domysłów do sprawdzenia nie zostanie opublikowanych, dopóki ich nie zaznaczysz. Jeśli produkt się nie zgadza, anuluj powiązanie — pozycja zostanie wtedy opublikowana jako produkt z paragonu.} other {# domysłu do sprawdzenia nie zostanie opublikowane, dopóki ich nie zaznaczysz. Jeśli produkt się nie zgadza, anuluj powiązanie — pozycja zostanie wtedy opublikowana jako produkt z paragonu.}}"
   },
   "create": {
     "title": "Nowy produkt z paragonu",
@@ -193,16 +201,25 @@
     "skip": "Pomiń"
   },
   "group": {
-    "toResolve": "Do uzupełnienia ({{count}})",
+    "toResolve": "Niepowiązane ({{count}})",
     "toCheck": "Do sprawdzenia ({{count}})",
     "ready": "Gotowe do potwierdzenia ({{count}})",
     "done": "Gotowe ({{count}})",
-    "ignored": "Zignorowane ({{count}})"
+    "ignored": "Zignorowane ({{count}})",
+    "toResolveHint": "Zaznaczone pozycje zostaną opublikowane jako produkty z paragonu — z nazwą i ceną jak na paragonie. Jeśli znajdziesz i powiążesz produkt w katalogu, cena zostanie zapisana przy nim."
   },
   "panel": {
     "accept": "Tak, to ten",
     "other": "Inny produkt",
     "notProduct": "To nie produkt — ignoruj",
-    "offHint": "Open Food Facts zna ten produkt po EAN. Zostanie dodany do katalogu, gdy potwierdzisz pozycję."
+    "offHint": "Open Food Facts zna ten produkt po EAN. Zostanie dodany do katalogu, gdy potwierdzisz pozycję.",
+    "receiptItemHint": "Nie musisz szukać ani dodawać produktu — zaznaczona pozycja zostanie opublikowana jako produkt z paragonu. Jeśli go jednak znajdziesz, cena trafi do prawdziwego produktu.",
+    "nonProductHint": "Wygląda to na kaucję albo opakowanie zwrotne — taka pozycja nie zostanie opublikowana. Jeśli to produkt, znajdź go i powiąż."
+  },
+  "sum": {
+    "mismatchTitle": "Suma pozycji {{computed}} nie zgadza się z kwotą na paragonie {{total}}",
+    "mismatchText": "Różnica wynosi {{difference}}. Któraś pozycja mogła zostać źle odczytana albo jej brakuje — przejrzyj pozycje oznaczone „Sprawdź” i odznacz to, czego nie chcesz publikować.",
+    "unknownTitle": "Nie udało się sprawdzić sumy — sprawdź pozycje",
+    "unknownText": "Aplikacja nie ma z czym porównać sumy pozycji — na paragonie nie znaleziono kwoty łącznej albo odczytała go starsza wersja. Przejrzyj pozycje (zwłaszcza oznaczone „Sprawdź”) i odznacz to, czego nie chcesz publikować."
   }
 }

@@ -98,6 +98,9 @@
     "RECEIPT_RESULT_INVALID": "Výsledek zpracování účtenky je neplatný.",
     "RECEIPT_LINE_ALREADY_CONFIRMED": "Cena z tohohle řádku už je zapsaná.",
     "RECEIPT_LINE_CONFIRM_FAILED": "Cenu z tohoto řádku se nepodařilo zapsat, zkuste to znovu.",
+    "RECEIPT_ITEM_LIMIT": "Máš už {{p0}} nepotvrzených položek z účtenek. Další půjde zveřejnit, až některé z nich potvrdí i ostatní.",
+    "RECEIPT_LINE_NOT_PRODUCT": "Tenhle řádek není zboží (záloha, vratný obal) a nezveřejňuje se.",
+    "RECEIPT_ITEM_REMATCH_INVALID": "Tohle zboží z účtenky už spárovat nejde, nebo vybrané zboží nepatří do stejného obchodu.",
     "RECEIPT_UPLOAD_TOO_LARGE": "Účtenka je na odeslání příliš velká — nafoťte ji na méně dílů.",
     "QUALITY_REQUIRES_LOGIN": "Hodnocení kvality vyžaduje přihlášení",
     "QUALITY_STARS_OUT_OF_RANGE": "Hodnocení musí být {{p0}} až {{p1}} hvězdiček",
@@ -236,12 +239,17 @@
       "FUZZY": "jen podle podobnosti názvu",
       "USER": "vybráno ručně",
       "NEW_PRODUCT": "nově založené zboží",
-      "OFF": "podle EAN z Open Food Facts"
+      "OFF": "podle EAN z Open Food Facts",
+      "RECEIPT_ITEM": "zveřejněno jako zboží z účtenky"
     },
     "quantityUnit": {
       "PCS": "ks",
       "KG": "kg",
       "L": "l"
     }
+  },
+  "receiptItem": {
+    "tag": "Z účtenky",
+    "hint": "Zboží vzniklo z nespárované položky účtenky. Název, cena, obchod a čas nákupu jsou z účtenky — značka, gramáž ani čárový kód ověřené nejsou."
   }
 }

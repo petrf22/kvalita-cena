@@ -143,10 +143,13 @@ export const ErrorCode = {
   ReceiptConsentRequired: 'RECEIPT_CONSENT_REQUIRED',
   ReceiptDailyLimit: 'RECEIPT_DAILY_LIMIT',
   ReceiptImagesRequired: 'RECEIPT_IMAGES_REQUIRED',
+  ReceiptItemLimit: 'RECEIPT_ITEM_LIMIT',
+  ReceiptItemRematchInvalid: 'RECEIPT_ITEM_REMATCH_INVALID',
   ReceiptLineAlreadyConfirmed: 'RECEIPT_LINE_ALREADY_CONFIRMED',
   ReceiptLineConfirmFailed: 'RECEIPT_LINE_CONFIRM_FAILED',
   ReceiptLineNotFound: 'RECEIPT_LINE_NOT_FOUND',
   ReceiptLineNotMatched: 'RECEIPT_LINE_NOT_MATCHED',
+  ReceiptLineNotProduct: 'RECEIPT_LINE_NOT_PRODUCT',
   ReceiptLinePriceMissing: 'RECEIPT_LINE_PRICE_MISSING',
   ReceiptNotFound: 'RECEIPT_NOT_FOUND',
   ReceiptNotProcessed: 'RECEIPT_NOT_PROCESSED',
@@ -263,6 +266,16 @@ export const PriceKind = {
 } as const;
 
 export type PriceKind = typeof PriceKind[keyof typeof PriceKind];
+/**
+ * Jak zboží vzniklo. RECEIPT = „zboží z účtenky": druhová položka ze zveřejněného nespárovaného
+ * řádku účtenky, bez ověřených náležitostí — klient ji kreslí jinak a nabídne dopárování.
+ */
+export const ProductCreatedVia = {
+  Receipt: 'RECEIPT',
+  User: 'USER'
+} as const;
+
+export type ProductCreatedVia = typeof ProductCreatedVia[keyof typeof ProductCreatedVia];
 /** Odkud je předvyplněná hodnota formuláře nového zboží — klient u AI ukáže, že jde o návrh. */
 export const ProductDefaultSource = {
   /** Návrh lokálního modelu — jen předvyplnění, uživatel ho má zkontrolovat. */
@@ -385,6 +398,8 @@ export const ReceiptMatchSource = {
    * offCandidate). Zboží se založí až potvrzením řádku. Deterministické jako CODE, předem zaškrtnuté.
    */
   Off: 'OFF',
+  /** Zveřejněno bez spárování — cena je zapsaná na „zboží z účtenky“ (Product.createdVia RECEIPT). */
+  ReceiptItem: 'RECEIPT_ITEM',
   User: 'USER'
 } as const;
 
@@ -410,6 +425,15 @@ export const ReceiptReviewStatus = {
 } as const;
 
 export type ReceiptReviewStatus = typeof ReceiptReviewStatus[keyof typeof ReceiptReviewStatus];
+/** Kontrolní součet workeru: součet položek proti vytištěnému „Celkem“. */
+export const ReceiptSumStatus = {
+  Match: 'MATCH',
+  Mismatch: 'MISMATCH',
+  /** Celkem se nenašlo, nebo účtenku zpracovala starší verze. */
+  Unknown: 'UNKNOWN'
+} as const;
+
+export type ReceiptSumStatus = typeof ReceiptSumStatus[keyof typeof ReceiptSumStatus];
 export const RecordType = {
   /** Nahlašovaný typ pro flagRecord — core.media samo nese jen PRODUCT/STORE (čí je fotka). */
   Photo: 'PHOTO',

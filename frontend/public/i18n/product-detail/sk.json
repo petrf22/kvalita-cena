@@ -61,5 +61,34 @@
     "title": "Názvy na bločkoch",
     "hint": "Takto tovar tlačia obchody na bloček — podľa toho sa pri načítaní bločku spáruje samo.",
     "unknownScope": "neznámy obchod"
+  },
+  "retry": "Skúsiť znova",
+  "offlineTitle": "Ste offline",
+  "offlineText": "Tovar sa načíta sám, hneď ako sa pripojíte.",
+  "loadFailed": "Tovar sa nepodarilo načítať.",
+  "receiptItem": {
+    "title": "Tovar z bločku",
+    "text": "Vznikol z položky bločku, ktorú nikto nespároval s tovarom v katalógu. Názov, cena, obchod a čas nákupu sú z bločku — značka, gramáž ani čiarový kód overené nie sú.",
+    "rematch": "Spárovať s tovarom",
+    "loginHint": "Viete, o aký tovar ide? Po prihlásení ho môžete spárovať s tovarom v katalógu."
+  },
+  "rematch": {
+    "title": "Spárovať s tovarom",
+    "intro": "Vyberte tovar z katalógu, ktorým táto položka z bločku v skutočnosti je.",
+    "introScope": "Vyberte tovar z katalógu, ktorým táto položka z bločku v skutočnosti je. Ponúka sa tovar s čiarovým kódom a tovar, ktorý má v ponuke {{scope}}.",
+    "placeholder": "Hľadať tovar podľa názvu",
+    "empty": "Nič podobné sme nenašli. Skúste iný názov.",
+    "typeName": "Napíšte názov tovaru.",
+    "offline": "Ste offline — hľadať a párovať pôjde po pripojení.",
+    "offlineAction": "Nie ste pripojení na internet — spárovanie sa neuložilo. Skúste to po pripojení znova.",
+    "unconfirmed": "zatiaľ nepotvrdené",
+    "confirmQuestion": "Spárovať „{{source}}“ s týmto tovarom?",
+    "confirmNote": "Vaše ceny sa presunú hneď. Ceny ostatných sa presunú, až rovnaké spárovanie potvrdia ďalší ľudia — jeden omyl tak nikomu históriu neprepíše.",
+    "submit": "Spárovať",
+    "back": "Vybrať iný",
+    "mergedTitle": "Tovar zlúčený",
+    "mergedText": "Ceny z tovaru z bločku „{{name}}“ sú teraz pri tomto tovare.",
+    "pendingTitle": "Vaše ceny sú presunuté",
+    "pendingText": "Zlúčenie pre všetkých čaká na potvrdenie ďalších ľudí ({{votes}} z {{required}}). Vaše ceny nájdete pri tovare:"
   }
 }
