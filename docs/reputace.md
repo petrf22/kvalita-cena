@@ -475,3 +475,50 @@ faktor odvozený z produktu by byl v celé buňce konstantní — jak vážený 
 takže by `agg.price_current` vyšlo bit po bitu stejně jako bez něj. Efekt "bezkódové zboží je
 méně důvěryhodné" proto patří tam, kde skutečně něco mění — do stropu confidence a do statusu
 DRAFT/ACTIVE, ne do váhy záznamu.
+
+## Zboží z účtenky
+
+Řádek účtenky, který uživatel nedokáže spárovat, se přesto může zveřejnit
+(`confirmReceiptLines(publishUnmatched: true)`, `docs/datovy-model.md`, „Účtenky"). Název, cena,
+obchod a čas nákupu jsou nejcennější údaje, které účtenka nese, a o ty se nemá přicházet jen
+proto, že párování je pracné. Cena se zapíše na **zboží z účtenky**: bezkódovou druhovou položku
+z oddílu výš (`is_generic`, rozsah řetězce/provozovny), jen se značkou původu
+`core.product.created_via = 'RECEIPT'`. Není to nová entita, takže hledání, agregace, grafy
+i sloučení fungují beze změny.
+
+**Viditelnost se nemění.** Zboží z účtenky je vždy `DRAFT` a platí pro něj stejný práh jako
+pro ruční bezkódové zboží („Práh důvěry pro zveřejnění nového záznamu" výš,
+`app.catalog.draft-confirmations` = 3, leave-one-out). Potvrzení se ale sbírají samy: po
+zveřejnění se naučí označení z účtenky (`core.product_store_label`), takže stejný řádek na
+účtence jiného člověka ze stejného řetězce dostane návrh na totéž zboží. Jeho potvrzená cena
+je potvrzení zboží z účtenky. V hledání se zboží z účtenky řadí za ostatní shody, kromě řazení
+podle ceny (`ProductSearchRepositoryImpl.orderByFragment`), a klient ho kreslí se štítkem
+„Z účtenky".
+
+**Stropy.** Zboží z účtenky se nepočítá do limitů ručního zakládání (`app.catalog.max-products-
+per-day`, `max-products-per-store-per-day`, `max-unconfirmed-drafts`) — jedna velká účtenka by je
+vyčerpala a autor by pak nemohl založit nic ani ručně. Platí pro něj vlastní strop
+`app.receipt.max-open-items` (výchozí 300): kolik nepotvrzených (`DRAFT`) položek z účtenek smí
+mít účet otevřených naráz. Co se nevejde, přeskočí se s `RECEIPT_ITEM_LIMIT` a zůstane
+v přehledu účtenky ke zveřejnění později. Spam brzdí denní limit účtenek
+(`app.receipt.max-receipts-per-day`) a to, že každá účtenka prošla workerem. Položka se stejným
+normalizovaným názvem v rozsahu se použije znovu, nevzniká duplicita. Záloha a vratný obal
+zboží nejsou a nezveřejňují se (`app.receipt.non-product-pattern`, `RECEIPT_LINE_NOT_PRODUCT`).
+
+**Dopárování mění data jiných lidí, proto má dvě rychlosti** (`rematchReceiptItem`,
+`ReceiptItemRematchService`):
+
+- Vlastní ceny a vlastní řádky účtenek uživatele se přesunou na vybrané zboží **hned** — nikomu
+  jinému tím nic nemění. Když na zboží z účtenky nejsou data ani hlas nikoho jiného, sloučí se
+  celé hned (`ProductMergeService.mergeReceiptItem`).
+- Jinak vznikne hlas `zdroj → cíl` (`core.product_merge_vote`, jeden účet jeden hlas, změna
+  názoru hlas přepíše). Sloučení všeho, co zbylo — cizí ceny, označení z účtenek, spárované
+  řádky — proběhne, až pro **stejný** cíl hlasuje `app.receipt.item-merge-confirmations`
+  (výchozí 2) různých lidí. Jeden omyl ani jeden zlý úmysl tak cizí historii nepřesune.
+- Neshoda hlasů (dva lidé, dva různé cíle) nesloučí nic a čeká na moderátora (`mergeProducts`).
+  Cizí hlas se proto počítá jako cizí data: kdo hlasoval, už svá data přesunul, a druhý hlas
+  pro jiný cíl by jinak našel zboží „bez cizích dat" a sloučil ho sám.
+- Cílem smí být i zboží s EAN (na rozdíl od moderátorského `mergeProducts`, který slučuje jen
+  bezkódové položky) — zboží z účtenky je jen zástupce, dokud někdo nepozná, co to je. Cíl musí
+  jít použít ve stejném řetězci/provozovně (`RECEIPT_ITEM_REMATCH_INVALID`). EAN z řádků se po
+  sloučení připíše cíli, který žádný EAN nemá (stejné pravidlo jako `ReceiptReviewService.learnCode`).

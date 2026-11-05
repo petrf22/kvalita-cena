@@ -7,6 +7,13 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [Nezveřejněno]
+
+### Přidáno
+- Z účtenky jde zveřejnit i zboží, které se nepodařilo spárovat — uloží se s názvem, cenou, obchodem a časem nákupu jako „zboží z účtenky" a stejné zboží z dalších účtenek se k němu přiřadí samo (server, web, mobil)
+- Když součet položek nesedí s částkou na účtence, appka na to upozorní a označí řádky ke kontrole (server, web, mobil)
+- Zboží z účtenky jde spárovat se skutečným zbožím; vlastní ceny se přesunou hned, ceny ostatních po potvrzení dalším člověkem (server, web, mobil)
+
 ## [0.13.2] – 2026-11-03
 
 ### Opraveno

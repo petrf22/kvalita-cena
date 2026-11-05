@@ -127,6 +127,14 @@ který se probral po vypršení leasu, vrátil do fronty úlohu, na které už p
 s celkovou částkou — patička s kartou se zahodí i tady (`docs/soukromi.md`, „Účtenky"). Váhové
 zboží s cenou za g/ml worker převede na kg/l v množství i v jednotkové ceně.
 
+**Kontrolní součet řídí předvýběr, nic nezakazuje.** Server si ze `extraction` vezme
+`totalMatches`/`printedTotal`/`computedTotal` a uloží je jako `core.receipt.sum_status`
+a `computed_total` (`ReceiptWorkerService.sumCheck`, nové rozpoznání přepíše jen známým
+výsledkem). Klient podle nich předvybere řádky ke zveřejnění: se sedícím součtem vše
+kromě nezboží; s nesedícím nebo neověřitelným součtem taky, ale s upozorněním na rozdíl
+a zvýrazněnými podezřelými řádky (`ReceiptLine.suspicious`, `ReceiptLineChecks`). Vybrané
+řádky zveřejní až klik vlastníka — i nespárované, na „zboží z účtenky" (`docs/reputace.md`).
+
 **Proč ne vision model se strukturovaným výstupem:** vyzkoušeno na reálných účtenkách
 (větev `feat/import-uctenek`, 2026-09-07) — jazykový model nad textem účtenky zahodil řádek
 `3.000 ks x 36.90 Kč /ks` (zůstalo zaplacených 110,70 za tři kusy jako cena kusu) a jindy

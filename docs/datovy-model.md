@@ -601,7 +601,8 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   `match_source = OFF` — jediný `SUGGESTED` **bez** `product_id`, zboží se nad OFF snapshotem
   založí až potvrzením řádku, ať se katalog neplní zbožím z nepotvrzených účtenek; výjimku
   nese `chk_receipt_line_product`),
-  `MATCHED` (uživatel potvrdil, `observation_id` ukazuje na vzniklou cenu — po 180 dnech ho
+  `MATCHED` (uživatel potvrdil, `observation_id` ukazuje na vzniklou cenu; řádek zveřejněný bez
+  spárování má `match_source = RECEIPT_ITEM` a zboží je „zboží z účtenky", viz níž — po 180 dnech ho
   pseudonymizace maže, `docs/soukromi.md`), `IGNORED` (uživatel párovat nechce).
   `skip_reason` nese, proč potvrzený řádek cenu nezapsal (typicky `DUPLICATE_SAME_DAY` —
   kolize s `uq_price_observation_submitter_kind_per_day` nesmí shodit celou účtenku, na rozdíl
@@ -610,6 +611,15 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   `skip_reason` (`ReceiptLine.isConfirmed`).
   **`unit_price` u váhového zboží je cena za kg/l, nikdy zaplacená částka** — ta je
   v `line_total`, zápis ceny bere `unit_price` s `quantityBasis = PER_KG`/`PER_L`.
+- **Zboží z účtenky** (migrace `2026-11-05/`, pravidla `docs/reputace.md`, „Zboží z účtenky") —
+  `core.product.created_via = 'RECEIPT'` u bezkódové druhové položky, kterou založilo zveřejnění
+  nespárovaného řádku (`ReceiptReviewService.receiptItemFor` → `ProductCatalogService
+  .receiptItem`). Žádná nová tabulka zboží: název je čitelný název řádku, kategorie
+  z `NewProductDefaultsService`, jinak záchytná `nezarazeno` („Nezařazeno"), gramáž jen jako
+  úplná dvojice z tisku. `core.receipt.sum_status` (`MATCH`/`MISMATCH`/`UNKNOWN`)
+  + `computed_total` je kontrolní součet workeru z `extraction` (`ReceiptWorkerService.sumCheck`)
+  — řídí jen předvýběr řádků v klientovi. `core.product_merge_vote` jsou hlasy pro dopárování
+  (`UNIQUE (source_product_id, user_id)`, `user_id` se po 180 dnech nuluje).
 - **`core.product_store_label`** + **`core.product_store_label_confirmation`** — „Názvy na
   účtenkách": označení obchodu → katalogové zboží. Rozsah právě jeden z `chain_id`/`store_id`
   (řetězec tiskne stejné zkratky ve všech provozovnách, nezávislý obchod vlastní), unikátnost

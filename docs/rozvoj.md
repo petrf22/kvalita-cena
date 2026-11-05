@@ -112,6 +112,10 @@ dvě podobné datové struktury vedle sebe.
 Zbývá: leták jako druhý zdroj označení (otevřená otázka v „Mapování…" níž), `f_evid` ve
 váze a cloudový engine.
 
+**Stav (2026-11-05):** zveřejnit jde celou účtenku, i řádky, které uživatel nespároval — cena
+se zapíše na „zboží z účtenky" a dopárovat ho jde kdykoli později (`docs/reputace.md`,
+„Zboží z účtenky"). Kontrolní součet workeru řídí předvýběr řádků.
+
 **Zadání:** naskenovat celou účtenku z obchodu a vytěžit z ní názvy zboží, ceny, slevy,
 vnitroobchodní kódy, počty kusů, případně obchod a datum. Dvojí přínos: hromadné zadání/
 aktualizace více cen najednou a uložení účtenky jako přehledu vlastního nákupu pro uživatele.
