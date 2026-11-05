@@ -445,6 +445,10 @@
                               }
                               @if (isNonProduct(line)) {
                                 <span class="muted">{{ t('receipts.line.nonProduct') }}</span>
+                              } @else if (isPriceMissing(line) && !line.skipReason) {
+                                <span class="muted">{{
+                                  'errors.RECEIPT_LINE_PRICE_MISSING' | transloco
+                                }}</span>
                               }
                               @if (line.confirmed) {
                                 <span class="line-recorded">

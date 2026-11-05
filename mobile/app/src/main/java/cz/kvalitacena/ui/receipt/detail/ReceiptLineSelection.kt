@@ -20,7 +20,22 @@ internal fun ReceiptLine.isConfirmable(): Boolean = status == "SUGGESTED"
  * párování jako každé jiné, jen se předem nezaškrtne ([isSelectedByDefault]).
  */
 internal fun ReceiptLine.isPublishable(): Boolean =
-  !confirmed && (isConfirmable() || (status == "UNMATCHED" && !nonProduct))
+  !confirmed && isPriceKnown() && (isConfirmable() || (status == "UNMATCHED" && !nonProduct))
+
+/**
+ * Z řádku jde zapsat cena — stejné pravidlo jako server (`ReceiptReviewService.priceRows`):
+ * kladná jednotková cena, nebo celková částka u kusového zboží či se známým množstvím. Bez ní
+ * server řádek vždy přeskočí (`RECEIPT_LINE_PRICE_MISSING`), zaškrtávátko by jen slibovalo
+ * něco, co se nestane. Web: `isLinePriceKnown` v `receipt-status.ts`.
+ */
+internal fun ReceiptLine.isPriceKnown(): Boolean {
+  if ((unitPrice ?: 0.0) > 0.0) return true
+  val total = lineTotal ?: 0.0
+  return total > 0.0 && (quantityUnit == "PCS" || (quantity ?: 0.0) > 0.0)
+}
+
+/** Nevyřízený řádek, ze kterého cenu zapsat nejde — klient řekne proč, místo zaškrtávátka. */
+internal fun ReceiptLine.isPriceMissing(): Boolean = !confirmed && status != "IGNORED" && !isPriceKnown()
 
 /** Zveřejní se bez spárování — cena se zapíše na „zboží z účtenky". */
 internal fun ReceiptLine.publishesAsReceiptItem(): Boolean = isPublishable() && status == "UNMATCHED"

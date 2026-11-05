@@ -7,6 +7,7 @@ import type {
 } from '../../models/catalog';
 import {
   ErrorCode,
+  QuantityUnit,
   ReceiptLineStatus,
   ReceiptMatchSource,
   ReceiptProcessingStatus,
@@ -89,7 +90,29 @@ export function isLineConfirmable(line: Pick<ReceiptLine, 'status' | 'confirmed'
   return line.status === ReceiptLineStatus.Suggested && !isLineLocked(line);
 }
 
-type SelectSource = Pick<ReceiptLine, 'status' | 'confirmed' | 'nonProduct'>;
+type SelectSource = Pick<ReceiptLine, 'status' | 'confirmed' | 'nonProduct'> &
+  Partial<Pick<ReceiptLine, 'unitPrice' | 'lineTotal' | 'quantity' | 'quantityUnit'>>;
+
+/**
+ * Z řádku jde zapsat cena — stejné pravidlo jako server (`ReceiptReviewService.priceRows`):
+ * kladná jednotková cena, nebo celková částka u kusového zboží či se známým množstvím. Bez ní
+ * server řádek vždy přeskočí (`RECEIPT_LINE_PRICE_MISSING`), takže ho nemá smysl nabízet.
+ * Řádek bez cenových údajů v typu (starší volání) se bere jako s cenou.
+ */
+export function isLinePriceKnown(line: SelectSource): boolean {
+  if (!('unitPrice' in line) && !('lineTotal' in line)) return true;
+  if ((line.unitPrice ?? 0) > 0) return true;
+  const total = line.lineTotal ?? 0;
+  const perPackage = !line.quantityUnit || line.quantityUnit === QuantityUnit.Pcs;
+  return total > 0 && (perPackage || (line.quantity ?? 0) > 0);
+}
+
+/** Nespárovaný nebo navržený řádek, ze kterého cenu zapsat nejde — nezveřejní se. */
+export function isLinePriceMissing(line: SelectSource): boolean {
+  return (
+    !isLineLocked(line) && line.status !== ReceiptLineStatus.Ignored && !isLinePriceKnown(line)
+  );
+}
 
 /**
  * Řádek jde zaškrtnout ke zveřejnění: cena z něj ještě nevznikla a server ji umí zapsat —
@@ -99,7 +122,7 @@ type SelectSource = Pick<ReceiptLine, 'status' | 'confirmed' | 'nonProduct'>;
  * zbožím, z návrhu ho zveřejnit může. Ignorovaný řádek je rozhodnutí uživatele „není zboží".
  */
 export function isLineSelectable(line: SelectSource): boolean {
-  if (isLineLocked(line)) return false;
+  if (isLineLocked(line) || !isLinePriceKnown(line)) return false;
   if (line.status === ReceiptLineStatus.Suggested) return true;
   return line.status === ReceiptLineStatus.Unmatched && !line.nonProduct;
 }
@@ -140,7 +163,9 @@ export function isLineGuess(
 function isLinePreselectable(
   line: SelectSource & Pick<ReceiptLine, 'matchSource' | 'skipReason'>,
 ): boolean {
-  return isLineSelectable(line) && !isLineGuess(line) && !line.nonProduct && !line.skipReason;
+  // RECEIPT_LINE_NOT_MATCHED vyřeší zveřejnění bez spárování — jako v mobilu.
+  const skipped = !!line.skipReason && line.skipReason !== 'RECEIPT_LINE_NOT_MATCHED';
+  return isLineSelectable(line) && !isLineGuess(line) && !line.nonProduct && !skipped;
 }
 
 /** Popisek zaškrtávátka řádku pro čtečky — klíč do bundlu `receipts`, parametr `label`. */

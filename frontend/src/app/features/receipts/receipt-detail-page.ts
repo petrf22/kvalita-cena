@@ -47,6 +47,7 @@ import {
   isLineGuess,
   isLineLocked,
   isLineNonProduct,
+  isLinePriceMissing,
   isLineReceiptItemCandidate,
   isLineSelectable,
   isLineToVerify,
@@ -140,6 +141,7 @@ export class ReceiptDetailPage {
   protected readonly isSelectable = isLineSelectable;
   protected readonly isReceiptItemCandidate = isLineReceiptItemCandidate;
   protected readonly isNonProduct = isLineNonProduct;
+  protected readonly isPriceMissing = isLinePriceMissing;
   protected readonly isToVerify = isLineToVerify;
   protected readonly isReceiptItem = isReceiptItem;
   protected readonly selectLabelKey = selectLabelKey;

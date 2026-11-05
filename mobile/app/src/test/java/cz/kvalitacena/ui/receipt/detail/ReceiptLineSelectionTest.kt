@@ -25,9 +25,17 @@ class ReceiptLineSelectionTest {
     nonProduct: Boolean = false,
     suspicious: Boolean = false,
     product: ProductSummary? = null,
+    unitPrice: Double? = 10.0,
+    lineTotal: Double? = 10.0,
+    quantity: Double? = 1.0,
+    quantityUnit: String = "PCS",
   ) = ReceiptLine(
     id = id,
     lineNo = id.toInt(),
+    unitPrice = unitPrice,
+    lineTotal = lineTotal,
+    quantity = quantity,
+    quantityUnit = quantityUnit,
     labelRaw = labelRaw,
     labelDisplay = labelDisplay,
     status = status,
@@ -78,6 +86,20 @@ class ReceiptLineSelectionTest {
   fun predemZaskrtnuteJeVseKromeOdhaduHotovehoAIgnorovaneho() {
     // Nespárovaný řádek 6 se zveřejní jako zboží z účtenky; odhad 3, zapsaný 7 a ignorovaný 8 ne.
     assertEquals(setOf("1", "2", "4", "5", "6"), defaultSelectedLineIds(lines))
+  }
+
+  @Test
+  fun radekBezCitelneCenyNejdeZaskrtnout() {
+    val noPrice = line("2", status = "UNMATCHED", unitPrice = null, lineTotal = null, suspicious = true)
+    assertFalse(noPrice.isPublishable())
+    assertFalse(noPrice.isSelectedByDefault())
+    assertTrue(noPrice.isPriceMissing())
+    // Váhové zboží jen s celkovou částkou a bez množství: cenu za kg spočítat nejde.
+    assertFalse(line("3", status = "UNMATCHED", unitPrice = null, lineTotal = 20.5, quantity = null, quantityUnit = "KG").isPublishable())
+    // Kus s celkovou částkou: cena za balení z ní jde.
+    val perPackage = line("4", status = "UNMATCHED", unitPrice = null, lineTotal = 20.5, quantity = null)
+    assertTrue(perPackage.isPublishable())
+    assertFalse(perPackage.isPriceMissing())
   }
 
   @Test

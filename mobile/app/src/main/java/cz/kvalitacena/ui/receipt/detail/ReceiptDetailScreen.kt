@@ -650,6 +650,14 @@ private fun LineRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
         }
+        if (line.isPriceMissing() && line.skipReason == null) {
+          // Bez ceny řádek zaškrtnout nejde — bez věty by prázdné místo vypadalo jako chyba.
+          Text(
+            stringResource(R.string.receipt_skip_price_missing),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
         if (line.isFuzzyGuess()) {
           // Odhad není předem zaškrtnutý (ReceiptLineSelection.kt) — řádek musí říct proč a co
           // potvrzení udělá, jinak prázdné zaškrtávátko vypadá jako chyba.

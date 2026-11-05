@@ -5,6 +5,7 @@ import {
   confirmBlocker,
   consentOutdated,
   defaultSelectedLineIds,
+  isLinePriceMissing,
   groupedLines,
   guideQueue,
   isLineConfirmable,
@@ -149,6 +150,29 @@ describe('odhad zboží podle podobnosti názvu (FUZZY)', () => {
       line('3', { status: 'SUGGESTED', matchSource: 'LABEL' }),
     ];
     expect([...defaultSelectedLineIds(lines)]).toEqual(['1', '3']);
+  });
+
+  it('řádek bez čitelné ceny nejde zaškrtnout — server by ho vždy přeskočil', () => {
+    const lines = [
+      line('1'),
+      line('2', { unitPrice: null, lineTotal: null, suspicious: true }),
+      // Váhové zboží jen s celkovou částkou a bez množství: cenu za kg spočítat nejde.
+      line('3', { unitPrice: null, lineTotal: 20.5, quantity: null, quantityUnit: 'KG' }),
+      // Kus s celkovou částkou: cena za balení z ní jde.
+      line('4', { unitPrice: null, lineTotal: 20.5, quantity: null }),
+    ];
+    expect([...defaultSelectedLineIds(lines)]).toEqual(['1', '4']);
+    expect(isLineSelectable(lines[1])).toBe(false);
+    expect(isLinePriceMissing(lines[1])).toBe(true);
+    expect(isLinePriceMissing(lines[3])).toBe(false);
+  });
+
+  it('řádek dřív přeskočený jen kvůli chybějícímu párování se zaškrtne znovu', () => {
+    const lines = [
+      line('1', { skipReason: 'RECEIPT_LINE_NOT_MATCHED' }),
+      line('2', { skipReason: 'RECEIPT_ITEM_LIMIT' }),
+    ];
+    expect([...defaultSelectedLineIds(lines)]).toEqual(['1']);
   });
 
   it('nový odhad od serveru se po obnově nezaškrtne', () => {
