@@ -180,20 +180,24 @@ public class ProductCatalogService {
   }
 
   /**
-   * „Zboží z účtenky" (docs/reputace.md, „Zboží z účtenky") — druhová položka pro řádek účtenky,
-   * který vlastník zveřejnil bez spárování. Vždy {@code DRAFT} v rozsahu řetězce/provozovny
-   * jako ruční bezkódové zboží, ale se značkou {@code created_via = RECEIPT} a s vlastním
+   * „Zboží z účtenky" (docs/reputace.md, „Zboží z účtenky") — položka pro řádek účtenky, který
+   * vlastník zveřejnil bez spárování. Bez EAN je to druhová položka {@code DRAFT} v rozsahu
+   * řetězce/provozovny jako ruční bezkódové zboží; s platným EAN z řádku ({@code gtin14}, který
+   * nezná katalog ani Open Food Facts) globální zboží s tím kódem jako po skenu čárového kódu —
+   * jinak by ho pozdější sken ani účtenka jiného řetězce nenašly. Obojí se značkou
+   * {@code created_via = RECEIPT}, vždy {@code DRAFT} (název je přepis z tisku pokladny) a s vlastním
    * stropem {@code app.receipt.max-open-items} místo limitů ručního zakládání ({@code
    * app.catalog.*}): účtenka se 40 nespárovanými řádky by je vyčerpala celé a autor by pak
    * nemohl založit nic ani ručně. Spam brzdí denní limit účtenek a to, že každá prošla workerem.
    *
-   * <p>Položka se stejným normalizovaným názvem v rozsahu se použije znovu (i ruční), ať se ceny
-   * různých lidí sbíhají na jedno zboží. Volá se uvnitř transakce řádku
+   * <p>Bezkódová položka se stejným normalizovaným názvem v rozsahu se použije znovu (i ruční),
+   * ať se ceny různých lidí sbíhají na jedno zboží; zboží s EAN se pozná podle kódu
+   * (ReceiptReviewService.receiptItemFor ho hledá dřív, než sem dojde). Volá se uvnitř transakce řádku
    * (ReceiptReviewService.confirmLines), proto se kolize unikátního indexu neřeší výjimkou —
    * ta by transakci řádku označila k rollbacku —, ale dotazem předem.
    */
   @Transactional
-  public ReceiptItem receiptItem(String name, Category category, BigDecimal netContentValue,
+  public ReceiptItem receiptItem(String name, String gtin14, Category category, BigDecimal netContentValue,
       NetContentUom netContentUom, boolean variableWeight, Store store, AppUser user, int maxOpenItems) {
     String trimmed = name == null ? "" : name.trim();
     if (trimmed.isEmpty()) {
@@ -202,13 +206,16 @@ public class ProductCatalogService {
     if (trimmed.length() > 200) {
       trimmed = trimmed.substring(0, 200).trim();
     }
-    Long chainId = store.getChain() != null ? store.getChain().getId() : null;
-    Optional<Product> existing = productRepository.findGenericInScopeByName(trimmed, chainId, store.getId());
-    if (existing.isPresent()) {
-      return new ReceiptItem(existing.get(), false);
+    boolean generic = gtin14 == null;
+    if (generic) {
+      Long chainId = store.getChain() != null ? store.getChain().getId() : null;
+      Optional<Product> existing = productRepository.findGenericInScopeByName(trimmed, chainId, store.getId());
+      if (existing.isPresent()) {
+        return new ReceiptItem(existing.get(), false);
+      }
     }
-    long open = productRepository.countByCreatedByUserIdAndGenericAndStatusAndCreatedVia(
-        user.getId(), true, ProductStatus.DRAFT, ProductCreatedVia.RECEIPT);
+    long open = productRepository.countByCreatedByUserIdAndStatusAndCreatedVia(
+        user.getId(), ProductStatus.DRAFT, ProductCreatedVia.RECEIPT);
     if (open >= maxOpenItems) {
       throw new TooManyRequestsException(ErrorCode.RECEIPT_ITEM_LIMIT, maxOpenItems);
     }
@@ -232,13 +239,24 @@ public class ProductCatalogService {
         .netContentUom(uom)
         .netContentBase(NetContentCalculator.computeNetContentBase(unitBase, value, uom, variableWeight))
         .variableWeight(variableWeight)
-        .generic(true)
+        .generic(generic)
         .status(ProductStatus.DRAFT)
         .createdVia(ProductCreatedVia.RECEIPT)
         .createdByUserId(user.getId())
         .build();
-    productScopeService.assignLocalScope(product, store);
-    return new ReceiptItem(productRepository.saveAndFlush(product), true);
+    if (generic) {
+      productScopeService.assignLocalScope(product, store);
+    }
+    product = productRepository.saveAndFlush(product);
+    if (!generic) {
+      productCodeRepository.save(ProductCode.builder()
+          .product(product)
+          .code(gtin14)
+          .codeType(CodeType.GTIN)
+          .primary(true)
+          .build());
+    }
+    return new ReceiptItem(product, true);
   }
 
   /**

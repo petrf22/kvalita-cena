@@ -12,6 +12,8 @@ import cz.kvalitacena.network.ProductSummary
  * zboží s kódem, ne lokální bezkódové položky stejného řetězce/provozovny, na které zboží
  * z účtenky dopárovat jde. Rozsah provozovny ji rovnou určuje; u řetězce poslouží kterýkoli obchod
  * toho řetězce, kde zboží má cenu — nejdřív vlastní (víme jistě, kde ji uživatel viděl).
+ * Globální zboží z účtenky (řádek s EAN) vezme kterýkoli obchod s cenou; lokální návrhy z něj
+ * stejně odfiltruje [rematchCandidates].
  */
 internal fun rematchStoreId(product: Product): String? {
   product.scopeStore?.id?.let { return it }

@@ -145,8 +145,9 @@ public class ReceiptItemRematchService {
 
   /**
    * Cíl musí jít použít v obchodech, kde zboží z účtenky má ceny: globální zboží všude, lokální
-   * jen ve stejném řetězci/provozovně (ProductScopeService). Rozsah zboží z účtenky je vždy
-   * lokální, takže stačí porovnat rozsahy.
+   * jen ve stejném řetězci/provozovně (ProductScopeService). Bezkódové zboží z účtenky má rozsah
+   * lokální, takže stačí porovnat rozsahy; zboží z účtenky s EAN je globální a pustí jen
+   * globální cíl (ceny může mít z kteréhokoli řetězce).
    */
   private static boolean scopeFits(Product source, Product target) {
     return switch (target.getCatalogScope()) {

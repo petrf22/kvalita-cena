@@ -96,7 +96,8 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   (`ReceiptReviewService.productFromOff` → `OffProductCatalogService.create`), nikdy při
   zpracování účtenky, ať se katalog neplní zbožím z nepotvrzených účtenek. Klient u `SUGGESTED`
   nesmí spoléhat na `product != null` — náhled nese `offCandidate`.
-- **Zboží z účtenky není nová entita** — je to bezkódová druhová položka s
+- **Zboží z účtenky není nová entita** — je to bezkódová druhová položka (u řádku s platným
+  EAN, který nezná katalog ani OFF, globální zboží s tím kódem) s
   `core.product.created_via = 'RECEIPT'`, založená VÝHRADNĚ přes `ProductCatalogService
   .receiptItem` (vlastní strop `app.receipt.max-open-items`), nikdy přes `create`. Ruční stropy
   bezkódového zboží (`app.catalog.max-unconfirmed-drafts`) ho záměrně nepočítají, jinak by jedna

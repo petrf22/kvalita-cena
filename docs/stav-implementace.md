@@ -602,7 +602,8 @@ uživatel sáhl, zůstanou (`ReceiptLineMerger`), po retenci obrázků se znovu 
 - **Zboží z účtenky.** `confirmReceiptLines(publishUnmatched: true)` zapíše cenu i z nespárovaného
   řádku. Nejdřív zkusí naučené označení, jinak použije nebo založí druhovou položku
   `created_via = RECEIPT` v rozsahu řetězce (`ReceiptReviewService.receiptItemFor`,
-  `ProductCatalogService.receiptItem`). Strop je vlastní (`app.receipt.max-open-items`), záloha
+  `ProductCatalogService.receiptItem`). Řádek s platným EAN, který nezná katalog ani OFF,
+  založí globální zboží s tím kódem (`publishedLineWithUnknownEanBecomesGlobalProductWithThatCode`). Strop je vlastní (`app.receipt.max-open-items`), záloha
   a vratný obal se přeskočí (`ReceiptLineChecks`). Hledání ho řadí za ostatní shody.
 - **Kontrolní součet** z workeru je na účtence (`Receipt.sumStatus`/`computedTotal`) a řídí
   předvýběr řádků. Řádky nesou `nonProduct` a `suspicious`.
@@ -613,8 +614,6 @@ uživatel sáhl, zůstanou (`ReceiptLineMerger`), po retenci obrázků se znovu 
 
 **Co zbývá:**
 - vlastní profily dalších řetězců (Penny prochází obecným),
-- zboží z účtenky s platným EAN, které nezná katalog ani OFF, se dnes zakládá jako druhová
-  položka bez kódu (EAN zůstane jen na řádku a připíše se až po dopárování na zboží s EAN),
 - `f_evid` ve váze ceny,
 - leták jako druhý zdroj označení,
 - kalibrace `auto-match-*` na produkčním katalogu,

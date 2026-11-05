@@ -212,6 +212,12 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
       ProductCreatedVia createdVia);
 
   /**
+   * Otevřené zboží z účtenek autora pro strop {@code app.receipt.max-open-items} — bezkódové
+   * i s EAN z řádku (ProductCatalogService.receiptItem), oboje vzniká stejným zveřejněním.
+   */
+  long countByCreatedByUserIdAndStatusAndCreatedVia(Long userId, ProductStatus status, ProductCreatedVia createdVia);
+
+  /**
    * Existující druhová položka se stejným normalizovaným názvem v rozsahu prodejce — zveřejnění
    * řádku účtenky ji použije místo založení duplicity. Kategorie se záměrně neporovnává: stejné
    * označení ze dvou účtenek může dostat dva různé návrhy kategorie, a zboží je pořád jedno.

@@ -303,9 +303,12 @@ public class ReceiptReviewService {
   /**
    * Zboží pro řádek zveřejněný bez spárování (docs/datovy-model.md, „Účtenky"). Nejdřív
    * naučené označení — mohlo vzniknout až po zpracování účtenky, třeba z jiné účtenky téhož
-   * řetězce —, jinak „zboží z účtenky" ({@link ProductCatalogService#receiptItem}): existující
-   * druhová položka se stejným názvem v rozsahu prodejce, nebo nová {@code DRAFT} s názvem,
-   * kategorií a gramáží z předvyplnění formuláře ({@link NewProductDefaultsService#forLine}).
+   * řetězce —, pak zboží s EAN řádku (mezitím ho mohl založit někdo jiný), jinak „zboží
+   * z účtenky" ({@link ProductCatalogService#receiptItem}): s platným EAN globální zboží s tím
+   * kódem, bez něj existující druhová položka se stejným názvem v rozsahu prodejce, nebo nová
+   * {@code DRAFT} s názvem, kategorií a gramáží z předvyplnění formuláře
+   * ({@link NewProductDefaultsService#forLine}). Platný EAN = GTIN s kontrolní číslicí
+   * ({@link GtinNormalization#isGlobalGtin}); vnitřní kód obchodu zůstane jen na řádku.
    * Bez navržené kategorie dostane záchytnou „Nezařazeno". Záloha a vratný obal zboží nejsou
    * a nezveřejňují se.
    */
@@ -321,6 +324,16 @@ public class ReceiptReviewService {
       line.setMatchSource(ReceiptMatchSource.LABEL);
       return;
     }
+    String gtin14 = GtinNormalization.isGlobalGtin(line.getInternalCode())
+        ? GtinNormalization.toGtin14(line.getInternalCode().trim()) : null;
+    if (gtin14 != null) {
+      Optional<Long> coded = existingProductForCode(line);
+      if (coded.isPresent()) {
+        line.setProductId(coded.get());
+        line.setMatchSource(ReceiptMatchSource.CODE);
+        return;
+      }
+    }
     NewProductDefaultsService.Defaults defaults = productDefaultsService.forLine(line, store.getId(), owner.getId());
     Category category = defaults.category() != null ? defaults.category()
         : categoryRepository.findBySlug(UNCATEGORIZED_SLUG)
@@ -328,7 +341,7 @@ public class ReceiptReviewService {
     NetContentUom uom = defaults.isVariableWeight()
         ? (line.getQuantityUnit() == QuantityUnit.L ? NetContentUom.L : NetContentUom.KG)
         : defaults.netContentUom();
-    ProductCatalogService.ReceiptItem item = catalogService.receiptItem(defaults.name(), category,
+    ProductCatalogService.ReceiptItem item = catalogService.receiptItem(defaults.name(), gtin14, category,
         defaults.netContentValue(), uom, defaults.isVariableWeight(), store, owner,
         receiptProperties.getMaxOpenItems());
     if (item.created()) {

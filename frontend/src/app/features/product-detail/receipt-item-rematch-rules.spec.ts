@@ -57,6 +57,12 @@ describe('cíl dopárování zboží z účtenky', () => {
     expect(rematchTargetFits(storeScoped('s', 'o1'), chainScoped('t', 'c1'))).toBe(false);
   });
 
+  it('zboží z účtenky s EAN je globální a jde jen na globální zboží', () => {
+    expect(rematchTargetFits(global('s'), global('t'))).toBe(true);
+    expect(rematchTargetFits(global('s'), chainScoped('t', 'c1'))).toBe(false);
+    expect(rematchTargetFits(global('s'), storeScoped('t', 'o1'))).toBe(false);
+  });
+
   it('nabídka vynechá zboží samotné a zboží mimo rozsah', () => {
     const source = chainScoped('s', 'c1');
     const offered = [source, global('g'), chainScoped('a', 'c1'), chainScoped('b', 'c2')];

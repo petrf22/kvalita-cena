@@ -1151,6 +1151,58 @@ class ReceiptFlowIntegrationTest {
   }
 
   @Test
+  void publishedLineWithUnknownEanBecomesGlobalProductWithThatCode() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    String ean = randomEan13();
+    Long receiptId = uploadAndProcess(owner, f, List.of(lineWithCode("NUDLE RYZOVE " + f.ico(), ean)));
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    ReceiptLine line = lines(receiptId).getFirst();
+    assertThat(line.getStatus()).isEqualTo(ReceiptLineStatus.UNMATCHED);
+
+    reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(line.getId()), ObservationSource.WEB, true);
+
+    // Zboží z účtenky s EAN je globální jako po skenu čárového kódu — ne druhová položka
+    // jednoho řetězce, kterou by pozdější sken stejného kódu nenašel.
+    ReceiptLine published = lineRepository.findById(line.getId()).orElseThrow();
+    assertThat(published.getMatchSource()).isEqualTo(ReceiptMatchSource.RECEIPT_ITEM);
+    Product item = productRepository.findById(published.getProductId()).orElseThrow();
+    assertThat(item.getCreatedVia()).isEqualTo(ProductCreatedVia.RECEIPT);
+    assertThat(item.getStatus()).isEqualTo(ProductStatus.DRAFT);
+    assertThat(item.isGeneric()).isFalse();
+    assertThat(item.getCatalogScope()).isEqualTo(ProductScope.GLOBAL);
+    assertThat(jdbcTemplate.queryForList("SELECT code FROM core.product_code WHERE product_id = ? AND code_type = 'GTIN'",
+        String.class, item.getId())).containsExactly(GtinNormalization.toGtin14(ean));
+
+    // Účtenka jiného řetězce se stejným EAN se na totéž zboží spáruje podle kódu sama.
+    Fixture other = fixture();
+    AppUser buyer = persistUser();
+    Long second = uploadAndProcess(buyer, other, List.of(lineWithCode("RICE NOODLES " + other.ico(), ean)));
+    ReceiptLine auto = lines(second).getFirst();
+    assertThat(auto.getMatchSource()).isEqualTo(ReceiptMatchSource.CODE);
+    assertThat(auto.getProductId()).isEqualTo(item.getId());
+  }
+
+  @Test
+  void lineWithStoreInternalCodeStaysGenericReceiptItem() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    // 27160840 je EAN-8 s prefixem 2 — vnitroobchodní kód, ne globální identifikátor.
+    Long receiptId = uploadAndProcess(owner, f, List.of(lineWithCode("SALAM VLASTNI " + f.ico(), "27160840")));
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    ReceiptLine line = lines(receiptId).getFirst();
+
+    reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(line.getId()), ObservationSource.WEB, true);
+
+    Product item = productRepository.findById(lineRepository.findById(line.getId()).orElseThrow().getProductId())
+        .orElseThrow();
+    assertThat(item.isGeneric()).isTrue();
+    assertThat(item.getCatalogScope()).isEqualTo(ProductScope.CHAIN);
+    assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM core.product_code WHERE product_id = ?",
+        Integer.class, item.getId())).isZero();
+  }
+
+  @Test
   void receiptItemCollectsConfirmationsFromOtherReceiptsOfTheSameChain() {
     Fixture f = fixture();
     AppUser owner = persistUser();
@@ -1199,13 +1251,13 @@ class ReceiptFlowIntegrationTest {
     Fixture f = fixture();
     AppUser owner = persistUser();
     Category category = f.rohlik().getCategory();
-    var first = catalogService.receiptItem("Sýr eidam " + f.ico(), category, null, null, false, f.store(), owner, 1);
+    var first = catalogService.receiptItem("Sýr eidam " + f.ico(), null, category, null, null, false, f.store(), owner, 1);
     assertThat(first.created()).isTrue();
     // Stejný název v rozsahu řetězce = stejné zboží, i když se strop už vyčerpal.
-    var again = catalogService.receiptItem("SÝR EIDAM " + f.ico(), category, null, null, false, f.store(), owner, 1);
+    var again = catalogService.receiptItem("SÝR EIDAM " + f.ico(), null, category, null, null, false, f.store(), owner, 1);
     assertThat(again.created()).isFalse();
     assertThat(again.product().getId()).isEqualTo(first.product().getId());
-    assertThatThrownBy(() -> catalogService.receiptItem("Sýr gouda " + f.ico(), category, null, null, false,
+    assertThatThrownBy(() -> catalogService.receiptItem("Sýr gouda " + f.ico(), null, category, null, null, false,
         f.store(), owner, 1))
         .isInstanceOfSatisfying(cz.kvalitacena.exception.AppException.class,
             e -> assertThat(e.getCode()).isEqualTo(cz.kvalitacena.exception.ErrorCode.RECEIPT_ITEM_LIMIT));
@@ -1309,6 +1361,30 @@ class ReceiptFlowIntegrationTest {
     // Ručně založené zboží „dopárovat" nejde — sloučení bez moderátora je jen pro zboží z účtenky.
     assertThatThrownBy(() -> rematchService.rematch(owner.getPublicUid(), f.banany().getId(), f.rohlik().getId()))
         .isInstanceOf(ValidationException.class);
+  }
+
+  @Test
+  void rematchOfReceiptItemWithEanTakesTheCodeToGlobalTarget() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    String ean = randomEan13();
+    Long receiptId = uploadAndProcess(owner, f, List.of(lineWithCode("CAJ ZELENY " + f.ico(), ean)));
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(lines(receiptId).getFirst().getId()),
+        ObservationSource.WEB, true);
+    Long itemId = lines(receiptId).getFirst().getProductId();
+    // Globální zboží z účtenky se smí dopárovat jen na globální zboží — prodává se všude, kde
+    // ho kdo s tím EAN koupil, ne jen v řetězci rohlíku.
+    assertThatThrownBy(() -> rematchService.rematch(owner.getPublicUid(), itemId, f.rohlik().getId()))
+        .isInstanceOf(ValidationException.class);
+    Product tea = productRepository.saveAndFlush(Product.builder()
+        .name("Zelený čaj " + f.ico()).category(f.rohlik().getCategory()).unitBase(UnitBase.COUNT)
+        .netContentBase(BigDecimal.ONE).status(ProductStatus.ACTIVE).build());
+
+    assertThat(rematchService.rematch(owner.getPublicUid(), itemId, tea.getId()).merged()).isTrue();
+
+    assertThat(jdbcTemplate.queryForList("SELECT code FROM core.product_code WHERE product_id = ? AND code_type = 'GTIN'",
+        String.class, tea.getId())).containsExactly(GtinNormalization.toGtin14(ean));
   }
 
   @Test

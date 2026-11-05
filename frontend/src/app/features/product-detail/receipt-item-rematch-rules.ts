@@ -11,8 +11,9 @@ type ScopeSource = Pick<ProductSummary, 'catalogScope' | 'scopeChain' | 'scopeSt
 
 /**
  * Cíl musí jít koupit tam, kde má zboží z účtenky ceny (ReceiptItemRematchService.scopeFits):
- * globální zboží vždy, lokální jen ze stejného řetězce, resp. téže provozovny. Zboží z účtenky
- * má rozsah vždy lokální, takže stačí porovnat rozsahy.
+ * globální zboží vždy, lokální jen ze stejného řetězce, resp. téže provozovny. Stačí porovnat
+ * rozsahy: bezkódové zboží z účtenky je lokální, zboží z účtenky s EAN globální — to pustí jen
+ * globální cíl.
  */
 export function rematchTargetFits(source: ScopeSource, target: ScopeSource): boolean {
   switch (target.catalogScope) {

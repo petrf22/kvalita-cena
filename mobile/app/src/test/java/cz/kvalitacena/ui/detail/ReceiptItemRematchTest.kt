@@ -106,4 +106,15 @@ class ReceiptItemRematchTest {
     val product = source(scope = "STORE", chain = null, scopeStore = shop)
     assertEquals(listOf("same", "ean"), rematchCandidates(product, candidates).map { it.id })
   }
+
+  @Test
+  fun zboziZUctenkySEanJeGlobalniAJdeJenNaGlobalni() {
+    val candidates = listOf(
+      candidate("chain", scope = "CHAIN", chain = billa),
+      candidate("store", scope = "STORE", scopeStore = store("s1", billa)),
+      candidate("ean"),
+    )
+    val product = source(scope = "GLOBAL", chain = null)
+    assertEquals(listOf("ean"), rematchCandidates(product, candidates).map { it.id })
+  }
 }

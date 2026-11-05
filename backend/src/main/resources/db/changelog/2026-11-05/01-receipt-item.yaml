@@ -2,8 +2,9 @@
 # docs/datovy-model.md, „Účtenky"; docs/reputace.md, „Zboží z účtenky").
 #
 # Zboží z účtenky NENÍ nová entita: je to bezkódová druhová položka (is_generic, rozsah
-# CHAIN/STORE, DRAFT do potvrzení) se značkou původu created_via = 'RECEIPT'. Díky tomu
-# hledání, agregáty, grafy i sloučení (ProductMergeService) fungují beze změny.
+# CHAIN/STORE, DRAFT do potvrzení) — u řádku s neznámým platným EAN globální zboží s tím
+# kódem — se značkou původu created_via = 'RECEIPT'. Díky tomu hledání, agregáty, grafy
+# i sloučení (ProductMergeService) fungují beze změny.
 #
 # core.receipt.sum_status je kontrolní součet workeru (součet položek proti vytištěnému
 # „Celkem", tools/uctenky/parse.py) — řídí jen předvýběr řádků v klientovi, nic nezakazuje.

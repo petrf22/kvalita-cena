@@ -614,7 +614,8 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
 - **Zboží z účtenky** (migrace `2026-11-05/`, pravidla `docs/reputace.md`, „Zboží z účtenky") —
   `core.product.created_via = 'RECEIPT'` u bezkódové druhové položky, kterou založilo zveřejnění
   nespárovaného řádku (`ReceiptReviewService.receiptItemFor` → `ProductCatalogService
-  .receiptItem`). Žádná nová tabulka zboží: název je čitelný název řádku, kategorie
+  .receiptItem`); u řádku s platným EAN, který nezná katalog ani OFF, je to globální zboží s tím
+  kódem v `core.product_code` (`is_generic = false`), jako po skenu. Žádná nová tabulka zboží: název je čitelný název řádku, kategorie
   z `NewProductDefaultsService`, jinak záchytná `nezarazeno` („Nezařazeno"), gramáž jen jako
   úplná dvojice z tisku. `core.receipt.sum_status` (`MATCH`/`MISMATCH`/`UNKNOWN`)
   + `computed_total` je kontrolní součet workeru z `extraction` (`ReceiptWorkerService.sumCheck`)

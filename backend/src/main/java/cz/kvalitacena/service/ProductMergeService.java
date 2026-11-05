@@ -62,8 +62,11 @@ public class ProductMergeService {
         .orElseThrow(() -> new NotFoundException(ErrorCode.MODERATION_RECORD_NOT_FOUND));
     // Zboží z účtenky je jen zástupce, dokud někdo nepozná, co to je — smí se sloučit i do
     // zboží s EAN, po hlasování (receiptItem) i rukou moderátora, když se hlasy neshodnou.
-    boolean targetAllowed = target.isGeneric() || source.getCreatedVia() == ProductCreatedVia.RECEIPT;
-    if (!source.isGeneric() || !targetAllowed
+    // A smí mít EAN samo (řádek s kódem, který neznal katalog ani OFF): ten pak jde s ostatními
+    // kódy na cíl (mergeCodes), ať sken stejného kódu najde skutečné zboží, ne sloučený zbytek.
+    boolean receiptSource = source.getCreatedVia() == ProductCreatedVia.RECEIPT;
+    boolean targetAllowed = target.isGeneric() || receiptSource;
+    if (!(source.isGeneric() || receiptSource) || !targetAllowed
         || source.getStatus() == ProductStatus.MERGED || target.getStatus() == ProductStatus.MERGED
         || source.getStatus() == ProductStatus.REJECTED || target.getStatus() == ProductStatus.REJECTED) {
       throw new ValidationException(ErrorCode.MODERATION_PRODUCT_MERGE_INVALID);

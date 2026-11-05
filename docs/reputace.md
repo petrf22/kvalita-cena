@@ -486,6 +486,13 @@ z oddílu výš (`is_generic`, rozsah řetězce/provozovny), jen se značkou pů
 `core.product.created_via = 'RECEIPT'`. Není to nová entita, takže hledání, agregace, grafy
 i sloučení fungují beze změny.
 
+Řádek s platným EAN (GTIN s kontrolní číslicí, ne vnitroobchodní kód), který nezná katalog ani
+Open Food Facts, dostane místo druhové položky **globální zboží s tím EAN** — stejně jako po
+skenu čárového kódu, jen se stejnou značkou `RECEIPT` a vždy `DRAFT`. Druhová položka jednoho
+řetězce by EAN zahodila: pozdější sken ani účtenka jiného řetězce by ji nenašly a vznikla by
+duplicita. Riziko je EAN přečtený chybně tak, že kontrolní číslici projde (jedna záměna číslice
+ji neprojde nikdy, prohození sousedních skoro nikdy); takové zboží opraví úprava nebo sloučení.
+
 **Viditelnost se nemění.** Zboží z účtenky je vždy `DRAFT` a platí pro něj stejný práh jako
 pro ruční bezkódové zboží („Práh důvěry pro zveřejnění nového záznamu" výš,
 `app.catalog.draft-confirmations` = 3, leave-one-out). Potvrzení se ale sbírají samy: po
@@ -522,5 +529,9 @@ zboží nejsou a nezveřejňují se (`app.receipt.non-product-pattern`, `RECEIPT
   pro jiný cíl by jinak našel zboží „bez cizích dat" a sloučil ho sám.
 - Cílem smí být i zboží s EAN (na rozdíl od moderátorského `mergeProducts`, který slučuje jen
   bezkódové položky) — zboží z účtenky je jen zástupce, dokud někdo nepozná, co to je. Cíl musí
-  jít použít ve stejném řetězci/provozovně (`RECEIPT_ITEM_REMATCH_INVALID`). EAN z řádků se po
-  sloučení připíše cíli, který žádný EAN nemá (stejné pravidlo jako `ReceiptReviewService.learnCode`).
+  jít použít ve stejném řetězci/provozovně (`RECEIPT_ITEM_REMATCH_INVALID`); zboží z účtenky
+  s EAN je globální, takže jen globální cíl. EAN z řádků se po sloučení připíše cíli, který žádný
+  EAN nemá (stejné pravidlo jako `ReceiptReviewService.learnCode`). Vlastní EAN zboží z účtenky
+  jde na cíl vždy, i když už nějaký EAN má (`ProductMergeService.mergeCodes`) — jinak by kód
+  zůstal u sloučeného zbytku a sken by skutečné zboží nenašel. Sloučení je vědomé rozhodnutí
+  člověka, ne automatické párování řádku, proto tu pravidlo „jen zboží bez EAN" neplatí.
