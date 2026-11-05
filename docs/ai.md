@@ -134,6 +134,17 @@ výsledkem). Klient podle nich předvybere řádky ke zveřejnění: se sedící
 kromě nezboží; s nesedícím nebo neověřitelným součtem taky, ale s upozorněním na rozdíl
 a zvýrazněnými podezřelými řádky (`ReceiptLine.suspicious`, `ReceiptLineChecks`). Vybrané
 řádky zveřejní až klik vlastníka — i nespárované, na „zboží z účtenky" (`docs/reputace.md`).
+Předem se nezaškrtávají (web `receipt-status.ts`, mobil `ReceiptLineSelection.kt`):
+
+- **odhad (`FUZZY`)** — jeho potvrzení by naučilo označení pro celý řetězec a připsalo zboží EAN
+  z řádku, takže omyl z hromadného zaškrtnutí by se šířil na účtenky ostatních. Kdo odhad
+  zamítne („Zrušit párování"), dostane nespárovaný řádek a ten se zaškrtne sám;
+- **nezboží (`nonProduct`)** — u nespárovaného řádku zaškrtávátko vůbec není, server ho stejně
+  přeskočí;
+- **řádek, který server minule přeskočil** (`skipReason`, kromě `RECEIPT_LINE_NOT_MATCHED`,
+  který teď zveřejnění bez spárování vyřeší) — jinak by se chybějící cena nebo vyčerpaný strop
+  nabízely k odeslání pořád dokola. Ručně zaškrtnout jdou;
+- ignorované a potvrzené řádky (zaškrtnout nejdou).
 
 **Proč ne vision model se strukturovaným výstupem:** vyzkoušeno na reálných účtenkách
 (větev `feat/import-uctenek`, 2026-09-07) — jazykový model nad textem účtenky zahodil řádek
