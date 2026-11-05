@@ -995,7 +995,11 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
       put("productId", productId)
       put("targetId", targetId)
     }
-    return execute(gql, variables, GraphQlResponse.serializer(RematchReceiptItemData.serializer())).rematchReceiptItem
+    val result = execute(gql, variables, GraphQlResponse.serializer(RematchReceiptItemData.serializer())).rematchReceiptItem
+    // Sloučení přesune EAN zboží z účtenky na cíl (ProductMergeService.mergeCodes) — sken toho
+    // kódu by jinak z [lookupCache] vrátil sloučený zbytek. Které kódy to byly, klient neví, proto celá.
+    if (result.merged) lookupCache.clear()
+    return result
   }
 
   suspend fun markReceiptSeen(id: String): Receipt {

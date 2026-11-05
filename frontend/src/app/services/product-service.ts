@@ -299,9 +299,14 @@ export class ProductService {
         }
       }
     `);
-    return this.graphQl
-      .execute(document, { productId, targetId })
-      .pipe(map((data) => data.rematchReceiptItem));
+    return this.graphQl.execute(document, { productId, targetId }).pipe(
+      map((data) => data.rematchReceiptItem),
+      // Sloučení přesune EAN zboží z účtenky na cíl (ProductMergeService.mergeCodes) — sken toho
+      // kódu by jinak z cache vrátil sloučený zbytek. Které kódy to byly, klient neví, proto celá.
+      tap((result) => {
+        if (result.merged) this.lookupCache.clear();
+      }),
+    );
   }
 
   /** Nahlášení zboží jako podezřelého/nesmyslného — hlasuje se o faktu, ne o člověku (docs/reputace.md). */
