@@ -44,11 +44,14 @@ import cz.kvalitacena.network.MyStoreItem
 import cz.kvalitacena.network.ProductSummary
 import cz.kvalitacena.network.PublicationStatus
 import cz.kvalitacena.ui.common.LabelValueRow
+import cz.kvalitacena.ui.common.ReceiptItemBadge
 import cz.kvalitacena.ui.common.StarRatingDisplay
 import cz.kvalitacena.ui.common.formatRelativeDate
+import cz.kvalitacena.ui.common.isReceiptItem
 import cz.kvalitacena.ui.common.netContentLabel
 import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
+import cz.kvalitacena.ui.theme.Spacing
 import kotlin.math.ceil
 import kotlin.math.max
 
@@ -146,6 +149,11 @@ private fun ProductsTab(viewModel: MyContributionsViewModel, onProductClick: (St
         .padding(vertical = 8.dp),
     ) {
       Text(productLabel(item.product), style = MaterialTheme.typography.titleSmall)
+      // Zboží z účtenky (ui/common/ReceiptItem.kt) se tu ukáže se štítkem jako ve hledání a na
+      // webu — jinak by mezi ručně založeným zbožím nebylo poznat, že ho založilo zveřejnění účtenky.
+      if (item.product.isReceiptItem) {
+        ReceiptItemBadge(modifier = Modifier.padding(vertical = Spacing.xs))
+      }
       Text(
         "${stringResource(R.string.my_contributions_created_at_label)} ${formatRelativeDate(item.createdAt)}",
         style = MaterialTheme.typography.bodySmall,
