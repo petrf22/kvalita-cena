@@ -357,6 +357,7 @@
     <string name="product_form_off_banner_title">Načítané z Open Food Facts — skontroluj a uprav podľa potreby. Klepnutím zobrazíš zdroj.</string>
     <string name="product_form_name_label">Názov tovaru</string>
     <string name="product_form_generic_tag">druhová položka</string>
+    <string name="product_form_receipt_item_tag">z účtenky</string>
     <string name="product_form_unconfirmed_tag">zatiaľ nepotvrdené</string>
     <string name="product_form_store_offer_title">Čo už v obchode máme</string>
     <string name="product_form_suggestions_hint">Nie je to už niektorá z týchto položiek? Klepnutím ju rovno použiješ.</string>
@@ -710,7 +711,7 @@
     <string name="receipt_line_sheet_fuzzy_hint">Tovar je navrhnutý len podľa podobného názvu — potvrďte ho, len keď sedí.</string>
     <string name="receipt_group_to_resolve">Na doplnenie (%d)</string>
     <string name="receipt_group_to_check">Na kontrolu (%d)</string>
-    <string name="receipt_group_ready">Pripravené na potvrdenie (%d)</string>
+    <string name="receipt_group_ready">Pripravené na zverejnenie (%d)</string>
     <string name="receipt_group_done">Hotovo (%d)</string>
     <string name="receipt_group_ignored">Ignorované (%d)</string>
     <string name="receipt_group_expand">Zobraziť</string>
@@ -726,14 +727,45 @@
     <string name="receipt_skip_price_missing">na riadku chýba cena</string>
     <string name="receipt_skip_not_matched">riadok nemá spárovaný tovar</string>
     <string name="receipt_skip_other">cenu sa nepodarilo zapísať</string>
-    <string name="receipt_confirm">Potvrdiť spárované (%1$d)</string>
+    <string name="receipt_confirm">Zverejniť vybrané (%1$d)</string>
     <string name="receipt_confirm_needs_store">Najprv potvrďte obchod — bez neho cenu zapísať nejde.</string>
     <string name="receipt_confirm_needs_date">Doplňte dátum a čas nákupu — stane sa dátumom všetkých cien z účtenky.</string>
     <string name="receipt_confirm_result_title">Ceny z účtenky</string>
-    <string name="receipt_confirm_result_confirmed">Zapísané ceny: %1$d</string>
+    <string name="receipt_confirm_result_confirmed">Zverejnené ceny: %1$d</string>
     <string name="receipt_confirm_result_skipped">Preskočené riadky: %1$d</string>
     <string name="receipt_suggestions_search">Hľadať tovar</string>
     <string name="receipt_suggestions_empty">Nič podobné sa nenašlo. Skúste iný názov alebo založte nový tovar.</string>
+    <!-- Účtenky — zveřejnění všech položek a zboží z účtenky (docs/reputace.md, „Zboží z účtenky") -->
+    <string name="receipt_sum_title">Skontrolujte položky</string>
+    <string name="receipt_sum_mismatch_with_difference">Súčet položiek (%1$s) nezodpovedá sume na účtenke (%2$s), rozdiel %3$s. Položky sú aj tak vybrané — odškrtnite, čo nechcete zverejniť.</string>
+    <string name="receipt_sum_mismatch">Súčet položiek nezodpovedá sume na účtenke. Položky sú aj tak vybrané — odškrtnite, čo nechcete zverejniť.</string>
+    <string name="receipt_sum_unknown">Súčet položiek sa nepodarilo overiť. Skôr než položky zverejníte, skontrolujte ich a odškrtnite, čo nechcete.</string>
+    <string name="receipt_sum_suspicious">Zvýraznené položky (%1$d) vyzerajú na chybu čítania.</string>
+    <string name="receipt_line_needs_check">Vyzerá na chybu čítania — porovnajte s účtenkou.</string>
+    <string name="receipt_line_publish_as_item_hint">Zverejní sa ako tovar z účtenky — s názvom, cenou a obchodom z účtenky.</string>
+    <string name="receipt_line_non_product_hint">Záloha alebo obal — nezverejňuje sa.</string>
+    <string name="receipt_line_sheet_publish_hint">Párovať nie je nutné — keď tovar nenájdete, riadok sa zverejní ako tovar z účtenky.</string>
+    <string name="receipt_skip_not_product">nie je to tovar (záloha, obal)</string>
+    <string name="receipt_skip_item_limit">na potvrdenie čaká priveľa vášho tovaru z účteniek — skúste to neskôr</string>
+    <string name="receipt_publish_offline">Ste offline — zverejniť pôjde po pripojení. Výber zostane, ako je.</string>
+    <string name="receipt_publish_as_items">Nespárované riadky (%1$d) sa zverejnia ako tovar z účtenky.</string>
+    <string name="receipt_confirm_result_receipt_items">Z toho ako tovar z účtenky: %1$d</string>
+    <string name="receipt_confirm_result_receipt_items_hint">Nájdete ich so štítkom „Z účtenky“ — v detaile tovaru ich možno spárovať so skutočným tovarom.</string>
+    <string name="receipt_item_badge">Z účtenky</string>
+    <string name="receipt_item_notice">Tovar vznikol zverejnením riadku účtenky. Názov je prepis z tlače pokladnice, značku, gramáž ani kategóriu nikto neoveril — spoľahlivé sú cena, obchod a čas nákupu.</string>
+    <string name="receipt_item_rematch">Spárovať s tovarom</string>
+    <string name="receipt_item_rematch_login">Prihláste sa a spárujte s tovarom</string>
+    <string name="receipt_item_rematch_title">Spárovať s tovarom</string>
+    <string name="receipt_item_rematch_hint">Vyberte tovar, ktorým táto položka z účtenky naozaj je. Vaše ceny sa presunú hneď, ceny ostatných až po potvrdení ďalšími ľuďmi.</string>
+    <string name="receipt_item_rematch_empty">Nič vhodné sa nenašlo. Skúste iný názov — ponúka sa len tovar, ktorý možno v tomto obchode použiť.</string>
+    <string name="receipt_item_rematch_offline">Ste offline — spárovať pôjde po pripojení.</string>
+    <string name="receipt_item_rematch_confirm_title">Spárovať s tovarom?</string>
+    <string name="receipt_item_rematch_confirm_text">„%1$s“ sa spáruje s tovarom „%2$s“. Vaše ceny sa presunú hneď, ceny ostatných až po potvrdení ďalšími ľuďmi.</string>
+    <string name="receipt_item_rematch_confirm">Spárovať</string>
+    <string name="receipt_item_rematch_merged">Tovar zlúčený</string>
+    <string name="receipt_item_rematch_moved_title">Vaše ceny sú presunuté</string>
+    <string name="receipt_item_rematch_moved_text">Zlúčenie pre všetkých čaká na potvrdenie (%1$d z %2$d).</string>
+    <string name="receipt_item_rematch_open_target">Otvoriť tovar</string>
     <!-- Účtenky — ladění (jen debug build) -->
     <string name="receipts_debug_check_status">Skontrolovať spracovanie teraz (ladenie)</string>
 </resources>

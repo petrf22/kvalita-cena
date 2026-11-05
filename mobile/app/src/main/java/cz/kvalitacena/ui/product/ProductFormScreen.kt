@@ -62,6 +62,7 @@ import cz.kvalitacena.ui.common.SearchableDropdown
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.StorePicker
 import cz.kvalitacena.ui.common.categoryChoicesFor
+import cz.kvalitacena.ui.common.isReceiptItem
 import cz.kvalitacena.ui.common.netContentUomLabel
 import cz.kvalitacena.ui.common.openUrl
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
@@ -210,6 +211,7 @@ fun ProductFormScreen(
     }
 
     val genericTag = stringResource(R.string.product_form_generic_tag)
+    val receiptItemTag = stringResource(R.string.product_form_receipt_item_tag)
     val unconfirmedTag = stringResource(R.string.product_form_unconfirmed_tag)
     val chainScope = stringResource(R.string.product_form_chain_scope)
     val storeScope = stringResource(R.string.product_form_store_scope)
@@ -217,7 +219,12 @@ fun ProductFormScreen(
     // podobných položek nejde 0,5 l odlišit od 1,5 l (ui/common/NetContent.kt).
     val netContentLabeler = rememberNetContentLabeler()
     val summaryLabel: (ProductSummary) -> String = { summary ->
-      val kind = if (summary.isGeneric) " ($genericTag)" else ""
+      // Zboží z účtenky je taky druhová položka, ale bez ověřených náležitostí — má vlastní značku.
+      val kind = when {
+        summary.isReceiptItem -> " ($receiptItemTag)"
+        summary.isGeneric -> " ($genericTag)"
+        else -> ""
+      }
       val unconfirmed = if (summary.status == "DRAFT") " ($unconfirmedTag)" else ""
       val brand = summary.brand?.name?.let { "$it · " } ?: ""
       val netContent = netContentLabeler(

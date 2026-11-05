@@ -11,8 +11,13 @@ import cz.kvalitacena.network.Photo
 import cz.kvalitacena.network.PriceHistory
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.ProductReview
+import cz.kvalitacena.network.ProductSummary
+import cz.kvalitacena.network.RematchReceiptItemResult
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.toUiText
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /** Rozsahy grafu nabízené v UI — dny odpovídají přímo argumentu `days` v priceHistory. */
@@ -26,6 +31,8 @@ val CHART_RANGES = listOf(
 /** Shoduje se s app.review.max-text-length v backendovém application.yml. */
 const val MAX_REVIEW_TEXT_LENGTH = 1000
 private const val REVIEWS_PAGE_SIZE = 10
+private const val REMATCH_DEBOUNCE_MS = 300L
+private const val REMATCH_SUGGESTIONS = 20
 
 class ProductDetailViewModel(
   private val graphQlClient: GraphQlClient,
@@ -80,6 +87,31 @@ class ProductDetailViewModel(
     private set
   var reviewFlagMessage by mutableStateOf<UiText?>(null)
     private set
+
+  // --- dopárování zboží z účtenky (rematchReceiptItem, docs/reputace.md) ---
+  var rematchOpen by mutableStateOf(false)
+    private set
+  var rematchQuery by mutableStateOf("")
+    private set
+  var rematchItems by mutableStateOf<List<ProductSummary>>(emptyList())
+    private set
+  var rematchLoading by mutableStateOf(false)
+    private set
+  var rematchLoadError by mutableStateOf<UiText?>(null)
+    private set
+
+  /** Vybraný cíl čekající na potvrzení v dialogu; null = dialog zavřený. */
+  var rematchTarget by mutableStateOf<ProductSummary?>(null)
+    private set
+  var rematchSaving by mutableStateOf(false)
+    private set
+  var rematchError by mutableStateOf<UiText?>(null)
+    private set
+
+  /** Výsledek posledního dopárování — obrazovka podle `merged` přejde na cíl, nebo ukáže stav hlasů. */
+  var rematchResult by mutableStateOf<RematchReceiptItemResult?>(null)
+    private set
+  private var rematchJob: Job? = null
 
   init {
     loadProduct()
@@ -136,6 +168,17 @@ class ProductDetailViewModel(
       } catch (e: Exception) {
         ratingError = e.toUiText()
       }
+    }
+  }
+
+  /**
+   * Tiché obnovení po akci, která změnila ceny (dopárování přesunulo vlastní ceny jinam) —
+   * na rozdíl od [loadProduct] neukazuje načítání přes celou obrazovku a při výpadku sítě
+   * nechá dosavadní data, místo aby zboží prohlásilo za nenalezené.
+   */
+  private fun refreshProduct() {
+    viewModelScope.launch {
+      runCatching { graphQlClient.productById(productId) }.getOrNull()?.let { product = it }
     }
   }
 
@@ -257,6 +300,92 @@ class ProductDetailViewModel(
         reviewSaving = false
       }
     }
+  }
+
+  // --- dopárování zboží z účtenky ---
+
+  /** Otevře výběr cílového zboží — našeptávač začne názvem zboží z účtenky. */
+  fun openRematch() {
+    val source = product ?: return
+    rematchOpen = true
+    rematchQuery = source.name
+    rematchError = null
+    loadRematchSuggestions(debounce = false)
+  }
+
+  fun closeRematch() {
+    rematchJob?.cancel()
+    rematchOpen = false
+    rematchTarget = null
+    rematchLoading = false
+  }
+
+  fun onRematchQueryChange(query: String) {
+    rematchQuery = query
+    loadRematchSuggestions(debounce = true)
+  }
+
+  /** Znovu po chybě nebo po návratu signálu (obchod bez připojení). */
+  fun retryRematchSuggestions() = loadRematchSuggestions(debounce = false)
+
+  private fun loadRematchSuggestions(debounce: Boolean) {
+    val source = product ?: return
+    rematchJob?.cancel()
+    rematchJob = viewModelScope.launch {
+      if (debounce) delay(REMATCH_DEBOUNCE_MS)
+      rematchLoading = true
+      rematchLoadError = null
+      // Zrušený dotaz (uživatel píše dál) stav nemění — patří už dalšímu dotazu.
+      try {
+        val found = graphQlClient.productSuggestions(rematchQuery.trim(), rematchStoreId(source), REMATCH_SUGGESTIONS)
+        rematchItems = rematchCandidates(source, found)
+        rematchLoading = false
+      } catch (e: CancellationException) {
+        throw e
+      } catch (e: Exception) {
+        rematchLoadError = e.toUiText()
+        rematchLoading = false
+      }
+    }
+  }
+
+  fun chooseRematchTarget(target: ProductSummary) {
+    rematchError = null
+    rematchTarget = target
+  }
+
+  fun cancelRematchTarget() {
+    if (!rematchSaving) rematchTarget = null
+  }
+
+  /**
+   * Vlastní ceny se přesunou hned; zbytek až po souhlasných hlasech (`merged = false`) — pak
+   * se zdroj tiše obnoví, protože z něj vlastní ceny zmizely. Chyba (výpadek sítě,
+   * `RECEIPT_ITEM_REMATCH_INVALID`) zůstane v dialogu, ať jde akci zopakovat.
+   */
+  fun confirmRematch() {
+    val source = product ?: return
+    val target = rematchTarget ?: return
+    if (rematchSaving) return
+    rematchSaving = true
+    rematchError = null
+    viewModelScope.launch {
+      try {
+        val result = graphQlClient.rematchReceiptItem(source.id, target.id)
+        rematchTarget = null
+        closeRematch()
+        rematchResult = result
+        if (!result.merged) refreshProduct()
+      } catch (e: Exception) {
+        rematchError = e.toUiText()
+      } finally {
+        rematchSaving = false
+      }
+    }
+  }
+
+  fun dismissRematchResult() {
+    rematchResult = null
   }
 
   fun flagReview(review: ProductReview) {

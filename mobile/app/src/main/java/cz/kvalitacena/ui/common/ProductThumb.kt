@@ -1,5 +1,6 @@
 package cz.kvalitacena.ui.common
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
@@ -47,6 +48,9 @@ fun usesExternalImage(photos: List<Photo>, externalImage: ExternalProductImage?)
 /**
  * Miniatura zboží pro řádek výsledků hledání — priorita zdroje [productImageUrl], bez obrázku
  * zástupná ikona (drží zarovnání řádků). Web protějšek: shared/product-thumb.ts.
+ *
+ * [placeholderIcon] mění jen zástupnou ikonu — zboží z účtenky (ui/common/ReceiptItem.kt) fotku
+ * skoro nikdy nemá a ikona účtenky ho odliší od běžného zboží bez fotky už v miniatuře.
  */
 @Composable
 fun ProductThumb(
@@ -55,6 +59,7 @@ fun ProductThumb(
   externalImage: ExternalProductImage?,
   modifier: Modifier = Modifier,
   size: Dp = 36.dp,
+  @DrawableRes placeholderIcon: Int = R.drawable.ic_picture,
 ) {
   val url = productImageUrl(photos, externalImage)
 
@@ -74,7 +79,7 @@ fun ProductThumb(
       contentAlignment = Alignment.Center,
     ) {
       Icon(
-        painter = painterResource(R.drawable.ic_picture),
+        painter = painterResource(placeholderIcon),
         contentDescription = null,
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.size(size * 0.5f),

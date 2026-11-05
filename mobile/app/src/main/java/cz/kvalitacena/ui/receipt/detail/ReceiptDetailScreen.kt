@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
@@ -46,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
@@ -63,9 +65,11 @@ import cz.kvalitacena.network.ProductSummary
 import cz.kvalitacena.network.Receipt
 import cz.kvalitacena.network.ReceiptLine
 import cz.kvalitacena.ui.common.NavigationResults
+import cz.kvalitacena.ui.common.ReceiptItemBadge
 import cz.kvalitacena.ui.common.StorePicker
 import cz.kvalitacena.ui.common.ZoomableImage
 import cz.kvalitacena.ui.common.globalGtinOrNull
+import cz.kvalitacena.ui.common.isReceiptItem
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 import cz.kvalitacena.ui.common.rememberNetContentLabeler
 import cz.kvalitacena.ui.common.storeLabel
@@ -84,6 +88,7 @@ import java.time.LocalTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
+import kotlin.math.abs
 
 /** Rozměr náhledu dílu účtenky v řádku obrázků — rozměr komponenty, ne rozestup (docs/design.md). */
 private val THUMB_WIDTH = 72.dp
@@ -91,8 +96,10 @@ private val THUMB_HEIGHT = 96.dp
 
 /**
  * Detail účtenky: hlavička s obchodem a datem nákupu (obojí se stane údajem všech cen
- * z účtenky), řádky se stavem párování a akcemi, potvrzení spárovaných řádků a náhled obrázků,
- * dokud je server nesmaže (docs/soukromi.md, „Účtenky" — 30 dní od zpracování).
+ * z účtenky), řádky se stavem párování a akcemi, zveřejnění vybraných řádků — i nespárovaných,
+ * ty se zapíšou na „zboží z účtenky" — a náhled obrázků, dokud je server nesmaže
+ * (docs/soukromi.md, „Účtenky" — 30 dní od zpracování). Nesedí-li kontrolní součet, nad
+ * seznamem je upozornění a podezřelé řádky jsou zvýrazněné ([SumWarningCard], [needsCheck]).
  *
  * Ťuknutí na řádek otevře spodní panel ([ReceiptLineSheet]) s tím, co řádek potřebuje — hledání
  * zboží, potvrzení návrhu, nebo ignorování; průvodce „Doplnit nerozpoznané" jím projde jen
@@ -171,6 +178,7 @@ fun ReceiptDetailScreen(
       else -> ReceiptContent(
         receipt = receipt,
         viewModel = viewModel,
+        online = online,
         onCreateProduct = { line ->
           viewModel.startNewProduct(line)
           onCreateProduct(line.id, line.shownLabel, globalGtinOrNull(line.internalCode), receipt.store?.id)
@@ -195,13 +203,24 @@ fun ReceiptDetailScreen(
       onProductClick = onProductClick,
     )
   }
-  viewModel.confirmResult?.let { result ->
+  viewModel.publishResult?.let { result ->
     AlertDialog(
-      onDismissRequest = viewModel::dismissConfirmResult,
+      onDismissRequest = viewModel::dismissPublishResult,
       title = { Text(stringResource(R.string.receipt_confirm_result_title)) },
       text = {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-          Text(stringResource(R.string.receipt_confirm_result_confirmed, result.confirmed))
+          Text(stringResource(R.string.receipt_confirm_result_confirmed, result.published))
+          if (result.asReceiptItems > 0) {
+            Text(
+              stringResource(R.string.receipt_confirm_result_receipt_items, result.asReceiptItems),
+              style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+              stringResource(R.string.receipt_confirm_result_receipt_items_hint),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
           if (result.skipped.isNotEmpty()) {
             Text(
               stringResource(R.string.receipt_confirm_result_skipped, result.skipped.size),
@@ -216,7 +235,7 @@ fun ReceiptDetailScreen(
           }
         }
       },
-      confirmButton = { TextButton(onClick = viewModel::dismissConfirmResult) { Text(stringResource(R.string.common_ok)) } },
+      confirmButton = { TextButton(onClick = viewModel::dismissPublishResult) { Text(stringResource(R.string.common_ok)) } },
     )
   }
 }
@@ -225,6 +244,7 @@ fun ReceiptDetailScreen(
 private fun ReceiptContent(
   receipt: Receipt,
   viewModel: ReceiptDetailViewModel,
+  online: Boolean,
   onCreateProduct: (ReceiptLine) -> Unit,
   onAddStore: () -> Unit,
   onProductClick: (String) -> Unit,
@@ -236,6 +256,9 @@ private fun ReceiptContent(
   // Hotové a ignorované řádky jsou sbalené — zajímá to, co ještě potřebuje člověka.
   var expandedGroups by remember { mutableStateOf<Set<LineGroup>>(emptySet()) }
   val processed = receipt.processingStatus == "PROCESSED"
+  val canPublish = processed && receipt.lines.any { it.isPublishable() }
+  // Upozornění na součet patří k tomu, co se teprve zveřejní — nad hotovou účtenkou už nic neřídí.
+  val warning = sumWarning(receipt).takeIf { canPublish }
 
   Column(modifier.fillMaxWidth()) {
     LazyColumn(
@@ -266,6 +289,11 @@ private fun ReceiptContent(
             )
           }
         }
+        warning?.let {
+          item(key = "sum-warning") {
+            SumWarningCard(it, suspiciousCount = receipt.lines.count { line -> line.needsCheck(it) }, currency = receipt.currency)
+          }
+        }
         if (viewModel.guideCount > 0) {
           item {
             Button(onClick = viewModel::startGuide, modifier = Modifier.fillMaxWidth()) {
@@ -292,6 +320,7 @@ private fun ReceiptContent(
                 currency = receipt.currency,
                 selected = line.id in viewModel.selected,
                 busy = line.id in viewModel.busyLineIds,
+                needsCheck = line.needsCheck(warning),
                 onOpen = {
                   val product = line.product
                   if (line.status == "MATCHED" && product != null) onProductClick(product.id) else viewModel.openLine(line)
@@ -313,8 +342,8 @@ private fun ReceiptContent(
         }
       }
     }
-    if (processed && receipt.lines.any { it.status == "SUGGESTED" }) {
-      ConfirmBar(receipt, viewModel)
+    if (canPublish) {
+      ConfirmBar(receipt, viewModel, online)
     }
   }
 
@@ -555,6 +584,7 @@ private fun LineRow(
   currency: String?,
   selected: Boolean,
   busy: Boolean,
+  needsCheck: Boolean,
   onOpen: () -> Unit,
   onToggle: () -> Unit,
   onChoose: () -> Unit,
@@ -565,10 +595,13 @@ private fun LineRow(
 ) {
   var menuOpen by remember { mutableStateOf(false) }
   val gtin = globalGtinOrNull(line.internalCode)
-  Card(onClick = onOpen, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
+  // Zvýraznění ke kontrole: obrys v barvě chyby se šířkou obrysu karty z Material tématu —
+  // čitelné v obou režimech, bez vlastní hodnoty mimo docs/design.md.
+  val border = if (needsCheck) CardDefaults.outlinedCardBorder().copy(brush = SolidColor(MaterialTheme.colorScheme.error)) else null
+  Card(onClick = onOpen, enabled = !busy, border = border, modifier = Modifier.fillMaxWidth()) {
     Row(Modifier.padding(vertical = Spacing.sm), verticalAlignment = Alignment.Top) {
       Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-        if (line.status == "SUGGESTED") {
+        if (line.isPublishable()) {
           Checkbox(checked = selected, onCheckedChange = { onToggle() }, enabled = !busy)
         }
       }
@@ -591,7 +624,32 @@ private fun LineRow(
             Text(offCandidateLabel(candidate), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
           }
         }
-        LineStatusChip(line, matchedByGtin = gtin != null && line.matchSource == "CODE")
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+          LineStatusChip(line, matchedByGtin = gtin != null && line.matchSource == "CODE")
+          if (line.product?.isReceiptItem == true || line.matchSource == "RECEIPT_ITEM") ReceiptItemBadge()
+        }
+        if (needsCheck) {
+          Text(
+            stringResource(R.string.receipt_line_needs_check),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+          )
+        }
+        if (line.publishesAsReceiptItem() && selected) {
+          // Zaškrtnutý nespárovaný řádek — bez věty by nebylo jasné, kam se cena zapíše.
+          Text(
+            stringResource(R.string.receipt_line_publish_as_item_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
+        if (line.nonProduct && line.status != "IGNORED" && !line.confirmed) {
+          Text(
+            stringResource(R.string.receipt_line_non_product_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
         if (line.isFuzzyGuess()) {
           // Odhad není předem zaškrtnutý (ReceiptLineSelection.kt) — řádek musí říct proč a co
           // potvrzení udělá, jinak prázdné zaškrtávátko vypadá jako chyba.
@@ -751,30 +809,94 @@ internal fun skipReasonText(reason: String?): String = stringResource(
     "DUPLICATE_SAME_DAY" -> R.string.receipt_skip_duplicate
     "RECEIPT_LINE_PRICE_MISSING" -> R.string.receipt_skip_price_missing
     "RECEIPT_LINE_NOT_MATCHED" -> R.string.receipt_skip_not_matched
+    "RECEIPT_LINE_NOT_PRODUCT" -> R.string.receipt_skip_not_product
+    "RECEIPT_ITEM_LIMIT" -> R.string.receipt_skip_item_limit
+    // Neznámý (i budoucí) kód nesmí appku shodit — obecná věta stačí.
     else -> R.string.receipt_skip_other
   },
 )
 
+/**
+ * Upozornění nad seznamem řádků, když kontrolní součet nesedí ([SumWarning.Mismatch], s rozdílem,
+ * když ho jde spočítat) nebo nešel ověřit ([SumWarning.Unknown]). Nic nezakazuje — výběr zůstává
+ * předem zaškrtnutý, jen říká, na které řádky se podívat. Tón `tertiaryContainer` = „pozor",
+ * ne chyba (stejně jako nespárovaný řádek).
+ */
 @Composable
-private fun ConfirmBar(receipt: Receipt, viewModel: ReceiptDetailViewModel) {
+private fun SumWarningCard(warning: SumWarning, suspiciousCount: Int, currency: String?) {
+  val money = rememberMoneyFormatter(currency)
+  val text = when (warning) {
+    is SumWarning.Mismatch -> {
+      val printed = warning.printedTotal
+      val computed = warning.computedTotal
+      val difference = warning.difference
+      if (printed != null && computed != null && difference != null) {
+        stringResource(
+          R.string.receipt_sum_mismatch_with_difference,
+          money.format(computed),
+          money.format(printed),
+          money.format(abs(difference)),
+        )
+      } else {
+        stringResource(R.string.receipt_sum_mismatch)
+      }
+    }
+    SumWarning.Unknown -> stringResource(R.string.receipt_sum_unknown)
+  }
+  Card(
+    colors = CardDefaults.cardColors(
+      containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+      contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+    ),
+    modifier = Modifier.fillMaxWidth(),
+  ) {
+    Column(Modifier.padding(Spacing.lg), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+      Text(stringResource(R.string.receipt_sum_title), style = MaterialTheme.typography.titleSmall)
+      Text(text, style = MaterialTheme.typography.bodySmall)
+      if (suspiciousCount > 0) {
+        Text(stringResource(R.string.receipt_sum_suspicious, suspiciousCount), style = MaterialTheme.typography.bodySmall)
+      }
+    }
+  }
+}
+
+/**
+ * „Zveřejnit vybrané" — aktivní až s potvrzeným obchodem a datem nákupu (obojí se stane údajem
+ * všech cen). Bez signálu tlačítko neodešle nic a lišta řekne, že zveřejnit půjde po připojení
+ * — výběr zůstane, jak je; nejde o chybu (docs/design.md, „Offline").
+ */
+@Composable
+private fun ConfirmBar(receipt: Receipt, viewModel: ReceiptDetailViewModel, online: Boolean) {
   val missingStore = receipt.store == null
   val missingDate = receipt.purchasedAt == null
+  val count = viewModel.publishCount
+  val asItems = viewModel.publishAsReceiptItemCount
   Surface(tonalElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
     Column(Modifier.padding(Spacing.lg), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-      if (missingStore || missingDate) {
-        Text(
+      when {
+        missingStore || missingDate -> Text(
           stringResource(if (missingStore) R.string.receipt_confirm_needs_store else R.string.receipt_confirm_needs_date),
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.error,
         )
+        !online -> Text(
+          stringResource(R.string.receipt_publish_offline),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        asItems > 0 -> Text(
+          stringResource(R.string.receipt_publish_as_items, asItems),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
       }
       Button(
         onClick = viewModel::confirm,
-        enabled = !missingStore && !missingDate && viewModel.confirmableCount > 0 && !viewModel.confirming,
+        enabled = !missingStore && !missingDate && online && count > 0 && !viewModel.confirming,
         modifier = Modifier.fillMaxWidth(),
       ) {
         if (viewModel.confirming) CircularProgressIndicator(Modifier.size(20.dp))
-        else Text(stringResource(R.string.receipt_confirm, viewModel.confirmableCount))
+        else Text(stringResource(R.string.receipt_confirm, count))
       }
     }
   }

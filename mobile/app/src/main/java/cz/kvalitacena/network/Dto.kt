@@ -163,6 +163,10 @@ data class Product(
   // EAN/OFF jsou GLOBAL, bezkódové zboží patří řetězci nebo jedné provozovně. LEGACY_GLOBAL
   // označuje starší nejednoznačné položky zachované kvůli historii.
   val catalogScope: String = "GLOBAL",
+  // USER/RECEIPT — RECEIPT je „zboží z účtenky" ze zveřejněného nespárovaného řádku, bez
+  // ověřených náležitostí (docs/reputace.md, „Zboží z účtenky"). Neznámá budoucí hodnota se
+  // bere jako běžné zboží (isReceiptItem v ui/common/ReceiptItem.kt).
+  val createdVia: String = "USER",
   val scopeChain: RetailChain? = null,
   val scopeStore: Store? = null,
   val prices: List<PriceCurrent> = emptyList(),
@@ -265,6 +269,8 @@ data class ProductSummary(
   // docs/reputace.md, "Zboží bez čárového kódu".
   val status: String = "ACTIVE",
   val catalogScope: String = "GLOBAL",
+  // Stejné jako Product.createdVia — řádek seznamu kreslí zboží z účtenky se štítkem.
+  val createdVia: String = "USER",
   val scopeChain: RetailChain? = null,
   val scopeStore: Store? = null,
   val verified: Boolean = false,
@@ -786,8 +792,9 @@ data class ReceiptLineCounts(
 /**
  * Řádek účtenky. Enumy se jako všude jinde v appce mapují ručně na String (appka typy ze
  * schématu negeneruje, kořenový CLAUDE.md): [status] UNMATCHED/SUGGESTED/MATCHED/IGNORED,
- * [matchSource] CODE/LABEL/FUZZY/USER/NEW_PRODUCT (FUZZY je jen odhad podle podobnosti názvu,
- * docs/ai.md), [quantityUnit] PCS/KG/L. [unitPrice] je u váhového zboží cena za kg/l, ne
+ * [matchSource] CODE/LABEL/FUZZY/OFF/USER/NEW_PRODUCT/RECEIPT_ITEM (FUZZY je jen odhad podle
+ * podobnosti názvu, docs/ai.md; RECEIPT_ITEM = zveřejněno bez spárování na „zboží z účtenky"),
+ * [quantityUnit] PCS/KG/L. [unitPrice] je u váhového zboží cena za kg/l, ne
  * zaplacená částka ([lineTotal]). [labelDisplay] je čitelný název od workeru jen pro oči,
  * hledání a předvyplnění — párování se učí podle [labelRaw]; u starších účtenek chybí.
  */
@@ -815,6 +822,12 @@ data class ReceiptLine(
   // Náhled z Open Food Facts u návrhu matchSource OFF — zboží zatím neexistuje, založí se
   // až potvrzením řádku (docs/ai.md, „Účtenky").
   val offCandidate: ExternalProductCandidate? = null,
+  // Není zboží (záloha, vratný obal) — předem se nezaškrtne a server ho bez spárování
+  // nezveřejní (RECEIPT_LINE_NOT_PRODUCT). Default kvůli starším odpovědím bez pole.
+  val nonProduct: Boolean = false,
+  // Vypadá na chybu čtení (chybí cena, množství × cena ≠ celkem, nečitelný název) — zvýrazní
+  // se, když kontrolní součet účtenky nesedí (ReceiptLineSelection.kt).
+  val suspicious: Boolean = false,
 )
 
 /**
@@ -855,6 +868,11 @@ data class Receipt(
   val storeIcoRaw: String? = null,
   val totalAmount: Double? = null,
   val currency: String? = null,
+  // Kontrolní součet workeru MATCH/MISMATCH/UNKNOWN a součet položek, jak ho spočítal — jen
+  // v detailu (RECEIPT_DETAIL_FIELDS), řídí upozornění nad seznamem řádků (docs/ai.md).
+  // Neznámá hodnota se bere jako UNKNOWN: upozornit navíc je bezpečnější než mlčet.
+  val sumStatus: String = "UNKNOWN",
+  val computedTotal: Double? = null,
   val store: Store? = null,
   val suggestedStore: Store? = null,
   val imagePaths: List<String> = emptyList(),
@@ -875,6 +893,19 @@ data class ConfirmReceiptLinesResult(
   val receipt: Receipt,
   val confirmed: Int,
   val skipped: List<ReceiptLine> = emptyList(),
+)
+
+/**
+ * Výsledek dopárování zboží z účtenky (`rematchReceiptItem`, docs/reputace.md). [merged] =
+ * sloučeno celé i s cenami ostatních; jinak se přesunuly jen vlastní ceny a sloučení čeká na
+ * [votesRequired] souhlasných hlasů ([votes] včetně vlastního). [product] je cílové zboží.
+ */
+@Serializable
+data class RematchReceiptItemResult(
+  val product: Product,
+  val merged: Boolean,
+  val votes: Int,
+  val votesRequired: Int,
 )
 
 /** Odpověď `POST /api/receipts`. */
@@ -1149,6 +1180,9 @@ data class UnmatchReceiptLineData(val unmatchReceiptLine: ReceiptLine)
 
 @Serializable
 data class ConfirmReceiptLinesData(val confirmReceiptLines: ConfirmReceiptLinesResult)
+
+@Serializable
+data class RematchReceiptItemData(val rematchReceiptItem: RematchReceiptItemResult)
 
 @Serializable
 data class MarkReceiptSeenData(val markReceiptSeen: Receipt)

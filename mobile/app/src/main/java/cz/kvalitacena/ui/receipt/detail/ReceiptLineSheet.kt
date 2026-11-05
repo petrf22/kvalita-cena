@@ -32,8 +32,11 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import cz.kvalitacena.R
 import cz.kvalitacena.network.ExternalProductCandidate
+import cz.kvalitacena.network.ProductSummary
 import cz.kvalitacena.network.ReceiptLine
+import cz.kvalitacena.ui.common.ReceiptItemBadge
 import cz.kvalitacena.ui.common.globalGtinOrNull
+import cz.kvalitacena.ui.common.isReceiptItem
 import cz.kvalitacena.ui.common.rememberNetContentLabeler
 import cz.kvalitacena.ui.theme.Spacing
 
@@ -48,6 +51,9 @@ private val OFF_THUMB_SIZE = 56.dp
  * - návrh nebo odhad → navržené zboží s „Ano, je to ono" a „Jiné zboží",
  * - návrh z Open Food Facts → náhled z OFF s povinnou atribucí; zboží vznikne až potvrzením,
  * - ignorovaný řádek → vrácení mezi nespárované.
+ *
+ * Zboží z účtenky (ui/common/ReceiptItem.kt) má v návrzích i u spárovaného řádku štítek —
+ * vybrat ho jde, ale je vidět, že nemá ověřené náležitosti.
  *
  * Offline: akce selžou s chybou v panelu (návrhy) nebo nad seznamem (akce řádku), panel se
  * nezavře — v obchodě bez signálu jde zkusit znovu.
@@ -109,6 +115,7 @@ internal fun ReceiptLineSheet(
           OutlinedButton(onClick = { viewModel.closeSheet(); onProductClick(it.id) }, modifier = Modifier.fillMaxWidth()) {
             Text(productLabel(it))
           }
+          if (it.isReceiptItem) ReceiptItemBadge()
         }
 
         !viewModel.sheetSearching && line.isOffSuggestion() -> {
@@ -126,11 +133,10 @@ internal fun ReceiptLineSheet(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
             modifier = Modifier.fillMaxWidth(),
           ) {
-            Text(
-              productLabel(product),
-              style = MaterialTheme.typography.bodyLarge,
-              modifier = Modifier.padding(Spacing.md),
-            )
+            Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+              Text(productLabel(product), style = MaterialTheme.typography.bodyLarge)
+              if (product.isReceiptItem) ReceiptItemBadge()
+            }
           }
           if (line.isFuzzyGuess()) {
             Text(
@@ -170,6 +176,14 @@ private fun ProductSearch(
   onCreateProduct: () -> Unit,
   busy: Boolean,
 ) {
+  if (line.publishesAsReceiptItem()) {
+    // Párovat není povinné — bez toho by hledání vypadalo jako jediná cesta, jak cenu zapsat.
+    Text(
+      stringResource(R.string.receipt_line_sheet_publish_hint),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+  }
   OutlinedTextField(
     value = viewModel.suggestionQuery,
     onValueChange = viewModel::onSuggestionQueryChange,
@@ -198,12 +212,7 @@ private fun ProductSearch(
     // by LazyColumn potřeboval pevnou výšku — právě ta tlačila akce pod okraj.
     else -> Column {
       viewModel.suggestionItems.forEach { product ->
-        Text(
-          productLabel(product),
-          style = MaterialTheme.typography.bodyMedium,
-          modifier = Modifier.fillMaxWidth().clickable(enabled = !busy) { viewModel.chooseProduct(product) }
-            .padding(vertical = Spacing.md),
-        )
+        SuggestionRow(product, enabled = !busy, onClick = { viewModel.chooseProduct(product) })
         HorizontalDivider()
       }
     }
@@ -213,6 +222,18 @@ private fun ProductSearch(
   }
   TextButton(onClick = { viewModel.ignoreFromSheet(line) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
     Text(stringResource(R.string.receipt_line_sheet_not_product))
+  }
+}
+
+/** Jeden návrh zboží k řádku — u zboží z účtenky se štítkem, ať je vidět, že není ověřené. */
+@Composable
+private fun SuggestionRow(product: ProductSummary, enabled: Boolean, onClick: () -> Unit) {
+  Column(
+    Modifier.fillMaxWidth().clickable(enabled = enabled, onClick = onClick).padding(vertical = Spacing.md),
+    verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+  ) {
+    Text(productLabel(product), style = MaterialTheme.typography.bodyMedium)
+    if (product.isReceiptItem) ReceiptItemBadge()
   }
 }
 
