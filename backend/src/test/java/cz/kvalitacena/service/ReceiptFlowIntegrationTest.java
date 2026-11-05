@@ -18,6 +18,7 @@ import cz.kvalitacena.db.entity.QuantityUnit;
 import cz.kvalitacena.db.entity.Receipt;
 import cz.kvalitacena.db.entity.ReceiptLine;
 import cz.kvalitacena.db.entity.ReceiptLineStatus;
+import cz.kvalitacena.db.entity.ReceiptReviewStatus;
 import cz.kvalitacena.db.entity.ReceiptMatchSource;
 import cz.kvalitacena.db.entity.ReceiptProcessingStatus;
 import cz.kvalitacena.db.entity.ReceiptSumStatus;
@@ -1135,6 +1136,11 @@ class ReceiptFlowIntegrationTest {
     assertThat(result.confirmed()).isEqualTo(1);
     assertThat(result.skipped()).singleElement()
         .satisfies(l -> assertThat(l.getSkipReason()).isEqualTo("RECEIPT_LINE_NOT_PRODUCT"));
+    // Záloha se nezveřejní nikdy — po zveřejnění je ignorovaná a účtenka hotová, ne rozpracovaná.
+    assertThat(lineRepository.findById(lines.get(1).getId()).orElseThrow().getStatus())
+        .isEqualTo(ReceiptLineStatus.IGNORED);
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getReviewStatus())
+        .isEqualTo(ReceiptReviewStatus.DONE);
     ReceiptLine published = lineRepository.findById(lines.get(0).getId()).orElseThrow();
     assertThat(published.getStatus()).isEqualTo(ReceiptLineStatus.MATCHED);
     assertThat(published.getMatchSource()).isEqualTo(ReceiptMatchSource.RECEIPT_ITEM);

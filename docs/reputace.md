@@ -511,6 +511,8 @@ v přehledu účtenky ke zveřejnění později. Spam brzdí denní limit účte
 (`app.receipt.max-receipts-per-day`) a to, že každá účtenka prošla workerem. Položka se stejným
 normalizovaným názvem v rozsahu se použije znovu, nevzniká duplicita. Záloha a vratný obal
 zboží nejsou a nezveřejňují se (`app.receipt.non-product-pattern`, `RECEIPT_LINE_NOT_PRODUCT`).
+Po zveřejnění se nespárované nezboží označí jako ignorované (vratně, jako ruční ignorování),
+jinak by účtenka kvůli záloze na lahev zůstala navždy rozpracovaná.
 
 **Dopárování mění data jiných lidí, proto má dvě rychlosti** (`rematchReceiptItem`,
 `ReceiptItemRematchService`):

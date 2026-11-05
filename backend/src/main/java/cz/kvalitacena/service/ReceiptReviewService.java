@@ -231,11 +231,31 @@ public class ReceiptReviewService {
     }
     Receipt result = new TransactionTemplate(transactionManager).execute(status -> {
       Receipt fresh = receiptRepository.findForUpdateById(receiptId).orElseThrow();
+      if (publishUnmatched) {
+        ignoreNonProducts(receiptId);
+      }
       updateReviewStatus(fresh);
       return fresh;
     });
     log.info("Účtenka {}: potvrzeno {} řádků, přeskočeno {}", receiptId, confirmed, skipped.size());
     return new ConfirmResult(result, confirmed, skipped);
+  }
+
+  /**
+   * Záloha a vratný obal se nezveřejní nikdy ({@link ReceiptLineChecks#isNonProduct}) — klient
+   * je ani nenabízí. Po „Zveřejnit vybrané" se proto nespárované nezboží označí jako ignorované,
+   * jinak by účtenka kvůli záloze na lahev zůstala navždy rozpracovaná. Vrátit jde jako každé
+   * ignorování ({@link #unmatchLine}).
+   */
+  private void ignoreNonProducts(Long receiptId) {
+    List<ReceiptLine> nonProducts = lineRepository.findByReceiptIdOrderByLineNoAsc(receiptId).stream()
+        .filter(l -> l.getStatus() == ReceiptLineStatus.UNMATCHED && lineChecks.isNonProduct(l))
+        .toList();
+    nonProducts.forEach(l -> {
+      l.setStatus(ReceiptLineStatus.IGNORED);
+      l.setSkipReason(null);
+    });
+    lineRepository.saveAll(nonProducts);
   }
 
   private ReceiptLine skip(TransactionTemplate lineTx, Long lineId, String reason, Receipt receipt, AppUser owner) {
