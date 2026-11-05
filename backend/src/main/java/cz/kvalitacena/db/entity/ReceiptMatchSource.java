@@ -21,5 +21,11 @@ public enum ReceiptMatchSource {
   /** Uživatel vybral z našeptávače. */
   USER,
   /** Uživatel pro řádek založil nové zboží. */
-  NEW_PRODUCT
+  NEW_PRODUCT,
+  /**
+   * Řádek zveřejněný bez spárování — cena je zapsaná na „zboží z účtenky" (druhová položka
+   * s {@code created_via = RECEIPT}, ReceiptReviewService.receiptItemFor). Dopárovat ho jde
+   * později přes ReceiptItemRematchService.
+   */
+  RECEIPT_ITEM
 }

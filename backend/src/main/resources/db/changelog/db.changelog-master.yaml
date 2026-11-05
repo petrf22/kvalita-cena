@@ -60,3 +60,4 @@ databaseChangeLog:
   - include: { file: 2026-11-03/01-receipt-line-off.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-11-03/02-receipt-line-hint.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-11-03/03-receipt-job-requeue.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-11-05/01-receipt-item.yaml, relativeToChangelogFile: true }

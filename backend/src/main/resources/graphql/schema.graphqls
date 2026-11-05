@@ -326,9 +326,19 @@ type Mutation {
   """
   Zapíše ceny z vybraných spárovaných řádků (observedAt = datum a čas nákupu, druh důkazu
   RECEIPT_OCR). Každý řádek zvlášť — kolize jednoho (stejné zboží týž den už zapsané) ostatní
-  neshodí, vrátí se ve skipped se skipReason.
+  neshodí, vrátí se ve skipped se skipReason. S publishUnmatched se zveřejní i nespárované
+  řádky: cena se zapíše na „zboží z účtenky" (matchSource RECEIPT_ITEM) — existující položku
+  se stejným označením nebo názvem v rozsahu obchodu, jinak novou (docs/datovy-model.md,
+  „Účtenky"). Řádek, který není zboží (nonProduct), se přeskočí s RECEIPT_LINE_NOT_PRODUCT.
   """
-  confirmReceiptLines(receiptId: ID!, lineIds: [ID!]!): ConfirmReceiptLinesResult!
+  confirmReceiptLines(receiptId: ID!, lineIds: [ID!]!, publishUnmatched: Boolean = false): ConfirmReceiptLinesResult!
+
+  """
+  Dopárování „zboží z účtenky" (Product.createdVia = RECEIPT) na skutečné zboží. Vlastní ceny
+  a řádky účtenek se přesunou hned; cizí až po hlasech app.receipt.item-merge-confirmations
+  různých lidí pro stejný cíl (docs/reputace.md, „Zboží z účtenky"). Vyžaduje přihlášení.
+  """
+  rematchReceiptItem(productId: ID!, targetId: ID!): RematchReceiptItemResult!
 
   "Vlastník účtenku viděl — zhasne notifikaci/odznak."
   markReceiptSeen(id: ID!): Receipt!
@@ -939,6 +949,15 @@ enum ProductStatus {
   REJECTED
 }
 
+"""
+Jak zboží vzniklo. RECEIPT = „zboží z účtenky": druhová položka ze zveřejněného nespárovaného
+řádku účtenky, bez ověřených náležitostí — klient ji kreslí jinak a nabídne dopárování.
+"""
+enum ProductCreatedVia {
+  USER
+  RECEIPT
+}
+
 enum ProductScope {
   GLOBAL
   CHAIN
@@ -982,6 +1001,7 @@ type Product {
   isGeneric: Boolean!
   "Rozsah identity: EAN globálně, bezkódové zboží u řetězce/provozovny."
   catalogScope: ProductScope!
+  createdVia: ProductCreatedVia!
   scopeChain: RetailChain
   scopeStore: Store
   "Aktuální ceny po jednotlivých obchodech (agg.price_current)."
@@ -1766,6 +1786,9 @@ enum ErrorCode {
   RECEIPT_RESULT_INVALID
   RECEIPT_LINE_ALREADY_CONFIRMED
   RECEIPT_LINE_CONFIRM_FAILED
+  RECEIPT_ITEM_LIMIT
+  RECEIPT_LINE_NOT_PRODUCT
+  RECEIPT_ITEM_REMATCH_INVALID
   RECEIPT_UPLOAD_TOO_LARGE
   OBSERVATION_ALREADY_SUBMITTED_TODAY
   OBSERVATION_PRICES_REQUIRED
@@ -1863,6 +1886,16 @@ enum ReceiptMatchSource {
   OFF
   USER
   NEW_PRODUCT
+  "Zveřejněno bez spárování — cena je zapsaná na „zboží z účtenky“ (Product.createdVia RECEIPT)."
+  RECEIPT_ITEM
+}
+
+"Kontrolní součet workeru: součet položek proti vytištěnému „Celkem“."
+enum ReceiptSumStatus {
+  MATCH
+  MISMATCH
+  "Celkem se nenašlo, nebo účtenku zpracovala starší verze."
+  UNKNOWN
 }
 
 enum QuantityUnit {
@@ -1886,6 +1919,13 @@ type Receipt {
   storeIcoRaw: String
   totalAmount: BigDecimal
   currency: String
+  """
+  Kontrolní součet — řídí jen předvýběr řádků ke zveřejnění. MATCH: všechno předem zaškrtnout;
+  jinak taky, ale s upozorněním na rozdíl (totalAmount − computedTotal) a podezřelé řádky.
+  """
+  sumStatus: ReceiptSumStatus!
+  "Součet položek, jak ho spočítal worker (i se zaokrouhlením)."
+  computedTotal: BigDecimal
   "Obchod potvrzený uživatelem."
   store: Store
   "Obchod navržený serverem podle IČO/adresy — uživatel ho potvrdí přes updateReceiptHeader."
@@ -1942,6 +1982,10 @@ type ReceiptLine {
   confirmed: Boolean!
   "Proč potvrzení cenu nezapsalo — DUPLICATE_SAME_DAY, nebo kód chyby (ErrorCode)."
   skipReason: String
+  "Není zboží (záloha, vratný obal) — klient ho ke zveřejnění předem nezaškrtne, server ho přeskočí."
+  nonProduct: Boolean!
+  "Vypadá na chybu čtení (chybí cena, množství × cena ≠ celkem, nečitelný název) — ukázat ke kontrole."
+  suspicious: Boolean!
 }
 
 "Odkud je předvyplněná hodnota formuláře nového zboží — klient u AI ukáže, že jde o návrh."
@@ -1981,6 +2025,16 @@ type ReceiptSummary {
   unseenCount: Int!
   "Aktuální verze textu souhlasu — klient se starší odsouhlasenou verzí se musí zeptat znovu."
   consentVersion: Int!
+}
+
+type RematchReceiptItemResult {
+  "Zboží, na které teď míří vlastní ceny (po sloučení i všechny ostatní)."
+  product: Product!
+  "Zboží z účtenky se sloučilo celé (i s cenami ostatních)."
+  merged: Boolean!
+  "Hlasů pro tenhle cíl, včetně vlastního."
+  votes: Int!
+  votesRequired: Int!
 }
 
 type ConfirmReceiptLinesResult {

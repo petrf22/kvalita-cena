@@ -101,6 +101,9 @@ public enum ErrorCode {
   RECEIPT_RESULT_INVALID("error.receipt.resultInvalid"),
   RECEIPT_LINE_ALREADY_CONFIRMED("error.receipt.lineAlreadyConfirmed"),
   RECEIPT_LINE_CONFIRM_FAILED("error.receipt.lineConfirmFailed"),
+  RECEIPT_ITEM_LIMIT("error.receipt.itemLimit"),   // {0} = app.receipt.max-open-items
+  RECEIPT_LINE_NOT_PRODUCT("error.receipt.lineNotProduct"),
+  RECEIPT_ITEM_REMATCH_INVALID("error.receipt.itemRematchInvalid"),
   RECEIPT_UPLOAD_TOO_LARGE("error.receipt.uploadTooLarge"),   // spring.servlet.multipart.max-request-size
 
   // --- cenové observace

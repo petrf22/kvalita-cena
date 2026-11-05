@@ -1,6 +1,7 @@
 package cz.kvalitacena.db.repo;
 
 import cz.kvalitacena.db.entity.Product;
+import cz.kvalitacena.db.entity.ProductCreatedVia;
 import cz.kvalitacena.db.entity.ProductStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -201,4 +202,32 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
   /** Kolik nepotvrzených bezkódových položek má autor otevřených — strop proti zaplevelení
    *  katalogu (docs/reputace.md, "Zboží bez čárového kódu"). */
   long countByCreatedByUserIdAndGenericAndStatus(Long userId, boolean generic, ProductStatus status);
+
+  /**
+   * Totéž, jen pro jeden způsob vzniku — ruční strop ({@code app.catalog.max-unconfirmed-drafts})
+   * nepočítá zboží z účtenek a strop zboží z účtenek ({@code app.receipt.max-open-items})
+   * nepočítá ruční položky.
+   */
+  long countByCreatedByUserIdAndGenericAndStatusAndCreatedVia(Long userId, boolean generic, ProductStatus status,
+      ProductCreatedVia createdVia);
+
+  /**
+   * Existující druhová položka se stejným normalizovaným názvem v rozsahu prodejce — zveřejnění
+   * řádku účtenky ji použije místo založení duplicity. Kategorie se záměrně neporovnává: stejné
+   * označení ze dvou účtenek může dostat dva různé návrhy kategorie, a zboží je pořád jedno.
+   * Skryté a sloučené položky se nepoužijí.
+   */
+  @Query(value = """
+      SELECT p.* FROM core.product p
+      WHERE p.is_generic AND p.status IN ('ACTIVE', 'DRAFT') AND p.hidden_at IS NULL
+        AND core.norm_text(p.name) = core.norm_text(:name)
+        AND ((CAST(:chainId AS BIGINT) IS NOT NULL AND p.catalog_scope = 'CHAIN'
+              AND p.scope_chain_id = CAST(:chainId AS BIGINT))
+          OR (CAST(:chainId AS BIGINT) IS NULL AND p.catalog_scope = 'STORE'
+              AND p.scope_store_id = CAST(:storeId AS BIGINT)))
+      ORDER BY CASE WHEN p.status = 'ACTIVE' THEN 0 ELSE 1 END, p.id
+      LIMIT 1
+      """, nativeQuery = true)
+  Optional<Product> findGenericInScopeByName(@Param("name") String name, @Param("chainId") Long chainId,
+      @Param("storeId") Long storeId);
 }

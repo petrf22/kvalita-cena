@@ -3,6 +3,7 @@ package cz.kvalitacena.service;
 import cz.kvalitacena.config.PrivacyProperties;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductAliasConfirmationRepository;
+import cz.kvalitacena.db.repo.ProductMergeVoteRepository;
 import cz.kvalitacena.db.repo.ProductStoreLabelRepository;
 import cz.kvalitacena.db.repo.ReceiptLineRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class PseudonymizationService {
   private final ProductAliasConfirmationRepository aliasConfirmationRepository;
   private final ProductStoreLabelRepository storeLabelRepository;
   private final ReceiptLineRepository receiptLineRepository;
+  private final ProductMergeVoteRepository mergeVoteRepository;
   private final PrivacyProperties privacyProperties;
 
   @Scheduled(cron = "@daily")
@@ -41,6 +43,8 @@ public class PseudonymizationService {
     // půlky vazby řádek ↔ observace musí zmizet, jinak by šel autor dohledat přes účtenku.
     int receiptLinks = receiptLineRepository.pseudonymizeObservationLinksBefore(cutoff)
         + priceObservationRepository.pseudonymizeReceiptLinksBefore(cutoff);
+    // Hlasy pro dopárování zboží z účtenky — kdo a kdy hlasoval, stejně jako u potvrzení.
+    int mergeVotes = mergeVoteRepository.pseudonymizeBefore(cutoff);
     if (affected > 0) {
       log.info("Pseudonymizace: zrušena vazba na uživatele u {} observací starších {} dní.",
           affected, privacyProperties.getPseudonymizationDays());
@@ -52,6 +56,9 @@ public class PseudonymizationService {
     if (labelConfirmations > 0) {
       log.info("Pseudonymizace: zrušena vazba na uživatele u {} potvrzení názvů z účtenek.",
           labelConfirmations);
+    }
+    if (mergeVotes > 0) {
+      log.info("Pseudonymizace: zrušena vazba na uživatele u {} hlasů pro dopárování zboží z účtenky.", mergeVotes);
     }
     if (receiptLinks > 0) {
       log.info("Pseudonymizace: zrušeno {} vazeb mezi cenami a řádky účtenek.", receiptLinks);

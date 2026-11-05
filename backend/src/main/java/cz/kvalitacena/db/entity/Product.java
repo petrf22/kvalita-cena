@@ -104,6 +104,13 @@ public class Product implements Persistable<Long> {
   @Column(name = "created_by_user_id")
   private Long createdByUserId;
 
+  // Zboží z účtenky (RECEIPT) je druhová položka bez ověřených náležitostí — klient ho
+  // kreslí jinak, hledání ho řadí za ostatní (docs/datovy-model.md, „Účtenky").
+  @Enumerated(EnumType.STRING)
+  @Column(name = "created_via", nullable = false, length = 10)
+  @Builder.Default
+  private ProductCreatedVia createdVia = ProductCreatedVia.USER;
+
   @Column(name = "created_at", nullable = false, columnDefinition = "TIMESTAMPTZ")
   private OffsetDateTime createdAt;
 

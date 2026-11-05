@@ -11,6 +11,7 @@ import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.ObservationSource;
 import cz.kvalitacena.db.entity.PriceKind;
 import cz.kvalitacena.db.entity.Product;
+import cz.kvalitacena.db.entity.ProductCreatedVia;
 import cz.kvalitacena.db.entity.ProductScope;
 import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.QuantityUnit;
@@ -19,6 +20,7 @@ import cz.kvalitacena.db.entity.ReceiptLine;
 import cz.kvalitacena.db.entity.ReceiptLineStatus;
 import cz.kvalitacena.db.entity.ReceiptMatchSource;
 import cz.kvalitacena.db.entity.ReceiptProcessingStatus;
+import cz.kvalitacena.db.entity.ReceiptSumStatus;
 import cz.kvalitacena.db.entity.RetailChain;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.entity.StoreStatus;
@@ -104,6 +106,8 @@ class ReceiptFlowIntegrationTest {
   @Autowired private org.springframework.transaction.PlatformTransactionManager transactionManager;
   @Autowired private cz.kvalitacena.db.repo.OffProductRepository offProductRepository;
   @Autowired private NewProductDefaultsService productDefaultsService;
+  @Autowired private ProductCatalogService catalogService;
+  @Autowired private ReceiptItemRematchService rematchService;
   @Autowired private cz.kvalitacena.controller.worker.WorkerReceiptController workerController;
   @Autowired private cz.kvalitacena.config.OpenFoodFactsProperties offProperties;
   // Skutečné Open Food Facts se nevolá nikdy — test obnovy cache si odpověď nastaví sám.
@@ -1109,6 +1113,226 @@ class ReceiptFlowIntegrationTest {
   private static WorkerReceiptResult.Line lineWithCode(String label, String code) {
     return new WorkerReceiptResult.Line(label, code, BigDecimal.ONE, QuantityUnit.PCS, new BigDecimal("44.90"),
         new BigDecimal("44.90"), null, PriceKind.REGULAR, null, null, null, null);
+  }
+
+  // --- Zboží z účtenky: zveřejnění bez spárování (docs/datovy-model.md, „Účtenky")
+
+  @Test
+  void publishUnmatchedRecordsPriceOnReceiptItemAndSkipsDeposit() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    String label = "KECUP JEMNY " + f.ico();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line(label, "1", QuantityUnit.PCS, "39.90", "39.90", null, PriceKind.REGULAR),
+        line("ZALOHA LAHEV", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR)));
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    List<ReceiptLine> lines = lines(receiptId);
+    assertThat(lines.get(0).getStatus()).isEqualTo(ReceiptLineStatus.UNMATCHED);
+
+    var result = reviewService.confirmLines(owner.getPublicUid(), receiptId,
+        lines.stream().map(ReceiptLine::getId).toList(), ObservationSource.WEB, true);
+
+    assertThat(result.confirmed()).isEqualTo(1);
+    assertThat(result.skipped()).singleElement()
+        .satisfies(l -> assertThat(l.getSkipReason()).isEqualTo("RECEIPT_LINE_NOT_PRODUCT"));
+    ReceiptLine published = lineRepository.findById(lines.get(0).getId()).orElseThrow();
+    assertThat(published.getStatus()).isEqualTo(ReceiptLineStatus.MATCHED);
+    assertThat(published.getMatchSource()).isEqualTo(ReceiptMatchSource.RECEIPT_ITEM);
+    Product item = productRepository.findById(published.getProductId()).orElseThrow();
+    assertThat(item.getCreatedVia()).isEqualTo(ProductCreatedVia.RECEIPT);
+    assertThat(item.getStatus()).isEqualTo(ProductStatus.DRAFT);
+    assertThat(item.isGeneric()).isTrue();
+    assertThat(item.getCatalogScope()).isEqualTo(ProductScope.CHAIN);
+    assertThat(item.getName()).isEqualTo(label);
+    assertThat(item.getCategory()).isNotNull();
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT evidence_kind FROM core.price_observation WHERE product_id = ?", String.class, item.getId()))
+        .isEqualTo(EvidenceKind.RECEIPT_OCR.name());
+  }
+
+  @Test
+  void receiptItemCollectsConfirmationsFromOtherReceiptsOfTheSameChain() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    String label = "HORCICE PLNOTUCNA " + f.ico();
+    Long first = uploadAndProcess(owner, f, List.of(
+        line(label, "1", QuantityUnit.PCS, "19.90", "19.90", null, PriceKind.REGULAR)));
+    reviewService.updateHeader(owner.getPublicUid(), first, f.store().getId(), null);
+    reviewService.confirmLines(owner.getPublicUid(), first, List.of(lines(first).getFirst().getId()),
+        ObservationSource.WEB, true);
+    Long itemId = lines(first).getFirst().getProductId();
+
+    // Naučené označení: stejná položka na účtence jiného člověka se spáruje sama na totéž zboží
+    // — nevznikne duplicita a jeho cena je potvrzení zboží z účtenky (docs/reputace.md).
+    for (int i = 0; i < 3; i++) {
+      AppUser other = persistUser();
+      Long receiptId = uploadAndProcess(other, f, List.of(
+          line(label, "1", QuantityUnit.PCS, "21.90", "21.90", null, PriceKind.REGULAR)));
+      ReceiptLine auto = lines(receiptId).getFirst();
+      assertThat(auto.getMatchSource()).isEqualTo(ReceiptMatchSource.LABEL);
+      assertThat(auto.getProductId()).isEqualTo(itemId);
+      reviewService.updateHeader(other.getPublicUid(), receiptId, f.store().getId(), null);
+      reviewService.confirmLines(other.getPublicUid(), receiptId, List.of(auto.getId()), ObservationSource.WEB, true);
+    }
+    assertThat(productRepository.findById(itemId).orElseThrow().getStatus()).isEqualTo(ProductStatus.ACTIVE);
+  }
+
+  @Test
+  void withoutPublishUnmatchedUnmatchedLineIsSkippedAsBefore() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line("OCET KVASNY " + f.ico(), "1", QuantityUnit.PCS, "12.90", "12.90", null, PriceKind.REGULAR)));
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    ReceiptLine line = lines(receiptId).getFirst();
+
+    var result = reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(line.getId()), ObservationSource.WEB);
+
+    assertThat(result.confirmed()).isZero();
+    assertThat(result.skipped()).singleElement()
+        .satisfies(l -> assertThat(l.getSkipReason()).isEqualTo("RECEIPT_LINE_NOT_MATCHED"));
+    assertThat(lineRepository.findById(line.getId()).orElseThrow().getProductId()).isNull();
+  }
+
+  @Test
+  void receiptItemsHaveOwnCapAndReuseSameNameInScope() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Category category = f.rohlik().getCategory();
+    var first = catalogService.receiptItem("Sýr eidam " + f.ico(), category, null, null, false, f.store(), owner, 1);
+    assertThat(first.created()).isTrue();
+    // Stejný název v rozsahu řetězce = stejné zboží, i když se strop už vyčerpal.
+    var again = catalogService.receiptItem("SÝR EIDAM " + f.ico(), category, null, null, false, f.store(), owner, 1);
+    assertThat(again.created()).isFalse();
+    assertThat(again.product().getId()).isEqualTo(first.product().getId());
+    assertThatThrownBy(() -> catalogService.receiptItem("Sýr gouda " + f.ico(), category, null, null, false,
+        f.store(), owner, 1))
+        .isInstanceOfSatisfying(cz.kvalitacena.exception.AppException.class,
+            e -> assertThat(e.getCode()).isEqualTo(cz.kvalitacena.exception.ErrorCode.RECEIPT_ITEM_LIMIT));
+    // Ruční strop nepotvrzených položek zboží z účtenek nepočítá.
+    assertThat(productRepository.countByCreatedByUserIdAndGenericAndStatusAndCreatedVia(owner.getId(), true,
+        ProductStatus.DRAFT, ProductCreatedVia.USER)).isZero();
+  }
+
+  @Test
+  void rematchOfOwnOnlyReceiptItemMergesItRightAway() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long itemId = publishedItem(owner, f, "ROHL.TUK.SPEC " + f.ico());
+    Long lineId = lineRepository.findAll().stream().filter(l -> itemId.equals(l.getProductId())).findFirst()
+        .orElseThrow().getId();
+
+    var result = rematchService.rematch(owner.getPublicUid(), itemId, f.rohlik().getId());
+
+    assertThat(result.merged()).isTrue();
+    assertThat(productRepository.findById(itemId).orElseThrow().getStatus()).isEqualTo(ProductStatus.MERGED);
+    assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM core.price_observation WHERE product_id = ?",
+        Long.class, f.rohlik().getId())).isEqualTo(1L);
+    ReceiptLine line = lineRepository.findById(lineId).orElseThrow();
+    assertThat(line.getProductId()).isEqualTo(f.rohlik().getId());
+    assertThat(line.getMatchSource()).isEqualTo(ReceiptMatchSource.LABEL);
+    // Označení z účtenky jde se sloučením — příští účtenka se spáruje rovnou na rohlík.
+    assertThat(jdbcTemplate.queryForObject("SELECT product_id FROM core.product_store_label WHERE chain_id = ? "
+        + "AND label = ?", Long.class, f.chain().getId(), "ROHL.TUK.SPEC " + f.ico())).isEqualTo(f.rohlik().getId());
+  }
+
+  @Test
+  void rematchWithOthersPricesMovesOwnDataAndMergesOnlyAfterAgreeingVote() {
+    Fixture f = fixture();
+    AppUser a = persistUser();
+    String label = "MED KVETOVY " + f.ico();
+    Long itemId = publishedItem(a, f, label);
+    AppUser b = persistUser();
+    Long receiptB = uploadAndProcess(b, f, List.of(line(label, "1", QuantityUnit.PCS, "99.90", "99.90", null,
+        PriceKind.REGULAR)));
+    reviewService.updateHeader(b.getPublicUid(), receiptB, f.store().getId(), null);
+    reviewService.confirmLines(b.getPublicUid(), receiptB, List.of(lines(receiptB).getFirst().getId()),
+        ObservationSource.WEB, true);
+    AppUser c = persistUser();
+    Long receiptC = uploadAndProcess(c, f, List.of(line(label, "1", QuantityUnit.PCS, "98.90", "98.90", null,
+        PriceKind.REGULAR)));
+    reviewService.updateHeader(c.getPublicUid(), receiptC, f.store().getId(), null);
+    reviewService.confirmLines(c.getPublicUid(), receiptC, List.of(lines(receiptC).getFirst().getId()),
+        ObservationSource.WEB, true);
+
+    var voteA = rematchService.rematch(a.getPublicUid(), itemId, f.rohlik().getId());
+    assertThat(voteA.merged()).isFalse();
+    assertThat(voteA.votes()).isEqualTo(1);
+    assertThat(submittersOf(f.rohlik().getId())).containsExactly(a.getId());
+    assertThat(submittersOf(itemId)).containsExactlyInAnyOrder(b.getId(), c.getId());
+
+    // Neshoda: B hlasuje pro jiné zboží — přesune jen svoje, nesloučí nic.
+    var voteB = rematchService.rematch(b.getPublicUid(), itemId, f.banany().getId());
+    assertThat(voteB.merged()).isFalse();
+    assertThat(productRepository.findById(itemId).orElseThrow().getStatus()).isNotEqualTo(ProductStatus.MERGED);
+
+    // Shoda: C hlasuje se A pro rohlík — druhý hlas pro stejný cíl sloučí všechno, co zbylo.
+    var voteC = rematchService.rematch(c.getPublicUid(), itemId, f.rohlik().getId());
+    assertThat(voteC.merged()).isTrue();
+    assertThat(voteC.votes()).isEqualTo(2);
+    assertThat(productRepository.findById(itemId).orElseThrow().getStatus()).isEqualTo(ProductStatus.MERGED);
+    assertThat(submittersOf(f.rohlik().getId())).containsExactlyInAnyOrder(a.getId(), c.getId());
+    assertThat(submittersOf(f.banany().getId())).containsExactly(b.getId());
+  }
+
+  @Test
+  void rematchIntoProductOfAnotherChainIsRejected() {
+    Fixture f = fixture();
+    Fixture other = fixture();
+    AppUser owner = persistUser();
+    Long itemId = publishedItem(owner, f, "CHLEB KMIN " + f.ico());
+    assertThatThrownBy(() -> rematchService.rematch(owner.getPublicUid(), itemId, other.rohlik().getId()))
+        .isInstanceOfSatisfying(ValidationException.class,
+            e -> assertThat(e.getCode()).isEqualTo(cz.kvalitacena.exception.ErrorCode.RECEIPT_ITEM_REMATCH_INVALID));
+    // Ručně založené zboží „dopárovat" nejde — sloučení bez moderátora je jen pro zboží z účtenky.
+    assertThatThrownBy(() -> rematchService.rematch(owner.getPublicUid(), f.banany().getId(), f.rohlik().getId()))
+        .isInstanceOf(ValidationException.class);
+  }
+
+  @Test
+  void workerSumCheckIsStoredOnReceipt() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long matched = uploadAndProcess(owner, f, List.of(
+        line("JOGURT BILY " + f.ico(), "1", QuantityUnit.PCS, "9.90", "9.90", null, PriceKind.REGULAR)),
+        Map.of("printedTotal", "9.90", "computedTotal", "9.90", "totalMatches", true));
+    Long mismatched = uploadAndProcess(owner, f, List.of(
+        line("JOGURT BILY " + f.ico(), "1", QuantityUnit.PCS, "9.90", "9.90", null, PriceKind.REGULAR)),
+        Map.of("printedTotal", "19.90", "computedTotal", "9.90", "totalMatches", false));
+    Long unknown = uploadAndProcess(owner, f, List.of(
+        line("JOGURT BILY " + f.ico(), "1", QuantityUnit.PCS, "9.90", "9.90", null, PriceKind.REGULAR)));
+
+    assertThat(receiptRepository.findById(matched).orElseThrow().getSumStatus()).isEqualTo(ReceiptSumStatus.MATCH);
+    Receipt mis = receiptRepository.findById(mismatched).orElseThrow();
+    assertThat(mis.getSumStatus()).isEqualTo(ReceiptSumStatus.MISMATCH);
+    assertThat(mis.getComputedTotal()).isEqualByComparingTo("9.90");
+    assertThat(receiptRepository.findById(unknown).orElseThrow().getSumStatus()).isEqualTo(ReceiptSumStatus.UNKNOWN);
+  }
+
+  /** Zveřejní jeden nespárovaný řádek jako zboží z účtenky a vrátí jeho id. */
+  private Long publishedItem(AppUser owner, Fixture f, String label) {
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line(label, "1", QuantityUnit.PCS, "29.90", "29.90", null, PriceKind.REGULAR)));
+    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    var result = reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(lines(receiptId).getFirst().getId()),
+        ObservationSource.WEB, true);
+    assertThat(result.confirmed()).isEqualTo(1);
+    return lines(receiptId).getFirst().getProductId();
+  }
+
+  private List<Long> submittersOf(Long productId) {
+    return jdbcTemplate.queryForList("SELECT submitter_id FROM core.price_observation WHERE product_id = ?",
+        Long.class, productId);
+  }
+
+  private Long uploadAndProcess(AppUser owner, Fixture f, List<WorkerReceiptResult.Line> lines, Object extraction) {
+    Receipt receipt = receiptService.upload(owner.getPublicUid(), List.of(jpeg(), jpeg()), 1, false, OffsetDateTime.now(),
+        null);
+    workerService.lease(10);
+    workerService.submitResult(receipt.getId(), new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED,
+        "test-model", "raw", extraction, f.store().getName(), "Hlavní 1, Praha", "CZ" + f.ico(),
+        OffsetDateTime.now().minusHours(2), new BigDecimal("46.52"), "CZK", lines));
+    return receipt.getId();
   }
 
   private Long uploadAndProcess(AppUser owner, Fixture f, List<WorkerReceiptResult.Line> lines) {

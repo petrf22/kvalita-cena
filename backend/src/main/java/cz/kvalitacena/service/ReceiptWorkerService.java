@@ -19,6 +19,7 @@ import cz.kvalitacena.db.entity.ReceiptLine;
 import cz.kvalitacena.db.entity.ReceiptLineHint;
 import cz.kvalitacena.db.entity.ReceiptProcessingStatus;
 import cz.kvalitacena.db.entity.ReceiptReviewStatus;
+import cz.kvalitacena.db.entity.ReceiptSumStatus;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.ReceiptImageRepository;
@@ -246,6 +247,13 @@ public class ReceiptWorkerService {
       receipt.setPurchasedAt(purchasedAt(result, now));
       receipt.setTotalAmount(amount(result.totalAmount()));
     }
+    // Kontrolní součet workeru řídí předvýběr řádků ke zveřejnění. Nové rozpoznání ho přepíše
+    // jen známým výsledkem — textový režim bez patičky by jinak „sedící" účtenku shodil na UNKNOWN.
+    SumCheck sum = sumCheck(result.extraction());
+    if (!reprocessing || sum.status() != ReceiptSumStatus.UNKNOWN) {
+      receipt.setSumStatus(sum.status());
+      receipt.setComputedTotal(sum.computedTotal());
+    }
     // Měnu z workeru jen předpokládá profil (dnes vždy CZK, tools/uctenky/README.md), kdežto
     // obchod potvrzený uživatelem ji určuje (ReceiptReviewService.updateHeader) — ta se nepřepisuje.
     if (receipt.getStoreId() == null) {
@@ -468,6 +476,31 @@ public class ReceiptWorkerService {
     return images.stream()
         .map(i -> "/api/worker/receipts/" + receiptId + "/images/" + i.getSeq())
         .toList();
+  }
+
+  record SumCheck(ReceiptSumStatus status, BigDecimal computedTotal) {
+  }
+
+  /**
+   * Kontrolní součet z dokumentu workeru ({@code printedTotal}, {@code computedTotal},
+   * {@code totalMatches} — tools/uctenky/parse.py). Bez vytištěného „Celkem" nebo od starší
+   * verze workeru je výsledek {@link ReceiptSumStatus#UNKNOWN}.
+   */
+  static SumCheck sumCheck(Object extraction) {
+    if (!(extraction instanceof Map<?, ?> doc) || !(doc.get("totalMatches") instanceof Boolean matches)) {
+      return new SumCheck(ReceiptSumStatus.UNKNOWN, null);
+    }
+    BigDecimal computed = null;
+    if (doc.get("computedTotal") != null) {
+      try {
+        computed = amount(new BigDecimal(doc.get("computedTotal").toString().trim()));
+      } catch (NumberFormatException e) {
+        computed = null;
+      }
+    }
+    ReceiptSumStatus status = doc.get("printedTotal") == null ? ReceiptSumStatus.UNKNOWN
+        : matches ? ReceiptSumStatus.MATCH : ReceiptSumStatus.MISMATCH;
+    return new SumCheck(status, computed);
   }
 
   private String toJson(Object extraction) {

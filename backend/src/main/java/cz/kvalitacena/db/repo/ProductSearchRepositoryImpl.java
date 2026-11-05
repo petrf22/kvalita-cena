@@ -130,7 +130,8 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
         SELECT p.id, COALESCE(
                  CASE WHEN e.name_lang = CAST(:locale AS TEXT) THEN e.name END,
                  CASE WHEN p.name_lang = CAST(:locale AS TEXT) THEN p.name END,
-                 pn.name, opn.name, p.name, op.product_name) AS name
+                 pn.name, opn.name, p.name, op.product_name) AS name,
+               (p.created_via = 'RECEIPT') AS receipt_item
         FROM core.product p
         JOIN candidate cnd ON cnd.id = p.id
         LEFT JOIN core.product_user_edit e
@@ -227,9 +228,19 @@ class ProductSearchRepositoryImpl implements ProductSearchRepository {
     nativeQuery.setParameter("locale", criteria.locale());
   }
 
-  /** Whitelist fragmentů podle {@link ProductSort} — nikdy konkatenace uživatelského vstupu. */
+  /**
+   * Whitelist fragmentů podle {@link ProductSort} — nikdy konkatenace uživatelského vstupu.
+   * Zboží z účtenky (created_via RECEIPT) jde za ostatní shody — nemá ověřené náležitosti a jeho
+   * název je čitelná zkratka z tisku. Výjimkou je řazení podle ceny: tam má rozhodnout cena.
+   */
   private String orderByFragment(ProductSort sort) {
-    return switch (sort == null ? ProductSort.REPORT_COUNT : sort) {
+    ProductSort effective = sort == null ? ProductSort.REPORT_COUNT : sort;
+    String byKind = baseOrderBy(effective);
+    return effective == ProductSort.PRICE_ASC ? byKind : "m.receipt_item ASC, " + byKind;
+  }
+
+  private String baseOrderBy(ProductSort sort) {
+    return switch (sort) {
       case REPORT_COUNT -> "COALESCE(t.n_obs_total, 0) DESC, t.last_observed_at DESC NULLS LAST";
       case PRICE_ASC -> "b.unit_price ASC NULLS LAST";
       case QUALITY -> "q.avg_stars DESC NULLS LAST"; // 5 = nejlepší

@@ -4,6 +4,7 @@ import cz.kvalitacena.config.CatalogProperties;
 import cz.kvalitacena.db.entity.Media;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.ProductScope;
+import cz.kvalitacena.db.entity.ProductCreatedVia;
 import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.RecordType;
 import cz.kvalitacena.db.entity.RecomputeReason;
@@ -38,6 +39,20 @@ public class ProductMergeService {
 
   @Transactional
   public Product merge(Long sourceId, Long targetId, Long moderatorUserId) {
+    return merge(sourceId, targetId, moderatorUserId, false);
+  }
+
+  /**
+   * Sloučení zboží z účtenky do skutečného zboží (ReceiptItemRematchService) — bez moderátora,
+   * po hlasování (docs/reputace.md, „Zboží z účtenky"). Cílem smí být i zboží s EAN: zboží
+   * z účtenky je jen zástupce, dokud někdo nepozná, co to je.
+   */
+  @Transactional
+  public Product mergeReceiptItem(Long sourceId, Long targetId) {
+    return merge(sourceId, targetId, null, true);
+  }
+
+  private Product merge(Long sourceId, Long targetId, Long moderatorUserId, boolean receiptItem) {
     if (sourceId.equals(targetId)) {
       throw new ValidationException(ErrorCode.MODERATION_PRODUCT_MERGE_SAME);
     }
@@ -45,7 +60,9 @@ public class ProductMergeService {
         .orElseThrow(() -> new NotFoundException(ErrorCode.MODERATION_RECORD_NOT_FOUND));
     Product target = productRepository.findById(targetId)
         .orElseThrow(() -> new NotFoundException(ErrorCode.MODERATION_RECORD_NOT_FOUND));
-    if (!source.isGeneric() || !target.isGeneric()
+    boolean targetAllowed = target.isGeneric()
+        || (receiptItem && source.getCreatedVia() == ProductCreatedVia.RECEIPT);
+    if (!source.isGeneric() || !targetAllowed
         || source.getStatus() == ProductStatus.MERGED || target.getStatus() == ProductStatus.MERGED
         || source.getStatus() == ProductStatus.REJECTED || target.getStatus() == ProductStatus.REJECTED) {
       throw new ValidationException(ErrorCode.MODERATION_PRODUCT_MERGE_INVALID);
@@ -91,8 +108,13 @@ public class ProductMergeService {
 
     storeIds.forEach(storeId ->
         priceAggregationService.enqueueRecompute(targetId, storeId, RecomputeReason.MODERATION));
-    log.info("Moderátor {} sloučil bezkódový produkt {} do {} ({} dotčených obchodů)",
-        moderatorUserId, sourceId, targetId, storeIds.size());
+    if (receiptItem) {
+      log.info("Zboží z účtenky {} sloučeno do {} po hlasování ({} dotčených obchodů)",
+          sourceId, targetId, storeIds.size());
+    } else {
+      log.info("Moderátor {} sloučil bezkódový produkt {} do {} ({} dotčených obchodů)",
+          moderatorUserId, sourceId, targetId, storeIds.size());
+    }
     return target;
   }
 

@@ -1,11 +1,14 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.config.ReceiptProperties;
 import cz.kvalitacena.controller.CreateProductFromOffInput;
 import cz.kvalitacena.controller.ObservationPriceInput;
 import cz.kvalitacena.controller.SubmitObservationsInput;
 import cz.kvalitacena.db.entity.AppUser;
+import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.CodeType;
 import cz.kvalitacena.db.entity.EvidenceKind;
+import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.ObservationSource;
 import cz.kvalitacena.db.entity.OffProduct;
 import cz.kvalitacena.db.entity.PriceKind;
@@ -22,6 +25,7 @@ import cz.kvalitacena.db.entity.ReceiptProcessingStatus;
 import cz.kvalitacena.db.entity.ReceiptReviewStatus;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.AppUserRepository;
+import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
 import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
@@ -81,7 +85,15 @@ public class ReceiptReviewService {
   private final ProductStoreLabelService labelService;
   private final OffProductCatalogService offProductCatalogService;
   private final ProductNameResolver productNameResolver;
+  private final ProductCatalogService catalogService;
+  private final NewProductDefaultsService productDefaultsService;
+  private final CategoryRepository categoryRepository;
+  private final ReceiptLineChecks lineChecks;
+  private final ReceiptProperties receiptProperties;
   private final PlatformTransactionManager transactionManager;
+
+  /** Záchytná kategorie zboží z účtenky, kterému nikdo kategorii nenavrhl (migrace 2026-11-05). */
+  static final String UNCATEGORIZED_SLUG = "nezarazeno";
 
   public record ConfirmResult(Receipt receipt, int confirmed, List<ReceiptLine> skipped) {
   }
@@ -156,13 +168,22 @@ public class ReceiptReviewService {
     return saved;
   }
 
+  public ConfirmResult confirmLines(UUID ownerPublicUid, Long receiptId, List<Long> lineIds, ObservationSource source) {
+    return confirmLines(ownerPublicUid, receiptId, lineIds, source, false);
+  }
+
   /**
    * Potvrzení vybraných řádků — každý řádek ve VLASTNÍ transakci. Na rozdíl od
    * {@code submitObservations} (jedna cenovka = jedna dávka) je účtenka desítky položek
    * a kolize jediné z nich (stejné zboží týž den ručně) nesmí shodit ostatní: řádek se
    * přeskočí a vrátí se se {@code skipReason} (docs/rozvoj.md).
+   *
+   * <p>S {@code publishUnmatched} se zveřejní i řádek bez zboží: cena se zapíše na „zboží
+   * z účtenky" ({@link #receiptItemFor}). Bez něj se nespárovaný řádek přeskočí jako dřív
+   * ({@code RECEIPT_LINE_NOT_MATCHED}) — starší klienti posílají jen spárované řádky.
    */
-  public ConfirmResult confirmLines(UUID ownerPublicUid, Long receiptId, List<Long> lineIds, ObservationSource source) {
+  public ConfirmResult confirmLines(UUID ownerPublicUid, Long receiptId, List<Long> lineIds, ObservationSource source,
+      boolean publishUnmatched) {
     TransactionTemplate readTx = new TransactionTemplate(transactionManager);
     AppUser owner = requireUser(ownerPublicUid);
     Receipt receipt = readTx.execute(status -> ownedReceipt(receiptId, owner));
@@ -196,7 +217,8 @@ public class ReceiptReviewService {
         continue;
       }
       try {
-        lineTx.executeWithoutResult(status -> confirmLine(line.getId(), receipt, owner, ownerPublicUid, source));
+        lineTx.executeWithoutResult(status ->
+            confirmLine(line.getId(), receipt, owner, ownerPublicUid, source, publishUnmatched));
         confirmed++;
       } catch (AppException e) {
         String reason = DUPLICATE_CODES.contains(e.getCode()) ? SKIP_DUPLICATE : e.getCode().name();
@@ -236,17 +258,23 @@ public class ReceiptReviewService {
     });
   }
 
-  private void confirmLine(Long lineId, Receipt receipt, AppUser owner, UUID ownerPublicUid, ObservationSource source) {
+  private void confirmLine(Long lineId, Receipt receipt, AppUser owner, UUID ownerPublicUid, ObservationSource source,
+      boolean publishUnmatched) {
     ReceiptLine line = lineRepository.findById(lineId).orElseThrow();
+    // Cena se ověří dřív, než vznikne zboží z účtenky — řádek bez ceny by ho jinak založil
+    // a hned zahodil rollbackem.
+    PriceRows rows = priceRows(line);
     if (line.getProductId() == null && line.getMatchSource() == ReceiptMatchSource.OFF) {
       line.setProductId(productFromOff(line, ownerPublicUid));
+    }
+    if (line.getProductId() == null && publishUnmatched) {
+      receiptItemFor(line, receipt, owner);
     }
     if (line.getProductId() == null) {
       throw new ValidationException(ErrorCode.RECEIPT_LINE_NOT_MATCHED);
     }
     Product product = productRepository.findById(line.getProductId())
         .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
-    PriceRows rows = priceRows(line);
     // Druh ceny, který uživatel ten den už zapsal (typicky běžnou cenu ručně), se vynechá —
     // submit by jinak kvůli jedné kolizi shodil celou dávku a cena po slevě by se ztratila.
     Set<String> alreadyToday = Set.copyOf(priceObservationRepository.findPriceKindsBySubmitterOnDay(
@@ -270,6 +298,44 @@ public class ReceiptReviewService {
     line.setSkipReason(null);
     lineRepository.save(line);
     learn(line, receipt, owner);
+  }
+
+  /**
+   * Zboží pro řádek zveřejněný bez spárování (docs/datovy-model.md, „Účtenky"). Nejdřív
+   * naučené označení — mohlo vzniknout až po zpracování účtenky, třeba z jiné účtenky téhož
+   * řetězce —, jinak „zboží z účtenky" ({@link ProductCatalogService#receiptItem}): existující
+   * druhová položka se stejným názvem v rozsahu prodejce, nebo nová {@code DRAFT} s názvem,
+   * kategorií a gramáží z předvyplnění formuláře ({@link NewProductDefaultsService#forLine}).
+   * Bez navržené kategorie dostane záchytnou „Nezařazeno". Záloha a vratný obal zboží nejsou
+   * a nezveřejňují se.
+   */
+  private void receiptItemFor(ReceiptLine line, Receipt receipt, AppUser owner) {
+    if (lineChecks.isNonProduct(line)) {
+      throw new ValidationException(ErrorCode.RECEIPT_LINE_NOT_PRODUCT);
+    }
+    Store store = storeRepository.findById(receipt.getStoreId())
+        .orElseThrow(() -> new NotFoundException(ErrorCode.STORE_NOT_FOUND));
+    Optional<Long> labelled = matchingService.byLabel(line, store, owner.getId());
+    if (labelled.isPresent()) {
+      line.setProductId(labelled.get());
+      line.setMatchSource(ReceiptMatchSource.LABEL);
+      return;
+    }
+    NewProductDefaultsService.Defaults defaults = productDefaultsService.forLine(line, store.getId(), owner.getId());
+    Category category = defaults.category() != null ? defaults.category()
+        : categoryRepository.findBySlug(UNCATEGORIZED_SLUG)
+            .orElseThrow(() -> new NotFoundException(ErrorCode.CATEGORY_NOT_FOUND));
+    NetContentUom uom = defaults.isVariableWeight()
+        ? (line.getQuantityUnit() == QuantityUnit.L ? NetContentUom.L : NetContentUom.KG)
+        : defaults.netContentUom();
+    ProductCatalogService.ReceiptItem item = catalogService.receiptItem(defaults.name(), category,
+        defaults.netContentValue(), uom, defaults.isVariableWeight(), store, owner,
+        receiptProperties.getMaxOpenItems());
+    if (item.created()) {
+      log.info("Účtenka {}: řádek {} založil zboží z účtenky {}", receipt.getId(), line.getId(), item.product().getId());
+    }
+    line.setProductId(item.product().getId());
+    line.setMatchSource(ReceiptMatchSource.RECEIPT_ITEM);
   }
 
   /**

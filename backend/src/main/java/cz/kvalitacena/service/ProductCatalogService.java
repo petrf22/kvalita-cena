@@ -7,9 +7,12 @@ import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.CodeType;
 import cz.kvalitacena.db.entity.Product;
+import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.ProductCode;
+import cz.kvalitacena.db.entity.ProductCreatedVia;
 import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.Store;
+import cz.kvalitacena.db.entity.UnitBase;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.PriceObservationRepository;
@@ -31,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -110,8 +114,10 @@ public class ProductCatalogService {
       // lokální položky je jeden obchod, takže strop na obchod drží případnou škodu tam, kde
       // vznikla; strop na otevřené nepotvrzené položky pak zavírá škálování časem, na které
       // denní limit nestačí (docs/reputace.md, "Zboží bez čárového kódu").
-      long openDrafts = productRepository.countByCreatedByUserIdAndGenericAndStatus(
-          user.getId(), true, ProductStatus.DRAFT);
+      // Zboží z účtenek má vlastní strop (createReceiptItem) — jedna velká účtenka nesmí
+      // zablokovat ruční zakládání.
+      long openDrafts = productRepository.countByCreatedByUserIdAndGenericAndStatusAndCreatedVia(
+          user.getId(), true, ProductStatus.DRAFT, ProductCreatedVia.USER);
       if (openDrafts >= catalogProperties.getMaxUnconfirmedDrafts()) {
         throw new TooManyRequestsException(ErrorCode.PRODUCT_TOO_MANY_UNCONFIRMED);
       }
@@ -167,6 +173,72 @@ public class ProductCatalogService {
     productNameWriter.applyOnCreate(product, input.name(), primaryLang, input.names(), user);
 
     return product;
+  }
+
+  /** Zboží z účtenky k řádku: existující položka v rozsahu prodejce, nebo nově založená. */
+  public record ReceiptItem(Product product, boolean created) {
+  }
+
+  /**
+   * „Zboží z účtenky" (docs/reputace.md, „Zboží z účtenky") — druhová položka pro řádek účtenky,
+   * který vlastník zveřejnil bez spárování. Vždy {@code DRAFT} v rozsahu řetězce/provozovny
+   * jako ruční bezkódové zboží, ale se značkou {@code created_via = RECEIPT} a s vlastním
+   * stropem {@code app.receipt.max-open-items} místo limitů ručního zakládání ({@code
+   * app.catalog.*}): účtenka se 40 nespárovanými řádky by je vyčerpala celé a autor by pak
+   * nemohl založit nic ani ručně. Spam brzdí denní limit účtenek a to, že každá prošla workerem.
+   *
+   * <p>Položka se stejným normalizovaným názvem v rozsahu se použije znovu (i ruční), ať se ceny
+   * různých lidí sbíhají na jedno zboží. Volá se uvnitř transakce řádku
+   * (ReceiptReviewService.confirmLines), proto se kolize unikátního indexu neřeší výjimkou —
+   * ta by transakci řádku označila k rollbacku —, ale dotazem předem.
+   */
+  @Transactional
+  public ReceiptItem receiptItem(String name, Category category, BigDecimal netContentValue,
+      NetContentUom netContentUom, boolean variableWeight, Store store, AppUser user, int maxOpenItems) {
+    String trimmed = name == null ? "" : name.trim();
+    if (trimmed.isEmpty()) {
+      throw new ValidationException(ErrorCode.PRODUCT_NAME_REQUIRED);
+    }
+    if (trimmed.length() > 200) {
+      trimmed = trimmed.substring(0, 200).trim();
+    }
+    Long chainId = store.getChain() != null ? store.getChain().getId() : null;
+    Optional<Product> existing = productRepository.findGenericInScopeByName(trimmed, chainId, store.getId());
+    if (existing.isPresent()) {
+      return new ReceiptItem(existing.get(), false);
+    }
+    long open = productRepository.countByCreatedByUserIdAndGenericAndStatusAndCreatedVia(
+        user.getId(), true, ProductStatus.DRAFT, ProductCreatedVia.RECEIPT);
+    if (open >= maxOpenItems) {
+      throw new TooManyRequestsException(ErrorCode.RECEIPT_ITEM_LIMIT, maxOpenItems);
+    }
+    // Gramáž jen jako úplná dvojice (CLAUDE.md, „Gramáž/objem VŽDY jako dvojice"); jednotka
+    // určí unitBase stejně jako formulář (unitBaseForUom), bez gramáže je cena za balení.
+    boolean pair = !variableWeight && netContentValue != null && netContentValue.signum() > 0 && netContentUom != null;
+    BigDecimal value = pair ? netContentValue : null;
+    NetContentUom uom = pair ? netContentUom : null;
+    // Váhové zboží gramáž ignoruje, jednotka (KG/L z řádku) rozhodne jen MASS/VOLUME.
+    boolean volume = netContentUom == NetContentUom.ML || netContentUom == NetContentUom.L;
+    UnitBase unitBase = variableWeight ? (volume ? UnitBase.VOLUME : UnitBase.MASS)
+        : uom == null ? UnitBase.COUNT
+        : volume ? UnitBase.VOLUME : UnitBase.MASS;
+    String lang = productNameResolver.requestLanguage();
+    Product product = Product.builder()
+        .name(trimmed)
+        .nameLang(productNameWriter.primaryLang(null, lang))
+        .category(category)
+        .unitBase(unitBase)
+        .netContentValue(value)
+        .netContentUom(uom)
+        .netContentBase(NetContentCalculator.computeNetContentBase(unitBase, value, uom, variableWeight))
+        .variableWeight(variableWeight)
+        .generic(true)
+        .status(ProductStatus.DRAFT)
+        .createdVia(ProductCreatedVia.RECEIPT)
+        .createdByUserId(user.getId())
+        .build();
+    productScopeService.assignLocalScope(product, store);
+    return new ReceiptItem(productRepository.saveAndFlush(product), true);
   }
 
   /**

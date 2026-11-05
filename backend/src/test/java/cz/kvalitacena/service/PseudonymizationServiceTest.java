@@ -34,6 +34,8 @@ class PseudonymizationServiceTest {
   private cz.kvalitacena.db.repo.ProductStoreLabelRepository storeLabelRepository;
   @Mock
   private cz.kvalitacena.db.repo.ReceiptLineRepository receiptLineRepository;
+  @Mock
+  private cz.kvalitacena.db.repo.ProductMergeVoteRepository mergeVoteRepository;
 
   private final PrivacyProperties privacyProperties = new PrivacyProperties();
 
@@ -46,7 +48,7 @@ class PseudonymizationServiceTest {
     when(priceObservationRepository.pseudonymizeObservationsBefore(any())).thenReturn(3);
     PseudonymizationService service = new PseudonymizationService(
         priceObservationRepository, aliasConfirmationRepository, storeLabelRepository, receiptLineRepository,
-        privacyProperties);
+        mergeVoteRepository, privacyProperties);
 
     service.pseudonymizeOldObservations();
 
@@ -57,6 +59,7 @@ class PseudonymizationServiceTest {
     // Obě půlky vazby cena ↔ řádek účtenky (docs/soukromi.md, „Účtenky").
     verify(receiptLineRepository).pseudonymizeObservationLinksBefore(cutoffCaptor.getValue());
     verify(priceObservationRepository).pseudonymizeReceiptLinksBefore(cutoffCaptor.getValue());
+    verify(mergeVoteRepository).pseudonymizeBefore(cutoffCaptor.getValue());
     verifyNoMoreInteractions(priceObservationRepository);
     assertThat(cutoffCaptor.getValue())
         .isCloseTo(OffsetDateTime.now().minusDays(180), within(5, ChronoUnit.SECONDS));
@@ -68,7 +71,7 @@ class PseudonymizationServiceTest {
     when(priceObservationRepository.pseudonymizeObservationsBefore(any())).thenReturn(0);
     PseudonymizationService service = new PseudonymizationService(
         priceObservationRepository, aliasConfirmationRepository, storeLabelRepository, receiptLineRepository,
-        privacyProperties);
+        mergeVoteRepository, privacyProperties);
 
     service.pseudonymizeOldObservations();
 
