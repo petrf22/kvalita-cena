@@ -236,6 +236,10 @@ app:
     # položek místo limitů ručního zakládání a počet hlasů pro sloučení i s cizími cenami.
     max-open-items: 300
     item-merge-confirmations: 2
+    # Kolik jiných přispěvatelů musí zboží z účtenky potvrdit cenou, než se zveřejní —
+    # vlastní práh místo app.catalog.draft-confirmations (produkce stejně jako ruční zakládání,
+    # profil beta 0 = zveřejnit hned, application-beta.yml).
+    item-confirmations: 3
     # E-mail provozovateli o čekajících účtenkách (ReceiptQueueNotifier) — první účtenka do
     # prázdné fronty + denní připomínka, dokud fronta není prázdná. Prázdné = vypnuto.
     notify-email: ${RECEIPT_NOTIFY_EMAIL:}

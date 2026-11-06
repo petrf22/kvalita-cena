@@ -5,6 +5,10 @@
 # výchozího prahu důvěry (app.trust.*) dost rychle na to, aby appka nepůsobila prázdně
 # i těm, kdo do ní zapisují.
 #
+# Zboží z účtenky (app.receipt.item-confirmations) se v betě zveřejňuje hned (0) — u ručního
+# zakládání stačí důvěra autora, zboží z účtenky ale bez vlastního prahu vzniká jako DRAFT
+# a dokud cenu nezapíše další tester, vidí ho jen autor.
+#
 # 0/0/1 dává smysl jen pro OSOBNĚ pozvané lidi, ne pro veřejnost — před Fází 3 (veřejné
 # spuštění) stačí vypustit "beta" z aktivních profilů (SPRING_PROFILES_ACTIVE=prod v .env),
 # cílové hodnoty z application.yml se vrátí samy, nic se needitovalo natvrdo přímo
@@ -15,6 +19,8 @@ app:
     min-observations: 0
   catalog:
     draft-confirmations: 1
+  receipt:
+    item-confirmations: 0
   feedback:
     challenge:
       # Osobně pozvaní testeři mohou mít starší APK bez proof-of-work (docs/nasazeni.md,

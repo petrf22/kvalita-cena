@@ -1,6 +1,7 @@
 package cz.kvalitacena.service;
 
 import cz.kvalitacena.config.CatalogProperties;
+import cz.kvalitacena.config.ReceiptProperties;
 import cz.kvalitacena.controller.MyEditItem;
 import cz.kvalitacena.controller.MyObservationItem;
 import cz.kvalitacena.controller.MyProductItem;
@@ -10,6 +11,7 @@ import cz.kvalitacena.db.entity.GeoSource;
 import cz.kvalitacena.db.entity.PriceKind;
 import cz.kvalitacena.db.entity.PriceObservation;
 import cz.kvalitacena.db.entity.Product;
+import cz.kvalitacena.db.entity.ProductCreatedVia;
 import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.ProductUserEdit;
 import cz.kvalitacena.db.entity.RecordType;
@@ -71,12 +73,13 @@ class MyContributionsServiceTest {
   private FxRateService fxRateService;
 
   private final CatalogProperties catalogProperties = new CatalogProperties();
+  private final ReceiptProperties receiptProperties = new ReceiptProperties();
 
   private MyContributionsService service() {
     catalogProperties.setDraftConfirmations(3);
     return new MyContributionsService(productRepository, storeRepository, priceObservationRepository,
         productUserEditRepository, storeUserEditRepository, productReviewRepository, productOverlayService,
-        storeOverlayService, catalogProperties, fxRateService);
+        storeOverlayService, new PublicationThresholds(catalogProperties, receiptProperties), fxRateService);
   }
 
   private void passthroughOverlays() {
@@ -109,6 +112,22 @@ class MyContributionsServiceTest {
     assertThat(items.get(0).publication().state()).isEqualTo(PublicationState.AWAITING_CONFIRMATIONS);
     assertThat(items.get(0).publication().confirmationsReceived()).isEqualTo(1);
     assertThat(items.get(0).publication().confirmationsRequired()).isEqualTo(3);
+  }
+
+  @Test
+  void receiptItemReportsItsOwnConfirmationThreshold() {
+    passthroughOverlays();
+    receiptProperties.setItemConfirmations(5);
+    Product draft = product(1L, ProductStatus.DRAFT, null);
+    draft.setCreatedVia(ProductCreatedVia.RECEIPT);
+    when(productRepository.findByCreatedByUserId(USER_ID, 20, 0)).thenReturn(List.of(draft));
+    when(productRepository.countByCreatedByUserId(USER_ID)).thenReturn(1L);
+    when(priceObservationRepository.countDistinctProductContributorsExcludingBatch(List.of(1L)))
+        .thenReturn(List.of(contributorCount(1L, 1)));
+
+    List<MyProductItem> items = service().myProducts(USER_ID, null, null).items();
+
+    assertThat(items.get(0).publication().confirmationsRequired()).isEqualTo(5);
   }
 
   @Test

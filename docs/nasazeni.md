@@ -336,6 +336,16 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   restartovat (`docker compose -f compose.prod.yaml up -d`) — profil `beta` se dá kdykoli
   vypnout zpět na `prod` bez editace kódu. Ověřeno 2026-08-28: `.env` na serveru má
   `SPRING_PROFILES_ACTIVE=prod,beta`.
+- [ ] **Po nasazení vlastního prahu zboží z účtenek** (`app.receipt.item-confirmations`, v betě 0)
+  jednorázově zveřejnit zboží z účtenek založené ještě podle starého prahu — nový se uplatní jen
+  na nově založené a na stávající až při další zapsané ceně. Agregáty cen na stavu zboží
+  nezávisí, přepočet není potřeba:
+  ```bash
+  docker compose -f compose.prod.yaml exec -T postgres psql -U "$POSTGRES_USER" -d kvalitaacena -c \
+    "UPDATE core.product SET status = 'ACTIVE' WHERE created_via = 'RECEIPT' AND status = 'DRAFT' AND hidden_at IS NULL;"
+  ```
+  Po vypuštění profilu `beta` (Fáze 3) se nic nevrací — zveřejněné zboží zůstává veřejné,
+  práh 3 platí pro nově založené.
 - [x] **Přihlásit se poprvé** (vlastním externím e-mailem, JIT registrace při první OTP
   verifikaci) a **označit sebe (a případně dalšího důvěryhodného člověka) jako moderátora** —
   nástroj pro přezkum nahlášených záznamů (`docs/reputace.md`, „Moderace", T4) je hotový, ale
@@ -457,7 +467,8 @@ krátce, což je záměr (`docs/soukromi.md`, „Účtenky"). Upload účtenky j
 
 ### Protokol bety — koho pozvat a co s nálezy
 
-Profil `beta` (prahy 0/0/1) dává smysl jen pro OSOBNĚ pozvané lidi, ne pro veřejnou výzvu —
+Profil `beta` (prahy 0/0/1, zboží z účtenek se zveřejňuje hned — `app.receipt.item-confirmations`
+= 0) dává smysl jen pro OSOBNĚ pozvané lidi, ne pro veřejnou výzvu —
 s cizími lidmi bez vztahu k appce by studený start dopadl stejně jako bez sníženého prahu,
 jen s hůř diagnostikovatelnými nálezy. Doporučený postup:
 

@@ -111,6 +111,7 @@ class ReceiptFlowIntegrationTest {
   @Autowired private ReceiptItemRematchService rematchService;
   @Autowired private cz.kvalitacena.controller.worker.WorkerReceiptController workerController;
   @Autowired private cz.kvalitacena.config.OpenFoodFactsProperties offProperties;
+  @Autowired private cz.kvalitacena.config.ReceiptProperties receiptProperties;
   // Skutečné Open Food Facts se nevolá nikdy — test obnovy cache si odpověď nastaví sám.
   @org.springframework.test.context.bean.override.mockito.MockitoBean
   private cz.kvalitacena.service.OpenFoodFactsApiClient offApiClient;
@@ -1154,6 +1155,32 @@ class ReceiptFlowIntegrationTest {
     assertThat(jdbcTemplate.queryForObject(
         "SELECT evidence_kind FROM core.price_observation WHERE product_id = ?", String.class, item.getId()))
         .isEqualTo(EvidenceKind.RECEIPT_OCR.name());
+  }
+
+  @Test
+  void receiptItemIsPublishedImmediatelyWhenItsThresholdIsZero() {
+    // Profil beta (application-beta.yml): app.receipt.item-confirmations = 0, ruční zakládání
+    // (app.catalog.draft-confirmations) se tím nemění.
+    receiptProperties.setItemConfirmations(0);
+    try {
+      Fixture f = fixture();
+      AppUser owner = persistUser();
+      String label = "HORCICE PLNOTUCNA " + f.ico();
+      Long receiptId = uploadAndProcess(owner, f, List.of(
+          line(label, "1", QuantityUnit.PCS, "24.90", "24.90", null, PriceKind.REGULAR)));
+      reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+      List<ReceiptLine> lines = lines(receiptId);
+
+      reviewService.confirmLines(owner.getPublicUid(), receiptId,
+          lines.stream().map(ReceiptLine::getId).toList(), ObservationSource.WEB, true);
+
+      Product item = productRepository.findById(
+          lineRepository.findById(lines.getFirst().getId()).orElseThrow().getProductId()).orElseThrow();
+      assertThat(item.getCreatedVia()).isEqualTo(ProductCreatedVia.RECEIPT);
+      assertThat(item.getStatus()).isEqualTo(ProductStatus.ACTIVE);
+    } finally {
+      receiptProperties.setItemConfirmations(3);
+    }
   }
 
   @Test

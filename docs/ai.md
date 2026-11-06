@@ -283,6 +283,7 @@ vrací jen účtenky s `archive_consent`, worker obrázky stáhne do `ARCHIVE_DI
 | `lease-minutes` | 15 | po vypršení leasu se úloha vrátí do fronty |
 | `max-attempts` | 3 | pak `FAILED` — počítá se každé vyzvednutí, i to, po kterém worker spadl bez `/fail` |
 | `label-confirmations` | 1 | aktivace označení; 1, dokud je přispěvatelů málo, pak zvednout na 2 (vzor alias) |
+| `item-confirmations` | 3 (profil `beta`: 0) | kolik jiných přispěvatelů musí zboží z účtenky potvrdit cenou, než se zveřejní (leave-one-out, `PublicationThresholds`). Vlastní práh místo `app.catalog.draft-confirmations`, ať jde v testovacím provozu zveřejňovat hned (0 = založit rovnou jako `ACTIVE`) bez změny ručního zakládání (`docs/reputace.md`, „Zboží z účtenky") |
 | `rematch-max-age-days` | 180 | pozdější návrh spárování jen u účtenek mladších než pseudonymizační okno |
 | `auto-match-similarity` | 0,75 | odhad (FUZZY) jen nad touhle podobností názvu (`ProductRepository.SIMILAR_BY_NAME_SCORE`, stejné měření jako našeptávač; čísla se z dotazu vynechávají, gramáž hlídá vodítko zvlášť). Výchozí hodnota, kalibrovat na reálných účtenkách |
 | `auto-match-margin` | 0,2 | nejlepší kandidát musí být o tolik před druhým — dvě podobné položky (duplicita, jiná příchuť) jsou hádání, ne odhad |

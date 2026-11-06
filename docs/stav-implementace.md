@@ -603,7 +603,9 @@ uživatel sáhl, zůstanou (`ReceiptLineMerger`), po retenci obrázků se znovu 
   řádku. Nejdřív zkusí naučené označení, jinak použije nebo založí druhovou položku
   `created_via = RECEIPT` v rozsahu řetězce (`ReceiptReviewService.receiptItemFor`,
   `ProductCatalogService.receiptItem`). Řádek s platným EAN, který nezná katalog ani OFF,
-  založí globální zboží s tím kódem (`publishedLineWithUnknownEanBecomesGlobalProductWithThatCode`). Strop je vlastní (`app.receipt.max-open-items`), záloha
+  založí globální zboží s tím kódem (`publishedLineWithUnknownEanBecomesGlobalProductWithThatCode`). Strop je vlastní (`app.receipt.max-open-items`), práh zveřejnění také
+  (`app.receipt.item-confirmations`, `PublicationThresholds`; v profilu `beta` 0 = hned
+  `ACTIVE`, `receiptItemIsPublishedImmediatelyWhenItsThresholdIsZero`), záloha
   a vratný obal se přeskočí (`ReceiptLineChecks`). Hledání ho řadí za ostatní shody.
 - **Kontrolní součet** z workeru je na účtence (`Receipt.sumStatus`/`computedTotal`) a řídí
   předvýběr řádků. Řádky nesou `nonProduct` a `suspicious`.

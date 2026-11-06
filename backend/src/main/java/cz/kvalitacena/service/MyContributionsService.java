@@ -1,6 +1,5 @@
 package cz.kvalitacena.service;
 
-import cz.kvalitacena.config.CatalogProperties;
 import cz.kvalitacena.controller.ConvertedPrice;
 import cz.kvalitacena.controller.MyEditItem;
 import cz.kvalitacena.controller.MyEditResult;
@@ -65,7 +64,7 @@ public class MyContributionsService {
   private final ProductReviewRepository productReviewRepository;
   private final ProductOverlayService productOverlayService;
   private final StoreOverlayService storeOverlayService;
-  private final CatalogProperties catalogProperties;
+  private final PublicationThresholds publicationThresholds;
   private final FxRateService fxRateService;
 
   public MyProductResult myProducts(Long userId, Integer first, Integer offset) {
@@ -76,11 +75,10 @@ public class MyContributionsService {
         productRepository.findByCreatedByUserId(userId, limit, off), userId);
     long total = productRepository.countByCreatedByUserId(userId);
 
-    int required = catalogProperties.getDraftConfirmations();
     Map<Long, Long> confirmations = confirmationsForProducts(page);
     List<MyProductItem> items = page.stream()
         .map(p -> new MyProductItem(p, p.getCreatedAt(),
-            productStatus(p, confirmations.getOrDefault(p.getId(), 0L), required)))
+            productStatus(p, confirmations.getOrDefault(p.getId(), 0L))))
         .toList();
     return new MyProductResult(items, (int) total, off + items.size() < total);
   }
@@ -93,7 +91,7 @@ public class MyContributionsService {
         storeRepository.findByCreatedByUserId(userId, limit, off), userId);
     long total = storeRepository.countByCreatedByUserId(userId);
 
-    int required = catalogProperties.getDraftConfirmations();
+    int required = publicationThresholds.forStore();
     Map<Long, Long> confirmations = confirmationsForStores(page);
     List<MyStoreItem> items = page.stream()
         .map(s -> new MyStoreItem(s, s.getCreatedAt(),
@@ -125,13 +123,13 @@ public class MyContributionsService {
     Map<Long, Product> productsById = products.stream().collect(Collectors.toMap(Product::getId, Function.identity()));
     Map<Long, Store> storesById = stores.stream().collect(Collectors.toMap(Store::getId, Function.identity()));
 
-    int required = catalogProperties.getDraftConfirmations();
+    int storeRequired = publicationThresholds.forStore();
     Map<Long, Long> productConfirmations = confirmationsForProducts(products);
     Map<Long, Long> storeConfirmations = confirmationsForStores(stores);
 
     List<MyObservationItem> items = page.stream()
         .map(o -> toObservationItem(o, productsById, storesById, productConfirmations, storeConfirmations,
-            required, displayCurrency))
+            storeRequired, displayCurrency))
         .toList();
     return new MyObservationResult(items, (int) total, off + items.size() < total);
   }
@@ -200,13 +198,15 @@ public class MyContributionsService {
     return new MyReviewResult(items, (int) total, off + items.size() < total);
   }
 
-  private PublicationStatus productStatus(Product product, long confirmationsReceived, int required) {
+  private PublicationStatus productStatus(Product product, long confirmationsReceived) {
     // Sloučené zboží (typicky zboží z účtenky po dopárování) žije dál jen jako odkaz na cíl —
     // „Zveřejněno" by tvrdilo, že ho ostatní vidí, a „čeká na potvrzení" by čekalo navždy.
     if (product.getStatus() == ProductStatus.MERGED) return PublicationStatus.merged();
     if (product.getHiddenAt() != null) return PublicationStatus.hiddenAfterFlags();
     if (product.getStatus() == ProductStatus.DRAFT) {
-      return PublicationStatus.awaitingConfirmations((int) confirmationsReceived, required);
+      // Zboží z účtenky má vlastní práh (app.receipt.item-confirmations), proto per-produkt.
+      return PublicationStatus.awaitingConfirmations((int) confirmationsReceived,
+          publicationThresholds.forProduct(product));
     }
     return PublicationStatus.publicState(product.isVerified());
   }
@@ -251,11 +251,11 @@ public class MyContributionsService {
 
   private MyObservationItem toObservationItem(PriceObservation observation, Map<Long, Product> productsById,
       Map<Long, Store> storesById, Map<Long, Long> productConfirmations, Map<Long, Long> storeConfirmations,
-      int required, String displayCurrency) {
+      int storeRequired, String displayCurrency) {
     Product product = productsById.get(observation.getProduct().getId());
     Store store = storesById.get(observation.getStore().getId());
-    PublicationStatus productBlock = productStatus(product, productConfirmations.getOrDefault(product.getId(), 0L), required);
-    PublicationStatus storeBlock = storeStatus(store, storeConfirmations.getOrDefault(store.getId(), 0L), required);
+    PublicationStatus productBlock = productStatus(product, productConfirmations.getOrDefault(product.getId(), 0L));
+    PublicationStatus storeBlock = storeStatus(store, storeConfirmations.getOrDefault(store.getId(), 0L), storeRequired);
     // Skryté vyhrává nad čekajícím na potvrzení, obojí vyhrává nad veřejným — cena je vidět
     // ostatním, jen když JAK zboží, TAK obchod jsou PUBLIC.
     PublicationStatus publication = blockingStatus(productBlock, storeBlock);
