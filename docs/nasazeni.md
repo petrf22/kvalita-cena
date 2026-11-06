@@ -341,9 +341,13 @@ důvěry na 0/0/1 pro OSOBNĚ pozvané lidi) jsou v repu hotové. Zbývá:
   na nově založené a na stávající až při další zapsané ceně. Agregáty cen na stavu zboží
   nezávisí, přepočet není potřeba:
   ```bash
-  docker compose -f compose.prod.yaml exec -T postgres psql -U "$POSTGRES_USER" -d kvalitaacena -c \
-    "UPDATE core.product SET status = 'ACTIVE' WHERE created_via = 'RECEIPT' AND status = 'DRAFT' AND hidden_at IS NULL;"
+  docker compose -f compose.prod.yaml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d kvalitaacena' <<'SQL'
+  SELECT count(*) FROM core.product WHERE created_via = 'RECEIPT' AND status = 'DRAFT' AND hidden_at IS NULL;
+  UPDATE core.product SET status = 'ACTIVE' WHERE created_via = 'RECEIPT' AND status = 'DRAFT' AND hidden_at IS NULL;
+  SQL
   ```
+  Spuštěno 2026-11-06: `count 0`, `UPDATE 0` — zboží z účtenek ve stavu `DRAFT` na serveru
+  nebylo.
   Po vypuštění profilu `beta` (Fáze 3) se nic nevrací — zveřejněné zboží zůstává veřejné,
   práh 3 platí pro nově založené.
 - [x] **Přihlásit se poprvé** (vlastním externím e-mailem, JIT registrace při první OTP
@@ -495,10 +499,14 @@ kolik zboží/obchodů visí v `DRAFT` déle než pár dní, kolik nahlášení 
 čeká na vyřízení):
 
 ```bash
-docker compose -f compose.prod.yaml exec -T postgres psql -U "$POSTGRES_USER" -d kvalitaacena < dev/beta-report.sql
+docker compose -f compose.prod.yaml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d kvalitaacena' < dev/beta-report.sql
 ```
 
-(role `postgres` v produkci neexistuje — `compose.prod.yaml` nastavuje `POSTGRES_USER` z `.env`;
+(role `postgres` v produkci neexistuje — `compose.prod.yaml` nastavuje `POSTGRES_USER` z `.env`.
+Proměnná ale existuje jen UVNITŘ kontejneru: `docker compose` si `.env` načte pro sebe, do shellu
+na serveru ji neexportuje. Proto `sh -c` s jednoduchými uvozovkami, ať `$POSTGRES_USER` rozbalí
+shell v kontejneru — `psql -U "$POSTGRES_USER"` přímo by dostal prázdné jméno a spadl na
+`role "root" does not exist`;
 bez `-f compose.prod.yaml` by `docker compose` na serveru sáhl na dev `compose.yaml`, který tam
 ani neběží.)
 
