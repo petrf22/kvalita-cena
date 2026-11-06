@@ -197,24 +197,35 @@
                     <a [routerLink]="['/product', pair.right.id]">{{ pair.right.name }}</a>
                   </div>
                   <div class="duplicate-actions">
-                    <button
-                      nz-button
-                      nz-popconfirm
-                      [nzPopconfirmTitle]="t('moderation.flagged.mergeConfirm')"
-                      [nzLoading]="duplicateActionLoading() === pair.left.id + pair.right.id"
-                      (nzOnConfirm)="mergeDuplicate(pair.left.id, pair.right.id)"
-                    >
-                      {{ t('moderation.duplicates.mergeLeftIntoRight') }}
-                    </button>
-                    <button
-                      nz-button
-                      nz-popconfirm
-                      [nzPopconfirmTitle]="t('moderation.flagged.mergeConfirm')"
-                      [nzLoading]="duplicateActionLoading() === pair.right.id + pair.left.id"
-                      (nzOnConfirm)="mergeDuplicate(pair.right.id, pair.left.id)"
-                    >
-                      {{ t('moderation.duplicates.mergeRightIntoLeft') }}
-                    </button>
+                    @if (canMergeUnits(pair.left, pair.right)) {
+                      <button
+                        nz-button
+                        nz-popconfirm
+                        [nzPopconfirmTitle]="t('moderation.flagged.mergeConfirm')"
+                        [nzLoading]="duplicateActionLoading() === pair.left.id + pair.right.id"
+                        (nzOnConfirm)="mergeDuplicate(pair.left.id, pair.right.id)"
+                      >
+                        {{ t('moderation.duplicates.mergeLeftIntoRight') }}
+                      </button>
+                    }
+                    @if (canMergeUnits(pair.right, pair.left)) {
+                      <button
+                        nz-button
+                        nz-popconfirm
+                        [nzPopconfirmTitle]="t('moderation.flagged.mergeConfirm')"
+                        [nzLoading]="duplicateActionLoading() === pair.right.id + pair.left.id"
+                        (nzOnConfirm)="mergeDuplicate(pair.right.id, pair.left.id)"
+                      >
+                        {{ t('moderation.duplicates.mergeRightIntoLeft') }}
+                      </button>
+                    }
+                    @if (
+                      !canMergeUnits(pair.left, pair.right) && !canMergeUnits(pair.right, pair.left)
+                    ) {
+                      <span class="duplicate-unit-mismatch">
+                        {{ t('moderation.duplicates.unitMismatch') }}
+                      </span>
+                    }
                   </div>
                   @for (product of [pair.left, pair.right]; track product.id) {
                     <div class="rename-actions">

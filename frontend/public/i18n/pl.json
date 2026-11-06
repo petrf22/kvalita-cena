@@ -151,6 +151,7 @@
     "MODERATION_PRODUCT_RENAME_INVALID": "Zmienić nazwę można tylko aktywnym produktom bez kodu kreskowego",
     "MODERATION_PRODUCT_MERGE_INVALID": "Można połączyć tylko dwa prawidłowe produkty bez kodu kreskowego.",
     "MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH": "Ceny produktu źródłowego nie należą do zakresu sklepu lub sieci produktu docelowego.",
+    "MODERATION_PRODUCT_MERGE_UNIT_MISMATCH": "Cen produktu źródłowego nie da się przeliczyć na jednostkę produktu docelowego (sztuka, kg, litr lub opakowanie) — połącz w odwrotnym kierunku albo najpierw ujednolić gramaturę.",
     "ACCOUNT_SUSPENDED": "To konto jest zawieszone.",
     "FEEDBACK_MESSAGE_REQUIRED": "Napisz proszę wiadomość",
     "FEEDBACK_MESSAGE_TOO_LONG": "Wiadomość może mieć najwyżej {{p0}} znaków",

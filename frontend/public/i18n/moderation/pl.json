@@ -35,7 +35,8 @@
     "mergeRightIntoLeft": "Scal drugi w pierwszy",
     "rename": "Zmień nazwę",
     "renamePlaceholder": "Nowa nazwa dla „{{name}}”",
-    "renameSuccess": "Zmieniono nazwę na „{{name}}”; poprzednia nazwa pozostała jako alias."
+    "renameSuccess": "Zmieniono nazwę na „{{name}}”; poprzednia nazwa pozostała jako alias.",
+    "unitMismatch": "Ceny tych dwóch pozycji są w jednostkach, których nie da się przeliczyć (sztuka, kg, litr lub opakowanie). Zanim je połączysz, popraw gramaturę jednej z nich."
   },
   "authorLabel": "Autor:",
   "authorUnknown": "nieznany (anonim lub po pseudonimizacji)",

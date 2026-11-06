@@ -225,6 +225,7 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.ModerationProductRenameInvalid]: 'errors.MODERATION_PRODUCT_RENAME_INVALID',
   [ErrorCode.ModerationProductMergeInvalid]: 'errors.MODERATION_PRODUCT_MERGE_INVALID',
   [ErrorCode.ModerationProductMergeScopeMismatch]: 'errors.MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH',
+  [ErrorCode.ModerationProductMergeUnitMismatch]: 'errors.MODERATION_PRODUCT_MERGE_UNIT_MISMATCH',
   [ErrorCode.FeedbackMessageRequired]: 'errors.FEEDBACK_MESSAGE_REQUIRED',
   [ErrorCode.FeedbackMessageTooLong]: 'errors.FEEDBACK_MESSAGE_TOO_LONG',
   [ErrorCode.FeedbackContactEmailInvalid]: 'errors.FEEDBACK_CONTACT_EMAIL_INVALID',

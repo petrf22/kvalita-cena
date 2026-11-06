@@ -35,7 +35,8 @@
     "mergeRightIntoLeft": "Sloučit druhou do první",
     "rename": "Přejmenovat",
     "renamePlaceholder": "Nový název pro „{{name}}“",
-    "renameSuccess": "Zboží bylo přejmenováno na „{{name}}“, původní název zůstal jako alias."
+    "renameSuccess": "Zboží bylo přejmenováno na „{{name}}“, původní název zůstal jako alias.",
+    "unitMismatch": "Ceny těchhle dvou položek jsou v jednotkách, které nejde převést (kus, kg, litr nebo balení). Než je sloučíš, oprav gramáž jedné z nich."
   },
   "authorLabel": "Autor:",
   "authorUnknown": "neznámý (anonym nebo po pseudonymizaci)",
