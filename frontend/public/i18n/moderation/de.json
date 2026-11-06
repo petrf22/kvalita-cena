@@ -35,8 +35,7 @@
     "mergeRightIntoLeft": "Zweiten in ersten zusammenführen",
     "rename": "Umbenennen",
     "renamePlaceholder": "Neuer Name für „{{name}}“",
-    "renameSuccess": "Der Artikel wurde in „{{name}}“ umbenannt; der alte Name bleibt als Alias.",
-    "unitMismatch": "Die Preise dieser beiden Artikel sind in Einheiten, die sich nicht umrechnen lassen (Stück, kg, Liter oder Packung). Korrigiere vor dem Zusammenführen die Füllmenge eines der beiden."
+    "renameSuccess": "Der Artikel wurde in „{{name}}“ umbenannt; der alte Name bleibt als Alias."
   },
   "authorLabel": "Autor:",
   "authorUnknown": "unbekannt (anonym oder pseudonymisiert)",

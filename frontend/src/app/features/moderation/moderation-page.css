@@ -106,11 +106,6 @@
   flex-wrap: wrap;
 }
 
-.duplicate-unit-mismatch {
-  color: var(--kc-text-muted);
-  font-size: var(--kc-font-sm);
-}
-
 .rename-actions {
   display: flex;
   gap: 8px;

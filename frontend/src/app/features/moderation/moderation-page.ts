@@ -39,7 +39,6 @@ import {
   PRICE_KIND_KEYS,
   RECORD_TYPE_KEYS,
 } from '../../shared/enum-labels';
-import { mergeUnitsFit } from '../../shared/merge-units';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { RelativeDatePipe } from '../../shared/relative-date.pipe';
 import { translateError } from '../../shared/error-message';
@@ -264,8 +263,11 @@ export class ModerationPage {
    * neopisuje číselné ID z jiné obrazovky. Prázdný dotaz vrátí celou lokální nabídku
    * provozovny, takže se seznam nabídne hned po otevření. U položky s rozsahem CHAIN žádné
    * `storeId` nemáme (scopeStore je NULL), takže se hledá napříč rozsahy a nesmyslnou dvojici
-   * odmítne až server (MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH). Cíle, na jejichž jednotku ceny
-   * převést nejdou (`mergeUnitsFit`, MODERATION_PRODUCT_MERGE_UNIT_MISMATCH), se nenabídnou.
+   * odmítne až server (MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH).
+   *
+   * Jednotky cen (MODERATION_PRODUCT_MERGE_UNIT_MISMATCH) klient záměrně nepředfiltruje: zboží
+   * bez cen jde sloučit kamkoli a význam ceny záleží i na osobním patchi jejího autora
+   * (server `ProductMergeUnits`) — z `ProductSummary` se to poznat nedá.
    */
   protected onMergeSearch(item: FlaggedRecordItem, query: string): void {
     const scopeStoreId = item.product?.scopeStore?.id ?? null;
@@ -276,11 +278,7 @@ export class ModerationPage {
         next: (result) => {
           this.mergeCandidates.update((current) => ({
             ...current,
-            [item.recordId]: result.filter(
-              (candidate) =>
-                candidate.id !== item.recordId &&
-                (!item.product || mergeUnitsFit(item.product, candidate)),
-            ),
+            [item.recordId]: result.filter((candidate) => candidate.id !== item.recordId),
           }));
           this.mergeSearching.set(null);
         },
@@ -346,14 +344,6 @@ export class ModerationPage {
         this.duplicates.error.set(translateError(err, this.transloco));
       },
     });
-  }
-
-  /**
-   * Jde sloučit `source` do `target`, aniž by se smíchaly jednotky cen? Směr, který server
-   * odmítne s MODERATION_PRODUCT_MERGE_UNIT_MISMATCH, se v Duplicitách nenabídne.
-   */
-  protected canMergeUnits(source: ProductSummary, target: ProductSummary): boolean {
-    return mergeUnitsFit(source, target);
   }
 
   /** Moderátor volí směr sám — appka nemá jak vědět, který z dvojice je "ten správný". */

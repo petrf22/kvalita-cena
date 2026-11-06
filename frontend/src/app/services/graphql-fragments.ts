@@ -263,8 +263,8 @@ export const productSummaryFieldsFragment = graphql(`
       slug
       path
     }
-    # Význam ceny (za kg/l/kus/balení) — dopárování zboží z účtenky ani moderátorské sloučení
-    # nenabídne cíl, kam by ceny nešly převést (shared/merge-units.ts, server ProductMergeUnits).
+    # Význam ceny (za kg/l/kus/balení) — dopárování zboží z účtenky nenabídne cíl, kam by
+    # ceny nešly převést (shared/merge-units.ts, server ProductMergeUnits).
     unitBase
     netContentValue
     isVariableWeight

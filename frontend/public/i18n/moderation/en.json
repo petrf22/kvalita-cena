@@ -35,8 +35,7 @@
     "mergeRightIntoLeft": "Merge second into first",
     "rename": "Rename",
     "renamePlaceholder": "New name for “{{name}}”",
-    "renameSuccess": "The item was renamed to “{{name}}”; the old name stays as an alias.",
-    "unitMismatch": "These two items' prices are in units that can't be converted (piece, kg, litre or package). Fix the net content of one of them before merging."
+    "renameSuccess": "The item was renamed to “{{name}}”; the old name stays as an alias."
   },
   "authorLabel": "Author:",
   "authorUnknown": "unknown (anonymous or pseudonymized)",

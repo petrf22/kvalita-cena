@@ -18,12 +18,14 @@ function priceUnit(product: UnitSource): PriceUnit {
 }
 
 /**
- * Jdou ceny zdroje přesunout na cíl? Platí pro dopárování zboží z účtenky i moderátorské sloučení
- * duplicit (server `ProductMergeUnits`, `RECEIPT_ITEM_REMATCH_UNIT_MISMATCH` /
- * `MODERATION_PRODUCT_MERGE_UNIT_MISMATCH`): stejný význam, nebo cena za balení neznámé velikosti
+ * Jdou ceny zdroje přesunout na cíl? Zjednodušené pravidlo serveru (`ProductMergeUnits`,
+ * `RECEIPT_ITEM_REMATCH_UNIT_MISMATCH`): stejný význam, nebo cena za balení neznámé velikosti
  * na zboží s pevnou gramáží (balení převezme gramáž cíle). Cena za kus na váhové zboží ani cena
- * za kg na zboží bez gramáže převést nejde. Server rozhoduje i podle jednotlivých cen, tohle je
- * jen předvýběr nabídky.
+ * za kg na zboží bez gramáže převést nejde.
+ *
+ * Je to jen předvýběr nabídky dopárování zboží z účtenky — to má vždy ceny. Server rozhoduje
+ * podle jednotlivých cen a gramáže z patche jejich autora, proto moderátorské slučování (zdroj
+ * může být bez cen) tohle pravidlo nepoužívá a nechá rozhodnout server.
  */
 export function mergeUnitsFit(source: UnitSource, target: UnitSource): boolean {
   const from = priceUnit(source);
