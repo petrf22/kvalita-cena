@@ -143,4 +143,21 @@ class ReceiptItemRematchTest {
     )
     assertEquals(listOf("jogurt", "vahove"), rematchCandidates(weighed, candidates).map { it.id })
   }
+
+  @Test
+  fun vychoziDotazVynechaGramazAPocetKusu() {
+    assertEquals("KECUP JEMNY", rematchInitialQuery("KECUP JEMNY 500G"))
+    assertEquals("COCA COLA", rematchInitialQuery("COCA COLA 1,5L"))
+    assertEquals("VODA", rematchInitialQuery("VODA 6X1.5L"))
+  }
+
+  @Test
+  fun vychoziDotazRozdeliZkratkuMistoInterpunkce() {
+    assertEquals("TUK ROHLIK", rematchInitialQuery("TUK.ROHLIK"))
+  }
+
+  @Test
+  fun vychoziDotazBezSlovNechaNazevJakJe() {
+    assertEquals("500G", rematchInitialQuery("500G"))
+  }
 }

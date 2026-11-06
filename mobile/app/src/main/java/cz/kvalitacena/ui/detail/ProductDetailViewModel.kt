@@ -304,11 +304,11 @@ class ProductDetailViewModel(
 
   // --- dopárování zboží z účtenky ---
 
-  /** Otevře výběr cílového zboží — našeptávač začne názvem zboží z účtenky. */
+  /** Otevře výběr cílového zboží — našeptávač začne názvem zboží z účtenky bez gramáže. */
   fun openRematch() {
     val source = product ?: return
     rematchOpen = true
-    rematchQuery = source.name
+    rematchQuery = rematchInitialQuery(source.name)
     rematchError = null
     loadRematchSuggestions(debounce = false)
   }

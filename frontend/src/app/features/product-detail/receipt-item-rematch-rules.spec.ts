@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Product, ProductSummary } from '../../models/catalog';
 import {
   rematchCandidates,
+  rematchInitialQuery,
   rematchScopeName,
   rematchStoreId,
   rematchTargetFits,
@@ -130,5 +131,21 @@ describe('jednotky cen v nabídce dopárování', () => {
     expect(rematchCandidates(source, [weighed, chainScoped('t', 'c1')]).map((p) => p.id)).toEqual([
       't',
     ]);
+  });
+});
+
+describe('výchozí dotaz dopárování', () => {
+  it('vynechá gramáž a počet kusů', () => {
+    expect(rematchInitialQuery('KECUP JEMNY 500G')).toBe('KECUP JEMNY');
+    expect(rematchInitialQuery('COCA COLA 1,5L')).toBe('COCA COLA');
+    expect(rematchInitialQuery('VODA 6X1.5L')).toBe('VODA');
+  });
+
+  it('zkratku z účtenky rozdělí místo interpunkce', () => {
+    expect(rematchInitialQuery('TUK.ROHLIK')).toBe('TUK ROHLIK');
+  });
+
+  it('když nic nezbude, nechá název, jak je', () => {
+    expect(rematchInitialQuery('500G')).toBe('500G');
   });
 });

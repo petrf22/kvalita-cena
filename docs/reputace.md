@@ -382,7 +382,14 @@ Web i mobil proto při ručním zadání vybírají **nejprve obchod** a až v j
 `productSuggestions(name, storeId)`. Poslední použitý obchod si klient pamatuje lokálně 30 dní,
 detail vždy znovu načte ze serveru a nekompatibilní či smazanou volbu zahodí. Hledání používá
 `core.norm_text` a `pg_trgm`, takže snese diakritiku i běžné překlepy; lokální shody řadí před
-globálními.
+globálními — ale jen mezi stejně silnými shodami. **Silná shoda** (skóre od
+`app.catalog.strong-suggestion-similarity`, výchozí 0,5) jde před všechny slabší bez ohledu na
+rozsah a potvrzenost; teprve uvnitř pásma rozhoduje rozsah (lokální dřív), druhovost a DRAFT za
+potvrzenými (`ProductRepository.findSimilarByName`). Jinak by název, se kterým má dotaz společnou
+jen gramáž nebo jedno slovo, předběhl téměř přesnou shodu: „KECUP JEMNY 500G" nabízel nahoře
+lokální „Těstoviny vřetena 500g" (0,29) a potvrzenou minerálku „jemně perlivá" (0,24) nad
+nepotvrzeným kečupem (0,71). Jedno slovo obsažené v názvu dá přes `word_similarity` 1,0, takže
+u bezkódového zápisu zůstává lokální druhová položka nahoře jako dřív.
 
 Skóre podobnosti je **maximum ze `similarity` a `word_similarity`** (práh
 `app.catalog.suggestion-similarity`, výchozí 0,2). Samotná `similarity` poměřuje shodu vůči
@@ -535,6 +542,11 @@ jinak by účtenka kvůli záloze na lahev zůstala navždy rozpracovaná.
   názoru hlas přepíše). Sloučení všeho, co zbylo — cizí ceny, označení z účtenek, spárované
   řádky — proběhne, až pro **stejný** cíl hlasuje `app.receipt.item-merge-confirmations`
   (výchozí 2) různých lidí. Jeden omyl ani jeden zlý úmysl tak cizí historii nepřesune.
+- **Nabídka cílů** je `productSuggestions(name, storeId)` předvyplněné názvem zboží z účtenky
+  BEZ tokenů s číslicí a bez interpunkce zkratek („KECUP JEMNY 500G" → „KECUP JEMNY",
+  `rematchInitialQuery` na webu i mobilu) — stejné očištění jako automatický odhad
+  (`ReceiptMatchingService.fuzzyQuery`). Gramáž by sama přeskočila práh podobnosti a vytáhla
+  zboží, se kterým má zboží z účtenky společné jen balení. Uživatel dotaz vidí a může ho upravit.
 - Neshoda hlasů (dva lidé, dva různé cíle) nesloučí nic a čeká na moderátora (`mergeProducts`).
   Cizí hlas se proto počítá jako cizí data: kdo hlasoval, už svá data přesunul, a druhý hlas
   pro jiný cíl by jinak našel zboží „bez cizích dat" a sloučil ho sám.

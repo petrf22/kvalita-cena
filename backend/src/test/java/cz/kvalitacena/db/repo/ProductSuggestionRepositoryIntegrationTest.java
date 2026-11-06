@@ -27,7 +27,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * jednoho slova (samotná {@code similarity} takovou shodu utopí v délce názvu); lokální nabídka
  * nesmí přetéct z jiné provozovny ani vytáhnout globální zboží; a nepotvrzené (DRAFT) položky
  * se řadí až za potvrzené, přestože zůstávají viditelné (docs/reputace.md, "Zboží bez čárového
- * kódu" — jinak by je neměl kdo potvrdit).
+ * kódu" — jinak by je neměl kdo potvrdit); jenže jen mezi stejně silnými shodami — téměř
+ * přesný název nesmí předběhnout lokální ani potvrzená položka, se kterou má dotaz společnou
+ * jen gramáž nebo jedno slovo.
  */
 @Testcontainers
 @SpringBootTest
@@ -35,6 +37,8 @@ class ProductSuggestionRepositoryIntegrationTest {
 
   /** Stejná hodnota jako app.catalog.suggestion-similarity v application.yml. */
   private static final double THRESHOLD = 0.2;
+  /** Stejná hodnota jako app.catalog.strong-suggestion-similarity v application.yml. */
+  private static final double STRONG = 0.5;
 
   @Container
   static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17");
@@ -82,6 +86,19 @@ class ProductSuggestionRepositoryIntegrationTest {
         .generic(true)
         .catalogScope(ProductScope.STORE)
         .scopeStore(store)
+        .build());
+  }
+
+  /** Globální zboží (jako zboží s kódem) — bez vazby na provozovnu. */
+  private Product persistGlobalProduct(Category category, String name, ProductStatus status) {
+    return productRepository.saveAndFlush(Product.builder()
+        .name(name)
+        .category(category)
+        .unitBase(UnitBase.MASS)
+        .netContentBase(BigDecimal.ONE)
+        .status(status)
+        .generic(false)
+        .catalogScope(ProductScope.GLOBAL)
         .build());
   }
 
@@ -144,7 +161,7 @@ class ProductSuggestionRepositoryIntegrationTest {
 
     // Samotná similarity() poměřuje shodu vůči trigramům CELÉHO názvu, takže jedno slovo
     // z dlouhého názvu spadne pod práh; word_similarity() hledá jen v nejlepším úseku.
-    List<Product> matches = productRepository.findSimilarByName("polevku", store.getId(), null, THRESHOLD, 20);
+    List<Product> matches = productRepository.findSimilarByName("polevku", store.getId(), null, THRESHOLD, STRONG, 20);
 
     assertThat(matches).extracting(Product::getId).contains(soup.getId());
   }
@@ -157,9 +174,27 @@ class ProductSuggestionRepositoryIntegrationTest {
     Product draft = persistLocalProduct(category, store, "Dršťková polévka " + suffix, ProductStatus.DRAFT);
     Product active = persistLocalProduct(category, store, "Dršťková polévka silná " + suffix, ProductStatus.ACTIVE);
 
-    List<Product> matches = productRepository.findSimilarByName("dršťková polévka", store.getId(), null, THRESHOLD, 20);
+    List<Product> matches = productRepository.findSimilarByName("dršťková polévka", store.getId(), null, THRESHOLD, STRONG, 20);
 
     assertThat(matches).extracting(Product::getId)
         .containsSubsequence(active.getId(), draft.getId());
+  }
+
+  @Test
+  void similarNamePutsStrongMatchBeforeWeakLocalAndConfirmedOnes() {
+    Category category = persistCategory();
+    Store store = persistStore();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    // Lokální druhová položka, se kterou má dotaz společnou jen gramáž, a potvrzené globální
+    // zboží, se kterým jen slovo „jemny" — obojí nad prahem, ale slabě.
+    Product pasta = persistLocalProduct(category, store, "Těstoviny vřetena 500g " + suffix, ProductStatus.DRAFT);
+    Product water = persistGlobalProduct(category, "Minerálka jemně perlivá " + suffix, ProductStatus.ACTIVE);
+    Product ketchup = persistGlobalProduct(category, "Kečup jemný " + suffix, ProductStatus.DRAFT);
+
+    List<Product> matches = productRepository.findSimilarByName("KECUP JEMNY 500G", store.getId(), null,
+        THRESHOLD, STRONG, 20);
+
+    assertThat(matches).extracting(Product::getId).contains(pasta.getId(), water.getId());
+    assertThat(matches.getFirst().getId()).isEqualTo(ketchup.getId());
   }
 }

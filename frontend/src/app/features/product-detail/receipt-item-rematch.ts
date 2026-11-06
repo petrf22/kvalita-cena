@@ -23,7 +23,12 @@ import { ProductService } from '../../services/product-service';
 import { translateError } from '../../shared/error-message';
 import { ProductThumb } from '../../shared/product-thumb';
 import { ReceiptItemTag, isReceiptItem } from '../../shared/receipt-item-tag';
-import { rematchCandidates, rematchScopeName, rematchStoreId } from './receipt-item-rematch-rules';
+import {
+  rematchCandidates,
+  rematchInitialQuery,
+  rematchScopeName,
+  rematchStoreId,
+} from './receipt-item-rematch-rules';
 
 /** Stejný debounce jako našeptávač řádku účtenky (`receipt-line-match.ts`). */
 const SEARCH_DEBOUNCE_MS = 300;
@@ -93,11 +98,12 @@ export class ReceiptItemRematch {
       clearTimeout(this.timer);
       this.request?.unsubscribe();
     });
-    // Výchozí dotaz je název zboží z účtenky — uživatel hned vidí podobné zboží a jen vybere.
+    // Výchozí dotaz je název zboží z účtenky bez gramáže — uživatel hned vidí podobné zboží
+    // a jen vybere.
     effect(() => {
       const name = this.product().name;
       untracked(() => {
-        this.query.set(name);
+        this.query.set(rematchInitialQuery(name));
         this.picked.set(null);
         this.search();
       });

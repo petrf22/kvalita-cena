@@ -155,6 +155,10 @@ app:
     # Práh podobnosti názvu (pg_trgm) pro našeptávač a kontrolu duplicit — skóre se počítá
     # jako max(similarity, word_similarity), takže na shodu stačí jedno slovo z názvu.
     suggestion-similarity: 0.2
+    # Silná shoda: od tohoto skóre jde návrh před všechny slabší, teprve uvnitř pásma rozhoduje
+    # rozsah (lokální dřív) a potvrzenost. Šum typu „sedí jen gramáž/jedno slovo" vychází
+    # kolem 0,2–0,35, skutečná shoda nad 0,7 (jedno slovo obsažené v názvu dá 1,0).
+    strong-suggestion-similarity: 0.5
     # Práh pro frontu podezřelých duplicit v moderaci — symetrická similarity (ne
     # word_similarity, ta poměřuje dotaz proti názvu, ne dva názvy mezi sebou).
     duplicate-similarity: 0.55
