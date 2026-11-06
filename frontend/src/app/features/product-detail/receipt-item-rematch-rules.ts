@@ -73,6 +73,23 @@ export function rematchStoreId(
   return stores.find((store) => store.chain?.id === chainId)?.id ?? null;
 }
 
+/**
+ * Výchozí dotaz dopárování z názvu zboží z účtenky: bez tokenů s číslicí („500G", „1,5L", „6X")
+ * a bez interpunkce zkratek („TUK.ROHLIK"). Gramáž v dotazu sama přeskočí práh podobnosti
+ * a vytáhne zboží, se kterým má společné jen balení („KECUP JEMNY 500G" nabízel těstoviny
+ * 500g). Stejné pravidlo jako automatický odhad na serveru (`ReceiptMatchingService.fuzzyQuery`).
+ * Když po očištění nic nezbude, zůstane název, jak je.
+ */
+export function rematchInitialQuery(name: string): string {
+  const words = name
+    .split(/\s+/)
+    .filter((token) => !/\d/.test(token))
+    .join(' ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim();
+  return words || name.trim();
+}
+
 /** Kde se zboží z účtenky prodává — název řetězce nebo provozovny pro vysvětlující větu. */
 export function rematchScopeName(product: ScopeSource): string | null {
   if (product.catalogScope === ProductScope.Store) return product.scopeStore?.name ?? null;

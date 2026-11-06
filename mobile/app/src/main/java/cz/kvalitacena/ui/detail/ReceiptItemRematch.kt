@@ -23,6 +23,25 @@ internal fun rematchStoreId(product: Product): String? {
 }
 
 /**
+ * Výchozí dotaz dopárování z názvu zboží z účtenky: bez tokenů s číslicí („500G", „1,5L", „6X")
+ * a bez interpunkce zkratek („TUK.ROHLIK"). Gramáž v dotazu sama přeskočí práh podobnosti
+ * a vytáhne zboží, se kterým má společné jen balení („KECUP JEMNY 500G" nabízel těstoviny
+ * 500g). Stejné pravidlo jako automatický odhad na serveru (`ReceiptMatchingService.fuzzyQuery`).
+ * Když po očištění nic nezbude, zůstane název, jak je.
+ */
+internal fun rematchInitialQuery(name: String): String {
+  val words = name.split(WHITESPACE)
+    .filter { token -> token.none(Char::isDigit) }
+    .joinToString(" ")
+    .replace(NON_WORD, " ")
+    .trim()
+  return words.ifEmpty { name.trim() }
+}
+
+private val WHITESPACE = Regex("\\s+")
+private val NON_WORD = Regex("[^\\p{L}\\p{N}]+")
+
+/**
  * Návrhy, na které jde zboží z účtenky dopárovat: ne samo na sebe (našeptávač podle názvu ho
  * najde první) a jen zboží použitelné ve stejném rozsahu — stejné pravidlo jako
  * `ReceiptItemRematchService.scopeFits`, ať uživatel nevybere cíl, který server odmítne
