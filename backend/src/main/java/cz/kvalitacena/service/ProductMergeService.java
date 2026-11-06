@@ -36,7 +36,7 @@ public class ProductMergeService {
   private final PriceAggregationService priceAggregationService;
   private final CatalogProperties catalogProperties;
   private final JdbcTemplate jdbcTemplate;
-  private final ReceiptItemUnits receiptItemUnits;
+  private final ProductMergeUnits productMergeUnits;
 
   @Transactional
   public Product merge(Long sourceId, Long targetId, Long moderatorUserId) {
@@ -75,10 +75,14 @@ public class ProductMergeService {
     if (!observationsFitTargetScope(sourceId, target)) {
       throw new ValidationException(ErrorCode.MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH);
     }
-    // Ceny zboží z účtenky musí po přesunu znamenat totéž co ceny cíle (za kg/l/kus/balení),
-    // jinak by se v agregátu míchala cena za kelímek s cenou za kg (ReceiptItemUnits).
-    if (receiptSource && receiptItemUnits.requireCompatible(source, target)) {
-      receiptItemUnits.adoptTargetNetContent(sourceId, target, null);
+    // Ceny zdroje musí po přesunu znamenat totéž co ceny cíle (za kg/l/kus/balení), jinak by se
+    // v agregátu míchala cena za kelímek s cenou za kg (ProductMergeUnits). Platí pro zboží
+    // z účtenky i pro moderátorské sloučení ručně založených duplicit — liší se jen chyba.
+    ErrorCode unitMismatch = receiptItem || receiptSource
+        ? ErrorCode.RECEIPT_ITEM_REMATCH_UNIT_MISMATCH
+        : ErrorCode.MODERATION_PRODUCT_MERGE_UNIT_MISMATCH;
+    if (productMergeUnits.requireCompatible(source, target, unitMismatch)) {
+      productMergeUnits.adoptTargetNetContent(sourceId, target, null);
     }
 
     List<Long> storeIds = jdbcTemplate.queryForList(

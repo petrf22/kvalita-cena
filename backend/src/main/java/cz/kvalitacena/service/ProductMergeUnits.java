@@ -11,28 +11,31 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Jednotky cen při dopárování zboží z účtenky (docs/reputace.md, „Zboží z účtenky").
+ * Jednotky cen při přesunu observací na jiné zboží — dopárování zboží z účtenky
+ * (docs/reputace.md, „Zboží z účtenky") i moderátorské sloučení duplicit ({@code mergeProducts}).
  *
  * <p>Observace nese snapshot {@code net_content_base} a z něj generovanou {@code unit_price}
  * (docs/datovy-model.md). Přesun observace na jiné zboží mění jen {@code product_id}, takže
- * cena za kelímek ze zboží z účtenky bez gramáže by se u 150g jogurtu agregovala jako cena za
+ * cena za kelímek ze zboží bez gramáže by se u 150g jogurtu agregovala jako cena za
  * kg — 19,90 Kč místo 132,67 Kč/kg. Proto se před přesunem porovná, CO jednotková cena znamená:
  *
  * <ul>
  *   <li>stejný význam (za kg, za l, za kus, za balení neznámé velikosti) — přesun beze změny;</li>
- *   <li>cena za balení neznámé velikosti na zboží s pevnou gramáží — dopárování je výslovné
- *       tvrzení „to balení bylo tohle zboží", takže observace převezme gramáž cíle (u MULTIBUY
- *       krát počet kusů, stejně jako {@code PriceObservationService});</li>
+ *   <li>cena za balení neznámé velikosti na zboží s pevnou gramáží — dopárování i sloučení je
+ *       výslovné tvrzení „to balení bylo tohle zboží", takže observace převezme gramáž cíle
+ *       (u MULTIBUY krát počet kusů, stejně jako {@code PriceObservationService});</li>
  *   <li>cokoli jiného (cena za kus na váhové zboží, cena za kg na zboží bez gramáže…) se
- *       odmítne s {@code RECEIPT_ITEM_REMATCH_UNIT_MISMATCH} — převést to nejde.</li>
+ *       odmítne s chybou, kterou zvolí volající ({@code RECEIPT_ITEM_REMATCH_UNIT_MISMATCH},
+ *       {@code MODERATION_PRODUCT_MERGE_UNIT_MISMATCH}) — převést to nejde.</li>
  * </ul>
  *
- * Význam ceny za balení se čte ze zdroje, ne z observace: zboží z účtenky dostane gramáž jen při
- * založení z tisku a observace bez ní mají {@code net_content_base = 1}.
+ * Význam ceny za balení se čte ze zdroje, ne z observace: observace jednotku nenese a bez
+ * gramáže má {@code net_content_base = 1}, stejně jako 1kg balení. Pozdější změna jednotky
+ * zdroje (g → ml) se tím nepozná — je vzácná a oprava gramáže ji pro starší ceny nedělá taky.
  */
 @Component
 @RequiredArgsConstructor
-class ReceiptItemUnits {
+class ProductMergeUnits {
 
   /** Co znamená jednotková cena: za kg, za litr, za kus, nebo za balení neznámé velikosti. */
   enum PriceUnit { MASS, VOLUME, COUNT, PACKAGE }
@@ -54,11 +57,11 @@ class ReceiptItemUnits {
   }
 
   /**
-   * Ověří, že ceny zboží z účtenky jde přesunout na cíl, jinak {@code RECEIPT_ITEM_REMATCH_UNIT_MISMATCH}.
+   * Ověří, že ceny zdroje jde přesunout na cíl, jinak vyhodí {@code mismatch}.
    *
    * @return {@code true}, když ceny za balení musí převzít gramáž cíle ({@link #adoptTargetNetContent})
    */
-  boolean requireCompatible(Product source, Product target) {
+  boolean requireCompatible(Product source, Product target, ErrorCode mismatch) {
     List<String> bases = jdbcTemplate.queryForList(
         "SELECT DISTINCT quantity_basis FROM core.price_observation WHERE product_id = ?", String.class, source.getId());
     PriceUnit targetUnit = unitOf(target);
@@ -76,13 +79,13 @@ class ReceiptItemUnits {
         adopt = true;
         continue;
       }
-      throw new ValidationException(ErrorCode.RECEIPT_ITEM_REMATCH_UNIT_MISMATCH);
+      throw new ValidationException(mismatch);
     }
     return adopt;
   }
 
   /**
-   * Ceny za balení ({@code PACKAGE}/{@code PER_PIECE}) zboží z účtenky převezmou gramáž cíle —
+   * Ceny za balení ({@code PACKAGE}/{@code PER_PIECE}) zdroje převezmou gramáž cíle —
    * jen ty, které se právě stěhují: jednoho autora, nebo všechny ({@code submitterId == null}).
    */
   void adoptTargetNetContent(Long sourceId, Product target, Long submitterId) {

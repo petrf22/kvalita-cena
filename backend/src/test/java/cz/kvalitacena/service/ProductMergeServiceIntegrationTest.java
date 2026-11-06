@@ -1,6 +1,7 @@
 package cz.kvalitacena.service;
 
 import cz.kvalitacena.db.entity.Category;
+import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.ProductScope;
 import cz.kvalitacena.db.entity.ProductStatus;
@@ -10,6 +11,7 @@ import cz.kvalitacena.db.entity.UnitBase;
 import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
+import cz.kvalitacena.exception.ErrorCode;
 import cz.kvalitacena.exception.ValidationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -99,6 +101,72 @@ class ProductMergeServiceIntegrationTest {
   }
 
   @Test
+  void mergeOfPackagePriceIntoProductWithNetContentAdoptsTargetNetContent() {
+    Store store = persistStore();
+    Product source = persistProduct(store, "Jogurt bílý " + UUID.randomUUID());
+    Product target = persistProduct(store, "Jogurt bílý 150 g " + UUID.randomUUID(),
+        UnitBase.MASS, "150", NetContentUom.G, "0.15", false);
+    insertObservation(source.getId(), store.getId(), "19.90", "PACKAGE", "1");
+
+    mergeService.merge(source.getId(), target.getId(), 1L);
+
+    // 19,90 Kč za kelímek je u 150g jogurtu 132,67 Kč/kg, ne 19,90 Kč/kg.
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT round(unit_price, 2) FROM core.price_observation WHERE product_id = ?",
+        BigDecimal.class, target.getId())).isEqualByComparingTo("132.67");
+  }
+
+  @Test
+  void mergeOfSameUnitKeepsObservationSnapshot() {
+    Store store = persistStore();
+    Product source = persistProduct(store, "Mouka 500 g " + UUID.randomUUID(),
+        UnitBase.MASS, "500", NetContentUom.G, "0.5", false);
+    Product target = persistProduct(store, "Mouka 1 kg " + UUID.randomUUID(),
+        UnitBase.MASS, "1", NetContentUom.KG, "1", false);
+    insertObservation(source.getId(), store.getId(), "15", "PACKAGE", "0.5");
+
+    mergeService.merge(source.getId(), target.getId(), 1L);
+
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT net_content_base FROM core.price_observation WHERE product_id = ?",
+        BigDecimal.class, target.getId())).isEqualByComparingTo("0.5");
+  }
+
+  @Test
+  void mergeRejectsMassPricesOnVolumeProduct() {
+    Store store = persistStore();
+    Product source = persistProduct(store, "Med 500 g " + UUID.randomUUID(),
+        UnitBase.MASS, "500", NetContentUom.G, "0.5", false);
+    Product target = persistProduct(store, "Med 1 l " + UUID.randomUUID(),
+        UnitBase.VOLUME, "1", NetContentUom.L, "1", false);
+    insertObservation(source.getId(), store.getId(), "120", "PACKAGE", "0.5");
+
+    assertUnitMismatch(source, target);
+  }
+
+  @Test
+  void mergeRejectsPerKgPricesOnProductWithoutNetContent() {
+    Store store = persistStore();
+    Product source = persistProduct(store, "Sýr eidam " + UUID.randomUUID(),
+        UnitBase.MASS, null, null, BigDecimal.ONE.toPlainString(), true);
+    Product target = persistProduct(store, "Sýr eidam plátky " + UUID.randomUUID());
+    insertObservation(source.getId(), store.getId(), "189", "PER_KG", "1");
+
+    assertUnitMismatch(source, target);
+  }
+
+  private void assertUnitMismatch(Product source, Product target) {
+    assertThatThrownBy(() -> mergeService.merge(source.getId(), target.getId(), 1L))
+        .isInstanceOfSatisfying(ValidationException.class, e -> assertThat(e.getCode())
+            .isEqualTo(ErrorCode.MODERATION_PRODUCT_MERGE_UNIT_MISMATCH));
+    assertThat(productRepository.findById(source.getId()).orElseThrow().getStatus())
+        .isEqualTo(ProductStatus.ACTIVE);
+    assertThat(jdbcTemplate.queryForObject(
+        "SELECT count(*) FROM core.price_observation WHERE product_id = ?", Long.class, source.getId()))
+        .isEqualTo(1L);
+  }
+
+  @Test
   void renameKeepsOldNameAsActiveAlias() {
     Store store = persistStore();
     Product product = persistProduct(store, "Polevka drstkova " + UUID.randomUUID());
@@ -184,6 +252,23 @@ class ProductMergeServiceIntegrationTest {
     return persistProduct(store, persistCategory(), name);
   }
 
+  private Product persistProduct(Store store, String name, UnitBase unitBase, String netContentValue,
+      NetContentUom uom, String netContentBase, boolean variableWeight) {
+    return productRepository.saveAndFlush(Product.builder()
+        .name(name)
+        .category(persistCategory())
+        .unitBase(unitBase)
+        .netContentValue(netContentValue == null ? null : new BigDecimal(netContentValue))
+        .netContentUom(uom)
+        .netContentBase(new BigDecimal(netContentBase))
+        .variableWeight(variableWeight)
+        .generic(true)
+        .catalogScope(ProductScope.STORE)
+        .scopeStore(store)
+        .status(ProductStatus.ACTIVE)
+        .build());
+  }
+
   private Product persistProduct(Store store, Category category, String name) {
     return productRepository.saveAndFlush(Product.builder()
         .name(name)
@@ -198,12 +283,17 @@ class ProductMergeServiceIntegrationTest {
   }
 
   private void insertObservation(Long productId, Long storeId) {
+    insertObservation(productId, storeId, "45", "PACKAGE", "1");
+  }
+
+  private void insertObservation(Long productId, Long storeId, String price, String quantityBasis,
+      String netContentBase) {
     jdbcTemplate.update("""
         INSERT INTO core.price_observation(
           product_id, store_id, price_amount, currency, price_kind, quantity_basis,
           net_content_base, observed_at, submitter_kind, status, agreement, source)
-        VALUES (?, ?, 45, 'CZK', 'REGULAR', 'PACKAGE', 1, CURRENT_TIMESTAMP,
+        VALUES (?, ?, ?, 'CZK', 'REGULAR', ?, ?, CURRENT_TIMESTAMP,
           'ANONYMOUS', 'ACTIVE', 'PENDING', 'WEB')
-        """, productId, storeId);
+        """, productId, storeId, new BigDecimal(price), quantityBasis, new BigDecimal(netContentBase));
   }
 }
