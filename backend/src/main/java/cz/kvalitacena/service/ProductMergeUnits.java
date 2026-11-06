@@ -8,7 +8,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Jednotky cen při přesunu observací na jiné zboží — dopárování zboží z účtenky
@@ -29,9 +36,14 @@ import java.util.List;
  *       {@code MODERATION_PRODUCT_MERGE_UNIT_MISMATCH}) — převést to nejde.</li>
  * </ul>
  *
- * Význam ceny za balení se čte ze zdroje, ne z observace: observace jednotku nenese a bez
- * gramáže má {@code net_content_base = 1}, stejně jako 1kg balení. Pozdější změna jednotky
- * zdroje (g → ml) se tím nepozná — je vzácná a oprava gramáže ji pro starší ceny nedělá taky.
+ * <p>Observace jednotku nenese, takže význam ceny za balení se skládá ze snapshotu a ze zboží,
+ * jak ho viděl AUTOR ceny: {@code PriceObservationService} bere gramáž z jeho osobního patche
+ * ({@link ProductOverlayService#applyOverlay}), ne z {@code core.product}. Snapshot jiný než
+ * „balení neznámé velikosti" ({@code net_content_base = 1}, u MULTIBUY počet kusů) je známá
+ * gramáž a nikdy se nepřepisuje — jinak by 0,5 kg z patche po sloučení do 1kg cíle zlevnilo
+ * historickou cenu za kg na polovinu. Snapshot 1 je neznámé balení jen tehdy, když autor ani dnes
+ * nevidí žádnou gramáž; jinak je to 1 kg / 1 l / 1 ks. Cíl se čte tak, jak ho vidí agregát
+ * (veřejná vrstva včetně Open Food Facts) — zboží z OFF má v {@code core.product} gramáž NULL.
  */
 @Component
 @RequiredArgsConstructor
@@ -40,7 +52,18 @@ class ProductMergeUnits {
   /** Co znamená jednotková cena: za kg, za litr, za kus, nebo za balení neznámé velikosti. */
   enum PriceUnit { MASS, VOLUME, COUNT, PACKAGE }
 
+  /**
+   * Výsledek posouzení: autoři ({@code null} = anonymní zápisy), jejichž ceny za balení neznámé
+   * velikosti musí při přesunu převzít gramáž cíle ({@link #adoptTargetNetContent}).
+   */
+  record Compatibility(Product target, Set<Long> adoptingSubmitters) {
+    boolean adoptsFor(Long submitterId) {
+      return adoptingSubmitters.contains(submitterId);
+    }
+  }
+
   private final JdbcTemplate jdbcTemplate;
+  private final ProductOverlayService productOverlayService;
 
   static PriceUnit unitOf(Product product) {
     if (product.isVariableWeight()) {
@@ -49,61 +72,76 @@ class ProductMergeUnits {
     if (product.getNetContentValue() == null) {
       return PriceUnit.PACKAGE;
     }
-    return switch (product.getUnitBase()) {
-      case MASS -> PriceUnit.MASS;
-      case VOLUME -> PriceUnit.VOLUME;
-      case COUNT -> PriceUnit.COUNT;
-    };
+    return knownUnit(product);
+  }
+
+  /** Veličina zboží s gramáží (nebo se snapshotem známé gramáže, ať dnes vypadá jakkoli). */
+  private static PriceUnit knownUnit(Product product) {
+    if (product.getUnitBase() == UnitBase.MASS) return PriceUnit.MASS;
+    if (product.getUnitBase() == UnitBase.VOLUME) return PriceUnit.VOLUME;
+    return PriceUnit.COUNT;
   }
 
   /**
-   * Ověří, že ceny zdroje jde přesunout na cíl, jinak vyhodí {@code mismatch}.
-   *
-   * @return {@code true}, když ceny za balení musí převzít gramáž cíle ({@link #adoptTargetNetContent})
+   * Ověří, že ceny zdroje jde přesunout na cíl, jinak vyhodí {@code mismatch}. Posuzuje všechny
+   * ceny zdroje (i když se pak stěhují jen ceny jednoho autora) — zboží bez cen projde vždy.
    */
-  boolean requireCompatible(Product source, Product target, ErrorCode mismatch) {
-    List<String> bases = jdbcTemplate.queryForList(
-        "SELECT DISTINCT quantity_basis FROM core.price_observation WHERE product_id = ?", String.class, source.getId());
-    PriceUnit targetUnit = unitOf(target);
-    boolean adopt = false;
-    for (String basis : bases) {
-      PriceUnit unit = switch (basis) {
+  Compatibility requireCompatible(Product source, Product target, ErrorCode mismatch) {
+    Product effectiveTarget = productOverlayService.applyOverlay(target, null);
+    PriceUnit targetUnit = unitOf(effectiveTarget);
+    Map<Long, Product> bySubmitter = new HashMap<>();
+    Set<Long> adopting = new HashSet<>();
+    List<Map<String, Object>> groups = jdbcTemplate.queryForList(
+        "SELECT DISTINCT submitter_id, quantity_basis, net_content_base = " + packageBaseSql()
+            + " AS unknown_package FROM core.price_observation WHERE product_id = ?", source.getId());
+    for (Map<String, Object> group : groups) {
+      Long submitterId = group.get("submitter_id") == null ? null : ((Number) group.get("submitter_id")).longValue();
+      PriceUnit unit = switch ((String) group.get("quantity_basis")) {
         case "PER_KG" -> PriceUnit.MASS;
         case "PER_L" -> PriceUnit.VOLUME;
-        default -> unitOf(source);
+        default -> {
+          Product seen = bySubmitter.computeIfAbsent(submitterId,
+              id -> productOverlayService.applyOverlay(source, id));
+          yield Boolean.TRUE.equals(group.get("unknown_package")) ? unitOf(seen) : knownUnit(seen);
+        }
       };
       if (unit == targetUnit) {
         continue;
       }
-      if (unit == PriceUnit.PACKAGE && !target.isVariableWeight() && targetUnit != PriceUnit.PACKAGE) {
-        adopt = true;
+      if (unit == PriceUnit.PACKAGE && !effectiveTarget.isVariableWeight() && targetUnit != PriceUnit.PACKAGE) {
+        adopting.add(submitterId);
         continue;
       }
       throw new ValidationException(mismatch);
     }
-    return adopt;
+    return new Compatibility(effectiveTarget, adopting);
   }
 
   /**
-   * Ceny za balení ({@code PACKAGE}/{@code PER_PIECE}) zdroje převezmou gramáž cíle —
-   * jen ty, které se právě stěhují: jednoho autora, nebo všechny ({@code submitterId == null}).
+   * Ceny za balení neznámé velikosti ({@code PACKAGE}/{@code PER_PIECE} se snapshotem
+   * {@link #packageBaseSql()}) převezmou gramáž cíle — jen autorů, které posouzení označilo
+   * a které volající jmenuje ({@code submitters}). Známé snapshoty zůstanou, jak jsou.
+   *
+   * @return ID observací, kterým se snapshot přepsal (změna hlasu je podle nich vrátí)
    */
-  void adoptTargetNetContent(Long sourceId, Product target, Long submitterId) {
-    String sql = """
-        UPDATE core.price_observation
-           SET net_content_base = ? * CASE WHEN price_kind = 'MULTIBUY' THEN COALESCE(multibuy_qty, 1) ELSE 1 END
-         WHERE product_id = ? AND quantity_basis IN ('PACKAGE', 'PER_PIECE')
-        """;
-    if (submitterId == null) {
-      jdbcTemplate.update(sql, target.getNetContentBase(), sourceId);
-    } else {
-      jdbcTemplate.update(sql + " AND submitter_id = ?", target.getNetContentBase(), sourceId, submitterId);
+  List<Long> adoptTargetNetContent(Long sourceId, Compatibility compatibility, Collection<Long> submitters) {
+    BigDecimal base = compatibility.target().getNetContentBase();
+    List<Long> adopted = new ArrayList<>();
+    for (Long submitterId : submitters) {
+      if (!compatibility.adoptsFor(submitterId)) continue;
+      adopted.addAll(jdbcTemplate.queryForList(
+          "UPDATE core.price_observation SET net_content_base = ? * " + packageBaseSql()
+              + " WHERE product_id = ? AND quantity_basis IN ('PACKAGE', 'PER_PIECE')"
+              + " AND net_content_base = " + packageBaseSql()
+              + " AND submitter_id IS NOT DISTINCT FROM ? RETURNING id",
+          Long.class, base, sourceId, submitterId));
     }
+    return adopted;
   }
 
   /**
-   * Původní snapshot ceny za balení zdroje bez gramáže — {@code net_content_base = 1} (u MULTIBUY
-   * počet kusů). Volá se při změně hlasu, kdy se dříve převedené ceny vracejí na zdroj.
+   * Snapshot ceny za balení neznámé velikosti — {@code net_content_base = 1} (u MULTIBUY počet
+   * kusů), stejně jako ho zapíše {@code PriceObservationService} pro zboží bez gramáže.
    */
   static String packageBaseSql() {
     return "CASE WHEN price_kind = 'MULTIBUY' THEN COALESCE(multibuy_qty, 1) ELSE 1 END";

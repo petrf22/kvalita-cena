@@ -97,7 +97,8 @@ dopárování zboží z účtenky a při moderátorském sloučení duplicit (`P
 `docs/reputace.md`, „Zboží z účtenky" a „Zboží bez čárového kódu") — cena za balení neznámé velikosti
 převezme gramáž cíle, protože dopárování i sloučení je výslovné tvrzení „to balení bylo tohle
 zboží". Nejde o opravu gramáže, ale o zjištění, co se vlastně koupilo; bez toho by se 19,90 Kč
-za kelímek agregovalo jako 19,90 Kč/kg. Ceny, jejichž význam převést nejde, se nepřesunou
+za kelímek agregovalo jako 19,90 Kč/kg. Známý snapshot (například 0,5 kg z osobního patche
+autora ceny) se nepřepisuje nikdy. Ceny, jejichž význam převést nejde, se nepřesunou
 (`RECEIPT_ITEM_REMATCH_UNIT_MISMATCH`, `MODERATION_PRODUCT_MERGE_UNIT_MISMATCH`).
 
 **`observed_at` ≠ `created_at`.** `observed_at` je, kdy uživatel cenu VIDĚL (může být

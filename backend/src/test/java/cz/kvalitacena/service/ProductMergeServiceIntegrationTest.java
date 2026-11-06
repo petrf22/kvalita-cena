@@ -1,5 +1,7 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.db.entity.AppUser;
+import cz.kvalitacena.db.entity.AppUserStatus;
 import cz.kvalitacena.db.entity.Category;
 import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.Product;
@@ -8,6 +10,7 @@ import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.entity.StoreStatus;
 import cz.kvalitacena.db.entity.UnitBase;
+import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
@@ -57,6 +60,8 @@ class ProductMergeServiceIntegrationTest {
   private StoreRepository storeRepository;
   @Autowired
   private CategoryRepository categoryRepository;
+  @Autowired
+  private AppUserRepository appUserRepository;
   @Autowired
   private JdbcTemplate jdbcTemplate;
 
@@ -114,6 +119,34 @@ class ProductMergeServiceIntegrationTest {
     assertThat(jdbcTemplate.queryForObject(
         "SELECT round(unit_price, 2) FROM core.price_observation WHERE product_id = ?",
         BigDecimal.class, target.getId())).isEqualByComparingTo("132.67");
+  }
+
+  @Test
+  void mergeKeepsNetContentKnownFromSubmittersPatch() {
+    Store store = persistStore();
+    Product source = persistProduct(store, "Med květový " + UUID.randomUUID());
+    Product target = persistProduct(store, "Med květový 250 g " + UUID.randomUUID(),
+        UnitBase.MASS, "250", NetContentUom.G, "0.25", false);
+    String unique = UUID.randomUUID().toString();
+    Long author = appUserRepository.saveAndFlush(AppUser.builder()
+        .publicUid(UUID.randomUUID()).emailHash(unique.getBytes()).emailEnc(unique.getBytes())
+        .publicHandle(unique.substring(0, 30)).handleAdjective("blue").handleNoun("stork")
+        .handleNumber((short) 1).status(AppUserStatus.ACTIVE).build()).getId();
+    // Autor si doplnil gramáž osobním patchem, jeho cena má snapshot 0,5 kg. Anonymní cena
+    // za balení neznámé velikosti převezme gramáž cíle.
+    jdbcTemplate.update("""
+        INSERT INTO core.product_user_edit(product_id, user_id, unit_base, net_content_value, net_content_uom,
+                                           net_content_base)
+        VALUES (?, ?, 'MASS', 500, 'G', 0.5)
+        """, source.getId(), author);
+    insertObservation(source.getId(), store.getId(), "60", "PACKAGE", "0.5", author);
+    insertObservation(source.getId(), store.getId(), "30", "PACKAGE", "1");
+
+    mergeService.merge(source.getId(), target.getId(), 1L);
+
+    assertThat(jdbcTemplate.queryForList(
+        "SELECT net_content_base FROM core.price_observation WHERE product_id = ? ORDER BY price_amount",
+        BigDecimal.class, target.getId())).containsExactly(new BigDecimal("0.250000"), new BigDecimal("0.500000"));
   }
 
   @Test
@@ -288,12 +321,18 @@ class ProductMergeServiceIntegrationTest {
 
   private void insertObservation(Long productId, Long storeId, String price, String quantityBasis,
       String netContentBase) {
+    insertObservation(productId, storeId, price, quantityBasis, netContentBase, null);
+  }
+
+  private void insertObservation(Long productId, Long storeId, String price, String quantityBasis,
+      String netContentBase, Long submitterId) {
     jdbcTemplate.update("""
         INSERT INTO core.price_observation(
           product_id, store_id, price_amount, currency, price_kind, quantity_basis,
-          net_content_base, observed_at, submitter_kind, status, agreement, source)
-        VALUES (?, ?, ?, 'CZK', 'REGULAR', ?, ?, CURRENT_TIMESTAMP,
-          'ANONYMOUS', 'ACTIVE', 'PENDING', 'WEB')
-        """, productId, storeId, new BigDecimal(price), quantityBasis, new BigDecimal(netContentBase));
+          net_content_base, observed_at, submitter_id, submitter_kind, status, agreement, source)
+        VALUES (?, ?, ?, 'CZK', 'REGULAR', ?, ?, CURRENT_TIMESTAMP, ?,
+          ?, 'ACTIVE', 'PENDING', 'WEB')
+        """, productId, storeId, new BigDecimal(price), quantityBasis, new BigDecimal(netContentBase),
+        submitterId, submitterId == null ? "ANONYMOUS" : "REGISTERED");
   }
 }

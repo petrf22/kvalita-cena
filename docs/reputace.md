@@ -461,9 +461,10 @@ Sloučení hlídá jednotky cen stejně jako dopárování zboží z účtenky (
 „Jednotky cen" níž). Cena za balení zdroje bez gramáže převezme gramáž cíle, protože jde
 o duplicitu, tedy o stejné balení. Rozdílná gramáž se stejnou jednotkou (500 g a 1 kg) nevadí,
 cena za kg zůstává správná. Cokoli jiného (kg ↔ litr, cena za kg na zboží bez gramáže, gramáž
-na zboží bez gramáže) server odmítne s `MODERATION_PRODUCT_MERGE_UNIT_MISMATCH`. Web takový cíl
-v našeptávači nenabídne a v Duplicitách nechá jen směr, který projde. Když neprojde žádný,
-napřed se musí opravit gramáž.
+na zboží bez gramáže) server odmítne s `MODERATION_PRODUCT_MERGE_UNIT_MISMATCH`. Hláška poradí
+sloučit opačným směrem nebo napřed opravit gramáž. Web nabídku cílů podle jednotek
+nepředfiltruje: zboží bez cen jde sloučit kamkoli a význam ceny záleží i na patchi jejího autora
+(„Jednotky cen" níž), což klient z údajů o zboží nepozná.
 
 `renameGenericProduct(productId, name)` opraví **kanonický název pro všechny**. Je to
 samostatná moderátorská mutace, protože `updateProduct` ukládá název do `core.product_user_edit`
@@ -551,9 +552,16 @@ jinak by účtenka kvůli záloze na lahev zůstala navždy rozpracovaná.
   (19,90 Kč za kelímek u 150g jogurtu = 132,67 Kč/kg). Cokoli jiného — cena za balení na váhové
   zboží, cena za kg na zboží bez gramáže, kg ↔ litr — se odmítne s
   `RECEIPT_ITEM_REMATCH_UNIT_MISMATCH`. Klient takové cíle v nabídce ani neukáže.
+  Význam ceny se posuzuje pro každou cenu zvlášť, podle zboží, jak ho viděl její AUTOR:
+  `PriceObservationService` bere gramáž z jeho osobního patche, takže cena se snapshotem 0,5 kg
+  je za kg, i když `core.product` gramáž nemá. Známý snapshot se nikdy nepřepisuje, převezme
+  ho jen cena za balení neznámé velikosti (`net_content_base = 1`, u MULTIBUY počet kusů,
+  a autor ani dnes gramáž nevidí). Cíl se čte jako veřejná vrstva včetně Open Food Facts,
+  protože zboží z OFF má v `core.product` gramáž `NULL`.
 - **Změna hlasu** na jiný cíl vezme s sebou i vlastní ceny a řádky účtenek, které předchozí hlas
-  přesunul (`core.product_merge_vote.moved_*`): vrátí se na zboží z účtenky (ceny za balení
-  zpátky bez převzaté gramáže) a odtud jdou na nový cíl.
+  přesunul (`core.product_merge_vote.moved_*`): vrátí se na zboží z účtenky a odtud jdou na nový
+  cíl. Snapshot balení neznámé velikosti dostanou zpátky jen ceny, kterým ho hlas přepsal
+  (`adopted_observation_ids`). Známá gramáž z patche autora zůstane.
 
 **Zrušený návrh se neobnoví.** Když vlastník u řádku zruší návrh (`unmatchLine`), řádek si zboží
 pamatuje jako odmítnuté (`rejected_product_id`, u návrhu podle EAN i `code_rejected`). Zveřejnění

@@ -81,9 +81,8 @@ public class ProductMergeService {
     ErrorCode unitMismatch = receiptItem || receiptSource
         ? ErrorCode.RECEIPT_ITEM_REMATCH_UNIT_MISMATCH
         : ErrorCode.MODERATION_PRODUCT_MERGE_UNIT_MISMATCH;
-    if (productMergeUnits.requireCompatible(source, target, unitMismatch)) {
-      productMergeUnits.adoptTargetNetContent(sourceId, target, null);
-    }
+    ProductMergeUnits.Compatibility units = productMergeUnits.requireCompatible(source, target, unitMismatch);
+    productMergeUnits.adoptTargetNetContent(sourceId, units, units.adoptingSubmitters());
 
     List<Long> storeIds = jdbcTemplate.queryForList(
         "SELECT DISTINCT store_id FROM core.price_observation WHERE product_id IN (?, ?)",
