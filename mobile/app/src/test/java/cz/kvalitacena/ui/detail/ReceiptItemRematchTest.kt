@@ -56,8 +56,12 @@ class ReceiptItemRematchTest {
     scope: String = "GLOBAL",
     chain: RetailChain? = null,
     scopeStore: Store? = null,
+    unitBase: String? = "COUNT",
+    netContentValue: Double? = null,
+    variableWeight: Boolean = false,
   ) = ProductSummary(
     id = id, name = "Rohlík", category = category, catalogScope = scope, scopeChain = chain, scopeStore = scopeStore,
+    unitBase = unitBase, netContentValue = netContentValue, isVariableWeight = variableWeight,
   )
 
   @Test
@@ -116,5 +120,27 @@ class ReceiptItemRematchTest {
     )
     val product = source(scope = "GLOBAL", chain = null)
     assertEquals(listOf("ean"), rematchCandidates(product, candidates).map { it.id })
+  }
+
+  @Test
+  fun cenaZaBaleniJdeNaZboziSGramaziAleNeNaVahove() {
+    val candidates = listOf(
+      candidate("baleni"),
+      candidate("jogurt", unitBase = "MASS", netContentValue = 150.0),
+      candidate("vahove", unitBase = "MASS", variableWeight = true),
+    )
+    assertEquals(listOf("baleni", "jogurt"), rematchCandidates(source(scope = "GLOBAL", chain = null), candidates).map { it.id })
+  }
+
+  @Test
+  fun cenaZaKgJdeJenNaZboziSCenouZaKg() {
+    val weighed = source(scope = "GLOBAL", chain = null).copy(unitBase = "MASS", isVariableWeight = true)
+    val candidates = listOf(
+      candidate("baleni"),
+      candidate("jogurt", unitBase = "MASS", netContentValue = 150.0),
+      candidate("vahove", unitBase = "MASS", variableWeight = true),
+      candidate("litr", unitBase = "VOLUME", variableWeight = true),
+    )
+    assertEquals(listOf("jogurt", "vahove"), rematchCandidates(weighed, candidates).map { it.id })
   }
 }

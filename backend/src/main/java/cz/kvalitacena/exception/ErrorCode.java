@@ -104,6 +104,8 @@ public enum ErrorCode {
   RECEIPT_ITEM_LIMIT("error.receipt.itemLimit"),   // {0} = app.receipt.max-open-items
   RECEIPT_LINE_NOT_PRODUCT("error.receipt.lineNotProduct"),
   RECEIPT_ITEM_REMATCH_INVALID("error.receipt.itemRematchInvalid"),
+  RECEIPT_ITEM_REMATCH_UNIT_MISMATCH("error.receipt.itemRematchUnitMismatch"),
+  RECEIPT_LINE_MATCH_REJECTED("error.receipt.lineMatchRejected"),
   RECEIPT_UPLOAD_TOO_LARGE("error.receipt.uploadTooLarge"),   // spring.servlet.multipart.max-request-size
 
   // --- cenové observace

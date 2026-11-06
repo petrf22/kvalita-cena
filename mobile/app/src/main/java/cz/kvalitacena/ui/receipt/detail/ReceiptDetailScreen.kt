@@ -819,6 +819,7 @@ internal fun skipReasonText(reason: String?): String = stringResource(
     "RECEIPT_LINE_NOT_MATCHED" -> R.string.receipt_skip_not_matched
     "RECEIPT_LINE_NOT_PRODUCT" -> R.string.receipt_skip_not_product
     "RECEIPT_ITEM_LIMIT" -> R.string.receipt_skip_item_limit
+    "RECEIPT_LINE_MATCH_REJECTED" -> R.string.receipt_skip_match_rejected
     // Neznámý (i budoucí) kód nesmí appku shodit — obecná věta stačí.
     else -> R.string.receipt_skip_other
   },

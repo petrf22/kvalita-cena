@@ -751,6 +751,7 @@
     <string name="receipt_line_sheet_publish_hint">Dopasowanie nie jest konieczne — jeśli nie znajdziesz produktu, pozycja zostanie opublikowana jako produkt z paragonu.</string>
     <string name="receipt_skip_not_product">to nie jest produkt (kaucja, opakowanie)</string>
     <string name="receipt_skip_item_limit">zbyt wiele twoich produktów z paragonów czeka na potwierdzenie — spróbuj później</string>
+    <string name="receipt_skip_match_rejected">propozycję anulowano — dopasuj pozycję ręcznie</string>
     <string name="receipt_publish_offline">Jesteś offline — opublikować będzie można po połączeniu. Wybór zostanie, jaki jest.</string>
     <string name="receipt_publish_as_items">Niedopasowane pozycje (%1$d) zostaną opublikowane jako produkty z paragonu.</string>
     <string name="receipt_confirm_result_receipt_items">W tym jako produkty z paragonu: %1$d</string>

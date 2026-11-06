@@ -751,6 +751,7 @@
     <string name="receipt_line_sheet_publish_hint">Párovať nie je nutné — keď tovar nenájdete, riadok sa zverejní ako tovar z účtenky.</string>
     <string name="receipt_skip_not_product">nie je to tovar (záloha, obal)</string>
     <string name="receipt_skip_item_limit">na potvrdenie čaká priveľa vášho tovaru z účteniek — skúste to neskôr</string>
+    <string name="receipt_skip_match_rejected">návrh ste zrušili — spárujte riadok ručne</string>
     <string name="receipt_publish_offline">Ste offline — zverejniť pôjde po pripojení. Výber zostane, ako je.</string>
     <string name="receipt_publish_as_items">Nespárované riadky (%1$d) sa zverejnia ako tovar z účtenky.</string>
     <string name="receipt_confirm_result_receipt_items">Z toho ako tovar z účtenky: %1$d</string>

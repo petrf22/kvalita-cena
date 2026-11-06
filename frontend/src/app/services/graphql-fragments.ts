@@ -263,6 +263,11 @@ export const productSummaryFieldsFragment = graphql(`
       slug
       path
     }
+    # Význam ceny (za kg/l/kus/balení) — dopárování zboží z účtenky nenabídne cíl, kam by
+    # ceny nešly převést (receipt-item-rematch-rules.ts, server ReceiptItemUnits).
+    unitBase
+    netContentValue
+    isVariableWeight
     isGeneric
     # Nepotvrzená (DRAFT) položka se v nabídce ukáže, ale označená a až za potvrzenými —
     # bez tohohle pole ji klient nemá jak odlišit (docs/reputace.md, "Zboží bez čárového kódu").

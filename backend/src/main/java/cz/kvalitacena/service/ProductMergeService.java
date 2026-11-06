@@ -36,6 +36,7 @@ public class ProductMergeService {
   private final PriceAggregationService priceAggregationService;
   private final CatalogProperties catalogProperties;
   private final JdbcTemplate jdbcTemplate;
+  private final ReceiptItemUnits receiptItemUnits;
 
   @Transactional
   public Product merge(Long sourceId, Long targetId, Long moderatorUserId) {
@@ -74,6 +75,11 @@ public class ProductMergeService {
     if (!observationsFitTargetScope(sourceId, target)) {
       throw new ValidationException(ErrorCode.MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH);
     }
+    // Ceny zboží z účtenky musí po přesunu znamenat totéž co ceny cíle (za kg/l/kus/balení),
+    // jinak by se v agregátu míchala cena za kelímek s cenou za kg (ReceiptItemUnits).
+    if (receiptSource && receiptItemUnits.requireCompatible(source, target)) {
+      receiptItemUnits.adoptTargetNetContent(sourceId, target, null);
+    }
 
     List<Long> storeIds = jdbcTemplate.queryForList(
         "SELECT DISTINCT store_id FROM core.price_observation WHERE product_id IN (?, ?)",
@@ -90,6 +96,9 @@ public class ProductMergeService {
     // sloučení rozbilo párování, které předtím fungovalo (docs/rozvoj.md).
     jdbcTemplate.update("UPDATE core.product_store_label SET product_id = ? WHERE product_id = ?", targetId, sourceId);
     jdbcTemplate.update("UPDATE core.receipt_line SET product_id = ? WHERE product_id = ?", targetId, sourceId);
+    // Odmítnutý návrh zdroje je po sloučení odmítnutím cíle — je to stejné zboží.
+    jdbcTemplate.update("UPDATE core.receipt_line SET rejected_product_id = ? WHERE rejected_product_id = ?",
+        targetId, sourceId);
 
     // Staré agregáty zdroje už nesmějí nikde přežít. Cíl se přepočítá z právě sjednocených
     // observací; frontu zdroje mažeme, jinak by plánovač znovu vytvořil osiřelé agregáty.

@@ -101,6 +101,8 @@
     "RECEIPT_ITEM_LIMIT": "Du hast schon {{p0}} unbestätigte Artikel aus Kassenbons. Weitere kannst du veröffentlichen, sobald andere einige davon bestätigen.",
     "RECEIPT_LINE_NOT_PRODUCT": "Diese Position ist kein Produkt (Pfand, Mehrwegverpackung) und wird nicht veröffentlicht.",
     "RECEIPT_ITEM_REMATCH_INVALID": "Dieser Artikel vom Kassenbon lässt sich nicht mehr zuordnen, oder das gewählte Produkt gehört nicht zum selben Geschäft.",
+    "RECEIPT_ITEM_REMATCH_UNIT_MISMATCH": "Die Preise dieses Artikels vom Kassenbon lassen sich nicht in die Einheit des gewählten Produkts umrechnen (Stück, kg, Liter oder Packung) — wählen Sie ein Produkt mit derselben Einheit.",
+    "RECEIPT_LINE_MATCH_REJECTED": "Sie haben den Vorschlag für diese Position verworfen, und der Artikel vom Kassenbon mit demselben Namen ist genau der abgelehnte — ordnen Sie die Position manuell zu oder legen Sie ein neues Produkt an.",
     "RECEIPT_UPLOAD_TOO_LARGE": "Der Kassenbon ist zum Hochladen zu groß — fotografieren Sie ihn in weniger Teilen.",
     "QUALITY_REQUIRES_LOGIN": "Die Qualitätsbewertung erfordert eine Anmeldung",
     "QUALITY_STARS_OUT_OF_RANGE": "Die Bewertung muss zwischen {{p0}} und {{p1}} Sternen liegen",

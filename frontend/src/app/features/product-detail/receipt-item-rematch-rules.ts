@@ -1,5 +1,5 @@
 import type { Product, ProductSummary } from '../../models/catalog';
-import { ProductScope } from '../../models/generated/enums';
+import { ProductScope, UnitBase } from '../../models/generated/enums';
 
 /**
  * Pravidla dopárování „zboží z účtenky" bez UI (`receipt-item-rematch.ts` z nich jen čte).
@@ -8,6 +8,33 @@ import { ProductScope } from '../../models/generated/enums';
  */
 
 type ScopeSource = Pick<ProductSummary, 'catalogScope' | 'scopeChain' | 'scopeStore'>;
+type UnitSource = Pick<ProductSummary, 'unitBase' | 'netContentValue' | 'isVariableWeight'>;
+
+/** Co znamená jednotková cena zboží: za kg, za litr, za kus, nebo za balení neznámé velikosti. */
+type PriceUnit = 'MASS' | 'VOLUME' | 'COUNT' | 'PACKAGE';
+
+function priceUnit(product: UnitSource): PriceUnit {
+  if (product.isVariableWeight) return product.unitBase === UnitBase.Volume ? 'VOLUME' : 'MASS';
+  if (product.netContentValue == null) return 'PACKAGE';
+  return product.unitBase === UnitBase.Mass
+    ? 'MASS'
+    : product.unitBase === UnitBase.Volume
+      ? 'VOLUME'
+      : 'COUNT';
+}
+
+/**
+ * Ceny zboží z účtenky musí po dopárování znamenat totéž co ceny cíle (server `ReceiptItemUnits`,
+ * `RECEIPT_ITEM_REMATCH_UNIT_MISMATCH`): stejný význam, nebo cena za balení neznámé velikosti na
+ * zboží s pevnou gramáží (balení převezme gramáž cíle). Cena za kus na váhové zboží ani cena za kg
+ * na zboží bez gramáže převést nejde. Server rozhoduje i podle jednotlivých cen, tohle je jen
+ * předvýběr nabídky.
+ */
+export function rematchUnitsFit(source: UnitSource, target: UnitSource): boolean {
+  const from = priceUnit(source);
+  const to = priceUnit(target);
+  return from === to || (from === 'PACKAGE' && !target.isVariableWeight && to !== 'PACKAGE');
+}
 
 /**
  * Cíl musí jít koupit tam, kde má zboží z účtenky ceny (ReceiptItemRematchService.scopeFits):
@@ -37,13 +64,19 @@ export function rematchTargetFits(source: ScopeSource, target: ScopeSource): boo
   }
 }
 
-/** Nabídka cílů: bez zboží z účtenky samotného a bez zboží, které se v jeho obchodě neprodává. */
-export function rematchCandidates<T extends ScopeSource & { id: string }>(
-  source: ScopeSource & { id: string },
+/**
+ * Nabídka cílů: bez zboží z účtenky samotného, bez zboží, které se v jeho obchodě neprodává,
+ * a bez zboží, na jehož jednotku ceny převést nejdou.
+ */
+export function rematchCandidates<T extends ScopeSource & UnitSource & { id: string }>(
+  source: ScopeSource & UnitSource & { id: string },
   products: readonly T[],
 ): T[] {
   return products.filter(
-    (product) => product.id !== source.id && rematchTargetFits(source, product),
+    (product) =>
+      product.id !== source.id &&
+      rematchTargetFits(source, product) &&
+      rematchUnitsFit(source, product),
   );
 }
 

@@ -261,6 +261,8 @@ data class ProductSummary(
   // Gramáž/objem do řádku seznamu — z fotky ani z názvu nejde poznat 0,5 l od 1,5 l
   // (ui/common/NetContent.kt). Vždycky dvojice hodnota+jednotka, samotné číslo nic neznamená
   // (kořenový CLAUDE.md); u váhového zboží se místo ní ukáže "na váhu".
+  // Význam ceny pro dopárování zboží z účtenky (ui/detail/ReceiptItemRematch.kt); null = starší server.
+  val unitBase: String? = null,
   val netContentValue: Double? = null,
   val netContentUom: String? = null,
   val isVariableWeight: Boolean = false,

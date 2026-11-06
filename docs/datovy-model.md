@@ -92,7 +92,11 @@ zvlášť `ALTER TABLE ... ADD COLUMN` (viz `2026-07-26/05-price-observation.yam
 
 **`net_content_base` je SNAPSHOT, ne odkaz na aktuální produkt.** Kdyby někdo později
 opravil gramáž produktu (500 g → 450 g), přepsalo by to zpětně jednotkové ceny celé
-historie a graf by najednou "lhal" o minulosti.
+historie a graf by najednou "lhal" o minulosti. Jediná výjimka: dopárování zboží z účtenky
+(`ReceiptItemUnits`, `docs/reputace.md`, „Zboží z účtenky") — cena za balení neznámé velikosti
+převezme gramáž cíle, protože dopárování je výslovné tvrzení „to balení bylo tohle zboží".
+Nejde o opravu gramáže, ale o zjištění, co se vlastně koupilo; bez toho by se 19,90 Kč za kelímek
+agregovalo jako 19,90 Kč/kg. Ceny, jejichž význam převést nejde, dopárování odmítne.
 
 **`observed_at` ≠ `created_at`.** `observed_at` je, kdy uživatel cenu VIDĚL (může být
 offline zápis z mobilu, doplněný později); `created_at` je, kdy záznam skutečně došel na
@@ -625,7 +629,11 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   úplná dvojice z tisku. `core.receipt.sum_status` (`MATCH`/`MISMATCH`/`UNKNOWN`)
   + `computed_total` je kontrolní součet workeru z `extraction` (`ReceiptWorkerService.sumCheck`)
   — řídí jen předvýběr řádků v klientovi. `core.product_merge_vote` jsou hlasy pro dopárování
-  (`UNIQUE (source_product_id, user_id)`, `user_id` se po 180 dnech nuluje).
+  (`UNIQUE (source_product_id, user_id)`, `user_id` se po 180 dnech nuluje);
+  `moved_observation_ids`/`moved_line_ids` drží, co hlas přesunul, ať změna hlasu vezme data
+  s sebou. `core.receipt_line.rejected_product_id`/`code_rejected` je návrh, který vlastník
+  zrušil (`unmatchLine`) — zveřejnění, učení označení (`suggestUnmatched`) ani nové rozpoznání
+  ho nevrátí; při sloučení zboží přejde odmítnutí na cíl.
 - **`core.product_store_label`** + **`core.product_store_label_confirmation`** — „Názvy na
   účtenkách": označení obchodu → katalogové zboží. Rozsah právě jeden z `chain_id`/`store_id`
   (řetězec tiskne stejné zkratky ve všech provozovnách, nezávislý obchod vlastní), unikátnost

@@ -751,6 +751,7 @@
     <string name="receipt_line_sheet_publish_hint">Matching is optional — if you cannot find the product, the line is published as a receipt item.</string>
     <string name="receipt_skip_not_product">it is not a product (deposit, packaging)</string>
     <string name="receipt_skip_item_limit">too many of your receipt items are awaiting confirmation — try again later</string>
+    <string name="receipt_skip_match_rejected">you cancelled the suggestion — match the line manually</string>
     <string name="receipt_publish_offline">You are offline — you can publish once connected. Your selection stays as it is.</string>
     <string name="receipt_publish_as_items">Unmatched lines (%1$d) will be published as receipt items.</string>
     <string name="receipt_confirm_result_receipt_items">Of these, as receipt items: %1$d</string>

@@ -753,6 +753,7 @@
     <string name="receipt_line_sheet_publish_hint">Zuordnen ist nicht nötig — finden Sie den Artikel nicht, wird die Zeile als Artikel vom Kassenbon veröffentlicht.</string>
     <string name="receipt_skip_not_product">kein Produkt (Pfand, Verpackung)</string>
     <string name="receipt_skip_item_limit">zu viele Ihrer Artikel vom Kassenbon warten auf Bestätigung — versuchen Sie es später</string>
+    <string name="receipt_skip_match_rejected">Vorschlag verworfen — Position manuell zuordnen</string>
     <string name="receipt_publish_offline">Sie sind offline — veröffentlichen geht nach dem Verbinden. Die Auswahl bleibt, wie sie ist.</string>
     <string name="receipt_publish_as_items">Nicht zugeordnete Zeilen (%1$d) werden als Artikel vom Kassenbon veröffentlicht.</string>
     <string name="receipt_confirm_result_receipt_items">Davon als Artikel vom Kassenbon: %1$d</string>

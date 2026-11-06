@@ -206,6 +206,8 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.ReceiptItemLimit]: 'errors.RECEIPT_ITEM_LIMIT',
   [ErrorCode.ReceiptLineNotProduct]: 'errors.RECEIPT_LINE_NOT_PRODUCT',
   [ErrorCode.ReceiptItemRematchInvalid]: 'errors.RECEIPT_ITEM_REMATCH_INVALID',
+  [ErrorCode.ReceiptItemRematchUnitMismatch]: 'errors.RECEIPT_ITEM_REMATCH_UNIT_MISMATCH',
+  [ErrorCode.ReceiptLineMatchRejected]: 'errors.RECEIPT_LINE_MATCH_REJECTED',
   [ErrorCode.ReceiptUploadTooLarge]: 'errors.RECEIPT_UPLOAD_TOO_LARGE',
   [ErrorCode.QualityRequiresLogin]: 'errors.QUALITY_REQUIRES_LOGIN',
   [ErrorCode.QualityStarsOutOfRange]: 'errors.QUALITY_STARS_OUT_OF_RANGE',

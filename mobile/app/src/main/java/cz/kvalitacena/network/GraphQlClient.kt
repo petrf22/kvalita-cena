@@ -109,7 +109,7 @@ internal val PRODUCT_SUMMARY_FIELDS = """
   id name nameLang
   brand { id name slug }
   category { id name slug path }
-  netContentValue netContentUom isVariableWeight
+  unitBase netContentValue netContentUom isVariableWeight
   isGeneric
   status
   catalogScope createdVia scopeChain { id name chainType } scopeStore { $STORE_FIELDS }

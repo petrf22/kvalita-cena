@@ -23,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -40,6 +42,10 @@ import java.util.UUID;
  *       {@code app.receipt.item-merge-confirmations} různých lidí — jeden omyl ani jeden zlý
  *       úmysl cizí historii nepřesune. Neshoda hlasů nesloučí nic, čeká na moderátora
  *       ({@code mergeProducts}).</li>
+ *   <li>Změna hlasu na jiný cíl vezme s sebou i data, která předchozí hlas už přesunul
+ *       ({@code moved_observation_ids}/{@code moved_line_ids}) — jinak by zůstala u starého cíle.</li>
+ *   <li>Ceny musí po přesunu znamenat totéž co ceny cíle — za kg, l, kus nebo balení
+ *       ({@link ReceiptItemUnits}); to se ověří dřív, než se cokoli přesune.</li>
  * </ul>
  */
 @Slf4j
@@ -55,6 +61,7 @@ public class ReceiptItemRematchService {
   private final ProductCatalogService catalogService;
   private final PriceAggregationService priceAggregationService;
   private final ReceiptProperties receiptProperties;
+  private final ReceiptItemUnits receiptItemUnits;
   private final JdbcTemplate jdbcTemplate;
 
   /**
@@ -85,14 +92,27 @@ public class ReceiptItemRematchService {
       throw new ValidationException(ErrorCode.RECEIPT_ITEM_REMATCH_INVALID);
     }
 
+    // Změna názoru: co předchozí hlas přesunul na jiný cíl, se nejdřív vrátí na zboží z účtenky
+    // a dál se s tím zachází jako s ostatními vlastními daty.
+    Optional<Long> previous = voteRepository.targetOf(sourceId, user.getId());
+    if (previous.isPresent() && !previous.get().equals(targetId)) {
+      returnVotedData(source, user.getId());
+    }
+    // Před oběma větvemi (a po vrácení, ať se posoudí i vrácené ceny) — sloučení i přesun
+    // vlastních dat by jinak smíchaly nesrovnatelné ceny. Odmítnutí vrátí celou transakci.
+    boolean adoptNetContent = receiptItemUnits.requireCompatible(source, target);
+
     int required = Math.max(1, receiptProperties.getItemMergeConfirmations());
     if (!hasOthersData(sourceId, user.getId())) {
       merge(source, target);
       return new Result(targetId, true, 1, required);
     }
 
-    moveOwnData(sourceId, targetId, user.getId());
-    voteRepository.vote(sourceId, targetId, user.getId());
+    if (adoptNetContent) {
+      receiptItemUnits.adoptTargetNetContent(sourceId, target, user.getId());
+    }
+    Moved moved = moveOwnData(sourceId, targetId, user.getId());
+    voteRepository.vote(sourceId, targetId, user.getId(), moved.observationIds(), moved.lineIds());
     int count = voteRepository.countVoters(sourceId, targetId);
     if (count >= required) {
       merge(source, target);
@@ -184,7 +204,10 @@ public class ReceiptItemRematchService {
    * uživatel týž den k cíli už zapsal (uq_price_observation_submitter_kind_per_day), se vyřeší
    * ve prospěch cíle — stejně jako ProductMergeService.mergeObservations.
    */
-  private void moveOwnData(Long sourceId, Long targetId, Long userId) {
+  private record Moved(List<Long> observationIds, List<Long> lineIds) {
+  }
+
+  private Moved moveOwnData(Long sourceId, Long targetId, Long userId) {
     Set<Long> storeIds = new LinkedHashSet<>(jdbcTemplate.queryForList(
         "SELECT DISTINCT store_id FROM core.price_observation WHERE product_id = ? AND submitter_id = ?",
         Long.class, sourceId, userId));
@@ -196,16 +219,57 @@ public class ReceiptItemRematchService {
           AND source.price_kind = target.price_kind
           AND core.day_utc(source.observed_at) = core.day_utc(target.observed_at)
         """, sourceId, targetId, userId);
-    jdbcTemplate.update("UPDATE core.price_observation SET product_id = ? WHERE product_id = ? AND submitter_id = ?",
-        targetId, sourceId, userId);
-    jdbcTemplate.update("""
+    List<Long> observationIds = jdbcTemplate.queryForList(
+        "UPDATE core.price_observation SET product_id = ? WHERE product_id = ? AND submitter_id = ? RETURNING id",
+        Long.class, targetId, sourceId, userId);
+    List<Long> lineIds = jdbcTemplate.queryForList("""
         UPDATE core.receipt_line l SET product_id = ?, match_source = 'USER'
         FROM core.receipt r
         WHERE r.id = l.receipt_id AND l.product_id = ? AND r.owner_user_id = ?
-        """, targetId, sourceId, userId);
+        RETURNING l.id
+        """, Long.class, targetId, sourceId, userId);
     for (Long storeId : storeIds) {
       priceAggregationService.enqueueRecompute(sourceId, storeId, RecomputeReason.MODERATION);
       priceAggregationService.enqueueRecompute(targetId, storeId, RecomputeReason.MODERATION);
+    }
+    return new Moved(observationIds, lineIds);
+  }
+
+  /**
+   * Vrátí na zboží z účtenky vlastní data, která předchozí hlas přesunul jinam — ať už jsou
+   * u původního cíle, nebo u zboží, do kterého se mezitím sloučil. Ceny za balení, které cíl
+   * převedl na svou gramáž ({@link ReceiptItemUnits#adoptTargetNetContent}), dostanou zpátky
+   * snapshot zdroje bez gramáže; jiné ceny se nepřeváděly. Kolize s cenou, kterou uživatel
+   * týž den zapsal přímo ke zboží z účtenky, se vyřeší ve prospěch té přímé.
+   */
+  private void returnVotedData(Product source, Long userId) {
+    Long sourceId = source.getId();
+    // CAST dělá z poddotazu skalární pole — samotné ANY(poddotaz) by porovnávalo id s celým polem.
+    String movedObservations = "CAST((SELECT moved_observation_ids FROM core.product_merge_vote"
+        + " WHERE source_product_id = ? AND user_id = ?) AS BIGINT[])";
+    List<Map<String, Object>> cells = jdbcTemplate.queryForList(
+        "SELECT DISTINCT product_id, store_id FROM core.price_observation WHERE id = ANY(" + movedObservations
+            + ") AND submitter_id = ? AND product_id <> ?", sourceId, userId, userId, sourceId);
+    jdbcTemplate.update("DELETE FROM core.price_observation moved USING core.price_observation kept"
+        + " WHERE moved.id = ANY(" + movedObservations + ") AND moved.submitter_id = ? AND moved.product_id <> ?"
+        + " AND kept.product_id = ? AND kept.submitter_id = moved.submitter_id AND kept.store_id = moved.store_id"
+        + " AND kept.price_kind = moved.price_kind AND core.day_utc(kept.observed_at) = core.day_utc(moved.observed_at)",
+        sourceId, userId, userId, sourceId, sourceId);
+    boolean packageSource = ReceiptItemUnits.unitOf(source) == ReceiptItemUnits.PriceUnit.PACKAGE;
+    jdbcTemplate.update("UPDATE core.price_observation SET product_id = ?, net_content_base = CASE WHEN ?"
+        + " AND quantity_basis IN ('PACKAGE', 'PER_PIECE') THEN " + ReceiptItemUnits.packageBaseSql()
+        + " ELSE net_content_base END WHERE id = ANY(" + movedObservations + ") AND submitter_id = ? AND product_id <> ?",
+        sourceId, packageSource, sourceId, userId, userId, sourceId);
+    jdbcTemplate.update("UPDATE core.receipt_line l SET product_id = ?, match_source = 'RECEIPT_ITEM'"
+        + " FROM core.receipt r WHERE r.id = l.receipt_id AND l.id = ANY(CAST((SELECT moved_line_ids"
+        + " FROM core.product_merge_vote WHERE source_product_id = ? AND user_id = ?) AS BIGINT[]))"
+        + " AND r.owner_user_id = ? AND l.product_id IS DISTINCT FROM ?",
+        sourceId, sourceId, userId, userId, sourceId);
+    for (Map<String, Object> cell : cells) {
+      Long productId = ((Number) cell.get("product_id")).longValue();
+      Long storeId = ((Number) cell.get("store_id")).longValue();
+      priceAggregationService.enqueueRecompute(productId, storeId, RecomputeReason.MODERATION);
+      priceAggregationService.enqueueRecompute(sourceId, storeId, RecomputeReason.MODERATION);
     }
   }
 }

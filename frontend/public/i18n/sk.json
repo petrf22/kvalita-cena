@@ -101,6 +101,8 @@
     "RECEIPT_ITEM_LIMIT": "Máš už {{p0}} nepotvrdených položiek z bločkov. Ďalšie pôjde zverejniť, až niektoré z nich potvrdia aj ostatní.",
     "RECEIPT_LINE_NOT_PRODUCT": "Tento riadok nie je tovar (záloha, vratný obal) a nezverejňuje sa.",
     "RECEIPT_ITEM_REMATCH_INVALID": "Tento tovar z bločku sa už spárovať nedá alebo vybraný tovar nepatrí do rovnakého obchodu.",
+    "RECEIPT_ITEM_REMATCH_UNIT_MISMATCH": "Ceny tohto tovaru z bločku sa nedajú previesť na jednotku vybraného tovaru (kus, kg, liter alebo balenie) — vyberte tovar s rovnakou jednotkou.",
+    "RECEIPT_LINE_MATCH_REJECTED": "Návrh pre tento riadok ste zrušili a tovar z bločku s rovnakým názvom je práve ten odmietnutý — spárujte riadok ručne alebo založte nový tovar.",
     "RECEIPT_UPLOAD_TOO_LARGE": "Bloček je na odoslanie príliš veľký — odfoťte ho na menej častí.",
     "QUALITY_REQUIRES_LOGIN": "Hodnotenie kvality vyžaduje prihlásenie",
     "QUALITY_STARS_OUT_OF_RANGE": "Hodnotenie musí byť {{p0}} až {{p1}} hviezdičiek",

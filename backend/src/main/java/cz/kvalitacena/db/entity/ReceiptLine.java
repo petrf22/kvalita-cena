@@ -93,6 +93,18 @@ public class ReceiptLine implements Persistable<Long> {
   @Column(name = "observation_id")
   private Long observationId;
 
+  /**
+   * Zboží, jehož návrh vlastník výslovně zrušil ({@code unmatchLine}) — zveřejnění ani pozdější
+   * učení označení ho na řádek znovu nepřiřadí (docs/reputace.md, „Zboží z účtenky").
+   */
+  @Column(name = "rejected_product_id")
+  private Long rejectedProductId;
+
+  /** Zrušený návrh stál na EAN řádku (párování podle kódu nebo z OFF) — EAN se pak nepoužije. */
+  @Column(name = "code_rejected", nullable = false)
+  @Builder.Default
+  private boolean codeRejected = false;
+
   @Column(name = "skip_reason", length = 30)
   private String skipReason;
 
@@ -116,7 +128,8 @@ public class ReceiptLine implements Persistable<Long> {
   }
 
   /**
-   * Na řádek sáhl uživatel — potvrdil cenu, vybral nebo založil zboží, nebo ho ignoruje.
+   * Na řádek sáhl uživatel — potvrdil cenu, vybral nebo založil zboží, ignoruje ho, nebo
+   * zrušil návrh (jinak by nové rozpoznání odmítnutý návrh tiše vrátilo).
    * Takový řádek stroj nikdy nepřepisuje, ani při novém rozpoznání účtenky (docs/ai.md,
    * „Nové rozpoznání").
    */
@@ -125,7 +138,9 @@ public class ReceiptLine implements Persistable<Long> {
         || status == ReceiptLineStatus.MATCHED
         || status == ReceiptLineStatus.IGNORED
         || matchSource == ReceiptMatchSource.USER
-        || matchSource == ReceiptMatchSource.NEW_PRODUCT;
+        || matchSource == ReceiptMatchSource.NEW_PRODUCT
+        || rejectedProductId != null
+        || codeRejected;
   }
 
   @Override

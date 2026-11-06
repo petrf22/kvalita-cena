@@ -46,7 +46,8 @@ public interface ReceiptLineRepository extends JpaRepository<ReceiptLine, Long> 
    * jiných účtenek se stejným označením v rozsahu aktivovaného mapování. Jen účtenky mladší
    * než {@code notBefore} (pseudonymizační okno) — starší cenu už nemá smysl nabízet.
    * Účtenka bez potvrzeného obchodu se bere podle navrženého. Strojový odhad (FUZZY) naučené
-   * označení přebije — to je jistota, odhad jen podobnost názvu.
+   * označení přebije — to je jistota, odhad jen podobnost názvu. Řádek, kde vlastník návrh
+   * právě tohohle zboží zrušil ({@code rejected_product_id}), návrh znovu nedostane.
    */
   @Modifying
   @Query(value = """
@@ -56,6 +57,7 @@ public interface ReceiptLineRepository extends JpaRepository<ReceiptLine, Long> 
       JOIN core.store s ON s.id = COALESCE(r.store_id, r.suggested_store_id)
       WHERE l.receipt_id = r.id AND l.label_norm = :labelNorm
         AND (l.status = 'UNMATCHED' OR (l.status = 'SUGGESTED' AND l.match_source = 'FUZZY'))
+        AND l.rejected_product_id IS DISTINCT FROM :productId
         AND COALESCE(r.purchased_at, r.created_at) >= :notBefore
         AND ((CAST(:chainId AS BIGINT) IS NOT NULL AND s.chain_id = CAST(:chainId AS BIGINT))
           OR (CAST(:storeId AS BIGINT) IS NOT NULL AND s.id = CAST(:storeId AS BIGINT)))

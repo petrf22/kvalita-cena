@@ -51,6 +51,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -134,6 +135,9 @@ public class ReceiptReviewService {
         .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
     line.setProductId(product.getId());
     line.setMatchSource(newProduct ? ReceiptMatchSource.NEW_PRODUCT : ReceiptMatchSource.USER);
+    if (Objects.equals(product.getId(), line.getRejectedProductId())) {
+      line.setRejectedProductId(null); // ruční volba přebije dřívější odmítnutí
+    }
     line.setStatus(ReceiptLineStatus.SUGGESTED);
     line.setSkipReason(null);
     ReceiptLine saved = lineRepository.saveAndFlush(line);
@@ -153,11 +157,22 @@ public class ReceiptReviewService {
     return saved;
   }
 
-  /** Vrátí řádek do výchozího stavu — zruší ruční spárování i ignorování. */
+  /**
+   * Vrátí řádek do výchozího stavu — zruší ruční spárování i ignorování. Zrušené zboží
+   * (a u párování podle EAN i samotný EAN) si řádek pamatuje jako odmítnuté: zveřejnění by ho
+   * jinak přes naučené označení nebo kód tiše obnovilo, i když klient slíbil samostatné zboží
+   * z účtenky ({@link #receiptItemFor}).
+   */
   @Transactional
   public ReceiptLine unmatchLine(UUID ownerPublicUid, Long lineId) {
     AppUser owner = requireUser(ownerPublicUid);
     ReceiptLine line = editableLine(lineId, owner);
+    if (line.getProductId() != null) {
+      line.setRejectedProductId(line.getProductId());
+    }
+    if (line.getMatchSource() == ReceiptMatchSource.CODE || line.getMatchSource() == ReceiptMatchSource.OFF) {
+      line.setCodeRejected(true);
+    }
     line.setStatus(ReceiptLineStatus.UNMATCHED);
     line.setProductId(null);
     line.setMatchSource(null);
@@ -338,20 +353,25 @@ public class ReceiptReviewService {
     }
     Store store = storeRepository.findById(receipt.getStoreId())
         .orElseThrow(() -> new NotFoundException(ErrorCode.STORE_NOT_FOUND));
-    Optional<Long> labelled = matchingService.byLabel(line, store, owner.getId());
+    Long rejected = line.getRejectedProductId();
+    Optional<Long> labelled = matchingService.byLabel(line, store, owner.getId())
+        .filter(id -> !id.equals(rejected));
     if (labelled.isPresent()) {
       line.setProductId(labelled.get());
       line.setMatchSource(ReceiptMatchSource.LABEL);
       return;
     }
-    String gtin14 = GtinNormalization.isGlobalGtin(line.getInternalCode())
+    String gtin14 = !line.isCodeRejected() && GtinNormalization.isGlobalGtin(line.getInternalCode())
         ? GtinNormalization.toGtin14(line.getInternalCode().trim()) : null;
     if (gtin14 != null) {
       Optional<Long> coded = existingProductForCode(line);
-      if (coded.isPresent()) {
+      if (coded.isPresent() && !coded.get().equals(rejected)) {
         line.setProductId(coded.get());
         line.setMatchSource(ReceiptMatchSource.CODE);
         return;
+      }
+      if (coded.isPresent()) {
+        gtin14 = null; // kód patří odmítnutému zboží — zbude bezkódové zboží z účtenky
       }
     }
     NewProductDefaultsService.Defaults defaults = productDefaultsService.forLine(line, store.getId(), owner.getId());
@@ -364,6 +384,11 @@ public class ReceiptReviewService {
     ProductCatalogService.ReceiptItem item = catalogService.receiptItem(defaults.name(), gtin14, category,
         defaults.netContentValue(), uom, defaults.isVariableWeight(), store, owner,
         receiptProperties.getMaxOpenItems());
+    if (item.product().getId().equals(rejected)) {
+      // Stejnojmenné zboží z účtenky v rozsahu je právě to odmítnuté — druhé se stejným názvem
+      // vzniknout nemůže (uq_product_generic_name_scope) a zapsat cenu k odmítnutému nesmíme.
+      throw new ValidationException(ErrorCode.RECEIPT_LINE_MATCH_REJECTED);
+    }
     if (item.created()) {
       log.info("Účtenka {}: řádek {} založil zboží z účtenky {}", receipt.getId(), line.getId(), item.product().getId());
     }

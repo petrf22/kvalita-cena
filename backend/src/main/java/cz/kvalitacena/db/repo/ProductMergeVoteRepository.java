@@ -5,6 +5,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Hlasy „tohle zboží z účtenky je ve skutečnosti tamto zboží" ({@code core.product_merge_vote},
@@ -17,14 +20,40 @@ public class ProductMergeVoteRepository {
 
   private final JdbcTemplate jdbcTemplate;
 
-  /** Jeden účet jeden hlas na zboží z účtenky — změna názoru hlas přepíše. */
-  public void vote(Long sourceProductId, Long targetProductId, Long userId) {
+  /**
+   * Jeden účet jeden hlas na zboží z účtenky — změna názoru hlas přepíše. Spolu s hlasem se
+   * pamatuje, které vlastní ceny a řádky účtenek hlas přesunul na cíl: pro stejný cíl se
+   * přidávají, pro jiný nahradí (volající je předtím vrátil na zdroj a přesunul znovu všechny).
+   */
+  public void vote(Long sourceProductId, Long targetProductId, Long userId, List<Long> movedObservationIds,
+      List<Long> movedLineIds) {
     jdbcTemplate.update("""
-        INSERT INTO core.product_merge_vote(source_product_id, target_product_id, user_id)
-        VALUES (?, ?, ?)
+        INSERT INTO core.product_merge_vote(source_product_id, target_product_id, user_id,
+                                            moved_observation_ids, moved_line_ids)
+        VALUES (?, ?, ?, CAST(? AS BIGINT[]), CAST(? AS BIGINT[]))
         ON CONFLICT (source_product_id, user_id) WHERE user_id IS NOT NULL
-        DO UPDATE SET target_product_id = EXCLUDED.target_product_id, created_at = CURRENT_TIMESTAMP
-        """, sourceProductId, targetProductId, userId);
+        DO UPDATE SET
+          moved_observation_ids = CASE WHEN core.product_merge_vote.target_product_id = EXCLUDED.target_product_id
+            THEN core.product_merge_vote.moved_observation_ids || EXCLUDED.moved_observation_ids
+            ELSE EXCLUDED.moved_observation_ids END,
+          moved_line_ids = CASE WHEN core.product_merge_vote.target_product_id = EXCLUDED.target_product_id
+            THEN core.product_merge_vote.moved_line_ids || EXCLUDED.moved_line_ids
+            ELSE EXCLUDED.moved_line_ids END,
+          target_product_id = EXCLUDED.target_product_id,
+          created_at = CURRENT_TIMESTAMP
+        """, sourceProductId, targetProductId, userId, pgArray(movedObservationIds), pgArray(movedLineIds));
+  }
+
+  /** Cíl, pro který účet u zboží z účtenky naposledy hlasoval. */
+  public Optional<Long> targetOf(Long sourceProductId, Long userId) {
+    return jdbcTemplate.queryForList("""
+        SELECT target_product_id FROM core.product_merge_vote WHERE source_product_id = ? AND user_id = ?
+        """, Long.class, sourceProductId, userId).stream().findFirst();
+  }
+
+  /** Textový literál pole PostgreSQL ({@code {1,2,3}}) — JdbcTemplate bez Connection pole neumí. */
+  private static String pgArray(List<Long> ids) {
+    return ids.stream().map(String::valueOf).collect(Collectors.joining(",", "{", "}"));
   }
 
   /** Různí lidé, kteří hlasují pro stejný cíl. Hlas po pseudonymizaci (bez autora) se nepočítá. */

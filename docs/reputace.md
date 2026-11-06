@@ -537,3 +537,19 @@ jinak by účtenka kvůli záloze na lahev zůstala navždy rozpracovaná.
   jde na cíl vždy, i když už nějaký EAN má (`ProductMergeService.mergeCodes`) — jinak by kód
   zůstal u sloučeného zbytku a sken by skutečné zboží nenašel. Sloučení je vědomé rozhodnutí
   člověka, ne automatické párování řádku, proto tu pravidlo „jen zboží bez EAN" neplatí.
+- **Jednotky cen** (`ReceiptItemUnits`, ověří se před přesunem čehokoli): cena po dopárování
+  musí znamenat totéž co ceny cíle — za kg, za litr, za kus, nebo za balení neznámé velikosti.
+  Cena za balení zboží z účtenky bez gramáže na zboží s pevnou gramáží převezme gramáž cíle
+  (19,90 Kč za kelímek u 150g jogurtu = 132,67 Kč/kg). Cokoli jiného — cena za balení na váhové
+  zboží, cena za kg na zboží bez gramáže, kg ↔ litr — se odmítne s
+  `RECEIPT_ITEM_REMATCH_UNIT_MISMATCH`. Klient takové cíle v nabídce ani neukáže.
+- **Změna hlasu** na jiný cíl vezme s sebou i vlastní ceny a řádky účtenek, které předchozí hlas
+  přesunul (`core.product_merge_vote.moved_*`): vrátí se na zboží z účtenky (ceny za balení
+  zpátky bez převzaté gramáže) a odtud jdou na nový cíl.
+
+**Zrušený návrh se neobnoví.** Když vlastník u řádku zruší návrh (`unmatchLine`), řádek si zboží
+pamatuje jako odmítnuté (`rejected_product_id`, u návrhu podle EAN i `code_rejected`). Zveřejnění
+ho přes naučené označení ani kód nevrátí, učení označení ho řádku znovu nenavrhne a nové
+rozpoznání řádek ponechá. Když je stejnojmenné zboží z účtenky právě to odmítnuté (druhé se
+stejným názvem v rozsahu vzniknout nemůže), řádek se přeskočí s `RECEIPT_LINE_MATCH_REJECTED`
+a vlastník ho spáruje ručně.

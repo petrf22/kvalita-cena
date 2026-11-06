@@ -836,6 +836,7 @@
     <string name="receipt_line_sheet_publish_hint">Párovat není nutné — když zboží nenajdete, řádek se zveřejní jako zboží z účtenky.</string>
     <string name="receipt_skip_not_product">není to zboží (záloha, obal)</string>
     <string name="receipt_skip_item_limit">na potvrzení čeká moc vašeho zboží z účtenek — zkuste to později</string>
+    <string name="receipt_skip_match_rejected">návrh jste zrušili — spárujte řádek ručně</string>
     <string name="receipt_publish_offline">Jste offline — zveřejnit půjde po připojení. Výběr zůstane, jak je.</string>
     <string name="receipt_publish_as_items">Nespárované řádky (%1$d) se zveřejní jako zboží z účtenky.</string>
     <string name="receipt_confirm_result_receipt_items">Z toho jako zboží z účtenky: %1$d</string>

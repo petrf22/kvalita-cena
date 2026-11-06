@@ -101,6 +101,8 @@
     "RECEIPT_ITEM_LIMIT": "Máš už {{p0}} nepotvrzených položek z účtenek. Další půjde zveřejnit, až některé z nich potvrdí i ostatní.",
     "RECEIPT_LINE_NOT_PRODUCT": "Tenhle řádek není zboží (záloha, vratný obal) a nezveřejňuje se.",
     "RECEIPT_ITEM_REMATCH_INVALID": "Tohle zboží z účtenky už spárovat nejde, nebo vybrané zboží nepatří do stejného obchodu.",
+    "RECEIPT_ITEM_REMATCH_UNIT_MISMATCH": "Ceny tohoto zboží z účtenky nejdou převést na jednotku vybraného zboží (kus, kg, litr nebo balení) — vyberte zboží se stejnou jednotkou.",
+    "RECEIPT_LINE_MATCH_REJECTED": "Návrh pro tenhle řádek jste zrušili a zboží z účtenky se stejným názvem je právě to odmítnuté — spárujte řádek ručně, nebo založte nové zboží.",
     "RECEIPT_UPLOAD_TOO_LARGE": "Účtenka je na odeslání příliš velká — nafoťte ji na méně dílů.",
     "QUALITY_REQUIRES_LOGIN": "Hodnocení kvality vyžaduje přihlášení",
     "QUALITY_STARS_OUT_OF_RANGE": "Hodnocení musí být {{p0}} až {{p1}} hvězdiček",
