@@ -1,5 +1,53 @@
 [
   {
+    "version": "0.13.3",
+    "date": "2026-11-06",
+    "sections": [
+      {
+        "title": "Přidáno",
+        "items": [
+          {
+            "text": "Z účtenky jde zveřejnit i zboží, které se nepodařilo spárovat — uloží se s názvem, cenou, obchodem a časem nákupu jako „zboží z účtenky\" a stejné zboží z dalších účtenek se k němu přiřadí samo; s čárovým kódem z účtenky ho najde i sken",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Když součet položek nesedí s částkou na účtence, appka na to upozorní a označí řádky ke kontrole",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          },
+          {
+            "text": "Zboží z účtenky jde spárovat se skutečným zbožím; vlastní ceny se přesunou hned, ceny ostatních po potvrzení dalším člověkem",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          }
+        ]
+      },
+      {
+        "title": "Opraveno",
+        "items": [
+          {
+            "text": "Moje příspěvky ukazují sloučené zboží jako „Sloučeno\", ne „Zveřejněno\", a u zboží bez čárového kódu už neslibují, že ho ostatní najdou skenem",
+            "parts": [
+              "server",
+              "web",
+              "mobil"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "0.13.2",
     "date": "2026-11-03",
     "sections": [

@@ -7,7 +7,7 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
-## [Nezveřejněno]
+## [0.13.3] – 2026-11-06
 
 ### Přidáno
 - Z účtenky jde zveřejnit i zboží, které se nepodařilo spárovat — uloží se s názvem, cenou, obchodem a časem nákupu jako „zboží z účtenky" a stejné zboží z dalších účtenek se k němu přiřadí samo; s čárovým kódem z účtenky ho najde i sken (server, web, mobil)
