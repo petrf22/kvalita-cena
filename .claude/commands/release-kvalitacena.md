@@ -12,7 +12,7 @@ Poslední tagy: !`git tag --list | sort -V | tail -5`
 
 Větev a čistota stromu: !`git status -sb`
 
-Commity od posledního tagu: !`git log $(git tag --list | sort -V | tail -1)..HEAD --oneline`
+Commity od posledního tagu: !`git log --oneline HEAD --not --tags`
 
 Sekce `[Nezveřejněno]` v CHANGELOG.md: !`grep -n "Nezveřejněno" CHANGELOG.md || echo "(žádná)"`
 
