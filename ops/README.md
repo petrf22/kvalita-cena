@@ -232,3 +232,48 @@ fakturace stojí zkouška pár korun):
 Viz komentář u `APP_AUTH_OTP_MAIL_ENABLED` v `.env.example` — dočasně obchází to, že appka bez
 SMTP nepustí dovnitř nikoho. Použít jen do doby, než SMTP poskytovatel doopravdy doručuje, a
 zapnout zpátky (smazat/zakomentovat proměnnou) před pozváním dalších lidí.
+
+## Přístup k DB z DBeaveru
+
+Na produkční Postgres se z PC chodí **jen přes SSH tunel** — `compose.prod.yaml` publikuje
+port 5432 výhradně na `127.0.0.1` serveru. Nikdy ho neměnit na holé `5432:5432`: port
+publikovaný Dockerem obchází `ufw` a databáze by byla veřejná, i když `ufw status` ukazuje jen
+22/80/443. Kontrola: na serveru `ss -ltn | grep 5432` musí ukázat jen `127.0.0.1:5432`, z PC
+`nc -zv <server> 5432` musí selhat.
+
+### Read-only role `kc_ctenar` (jednorázově na serveru)
+
+DBeaver se **nepřipojuje jako `POSTGRES_USER`** — to je superuser, pod kterým běží appka, a
+DBeaver umí editovat buňky v gridu, takže jeden překlik = nevratná změna v produkci. Volba
+„Read-only connection" v DBeaveru je jen nastavení klienta, dá se obejít; skutečná pojistka jsou
+práva role. Schéma `auth` (tokeny, šifrované e-maily, profily) role záměrně nevidí.
+
+```bash
+openssl rand -hex 32        # heslo — jen do správce hesel, ne do .env ani repa
+docker compose -f compose.prod.yaml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d kvalitaacena' <<'SQL'
+CREATE ROLE kc_ctenar LOGIN PASSWORD '<heslo>';
+ALTER ROLE kc_ctenar SET default_transaction_read_only = on;
+GRANT CONNECT ON DATABASE kvalitaacena TO kc_ctenar;
+GRANT USAGE ON SCHEMA core, agg, fx, off TO kc_ctenar;
+GRANT SELECT ON ALL TABLES IN SCHEMA core, agg, fx, off TO kc_ctenar;
+ALTER DEFAULT PRIVILEGES IN SCHEMA core, agg, fx, off GRANT SELECT ON TABLES TO kc_ctenar;
+SQL
+```
+
+`ALTER DEFAULT PRIVILEGES` platí jen pro tabulky, které vytvoří role, jež ho spustila — proto
+musí běžet jako `POSTGRES_USER` (pod ním Liquibase zakládá tabulky z migrací), jinak by nové
+tabulky po dalším vydání zůstaly pro `kc_ctenar` nečitelné. Zrušení: `DROP OWNED BY kc_ctenar;
+DROP ROLE kc_ctenar;`.
+
+### Nastavení spojení v DBeaveru
+
+- **Main:** Host `localhost`, Port `5432`, Database `kvalitaacena`, Username `kc_ctenar`,
+  **Save password nezaškrtávat** — DBeaver Community ukládá hesla do `credentials-config.json`
+  šifrovaná pevným, veřejně známým klíčem, tedy prakticky čitelně.
+- **SSH:** Use SSH Tunnel, Host = IP serveru, Port `22`, User `kvalitacena`, autentizace
+  klíčem `~/.ssh/id_ed25519` (passphrase neukládat) nebo přes SSH agenta, pokud ho verze
+  DBeaveru nabízí. Ne klíčem `id_ed25519_kvalitacena_backup` — ten `rrsync` pustí jen ke
+  zálohám, tunel s ním nevznikne.
+- **General:** Connection type **Production** (barevné odlišení, potvrzování dotazů, vypnutý
+  auto-commit), zaškrtnout i **Read-only connection** jako druhou pojistku a spojení
+  pojmenovat „PRODUKCE …" — stejný důvod jako `prod-prompt.sh` výš.

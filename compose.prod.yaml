@@ -17,8 +17,13 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - kvalita-a-cena-postgres-data-prod:/var/lib/postgresql/data
-    # Žádné `ports:` — na rozdíl od dev compose.yaml tu Postgres nemá být dostupný z hostitele,
-    # jen z backend kontejneru přes interní síť compose.
+    # Port JEN na loopbacku hostitele — kvůli SSH tunelu z DBeaveru (ops/README.md, „Přístup
+    # k DB z DBeaveru"), zvenku se k databázi nedostane nic. NIKDY ne holé '5432:5432': port
+    # publikovaný Dockerem obchází `ufw` (Docker si píše vlastní iptables pravidla), takže DB by
+    # byla veřejně dostupná, i když `ufw status` dál ukazuje jen 22/80/443. Backend se připojuje
+    # přes interní síť compose (`postgres:5432`), tenhle port nepotřebuje.
+    ports:
+      - '127.0.0.1:5432:5432'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d kvalitaacena']
       interval: 5s
