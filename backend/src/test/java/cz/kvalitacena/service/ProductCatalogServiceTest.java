@@ -1,6 +1,7 @@
 package cz.kvalitacena.service;
 
 import cz.kvalitacena.config.CatalogProperties;
+import cz.kvalitacena.config.ReceiptProperties;
 import cz.kvalitacena.controller.CreateProductInput;
 import cz.kvalitacena.controller.PublicationState;
 import cz.kvalitacena.controller.PublicationStatus;
@@ -10,6 +11,7 @@ import cz.kvalitacena.db.entity.CodeType;
 import cz.kvalitacena.db.entity.NetContentUom;
 import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.ProductCode;
+import cz.kvalitacena.db.entity.ProductCreatedVia;
 import cz.kvalitacena.db.entity.ProductStatus;
 import cz.kvalitacena.db.entity.ProductScope;
 import cz.kvalitacena.db.entity.RetailChain;
@@ -82,6 +84,7 @@ class ProductCatalogServiceTest {
   private ProductNameWriter productNameWriter;
 
   private final CatalogProperties catalogProperties = new CatalogProperties();
+  private final ReceiptProperties receiptProperties = new ReceiptProperties();
 
   private ProductCatalogService service() {
     catalogProperties.setDraftConfirmations(3);
@@ -89,7 +92,7 @@ class ProductCatalogServiceTest {
     return new ProductCatalogService(productRepository, storeRepository, brandResolutionService, categoryRepository,
         productCodeRepository, priceObservationRepository, appUserRepository, catalogProperties,
         catalogRateLimiter, duplicateLookupService, trustLevelService, new ProductScopeService(),
-        productNameWriter, TestI18n.nameResolver());
+        productNameWriter, TestI18n.nameResolver(), new PublicationThresholds(catalogProperties, receiptProperties));
   }
 
   private CreateProductInput input(String code) {
@@ -326,6 +329,23 @@ class ProductCatalogServiceTest {
     service().promoteIfConfirmed(PRODUCT_ID);
 
     verify(productRepository, org.mockito.Mockito.never()).save(any());
+  }
+
+  /** Zboží z účtenky má vlastní práh (app.receipt.item-confirmations), nezávislý na ručním. */
+  @Test
+  void receiptItemIsPromotedByItsOwnThreshold() {
+    receiptProperties.setItemConfirmations(1);
+    when(productRepository.findById(PRODUCT_ID))
+        .thenReturn(Optional.of(Product.builder().id(PRODUCT_ID).status(ProductStatus.DRAFT)
+            .createdVia(ProductCreatedVia.RECEIPT).createdByUserId(USER_ID).build()));
+    when(priceObservationRepository.countDistinctProductContributorsExcluding(PRODUCT_ID, USER_ID))
+        .thenReturn(1L);
+
+    service().promoteIfConfirmed(PRODUCT_ID);
+
+    ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
+    verify(productRepository).save(captor.capture());
+    assertThat(captor.getValue().getStatus()).isEqualTo(ProductStatus.ACTIVE);
   }
 
   @Test

@@ -65,6 +65,7 @@ public class ProductCatalogService {
   private final ProductScopeService productScopeService;
   private final ProductNameWriter productNameWriter;
   private final ProductNameResolver productNameResolver;
+  private final PublicationThresholds publicationThresholds;
 
   @Transactional
   public Product create(CreateProductInput input, UUID viewerPublicUid) {
@@ -185,10 +186,12 @@ public class ProductCatalogService {
    * řetězce/provozovny jako ruční bezkódové zboží; s platným EAN z řádku ({@code gtin14}, který
    * nezná katalog ani Open Food Facts) globální zboží s tím kódem jako po skenu čárového kódu —
    * jinak by ho pozdější sken ani účtenka jiného řetězce nenašly. Obojí se značkou
-   * {@code created_via = RECEIPT}, vždy {@code DRAFT} (název je přepis z tisku pokladny) a s vlastním
-   * stropem {@code app.receipt.max-open-items} místo limitů ručního zakládání ({@code
-   * app.catalog.*}): účtenka se 40 nespárovanými řádky by je vyčerpala celé a autor by pak
-   * nemohl založit nic ani ručně. Spam brzdí denní limit účtenek a to, že každá prošla workerem.
+   * {@code created_via = RECEIPT}, {@code DRAFT} (název je přepis z tisku pokladny), dokud ho
+   * nepotvrdí {@code app.receipt.item-confirmations} jiných lidí — při prahu 0 (profil beta)
+   * rovnou {@code ACTIVE}. Vlastní strop {@code app.receipt.max-open-items} místo limitů ručního
+   * zakládání ({@code app.catalog.*}): účtenka se 40 nespárovanými řádky by je vyčerpala celé
+   * a autor by pak nemohl založit nic ani ručně. Strop počítá jen DRAFT, při prahu 0 tedy
+   * fakticky neplatí; spam dál brzdí denní limit účtenek a to, že každá prošla workerem.
    *
    * <p>Bezkódová položka se stejným normalizovaným názvem v rozsahu se použije znovu (i ruční),
    * ať se ceny různých lidí sbíhají na jedno zboží; zboží s EAN se pozná podle kódu
@@ -240,7 +243,7 @@ public class ProductCatalogService {
         .netContentBase(NetContentCalculator.computeNetContentBase(unitBase, value, uom, variableWeight))
         .variableWeight(variableWeight)
         .generic(generic)
-        .status(ProductStatus.DRAFT)
+        .status(publicationThresholds.receiptItemConfirmations() == 0 ? ProductStatus.ACTIVE : ProductStatus.DRAFT)
         .createdVia(ProductCreatedVia.RECEIPT)
         .createdByUserId(user.getId())
         .build();
@@ -261,7 +264,8 @@ public class ProductCatalogService {
 
   /**
    * Volá {@link PriceObservationService#submit} po každém zápisu ceny k DRAFT produktu —
-   * jakmile ho potvrdí dost RŮZNÝCH přispěvatelů (app.catalog.draft-confirmations), překlopí
+   * jakmile ho potvrdí dost RŮZNÝCH přispěvatelů ({@link PublicationThresholds#forProduct} —
+   * app.catalog.draft-confirmations, u zboží z účtenky app.receipt.item-confirmations), překlopí
    * se na ACTIVE. Žádný plánovač navíc, kontrola je jen dotaz + případný jeden UPDATE.
    * Leave-one-out (docs/reputace.md) — počítají se jen potvrzení od JINÝCH uživatelů než
    * autora, stejně jako u PENDING obchodu (StoreService.promoteIfConfirmed), jinak by si
@@ -274,7 +278,7 @@ public class ProductCatalogService {
 
     long contributors = priceObservationRepository.countDistinctProductContributorsExcluding(
         productId, product.getCreatedByUserId());
-    if (contributors >= catalogProperties.getDraftConfirmations()) {
+    if (contributors >= publicationThresholds.forProduct(product)) {
       product.setStatus(ProductStatus.ACTIVE);
       productRepository.save(product);
     }
@@ -292,7 +296,7 @@ public class ProductCatalogService {
     if (product.getStatus() == ProductStatus.MERGED) return PublicationStatus.merged();
     if (product.getHiddenAt() != null) return PublicationStatus.hiddenAfterFlags();
     if (product.getStatus() == ProductStatus.DRAFT) {
-      return PublicationStatus.awaitingConfirmations((int) confirmationsReceived, catalogProperties.getDraftConfirmations());
+      return PublicationStatus.awaitingConfirmations((int) confirmationsReceived, publicationThresholds.forProduct(product));
     }
     return PublicationStatus.publicState(product.isVerified());
   }

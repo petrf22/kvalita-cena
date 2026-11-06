@@ -48,6 +48,13 @@ public class ReceiptProperties {
   /** Kolik různých lidí musí hlasovat pro stejný cíl, než se zboží z účtenky sloučí i s cizími cenami. */
   private int itemMergeConfirmations = 2;
   /**
+   * Kolik různých přispěvatelů (leave-one-out) musí zboží z účtenky potvrdit cenou, než se
+   * zveřejní (PublicationThresholds). Vlastní práh místo app.catalog.draft-confirmations, ať jde
+   * v testovacím provozu zveřejňovat hned (0 = založit rovnou jako ACTIVE) bez snížení prahu
+   * pro ruční zakládání.
+   */
+  private int itemConfirmations = 3;
+  /**
    * Řádky, které nejsou zboží (záloha, vratný obal) — regulární výraz nad {@code label_norm}
    * (malá písmena bez diakritiky). Zboží z účtenky se pro ně nezakládá.
    */
