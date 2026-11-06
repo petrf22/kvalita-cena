@@ -203,7 +203,7 @@ je to nástroj provozovatele, ne appky. Fronta zahrnuje i nahlášené recenze
 (`RecordType.REVIEW`) — `FlaggedRecordItem.review` (nový typ `FlaggedReview`) nese `product`
 jako kontext textu, autor je autor recenze, ne autor zboží. U nahlášeného bezkódového produktu
 lze vybrat kanonický cíl z našeptávače ve stejném rozsahu a zavolat `mergeProducts`: backend
-ověří obchodní rozsah, přesune historii a související obsah, přepočítá agregáty a staré ID
+ověří obchodní rozsah a jednotky cen (`ProductMergeUnits`), přesune historii a související obsah, přepočítá agregáty a staré ID
 přesměruje na cíl. Samostatná záložka „Duplicity" (`duplicateCandidates`) nabízí dvojice
 podobných bezkódových položek v témže rozsahu a kategorii i bez nahlášení — duplicitu totiž
 nikdo nenahlásí, jen tiše rozděluje ceny jedné věci do dvou košů; slučuje se vždy ručně a směr

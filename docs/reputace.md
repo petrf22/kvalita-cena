@@ -457,6 +457,14 @@ stane aktivním aliasem cíle. Moderátor cíl **vybírá z našeptávače** ve 
 vědět, který z dvojice je „ten správný". Automatické slučování podle podobnosti názvu se
 nedělá; fronta je jen seřazená nabídka k přezkumu.
 
+Sloučení hlídá jednotky cen stejně jako dopárování zboží z účtenky (`ProductMergeUnits`,
+„Jednotky cen" níž). Cena za balení zdroje bez gramáže převezme gramáž cíle, protože jde
+o duplicitu, tedy o stejné balení. Rozdílná gramáž se stejnou jednotkou (500 g a 1 kg) nevadí,
+cena za kg zůstává správná. Cokoli jiného (kg ↔ litr, cena za kg na zboží bez gramáže, gramáž
+na zboží bez gramáže) server odmítne s `MODERATION_PRODUCT_MERGE_UNIT_MISMATCH`. Web takový cíl
+v našeptávači nenabídne a v Duplicitách nechá jen směr, který projde. Když neprojde žádný,
+napřed se musí opravit gramáž.
+
 `renameGenericProduct(productId, name)` opraví **kanonický název pro všechny**. Je to
 samostatná moderátorská mutace, protože `updateProduct` ukládá název do `core.product_user_edit`
 — což je patch JEDNOHO uživatele. U zboží s EANem to dává smysl (identitu nese kód, název je jen
@@ -537,7 +545,7 @@ jinak by účtenka kvůli záloze na lahev zůstala navždy rozpracovaná.
   jde na cíl vždy, i když už nějaký EAN má (`ProductMergeService.mergeCodes`) — jinak by kód
   zůstal u sloučeného zbytku a sken by skutečné zboží nenašel. Sloučení je vědomé rozhodnutí
   člověka, ne automatické párování řádku, proto tu pravidlo „jen zboží bez EAN" neplatí.
-- **Jednotky cen** (`ReceiptItemUnits`, ověří se před přesunem čehokoli): cena po dopárování
+- **Jednotky cen** (`ProductMergeUnits`, ověří se před přesunem čehokoli): cena po dopárování
   musí znamenat totéž co ceny cíle — za kg, za litr, za kus, nebo za balení neznámé velikosti.
   Cena za balení zboží z účtenky bez gramáže na zboží s pevnou gramáží převezme gramáž cíle
   (19,90 Kč za kelímek u 150g jogurtu = 132,67 Kč/kg). Cokoli jiného — cena za balení na váhové
