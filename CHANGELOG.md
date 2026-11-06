@@ -7,6 +7,11 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [0.13.4] – 2026-11-06
+
+### Změněno
+- Databáze serveru je pro správu dostupná přes zabezpečené SSH spojení, zvenku zůstává uzavřená (server)
+
 ## [0.13.3] – 2026-11-06
 
 ### Přidáno

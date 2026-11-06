@@ -1,5 +1,22 @@
 [
   {
+    "version": "0.13.4",
+    "date": "2026-11-06",
+    "sections": [
+      {
+        "title": "Změněno",
+        "items": [
+          {
+            "text": "Databáze serveru je pro správu dostupná přes zabezpečené SSH spojení, zvenku zůstává uzavřená",
+            "parts": [
+              "server"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "0.13.3",
     "date": "2026-11-06",
     "sections": [
