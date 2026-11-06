@@ -20,6 +20,11 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.13.4", date: "2026-11-06", sections: [
+      { title: "Změněno", items: [
+        { text: "Databáze serveru je pro správu dostupná přes zabezpečené SSH spojení, zvenku zůstává uzavřená", parts: ["server"] },
+      ] },
+  ] },
   { version: "0.13.3", date: "2026-11-06", sections: [
       { title: "Přidáno", items: [
         { text: "Z účtenky jde zveřejnit i zboží, které se nepodařilo spárovat — uloží se s názvem, cenou, obchodem a časem nákupu jako „zboží z účtenky\" a stejné zboží z dalších účtenek se k němu přiřadí samo; s čárovým kódem z účtenky ho najde i sken", parts: ["server", "web", "mobil"] },
