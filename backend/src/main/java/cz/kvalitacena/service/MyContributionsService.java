@@ -201,6 +201,9 @@ public class MyContributionsService {
   }
 
   private PublicationStatus productStatus(Product product, long confirmationsReceived, int required) {
+    // Sloučené zboží (typicky zboží z účtenky po dopárování) žije dál jen jako odkaz na cíl —
+    // „Zveřejněno" by tvrdilo, že ho ostatní vidí, a „čeká na potvrzení" by čekalo navždy.
+    if (product.getStatus() == ProductStatus.MERGED) return PublicationStatus.merged();
     if (product.getHiddenAt() != null) return PublicationStatus.hiddenAfterFlags();
     if (product.getStatus() == ProductStatus.DRAFT) {
       return PublicationStatus.awaitingConfirmations((int) confirmationsReceived, required);
@@ -209,6 +212,7 @@ public class MyContributionsService {
   }
 
   private PublicationStatus storeStatus(Store store, long confirmationsReceived, int required) {
+    if (store.getStatus() == StoreStatus.MERGED) return PublicationStatus.merged();
     if (store.getHiddenAt() != null) return PublicationStatus.hiddenAfterFlags();
     if (store.getStatus() == StoreStatus.PENDING) {
       return PublicationStatus.awaitingConfirmations((int) confirmationsReceived, required);

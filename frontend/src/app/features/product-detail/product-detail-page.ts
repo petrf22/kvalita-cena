@@ -1,7 +1,8 @@
 import { Location } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   TranslocoDirective,
   TranslocoPipe,
@@ -22,6 +23,7 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { PriceKind, PricePoint, Product, ProductReview } from '../../models/catalog';
 import { AuthService } from '../../services/auth-service';
+import { ConnectivityService, isNetworkError } from '../../services/connectivity-service';
 import { FormatService } from '../../services/format-service';
 import { LanguageService } from '../../services/language-service';
 import { NavigationHistoryService } from '../../services/navigation-history-service';
@@ -32,6 +34,7 @@ import { MoneyPipe } from '../../shared/money.pipe';
 import { PhotoGallery } from '../../shared/photo-gallery';
 import { PriceEntryForm } from '../../shared/price-entry-form';
 import { QualityBadge } from '../../shared/quality-badge';
+import { ReceiptItemTag, isReceiptItem } from '../../shared/receipt-item-tag';
 import { RelativeDatePipe } from '../../shared/relative-date.pipe';
 import {
   MAX_REVIEW_TEXT_LENGTH,
@@ -40,10 +43,21 @@ import {
 } from '../../shared/review-validation';
 import { ProductForm } from '../product-form/product-form';
 import { PriceChart } from './price-chart';
+import { ReceiptItemRematch, ReceiptItemRematched } from './receipt-item-rematch';
 import { ReceiptLabels } from './receipt-labels';
 
 const CHART_RANGES = [7, 30, 90, 365];
 const REVIEWS_PAGE_SIZE = 10;
+
+type LoadState = 'loading' | 'ready' | 'notFound' | 'error' | 'offline';
+
+/**
+ * Výsledek dopárování zboží z účtenky. `merged` se ukazuje na CÍLOVÉM zboží (appka na něj
+ * přejde), `pending` zůstává na zboží z účtenky — sloučení pro všechny čeká na další hlasy.
+ */
+type RematchNotice =
+  | { kind: 'merged'; sourceName: string }
+  | { kind: 'pending'; target: { id: string; name: string }; votes: number; votesRequired: number };
 
 @Component({
   selector: 'app-product-detail-page',
@@ -65,6 +79,8 @@ const REVIEWS_PAGE_SIZE = 10;
     QualityBadge,
     PriceEntryForm,
     PriceChart,
+    ReceiptItemRematch,
+    ReceiptItemTag,
     ReceiptLabels,
     PhotoGallery,
     ProductForm,
@@ -79,10 +95,12 @@ const REVIEWS_PAGE_SIZE = 10;
 })
 export class ProductDetailPage {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly location = inject(Location);
   private readonly productService = inject(ProductService);
   private readonly transloco = inject(TranslocoService);
   protected readonly auth = inject(AuthService);
+  protected readonly connectivity = inject(ConnectivityService);
   protected readonly format = inject(FormatService);
   protected readonly navigationHistory = inject(NavigationHistoryService);
   private readonly language = inject(LanguageService);
@@ -92,7 +110,18 @@ export class ProductDetailPage {
   protected readonly chartRanges = CHART_RANGES;
 
   protected readonly product = signal<Product | null>(null);
-  protected readonly loading = signal(true);
+  protected readonly loadState = signal<LoadState>('loading');
+  protected readonly loadErrorMessage = signal<string | null>(null);
+
+  /**
+   * „Zboží z účtenky" — bez ověřených náležitostí; detail to řekne nahoře a přihlášenému
+   * nabídne dopárování na skutečné zboží (`receipt-item-rematch.ts`).
+   */
+  protected readonly isReceiptItem = computed(() => isReceiptItem(this.product()));
+  protected readonly rematchOpen = signal(false);
+  protected readonly rematchNotice = signal<RematchNotice | null>(null);
+  /** Upozornění „sloučeno" patří na cílové zboží — při přechodu na něj se nesmaže. */
+  private keepNoticeFor: string | null = null;
 
   /**
    * Jazyk zobrazeného názvu, KDYŽ se liší od jazyka appky — pak se u nadpisu ukáže štítek
@@ -160,8 +189,31 @@ export class ProductDetailPage {
   protected readonly maxReviewTextLength = MAX_REVIEW_TEXT_LENGTH;
 
   constructor() {
-    const id = this.route.snapshot.paramMap.get('id');
-    if (id) this.loadProduct(id);
+    // Podle `paramMap`, ne snímku: přechod z jednoho detailu na jiný (po sloučení zboží
+    // z účtenky) znovu použije tutéž instanci komponenty a snímek by zůstal na starém id.
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const id = params.get('id');
+      if (!id) return;
+      this.resetFor(id);
+      this.loadProduct(id);
+    });
+    this.connectivity.reconnected$.pipe(takeUntilDestroyed()).subscribe(() => {
+      const id = this.route.snapshot.paramMap.get('id');
+      if (id && this.loadState() === 'offline') this.loadProduct(id);
+    });
+  }
+
+  /** Stav, který patří k jinému zboží, se při přechodu na nové id zahodí. */
+  private resetFor(id: string): void {
+    if (this.product()?.id !== id) this.product.set(null);
+    this.editing.set(false);
+    this.rematchOpen.set(false);
+    this.flagMessage.set(null);
+    this.ratingError.set(null);
+    this.reviewFlagMessage.set(null);
+    this.reviewsPageIndex.set(1);
+    if (this.keepNoticeFor !== id) this.rematchNotice.set(null);
+    this.keepNoticeFor = null;
   }
 
   /** Vrátí na stránku, odkud uživatel přišel (`/my`, hledání, jiný detail) — ne vždy na hledání. */
@@ -169,20 +221,60 @@ export class ProductDetailPage {
     this.location.back();
   }
 
-  /** Obnoví agregované ceny v tabulce i graf po úspěšném zápisu (`app-price-entry-form`). */
+  /**
+   * Načte zboží; volá se i po úspěšném zápisu ceny (`app-price-entry-form`), ať se obnoví
+   * agregované ceny v tabulce i graf. Když obnova už zobrazeného zboží selže, zůstane vidět
+   * předchozí verze — chyba nebo offline stav se ukáže jen tehdy, když není co ukázat.
+   */
   protected loadProduct(id: string): void {
-    this.loading.set(true);
+    this.loadState.set('loading');
     this.productService.getById(id).subscribe({
       next: (product) => {
         this.product.set(product);
-        this.loading.set(false);
+        this.loadState.set(product ? 'ready' : 'notFound');
         if (product) {
           this.loadHistory();
           this.loadReviews();
         }
       },
-      error: () => this.loading.set(false),
+      error: (err: unknown) => {
+        if (this.product()?.id === id) {
+          this.loadState.set('ready');
+          return;
+        }
+        this.loadErrorMessage.set(translateError(err, this.transloco));
+        this.loadState.set(isNetworkError(err) ? 'offline' : 'error');
+      },
     });
+  }
+
+  protected retryLoad(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) this.loadProduct(id);
+  }
+
+  /**
+   * Po dopárování: sloučené zboží z účtenky už neexistuje, takže appka přejde na cílové zboží
+   * a Zpět nevede na mrtvou stránku (`replaceUrl`). Bez sloučení se přesunuly jen vlastní ceny
+   * a zboží z účtenky se načte znovu — zbývají na něm ceny ostatních.
+   */
+  protected onRematched({ result }: ReceiptItemRematched): void {
+    const source = this.product();
+    this.rematchOpen.set(false);
+    if (!source) return;
+    if (result.merged) {
+      this.rematchNotice.set({ kind: 'merged', sourceName: source.name });
+      this.keepNoticeFor = result.product.id;
+      void this.router.navigate(['/product', result.product.id], { replaceUrl: true });
+      return;
+    }
+    this.rematchNotice.set({
+      kind: 'pending',
+      target: result.product,
+      votes: result.votes,
+      votesRequired: result.votesRequired,
+    });
+    this.loadProduct(source.id);
   }
 
   private loadHistory(): void {

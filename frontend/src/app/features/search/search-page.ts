@@ -22,6 +22,7 @@ import { PRODUCT_SORT_KEYS } from '../../shared/enum-labels';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { ProductThumb, usesExternalImageFallback } from '../../shared/product-thumb';
 import { QualityBadge } from '../../shared/quality-badge';
+import { ReceiptItemTag, isReceiptItem } from '../../shared/receipt-item-tag';
 import { RelativeDatePipe } from '../../shared/relative-date.pipe';
 import { storeLabel } from '../../shared/store-label';
 
@@ -56,6 +57,7 @@ const SORT_ORDER = ['REPORT_COUNT', 'PRICE_ASC', 'QUALITY', 'LAST_REPORTED', 'NA
     NzTreeSelectModule,
     ProductThumb,
     QualityBadge,
+    ReceiptItemTag,
     RelativeDatePipe,
     MoneyPipe,
     TranslocoDirective,
@@ -71,6 +73,7 @@ export class SearchPage {
   private readonly language = inject(LanguageService);
   protected readonly countryService = inject(CountryService);
   protected readonly storeLabel = storeLabel;
+  protected readonly isReceiptItem = isReceiptItem;
 
   protected readonly sortOrder = SORT_ORDER;
   protected readonly sortKeys = PRODUCT_SORT_KEYS;

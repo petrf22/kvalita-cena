@@ -1,0 +1,128 @@
+<ng-container *transloco="let t; scope: 'product-detail'">
+  @if (picked(); as target) {
+    <!-- Druhý krok: vlastní ceny se přesunou hned, proto se výběr ještě jednou potvrzuje. -->
+    <div class="rematch">
+      <p class="rematch-question">
+        {{ t('product-detail.rematch.confirmQuestion', { source: product().name }) }}
+      </p>
+      <div class="rematch-candidate">
+        <app-product-thumb
+          [name]="target.name"
+          [photos]="target.photos"
+          [externalImage]="target.externalImage"
+        />
+        <span class="rematch-text">
+          <strong class="rematch-name">{{ target.name }}</strong>
+          <span class="rematch-meta">{{ meta(target) }}</span>
+        </span>
+      </div>
+      <p class="rematch-note">{{ t('product-detail.rematch.confirmNote') }}</p>
+      @if (!connectivity.online()) {
+        <p class="rematch-note">{{ t('product-detail.rematch.offlineAction') }}</p>
+      }
+      @if (submitError(); as error) {
+        <p class="rematch-error" role="alert">{{ error }}</p>
+      }
+      <div class="rematch-actions">
+        <button
+          nz-button
+          nzType="primary"
+          type="button"
+          [nzLoading]="submitting()"
+          [disabled]="!connectivity.online()"
+          (click)="submit(target)"
+        >
+          <span nz-icon nzType="link"></span>
+          {{ t('product-detail.rematch.submit') }}
+        </button>
+        <button nz-button type="button" [disabled]="submitting()" (click)="backToList()">
+          {{ t('product-detail.rematch.back') }}
+        </button>
+      </div>
+    </div>
+  } @else {
+    <div class="rematch">
+      <p class="rematch-note">
+        @if (scopeName(); as scope) {
+          {{ t('product-detail.rematch.introScope', { scope }) }}
+        } @else {
+          {{ t('product-detail.rematch.intro') }}
+        }
+      </p>
+      <nz-input-wrapper>
+        <span nzInputPrefix nz-icon nzType="search"></span>
+        <input
+          nz-input
+          type="search"
+          [placeholder]="t('product-detail.rematch.placeholder')"
+          [attr.aria-label]="t('product-detail.rematch.placeholder')"
+          [ngModel]="query()"
+          (ngModelChange)="onQueryChange($event)"
+          (keyup.enter)="search()"
+        />
+      </nz-input-wrapper>
+
+      @switch (searchState()) {
+        @case ('loading') {
+          <div class="rematch-state"><nz-spin nzSimple /></div>
+        }
+        @case ('offline') {
+          <p class="rematch-state rematch-message">{{ t('product-detail.rematch.offline') }}</p>
+        }
+        @case ('error') {
+          <div class="rematch-state rematch-message">
+            <span>{{ searchError() }}</span>
+            <button nz-button nzSize="small" type="button" (click)="search()">
+              {{ t('product-detail.retry') }}
+            </button>
+          </div>
+        }
+        @default {
+          @if (results().length === 0) {
+            <p class="rematch-state rematch-message">
+              {{
+                query().trim()
+                  ? t('product-detail.rematch.empty')
+                  : t('product-detail.rematch.typeName')
+              }}
+            </p>
+          } @else {
+            <ul class="rematch-list">
+              @for (item of results(); track item.id) {
+                <li>
+                  <button type="button" class="rematch-item" (click)="pick(item)">
+                    <app-product-thumb
+                      [name]="item.name"
+                      [photos]="item.photos"
+                      [externalImage]="item.externalImage"
+                    />
+                    <span class="rematch-text">
+                      <span class="rematch-name">
+                        {{ item.name }}
+                        @if (isReceiptItem(item)) {
+                          <app-receipt-item-tag />
+                        }
+                      </span>
+                      <span class="rematch-meta">
+                        {{ meta(item) }}
+                        @if (item.status === 'DRAFT') {
+                          · {{ t('product-detail.rematch.unconfirmed') }}
+                        }
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        }
+      }
+
+      <div class="rematch-actions">
+        <button nz-button nzType="text" type="button" (click)="cancelled.emit()">
+          {{ 'common.cancel' | transloco }}
+        </button>
+      </div>
+    </div>
+  }
+</ng-container>

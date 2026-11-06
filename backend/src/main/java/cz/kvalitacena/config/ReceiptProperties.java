@@ -38,6 +38,20 @@ public class ReceiptProperties {
   private double autoMatchSimilarity = 0.75;
   /** ...a být o tolik lepší než druhý — jinak je to hádání mezi dvěma podobnými. */
   private double autoMatchMargin = 0.2;
+  /**
+   * Zboží z účtenky (docs/reputace.md, „Zboží z účtenky"): kolik nepotvrzených (DRAFT) položek
+   * z účtenek smí mít jeden účet otevřených naráz. Vlastní strop místo limitů ručního zakládání
+   * (app.catalog.*) — jedna velká účtenka by je vyčerpala celé. Co se nevejde, zůstane
+   * v přehledu účtenky a zveřejní se později.
+   */
+  private int maxOpenItems = 300;
+  /** Kolik různých lidí musí hlasovat pro stejný cíl, než se zboží z účtenky sloučí i s cizími cenami. */
+  private int itemMergeConfirmations = 2;
+  /**
+   * Řádky, které nejsou zboží (záloha, vratný obal) — regulární výraz nad {@code label_norm}
+   * (malá písmena bez diakritiky). Zboží z účtenky se pro ně nezakládá.
+   */
+  private String nonProductPattern = "\\b(zaloha|zal|zalohy|vratn\\w*|vraceni|vratka)\\b";
   /** Kam hlásit čekající účtenky (ReceiptQueueNotifier); prázdné = notifikace vypnuté. */
   private String notifyEmail;
   private String notifyReminderCron = "0 0 8 * * *";

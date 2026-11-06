@@ -96,6 +96,13 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   (`ReceiptReviewService.productFromOff` → `OffProductCatalogService.create`), nikdy při
   zpracování účtenky, ať se katalog neplní zbožím z nepotvrzených účtenek. Klient u `SUGGESTED`
   nesmí spoléhat na `product != null` — náhled nese `offCandidate`.
+- **Zboží z účtenky není nová entita** — je to bezkódová druhová položka (u řádku s platným
+  EAN, který nezná katalog ani OFF, globální zboží s tím kódem) s
+  `core.product.created_via = 'RECEIPT'`, založená VÝHRADNĚ přes `ProductCatalogService
+  .receiptItem` (vlastní strop `app.receipt.max-open-items`), nikdy přes `create`. Ruční stropy
+  bezkódového zboží (`app.catalog.max-unconfirmed-drafts`) ho záměrně nepočítají, jinak by jedna
+  velká účtenka zablokovala ruční zakládání. Dopárování smí cizí ceny přesunout až po
+  souhlasných hlasech (`ReceiptItemRematchService`, `docs/reputace.md`, „Zboží z účtenky").
 - **Prošlý access token není chyba, kterou by šlo počkat** — `JwtAuthenticationFilter` ho mlčky
   zahodí a request doběhne jako ANONYMNÍ (HTTP 200, žádné `errors`), takže dotaz s anonymní
   variantou (`me` vrátí `null`, hledání zamlčí vlastní DRAFTy, graf zkrátí okno) vypadá jako

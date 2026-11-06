@@ -285,7 +285,7 @@
 }
 
 .create-hint,
-.skipped-title {
+.result-title {
   margin: 0 0 var(--kc-space-2);
 }
 

@@ -92,7 +92,11 @@ zvlášť `ALTER TABLE ... ADD COLUMN` (viz `2026-07-26/05-price-observation.yam
 
 **`net_content_base` je SNAPSHOT, ne odkaz na aktuální produkt.** Kdyby někdo později
 opravil gramáž produktu (500 g → 450 g), přepsalo by to zpětně jednotkové ceny celé
-historie a graf by najednou "lhal" o minulosti.
+historie a graf by najednou "lhal" o minulosti. Jediná výjimka: dopárování zboží z účtenky
+(`ReceiptItemUnits`, `docs/reputace.md`, „Zboží z účtenky") — cena za balení neznámé velikosti
+převezme gramáž cíle, protože dopárování je výslovné tvrzení „to balení bylo tohle zboží".
+Nejde o opravu gramáže, ale o zjištění, co se vlastně koupilo; bez toho by se 19,90 Kč za kelímek
+agregovalo jako 19,90 Kč/kg. Ceny, jejichž význam převést nejde, dopárování odmítne.
 
 **`observed_at` ≠ `created_at`.** `observed_at` je, kdy uživatel cenu VIDĚL (může být
 offline zápis z mobilu, doplněný později); `created_at` je, kdy záznam skutečně došel na
@@ -428,6 +432,11 @@ poslední jmenované se ve výpisu vždy označí `PublicationState.PENDING_MERG
 konsolidační job (viz výš) zatím neběží. `myProducts`/`myStores` k tomu dopočítají i konkrétní
 `confirmationsReceived`/`confirmationsRequired` (viz `docs/reputace.md`, "Práh důvěry pro
 zveřejnění nového záznamu") — bez toho by uživatel viděl jen "čeká na potvrzení" bez čísel.
+Sloučené zboží/obchod (status `MERGED`, nejčastěji zboží z účtenky po dopárování) má
+`PublicationState.MERGED`, ne `PUBLIC` — data žijí u cíle a `product(id)` vrací rovnou cíl.
+Starší mobilní klient neznámý stav ukáže jako „Zveřejněno". Text u čekajícího zboží rozlišuje
+klient podle `isGeneric`: zboží s kódem najdou ostatní skenem, bezkódové jen v nabídce obchodu
+při zápisu ceny (`productSuggestions`).
 
 ## Fotky zboží a provozoven
 
@@ -601,7 +610,8 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   `match_source = OFF` — jediný `SUGGESTED` **bez** `product_id`, zboží se nad OFF snapshotem
   založí až potvrzením řádku, ať se katalog neplní zbožím z nepotvrzených účtenek; výjimku
   nese `chk_receipt_line_product`),
-  `MATCHED` (uživatel potvrdil, `observation_id` ukazuje na vzniklou cenu — po 180 dnech ho
+  `MATCHED` (uživatel potvrdil, `observation_id` ukazuje na vzniklou cenu; řádek zveřejněný bez
+  spárování má `match_source = RECEIPT_ITEM` a zboží je „zboží z účtenky", viz níž — po 180 dnech ho
   pseudonymizace maže, `docs/soukromi.md`), `IGNORED` (uživatel párovat nechce).
   `skip_reason` nese, proč potvrzený řádek cenu nezapsal (typicky `DUPLICATE_SAME_DAY` —
   kolize s `uq_price_observation_submitter_kind_per_day` nesmí shodit celou účtenku, na rozdíl
@@ -610,6 +620,20 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   `skip_reason` (`ReceiptLine.isConfirmed`).
   **`unit_price` u váhového zboží je cena za kg/l, nikdy zaplacená částka** — ta je
   v `line_total`, zápis ceny bere `unit_price` s `quantityBasis = PER_KG`/`PER_L`.
+- **Zboží z účtenky** (migrace `2026-11-05/`, pravidla `docs/reputace.md`, „Zboží z účtenky") —
+  `core.product.created_via = 'RECEIPT'` u bezkódové druhové položky, kterou založilo zveřejnění
+  nespárovaného řádku (`ReceiptReviewService.receiptItemFor` → `ProductCatalogService
+  .receiptItem`); u řádku s platným EAN, který nezná katalog ani OFF, je to globální zboží s tím
+  kódem v `core.product_code` (`is_generic = false`), jako po skenu. Žádná nová tabulka zboží: název je čitelný název řádku, kategorie
+  z `NewProductDefaultsService`, jinak záchytná `nezarazeno` („Nezařazeno"), gramáž jen jako
+  úplná dvojice z tisku. `core.receipt.sum_status` (`MATCH`/`MISMATCH`/`UNKNOWN`)
+  + `computed_total` je kontrolní součet workeru z `extraction` (`ReceiptWorkerService.sumCheck`)
+  — řídí jen předvýběr řádků v klientovi. `core.product_merge_vote` jsou hlasy pro dopárování
+  (`UNIQUE (source_product_id, user_id)`, `user_id` se po 180 dnech nuluje);
+  `moved_observation_ids`/`moved_line_ids` drží, co hlas přesunul, ať změna hlasu vezme data
+  s sebou. `core.receipt_line.rejected_product_id`/`code_rejected` je návrh, který vlastník
+  zrušil (`unmatchLine`) — zveřejnění, učení označení (`suggestUnmatched`) ani nové rozpoznání
+  ho nevrátí; při sloučení zboží přejde odmítnutí na cíl.
 - **`core.product_store_label`** + **`core.product_store_label_confirmation`** — „Názvy na
   účtenkách": označení obchodu → katalogové zboží. Rozsah právě jeden z `chain_id`/`store_id`
   (řetězec tiskne stejné zkratky ve všech provozovnách, nezávislý obchod vlastní), unikátnost

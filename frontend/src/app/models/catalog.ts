@@ -37,6 +37,7 @@ import type {
   ReceiptDetailFieldsFragment,
   ReceiptLineFieldsFragment,
   ReceiptListFieldsFragment,
+  RematchReceiptItemMutation,
   ReverseGeocodeQuery,
   SearchFacetsQuery,
   SearchItemFieldsFragment,
@@ -58,6 +59,7 @@ export {
   GeoSource,
   NetContentUom,
   PriceKind,
+  ProductCreatedVia,
   ProductSort,
   ProductStatus,
   PublicationState,
@@ -67,6 +69,7 @@ export {
   ReceiptMatchSource,
   ReceiptProcessingStatus,
   ReceiptReviewStatus,
+  ReceiptSumStatus,
   RecordType,
   UnitBase,
 } from './generated/enums';
@@ -188,6 +191,12 @@ export type ReceiptDetail = ReceiptDetailFieldsFragment;
 export type ReceiptLine = ReceiptLineFieldsFragment;
 export type ReceiptLineCounts = ReceiptListFieldsFragment['lineCounts'];
 export type ConfirmReceiptLinesResult = ConfirmReceiptLinesMutation['confirmReceiptLines'];
+
+/**
+ * Výsledek dopárování „zboží z účtenky" — `merged` = sloučeno celé, jinak se přesunuly jen
+ * vlastní ceny a sloučení pro všechny čeká na další hlasy (`votes` z `votesRequired`).
+ */
+export type RematchReceiptItemResult = RematchReceiptItemMutation['rematchReceiptItem'];
 
 /** Označení zboží na účtenkách jednoho řetězce/obchodu (Product.storeLabels). */
 export type ProductStoreLabel = ProductDetailFieldsFragment['storeLabels'][number];

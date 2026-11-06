@@ -163,23 +163,31 @@
     "createNeedsStore": "A new product can be added once the store is confirmed.",
     "ignore": "Ignore",
     "unmatch": "Unmatch",
-    "unignore": "Stop ignoring"
+    "unignore": "Stop ignoring",
+    "selectReceiptItemLabel": "Publish line {{label}} as a receipt item",
+    "publishAsReceiptItem": "will be published as a receipt item",
+    "nonProduct": "deposit or packaging — not published",
+    "verify": "Check",
+    "verifyHint": "This line looks misread: the price is missing, quantity × price does not match the amount, or the name is unreadable. Compare it with the receipt image."
   },
   "skip": {
-    "duplicateSameDay": "You have already recorded this price for the day of purchase — no second record was added."
+    "duplicateSameDay": "You have already recorded this price for the day of purchase — no second record was added.",
+    "itemLimit": "You have too many unconfirmed items from receipts. More can be published once others confirm some of them."
   },
   "confirm": {
-    "button": "Confirm matched ({{count}})",
-    "hint": "Records the prices of the ticked lines with the date and time of purchase from the receipt.",
+    "button": "Publish selected ({{count}})",
+    "hint": "Records the prices of the ticked lines with the date and time of purchase from the receipt. Unmatched lines are published as receipt items.",
     "blocker": {
       "notProcessed": "The receipt has not been processed yet.",
       "storeMissing": "Confirm the store above first.",
       "purchaseTimeMissing": "Fill in the date and time of purchase above first.",
-      "nothing": "Tick at least one matched line."
+      "nothing": "Tick at least one line."
     },
-    "done": "{count, plural, one {# price recorded.} other {# prices recorded.}}",
-    "doneNone": "No new price was recorded.",
-    "skipped": "{count, plural, one {# line skipped:} other {# lines skipped:}}"
+    "done": "{count, plural, one {# line published.} other {# lines published.}}",
+    "doneNone": "No line was published.",
+    "skipped": "{count, plural, one {# line skipped:} other {# lines skipped:}}",
+    "doneReceiptItems": "{count, plural, one {# of them as a receipt item — you can match it later on the product page.} other {# of them as receipt items — you can match them later on the product page.}}",
+    "guessesLeft": "{count, plural, one {# guess to check will not be published until you tick it. If the product is wrong, unmatch it — it will then be published as a receipt item.} other {# guesses to check will not be published until you tick them. If a product is wrong, unmatch it — it will then be published as a receipt item.}}"
   },
   "create": {
     "title": "New product from the receipt",
@@ -193,16 +201,25 @@
     "skip": "Skip"
   },
   "group": {
-    "toResolve": "To fill in ({{count}})",
+    "toResolve": "Unmatched ({{count}})",
     "toCheck": "To check ({{count}})",
     "ready": "Ready to confirm ({{count}})",
     "done": "Done ({{count}})",
-    "ignored": "Ignored ({{count}})"
+    "ignored": "Ignored ({{count}})",
+    "toResolveHint": "Ticked lines are published as receipt items — with the name and price as printed. If you find and match the product in the catalogue, the price goes to it instead."
   },
   "panel": {
     "accept": "Yes, that's it",
     "other": "Different product",
     "notProduct": "Not a product — ignore",
-    "offHint": "Open Food Facts knows this product by its EAN. It will be added to the catalogue when you confirm the line."
+    "offHint": "Open Food Facts knows this product by its EAN. It will be added to the catalogue when you confirm the line.",
+    "receiptItemHint": "You do not have to find or add the product — a ticked line is published as a receipt item. But if you find it, the price goes to the real product.",
+    "nonProductHint": "This looks like a deposit or returnable packaging — such a line is not published. If it is a product, find it and match it."
+  },
+  "sum": {
+    "mismatchTitle": "The items add up to {{computed}}, but the receipt total is {{total}}",
+    "mismatchText": "The difference is {{difference}}. A line may have been misread or be missing — go through the lines tagged “Check” and untick what you do not want to publish.",
+    "unknownTitle": "The total could not be verified — check the items",
+    "unknownText": "The app has nothing to compare the items with — the total was not found on the receipt, or an older version read it. Go through the items (especially those tagged “Check”) and untick what you do not want to publish."
   }
 }

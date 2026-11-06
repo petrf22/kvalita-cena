@@ -61,5 +61,34 @@
     "title": "Namen auf Kassenbons",
     "hint": "So drucken Geschäfte das Produkt auf den Kassenbon — danach werden eingelesene Kassenbons automatisch zugeordnet.",
     "unknownScope": "unbekanntes Geschäft"
+  },
+  "retry": "Erneut versuchen",
+  "offlineTitle": "Du bist offline",
+  "offlineText": "Das Produkt wird geladen, sobald du wieder verbunden bist.",
+  "loadFailed": "Das Produkt konnte nicht geladen werden.",
+  "receiptItem": {
+    "title": "Artikel vom Kassenbon",
+    "text": "Entstanden aus einer Kassenbon-Position, die niemand einem Produkt im Katalog zugeordnet hat. Name, Preis, Geschäft und Einkaufszeit stammen vom Kassenbon — Marke, Füllmenge und Barcode sind nicht geprüft.",
+    "rematch": "Einem Produkt zuordnen",
+    "loginHint": "Weißt du, welches Produkt das ist? Nach der Anmeldung kannst du es einem Produkt im Katalog zuordnen."
+  },
+  "rematch": {
+    "title": "Einem Produkt zuordnen",
+    "intro": "Wähle das Produkt aus dem Katalog, das dieser Artikel vom Kassenbon wirklich ist.",
+    "introScope": "Wähle das Produkt aus dem Katalog, das dieser Artikel vom Kassenbon wirklich ist. Angeboten werden Produkte mit Barcode und Produkte aus dem Sortiment von {{scope}}.",
+    "placeholder": "Produkt nach Namen suchen",
+    "empty": "Nichts Ähnliches gefunden. Versuch einen anderen Namen.",
+    "typeName": "Gib den Produktnamen ein.",
+    "offline": "Du bist offline — Suchen und Zuordnen funktionieren nach dem Verbinden.",
+    "offlineAction": "Du bist nicht mit dem Internet verbunden — die Zuordnung wurde nicht gespeichert. Versuch es nach dem Verbinden erneut.",
+    "unconfirmed": "noch nicht bestätigt",
+    "confirmQuestion": "„{{source}}“ diesem Produkt zuordnen?",
+    "confirmNote": "Deine Preise werden sofort verschoben. Die Preise anderer werden verschoben, sobald weitere Personen dieselbe Zuordnung bestätigen — so überschreibt ein einzelner Fehler niemandem die Historie.",
+    "submit": "Zuordnen",
+    "back": "Anderes wählen",
+    "mergedTitle": "Produkte zusammengeführt",
+    "mergedText": "Die Preise vom Artikel vom Kassenbon „{{name}}“ sind jetzt bei diesem Produkt.",
+    "pendingTitle": "Deine Preise wurden verschoben",
+    "pendingText": "Das Zusammenführen für alle wartet auf die Bestätigung weiterer Personen ({{votes}} von {{required}}). Deine Preise findest du jetzt bei:"
   }
 }

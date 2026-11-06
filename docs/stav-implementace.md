@@ -166,7 +166,7 @@ kg/l/kus se cena označuje až při zápisu ceny (`QuantityBasis`).
 `myEdits` (`MyContributionsGraphQlController`, `MyContributionsService`, vyžadují přihlášení)
 vrací vlastní založené zboží/obchody, vlastní zapsané ceny a vlastní úpravy cizích záznamů,
 každý s `PublicationStatus` (`state` PUBLIC/AWAITING_CONFIRMATIONS/HIDDEN_AFTER_FLAGS/
-PENDING_MERGE + konkrétní `confirmationsReceived`/`confirmationsRequired`, dopočítané dávkově
+PENDING_MERGE/MERGED + konkrétní `confirmationsReceived`/`confirmationsRequired`, dopočítané dávkově
 přes `PriceObservationRepository.countDistinctProductContributorsExcludingBatch`/
 `countDistinctContributorsExcludingBatch`, které počítají jen registrované přispěvatele) — cíl
 je, aby uživatel viděl „zatím 1 ze 3", ne jen štítek „čeká na potvrzení" bez kontextu.
@@ -596,6 +596,21 @@ uživatel sáhl, zůstanou (`ReceiptLineMerger`), po retenci obrázků se znovu 
 `ReceiptFlowIntegrationTest` (`reprocessing*`, `requeuedFailedReceipt*`,
 `workerResultDoesNotOverwriteHeaderSavedByOwnerMeanwhile`), `test_worker.py`
 (`ReprocessTest`). Vlastník sám nové rozpoznání spustit nemůže (web ani mobil tlačítko nemají).
+
+**Zveřejnění bez spárování (2026-11-05):** pravidla `docs/reputace.md`, „Zboží z účtenky".
+
+- **Zboží z účtenky.** `confirmReceiptLines(publishUnmatched: true)` zapíše cenu i z nespárovaného
+  řádku. Nejdřív zkusí naučené označení, jinak použije nebo založí druhovou položku
+  `created_via = RECEIPT` v rozsahu řetězce (`ReceiptReviewService.receiptItemFor`,
+  `ProductCatalogService.receiptItem`). Řádek s platným EAN, který nezná katalog ani OFF,
+  založí globální zboží s tím kódem (`publishedLineWithUnknownEanBecomesGlobalProductWithThatCode`). Strop je vlastní (`app.receipt.max-open-items`), záloha
+  a vratný obal se přeskočí (`ReceiptLineChecks`). Hledání ho řadí za ostatní shody.
+- **Kontrolní součet** z workeru je na účtence (`Receipt.sumStatus`/`computedTotal`) a řídí
+  předvýběr řádků. Řádky nesou `nonProduct` a `suspicious`.
+- **Dopárování** `rematchReceiptItem` (`ReceiptItemRematchService`): vlastní data hned, cizí po
+  dvou souhlasných hlasech (`core.product_merge_vote`, `ProductMergeVoteRepository`).
+- **Testy.** `ReceiptFlowIntegrationTest` (`publishUnmatched*`, `receiptItem*`, `rematch*`,
+  `workerSumCheckIsStoredOnReceipt`), `PseudonymizationServiceTest`.
 
 **Co zbývá:**
 - vlastní profily dalších řetězců (Penny prochází obecným),

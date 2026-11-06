@@ -7,8 +7,26 @@
     <a routerLink="/">&larr; {{ t('product-detail.backToSearch') }}</a>
   }
 
-  @if (loading()) {
+  @if (loadState() === 'loading') {
     <p>{{ t('product-detail.loading') }}</p>
+  } @else if (loadState() === 'offline') {
+    <nz-alert
+      nzType="info"
+      nzShowIcon
+      [nzMessage]="t('product-detail.offlineTitle')"
+      [nzDescription]="t('product-detail.offlineText')"
+      [nzAction]="retryAction"
+      class="page-alert"
+    />
+  } @else if (loadState() === 'error') {
+    <nz-alert
+      nzType="error"
+      nzShowIcon
+      [nzMessage]="t('product-detail.loadFailed')"
+      [nzDescription]="loadErrorMessage()"
+      [nzAction]="retryAction"
+      class="page-alert"
+    />
   } @else if (!product()) {
     <nz-alert nzType="error" [nzMessage]="t('product-detail.notFound')" nzShowIcon />
   } @else {
@@ -55,7 +73,10 @@
     </p>
 
     <div class="status-badges">
-      @if (!product()!.verified) {
+      <!-- Zboží z účtenky říká víc než obecné „Neověřeno" — ověřené nemá nic kromě účtenky. -->
+      @if (isReceiptItem()) {
+        <app-receipt-item-tag />
+      } @else if (!product()!.verified) {
         <nz-tag>{{ t('product-detail.unverified') }}</nz-tag>
       }
       @if (product()!.editedByMe) {
@@ -93,6 +114,75 @@
       <nz-alert nzType="info" [nzMessage]="flagMessage()" nzShowIcon class="flag-alert" />
     }
 
+    @if (rematchNotice(); as notice) {
+      @if (notice.kind === 'merged') {
+        <nz-alert
+          nzType="success"
+          nzShowIcon
+          nzCloseable
+          [nzMessage]="t('product-detail.rematch.mergedTitle')"
+          [nzDescription]="t('product-detail.rematch.mergedText', { name: notice.sourceName })"
+          (nzOnClose)="rematchNotice.set(null)"
+          class="page-alert"
+        />
+      } @else {
+        <nz-alert
+          nzType="info"
+          nzShowIcon
+          nzCloseable
+          [nzMessage]="t('product-detail.rematch.pendingTitle')"
+          [nzDescription]="pendingDescription"
+          (nzOnClose)="rematchNotice.set(null)"
+          class="page-alert"
+        />
+        <ng-template #pendingDescription>
+          <p class="alert-text">
+            {{
+              t('product-detail.rematch.pendingText', {
+                votes: notice.votes,
+                required: notice.votesRequired,
+              })
+            }}
+          </p>
+          <a [routerLink]="['/product', notice.target.id]">{{ notice.target.name }}</a>
+        </ng-template>
+      }
+    }
+
+    <!--
+      Zboží z účtenky: název, cena, obchod a čas nákupu jsou z účtenky, nic dalšího ověřené
+      není. Řekne se to nahoře, dřív než si člověk přečte „Nezařazeno" a prázdnou gramáž.
+    -->
+    @if (isReceiptItem()) {
+      <nz-alert
+        nzType="info"
+        nzShowIcon
+        [nzMessage]="t('product-detail.receiptItem.title')"
+        [nzDescription]="receiptItemDescription"
+        class="page-alert"
+      />
+      <ng-template #receiptItemDescription>
+        <p class="alert-text">{{ t('product-detail.receiptItem.text') }}</p>
+        @if (auth.isLoggedIn()) {
+          <button
+            nz-button
+            type="button"
+            class="alert-action"
+            [disabled]="!connectivity.online()"
+            (click)="rematchOpen.set(true)"
+          >
+            <span nz-icon nzType="link"></span>
+            {{ t('product-detail.receiptItem.rematch') }}
+          </button>
+          @if (!connectivity.online()) {
+            <p class="alert-text alert-hint">{{ t('product-detail.rematch.offline') }}</p>
+          }
+        } @else {
+          <p class="alert-text alert-hint">{{ t('product-detail.receiptItem.loginHint') }}</p>
+        }
+      </ng-template>
+    }
+
     <div class="price-summary-actions">
       @if (product()!.stats?.bestPrice != null && product()!.stats?.cheapestStore) {
         <nz-card [nzTitle]="t('product-detail.cheapestTitle')" class="cheapest-card">
@@ -125,64 +215,75 @@
       @if (product()!.prices.length === 0) {
         <p class="no-prices">{{ t('product-detail.noPrices') }}</p>
       } @else {
-        <nz-table
-          #pricesTable
-          [nzData]="product()!.prices"
-          [nzShowPagination]="false"
-          nzSize="small"
-        >
-          <thead>
-            <tr>
-              <th>{{ t('product-detail.colStore') }}</th>
-              <th>{{ t('product-detail.colPriceKind') }}</th>
-              <th>{{ t('product-detail.colPrice') }}</th>
-              <th>{{ t('product-detail.colUnitPrice') }}</th>
-              <th>{{ t('product-detail.colConfidence') }}</th>
-              <th>{{ t('product-detail.colLastReported') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (price of pricesTable.data; track price.store.id + price.priceKind) {
+        <!-- Šest sloupců se pod 600 px nevejde — tabulka se posouvá sama, ne celá stránka. -->
+        <div class="table-scroll">
+          <nz-table
+            #pricesTable
+            [nzData]="product()!.prices"
+            [nzShowPagination]="false"
+            nzSize="small"
+          >
+            <thead>
               <tr>
-                <td>
-                  <a [routerLink]="['/store', price.store.id]">{{ price.store.name }}</a>
-                </td>
-                <td>
-                  {{ priceKindKeys[price.priceKind] | transloco }}
-                  @if (price.promoValidTo) {
-                    <span class="promo-validity-note">{{
-                      t('product-detail.promoValidUntil', { date: format.date(price.promoValidTo) })
-                    }}</span>
-                  }
-                </td>
-                <td>{{ price.priceAmount | money: price.currency }}</td>
-                <td>
-                  @if (price.converted; as converted) {
-                    <span [title]="price.unitPrice | money: price.currency">{{
-                      converted.amount | money: converted.currency
-                    }}</span>
-                  } @else {
-                    {{ price.unitPrice | money: price.currency }}
-                  }
-                </td>
-                <td>
-                  <nz-tag
-                    [nzColor]="
-                      price.confidence === 'HIGH'
-                        ? 'green'
-                        : price.confidence === 'MEDIUM'
-                          ? 'orange'
-                          : 'default'
-                    "
-                  >
-                    {{ t('product-detail.observationCount', { count: price.nObs }) }}
-                  </nz-tag>
-                </td>
-                <td>{{ price.lastObservedAt | relativeDate }}</td>
+                <th>{{ t('product-detail.colStore') }}</th>
+                <th>{{ t('product-detail.colPriceKind') }}</th>
+                <th>{{ t('product-detail.colPrice') }}</th>
+                <th>{{ t('product-detail.colUnitPrice') }}</th>
+                <th>{{ t('product-detail.colConfidence') }}</th>
+                <th>{{ t('product-detail.colLastReported') }}</th>
               </tr>
-            }
-          </tbody>
-        </nz-table>
+            </thead>
+            <tbody>
+              @for (price of pricesTable.data; track price.store.id + price.priceKind) {
+                <tr>
+                  <td>
+                    <a [routerLink]="['/store', price.store.id]">{{ price.store.name }}</a>
+                  </td>
+                  <td>
+                    {{ priceKindKeys[price.priceKind] | transloco }}
+                    @if (price.promoValidTo) {
+                      <span class="promo-validity-note">{{
+                        t('product-detail.promoValidUntil', {
+                          date: format.date(price.promoValidTo),
+                        })
+                      }}</span>
+                    }
+                  </td>
+                  <td>{{ price.priceAmount | money: price.currency }}</td>
+                  <td>
+                    @if (price.converted; as converted) {
+                      <span [title]="price.unitPrice | money: price.currency">{{
+                        converted.amount | money: converted.currency
+                      }}</span>
+                    } @else {
+                      {{ price.unitPrice | money: price.currency }}
+                    }
+                  </td>
+                  <td>
+                    <nz-tag
+                      [nzColor]="
+                        price.confidence === 'HIGH'
+                          ? 'green'
+                          : price.confidence === 'MEDIUM'
+                            ? 'orange'
+                            : 'default'
+                      "
+                    >
+                      {{ t('product-detail.observationCount', { count: price.nObs }) }}
+                    </nz-tag>
+                  </td>
+                  <td>
+                    @if (isReceiptItem()) {
+                      {{ format.dateTime(price.lastObservedAt) }}
+                    } @else {
+                      {{ price.lastObservedAt | relativeDate }}
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        </div>
       }
     </nz-card>
 
@@ -323,7 +424,11 @@
               } @else {
                 {{ mp.priceAmount | money: mp.currency }}
               }
-              <span class="my-price-date">({{ mp.observedAt | relativeDate }})</span>
+              <span class="my-price-date"
+                >({{
+                  isReceiptItem() ? format.dateTime(mp.observedAt) : (mp.observedAt | relativeDate)
+                }})</span
+              >
               @if (mp.promoValidTo) {
                 <span class="promo-validity-note">{{
                   t('product-detail.promoValidUntil', { date: format.date(mp.promoValidTo) })
@@ -367,6 +472,21 @@
           [product]="product()"
           (created)="onProductSaved($event)"
           (cancelled)="editing.set(false)"
+        />
+      </ng-container>
+    </nz-modal>
+
+    <nz-modal
+      [nzVisible]="rematchOpen()"
+      [nzTitle]="t('product-detail.rematch.title')"
+      [nzFooter]="null"
+      (nzOnCancel)="rematchOpen.set(false)"
+    >
+      <ng-container *nzModalContent>
+        <app-receipt-item-rematch
+          [product]="product()!"
+          (rematched)="onRematched($event)"
+          (cancelled)="rematchOpen.set(false)"
         />
       </ng-container>
     </nz-modal>
@@ -421,4 +541,10 @@
       </ng-container>
     </nz-modal>
   }
+
+  <ng-template #retryAction>
+    <button nz-button nzSize="small" type="button" (click)="retryLoad()">
+      {{ t('product-detail.retry') }}
+    </button>
+  </ng-template>
 </ng-container>

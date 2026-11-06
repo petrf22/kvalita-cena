@@ -48,7 +48,8 @@
     "PUBLIC": "Published",
     "AWAITING_CONFIRMATIONS": "Awaiting confirmation",
     "HIDDEN_AFTER_FLAGS": "Hidden after reports",
-    "PENDING_MERGE": "Your edit"
+    "PENDING_MERGE": "Your edit",
+    "MERGED": "Merged"
   },
   "status": {
     "public": {
@@ -58,6 +59,7 @@
     },
     "awaitingConfirmations": {
       "product": "Only you can find it in search for now. Others can still find it by scanning the code. It becomes visible to everyone once {{required}} other people log a price for it — so far {{received}}.",
+      "genericProduct": "Only you can find it in search for now. Others will find it in the store's product list when logging a price. It becomes visible to everyone once {{required}} other people log a price for it — so far {{received}}.",
       "store": "Only you can see it for now. It becomes visible once {{required}} other people log a price at it — so far {{received}}.",
       "observation": "Others will see this price once the underlying product or store is published — so far {{received}} of {{required}} confirmations needed."
     },
@@ -68,6 +70,10 @@
     },
     "pendingMerge": {
       "edit": "Only you can see your edit for now — merging it into the public record hasn't started yet."
+    },
+    "merged": {
+      "product": "Merged into another product — its prices and reviews now live there, and the link takes you straight to it.",
+      "store": "Merged into another store — its prices now live there."
     }
   }
 }

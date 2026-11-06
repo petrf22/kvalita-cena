@@ -98,6 +98,11 @@
     "RECEIPT_RESULT_INVALID": "The receipt processing result is invalid.",
     "RECEIPT_LINE_ALREADY_CONFIRMED": "The price from this line has already been recorded.",
     "RECEIPT_LINE_CONFIRM_FAILED": "The price from this line could not be recorded, please try again.",
+    "RECEIPT_ITEM_LIMIT": "You already have {{p0}} unconfirmed items from receipts. More can be published once others confirm some of them.",
+    "RECEIPT_LINE_NOT_PRODUCT": "This line is not a product (deposit, returnable packaging) and is not published.",
+    "RECEIPT_ITEM_REMATCH_INVALID": "This receipt item can no longer be matched, or the selected product does not belong to the same store.",
+    "RECEIPT_ITEM_REMATCH_UNIT_MISMATCH": "This receipt item's prices can't be converted to the chosen product's unit (piece, kg, litre or package) — pick a product with the same unit.",
+    "RECEIPT_LINE_MATCH_REJECTED": "You cancelled the suggestion for this line, and the receipt item with the same name is the one you rejected — match the line manually or create a new product.",
     "RECEIPT_UPLOAD_TOO_LARGE": "The receipt is too large to upload — capture it in fewer parts.",
     "QUALITY_REQUIRES_LOGIN": "Rating quality requires signing in",
     "QUALITY_STARS_OUT_OF_RANGE": "The rating must be between {{p0}} and {{p1}} stars",
@@ -236,12 +241,17 @@
       "FUZZY": "only by a similar name",
       "USER": "chosen by hand",
       "NEW_PRODUCT": "newly added product",
-      "OFF": "by EAN from Open Food Facts"
+      "OFF": "by EAN from Open Food Facts",
+      "RECEIPT_ITEM": "published as a receipt item"
     },
     "quantityUnit": {
       "PCS": "pcs",
       "KG": "kg",
       "L": "l"
     }
+  },
+  "receiptItem": {
+    "tag": "From receipt",
+    "hint": "Created from an unmatched receipt line. The name, price, store and time of purchase come from the receipt — brand, size and barcode are not verified."
   }
 }

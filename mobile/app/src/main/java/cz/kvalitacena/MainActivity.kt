@@ -323,6 +323,14 @@ private fun AppScaffold() {
           },
           onStoreClick = { storeId -> navController.navigate(storeDetailRoute(storeId)) },
           onEditProduct = { id -> navController.navigate(productFormRouteForEdit(id)) },
+          // Po sloučení zboží z účtenky zdroj zmizel — cíl ho v zásobníku nahradí, ať „zpět"
+          // nevede na zboží, které už neexistuje. popUpTo najde nejvyšší záznam té trasy, tedy
+          // právě tenhle detail, ne starší detail jiného zboží pod ním.
+          onOpenProduct = { id, replaceCurrent ->
+            navController.navigate(productDetailRoute(id)) {
+              if (replaceCurrent) popUpTo(backStackEntry.destination.id) { inclusive = true }
+            }
+          },
         )
       }
       composable(

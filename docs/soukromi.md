@@ -253,6 +253,13 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   by znamenalo mazat z účtenky obsah, kvůli kterému ji vlastník má (třetí výjimka výš).
   Zmírnění je stejné jako u ní: účtenka nikdy nejde přes API k cizímu a export pro třetí
   stranu musí `owner_user_id` vynechat nebo hashovat.
+- **Zveřejnit jde celý nákup, ne jen spárované řádky** (`docs/reputace.md`, „Zboží z účtenky").
+  Ceny vznikají dál jen potvrzením vlastníka a jsou to běžné pseudonymizované observace. Větší
+  objem zvětšuje otisk jednoho nákupu (víc cen se stejným obchodem a časem nákupu), ale autor
+  ceny není veřejně vidět a agregáty jednotlivé observace nevypisují, takže zbytkové riziko výš
+  se kvalitativně nemění. Zboží z účtenky nese jen čitelný název řádku, nikdy nic o kupujícím.
+  Hlas pro dopárování (`core.product_merge_vote`) se po 180 dnech zbaví autora stejně jako
+  potvrzení označení.
 - **Nespárované řádky jiných lidí se nikomu neukazují.** Když se později naučí mapování názvu
   z účtenky (`core.product_store_label`), server nespárovaný řádek jen přepne na návrh; vlastník
   dostane upozornění a cenu potvrdí sám. Do sdíleného katalogu jde jen samotné označení

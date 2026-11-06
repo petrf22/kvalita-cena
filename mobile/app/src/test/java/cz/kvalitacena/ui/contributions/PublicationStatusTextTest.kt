@@ -70,4 +70,27 @@ class PublicationStatusTextTest {
     assertEquals(R.string.my_contributions_state_hidden_after_flags, publicationStateLabel("HIDDEN_AFTER_FLAGS"))
     assertEquals(R.string.my_contributions_state_pending_merge, publicationStateLabel("PENDING_MERGE"))
   }
+
+  @Test
+  fun genericProductAwaitingConfirmationsDoesNotPromiseScanning() {
+    val status = PublicationStatus("AWAITING_CONFIRMATIONS", confirmationsReceived = 0, confirmationsRequired = 3)
+    assertEquals(
+      UiText.Res(R.string.my_contributions_status_awaiting_generic_product, listOf(3, 0)),
+      publicationStatusText(status, PublicationRecordKind.PRODUCT, generic = true),
+    )
+  }
+
+  @Test
+  fun mergedRecordPointsToTarget() {
+    val status = PublicationStatus("MERGED")
+    assertEquals(R.string.my_contributions_state_merged, publicationStateLabel("MERGED"))
+    assertEquals(
+      UiText.Res(R.string.my_contributions_status_merged_product),
+      publicationStatusText(status, PublicationRecordKind.PRODUCT),
+    )
+    assertEquals(
+      UiText.Res(R.string.my_contributions_status_merged_store),
+      publicationStatusText(status, PublicationRecordKind.STORE),
+    )
+  }
 }

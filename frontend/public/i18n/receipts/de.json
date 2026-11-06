@@ -163,23 +163,31 @@
     "createNeedsStore": "Ein neues Produkt lässt sich anlegen, sobald das Geschäft bestätigt ist.",
     "ignore": "Ignorieren",
     "unmatch": "Zuordnung aufheben",
-    "unignore": "Nicht mehr ignorieren"
+    "unignore": "Nicht mehr ignorieren",
+    "selectReceiptItemLabel": "Position {{label}} als Artikel vom Kassenbon veröffentlichen",
+    "publishAsReceiptItem": "wird als Artikel vom Kassenbon veröffentlicht",
+    "nonProduct": "Pfand oder Verpackung — wird nicht veröffentlicht",
+    "verify": "Prüfen",
+    "verifyHint": "Diese Position sieht nach einem Lesefehler aus: Der Preis fehlt, Menge × Preis ergibt nicht den Betrag, oder der Name ist unleserlich. Vergleiche sie mit dem Bild des Kassenbons."
   },
   "skip": {
-    "duplicateSameDay": "Diesen Preis hast du für den Einkaufstag schon erfasst — ein zweiter Eintrag wurde nicht hinzugefügt."
+    "duplicateSameDay": "Diesen Preis hast du für den Einkaufstag schon erfasst — ein zweiter Eintrag wurde nicht hinzugefügt.",
+    "itemLimit": "Du hast zu viele unbestätigte Artikel aus Kassenbons. Weitere kannst du veröffentlichen, sobald andere einige davon bestätigen."
   },
   "confirm": {
-    "button": "Zugeordnete bestätigen ({{count}})",
-    "hint": "Erfasst die Preise der angehakten Positionen mit Datum und Uhrzeit des Einkaufs vom Kassenbon.",
+    "button": "Ausgewählte veröffentlichen ({{count}})",
+    "hint": "Erfasst die Preise der angehakten Positionen mit Datum und Uhrzeit des Einkaufs vom Kassenbon. Nicht zugeordnete werden als Artikel vom Kassenbon veröffentlicht.",
     "blocker": {
       "notProcessed": "Der Kassenbon ist noch nicht verarbeitet.",
       "storeMissing": "Bestätige zuerst oben das Geschäft.",
       "purchaseTimeMissing": "Ergänze zuerst oben Datum und Uhrzeit des Einkaufs.",
-      "nothing": "Hake mindestens eine zugeordnete Position an."
+      "nothing": "Hake mindestens eine Position an."
     },
-    "done": "{count, plural, one {# Preis erfasst.} other {# Preise erfasst.}}",
-    "doneNone": "Es wurde kein neuer Preis erfasst.",
-    "skipped": "{count, plural, one {# Position übersprungen:} other {# Positionen übersprungen:}}"
+    "done": "{count, plural, one {# Position veröffentlicht.} other {# Positionen veröffentlicht.}}",
+    "doneNone": "Es wurde keine Position veröffentlicht.",
+    "skipped": "{count, plural, one {# Position übersprungen:} other {# Positionen übersprungen:}}",
+    "doneReceiptItems": "{count, plural, one {# davon als Artikel vom Kassenbon — zuordnen kannst du ihn später auf der Produktseite.} other {# davon als Artikel vom Kassenbon — zuordnen kannst du sie später auf der Produktseite.}}",
+    "guessesLeft": "{count, plural, one {# Vermutung zum Prüfen wird erst veröffentlicht, wenn du sie anhakst. Passt das Produkt nicht, heb die Zuordnung auf — dann wird die Position als Artikel vom Kassenbon veröffentlicht.} other {# Vermutungen zum Prüfen werden erst veröffentlicht, wenn du sie anhakst. Passt ein Produkt nicht, heb die Zuordnung auf — dann wird die Position als Artikel vom Kassenbon veröffentlicht.}}"
   },
   "create": {
     "title": "Neues Produkt vom Kassenbon",
@@ -193,16 +201,25 @@
     "skip": "Überspringen"
   },
   "group": {
-    "toResolve": "Zu ergänzen ({{count}})",
+    "toResolve": "Nicht zugeordnet ({{count}})",
     "toCheck": "Zu prüfen ({{count}})",
     "ready": "Bereit zur Bestätigung ({{count}})",
     "done": "Erledigt ({{count}})",
-    "ignored": "Ignoriert ({{count}})"
+    "ignored": "Ignoriert ({{count}})",
+    "toResolveHint": "Angehakte Positionen werden als Artikel vom Kassenbon veröffentlicht — mit Name und Preis wie auf dem Kassenbon. Wenn du das Produkt im Katalog findest und zuordnest, wird der Preis stattdessen dort erfasst."
   },
   "panel": {
     "accept": "Ja, das ist es",
     "other": "Anderes Produkt",
     "notProduct": "Kein Produkt — ignorieren",
-    "offHint": "Open Food Facts kennt dieses Produkt über die EAN. Es wird in den Katalog aufgenommen, sobald du die Zeile bestätigst."
+    "offHint": "Open Food Facts kennt dieses Produkt über die EAN. Es wird in den Katalog aufgenommen, sobald du die Zeile bestätigst.",
+    "receiptItemHint": "Du musst das Produkt weder suchen noch anlegen — eine angehakte Position wird als Artikel vom Kassenbon veröffentlicht. Findest du es aber, wird der Preis beim echten Produkt erfasst.",
+    "nonProductHint": "Das sieht nach Pfand oder Mehrwegverpackung aus — eine solche Position wird nicht veröffentlicht. Ist es ein Produkt, such es und ordne es zu."
+  },
+  "sum": {
+    "mismatchTitle": "Die Summe der Positionen {{computed}} stimmt nicht mit dem Betrag auf dem Kassenbon {{total}} überein",
+    "mismatchText": "Die Differenz beträgt {{difference}}. Eine Position wurde vielleicht falsch gelesen oder fehlt — geh die mit „Prüfen“ markierten Positionen durch und entferne das Häkchen bei allem, was du nicht veröffentlichen willst.",
+    "unknownTitle": "Die Summe ließ sich nicht prüfen — kontrolliere die Positionen",
+    "unknownText": "Die App hat nichts, womit sie die Summe der Positionen vergleichen kann — der Gesamtbetrag wurde auf dem Kassenbon nicht gefunden, oder eine ältere Version hat ihn gelesen. Geh die Positionen durch (vor allem die mit „Prüfen“ markierten) und entferne das Häkchen bei allem, was du nicht veröffentlichen willst."
   }
 }

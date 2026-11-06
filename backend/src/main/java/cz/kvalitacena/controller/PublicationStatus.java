@@ -21,6 +21,10 @@ public record PublicationStatus(PublicationState state, Integer confirmationsRec
     return new PublicationStatus(PublicationState.AWAITING_CONFIRMATIONS, received, required, false);
   }
 
+  public static PublicationStatus merged() {
+    return new PublicationStatus(PublicationState.MERGED, null, null, false);
+  }
+
   public static PublicationStatus pendingMerge() {
     return new PublicationStatus(PublicationState.PENDING_MERGE, null, null, false);
   }

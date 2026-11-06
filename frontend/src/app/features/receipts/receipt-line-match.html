@@ -52,7 +52,12 @@
                     [externalImage]="product.externalImage"
                   />
                   <span class="match-text">
-                    <span class="match-name">{{ product.name }}</span>
+                    <span class="match-name">
+                      {{ product.name }}
+                      @if (isReceiptItem(product)) {
+                        <app-receipt-item-tag />
+                      }
+                    </span>
                     <span class="match-meta">
                       @if (product.brand) {
                         {{ product.brand.name }} ·

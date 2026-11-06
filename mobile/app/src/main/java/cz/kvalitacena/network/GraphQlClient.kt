@@ -59,7 +59,7 @@ internal val PRODUCT_FIELDS = """
   brand { id name slug }
   category { id name slug path }
   unitBase netContentValue netContentUom netContentBase piecesInPack isVariableWeight status isGeneric
-  catalogScope scopeChain { id name chainType } scopeStore { $STORE_FIELDS }
+  catalogScope createdVia scopeChain { id name chainType } scopeStore { $STORE_FIELDS }
   verified editedByMe
   prices { $PRICE_CURRENT_FIELDS }
   photos { $PHOTO_FIELDS }
@@ -109,10 +109,10 @@ internal val PRODUCT_SUMMARY_FIELDS = """
   id name nameLang
   brand { id name slug }
   category { id name slug path }
-  netContentValue netContentUom isVariableWeight
+  unitBase netContentValue netContentUom isVariableWeight
   isGeneric
   status
-  catalogScope scopeChain { id name chainType } scopeStore { $STORE_FIELDS }
+  catalogScope createdVia scopeChain { id name chainType } scopeStore { $STORE_FIELDS }
   verified editedByMe
   photos { id url thumbnailUrl width height }
   externalImage { url thumbnailUrl kind lang attribution }
@@ -144,7 +144,7 @@ internal val PUBLICATION_STATUS_FIELDS = """
 /** Řádek účtenky i se spárovaným zbožím (docs/datovy-model.md, „Účtenky"). */
 internal val RECEIPT_LINE_FIELDS = """
   id lineNo labelRaw labelDisplay internalCode quantity quantityUnit unitPrice lineTotal discountAmount
-  priceKind status matchSource observationId confirmed skipReason
+  priceKind status matchSource observationId confirmed skipReason nonProduct suspicious
   product { $PRODUCT_SUMMARY_FIELDS }
   offCandidate { code name nameLang brandName netContentValue netContentUom image { url thumbnailUrl kind lang attribution } sourceUrl attribution }
 """
@@ -159,8 +159,10 @@ internal val RECEIPT_FIELDS = """
   lineCounts { total unmatched suggested matched ignored }
 """
 
+/** Kontrolní součet (`sumStatus`, `computedTotal`) jen v detailu — seznam účtenek ho nepotřebuje. */
 internal val RECEIPT_DETAIL_FIELDS = """
   $RECEIPT_FIELDS
+  sumStatus computedTotal
   lines { $RECEIPT_LINE_FIELDS }
 """
 
@@ -949,11 +951,19 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     return execute(gql, variables, GraphQlResponse.serializer(UnmatchReceiptLineData.serializer())).unmatchReceiptLine
   }
 
-  /** Zapíše ceny z vybraných řádků; kolize jednoho řádku ostatní neshodí (vrátí se ve `skipped`). */
-  suspend fun confirmReceiptLines(receiptId: String, lineIds: List<String>): ConfirmReceiptLinesResult {
+  /**
+   * Zapíše ceny z vybraných řádků; kolize jednoho řádku ostatní neshodí (vrátí se ve `skipped`).
+   * S [publishUnmatched] server zveřejní i nespárované řádky — cenu zapíše na „zboží z účtenky"
+   * (`matchSource = RECEIPT_ITEM`), nezboží přeskočí s `RECEIPT_LINE_NOT_PRODUCT`.
+   */
+  suspend fun confirmReceiptLines(
+    receiptId: String,
+    lineIds: List<String>,
+    publishUnmatched: Boolean = false,
+  ): ConfirmReceiptLinesResult {
     val gql = """
-      mutation(${'$'}receiptId: ID!, ${'$'}lineIds: [ID!]!) {
-        confirmReceiptLines(receiptId: ${'$'}receiptId, lineIds: ${'$'}lineIds) {
+      mutation(${'$'}receiptId: ID!, ${'$'}lineIds: [ID!]!, ${'$'}publishUnmatched: Boolean) {
+        confirmReceiptLines(receiptId: ${'$'}receiptId, lineIds: ${'$'}lineIds, publishUnmatched: ${'$'}publishUnmatched) {
           confirmed
           skipped { $RECEIPT_LINE_FIELDS }
           receipt { $RECEIPT_DETAIL_FIELDS }
@@ -963,8 +973,33 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     val variables = buildJsonObject {
       put("receiptId", receiptId)
       put("lineIds", json.encodeToJsonElement(lineIds))
+      put("publishUnmatched", publishUnmatched)
     }
     return execute(gql, variables, GraphQlResponse.serializer(ConfirmReceiptLinesData.serializer())).confirmReceiptLines
+  }
+
+  /**
+   * Dopárování zboží z účtenky na skutečné zboží (docs/reputace.md, „Zboží z účtenky") — vlastní
+   * ceny se přesunou hned, cizí až po `votesRequired` souhlasných hlasech. Vyžaduje přihlášení.
+   */
+  suspend fun rematchReceiptItem(productId: String, targetId: String): RematchReceiptItemResult {
+    val gql = """
+      mutation(${'$'}productId: ID!, ${'$'}targetId: ID!) {
+        rematchReceiptItem(productId: ${'$'}productId, targetId: ${'$'}targetId) {
+          merged votes votesRequired
+          product { $PRODUCT_FIELDS }
+        }
+      }
+    """
+    val variables = buildJsonObject {
+      put("productId", productId)
+      put("targetId", targetId)
+    }
+    val result = execute(gql, variables, GraphQlResponse.serializer(RematchReceiptItemData.serializer())).rematchReceiptItem
+    // Sloučení přesune EAN zboží z účtenky na cíl (ProductMergeService.mergeCodes) — sken toho
+    // kódu by jinak z [lookupCache] vrátil sloučený zbytek. Které kódy to byly, klient neví, proto celá.
+    if (result.merged) lookupCache.clear()
+    return result
   }
 
   suspend fun markReceiptSeen(id: String): Receipt {

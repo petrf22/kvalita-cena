@@ -19,14 +19,7 @@ import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { Observable } from 'rxjs';
-import {
-  ConfirmReceiptLinesResult,
-  Product,
-  ProductSummary,
-  ReceiptDetail,
-  ReceiptLine,
-  Store,
-} from '../../models/catalog';
+import { Product, ProductSummary, ReceiptDetail, ReceiptLine, Store } from '../../models/catalog';
 import { QuantityUnit, ReceiptLineStatus } from '../../models/generated/enums';
 import { AuthService } from '../../services/auth-service';
 import { ConnectivityService, isNetworkError } from '../../services/connectivity-service';
@@ -36,6 +29,7 @@ import { QUANTITY_UNIT_KEYS, RECEIPT_LINE_STATUS_KEYS } from '../../shared/enum-
 import { translateError } from '../../shared/error-message';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { ProductThumb, usesExternalImageFallback } from '../../shared/product-thumb';
+import { ReceiptItemTag, isReceiptItem } from '../../shared/receipt-item-tag';
 import { StorePicker } from '../../shared/store-picker';
 import { ExistingProductMatch, ProductForm } from '../product-form/product-form';
 import { loginRedirect, requiresLogin } from './receipt-auth';
@@ -44,14 +38,19 @@ import { ReceiptLineMatch } from './receipt-line-match';
 import { ReceiptLineGroupHeader } from './receipt-line-group-header';
 import { ReceiptLinePanel, offCandidateLabel } from './receipt-line-panel';
 import {
+  type PublishSummary,
   confirmBlocker,
   defaultSelectedLineIds,
   groupedLines,
   guideQueue,
   isAwaitingProcessing,
-  isLineConfirmable,
   isLineGuess,
   isLineLocked,
+  isLineNonProduct,
+  isLinePriceMissing,
+  isLineReceiptItemCandidate,
+  isLineSelectable,
+  isLineToVerify,
   isProcessingDeadEnd,
   type LineGroup,
   lineGtin,
@@ -61,13 +60,17 @@ import {
   matchSourceKey,
   nextInGuide,
   nextSelection,
+  publishSummary,
   purchasedAtToDate,
   receiptStatusColor,
   receiptStatusKey,
   receiptStoreName,
   replaceLine,
   samePurchaseTime,
+  selectLabelKey,
   skipReasonKey,
+  sumCheck,
+  unselectedGuessCount,
 } from './receipt-status';
 import { receiptStorePrefill } from './receipt-store-prefill';
 
@@ -77,12 +80,13 @@ const PENDING_POLL_MS = 30_000;
 type PageState = 'loading' | 'ready' | 'notFound' | 'error' | 'offline';
 
 /**
- * Detail účtenky — párování řádků se zbožím a hromadné potvrzení cen (docs/datovy-model.md,
+ * Detail účtenky — párování řádků se zbožím a hromadné zveřejnění cen (docs/datovy-model.md,
  * „Účtenky"). Obrázek vlevo, řádky vpravo, na úzkém displeji pod sebou a obrázek sbalený.
  *
- * Cenu nikdy nezapíše stroj ani samotné spárování — jen „Potvrdit spárované" (docs/ai.md,
- * „AI nikdy nerozhoduje"). Potvrzení potřebuje potvrzený obchod a datum a čas nákupu, protože
- * z nich vznikne `storeId` a `observedAt` každé ceny.
+ * Cenu nikdy nezapíše stroj ani samotné spárování — jen „Zveřejnit vybrané" (docs/ai.md,
+ * „AI nikdy nerozhoduje"). Zveřejnit jde i nespárovaný řádek: cena se zapíše na „zboží
+ * z účtenky", které jde později dopárovat (`publishUnmatched`). Zveřejnění potřebuje potvrzený
+ * obchod a datum a čas nákupu, protože z nich vznikne `storeId` a `observedAt` každé ceny.
  */
 @Component({
   selector: 'app-receipt-detail-page',
@@ -105,6 +109,7 @@ type PageState = 'loading' | 'ready' | 'notFound' | 'error' | 'offline';
     ProductForm,
     ProductThumb,
     ReceiptImages,
+    ReceiptItemTag,
     ReceiptLineMatch,
     ReceiptLineGroupHeader,
     ReceiptLinePanel,
@@ -133,7 +138,13 @@ export class ReceiptDetailPage {
   protected readonly statusKey = receiptStatusKey;
   protected readonly statusColor = receiptStatusColor;
   protected readonly isLocked = isLineLocked;
-  protected readonly isConfirmable = isLineConfirmable;
+  protected readonly isSelectable = isLineSelectable;
+  protected readonly isReceiptItemCandidate = isLineReceiptItemCandidate;
+  protected readonly isNonProduct = isLineNonProduct;
+  protected readonly isPriceMissing = isLinePriceMissing;
+  protected readonly isToVerify = isLineToVerify;
+  protected readonly isReceiptItem = isReceiptItem;
+  protected readonly selectLabelKey = selectLabelKey;
   protected readonly skipReasonKey = skipReasonKey;
 
   protected readonly receipt = signal<ReceiptDetail | null>(null);
@@ -158,6 +169,11 @@ export class ReceiptDetailPage {
     return receipt != null && isProcessingDeadEnd(receipt);
   });
   protected readonly summary = computed(() => lineSummary(this.receipt()?.lines ?? []));
+  /** Kontrolní součet nesouhlasí nebo ho nešlo ověřit — upozornění a zvýraznění podezřelých řádků. */
+  protected readonly sumWarning = computed(() => {
+    const receipt = this.receipt();
+    return receipt ? sumCheck(receipt) : null;
+  });
   protected readonly showExternalImageNote = computed(() =>
     (this.receipt()?.lines ?? []).some(
       (line) => line.product != null && usesExternalImageFallback(line.product),
@@ -173,6 +189,10 @@ export class ReceiptDetailPage {
     const receipt = this.receipt();
     return receipt ? confirmBlocker(receipt, this.selectedCount()) : 'notProcessed';
   });
+  /** Odhady ke kontrole, které se bez zaškrtnutí nezveřejní — připomínka u tlačítka. */
+  protected readonly guessesLeft = computed(() =>
+    unselectedGuessCount(this.receipt()?.lines ?? [], this.selected()),
+  );
 
   // --- hlavička
   protected readonly editingStore = signal(false);
@@ -212,7 +232,7 @@ export class ReceiptDetailPage {
 
   // --- potvrzení a smazání
   protected readonly confirming = signal(false);
-  protected readonly confirmResult = signal<ConfirmReceiptLinesResult | null>(null);
+  protected readonly publishResult = signal<PublishSummary | null>(null);
   protected readonly confirmError = signal<string | null>(null);
   protected readonly deleting = signal(false);
   protected readonly deleteError = signal<string | null>(null);
@@ -547,7 +567,7 @@ export class ReceiptDetailPage {
   ): void {
     this.busyLineId.set(line.id);
     this.clearLineError(line.id);
-    this.confirmResult.set(null);
+    this.publishResult.set(null);
     action.subscribe({
       next: (updated) => {
         this.busyLineId.set(null);
@@ -572,7 +592,7 @@ export class ReceiptDetailPage {
     });
   }
 
-  // --- potvrzení
+  // --- zveřejnění
 
   protected confirm(): void {
     const receipt = this.receipt();
@@ -580,12 +600,18 @@ export class ReceiptDetailPage {
     const lineIds = receipt.lines.filter((l) => this.selected().has(l.id)).map((l) => l.id);
     this.confirming.set(true);
     this.confirmError.set(null);
-    this.confirmResult.set(null);
-    this.receiptService.confirmLines(receipt.id, lineIds).subscribe({
+    this.publishResult.set(null);
+    this.receiptService.confirmLines(receipt.id, lineIds, true).subscribe({
       next: (result) => {
         this.confirming.set(false);
-        this.confirmResult.set(result);
+        this.publishResult.set(publishSummary(lineIds, result));
         this.applyReceipt(result.receipt, false);
+        // Přeskočený řádek potřebuje člověka (cena chybí, strop zboží z účtenek) — zaškrtnutý
+        // by se při dalším „Zveřejnit vybrané" jen znovu přeskočil.
+        const skipped = new Set(result.skipped.map((line) => line.id));
+        if (skipped.size > 0) {
+          this.selected.update((current) => new Set([...current].filter((id) => !skipped.has(id))));
+        }
         this.receiptService.refreshSummary();
       },
       error: (err: unknown) => {

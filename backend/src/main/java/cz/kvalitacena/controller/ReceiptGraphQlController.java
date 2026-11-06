@@ -23,6 +23,8 @@ import cz.kvalitacena.security.ViewerContext;
 import cz.kvalitacena.security.ViewerContextResolver;
 import cz.kvalitacena.service.ProductOverlayService;
 import cz.kvalitacena.service.NewProductDefaultsService;
+import cz.kvalitacena.service.ReceiptItemRematchService;
+import cz.kvalitacena.service.ReceiptLineChecks;
 import cz.kvalitacena.service.ReceiptMatchingService;
 import cz.kvalitacena.service.ReceiptReviewService;
 import cz.kvalitacena.service.ReceiptService;
@@ -68,6 +70,8 @@ public class ReceiptGraphQlController {
   private final ViewerContextResolver viewerContextResolver;
   private final ExternalProductCandidateFactory candidateFactory;
   private final NewProductDefaultsService productDefaultsService;
+  private final ReceiptItemRematchService rematchService;
+  private final ReceiptLineChecks lineChecks;
   private final HttpServletRequest servletRequest;
 
   // --- dotazy
@@ -150,10 +154,25 @@ public class ReceiptGraphQlController {
 
   @MutationMapping
   public ReceiptReviewService.ConfirmResult confirmReceiptLines(@Argument Long receiptId, @Argument List<Long> lineIds,
-      Authentication authentication) {
+      @Argument Boolean publishUnmatched, Authentication authentication) {
     String clientKind = servletRequest.getHeader("X-Client-Kind");
     ObservationSource source = "ANDROID".equalsIgnoreCase(clientKind) ? ObservationSource.MOBILE : ObservationSource.WEB;
-    return reviewService.confirmLines(viewer(authentication).publicUid(), receiptId, lineIds, source);
+    return reviewService.confirmLines(viewer(authentication).publicUid(), receiptId, lineIds, source,
+        Boolean.TRUE.equals(publishUnmatched));
+  }
+
+  public record RematchView(Product product, boolean merged, int votes, int votesRequired) {
+  }
+
+  @MutationMapping
+  public RematchView rematchReceiptItem(@Argument Long productId, @Argument Long targetId,
+      Authentication authentication) {
+    ViewerContext viewer = viewer(authentication);
+    ReceiptItemRematchService.Result result = rematchService.rematch(viewer.publicUid(), productId, targetId);
+    Product product = productRepository.findById(result.productId())
+        .map(p -> productOverlayService.applyOverlay(List.of(p), viewer.userId()).getFirst())
+        .orElseThrow(() -> new NotFoundException(ErrorCode.PRODUCT_NOT_FOUND));
+    return new RematchView(product, result.merged(), result.votes(), result.votesRequired());
   }
 
   @MutationMapping
@@ -226,6 +245,16 @@ public class ReceiptGraphQlController {
   @SchemaMapping(typeName = "ReceiptLine", field = "priceKind")
   public PriceKind priceKind(ReceiptLine line) {
     return line.getPriceKindGuess();
+  }
+
+  @SchemaMapping(typeName = "ReceiptLine", field = "nonProduct")
+  public boolean nonProduct(ReceiptLine line) {
+    return lineChecks.isNonProduct(line);
+  }
+
+  @SchemaMapping(typeName = "ReceiptLine", field = "suspicious")
+  public boolean suspicious(ReceiptLine line) {
+    return ReceiptLineChecks.isSuspicious(line);
   }
 
   @SchemaMapping(typeName = "ReceiptLine", field = "offCandidate")

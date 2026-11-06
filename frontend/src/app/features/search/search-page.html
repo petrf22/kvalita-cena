@@ -119,7 +119,10 @@
                   <div>
                     <div class="product-name">
                       {{ item.product.name }}
-                      @if (!item.product.verified) {
+                      <!-- Zboží z účtenky: server ho řadí za ostatní shody, štítek říká proč. -->
+                      @if (isReceiptItem(item.product)) {
+                        <app-receipt-item-tag class="unverified-tag" />
+                      } @else if (!item.product.verified) {
                         <nz-tag class="unverified-tag">{{ t('search.unverified') }}</nz-tag>
                       }
                     </div>
@@ -176,7 +179,9 @@
               <div class="result-card-product">
                 <div class="product-name">
                   {{ item.product.name }}
-                  @if (!item.product.verified) {
+                  @if (isReceiptItem(item.product)) {
+                    <app-receipt-item-tag class="unverified-tag" />
+                  } @else if (!item.product.verified) {
                     <nz-tag class="unverified-tag">{{ t('search.unverified') }}</nz-tag>
                   }
                 </div>

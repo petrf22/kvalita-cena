@@ -98,6 +98,11 @@
     "RECEIPT_RESULT_INVALID": "Wynik przetwarzania paragonu jest nieprawidłowy.",
     "RECEIPT_LINE_ALREADY_CONFIRMED": "Cena z tej pozycji jest już zapisana.",
     "RECEIPT_LINE_CONFIRM_FAILED": "Nie udało się zapisać ceny z tej pozycji, spróbuj ponownie.",
+    "RECEIPT_ITEM_LIMIT": "Masz już {{p0}} niepotwierdzonych pozycji z paragonów. Kolejne będzie można opublikować, gdy inni potwierdzą część z nich.",
+    "RECEIPT_LINE_NOT_PRODUCT": "Ta pozycja nie jest produktem (kaucja, opakowanie zwrotne) i nie jest publikowana.",
+    "RECEIPT_ITEM_REMATCH_INVALID": "Tego produktu z paragonu nie można już powiązać albo wybrany produkt nie należy do tego samego sklepu.",
+    "RECEIPT_ITEM_REMATCH_UNIT_MISMATCH": "Cen tego produktu z paragonu nie da się przeliczyć na jednostkę wybranego produktu (sztuka, kg, litr lub opakowanie) — wybierz produkt z tą samą jednostką.",
+    "RECEIPT_LINE_MATCH_REJECTED": "Propozycję dla tej pozycji anulowano, a produkt z paragonu o tej samej nazwie to właśnie odrzucony — dopasuj pozycję ręcznie albo załóż nowy produkt.",
     "RECEIPT_UPLOAD_TOO_LARGE": "Paragon jest za duży do wysłania — sfotografuj go w mniejszej liczbie części.",
     "QUALITY_REQUIRES_LOGIN": "Ocena jakości wymaga zalogowania",
     "QUALITY_STARS_OUT_OF_RANGE": "Ocena musi być w zakresie od {{p0}} do {{p1}} gwiazdek",
@@ -236,12 +241,17 @@
       "FUZZY": "tylko według podobnej nazwy",
       "USER": "wybrane ręcznie",
       "NEW_PRODUCT": "nowo dodany produkt",
-      "OFF": "według EAN z Open Food Facts"
+      "OFF": "według EAN z Open Food Facts",
+      "RECEIPT_ITEM": "opublikowane jako produkt z paragonu"
     },
     "quantityUnit": {
       "PCS": "szt.",
       "KG": "kg",
       "L": "l"
     }
+  },
+  "receiptItem": {
+    "tag": "Z paragonu",
+    "hint": "Produkt powstał z niepowiązanej pozycji paragonu. Nazwa, cena, sklep i czas zakupu pochodzą z paragonu — marka, gramatura ani kod kreskowy nie są zweryfikowane."
   }
 }

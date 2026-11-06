@@ -475,3 +475,81 @@ faktor odvozený z produktu by byl v celé buňce konstantní — jak vážený 
 takže by `agg.price_current` vyšlo bit po bitu stejně jako bez něj. Efekt "bezkódové zboží je
 méně důvěryhodné" proto patří tam, kde skutečně něco mění — do stropu confidence a do statusu
 DRAFT/ACTIVE, ne do váhy záznamu.
+
+## Zboží z účtenky
+
+Řádek účtenky, který uživatel nedokáže spárovat, se přesto může zveřejnit
+(`confirmReceiptLines(publishUnmatched: true)`, `docs/datovy-model.md`, „Účtenky"). Název, cena,
+obchod a čas nákupu jsou nejcennější údaje, které účtenka nese, a o ty se nemá přicházet jen
+proto, že párování je pracné. Cena se zapíše na **zboží z účtenky**: bezkódovou druhovou položku
+z oddílu výš (`is_generic`, rozsah řetězce/provozovny), jen se značkou původu
+`core.product.created_via = 'RECEIPT'`. Není to nová entita, takže hledání, agregace, grafy
+i sloučení fungují beze změny.
+
+Řádek s platným EAN (GTIN s kontrolní číslicí, ne vnitroobchodní kód), který nezná katalog ani
+Open Food Facts, dostane místo druhové položky **globální zboží s tím EAN** — stejně jako po
+skenu čárového kódu, jen se stejnou značkou `RECEIPT` a vždy `DRAFT`. Druhová položka jednoho
+řetězce by EAN zahodila: pozdější sken ani účtenka jiného řetězce by ji nenašly a vznikla by
+duplicita. Riziko je EAN přečtený chybně tak, že kontrolní číslici projde (jedna záměna číslice
+ji neprojde nikdy, prohození sousedních skoro nikdy); takové zboží opraví úprava nebo sloučení.
+
+**Viditelnost se nemění.** Zboží z účtenky je vždy `DRAFT` a platí pro něj stejný práh jako
+pro ruční bezkódové zboží („Práh důvěry pro zveřejnění nového záznamu" výš,
+`app.catalog.draft-confirmations` = 3, leave-one-out). Potvrzení se ale sbírají samy: po
+zveřejnění se naučí označení z účtenky (`core.product_store_label`), takže stejný řádek na
+účtence jiného člověka ze stejného řetězce dostane návrh na totéž zboží. Jeho potvrzená cena
+je potvrzení zboží z účtenky. V hledání se zboží z účtenky řadí za ostatní shody, kromě řazení
+podle ceny (`ProductSearchRepositoryImpl.orderByFragment`), a klient ho kreslí se štítkem
+„Z účtenky".
+
+**Stropy.** Zboží z účtenky se nepočítá do limitů ručního zakládání (`app.catalog.max-products-
+per-day`, `max-products-per-store-per-day`, `max-unconfirmed-drafts`) — jedna velká účtenka by je
+vyčerpala a autor by pak nemohl založit nic ani ručně. Platí pro něj vlastní strop
+`app.receipt.max-open-items` (výchozí 300): kolik nepotvrzených (`DRAFT`) položek z účtenek smí
+mít účet otevřených naráz. Co se nevejde, přeskočí se s `RECEIPT_ITEM_LIMIT` a zůstane
+v přehledu účtenky ke zveřejnění později. Spam brzdí denní limit účtenek
+(`app.receipt.max-receipts-per-day`) a to, že každá účtenka prošla workerem. Položka se stejným
+normalizovaným názvem v rozsahu se použije znovu, nevzniká duplicita. Záloha a vratný obal
+zboží nejsou a nezveřejňují se (`app.receipt.non-product-pattern`, `RECEIPT_LINE_NOT_PRODUCT`).
+Po zveřejnění se nespárované nezboží označí jako ignorované (vratně, jako ruční ignorování),
+jinak by účtenka kvůli záloze na lahev zůstala navždy rozpracovaná.
+
+**Dopárování mění data jiných lidí, proto má dvě rychlosti** (`rematchReceiptItem`,
+`ReceiptItemRematchService`):
+
+- Vlastní ceny a vlastní řádky účtenek uživatele se přesunou na vybrané zboží **hned** — nikomu
+  jinému tím nic nemění. Když na zboží z účtenky nejsou ceny, potvrzené řádky ani hlas nikoho
+  jiného, sloučí se celé hned (`ProductMergeService.mergeReceiptItem`). Cizí řádek, který je
+  jen návrh (naučené označení ho po zveřejnění přepnulo na tohle zboží), sloučení neblokuje —
+  cena z něj nevznikla a přesune se s ním na cíl.
+- Jinak vznikne hlas `zdroj → cíl` (`core.product_merge_vote`, jeden účet jeden hlas, změna
+  názoru hlas přepíše). Sloučení všeho, co zbylo — cizí ceny, označení z účtenek, spárované
+  řádky — proběhne, až pro **stejný** cíl hlasuje `app.receipt.item-merge-confirmations`
+  (výchozí 2) různých lidí. Jeden omyl ani jeden zlý úmysl tak cizí historii nepřesune.
+- Neshoda hlasů (dva lidé, dva různé cíle) nesloučí nic a čeká na moderátora (`mergeProducts`).
+  Cizí hlas se proto počítá jako cizí data: kdo hlasoval, už svá data přesunul, a druhý hlas
+  pro jiný cíl by jinak našel zboží „bez cizích dat" a sloučil ho sám.
+- Cílem smí být i zboží s EAN (na rozdíl od moderátorského `mergeProducts`, který slučuje jen
+  bezkódové položky) — zboží z účtenky je jen zástupce, dokud někdo nepozná, co to je. Cíl musí
+  jít použít ve stejném řetězci/provozovně (`RECEIPT_ITEM_REMATCH_INVALID`); zboží z účtenky
+  s EAN je globální, takže jen globální cíl. EAN z řádků se po sloučení připíše cíli, který žádný
+  EAN nemá (stejné pravidlo jako `ReceiptReviewService.learnCode`). Vlastní EAN zboží z účtenky
+  jde na cíl vždy, i když už nějaký EAN má (`ProductMergeService.mergeCodes`) — jinak by kód
+  zůstal u sloučeného zbytku a sken by skutečné zboží nenašel. Sloučení je vědomé rozhodnutí
+  člověka, ne automatické párování řádku, proto tu pravidlo „jen zboží bez EAN" neplatí.
+- **Jednotky cen** (`ReceiptItemUnits`, ověří se před přesunem čehokoli): cena po dopárování
+  musí znamenat totéž co ceny cíle — za kg, za litr, za kus, nebo za balení neznámé velikosti.
+  Cena za balení zboží z účtenky bez gramáže na zboží s pevnou gramáží převezme gramáž cíle
+  (19,90 Kč za kelímek u 150g jogurtu = 132,67 Kč/kg). Cokoli jiného — cena za balení na váhové
+  zboží, cena za kg na zboží bez gramáže, kg ↔ litr — se odmítne s
+  `RECEIPT_ITEM_REMATCH_UNIT_MISMATCH`. Klient takové cíle v nabídce ani neukáže.
+- **Změna hlasu** na jiný cíl vezme s sebou i vlastní ceny a řádky účtenek, které předchozí hlas
+  přesunul (`core.product_merge_vote.moved_*`): vrátí se na zboží z účtenky (ceny za balení
+  zpátky bez převzaté gramáže) a odtud jdou na nový cíl.
+
+**Zrušený návrh se neobnoví.** Když vlastník u řádku zruší návrh (`unmatchLine`), řádek si zboží
+pamatuje jako odmítnuté (`rejected_product_id`, u návrhu podle EAN i `code_rejected`). Zveřejnění
+ho přes naučené označení ani kód nevrátí, učení označení ho řádku znovu nenavrhne a nové
+rozpoznání řádek ponechá. Když je stejnojmenné zboží z účtenky právě to odmítnuté (druhé se
+stejným názvem v rozsahu vzniknout nemůže), řádek se přeskočí s `RECEIPT_LINE_MATCH_REJECTED`
+a vlastník ho spáruje ručně.

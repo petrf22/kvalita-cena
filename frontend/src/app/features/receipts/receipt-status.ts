@@ -1,9 +1,18 @@
-import type { ReceiptDetail, ReceiptLine, ReceiptListItem } from '../../models/catalog';
+import { isReceiptItem } from '../../shared/receipt-item-tag';
+import type {
+  ConfirmReceiptLinesResult,
+  ReceiptDetail,
+  ReceiptLine,
+  ReceiptListItem,
+} from '../../models/catalog';
 import {
+  ErrorCode,
+  QuantityUnit,
   ReceiptLineStatus,
   ReceiptMatchSource,
   ReceiptProcessingStatus,
   ReceiptReviewStatus,
+  ReceiptSumStatus,
 } from '../../models/generated/enums';
 import {
   RECEIPT_MATCH_SOURCE_KEYS,
@@ -76,9 +85,56 @@ export function isLineLocked(line: Pick<ReceiptLine, 'confirmed'>): boolean {
   return line.confirmed;
 }
 
-/** Řádek jde zaškrtnout k hromadnému potvrzení: má zboží a cena z něj ještě nevznikla. */
+/** Návrh zboží, ze kterého ještě nevznikla cena (skupina „Připraveno", průvodce, odhad). */
 export function isLineConfirmable(line: Pick<ReceiptLine, 'status' | 'confirmed'>): boolean {
   return line.status === ReceiptLineStatus.Suggested && !isLineLocked(line);
+}
+
+type SelectSource = Pick<ReceiptLine, 'status' | 'confirmed' | 'nonProduct'> &
+  Partial<Pick<ReceiptLine, 'unitPrice' | 'lineTotal' | 'quantity' | 'quantityUnit'>>;
+
+/**
+ * Z řádku jde zapsat cena — stejné pravidlo jako server (`ReceiptReviewService.priceRows`):
+ * kladná jednotková cena, nebo celková částka u kusového zboží či se známým množstvím. Bez ní
+ * server řádek vždy přeskočí (`RECEIPT_LINE_PRICE_MISSING`), takže ho nemá smysl nabízet.
+ * Řádek bez cenových údajů v typu (starší volání) se bere jako s cenou.
+ */
+export function isLinePriceKnown(line: SelectSource): boolean {
+  if (!('unitPrice' in line) && !('lineTotal' in line)) return true;
+  if ((line.unitPrice ?? 0) > 0) return true;
+  const total = line.lineTotal ?? 0;
+  const perPackage = !line.quantityUnit || line.quantityUnit === QuantityUnit.Pcs;
+  return total > 0 && (perPackage || (line.quantity ?? 0) > 0);
+}
+
+/** Nespárovaný nebo navržený řádek, ze kterého cenu zapsat nejde — nezveřejní se. */
+export function isLinePriceMissing(line: SelectSource): boolean {
+  return (
+    !isLineLocked(line) && line.status !== ReceiptLineStatus.Ignored && !isLinePriceKnown(line)
+  );
+}
+
+/**
+ * Řádek jde zaškrtnout ke zveřejnění: cena z něj ještě nevznikla a server ji umí zapsat —
+ * návrh zboží, nebo nespárovaný řádek, který se zveřejní jako „zboží z účtenky"
+ * (`confirmReceiptLines(publishUnmatched: true)`). Záloha a vratný obal (`nonProduct`) bez
+ * zboží ne: server by ho jen přeskočil (`RECEIPT_LINE_NOT_PRODUCT`). Kdo ho přesto spáruje se
+ * zbožím, z návrhu ho zveřejnit může. Ignorovaný řádek je rozhodnutí uživatele „není zboží".
+ */
+export function isLineSelectable(line: SelectSource): boolean {
+  if (isLineLocked(line) || !isLinePriceKnown(line)) return false;
+  if (line.status === ReceiptLineStatus.Suggested) return true;
+  return line.status === ReceiptLineStatus.Unmatched && !line.nonProduct;
+}
+
+/** Nespárovaný řádek, který se zaškrtnutý zveřejní jako „zboží z účtenky" (bez ověřených náležitostí). */
+export function isLineReceiptItemCandidate(line: SelectSource): boolean {
+  return line.status === ReceiptLineStatus.Unmatched && isLineSelectable(line);
+}
+
+/** Nespárovaný řádek, který podle textu není zboží (záloha, vratný obal) — nezveřejní se. */
+export function isLineNonProduct(line: SelectSource): boolean {
+  return line.status === ReceiptLineStatus.Unmatched && line.nonProduct && !isLineLocked(line);
 }
 
 /**
@@ -92,11 +148,36 @@ export function isLineGuess(
   return isLineConfirmable(line) && line.matchSource === ReceiptMatchSource.Fuzzy;
 }
 
-/** Řádek appka smí zaškrtnout sama: potvrditelný návrh, který není jen odhad. */
+/**
+ * Řádek appka smí zaškrtnout sama: všechno, co jde zveřejnit, kromě odhadu, zálohy či obalu
+ * a řádku, který server při minulém zveřejnění přeskočil (`skipReason` — chybí cena, strop
+ * zboží z účtenek): zaškrtnutý by se jen znovu přeskočil, takže ho zaškrtne až člověk.
+ *
+ * Proč odhad (`FUZZY`) ne, i když se teď zveřejňuje všechno: nespárovaný řádek skončí na
+ * izolovaném „zboží z účtenky", které jde později dopárovat. Potvrzený odhad naopak zapíše cenu
+ * ke SKUTEČNÉMU zboží, naučí se jako označení pro celý řetězec a zboží dostane EAN z řádku —
+ * omyl z hromadného zaškrtnutí by se šířil na další účtenky (docs/ai.md). Odhad proto zaškrtává
+ * jen člověk; kdo ho zamítne („Zrušit párování"), z řádku se stane nespárovaný a zaškrtne se
+ * jako zboží z účtenky (`nextSelection`).
+ */
 function isLinePreselectable(
-  line: Pick<ReceiptLine, 'status' | 'confirmed' | 'matchSource'>,
+  line: SelectSource & Pick<ReceiptLine, 'matchSource' | 'skipReason'>,
 ): boolean {
-  return isLineConfirmable(line) && !isLineGuess(line);
+  // RECEIPT_LINE_NOT_MATCHED vyřeší zveřejnění bez spárování — jako v mobilu.
+  const skipped = !!line.skipReason && line.skipReason !== 'RECEIPT_LINE_NOT_MATCHED';
+  return isLineSelectable(line) && !isLineGuess(line) && !line.nonProduct && !skipped;
+}
+
+/** Popisek zaškrtávátka řádku pro čtečky — klíč do bundlu `receipts`, parametr `label`. */
+export function selectLabelKey(
+  line: SelectSource & Pick<ReceiptLine, 'matchSource'>,
+):
+  | 'receipts.line.selectGuessLabel'
+  | 'receipts.line.selectReceiptItemLabel'
+  | 'receipts.line.selectLabel' {
+  if (isLineGuess(line)) return 'receipts.line.selectGuessLabel';
+  if (isLineReceiptItemCandidate(line)) return 'receipts.line.selectReceiptItemLabel';
+  return 'receipts.line.selectLabel';
 }
 
 /**
@@ -139,8 +220,11 @@ export function matchSourceKey(
 }
 
 /**
- * Výchozí zaškrtnutí — řádky, které server (nebo uživatel) připravil jako návrh. Odhad
- * (`isLineGuess`) ne: ten zaškrtává jen uživatel sám, až zboží zkontroluje.
+ * Výchozí zaškrtnutí — všechno, co jde zveřejnit (návrhy i nespárované řádky jako zboží
+ * z účtenky), kromě odhadu (`isLineGuess`), zálohy či obalu (`nonProduct`) a řádku, který
+ * server minule přeskočil (`skipReason`, viz `isLinePreselectable`). Platí i pro
+ * nesouhlasící kontrolní součet: uživatel odškrtne, co nechce, appka mu jen ukáže podezřelé
+ * řádky (`sumCheck`).
  */
 export function defaultSelectedLineIds(lines: readonly ReceiptLine[]): Set<string> {
   return new Set(lines.filter(isLinePreselectable).map((line) => line.id));
@@ -234,11 +318,106 @@ export function confirmBlocker(
 export const SKIP_DUPLICATE_SAME_DAY = 'DUPLICATE_SAME_DAY';
 
 /**
- * Překladový klíč důvodu přeskočení: duplicita má vlastní text, ostatní důvody jsou kódy
- * `ErrorCode` a berou se z kontraktu chyb (`errors.*`, docs/lokalizace.md).
+ * Důvody přeskočení s vlastním textem. `RECEIPT_ITEM_LIMIT` je v kontraktu chyb s parametrem
+ * (strop otevřených položek), který `skipReason` nenese — text z `errors.*` by ukázal prázdné
+ * místo, proto má verzi bez čísla.
  */
-export function skipReasonKey(reason: string): string {
-  return reason === SKIP_DUPLICATE_SAME_DAY ? 'receipts.skip.duplicateSameDay' : `errors.${reason}`;
+const SKIP_REASON_KEYS: Record<string, string> = {
+  [SKIP_DUPLICATE_SAME_DAY]: 'receipts.skip.duplicateSameDay',
+  [ErrorCode.ReceiptItemLimit]: 'receipts.skip.itemLimit',
+};
+
+/**
+ * Překladový klíč důvodu přeskočení: duplicita a strop zboží z účtenek mají vlastní text,
+ * ostatní důvody jsou kódy `ErrorCode` a berou se z kontraktu chyb (`errors.*`,
+ * docs/lokalizace.md). Chybějící důvod je obecné selhání řádku.
+ */
+export function skipReasonKey(reason: string | null | undefined): string {
+  if (!reason) return 'errors.RECEIPT_LINE_CONFIRM_FAILED';
+  return SKIP_REASON_KEYS[reason] ?? `errors.${reason}`;
+}
+
+/** Přeskočené řádky jednoho důvodu — souhrn po zveřejnění je seskupuje, ať se důvod neopakuje. */
+export interface SkippedGroup {
+  reasonKey: string;
+  labels: string[];
+}
+
+/** Souhrn po „Zveřejnit vybrané": kolik cen vzniklo, kolik z toho na zboží z účtenky, co a proč se přeskočilo. */
+export interface PublishSummary {
+  published: number;
+  receiptItems: number;
+  skippedCount: number;
+  skipped: SkippedGroup[];
+}
+
+/**
+ * `requestedIds` jsou řádky, které klient poslal — „jako zboží z účtenky" se počítá jen z nich,
+ * ne ze dřív zveřejněných řádků téže účtenky. Počítá se každý potvrzený řádek, jehož cena je na
+ * zboží z účtenky: nově založeném (`matchSource: RECEIPT_ITEM`) i existujícím, na které řádek
+ * mezitím spárovalo naučené označení (`LABEL` + `product.createdVia: RECEIPT`) — stejně jako mobil.
+ */
+export function publishSummary(
+  requestedIds: readonly string[],
+  result: Pick<ConfirmReceiptLinesResult, 'confirmed' | 'skipped' | 'receipt'>,
+): PublishSummary {
+  const requested = new Set(requestedIds);
+  const receiptItems = result.receipt.lines.filter(
+    (line) =>
+      requested.has(line.id) &&
+      line.confirmed &&
+      (line.matchSource === ReceiptMatchSource.ReceiptItem || isReceiptItem(line.product)),
+  ).length;
+  const groups = new Map<string, string[]>();
+  for (const line of result.skipped) {
+    const key = skipReasonKey(line.skipReason);
+    groups.set(key, [...(groups.get(key) ?? []), lineLabel(line)]);
+  }
+  return {
+    published: result.confirmed,
+    receiptItems: Math.min(receiptItems, result.confirmed),
+    skippedCount: result.skipped.length,
+    skipped: [...groups].map(([reasonKey, labels]) => ({ reasonKey, labels })),
+  };
+}
+
+/** Upozornění nad seznamem řádků podle kontrolního součtu workeru (`Receipt.sumStatus`). */
+export type SumCheck =
+  { kind: 'mismatch'; computed: number; total: number; difference: number } | { kind: 'unknown' };
+
+/**
+ * `MATCH` = nic. `MISMATCH` = obě částky a rozdíl (vytištěné „Celkem" − součet položek, v absolutní
+ * hodnotě). `UNKNOWN` — nebo nesouhlas bez jedné z částek — jen obecná výzva ke kontrole. Jen
+ * dokud je co zveřejnit: u hotové účtenky by upozornění jen strašilo. Předvýběr řádků se podle
+ * součtu NEmění (`defaultSelectedLineIds`), mění se jen to, co appka ukáže.
+ */
+export function sumCheck(
+  receipt: Pick<ReceiptDetail, 'sumStatus' | 'totalAmount' | 'computedTotal' | 'lines'>,
+): SumCheck | null {
+  if (receipt.sumStatus === ReceiptSumStatus.Match) return null;
+  if (!receipt.lines.some(isLineSelectable)) return null;
+  const { totalAmount: total, computedTotal: computed } = receipt;
+  if (receipt.sumStatus === ReceiptSumStatus.Mismatch && total != null && computed != null) {
+    const difference = Math.round(Math.abs(total - computed) * 100) / 100;
+    return { kind: 'mismatch', computed, total, difference };
+  }
+  return { kind: 'unknown' };
+}
+
+/** Řádek ke kontrole: podezřelý (`suspicious`), dosud nezveřejněný, a součet nesouhlasí nebo ho nešlo ověřit. */
+export function isLineToVerify(
+  line: Pick<ReceiptLine, 'suspicious' | 'confirmed'>,
+  check: SumCheck | null,
+): boolean {
+  return check !== null && line.suspicious && !isLineLocked(line);
+}
+
+/** Odhady, které uživatel nezaškrtl — bez jeho rozhodnutí se nezveřejní (`isLinePreselectable`). */
+export function unselectedGuessCount(
+  lines: readonly ReceiptLine[],
+  selected: ReadonlySet<string>,
+): number {
+  return lines.filter((line) => isLineGuess(line) && !selected.has(line.id)).length;
 }
 
 /** Nahradí řádek v detailu účtenky jeho novou verzí z mutace (match/ignore/unmatch). */
@@ -283,13 +462,29 @@ export function samePurchaseTime(a: Date | null, iso: string | null | undefined)
 }
 
 /**
- * Zaškrtnutí po změně řádků (mutace, obnova ze serveru): řádek, který se NOVĚ stal jistým
- * návrhem (uživatel ho právě spároval, server přidal návrh, odhad nahradilo naučené označení),
- * se zaškrtne; řádek, který potvrditelný být přestal, se odškrtne. Co si uživatel u beze změny
- * potvrditelných řádků odškrtl, zůstane odškrtnuté.
+ * S čím server řádek zveřejní: stav, zdroj párování a zboží. Shoda znamená „uživatel o tomhle
+ * řádku už rozhodl" — změna (spárování, zrušení párování, nový návrh po změně obchodu) je pro
+ * něj nová věc a výchozí zaškrtnutí platí znovu.
+ */
+function samePublishTarget(
+  a: Pick<ReceiptLine, 'status' | 'matchSource' | 'product'>,
+  b: Pick<ReceiptLine, 'status' | 'matchSource' | 'product'>,
+): boolean {
+  return (
+    a.status === b.status &&
+    a.matchSource === b.matchSource &&
+    (a.product?.id ?? null) === (b.product?.id ?? null)
+  );
+}
+
+/**
+ * Zaškrtnutí po změně řádků (mutace, obnova ze serveru): řádek, se kterým se NOVĚ zveřejní
+ * něco jiného (uživatel ho právě spároval nebo párování zrušil, server přidal návrh, odhad
+ * nahradilo naučené označení), dostane výchozí zaškrtnutí; řádek, který zveřejnit nejde, se
+ * odškrtne. Co si uživatel u beze změny zveřejnitelných řádků odškrtl, zůstane odškrtnuté.
  *
- * Odhad se sám nezaškrtne nikdy. Zaškrtnutí, které mu dal uživatel, vydrží jen do té doby,
- * dokud jde o tentýž odhad — když server po změně obchodu navrhne jiné zboží, uživatel ho
+ * Odhad ani záloha se sami nezaškrtnou nikdy. Zaškrtnutí, které jim dal uživatel, vydrží jen do
+ * té doby, dokud jde o totéž — když server po změně obchodu navrhne jiné zboží, uživatel ho
  * ještě neviděl.
  */
 export function nextSelection(
@@ -300,18 +495,14 @@ export function nextSelection(
   const previousById = new Map(previousLines.map((line) => [line.id, line]));
   const result = new Set<string>();
   for (const line of nextLines) {
-    if (!isLineConfirmable(line)) continue;
+    if (!isLineSelectable(line)) continue;
     const previous = previousById.get(line.id);
-    if (isLineGuess(line)) {
-      const sameGuess =
-        previous !== undefined &&
-        isLineGuess(previous) &&
-        previous.product?.id === line.product?.id;
-      if (sameGuess && selected.has(line.id)) result.add(line.id);
+    const unchanged = previous !== undefined && samePublishTarget(previous, line);
+    if (!isLinePreselectable(line)) {
+      if (unchanged && selected.has(line.id)) result.add(line.id);
       continue;
     }
-    const wasPreselectable = previous !== undefined && isLinePreselectable(previous);
-    if (!wasPreselectable || selected.has(line.id)) result.add(line.id);
+    if (!unchanged || selected.has(line.id)) result.add(line.id);
   }
   return result;
 }

@@ -231,7 +231,8 @@ class ProductCatalogServiceTest {
     givenCategoryExists();
     when(catalogRateLimiter.tryAcquireProductCreation(PUBLIC_UID)).thenReturn(true);
     when(storeRepository.findById(STORE_ID)).thenReturn(Optional.of(Store.builder().id(STORE_ID).build()));
-    when(productRepository.countByCreatedByUserIdAndGenericAndStatus(USER_ID, true, ProductStatus.DRAFT))
+    when(productRepository.countByCreatedByUserIdAndGenericAndStatusAndCreatedVia(USER_ID, true, ProductStatus.DRAFT,
+        cz.kvalitacena.db.entity.ProductCreatedVia.USER))
         .thenReturn(15L);
 
     assertThatThrownBy(() -> service().create(input(null), PUBLIC_UID))

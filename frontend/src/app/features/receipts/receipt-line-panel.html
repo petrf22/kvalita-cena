@@ -51,6 +51,9 @@
           [externalImage]="product.externalImage"
         />
         <strong>{{ product.name }}</strong>
+        @if (isReceiptItem(product)) {
+          <app-receipt-item-tag />
+        }
       </div>
       @if (isGuess(current)) {
         <p class="panel-note">
@@ -61,6 +64,19 @@
       }
       <ng-container *ngTemplateOutlet="actions" />
     } @else {
+      <!--
+        Nespárovaný řádek se zveřejní i bez hledání — jako zboží z účtenky. Hledání tu je na
+        zlepšení, ne podmínka; záloha nebo obal se nezveřejní vůbec.
+      -->
+      @if (current.status === 'UNMATCHED') {
+        <p class="panel-note">
+          {{
+            current.nonProduct
+              ? t('receipts.panel.nonProductHint')
+              : t('receipts.panel.receiptItemHint')
+          }}
+        </p>
+      }
       <app-receipt-line-match
         [line]="current"
         [canCreate]="canCreate()"

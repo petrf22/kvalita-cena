@@ -59,13 +59,16 @@ import cz.kvalitacena.network.ProductSearchItem
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.ProductThumb
 import cz.kvalitacena.ui.common.QualityBadge
+import cz.kvalitacena.ui.common.ReceiptItemBadge
 import cz.kvalitacena.ui.common.SearchableDropdown
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.categoryChoicesFor
 import cz.kvalitacena.ui.common.formatRelativeDate
+import cz.kvalitacena.ui.common.isReceiptItem
 import cz.kvalitacena.ui.common.netContentLabel
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 import cz.kvalitacena.ui.common.storeLabel
+import cz.kvalitacena.ui.theme.Spacing
 
 /**
  * Záložka "Hledat" — úvodní obrazovka appky (viz zadání). Pole s lupou nahoře, pod ním filtry
@@ -100,7 +103,7 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
   var filtersExpanded by rememberSaveable { mutableStateOf(false) }
 
   Column(modifier = Modifier.fillMaxSize()) {
-    Box(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+    Box(modifier = Modifier.fillMaxWidth().padding(Spacing.lg)) {
       SingleLineTextField(
         value = viewModel.query,
         onValueChange = { viewModel.query = it },
@@ -129,7 +132,7 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
     ).count { it != null }
     OutlinedButton(
       onClick = { filtersExpanded = !filtersExpanded },
-      modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+      modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg),
     ) {
       Text(
         if (activeFilterCount == 0) {
@@ -148,10 +151,10 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
       categoryChoicesFor(viewModel.categoryQuery, viewModel.categories, locale)
     }
     AnimatedVisibility(visible = filtersExpanded) {
-      Column(modifier = Modifier.padding(top = 8.dp)) {
+      Column(modifier = Modifier.padding(top = Spacing.sm)) {
         Row(
-          modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg),
+          horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
           FilterDropdown(
             label = stringResource(R.string.search_store_filter),
@@ -183,13 +186,13 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
               onClick = { viewModel.clearCategory() },
             )
           },
-          modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+          modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         )
 
         SortDropdown(
           selected = viewModel.sort,
           onSelect = viewModel::onSortChange,
-          modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+          modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg, vertical = Spacing.sm),
         )
       }
     }
@@ -203,20 +206,20 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
       }
 
       viewModel.errorMessage != null -> {
-        Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize().padding(Spacing.xl), contentAlignment = Alignment.Center) {
           Text(viewModel.errorMessage!!.asString(), color = MaterialTheme.colorScheme.error)
         }
       }
 
       !viewModel.hasSearched -> {
-        Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize().padding(Spacing.xl), contentAlignment = Alignment.Center) {
           Text(stringResource(R.string.search_hint), style = MaterialTheme.typography.bodyMedium)
         }
       }
 
       viewModel.items.isEmpty() -> {
         Column(
-          modifier = Modifier.fillMaxSize().padding(24.dp),
+          modifier = Modifier.fillMaxSize().padding(Spacing.xl),
           horizontalAlignment = Alignment.CenterHorizontally,
           verticalArrangement = Arrangement.Center,
         ) {
@@ -225,7 +228,7 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
           )
-          Spacer(Modifier.height(16.dp))
+          Spacer(Modifier.height(Spacing.lg))
           // Bezkódová druhová položka (docs/reputace.md, "Zboží bez čárového kódu") — appka po
           // založení rovnou nabídne zápis ceny, viz MainActivity (writePrice=true), stejná
           // parita jako web price-entry-page.html (searchMode 'name', addNewButton).
@@ -236,7 +239,7 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
               color = MaterialTheme.colorScheme.onSurfaceVariant,
               textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Spacing.sm))
             OutlinedButton(onClick = onAddProduct) {
               Text(stringResource(R.string.search_add_new_button))
             }
@@ -266,14 +269,14 @@ fun SearchScreen(onProductClick: (String) -> Unit, onAddProduct: () -> Unit = {}
         LazyColumn(
           state = listState,
           modifier = Modifier.fillMaxSize(),
-          contentPadding = PaddingValues(vertical = 8.dp),
+          contentPadding = PaddingValues(vertical = Spacing.sm),
         ) {
           items(viewModel.items, key = { it.product.id }) { item ->
             SearchResultCard(item = item, onClick = { onProductClick(item.product.id) })
           }
           if (viewModel.hasMore) {
             item {
-              Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+              Box(modifier = Modifier.fillMaxWidth().padding(Spacing.lg), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(modifier = Modifier.size(20.dp))
               }
             }
@@ -290,18 +293,20 @@ private fun SearchResultCard(item: ProductSearchItem, onClick: () -> Unit) {
     onClick = onClick,
     modifier = Modifier
       .fillMaxWidth()
-      .padding(horizontal = 16.dp, vertical = 6.dp),
+      .padding(horizontal = Spacing.lg, vertical = 6.dp),
     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
   ) {
-    Column(modifier = Modifier.padding(16.dp)) {
+    Column(modifier = Modifier.padding(Spacing.lg)) {
       Row(verticalAlignment = Alignment.Top) {
+        val receiptItem = item.product.isReceiptItem
         ProductThumb(
           name = item.product.name,
           photos = item.product.photos,
           externalImage = item.product.externalImage,
           size = 72.dp,
-          modifier = Modifier.padding(end = 14.dp),
+          modifier = Modifier.padding(end = Spacing.md),
+          placeholderIcon = if (receiptItem) R.drawable.ic_receipt else R.drawable.ic_picture,
         )
         Column(modifier = Modifier.weight(1f)) {
           Text(
@@ -330,18 +335,28 @@ private fun SearchResultCard(item: ProductSearchItem, onClick: () -> Unit) {
               modifier = Modifier.padding(top = 2.dp),
             )
           }
-          if (!item.product.verified) {
-            Text(
-              stringResource(R.string.common_unverified),
-              style = MaterialTheme.typography.labelSmall,
-              color = MaterialTheme.colorScheme.tertiary,
-              modifier = Modifier.padding(top = 6.dp),
-            )
+          // Zboží z účtenky (ui/common/ReceiptItem.kt) dostane štítek vedle „Neověřeno" — název
+          // je jen přepis tisku pokladny, na rozdíl od ručně založeného zboží ho nikdo nevyplňoval.
+          if (receiptItem || !item.product.verified) {
+            Row(
+              modifier = Modifier.padding(top = Spacing.sm),
+              horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              if (receiptItem) ReceiptItemBadge()
+              if (!item.product.verified) {
+                Text(
+                  stringResource(R.string.common_unverified),
+                  style = MaterialTheme.typography.labelSmall,
+                  color = MaterialTheme.colorScheme.tertiary,
+                )
+              }
+            }
           }
         }
       }
 
-      HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+      HorizontalDivider(modifier = Modifier.padding(vertical = Spacing.md))
 
       // Přepočtená hodnota (X-Display-Currency), když je — jinak originál v měně obchodu
       // (docs/lokalizace.md, "Kurzovní lístek a zobrazovací měna"). Cena je hlavní údaj
@@ -357,7 +372,7 @@ private fun SearchResultCard(item: ProductSearchItem, onClick: () -> Unit) {
       Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Bottom,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
       ) {
         Text(
           priceText,
@@ -396,13 +411,13 @@ private fun SearchResultCard(item: ProductSearchItem, onClick: () -> Unit) {
       QualityBadge(
         average = item.qualityAverage,
         count = item.qualityCount,
-        modifier = Modifier.padding(top = 12.dp),
+        modifier = Modifier.padding(top = Spacing.md),
       )
       Text(
         stringResource(R.string.search_report_summary, item.observationCount, formatRelativeDate(item.lastObservedAt)),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(top = 4.dp),
+        modifier = Modifier.padding(top = Spacing.xs),
       )
     }
   }

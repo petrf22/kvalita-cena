@@ -1,5 +1,6 @@
 package cz.kvalitacena.ui.detail
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -58,6 +59,7 @@ import cz.kvalitacena.ui.common.QualityBadge
 import cz.kvalitacena.ui.common.StarRatingDisplay
 import cz.kvalitacena.ui.common.StarRatingInput
 import cz.kvalitacena.ui.common.formatRelativeDate
+import cz.kvalitacena.ui.common.isReceiptItem
 import cz.kvalitacena.ui.common.netContentLabel
 import cz.kvalitacena.ui.common.openUrl
 import cz.kvalitacena.ui.common.priceKindLabel
@@ -71,6 +73,11 @@ import cz.kvalitacena.ui.theme.Spacing
  * odkazy do otevřených databází (Open Food Facts), počet hlášení/cena/datum/obchod po řádcích
  * — klik na obchod vede na jeho detail (adresa, mapa, fotky), viz StoreDetailScreen.
  * Hodnocení kvality hvězdičkami (5 nejlepší) vyžaduje přihlášení.
+ *
+ * Zboží z účtenky (`createdVia = RECEIPT`, ui/common/ReceiptItem.kt) má pod názvem štítek
+ * s vysvětlením, co na něm ověřené není, a přihlášenému nabídne „Spárovat se zbožím"
+ * ([ReceiptItemRematchSheet]). Po sloučení se detail nahradí cílovým zbožím
+ * ([onOpenProduct] s `replaceCurrent = true` — zdroj už neexistuje).
  */
 @Composable
 fun ProductDetailScreen(
@@ -79,12 +86,14 @@ fun ProductDetailScreen(
   onNavigateToAccount: () -> Unit,
   onStoreClick: (String) -> Unit,
   onEditProduct: (String) -> Unit,
+  onOpenProduct: (productId: String, replaceCurrent: Boolean) -> Unit,
 ) {
   val viewModel: ProductDetailViewModel = viewModel(
     factory = viewModelFactory { initializer { ProductDetailViewModel(AppContainer.graphQlClient, productId) } },
   )
   val context = LocalContext.current
   val isLoggedIn by AppContainer.authRepository.isLoggedIn.collectAsState()
+  val online by AppContainer.networkMonitor.online.collectAsState()
   var productActionsExpanded by remember { mutableStateOf(false) }
   ReportUnsavedChanges(viewModel.reviewModalVisible && reviewTextDirty(viewModel))
 
@@ -94,6 +103,18 @@ fun ProductDetailScreen(
     NavigationResults.updatedProduct?.let {
       viewModel.onProductUpdated(it)
       NavigationResults.updatedProduct = null
+    }
+  }
+
+  // Sloučené zboží z účtenky zmizelo — detail ho nahradí cílem a potvrdí to Toastem, který
+  // přežije navigaci (stejný vzor jako zápis ceny v PriceEntryScreen).
+  val mergedMessage = stringResource(R.string.receipt_item_rematch_merged)
+  LaunchedEffect(viewModel.rematchResult) {
+    val result = viewModel.rematchResult ?: return@LaunchedEffect
+    if (result.merged) {
+      viewModel.dismissRematchResult()
+      Toast.makeText(context, mergedMessage, Toast.LENGTH_SHORT).show()
+      onOpenProduct(result.product.id, true)
     }
   }
 
@@ -122,6 +143,12 @@ fun ProductDetailScreen(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
+        }
+        // Hned pod názvem: u zboží z účtenky je název jediné, co pochází z tisku — co z údajů
+        // níž platí, musí být jasné dřív, než je člověk začne číst.
+        if (product.isReceiptItem) {
+          Gap()
+          ReceiptItemNotice(isLoggedIn = isLoggedIn, onRematch = viewModel::openRematch, onLogin = onNavigateToAccount)
         }
 
         Gap()
@@ -169,7 +196,8 @@ fun ProductDetailScreen(
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
           ) {
-            if (!product.verified) {
+            // U zboží z účtenky „Neověřeno" říká už blok pod názvem, podrobněji.
+            if (!product.verified && !product.isReceiptItem) {
               AssistChip(onClick = {}, label = { Text(stringResource(R.string.common_unverified)) })
             }
             if (product.editedByMe) {
@@ -429,6 +457,26 @@ fun ProductDetailScreen(
 
       if (viewModel.reviewModalVisible) {
         ReviewDialog(viewModel)
+      }
+      if (viewModel.rematchOpen) {
+        ReceiptItemRematchSheet(viewModel, online)
+      }
+      viewModel.rematchResult?.takeIf { !it.merged }?.let { result ->
+        // Vlastní ceny jsou přesunuté, zbytek čeká na hlasy dalších lidí (docs/reputace.md).
+        AlertDialog(
+          onDismissRequest = viewModel::dismissRematchResult,
+          title = { Text(stringResource(R.string.receipt_item_rematch_moved_title)) },
+          text = { Text(stringResource(R.string.receipt_item_rematch_moved_text, result.votes, result.votesRequired)) },
+          confirmButton = {
+            TextButton(onClick = {
+              viewModel.dismissRematchResult()
+              onOpenProduct(result.product.id, false)
+            }) { Text(stringResource(R.string.receipt_item_rematch_open_target)) }
+          },
+          dismissButton = {
+            TextButton(onClick = viewModel::dismissRematchResult) { Text(stringResource(R.string.common_ok)) }
+          },
+        )
       }
     }
   }

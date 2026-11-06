@@ -76,4 +76,31 @@ describe('publicationStatusText', () => {
       key: 'my-contributions.status.pendingMerge.edit',
     });
   });
+  it('uses a codeless-product sentence for a generic product awaiting confirmations', () => {
+    const status = {
+      state: PublicationState.AwaitingConfirmations,
+      confirmationsReceived: 0,
+      confirmationsRequired: 3,
+      verified: false,
+    };
+    expect(publicationStatusText(status, 'product', { generic: true }).key).toBe(
+      'my-contributions.status.awaitingConfirmations.genericProduct',
+    );
+    // Jen u zboží — obchod žádný kód nemá a věta o skenu se ho netýká.
+    expect(publicationStatusText(status, 'store', { generic: true }).key).toBe(
+      'my-contributions.status.awaitingConfirmations.store',
+    );
+  });
+
+  it('points a merged product to its target', () => {
+    const status = {
+      state: PublicationState.Merged,
+      confirmationsReceived: null,
+      confirmationsRequired: null,
+      verified: false,
+    };
+    expect(publicationStatusText(status, 'product')).toEqual({
+      key: 'my-contributions.status.merged.product',
+    });
+  });
 });

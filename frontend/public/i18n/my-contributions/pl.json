@@ -48,7 +48,8 @@
     "PUBLIC": "Opublikowano",
     "AWAITING_CONFIRMATIONS": "Czeka na potwierdzenie",
     "HIDDEN_AFTER_FLAGS": "Ukryto po zgłoszeniu",
-    "PENDING_MERGE": "Twoja edycja"
+    "PENDING_MERGE": "Twoja edycja",
+    "MERGED": "Scalono"
   },
   "status": {
     "public": {
@@ -58,6 +59,7 @@
     },
     "awaitingConfirmations": {
       "product": "W wyszukiwaniu na razie widzisz go tylko Ty. Inni znajdą go, skanując kod. Upubliczni się dla wszystkich, gdy zapisze przy nim cenę {{required}} innych osób — na razie {{received}}.",
+      "genericProduct": "Na razie tylko ty widzisz go w wyszukiwaniu. Inni znajdą go na liście produktów sklepu przy wpisywaniu ceny. Stanie się widoczny dla wszystkich, gdy cenę wpisze {{required}} innych osób — na razie {{received}}.",
       "store": "Na razie widzisz go tylko Ty. Upubliczni się, gdy zapisze w nim cenę {{required}} innych osób — na razie {{received}}.",
       "observation": "Inni zobaczą tę cenę, gdy opublikowany zostanie powiązany produkt lub sklep — na razie {{received}} z {{required}} potrzebnych potwierdzeń."
     },
@@ -68,6 +70,10 @@
     },
     "pendingMerge": {
       "edit": "Twoją edycję na razie widzisz tylko Ty — scalenie z publicznym wpisem dopiero się przygotowuje."
+    },
+    "merged": {
+      "product": "Scalono z innym produktem — ceny i recenzje są teraz przy nim, a link prowadzi prosto do niego.",
+      "store": "Scalono z innym sklepem — ceny są teraz przy nim."
     }
   }
 }

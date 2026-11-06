@@ -77,6 +77,16 @@ public class Receipt implements Persistable<Long> {
   @Column(name = "currency", length = 3)
   private String currency;
 
+  /** Kontrolní součet workeru — řídí předvýběr řádků ke zveřejnění, nic nezakazuje. */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "sum_status", nullable = false, length = 10)
+  @Builder.Default
+  private ReceiptSumStatus sumStatus = ReceiptSumStatus.UNKNOWN;
+
+  /** Součet položek, jak ho spočítal worker (i se zaokrouhlením) — pro upozornění na rozdíl. */
+  @Column(name = "computed_total", precision = 10, scale = 2)
+  private BigDecimal computedTotal;
+
   @Column(name = "store_id")
   private Long storeId;
 

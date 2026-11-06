@@ -5,7 +5,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import cz.kvalitacena.network.ConfirmReceiptLinesResult
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.MediaClient
 import cz.kvalitacena.network.ProductSummary
@@ -23,10 +22,10 @@ private const val SEARCH_DEBOUNCE_MS = 300L
 
 /**
  * Detail účtenky a párování řádků se zbožím. Výsledek workeru je jen návrh (docs/ai.md, „AI
- * nikdy nerozhoduje"): řádky, které server spároval jistě (SUGGESTED podle kódu nebo
- * označení), jsou předem zaškrtnuté, ale cenu zapíše až „Potvrdit spárované". Odhad podle
- * podobnosti názvu (FUZZY) předem zaškrtnutý není — pravidla výběru jsou
- * v `ReceiptLineSelection.kt`.
+ * nikdy nerozhoduje"): předem zaškrtnuté je ke zveřejnění vše, co zveřejnit jde — jisté návrhy
+ * i nespárované řádky (ty se zapíšou na „zboží z účtenky") —, ale cenu zapíše až „Zveřejnit
+ * vybrané". Odhad podle podobnosti názvu (FUZZY) a nezboží předem zaškrtnuté nejsou —
+ * pravidla výběru jsou v `ReceiptLineSelection.kt`.
  */
 class ReceiptDetailViewModel(
   private val receiptId: String,
@@ -49,13 +48,14 @@ class ReceiptDetailViewModel(
   var headerSaving by mutableStateOf(false)
     private set
 
-  /** Řádky zaškrtnuté k potvrzení — výchozí jsou SUGGESTED kromě odhadů ([defaultSelectedLineIds]). */
+  /** Řádky zaškrtnuté ke zveřejnění — výchozí výběr je [defaultSelectedLineIds]. */
   var selected by mutableStateOf<Set<String>>(emptySet())
     private set
 
   var confirming by mutableStateOf(false)
     private set
-  var confirmResult by mutableStateOf<ConfirmReceiptLinesResult?>(null)
+  /** Souhrn posledního zveřejnění pro dialog; null = dialog zavřený. */
+  internal var publishResult by mutableStateOf<PublishSummary?>(null)
     private set
   var deleted by mutableStateOf(false)
     private set
@@ -139,8 +139,13 @@ class ReceiptDetailViewModel(
     selected = if (lineId in selected) selected - lineId else selected + lineId
   }
 
-  val confirmableCount: Int
-    get() = receipt?.lines?.count { it.isConfirmable() && it.id in selected } ?: 0
+  /** Kolik zaškrtnutých řádků „Zveřejnit vybrané" odešle. */
+  val publishCount: Int
+    get() = receipt?.lines?.let { publishableSelection(it, selected).size } ?: 0
+
+  /** Z toho kolik se zveřejní bez spárování — jako zboží z účtenky. */
+  val publishAsReceiptItemCount: Int
+    get() = receipt?.lines?.let { lines -> publishableSelection(lines, selected).count { it.publishesAsReceiptItem() } } ?: 0
 
   // --- hlavička ---
 
@@ -375,18 +380,23 @@ class ReceiptDetailViewModel(
     }
   }
 
+  /**
+   * „Zveřejnit vybrané" — zaškrtnuté návrhy se potvrdí, zaškrtnuté nespárované řádky server
+   * zapíše na zboží z účtenky (`publishUnmatched`). Ručně zaškrtnutý odhad (FUZZY) se potvrdí
+   * stejně jako jiný návrh. Bez signálu tlačítko zveřejnit nedovolí (ConfirmBar) — výběr
+   * zůstane, jak ho uživatel nechal, a odešle se, až bude připojení.
+   */
   fun confirm() {
     val current = receipt ?: return
-    // Ručně zaškrtnutý odhad (FUZZY) jde potvrdit stejně jako jiný návrh.
-    val lineIds = current.lines.filter { it.isConfirmable() && it.id in selected }.map { it.id }
+    val lineIds = publishableSelection(current.lines, selected).map { it.id }
     if (lineIds.isEmpty() || confirming) return
     confirming = true
     actionError = null
     viewModelScope.launch {
       try {
-        val result = graphQlClient.confirmReceiptLines(receiptId, lineIds)
+        val result = graphQlClient.confirmReceiptLines(receiptId, lineIds, publishUnmatched = true)
         apply(result.receipt, resetSelection = true)
-        confirmResult = result
+        publishResult = publishSummary(lineIds, result)
       } catch (e: Exception) {
         actionError = e.toUiText()
       } finally {
@@ -395,8 +405,8 @@ class ReceiptDetailViewModel(
     }
   }
 
-  fun dismissConfirmResult() {
-    confirmResult = null
+  fun dismissPublishResult() {
+    publishResult = null
   }
 
   fun delete() {

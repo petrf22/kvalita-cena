@@ -152,6 +152,9 @@ export const productFieldsFragment = graphql(`
     status
     isGeneric
     catalogScope
+    # RECEIPT = „zboží z účtenky" — bez ověřených náležitostí, kreslí se jinak a jde dopárovat
+    # (shared/receipt-item-tag.ts, product-detail/receipt-item-rematch.ts).
+    createdVia
     scopeChain {
       id
       name
@@ -260,11 +263,18 @@ export const productSummaryFieldsFragment = graphql(`
       slug
       path
     }
+    # Význam ceny (za kg/l/kus/balení) — dopárování zboží z účtenky nenabídne cíl, kam by
+    # ceny nešly převést (receipt-item-rematch-rules.ts, server ReceiptItemUnits).
+    unitBase
+    netContentValue
+    isVariableWeight
     isGeneric
     # Nepotvrzená (DRAFT) položka se v nabídce ukáže, ale označená a až za potvrzenými —
     # bez tohohle pole ji klient nemá jak odlišit (docs/reputace.md, "Zboží bez čárového kódu").
     status
     catalogScope
+    # Zboží z účtenky se v nabídce i výsledcích hledání označí (shared/receipt-item-tag.ts).
+    createdVia
     scopeChain {
       id
       name

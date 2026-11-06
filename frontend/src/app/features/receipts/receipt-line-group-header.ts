@@ -5,7 +5,8 @@ import type { LineGroup } from './receipt-status';
 
 /**
  * Nadpis skupiny řádků účtenky s počtem (`receipt-status.ts`, `groupedLines`). Hotové
- * a ignorované řádky jdou sbalit — zajímá hlavně to, co ještě potřebuje člověka.
+ * a ignorované řádky jdou sbalit — zajímá hlavně to, co ještě potřebuje člověka. Volitelná
+ * `hint` je vysvětlující věta pod nadpisem (nespárované řádky se zveřejní jako zboží z účtenky).
  */
 @Component({
   selector: 'app-receipt-line-group-header',
@@ -27,6 +28,9 @@ import type { LineGroup } from './receipt-status';
           {{ t('receipts.group.' + group(), { count: count() }) }}
         }
       </h3>
+      @if (hint(); as text) {
+        <p class="hint">{{ text }}</p>
+      }
     </ng-container>
   `,
   styles: `
@@ -34,6 +38,12 @@ import type { LineGroup } from './receipt-status';
       margin: var(--kc-space-4) 0 0;
       font-size: var(--kc-font-md);
       font-weight: 600;
+    }
+
+    .hint {
+      margin: var(--kc-space-1) 0 var(--kc-space-2);
+      font-size: var(--kc-font-sm);
+      color: var(--kc-text-secondary);
     }
 
     .toggle {
@@ -54,5 +64,6 @@ export class ReceiptLineGroupHeader {
   readonly count = input.required<number>();
   readonly collapsible = input(false);
   readonly expanded = input(true);
+  readonly hint = input<string | null>(null);
   readonly toggled = output<void>();
 }

@@ -163,23 +163,31 @@
     "createNeedsStore": "Nový tovar pôjde založiť po potvrdení obchodu.",
     "ignore": "Ignorovať",
     "unmatch": "Zrušiť párovanie",
-    "unignore": "Zrušiť ignorovanie"
+    "unignore": "Zrušiť ignorovanie",
+    "selectReceiptItemLabel": "Zverejniť riadok {{label}} ako tovar z bločku",
+    "publishAsReceiptItem": "zverejní sa ako tovar z bločku",
+    "nonProduct": "záloha alebo obal — nezverejní sa",
+    "verify": "Skontrolovať",
+    "verifyHint": "Riadok vyzerá na chybu čítania: chýba cena, množstvo × cena nedáva sumu alebo je názov nečitateľný. Porovnaj ho s obrázkom bločku."
   },
   "skip": {
-    "duplicateSameDay": "Túto cenu si pre deň nákupu už zapísal/a — druhý záznam sa nepridal."
+    "duplicateSameDay": "Túto cenu si pre deň nákupu už zapísal/a — druhý záznam sa nepridal.",
+    "itemLimit": "Máš priveľa nepotvrdených položiek z bločkov. Ďalšie pôjde zverejniť, až niektoré z nich potvrdia aj ostatní."
   },
   "confirm": {
-    "button": "Potvrdiť spárované ({{count}})",
-    "hint": "Zapíše ceny zaškrtnutých riadkov s dátumom a časom nákupu z bločku.",
+    "button": "Zverejniť vybrané ({{count}})",
+    "hint": "Zapíše ceny zaškrtnutých riadkov s dátumom a časom nákupu z bločku. Nespárované sa zverejnia ako tovar z bločku.",
     "blocker": {
       "notProcessed": "Bloček ešte nie je spracovaný.",
       "storeMissing": "Najprv potvrď obchod hore.",
       "purchaseTimeMissing": "Najprv doplň dátum a čas nákupu hore.",
-      "nothing": "Zaškrtni aspoň jeden spárovaný riadok."
+      "nothing": "Zaškrtni aspoň jeden riadok."
     },
-    "done": "{count, plural, one {# cena je zapísaná.} few {# ceny sú zapísané.} other {# cien je zapísaných.}}",
-    "doneNone": "Žiadna nová cena sa nezapísala.",
-    "skipped": "{count, plural, one {# riadok sa preskočil:} few {# riadky sa preskočili:} other {# riadkov sa preskočilo:}}"
+    "done": "{count, plural, one {# položka je zverejnená.} few {# položky sú zverejnené.} other {# položiek je zverejnených.}}",
+    "doneNone": "Nezverejnila sa žiadna položka.",
+    "skipped": "{count, plural, one {# riadok sa preskočil:} few {# riadky sa preskočili:} other {# riadkov sa preskočilo:}}",
+    "doneReceiptItems": "{count, plural, one {# z nich ako tovar z bločku — spárovať ho môžeš aj neskôr na stránke tovaru.} few {# z nich ako tovar z bločku — spárovať ich môžeš aj neskôr na stránke tovaru.} other {# z nich ako tovar z bločku — spárovať ich môžeš aj neskôr na stránke tovaru.}}",
+    "guessesLeft": "{count, plural, one {# odhad na kontrolu sa nezverejní, kým ho nezaškrtneš. Keď tovar nesedí, zruš párovanie — zverejní sa potom ako tovar z bločku.} few {# odhady na kontrolu sa nezverejnia, kým ich nezaškrtneš. Keď tovar nesedí, zruš párovanie — zverejnia sa potom ako tovar z bločku.} other {# odhadov na kontrolu sa nezverejní, kým ich nezaškrtneš. Keď tovar nesedí, zruš párovanie — zverejnia sa potom ako tovar z bločku.}}"
   },
   "create": {
     "title": "Nový tovar z bločku",
@@ -193,16 +201,25 @@
     "skip": "Preskočiť"
   },
   "group": {
-    "toResolve": "Na doplnenie ({{count}})",
+    "toResolve": "Nespárované ({{count}})",
     "toCheck": "Na kontrolu ({{count}})",
     "ready": "Pripravené na potvrdenie ({{count}})",
     "done": "Hotovo ({{count}})",
-    "ignored": "Ignorované ({{count}})"
+    "ignored": "Ignorované ({{count}})",
+    "toResolveHint": "Zaškrtnuté sa zverejnia ako tovar z bločku — s názvom a cenou, ako sú na bločku. Keď tovar nájdeš v katalógu a spáruješ, cena sa zapíše k nemu."
   },
   "panel": {
     "accept": "Áno, je to ono",
     "other": "Iný tovar",
     "notProduct": "Nie je tovar — ignorovať",
-    "offHint": "Tovar podľa EAN pozná Open Food Facts. Do katalógu sa pridá, až riadok potvrdíš."
+    "offHint": "Tovar podľa EAN pozná Open Food Facts. Do katalógu sa pridá, až riadok potvrdíš.",
+    "receiptItemHint": "Tovar nemusíš hľadať ani zakladať — zaškrtnutý riadok sa zverejní ako tovar z bločku. Keď ho však nájdeš, cena sa zapíše ku skutočnému tovaru.",
+    "nonProductHint": "Vyzerá to na zálohu alebo vratný obal — taký riadok sa nezverejní. Ak je to tovar, nájdi ho a spáruj."
+  },
+  "sum": {
+    "mismatchTitle": "Súčet položiek {{computed}} nezodpovedá sume na bločku {{total}}",
+    "mismatchText": "Rozdiel je {{difference}}. Niektorá položka sa mohla prečítať zle alebo chýba — prejdi riadky so štítkom „Skontrolovať“ a odškrtni, čo zverejniť nechceš.",
+    "unknownTitle": "Súčet nebolo možné overiť, skontroluj položky",
+    "unknownText": "Appka nemá s čím súčet položiek porovnať — celková suma sa na bločku nenašla alebo ho čítala staršia verzia. Prejdi položky (hlavne so štítkom „Skontrolovať“) a odškrtni, čo zverejniť nechceš."
   }
 }

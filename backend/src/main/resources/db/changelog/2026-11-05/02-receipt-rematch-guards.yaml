@@ -1,0 +1,42 @@
+# 02-receipt-rematch-guards.yaml — pojistky zveřejnění a dopárování zboží z účtenky
+# (docs/reputace.md, „Zboží z účtenky").
+#
+# core.receipt_line.rejected_product_id / code_rejected: návrh, který vlastník řádku výslovně
+# zrušil (ReceiptReviewService.unmatchLine). Zveřejnění ani pozdější učení označení
+# (suggestUnmatched) ho nesmí potichu obnovit — cena by skončila u zboží, které člověk odmítl.
+# code_rejected = odmítl identitu podle EAN (návrh podle kódu nebo z Open Food Facts), takže
+# se EAN řádku nepoužije ani pro nové zboží s kódem.
+#
+# core.product_merge_vote.moved_observation_ids / moved_line_ids: vlastní ceny a řádky účtenek,
+# které hlas přesunul ze zboží z účtenky na cíl (ReceiptItemRematchService.moveOwnData). Změna
+# hlasu na jiný cíl je podle nich přesune za hlasem — jinak by zůstaly u původního cíle.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-05-02-receipt-line-rejected-match
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.receipt_line ADD COLUMN rejected_product_id BIGINT
+                REFERENCES core.product(id) ON DELETE SET NULL;
+              ALTER TABLE core.receipt_line ADD COLUMN code_rejected BOOLEAN NOT NULL DEFAULT false;
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE core.receipt_line DROP COLUMN IF EXISTS code_rejected;
+              ALTER TABLE core.receipt_line DROP COLUMN IF EXISTS rejected_product_id;
+
+  - changeSet:
+      id: 2026-11-05-02-product-merge-vote-moved
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.product_merge_vote
+                ADD COLUMN moved_observation_ids BIGINT[] NOT NULL DEFAULT '{}',
+                ADD COLUMN moved_line_ids BIGINT[] NOT NULL DEFAULT '{}';
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE core.product_merge_vote DROP COLUMN IF EXISTS moved_line_ids;
+              ALTER TABLE core.product_merge_vote DROP COLUMN IF EXISTS moved_observation_ids;

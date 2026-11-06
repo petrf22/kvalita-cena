@@ -140,6 +140,13 @@ public class ReceiptMatchingService {
     }
   }
 
+  /** Naučené označení (krok 2 kaskády) pro jeden řádek — obchod je povinný, rozsah je řetězec/provozovna. */
+  public Optional<Long> byLabel(ReceiptLine line, Store store, Long viewerId) {
+    Long chainId = store.getChain() != null ? store.getChain().getId() : null;
+    return labelRepository.findExact(line.getLabelRaw(), store.getId(), chainId, viewerId).stream()
+        .findFirst().map(ProductStoreLabel::getProductId);
+  }
+
   /**
    * Zboží z Open Food Facts, které jde pro řádek založit bez formuláře: globální EAN, který
    * katalog nezná, OFF ho zná a dodá vše, co {@code OffProductCatalogService.create} jinak
