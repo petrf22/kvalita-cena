@@ -246,19 +246,36 @@ publikovaný Dockerem obchází `ufw` a databáze by byla veřejná, i když `uf
 DBeaver se **nepřipojuje jako `POSTGRES_USER`** — to je superuser, pod kterým běží appka, a
 DBeaver umí editovat buňky v gridu, takže jeden překlik = nevratná změna v produkci. Volba
 „Read-only connection" v DBeaveru je jen nastavení klienta, dá se obejít; skutečná pojistka jsou
-práva role. Schéma `auth` (tokeny, šifrované e-maily, profily) role záměrně nevidí.
+práva role. Schéma `auth` (tokeny, šifrované e-maily, profily) role záměrně nevidí. Schéma `ai`
+(fronta účtenek se stavem a `last_error`, ořezaný OCR text, návrhy modelu) vidí — hodí se
+k ladění účtenek a hlavičky i řádky účtenek jsou v `core.receipt*` čitelné tak jako tak.
+
+Heslo vygenerovat **na PC**, ne na serveru — nejlépe rovnou generátorem ve správci hesel
+(aspoň 32 znaků), jinak `openssl rand -hex 32` a zkopírovat do správce. Do SQL se **nepíše**:
+heredoc s heslem by zůstal v `~/.bash_history` na serveru. Role se založí bez hesla:
 
 ```bash
-openssl rand -hex 32        # heslo — jen do správce hesel, ne do .env ani repa
 docker compose -f compose.prod.yaml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d kvalitaacena' <<'SQL'
-CREATE ROLE kc_ctenar LOGIN PASSWORD '<heslo>';
+CREATE ROLE kc_ctenar LOGIN;
 ALTER ROLE kc_ctenar SET default_transaction_read_only = on;
 GRANT CONNECT ON DATABASE kvalitaacena TO kc_ctenar;
-GRANT USAGE ON SCHEMA core, agg, fx, off TO kc_ctenar;
-GRANT SELECT ON ALL TABLES IN SCHEMA core, agg, fx, off TO kc_ctenar;
-ALTER DEFAULT PRIVILEGES IN SCHEMA core, agg, fx, off GRANT SELECT ON TABLES TO kc_ctenar;
+GRANT USAGE ON SCHEMA core, agg, fx, off, ai TO kc_ctenar;
+GRANT SELECT ON ALL TABLES IN SCHEMA core, agg, fx, off, ai TO kc_ctenar;
+ALTER DEFAULT PRIVILEGES IN SCHEMA core, agg, fx, off, ai GRANT SELECT ON TABLES TO kc_ctenar;
 SQL
 ```
+
+a heslo se nastaví interaktivně (`exec` **bez** `-T`, psql potřebuje terminál):
+
+```bash
+docker compose -f compose.prod.yaml exec postgres sh -c 'psql -U "$POSTGRES_USER" -d kvalitaacena'
+```
+```
+\password kc_ctenar
+```
+
+psql se dvakrát zeptá na heslo (vložit ze správce, na obrazovce se neukáže) a serveru pošle jen
+hotový SCRAM hash — heslo nezůstane v historii shellu ani v logu Postgresu.
 
 `ALTER DEFAULT PRIVILEGES` platí jen pro tabulky, které vytvoří role, jež ho spustila — proto
 musí běžet jako `POSTGRES_USER` (pod ním Liquibase zakládá tabulky z migrací), jinak by nové
