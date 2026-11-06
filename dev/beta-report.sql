@@ -5,7 +5,8 @@
 -- NENÍ SOUČÁST LIQUIBASE, jen ruční kontrola při běžící uzavřené betě. Na produkčním serveru
 -- (docs/nasazeni.md, "Provozní přehled bez analytiky") role "postgres" neexistuje a compose
 -- soubor je jiný než v lokálním vývoji:
---   docker compose -f compose.prod.yaml exec -T postgres psql -U "$POSTGRES_USER" -d kvalitaacena < dev/beta-report.sql
+--   docker compose -f compose.prod.yaml exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d kvalitaacena' < dev/beta-report.sql
+-- (sh -c: POSTGRES_USER je jen v kontejneru, shell na serveru ho nezná — docs/nasazeni.md)
 -- Lokálně (dev compose.yaml, uživatel "postgres") funguje i bez "-f"/"$POSTGRES_USER":
 --   docker compose exec -T postgres psql -U postgres -d kvalitaacena < dev/beta-report.sql
 
