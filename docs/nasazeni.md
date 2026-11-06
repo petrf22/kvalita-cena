@@ -170,7 +170,9 @@ domény na server (krok 4) — build appky na serveru je nejpravděpodobnější
    2 GB swapu, Docker 29.7.2 + Compose v5.5.0 běží). `ufw`/`unattended-upgrades` samo se
    nedalo ověřit bez roota, ale zvenku odpovídají jen porty 22/80/443. **Od 2026-10-28 běží
    appka na nové instanci CAX11** se stejnou IP (sekce 1, „Přechod na CAX11"); nastavená
-   stejně, navíc ověřeno `rrsync` a Docker 29.9.2 + Compose v5.6.1.
+   stejně, navíc ověřeno `rrsync` a Docker 29.9.2 + Compose v5.6.1. Postgres publikuje port jen na
+   `127.0.0.1` (SSH tunel z DBeaveru, `ops/README.md`, „Přístup k DB z DBeaveru") — port
+   publikovaný Dockerem obchází `ufw`, holé `5432:5432` by DB otevřelo do internetu.
 2. [x] `git clone` repa na server, `cp .env.example .env`, doplnit — ověřeno 2026-08-28
    (`.env` existuje, `POSTGRES_PASSWORD` má 64 znaků = `openssl rand -hex 32`, `SITE_ADDRESS`/
    `API_ADDRESS` jsou finální `https://` domény a `SPRING_PROFILES_ACTIVE=prod,beta` — tedy
