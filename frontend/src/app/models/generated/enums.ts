@@ -93,6 +93,7 @@ export const ErrorCode = {
   ModerationProductMergeInvalid: 'MODERATION_PRODUCT_MERGE_INVALID',
   ModerationProductMergeSame: 'MODERATION_PRODUCT_MERGE_SAME',
   ModerationProductMergeScopeMismatch: 'MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH',
+  ModerationProductMergeUnitMismatch: 'MODERATION_PRODUCT_MERGE_UNIT_MISMATCH',
   ModerationProductRenameInvalid: 'MODERATION_PRODUCT_RENAME_INVALID',
   ModerationRecordNotFound: 'MODERATION_RECORD_NOT_FOUND',
   ModerationRequiresRole: 'MODERATION_REQUIRES_ROLE',

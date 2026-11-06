@@ -22,15 +22,16 @@ public class ProductMergeVoteRepository {
 
   /**
    * Jeden účet jeden hlas na zboží z účtenky — změna názoru hlas přepíše. Spolu s hlasem se
-   * pamatuje, které vlastní ceny a řádky účtenek hlas přesunul na cíl: pro stejný cíl se
-   * přidávají, pro jiný nahradí (volající je předtím vrátil na zdroj a přesunul znovu všechny).
+   * pamatuje, které vlastní ceny a řádky účtenek hlas přesunul na cíl a kterým cenám za balení
+   * přepsal snapshot gramáží cíle: pro stejný cíl se přidávají, pro jiný nahradí (volající je
+   * předtím vrátil na zdroj a přesunul znovu všechny).
    */
   public void vote(Long sourceProductId, Long targetProductId, Long userId, List<Long> movedObservationIds,
-      List<Long> movedLineIds) {
+      List<Long> movedLineIds, List<Long> adoptedObservationIds) {
     jdbcTemplate.update("""
         INSERT INTO core.product_merge_vote(source_product_id, target_product_id, user_id,
-                                            moved_observation_ids, moved_line_ids)
-        VALUES (?, ?, ?, CAST(? AS BIGINT[]), CAST(? AS BIGINT[]))
+                                            moved_observation_ids, moved_line_ids, adopted_observation_ids)
+        VALUES (?, ?, ?, CAST(? AS BIGINT[]), CAST(? AS BIGINT[]), CAST(? AS BIGINT[]))
         ON CONFLICT (source_product_id, user_id) WHERE user_id IS NOT NULL
         DO UPDATE SET
           moved_observation_ids = CASE WHEN core.product_merge_vote.target_product_id = EXCLUDED.target_product_id
@@ -39,9 +40,13 @@ public class ProductMergeVoteRepository {
           moved_line_ids = CASE WHEN core.product_merge_vote.target_product_id = EXCLUDED.target_product_id
             THEN core.product_merge_vote.moved_line_ids || EXCLUDED.moved_line_ids
             ELSE EXCLUDED.moved_line_ids END,
+          adopted_observation_ids = CASE WHEN core.product_merge_vote.target_product_id = EXCLUDED.target_product_id
+            THEN core.product_merge_vote.adopted_observation_ids || EXCLUDED.adopted_observation_ids
+            ELSE EXCLUDED.adopted_observation_ids END,
           target_product_id = EXCLUDED.target_product_id,
           created_at = CURRENT_TIMESTAMP
-        """, sourceProductId, targetProductId, userId, pgArray(movedObservationIds), pgArray(movedLineIds));
+        """, sourceProductId, targetProductId, userId, pgArray(movedObservationIds), pgArray(movedLineIds),
+            pgArray(adoptedObservationIds));
   }
 
   /** Cíl, pro který účet u zboží z účtenky naposledy hlasoval. */

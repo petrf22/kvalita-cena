@@ -264,6 +264,10 @@ export class ModerationPage {
    * provozovny, takže se seznam nabídne hned po otevření. U položky s rozsahem CHAIN žádné
    * `storeId` nemáme (scopeStore je NULL), takže se hledá napříč rozsahy a nesmyslnou dvojici
    * odmítne až server (MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH).
+   *
+   * Jednotky cen (MODERATION_PRODUCT_MERGE_UNIT_MISMATCH) klient záměrně nepředfiltruje: zboží
+   * bez cen jde sloučit kamkoli a význam ceny záleží i na osobním patchi jejího autora
+   * (server `ProductMergeUnits`) — z `ProductSummary` se to poznat nedá.
    */
   protected onMergeSearch(item: FlaggedRecordItem, query: string): void {
     const scopeStoreId = item.product?.scopeStore?.id ?? null;

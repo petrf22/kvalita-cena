@@ -264,7 +264,7 @@ export const productSummaryFieldsFragment = graphql(`
       path
     }
     # Význam ceny (za kg/l/kus/balení) — dopárování zboží z účtenky nenabídne cíl, kam by
-    # ceny nešly převést (receipt-item-rematch-rules.ts, server ReceiptItemUnits).
+    # ceny nešly převést (shared/merge-units.ts, server ProductMergeUnits).
     unitBase
     netContentValue
     isVariableWeight

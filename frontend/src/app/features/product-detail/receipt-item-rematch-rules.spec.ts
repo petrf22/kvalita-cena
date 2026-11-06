@@ -5,7 +5,6 @@ import {
   rematchScopeName,
   rematchStoreId,
   rematchTargetFits,
-  rematchUnitsFit,
 } from './receipt-item-rematch-rules';
 
 type Scoped = Pick<
@@ -122,26 +121,8 @@ describe('obchod pro nabídku cílů', () => {
   });
 });
 
-describe('jednotky cen při dopárování', () => {
-  const grams = { unitBase: 'MASS', netContentValue: 150, isVariableWeight: false } as const;
+describe('jednotky cen v nabídce dopárování', () => {
   const perKg = { unitBase: 'MASS', netContentValue: null, isVariableWeight: true } as const;
-  const perLitre = { unitBase: 'VOLUME', netContentValue: null, isVariableWeight: true } as const;
-
-  it('cena za balení jde na zboží bez gramáže i s pevnou gramáží', () => {
-    expect(rematchUnitsFit(packageUnit, packageUnit)).toBe(true);
-    expect(rematchUnitsFit(packageUnit, grams)).toBe(true);
-  });
-
-  it('cena za balení na váhové zboží nejde', () => {
-    expect(rematchUnitsFit(packageUnit, perKg)).toBe(false);
-  });
-
-  it('cena za kg jde jen na zboží, jehož cena je taky za kg', () => {
-    expect(rematchUnitsFit(perKg, grams)).toBe(true);
-    expect(rematchUnitsFit(perKg, perKg)).toBe(true);
-    expect(rematchUnitsFit(perKg, packageUnit)).toBe(false);
-    expect(rematchUnitsFit(perKg, perLitre)).toBe(false);
-  });
 
   it('nabídka vynechá zboží s nepřevoditelnou jednotkou', () => {
     const source = chainScoped('s', 'c1');

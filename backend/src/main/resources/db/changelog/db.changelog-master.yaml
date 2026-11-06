@@ -62,3 +62,4 @@ databaseChangeLog:
   - include: { file: 2026-11-03/03-receipt-job-requeue.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-11-05/01-receipt-item.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-11-05/02-receipt-rematch-guards.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-11-06/01-product-merge-vote-adopted.yaml, relativeToChangelogFile: true }

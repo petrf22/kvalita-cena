@@ -151,6 +151,7 @@ public enum ErrorCode {
   MODERATION_PRODUCT_RENAME_INVALID("error.moderation.productRenameInvalid"),
   MODERATION_PRODUCT_MERGE_INVALID("error.moderation.productMergeInvalid"),
   MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH("error.moderation.productMergeScopeMismatch"),
+  MODERATION_PRODUCT_MERGE_UNIT_MISMATCH("error.moderation.productMergeUnitMismatch"),
 
   // --- zpětná vazba (core.feedback, docs/nasazeni.md "Než pozvat první lidi")
   FEEDBACK_MESSAGE_REQUIRED("error.feedback.messageRequired"),

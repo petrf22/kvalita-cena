@@ -1406,6 +1406,65 @@ class ReceiptFlowIntegrationTest {
   }
 
   @Test
+  void rematchIntoOffProductReadsTargetNetContentFromOff() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    Long itemId = publishedItem(owner, f, "JOGURT BILY " + f.ico());
+    // Zboží z Open Food Facts: gramáž je jen v off.product, v core.product je NULL (ODbL).
+    String ean = randomEan13();
+    offSnapshot(ean, f.rohlik().getCategory().getSlug(), "150", "G", Map.of("cs", "Jogurt bílý"));
+    Product offJogurt = productRepository.saveAndFlush(Product.builder()
+        .catalogScope(ProductScope.GLOBAL).status(ProductStatus.ACTIVE).build());
+    jdbcTemplate.update("INSERT INTO core.product_code (product_id, code, code_type, is_primary) VALUES (?, ?, 'GTIN', true)",
+        offJogurt.getId(), "0" + ean);
+
+    assertThat(rematchService.rematch(owner.getPublicUid(), itemId, offJogurt.getId()).merged()).isTrue();
+
+    assertThat(jdbcTemplate.queryForObject("SELECT unit_price FROM core.price_observation WHERE product_id = ?",
+        BigDecimal.class, offJogurt.getId())).isEqualByComparingTo("199.3333");
+  }
+
+  @Test
+  void knownNetContentFromSubmittersPatchSurvivesRematchAndChangedVote() {
+    Fixture f = fixture();
+    AppUser a = persistUser();
+    String label = "MED KVETOVY " + f.ico();
+    Long itemId = publishedItem(a, f, label);
+    // A si u zboží z účtenky doplnil gramáž osobním patchem a jeho cena má snapshot 0,5 kg —
+    // tak ji zapisuje PriceObservationService pro zboží s patchem autora.
+    jdbcTemplate.update("""
+        INSERT INTO core.product_user_edit(product_id, user_id, unit_base, net_content_value, net_content_uom,
+                                           net_content_base)
+        VALUES (?, ?, 'MASS', 500, 'G', 0.5)
+        """, itemId, a.getId());
+    jdbcTemplate.update("UPDATE core.price_observation SET net_content_base = 0.5 WHERE product_id = ? AND submitter_id = ?",
+        itemId, a.getId());
+    // Cizí cena za balení bez gramáže drží zboží z účtenky před okamžitým sloučením.
+    AppUser b = persistUser();
+    Long receiptB = uploadAndProcess(b, f, List.of(line(label, "1", QuantityUnit.PCS, "31.90", "31.90", null,
+        PriceKind.REGULAR)));
+    reviewService.updateHeader(b.getPublicUid(), receiptB, f.store().getId(), null);
+    reviewService.confirmLines(b.getPublicUid(), receiptB, List.of(lines(receiptB).getFirst().getId()),
+        ObservationSource.WEB, true);
+    Product med250 = chainProduct(f, "Med 250 g " + f.ico(), new BigDecimal("250"), NetContentUom.G);
+    Product med1kg = chainProduct(f, "Med 1 kg " + f.ico(), BigDecimal.ONE, NetContentUom.KG);
+
+    rematchService.rematch(a.getPublicUid(), itemId, med250.getId());
+    assertThat(netContentBasesOf(med250.getId())).containsExactly(new BigDecimal("0.500000"));
+
+    // Změna hlasu cenu vrátí a přesune dál — známý snapshot se nepřepíše ani nevynuluje.
+    rematchService.rematch(a.getPublicUid(), itemId, med1kg.getId());
+    assertThat(netContentBasesOf(med1kg.getId())).containsExactly(new BigDecimal("0.500000"));
+    // Cena B (balení neznámé velikosti) zůstala na zboží z účtenky beze změny.
+    assertThat(netContentBasesOf(itemId)).containsExactly(new BigDecimal("1.000000"));
+  }
+
+  private List<BigDecimal> netContentBasesOf(Long productId) {
+    return jdbcTemplate.queryForList("SELECT net_content_base FROM core.price_observation WHERE product_id = ?",
+        BigDecimal.class, productId);
+  }
+
+  @Test
   void rematchIntoIncomparableUnitIsRejectedBeforeAnythingMoves() {
     Fixture f = fixture();
     AppUser owner = persistUser();

@@ -151,6 +151,7 @@
     "MODERATION_PRODUCT_RENAME_INVALID": "Nur aktive Artikel ohne Barcode können umbenannt werden",
     "MODERATION_PRODUCT_MERGE_INVALID": "Es können nur zwei gültige Waren ohne Strichcode zusammengeführt werden.",
     "MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH": "Die Preise der Quellware gehören nicht zum Bereich der Zielfiliale oder Zielkette.",
+    "MODERATION_PRODUCT_MERGE_UNIT_MISMATCH": "Die Preise der Quellware lassen sich nicht in die Einheit der Zielware umrechnen (Stück, kg, Liter oder Packung) — führen Sie in umgekehrter Richtung zusammen oder gleichen Sie zuerst die Füllmenge an.",
     "ACCOUNT_SUSPENDED": "Dieses Konto ist gesperrt.",
     "FEEDBACK_MESSAGE_REQUIRED": "Bitte schreibe eine Nachricht",
     "FEEDBACK_MESSAGE_TOO_LONG": "Die Nachricht darf höchstens {{p0}} Zeichen haben",

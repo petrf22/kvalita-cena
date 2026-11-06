@@ -151,6 +151,7 @@
     "MODERATION_PRODUCT_RENAME_INVALID": "Přejmenovat lze jen aktivní bezkódové zboží",
     "MODERATION_PRODUCT_MERGE_INVALID": "Sloučit lze jen dvě platné bezkódové položky.",
     "MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH": "Ceny zdrojového zboží nepatří do rozsahu cílového obchodu nebo řetězce.",
+    "MODERATION_PRODUCT_MERGE_UNIT_MISMATCH": "Ceny zdrojového zboží nejdou převést na jednotku cílového zboží (kus, kg, litr nebo balení) — slučte opačným směrem nebo nejdřív sjednoťte gramáž.",
     "ACCOUNT_SUSPENDED": "Tenhle účet je pozastavený.",
     "FEEDBACK_MESSAGE_REQUIRED": "Napiš prosím zprávu",
     "FEEDBACK_MESSAGE_TOO_LONG": "Zpráva smí mít nejvýš {{p0}} znaků",

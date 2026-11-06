@@ -92,11 +92,14 @@ zvlášť `ALTER TABLE ... ADD COLUMN` (viz `2026-07-26/05-price-observation.yam
 
 **`net_content_base` je SNAPSHOT, ne odkaz na aktuální produkt.** Kdyby někdo později
 opravil gramáž produktu (500 g → 450 g), přepsalo by to zpětně jednotkové ceny celé
-historie a graf by najednou "lhal" o minulosti. Jediná výjimka: dopárování zboží z účtenky
-(`ReceiptItemUnits`, `docs/reputace.md`, „Zboží z účtenky") — cena za balení neznámé velikosti
-převezme gramáž cíle, protože dopárování je výslovné tvrzení „to balení bylo tohle zboží".
-Nejde o opravu gramáže, ale o zjištění, co se vlastně koupilo; bez toho by se 19,90 Kč za kelímek
-agregovalo jako 19,90 Kč/kg. Ceny, jejichž význam převést nejde, dopárování odmítne.
+historie a graf by najednou "lhal" o minulosti. Jediná výjimka: přesun cen na jiné zboží při
+dopárování zboží z účtenky a při moderátorském sloučení duplicit (`ProductMergeUnits`,
+`docs/reputace.md`, „Zboží z účtenky" a „Zboží bez čárového kódu") — cena za balení neznámé velikosti
+převezme gramáž cíle, protože dopárování i sloučení je výslovné tvrzení „to balení bylo tohle
+zboží". Nejde o opravu gramáže, ale o zjištění, co se vlastně koupilo; bez toho by se 19,90 Kč
+za kelímek agregovalo jako 19,90 Kč/kg. Známý snapshot (například 0,5 kg z osobního patche
+autora ceny) se nepřepisuje nikdy. Ceny, jejichž význam převést nejde, se nepřesunou
+(`RECEIPT_ITEM_REMATCH_UNIT_MISMATCH`, `MODERATION_PRODUCT_MERGE_UNIT_MISMATCH`).
 
 **`observed_at` ≠ `created_at`.** `observed_at` je, kdy uživatel cenu VIDĚL (může být
 offline zápis z mobilu, doplněný později); `created_at` je, kdy záznam skutečně došel na
@@ -250,7 +253,8 @@ jej ve výsledcích vidí jen jeho potvrzovatel. `user_id` potvrzení je po 180 
 smazání účtu nulováno, alias i jeho už získaný stav ale zůstávají komunitním údajem.
 
 Moderátorské `mergeProducts(sourceId, targetId)` je transakční konsolidace dvou druhových
-položek. Ověří rozsah cíle, přesune observace, recenze, média, patche, kódy, aliasy,
+položek. Ověří rozsah cíle i jednotky cen (`ProductMergeUnits`, výjimka ze snapshotu
+`net_content_base` výš), přesune observace, recenze, média, patche, kódy, aliasy,
 označení z účtenek (`product_store_label`) i spárované řádky účtenek, vyřeší
 unikátní kolize ve prospěch cíle, smaže staré agregáty a zařadí přepočet cílových buněk.
 Zdroj zůstane jako `MERGED` s `merged_into_id`; přímé čtení starého ID vrátí kanonický cíl.

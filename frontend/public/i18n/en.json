@@ -151,6 +151,7 @@
     "MODERATION_PRODUCT_RENAME_INVALID": "Only active items without a barcode can be renamed",
     "MODERATION_PRODUCT_MERGE_INVALID": "Only two valid products without barcodes can be merged.",
     "MODERATION_PRODUCT_MERGE_SCOPE_MISMATCH": "The source prices do not belong to the target store or chain scope.",
+    "MODERATION_PRODUCT_MERGE_UNIT_MISMATCH": "The source product's prices can't be converted to the target product's unit (piece, kg, litre or package) — merge the other way round or align the net content first.",
     "ACCOUNT_SUSPENDED": "This account is suspended.",
     "FEEDBACK_MESSAGE_REQUIRED": "Please write a message",
     "FEEDBACK_MESSAGE_TOO_LONG": "Message may have at most {{p0}} characters",

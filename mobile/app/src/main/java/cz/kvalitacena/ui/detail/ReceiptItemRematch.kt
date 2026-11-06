@@ -44,7 +44,7 @@ private fun priceUnit(unitBase: String?, netContentValue: Double?, variableWeigh
 }
 
 /**
- * Ceny zboží z účtenky musí po dopárování znamenat totéž co ceny cíle (server `ReceiptItemUnits`,
+ * Ceny zboží z účtenky musí po dopárování znamenat totéž co ceny cíle (server `ProductMergeUnits`,
  * `RECEIPT_ITEM_REMATCH_UNIT_MISMATCH`): stejný význam, nebo cena za balení neznámé velikosti na
  * zboží s pevnou gramáží (balení převezme gramáž cíle). Neznámou jednotku (starší server bez
  * `unitBase` v souhrnu) nechá rozhodnout server — tohle je jen předvýběr nabídky.

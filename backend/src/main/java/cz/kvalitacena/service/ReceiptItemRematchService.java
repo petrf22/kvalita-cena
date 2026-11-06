@@ -45,7 +45,7 @@ import java.util.UUID;
  *   <li>Změna hlasu na jiný cíl vezme s sebou i data, která předchozí hlas už přesunul
  *       ({@code moved_observation_ids}/{@code moved_line_ids}) — jinak by zůstala u starého cíle.</li>
  *   <li>Ceny musí po přesunu znamenat totéž co ceny cíle — za kg, l, kus nebo balení
- *       ({@link ReceiptItemUnits}); to se ověří dřív, než se cokoli přesune.</li>
+ *       ({@link ProductMergeUnits}); to se ověří dřív, než se cokoli přesune.</li>
  * </ul>
  */
 @Slf4j
@@ -61,7 +61,7 @@ public class ReceiptItemRematchService {
   private final ProductCatalogService catalogService;
   private final PriceAggregationService priceAggregationService;
   private final ReceiptProperties receiptProperties;
-  private final ReceiptItemUnits receiptItemUnits;
+  private final ProductMergeUnits productMergeUnits;
   private final JdbcTemplate jdbcTemplate;
 
   /**
@@ -100,7 +100,8 @@ public class ReceiptItemRematchService {
     }
     // Před oběma větvemi (a po vrácení, ať se posoudí i vrácené ceny) — sloučení i přesun
     // vlastních dat by jinak smíchaly nesrovnatelné ceny. Odmítnutí vrátí celou transakci.
-    boolean adoptNetContent = receiptItemUnits.requireCompatible(source, target);
+    ProductMergeUnits.Compatibility units = productMergeUnits.requireCompatible(
+        source, target, ErrorCode.RECEIPT_ITEM_REMATCH_UNIT_MISMATCH);
 
     int required = Math.max(1, receiptProperties.getItemMergeConfirmations());
     if (!hasOthersData(sourceId, user.getId())) {
@@ -108,11 +109,9 @@ public class ReceiptItemRematchService {
       return new Result(targetId, true, 1, required);
     }
 
-    if (adoptNetContent) {
-      receiptItemUnits.adoptTargetNetContent(sourceId, target, user.getId());
-    }
+    List<Long> adopted = productMergeUnits.adoptTargetNetContent(sourceId, units, List.of(user.getId()));
     Moved moved = moveOwnData(sourceId, targetId, user.getId());
-    voteRepository.vote(sourceId, targetId, user.getId(), moved.observationIds(), moved.lineIds());
+    voteRepository.vote(sourceId, targetId, user.getId(), moved.observationIds(), moved.lineIds(), adopted);
     int count = voteRepository.countVoters(sourceId, targetId);
     if (count >= required) {
       merge(source, target);
@@ -238,8 +237,9 @@ public class ReceiptItemRematchService {
   /**
    * Vrátí na zboží z účtenky vlastní data, která předchozí hlas přesunul jinam — ať už jsou
    * u původního cíle, nebo u zboží, do kterého se mezitím sloučil. Ceny za balení, které cíl
-   * převedl na svou gramáž ({@link ReceiptItemUnits#adoptTargetNetContent}), dostanou zpátky
-   * snapshot zdroje bez gramáže; jiné ceny se nepřeváděly. Kolize s cenou, kterou uživatel
+   * převedl na svou gramáž ({@link ProductMergeUnits#adoptTargetNetContent}, zapsané
+   * v {@code adopted_observation_ids}), dostanou zpátky snapshot balení neznámé velikosti; jiné
+   * ceny se nepřeváděly a jejich snapshot zůstane. Kolize s cenou, kterou uživatel
    * týž den zapsal přímo ke zboží z účtenky, se vyřeší ve prospěch té přímé.
    */
   private void returnVotedData(Product source, Long userId) {
@@ -255,11 +255,12 @@ public class ReceiptItemRematchService {
         + " AND kept.product_id = ? AND kept.submitter_id = moved.submitter_id AND kept.store_id = moved.store_id"
         + " AND kept.price_kind = moved.price_kind AND core.day_utc(kept.observed_at) = core.day_utc(moved.observed_at)",
         sourceId, userId, userId, sourceId, sourceId);
-    boolean packageSource = ReceiptItemUnits.unitOf(source) == ReceiptItemUnits.PriceUnit.PACKAGE;
-    jdbcTemplate.update("UPDATE core.price_observation SET product_id = ?, net_content_base = CASE WHEN ?"
-        + " AND quantity_basis IN ('PACKAGE', 'PER_PIECE') THEN " + ReceiptItemUnits.packageBaseSql()
+    String adoptedObservations = "CAST((SELECT adopted_observation_ids FROM core.product_merge_vote"
+        + " WHERE source_product_id = ? AND user_id = ?) AS BIGINT[])";
+    jdbcTemplate.update("UPDATE core.price_observation SET product_id = ?, net_content_base = CASE WHEN id = ANY("
+        + adoptedObservations + ") THEN " + ProductMergeUnits.packageBaseSql()
         + " ELSE net_content_base END WHERE id = ANY(" + movedObservations + ") AND submitter_id = ? AND product_id <> ?",
-        sourceId, packageSource, sourceId, userId, userId, sourceId);
+        sourceId, sourceId, userId, sourceId, userId, userId, sourceId);
     jdbcTemplate.update("UPDATE core.receipt_line l SET product_id = ?, match_source = 'RECEIPT_ITEM'"
         + " FROM core.receipt r WHERE r.id = l.receipt_id AND l.id = ANY(CAST((SELECT moved_line_ids"
         + " FROM core.product_merge_vote WHERE source_product_id = ? AND user_id = ?) AS BIGINT[]))"

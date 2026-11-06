@@ -1,0 +1,31 @@
+# 01-product-merge-vote-adopted.yaml — které ceny hlas pro dopárování převedl na gramáž cíle
+# (docs/reputace.md, „Zboží z účtenky", ProductMergeUnits).
+#
+# core.product_merge_vote.adopted_observation_ids: vlastní ceny za balení neznámé velikosti,
+# kterým hlas přepsal snapshot net_content_base gramáží cíle. Změna hlasu vrací snapshot JEN
+# jim — dřív se vracel všem cenám za balení zboží bez gramáže, takže známá gramáž z osobního
+# patche autora by se změnou hlasu ztratila.
+#
+# Existující hlasy dostanou to, co by dřív vrátila změna hlasu (přesunuté ceny za balení, když
+# zboží z účtenky nemá gramáž) — jejich snapshot se tak chová stejně jako před změnou.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-06-01-product-merge-vote-adopted
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.product_merge_vote
+                ADD COLUMN adopted_observation_ids BIGINT[] NOT NULL DEFAULT '{}';
+              UPDATE core.product_merge_vote v
+                 SET adopted_observation_ids = ARRAY(
+                       SELECT o.id FROM core.price_observation o
+                        WHERE o.id = ANY(v.moved_observation_ids)
+                          AND o.quantity_basis IN ('PACKAGE', 'PER_PIECE'))
+                FROM core.product p
+               WHERE p.id = v.source_product_id
+                 AND p.net_content_value IS NULL AND NOT p.is_variable_weight;
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE core.product_merge_vote DROP COLUMN IF EXISTS adopted_observation_ids;
