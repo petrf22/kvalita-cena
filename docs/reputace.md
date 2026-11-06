@@ -509,9 +509,14 @@ skenu čárového kódu, jen se stejnou značkou `RECEIPT` a vždy `DRAFT`. Druh
 duplicita. Riziko je EAN přečtený chybně tak, že kontrolní číslici projde (jedna záměna číslice
 ji neprojde nikdy, prohození sousedních skoro nikdy); takové zboží opraví úprava nebo sloučení.
 
-**Viditelnost se nemění.** Zboží z účtenky je vždy `DRAFT` a platí pro něj stejný práh jako
-pro ruční bezkódové zboží („Práh důvěry pro zveřejnění nového záznamu" výš,
-`app.catalog.draft-confirmations` = 3, leave-one-out). Potvrzení se ale sbírají samy: po
+**Viditelnost.** Zboží z účtenky vzniká jako `DRAFT` a v produkci platí pro něj stejné číslo
+jako pro ruční bezkódové zboží („Práh důvěry pro zveřejnění nového záznamu" výš, 3,
+leave-one-out), jen z vlastního klíče `app.receipt.item-confirmations` (`PublicationThresholds`).
+Na důvěře autora nezávisí — název je přepis z tisku pokladny, ne text, který autor napsal.
+Vlastní klíč je kvůli testovacímu provozu: profil `beta` ho nastavuje na 0, zboží z účtenky
+se pak zakládá rovnou jako `ACTIVE`, aniž by se snížil práh pro ruční zakládání (tam v betě
+stačí důvěra autora, `app.trust.*` = 0). Strop `max-open-items` níž počítá jen `DRAFT`, při
+prahu 0 tedy fakticky neplatí. Potvrzení se ale sbírají samy: po
 zveřejnění se naučí označení z účtenky (`core.product_store_label`), takže stejný řádek na
 účtence jiného člověka ze stejného řetězce dostane návrh na totéž zboží. Jeho potvrzená cena
 je potvrzení zboží z účtenky. V hledání se zboží z účtenky řadí za ostatní shody, kromě řazení
