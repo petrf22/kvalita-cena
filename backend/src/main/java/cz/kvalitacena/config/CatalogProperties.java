@@ -39,6 +39,13 @@ public class CatalogProperties {
    */
   private double suggestionSimilarity;
   /**
+   * Od jaké podobnosti je shoda názvu v našeptávači „silná" a řadí se před všechny slabší bez
+   * ohledu na rozsah a potvrzenost (ProductRepository.findSimilarByName). Pod ním jsou shody
+   * typu „sedí jen gramáž" nebo „sedí jedno slovo z dlouhého dotazu", které nemají předběhnout
+   * téměř přesný název jen proto, že jsou lokální nebo potvrzené.
+   */
+  private double strongSuggestionSimilarity;
+  /**
    * Od jaké podobnosti názvu se dvojice lokálních položek nabídne moderátorovi jako podezření
    * na duplicitu. Výrazně vyšší než {@link #suggestionSimilarity} — našeptávač si může dovolit
    * nabídnout i vzdálenou shodu, fronta duplicit ne, ta by se jinak zaplnila šumem

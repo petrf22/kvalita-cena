@@ -310,7 +310,7 @@ public class ProductGraphQlController {
     List<Product> found = blankName
         ? productRepository.findLocalByStore(storeId, limit)
         : productRepository.findSimilarByName(name.trim(), storeId, viewer.userId(),
-            catalogProperties.getSuggestionSimilarity(), limit);
+            catalogProperties.getSuggestionSimilarity(), catalogProperties.getStrongSuggestionSimilarity(), limit);
     List<Product> matches = found.stream()
         .filter(p -> p.getHiddenAt() == null || sameUser(p.getCreatedByUserId(), viewer) || viewer.moderator())
         .toList();

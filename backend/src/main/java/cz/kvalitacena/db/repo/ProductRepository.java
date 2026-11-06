@@ -88,16 +88,26 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
    * <p>Nepotvrzené (DRAFT) položky se řadí AŽ ZA potvrzené. Vidět musí být, jinak by je neměl
    * kdo potvrdit (docs/reputace.md, "Práh důvěry pro zveřejnění nového záznamu" — najít je
    * cíleně musí jít i jiným přispěvatelům), ale nepotvrzený název nemá stát nad zavedeným.
+   *
+   * <p>Rozsah, druhovost i potvrzenost ale rozhodují až UVNITŘ pásma podobnosti: shoda od
+   * {@code strong} výš ({@code app.catalog.strong-suggestion-similarity}) jde před všechny slabší.
+   * Jinak by název, který skoro nesedí, porazil téměř přesnou shodu jen tím, že je lokální nebo
+   * potvrzený — „KECUP JEMNY 500G" nabízel nahoře lokální „Těstoviny vřetena 500g" (0,29 jen za
+   * gramáž) a potvrzenou minerálku „jemně perlivá" (0,24) nad nepotvrzeným kečupem (0,71).
+   * Jedno slovo obsažené v názvu dá přes {@code word_similarity} 1,0, takže u bezkódového zápisu
+   * lokální druhová položka zůstává nahoře jako dřív — obě shody jsou silné a rozhodne rozsah.
    */
-  @Query(value = "SELECT p.* " + SIMILAR_BY_NAME_FROM + """
-      ORDER BY CASE WHEN p.scope_store_id=:storeId THEN 0
+  @Query(value = "SELECT p.* " + SIMILAR_BY_NAME_FROM
+      + "ORDER BY CASE WHEN " + SIMILAR_BY_NAME_SCORE + " >= :strong THEN 0 ELSE 1 END," + """
+      CASE WHEN p.scope_store_id=:storeId THEN 0
         WHEN p.scope_chain_id=(SELECT s.chain_id FROM core.store s WHERE s.id=:storeId) THEN 1
         WHEN p.catalog_scope='GLOBAL' THEN 2 ELSE 3 END,
       p.is_generic DESC,
       CASE WHEN p.status='DRAFT' THEN 1 ELSE 0 END,
       """ + SIMILAR_BY_NAME_SCORE + " DESC LIMIT :limit", nativeQuery = true)
   List<Product> findSimilarByName(@Param("name") String name, @Param("storeId") Long storeId,
-      @Param("viewerId") Long viewerId, @Param("threshold") double threshold, @Param("limit") int limit);
+      @Param("viewerId") Long viewerId, @Param("threshold") double threshold, @Param("strong") double strong,
+      @Param("limit") int limit);
 
   /**
    * Totéž měření jako {@link #findSimilarByName}, ale s číselným skóre a řazené jen podle něj —

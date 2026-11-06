@@ -316,7 +316,7 @@ public class ReceiptMatchingService {
         : searchableLabel(line.getLabelDisplay() != null ? line.getLabelDisplay() : line.getLabelRaw());
     if (!name.isBlank()) {
       List<Product> byName = productRepository.findSimilarByName(name, storeId, viewerId,
-          catalogProperties.getSuggestionSimilarity(), limit);
+          catalogProperties.getSuggestionSimilarity(), catalogProperties.getStrongSuggestionSimilarity(), limit);
       byName.forEach(p -> result.putIfAbsent(p.getId(), p));
     }
     return new ArrayList<>(result.values()).subList(0, Math.min(limit, result.size()));
