@@ -167,7 +167,8 @@ změnou v daných oblastech.
 PostgreSQL schémata: **`core`** (vlastní data), **`auth`**, **`agg`** (agregáty pro grafy),
 **`off`** (Open Food Facts), **`osm`** (souřadnice provozoven z OpenStreetMap — schéma zatím
 nemá jedinou tabulku, je to rezervace pro budoucí synchronizaci), **`fx`** (kurzovní lístek ČNB,
-`docs/lokalizace.md` — na rozdíl od `off`/`osm` sem appka sama píše, hotovo).
+`docs/lokalizace.md` — na rozdíl od `off`/`osm` sem appka sama píše, hotovo), **`ai`** (fronta
+a syrové výstupy strojového zpracování účtenek, `docs/ai.md` — mimo čistý export).
 
 Open Food Facts **i OpenStreetMap** jsou pod ODbL se share-alike podmínkou. Oddělení schémat je
 **projektová bezpečnostní politika zvolená vědomě přísněji, než ODbL vyžaduje** (ta rozlišuje
