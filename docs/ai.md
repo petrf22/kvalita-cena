@@ -239,13 +239,19 @@ papírové zboží), proto 14B. Ten se do 8 GB VRAM nevejde celý a běží zč�
 **Návrh obchodu** (`ReceiptMatchingService.suggestStore`, jen návrh — potvrzuje uživatel):
 nejdřív obchod, který vlastník už potvrdil u jiné SVÉ účtenky se stejnou hlavičkou (stejné
 IČO, bez IČO stejný název, a vždy stejná adresa — po `core.norm_text`; cizí potvrzení se
-nepoužívají), pak textová shoda IČO/názvu s katalogem a adresa mezi pobočkami. Kromě
+nepoužívají; při víc shodách vyhrává poslední POTVRZENÍ podle `core.receipt.store_confirmed_at`,
+ne poslední nahraná účtenka, jinak by oprava obchodu u starší účtenky prohrála s chybnou volbou
+z novější), pak textová shoda IČO/názvu s katalogem a adresa mezi pobočkami. Kromě
 rozpoznání se počítá znovu, když vlastník potvrdí obchod u jiné účtenky (`updateHeader` →
-`resuggestOpenReceiptsAfterCommit`, jen rozpoznané a neuzavřené účtenky bez obchodu) — jinak
-by účtenka rozpoznaná dřív, než obchod někdo založil, zůstala bez návrhu natrvalo. Přepočet
-běží až po commitu potvrzení, každá účtenka ve vlastní transakci s blokujícím zámkem: zamčenou
-účtenku (párování řádku) přeskočit nejde, protože by o návrh přišla, a čekat uvnitř
-`updateHeader` taky ne — dvě souběžná potvrzení by se zablokovala navzájem. Se změnou návrhu se
+`ReceiptStoreResuggester`, jen neuzavřené účtenky bez obchodu) — jinak by účtenka rozpoznaná
+dřív, než obchod někdo založil, zůstala bez návrhu natrvalo. Přepočet běží až po commitu
+potvrzení a na pozadí (`receiptTaskExecutor`, jedno vlákno) — čekání na zámky ostatních účtenek
+a párování řádků s dotazy do OFF by jinak odpověď na už uložené potvrzení protáhlo přes timeout
+mobilu. Každá účtenka se přepočítá ve vlastní transakci s blokujícím zámkem: zamčenou účtenku
+(párování řádku) přeskočit nejde, protože by o návrh přišla, a čekat uvnitř `updateHeader` taky
+ne — dvě souběžná potvrzení by se zablokovala navzájem. Výběr bere i účtenky `PROCESSING`:
+worker mohl návrh spočítat před potvrzením a commitnout až po něm, zámek proto počká na jeho
+commit a přepočítá už hotovou účtenku. Se změnou návrhu se
 znovu spárují strojové návrhy řádků; ruční volby zůstávají a zrušený návrh (`unmatchLine` →
 `rejected_product_id`/`code_rejected`) `matchLines` znovu nenabídne — ani při změně obchodu.
 

@@ -71,7 +71,7 @@ public class ReceiptMatchingService {
   /**
    * Návrh obchodu z hlavičky — jen návrh, potvrdí ho uživatel (updateReceiptHeader). Počítá se
    * při rozpoznání a znovu po potvrzení obchodu u jiné účtenky téhož vlastníka
-   * (ReceiptReviewService.updateHeader), jinak by účtenka rozpoznaná dřív, než obchod vznikl,
+   * (ReceiptStoreResuggester), jinak by účtenka rozpoznaná dřív, než obchod vznikl,
    * zůstala bez návrhu natrvalo.
    */
   @Transactional(readOnly = true)
