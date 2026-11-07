@@ -114,6 +114,8 @@ public class ReceiptReviewService {
       Store store = storeRepository.findById(storeId)
           .orElseThrow(() -> new NotFoundException(ErrorCode.STORE_NOT_FOUND));
       receipt.setStoreId(store.getId());
+      // Návrh obchodu u dalších účtenek se řídí posledním potvrzením, ne posledním nahráním.
+      receipt.setStoreConfirmedAt(OffsetDateTime.now());
       // Součet účtenky se zobrazuje v měně obchodu — stejné, v jaké se pak zapíšou ceny.
       receipt.setCurrency(currencyResolver.forStore(store));
       // Jiný obchod = jiný rozsah označení i vnitroobchodních kódů — strojové návrhy znovu.

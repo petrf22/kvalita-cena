@@ -90,6 +90,10 @@ public class Receipt implements Persistable<Long> {
   @Column(name = "store_id")
   private Long storeId;
 
+  /** Kdy vlastník obchod naposledy potvrdil — řídí krok 0 návrhu obchodu u dalších účtenek. */
+  @Column(name = "store_confirmed_at", columnDefinition = "TIMESTAMPTZ")
+  private OffsetDateTime storeConfirmedAt;
+
   @Column(name = "suggested_store_id")
   private Long suggestedStoreId;
 

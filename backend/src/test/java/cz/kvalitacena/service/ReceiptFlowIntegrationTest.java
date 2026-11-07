@@ -332,6 +332,38 @@ class ReceiptFlowIntegrationTest {
   }
 
   @Test
+  void laterStoreCorrectionOnOlderReceiptWinsOverNewerUpload() {
+    AppUser owner = persistUser();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    String name = "XYZ TRADE S.R.O. " + suffix;
+    String address = "Kratka 5, 602 00 Brno " + suffix;
+    Long older = uploadWithHeader(owner, name, address, null, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    Long newer = uploadWithHeader(owner, name, address, null, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    Long open = uploadWithHeader(owner, name, address, null, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    // Názvy obchodů s hlavičkou nesouvisí — návrh dává jen dřívější potvrzení vlastníka.
+    Store wrong = storeRepository.saveAndFlush(Store.builder()
+        .name("Krámek na rohu " + suffix).street("Krátká 7").city("Brno").country("CZ")
+        .status(StoreStatus.PENDING).build());
+    Store right = storeRepository.saveAndFlush(Store.builder()
+        .name("Krámek u nádraží " + suffix).street("Krátká 5").city("Brno").country("CZ")
+        .status(StoreStatus.PENDING).build());
+    updateHeader(owner.getPublicUid(), older, wrong.getId(), null);
+    updateHeader(owner.getPublicUid(), newer, wrong.getId(), null);
+    assertThat(receiptRepository.findById(open).orElseThrow().getSuggestedStoreId()).isEqualTo(wrong.getId());
+
+    // Vlastník chybu opraví u STARŠÍ účtenky — platí poslední potvrzení, ne poslední nahrání.
+    updateHeader(owner.getPublicUid(), older, right.getId(), null);
+
+    assertThat(receiptRepository.findById(open).orElseThrow().getSuggestedStoreId()).isEqualTo(right.getId());
+    Long fresh = uploadWithHeader(owner, name, address, null, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    assertThat(receiptRepository.findById(fresh).orElseThrow().getSuggestedStoreId()).isEqualTo(right.getId());
+  }
+
+  @Test
   void storeNamedDifferentlyThanReceiptIsSuggestedFromOwnersConfirmedHeader() {
     AppUser owner = persistUser();
     AppUser stranger = persistUser();
