@@ -37,7 +37,8 @@ Pravidla, která to drží čisté:
    - jednotlivě zvolený geokódovaný výsledek (lat/lon + `osm_ref` konkrétního kandidáta) se
      uložit smí, s `geo_source` jako značkou původu — viz `core.store.geo_source` níž. Odtud
      pochází jen BOD, ne text, takže `data_origin` zůstává `OWN`;
-   - jednotlivě zvolená **provozovna z nabídky `nearbyOsmStores`** (Overpass) smí přinést
+   - jednotlivě zvolená **provozovna z nabídky `nearbyOsmStores`/`osmStoresAtAddress`**
+     (Overpass, kolem polohy nebo kolem adresy z hlavičky účtenky) smí přinést
      i název a adresu — ty se značí `data_origin = 'OSM_DERIVED'` a vypadávají z „čistého"
      exportu podle pravidla 3, stejně jako `OFF_DERIVED` u zboží.
 
@@ -278,6 +279,15 @@ výpadek hlásí jako `status = UNAVAILABLE`, odlišený od „v okolí opravdu 
 jako `ProductLookupStatus.OFF_UNAVAILABLE` u skenování). Kandidáty, které appka ve svém
 katalogu už má, vyřadí `OsmStoreCandidateFilter` (shoda `osm_ref`, nebo normalizovaná identita
 jako v `uq_store_identity`) ještě před odesláním nabídky.
+
+**Nabídka kolem adresy (`osmStoresAtAddress`, `OsmStoreLookupService.atAddress`)** slouží
+zakládání obchodu z hlavičky účtenky — tu uživatel zpracovává doma, takže hledání kolem jeho
+polohy by nenašlo nic. Server adresu nejdřív geokóduje (`GeocodingService.lookup`, první bod
+Nominatimu) a kolem bodu hledá stejnou cestou jako `nearbyOsmStores`. Výpadek geokodéru je
+taky `UNAVAILABLE` (`lookup` vrací prázdný `Optional`, ne prázdný seznam, a výpadek
+necachuje), neznámá adresa `OK` s prázdným seznamem. Kandidáty, jejichž název nebo značka sdílí
+slovo s názvem z účtenky, posune nahoru `OsmStoreCandidateFilter.rankByName`; ostatní zůstávají,
+protože účtenka často tiskne provozovatele („AHOLD Czech Republic"), ne značku („Albert").
 
 **Geokódování (OpenStreetMap Nominatim, `geocodeAddress`, `GeocodingService`) jde vždy ze
 serveru, nikdy z klienta** (`docs/soukromi.md` — jinak by šla Nominatimu přímo IP uživatele).

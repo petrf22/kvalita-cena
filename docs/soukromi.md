@@ -54,7 +54,9 @@ výše vyhýbá. Odpověď se do `core.store` nekopíruje celá — jen lat/lon 
 pravidlu** — dotaz na Overpass jde výhradně ze serveru a se souřadnicemi zaokrouhlenými na
 3 desetinná místa, stejně jako `nearbyStores`. Zaokrouhlená poloha je zároveň klíč cache, takže
 ven jde přesně to, co se cachuje. Odpověď se nikam neukládá; do `core.store` se dostane až to,
-co uživatel potvrdí ve formuláři (`docs/datovy-model.md`, pravidlo 1).
+co uživatel potvrdí ve formuláři (`docs/datovy-model.md`, pravidlo 1). Varianta kolem adresy
+(`osmStoresAtAddress`, zakládání obchodu z účtenky) posílá Nominatimu a Overpassu adresu
+OBCHODU z hlavičky účtenky, ne polohu uživatele, a taky jen ze serveru.
 
 **Opačný směr (`reverseGeocode`, tlačítko „Použít mou polohu" při editaci obchodu) platí
 stejně** — parametrem je tady rovnou poloha UŽIVATELE, ne adresa obchodu, takže je pravidlo
