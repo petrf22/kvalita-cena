@@ -6,7 +6,7 @@ import { vi } from 'vitest';
 import { StoreForm } from './store-form';
 import { StoreService } from '../services/store-service';
 import { CountryService } from '../services/country-service';
-import { OsmLookupStatus } from '../models/generated/enums';
+import { DataOrigin, GeoSource, OsmLookupStatus } from '../models/generated/enums';
 
 describe('StoreForm – propojení adresy a mapy', () => {
   const address = (city: string) => ({
@@ -192,5 +192,116 @@ describe('StoreForm – předvyplnění z účtenky', () => {
     form['city'].set('Jinde');
     form['applyPrefill'](prefill);
     expect(form['city']()).toBe('Jinde');
+  });
+});
+
+describe('StoreForm – převzetí provozovny z OpenStreetMap', () => {
+  const candidate = {
+    name: 'Albert',
+    street: 'Nádražní 12',
+    city: 'Vzorov',
+    postalCode: '100 00',
+    country: 'SK',
+    lat: 50.1,
+    lon: 14.4,
+    osmRef: 'node/42',
+    brand: 'Albert',
+  };
+  const receipt = {
+    name: 'AHOLD Czech Republic',
+    street: 'Masarykova 1',
+    postalCode: '100 01',
+    city: 'Vzorov',
+    ico: '44012373',
+  };
+  let service: {
+    chains: ReturnType<typeof vi.fn>;
+    search: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    reverseGeocode: ReturnType<typeof vi.fn>;
+  };
+  let form: StoreForm;
+
+  beforeEach(() => {
+    service = {
+      chains: vi.fn(() => of([{ id: '7', name: 'Albert' }])),
+      search: vi.fn(() => of({ items: [] })),
+      create: vi.fn(() => of({ id: '9' })),
+      reverseGeocode: vi.fn(() => of({ status: OsmLookupStatus.Unavailable, attribution: 'OSM' })),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: StoreService, useValue: service },
+        { provide: CountryService, useValue: { country: signal('CZ'), countries: signal([]) } },
+        { provide: TranslocoService, useValue: { translate: (key: string) => key } },
+      ],
+    });
+    form = TestBed.runInInjectionContext(() => new StoreForm());
+  });
+
+  it('název a adresu vezme z OSM, IČO z účtenky a řetězec podle značky', () => {
+    form['applyOsmCandidate'](candidate, '© OSM', receipt);
+    expect(form['name']()).toBe('Albert');
+    expect(form['street']()).toBe('Nádražní 12');
+    expect(form['postalCode']()).toBe('100 00');
+    expect(form['country']()).toBe('SK');
+    expect(form['ico']()).toBe('44012373');
+    expect(form['icoFromReceipt']()).toBe(true);
+    expect(form['prefilled']()).toBe(false);
+    expect(form['osmAttributionText']()).toBe('© OSM');
+    expect(service.chains).toHaveBeenCalledWith('Albert', 'SK');
+    expect(form['chainId']()).toBe('7');
+    expect(form['pointFromOsm']()).toBe(true);
+  });
+
+  it('uloží obchod jako OSM_DERIVED s bodem a odkazem z OSM', () => {
+    form['applyOsmCandidate'](candidate, '© OSM', null);
+    form.submit();
+    expect(service.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Albert',
+        city: 'Vzorov',
+        country: 'SK',
+        ico: null,
+        lat: 50.1,
+        lon: 14.4,
+        geoSource: GeoSource.Osm,
+        osmRef: 'node/42',
+        dataOrigin: DataOrigin.OsmDerived,
+      }),
+    );
+  });
+
+  it('posunutý bod uloží jako COMMUNITY, původ textu zůstává OSM_DERIVED', () => {
+    form['applyOsmCandidate'](candidate, '© OSM', null);
+    form.onMapPointSelected({ lat: 50.2, lon: 14.5 });
+    expect(form['pointFromOsm']()).toBe(false);
+    form.submit();
+    expect(service.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lat: 50.2,
+        lon: 14.5,
+        geoSource: GeoSource.Community,
+        osmRef: 'node/42',
+        dataOrigin: DataOrigin.OsmDerived,
+      }),
+    );
+  });
+
+  it('po převzetí z OSM se formulář na údaje z účtenky už nepřepne', () => {
+    form['applyOsmCandidate'](candidate, '© OSM', receipt);
+    form['applyPrefill'](receipt);
+    expect(form['name']()).toBe('Albert');
+    expect(form['street']()).toBe('Nádražní 12');
+    expect(form['prefilled']()).toBe(false);
+  });
+
+  it('bez OSM obchod z účtenky zůstává vlastní (dataOrigin se neposílá)', () => {
+    service.chains.mockReturnValue(of([]));
+    form['applyPrefill'](receipt);
+    form.submit();
+    expect(service.create).toHaveBeenCalledWith(
+      expect.objectContaining({ geoSource: null, osmRef: null, dataOrigin: null }),
+    );
   });
 });

@@ -155,7 +155,11 @@ export class ReceiptDetailPage {
     const receipt = this.receipt();
     return receipt ? receiptStoreName(receipt) : null;
   });
-  /** „Přidat nový obchod" se předvyplní z hlavičky účtenky, ať uživatel neopisuje. */
+  /**
+   * „Přidat nový obchod" se předvyplní z hlavičky účtenky, ať uživatel neopisuje. Z téže adresy
+   * picker nabídne provozovny z OpenStreetMap — výběr jde přes formulář nového obchodu a na
+   * účtenku se pak ukládá stejně jako „+ Nový obchod" (`pendingStore` → `saveStore`).
+   */
   protected readonly storePrefill = computed(() => {
     const receipt = this.receipt();
     return receipt ? receiptStorePrefill(receipt) : null;

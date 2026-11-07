@@ -30,6 +30,8 @@
     },
     "similarWarning": "Nemyslíš spíš některý z už existujících obchodů?",
     "prefilledFromReceipt": "Předvyplněno z účtenky — údaje zkontroluj, stroj se mohl přečíst.",
+    "prefilledFromOsm": "Předvyplněno z OpenStreetMap — údaje zkontroluj a případně oprav.",
+    "companyIdFromReceipt": "{{label}} jsme převzali z účtenky.",
     "saveChanges": "Uložit změny",
     "createStore": "Založit obchod"
   },
@@ -65,6 +67,7 @@
     "findCoordinates": "Najít souřadnice",
     "useMyLocation": "Použít mou polohu",
     "willUseMapPosition": "Použije se poloha z mapy níž / tvoje aktuální poloha.",
+    "fromOsm": "Použije se poloha obchodu z OpenStreetMap. Na mapě ji můžeš posunout.",
     "notFound": "Adresu se nepodařilo dohledat. Zkontroluj připojení nebo ji doplň ručně; polohu lze vybrat na mapě.",
     "unavailable": "Adresu teď nejde dohledat — služba OpenStreetMap je nedostupná. Vyplněnou adresu jsme nechali beze změny, zkontroluj ji."
   },
@@ -95,6 +98,16 @@
     "noNearbyStores": "V okolí jsme nenašli žádný obchod.",
     "geoPermissionDenied": "Přístup k poloze byl odmítnut — vyber obchod ručně.",
     "change": "Změnit obchod",
-    "clear": "Vymazat obchod"
+    "clear": "Vymazat obchod",
+    "osm": {
+      "title": "V OpenStreetMap u adresy z účtenky",
+      "hint": "Obchody, které appka zatím nezná. Výběrem otevřeš formulář nového obchodu předvyplněný z OpenStreetMap.",
+      "loading": "Hledáme obchody u adresy z účtenky…",
+      "empty": "U adresy z účtenky nezná OpenStreetMap žádný obchod, který by appka ještě neměla. Zkus ho najít v hledání výš, nebo ho založ jako nový.",
+      "unavailable": "OpenStreetMap je teď nedostupná, takže nevíme, jestli tu obchod je. Zkus to za chvíli znovu, nebo obchod najdi či založ sám.",
+      "offline": "Jsi offline — obchody z OpenStreetMap načteme, až se připojíš.",
+      "retry": "Zkusit znovu",
+      "showMore": "Zobrazit další ({{count}})"
+    }
   }
 }
