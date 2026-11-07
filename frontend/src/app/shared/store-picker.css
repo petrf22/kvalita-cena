@@ -36,3 +36,96 @@
   font-size: var(--kc-font-xs);
   color: var(--kc-text-muted);
 }
+
+/* Nabídka z OpenStreetMap u adresy z účtenky — stejný vzor jako hledání zboží u řádku účtenky
+   (features/receipts/receipt-line-match.css). */
+.osm {
+  display: grid;
+  gap: var(--kc-space-2);
+  margin-top: var(--kc-space-3);
+  padding: var(--kc-space-3);
+  border: 1px solid var(--kc-border-split);
+  border-radius: var(--kc-space-1);
+  background: var(--kc-bg-subtle);
+}
+.osm-title {
+  margin: 0;
+  font-size: var(--kc-font-md);
+  font-weight: 600;
+}
+.osm-body {
+  display: grid;
+  gap: var(--kc-space-2);
+  min-width: 0;
+}
+.osm-state {
+  display: flex;
+  align-items: center;
+  gap: var(--kc-space-2);
+  margin: 0;
+}
+.osm-problem {
+  flex-wrap: wrap;
+}
+.osm-problem button {
+  min-height: 44px;
+}
+.osm-message {
+  margin: 0;
+  font-size: var(--kc-font-sm);
+  color: var(--kc-text-secondary);
+}
+.osm-error {
+  color: var(--kc-danger);
+}
+.osm-hint {
+  margin: 0;
+  font-size: var(--kc-font-xs);
+  color: var(--kc-text-muted);
+}
+.osm-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.osm-item {
+  display: flex;
+  align-items: center;
+  gap: var(--kc-space-3);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--kc-space-2);
+  border: 0;
+  border-bottom: 1px solid var(--kc-border-split);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.osm-item:hover,
+.osm-item:focus-visible {
+  background: var(--kc-border-split);
+}
+.osm-text {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.osm-name {
+  color: var(--kc-text);
+  overflow-wrap: anywhere;
+}
+.osm-meta {
+  font-size: var(--kc-font-xs);
+  color: var(--kc-text-muted);
+  overflow-wrap: anywhere;
+}
+.osm-item-icon {
+  color: var(--kc-brand);
+}
+.osm-more {
+  justify-self: start;
+  min-height: 44px;
+  padding-left: 0;
+  padding-right: 0;
+}

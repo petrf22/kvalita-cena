@@ -20,6 +20,7 @@ import cz.kvalitacena.ui.common.companyIdDigits
 import cz.kvalitacena.ui.common.companyIdLabelRes
 import cz.kvalitacena.ui.common.toUiText
 import cz.kvalitacena.ui.receipt.StorePrefill
+import cz.kvalitacena.ui.receipt.besideOsmCandidate
 import cz.kvalitacena.ui.settings.CountryStore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -227,9 +228,31 @@ class StoreFormViewModel(
    * ať uživatel neopisuje, co už přečetl worker. Na rozdíl od [applyOsmCandidate] jsou to
    * vlastní data uživatele — `dataOrigin` zůstává OWN. Souřadnice se dohledají z adresy
    * ([scheduleGeocode]); ARES se sám nevolá, IČO z účtenky je sídlo firmy, ne provozovna.
+   *
+   * Vybral-li uživatel na účtence kandidáta z OpenStreetMap, přijde hlavička spolu s ním
+   * (StoreFormScreen vyzvedává kandidáta PRVNÍ). Pak se z účtenky vezme jen IČO, u kandidáta
+   * bez města i adresa ([besideOsmCandidate]): název zůstane z OSM a `dataOrigin` OSM_DERIVED — přečtený
+   * tisk by jinak přepsal údaje, ke kterým se značka původu vztahuje. Pravidlo žije tady, ne
+   * jen v pořadí vyzvedávání — volající (detail účtenky) předává celou hlavičku stejně jako
+   * u ručního založení a co z ní platí, rozhoduje formulář, který o kandidátovi ví.
    */
   fun applyReceiptPrefill(prefill: StorePrefill) {
     if (isEditing || prefilledFromReceipt) return
+    val osm = osmCandidate
+    if (osm != null) {
+      val beside = prefill.besideOsmCandidate(candidateHasCity = !osm.city.isNullOrBlank()) ?: return
+      prefilledFromReceipt = true
+      beside.ico?.let { ico = it }
+      beside.city?.let {
+        // Celá adresa z účtenky, i s prázdnými částmi — ne smíchaná s ulicí z OSM.
+        street = beside.street.orEmpty()
+        postalCode = beside.postalCode.orEmpty()
+        city = it
+      }
+      // Bod je z OSM kandidáta — geokódovat adresu z účtenky nemá smysl.
+      scheduleSimilarCheck()
+      return
+    }
     prefilledFromReceipt = true
     prefill.name?.let { name = it }
     prefill.street?.let { street = it }

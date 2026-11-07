@@ -12,7 +12,7 @@ import java.util.Locale
 /**
  * Seřadí obchody podle skutečné vzdálenosti a zahodí ty, které se do nastaveného okruhu ve
  * skutečnosti nevejdou. Server totiž hledá s okruhem zvětšeným o chybu zaokrouhlení polohy
- * (StoreGraphQlController.ROUNDING_SLACK_M), aby uživateli nevypadl obchod, ve kterém právě
+ * (Coordinates.ROUNDING_SLACK_M), aby uživateli nevypadl obchod, ve kterém právě
  * stojí — pár řádků navíc proto odfiltruje až klient.
  *
  * Obchod bez souřadnic se zahazuje — vzdálenost k němu neznáme, takže "v okolí" není. Výsledky

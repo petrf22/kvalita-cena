@@ -1046,6 +1046,9 @@ data class NearbyStoresData(val nearbyStores: List<Store> = emptyList())
 data class NearbyOsmStoresData(val nearbyOsmStores: OsmStoreCandidateResult)
 
 @Serializable
+data class OsmStoresAtAddressData(val osmStoresAtAddress: OsmStoreCandidateResult)
+
+@Serializable
 data class SubmitObservationsData(val submitObservations: List<PriceObservation>)
 
 @Serializable

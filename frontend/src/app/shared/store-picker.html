@@ -1,6 +1,6 @@
 <ng-container *transloco="let t; scope: 'store'">
   <div class="store-picker">
-    @if (selectedStore() && selectedStoreId() === selectedStore()!.id && !picking()) {
+    @if (showSelectedCard()) {
       <div class="selected-store">
         <strong>{{ selectedStore()!.name }}</strong>
         @if (selectedStore()!.street) {
@@ -47,7 +47,7 @@
       {{ t('store.picker.findNearby') }}
     </button>
     @if (auth.isLoggedIn()) {
-      <button nz-button type="button" (click)="showAddModal.set(true)">
+      <button nz-button type="button" (click)="openNewStore()">
         {{ t('store.picker.addNew') }}
       </button>
     }
@@ -59,6 +59,76 @@
     <p class="location-error">{{ locationError() }}</p>
   }
 
+  @if (osmSectionVisible()) {
+    <section class="osm" [attr.aria-label]="t('store.picker.osm.title')">
+      <h4 class="osm-title">{{ t('store.picker.osm.title') }}</h4>
+      <div class="osm-body" aria-live="polite">
+        @switch (osm().kind) {
+          @case ('loading') {
+            <div class="osm-state">
+              <nz-spin nzSimple nzSize="small" />
+              <span class="osm-message">{{ t('store.picker.osm.loading') }}</span>
+            </div>
+          }
+          @case ('offline') {
+            <p class="osm-state osm-message">{{ t('store.picker.osm.offline') }}</p>
+          }
+          @case ('unavailable') {
+            <div class="osm-state osm-problem">
+              <p class="osm-message">{{ t('store.picker.osm.unavailable') }}</p>
+              <button nz-button type="button" (click)="loadOsm()">
+                {{ t('store.picker.osm.retry') }}
+              </button>
+            </div>
+          }
+          @case ('error') {
+            <div class="osm-state osm-problem">
+              <p class="osm-message osm-error">{{ osmError() }}</p>
+              <button nz-button type="button" (click)="loadOsm()">
+                {{ t('store.picker.osm.retry') }}
+              </button>
+            </div>
+          }
+          @case ('loaded') {
+            @if (osmCandidates().length === 0) {
+              <p class="osm-state osm-message">{{ t('store.picker.osm.empty') }}</p>
+            } @else {
+              <p class="osm-hint">{{ t('store.picker.osm.hint') }}</p>
+              <ul class="osm-list">
+                @for (candidate of osmVisible(); track candidate.osmRef) {
+                  <li>
+                    <button type="button" class="osm-item" (click)="openOsmCandidate(candidate)">
+                      <span class="osm-text">
+                        <span class="osm-name">{{ candidate.name }}</span>
+                        @if (osmCandidateAddress(candidate)) {
+                          <span class="osm-meta">{{ osmCandidateAddress(candidate) }}</span>
+                        }
+                      </span>
+                      <span nz-icon nzType="plus" class="osm-item-icon" aria-hidden="true"></span>
+                    </button>
+                  </li>
+                }
+              </ul>
+              @if (osmHiddenCount() > 0) {
+                <button
+                  nz-button
+                  nzType="link"
+                  type="button"
+                  class="osm-more"
+                  (click)="showAllOsm()"
+                >
+                  {{ t('store.picker.osm.showMore', { count: osmHiddenCount() }) }}
+                </button>
+              }
+              <!-- Atribuce ODbL je u výsledků povinná; text chodí ze serveru (lokalizovaný). -->
+              <p class="osm-hint">{{ osmAttribution() }}</p>
+            }
+          }
+        }
+      </div>
+    </section>
+  }
+
   <nz-modal
     [nzVisible]="showAddModal()"
     [nzTitle]="t('store.picker.newStoreModalTitle')"
@@ -68,6 +138,8 @@
     <ng-container *nzModalContent>
       <app-store-form
         [prefill]="prefill()"
+        [osmCandidate]="osmPick()"
+        [osmAttribution]="osmAttribution()"
         (created)="onStoreCreated($event)"
         (cancelled)="showAddModal.set(false)"
       />

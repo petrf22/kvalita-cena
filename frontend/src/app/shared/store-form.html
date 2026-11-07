@@ -1,6 +1,25 @@
 <ng-container *transloco="let t; scope: 'store'">
   <form nz-form nzLayout="vertical" (ngSubmit)="submit()">
-    @if (prefilled()) {
+    @if (osmApplied()) {
+      <!-- Atribuce ODbL je u převzatých údajů povinná; text chodí ze serveru (lokalizovaný). -->
+      <nz-alert
+        nzType="info"
+        [nzMessage]="t('store.form.prefilledFromOsm')"
+        [nzDescription]="osmNote"
+        nzShowIcon
+        class="form-alert"
+      />
+      <ng-template #osmNote>
+        @if (icoFromReceipt()) {
+          <p class="alert-text">
+            {{ t('store.form.companyIdFromReceipt', { label: companyIdLabel() }) }}
+          </p>
+        }
+        @if (osmAttributionText()) {
+          <p class="alert-text attribution">{{ osmAttributionText() }}</p>
+        }
+      </ng-template>
+    } @else if (prefilled()) {
       <nz-alert
         nzType="info"
         [nzMessage]="t('store.form.prefilledFromReceipt')"
@@ -152,7 +171,9 @@
       </nz-radio-group>
     }
 
-    @if (manualLat() != null && !selectedCandidateRef()) {
+    @if (pointFromOsm() && !selectedCandidateRef()) {
+      <p class="section-hint">{{ t('store.location.fromOsm') }}</p>
+    } @else if (manualLat() != null && !selectedCandidateRef()) {
       <p class="section-hint">{{ t('store.location.willUseMapPosition') }}</p>
     }
 

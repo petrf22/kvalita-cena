@@ -511,6 +511,13 @@
     <string name="store_picker_osm_search">Zkusit obchody z OpenStreetMap</string>
     <string name="store_picker_osm_unavailable">OpenStreetMap je teď nedostupná, o okolí tedy nic nevíme. Zkus to za chvíli, nebo obchod zadej sám.</string>
     <string name="store_picker_osm_none">Ani OpenStreetMap tu žádný obchod nezná.</string>
+    <string name="store_picker_osm_address_title">V OpenStreetMap u adresy z účtenky</string>
+    <string name="store_picker_osm_address_search">Hledat v OpenStreetMap u adresy z účtenky</string>
+    <string name="store_picker_osm_address_searching">Hledám v OpenStreetMap u adresy z účtenky…</string>
+    <string name="store_picker_osm_address_unavailable">OpenStreetMap je teď nedostupná, o obchodech u adresy z účtenky tedy nic nevíme. Zkus to znovu, nebo obchod zadej sám.</string>
+    <string name="store_picker_osm_address_none">OpenStreetMap u adresy z účtenky nenašla žádný obchod, který bychom ještě neznali. Zkus ho vyhledat podle názvu výš, nebo ho přidej.</string>
+    <string name="store_picker_osm_offline">Bez připojení se nabídka z OpenStreetMap nenačte — ukáže se sama, až budeš online.</string>
+    <string name="store_picker_osm_distance_from_address">%1$s od adresy</string>
     <string name="store_picker_add_new_action">Obchod tu není — přidat nový</string>
     <string name="store_picker_add_new">+ Přidat nový obchod</string>
     <string name="store_picker_hint_anonymous">Napiš název nebo město obchodu — založení nového obchodu vyžaduje přihlášení.</string>

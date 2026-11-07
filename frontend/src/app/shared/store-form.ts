@@ -24,13 +24,20 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSelectModule } from 'ng-zorro-antd/select';
-import { GeocodeCandidate, RetailChain, Store, UpdateStoreInput } from '../models/catalog';
+import {
+  GeocodeCandidate,
+  OsmStoreCandidate,
+  RetailChain,
+  Store,
+  UpdateStoreInput,
+} from '../models/catalog';
 import { CountryService } from '../services/country-service';
-import { OsmLookupStatus } from '../models/generated/enums';
+import { GeoSource, OsmLookupStatus } from '../models/generated/enums';
 import { StoreService } from '../services/store-service';
 import { translateError } from './error-message';
 import { KNOWN_COUNTRIES } from './known-countries';
 import { LocationMap } from './location-map';
+import { isOsmPoint, osmCandidateFormValues, storeGeoFields } from './osm-store-candidate';
 
 const SIMILAR_CHECK_DEBOUNCE_MS = 400;
 const CHAIN_SEARCH_DEBOUNCE_MS = 300;
@@ -55,9 +62,9 @@ const COMPANY_ID_DIGITS: Record<string, number> = {
 const COUNTRIES_WITH_REGISTRY: readonly string[] = ['CZ'];
 
 /**
- * Údaje, kterými se předvyplní NOVÝ obchod — dnes jen z hlavičky účtenky
+ * Údaje, kterými se předvyplní NOVÝ obchod — z hlavičky účtenky
  * (features/receipts/receipt-store-prefill.ts). Jsou to vlastní data uživatele, ne OSM, takže
- * obchod z nich vzniká s `dataOrigin` OWN.
+ * obchod z nich vzniká s `dataOrigin` OWN. Předvyplnění z OpenStreetMap je vstup `osmCandidate`.
  */
 export interface StorePrefill {
   name: string | null;
@@ -104,8 +111,24 @@ export class StoreForm {
   readonly store = input<Store | null>(null);
   /** Předvyplnění nového obchodu (v režimu editace se ignoruje). */
   readonly prefill = input<StorePrefill | null>(null);
+  /**
+   * Provozovna vybraná v nabídce OpenStreetMap (StorePicker) — má přednost před `prefill`:
+   * název a adresa jdou z OSM, z účtenky zůstává jen IČO. Obchod pak vznikne jako
+   * `dataOrigin = OSM_DERIVED` (docs/datovy-model.md, pravidla 1 a 2).
+   */
+  readonly osmCandidate = input<OsmStoreCandidate | null>(null);
+  /** Text atribuce ODbL k `osmCandidate` — chodí ze serveru a formulář ho musí ukázat. */
+  readonly osmAttribution = input<string | null>(null);
   /** Formulář předvyplnila účtenka — stroj se mohl přečíst, uživatel má údaje zkontrolovat. */
   protected readonly prefilled = signal(false);
+  /**
+   * Převzatá provozovna z OSM — určuje `dataOrigin` i `osmRef` při uložení. Uživatel může cokoli
+   * přepsat, značka původu zůstává: jde o to, ODKUD data pocházejí, ne jestli je pak někdo upravil.
+   */
+  protected readonly osmApplied = signal<OsmStoreCandidate | null>(null);
+  protected readonly osmAttributionText = signal<string | null>(null);
+  /** IČO (NIP…) převzaté z účtenky vedle údajů z OSM — hlavička formuláře to řekne. */
+  protected readonly icoFromReceipt = signal(false);
 
   @Output() readonly created = new EventEmitter<Store>();
   @Output() readonly cancelled = new EventEmitter<void>();
@@ -175,6 +198,10 @@ export class StoreForm {
   protected readonly manualLat = signal<number | null>(null);
   protected readonly manualLon = signal<number | null>(null);
   protected readonly locating = signal(false);
+  /** Bod je pořád ten z převzaté provozovny — místo „použije se poloha z mapy" se řekne odkud. */
+  protected readonly pointFromOsm = computed(() =>
+    isOsmPoint(this.osmApplied(), this.manualLat(), this.manualLon()),
+  );
 
   protected readonly saving = signal(false);
   protected readonly saveError = signal<string | null>(null);
@@ -200,9 +227,13 @@ export class StoreForm {
       this.manualLon.set(store.lon);
     });
     effect(() => {
+      const osm = this.osmCandidate();
       const prefill = this.prefill();
-      if (!prefill || this.store()) return;
-      untracked(() => this.applyPrefill(prefill));
+      if (this.store()) return;
+      untracked(() => {
+        if (osm) this.applyOsmCandidate(osm, this.osmAttribution(), prefill);
+        else if (prefill) this.applyPrefill(prefill);
+      });
     });
   }
 
@@ -212,7 +243,9 @@ export class StoreForm {
    * podobných obchodů. ARES se sám nevolá — IČO z účtenky je sídlo firmy, ne provozovna.
    */
   private applyPrefill(prefill: StorePrefill): void {
-    if (this.prefilled()) return;
+    // Formulář, který už převzal provozovnu z OSM, se na účtenku nepřepne — picker po založení
+    // vstup `osmCandidate` vynuluje a efekt by jinak zavírající se formulář přepsal.
+    if (this.prefilled() || this.osmApplied()) return;
     this.prefilled.set(true);
     if (prefill.name) this.name.set(prefill.name);
     if (prefill.street) this.street.set(prefill.street);
@@ -220,7 +253,50 @@ export class StoreForm {
     if (prefill.postalCode) this.postalCode.set(prefill.postalCode);
     if (prefill.ico) this.ico.set(prefill.ico);
     this.onNameOrCityChange();
-    const brand = prefill.name?.trim();
+    this.prefillChain(prefill.name);
+  }
+
+  /**
+   * Stejné chování jako mobilní StoreFormViewModel.applyOsmCandidate: název, adresa, země a bod
+   * jdou z OSM (pravidla v osmCandidateFormValues), řetězec jen při přesné shodě značky
+   * s vlastním číselníkem. Z účtenky zůstává IČO — vlastní data, OSM ho nenese; ARES se sám
+   * nevolá, IČO z účtenky je sídlo firmy, ne provozovna.
+   *
+   * Mapa se sama neotevře: dlaždice se z prohlížeče stahují jen na výslovné přání uživatele
+   * (LocationMap, docs/soukromi.md). Bod se uloží i tak a formulář řekne, odkud je.
+   */
+  private applyOsmCandidate(
+    candidate: OsmStoreCandidate,
+    attribution: string | null,
+    receipt: StorePrefill | null,
+  ): void {
+    if (this.osmApplied()?.osmRef === candidate.osmRef) return;
+    const values = osmCandidateFormValues(candidate, receipt, this.countryOptions());
+    this.osmApplied.set(candidate);
+    this.osmAttributionText.set(attribution);
+    this.name.set(values.name);
+    this.street.set(values.street);
+    this.city.set(values.city);
+    this.postalCode.set(values.postalCode);
+    if (values.country) this.country.set(values.country);
+    const ico = receipt?.ico?.trim();
+    if (ico) this.ico.set(ico);
+    this.icoFromReceipt.set(!!ico);
+    this.selectedCandidateRef.set(null);
+    this.geocodeCandidates.set([]);
+    this.manualLat.set(values.lat);
+    this.manualLon.set(values.lon);
+    this.prefillChain(candidate.brand);
+    this.onNameOrCityChange();
+  }
+
+  /**
+   * Řetězec se vyplní JEN při přesné shodě s vlastním číselníkem — `core.retail_chain` je
+   * kurátorský, nový řetězec z OSM ani z účtenky nevzniká. U nezávislého obchodu bývá značka
+   * totéž co název; vyplnit ji natvrdo by ukázalo řetězec, který na nic neodkazuje.
+   */
+  private prefillChain(query: string | null | undefined): void {
+    const brand = query?.trim();
     if (!brand) return;
     this.storeService.chains(brand, this.country()).subscribe({
       next: (chains) => {
@@ -508,11 +584,12 @@ export class StoreForm {
     if (!this.isValid()) return;
     this.saving.set(true);
     this.saveError.set(null);
-    const candidate = this.selectedCandidateRef();
-    const lat = candidate?.lat ?? this.manualLat();
-    const lon = candidate?.lon ?? this.manualLon();
-    const geoSource = candidate ? 'OSM' : lat != null ? 'COMMUNITY' : null;
-    const osmRef = candidate?.osmRef ?? null;
+    const { lat, lon, geoSource, osmRef, dataOrigin } = storeGeoFields({
+      geocodeCandidate: this.selectedCandidateRef(),
+      osmCandidate: this.osmApplied(),
+      manualLat: this.manualLat(),
+      manualLon: this.manualLon(),
+    });
 
     const editingStore = this.store();
     const request = editingStore
@@ -532,6 +609,7 @@ export class StoreForm {
           lon,
           geoSource,
           osmRef,
+          dataOrigin,
           url: this.url().trim() || null,
         });
 
@@ -556,7 +634,7 @@ export class StoreForm {
   private buildUpdateInput(
     lat: number | null,
     lon: number | null,
-    geoSource: 'COMMUNITY' | 'OSM' | null,
+    geoSource: GeoSource | null,
     osmRef: string | null,
   ): UpdateStoreInput {
     return {

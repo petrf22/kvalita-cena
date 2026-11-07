@@ -509,6 +509,10 @@ Potvrzení obchodu u jedné účtenky přepočítá návrh u ostatních otevřen
 (`ReceiptReviewService.resuggestOpenReceiptsAfterCommit`), takže druhá účtenka ze stejného, právě
 založeného obchodu ho dostane navržený. Naučená vazba hlavička → obchod viz `docs/ai.md`,
 „Návrh obchodu".
+Výběr obchodu na detailu účtenky (web i mobil) navíc sám nabídne provozovny z OpenStreetMap
+kolem adresy z hlavičky (`osmStoresAtAddress`, `docs/datovy-model.md`); vybraný kandidát
+předvyplní formulář jako u nabídky v okolí (`data_origin = 'OSM_DERIVED'`), IČO se vezme
+z účtenky. Web cestu `OSM_DERIVED` dřív neměl vůbec.
 
 **EAN z účtenky** (`ReceiptLine.internalCode`, u účtenek, které ho tisknou): server podle něj
 spáruje zboží (`ReceiptMatchingService.byCode`) — od 2026-11-03 i bez známého obchodu, protože

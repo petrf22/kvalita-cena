@@ -30,6 +30,8 @@
     },
     "similarWarning": "Meinst du nicht eher eines dieser bereits vorhandenen Geschäfte?",
     "prefilledFromReceipt": "Aus dem Kassenbon vorausgefüllt — prüfe die Angaben, die Maschine kann sich verlesen haben.",
+    "prefilledFromOsm": "Aus OpenStreetMap vorausgefüllt — prüfe die Angaben und korrigiere sie bei Bedarf.",
+    "companyIdFromReceipt": "Die {{label}} wurde vom Kassenbon übernommen.",
     "saveChanges": "Änderungen speichern",
     "createStore": "Geschäft anlegen"
   },
@@ -65,6 +67,7 @@
     "findCoordinates": "Koordinaten finden",
     "useMyLocation": "Meinen Standort verwenden",
     "willUseMapPosition": "Es wird die Position von der Karte unten / dein aktueller Standort verwendet.",
+    "fromOsm": "Der Standort des Geschäfts aus OpenStreetMap wird verwendet. Du kannst ihn auf der Karte verschieben.",
     "notFound": "Die Adresse wurde nicht gefunden. Prüfe die Verbindung oder gib sie manuell ein; den Standort kannst du auf der Karte auswählen.",
     "unavailable": "Die Adresse kann gerade nicht ermittelt werden — der OpenStreetMap-Dienst ist nicht erreichbar. Die eingegebene Adresse wurde nicht geändert, bitte prüfe sie."
   },
@@ -95,6 +98,16 @@
     "noNearbyStores": "In der Umgebung haben wir kein Geschäft gefunden.",
     "geoPermissionDenied": "Der Zugriff auf den Standort wurde abgelehnt — wähle das Geschäft manuell aus.",
     "change": "Geschäft ändern",
-    "clear": "Geschäft leeren"
+    "clear": "Geschäft leeren",
+    "osm": {
+      "title": "In OpenStreetMap an der Adresse vom Kassenbon",
+      "hint": "Geschäfte, die die App noch nicht kennt. Eine Auswahl öffnet das Formular für ein neues Geschäft, vorausgefüllt aus OpenStreetMap.",
+      "loading": "Wir suchen Geschäfte an der Adresse vom Kassenbon…",
+      "empty": "OpenStreetMap kennt an der Adresse vom Kassenbon kein Geschäft, das die App noch nicht hat. Suche es oben in der Suche oder lege es als neues Geschäft an.",
+      "unavailable": "OpenStreetMap ist gerade nicht erreichbar, daher wissen wir nicht, ob das Geschäft dort ist. Versuche es gleich noch einmal oder finde bzw. lege das Geschäft selbst an.",
+      "offline": "Du bist offline — Geschäfte aus OpenStreetMap laden wir, sobald du verbunden bist.",
+      "retry": "Erneut versuchen",
+      "showMore": "Mehr anzeigen ({{count}})"
+    }
   }
 }

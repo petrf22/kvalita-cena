@@ -134,7 +134,12 @@ fun ReceiptDetailScreen(
 
   val viewModel: ReceiptDetailViewModel = viewModel(
     factory = viewModelFactory {
-      initializer { ReceiptDetailViewModel(receiptId, AppContainer.graphQlClient, AppContainer.mediaClient) }
+      initializer {
+        ReceiptDetailViewModel(
+          receiptId, AppContainer.graphQlClient, AppContainer.mediaClient, AppContainer.networkMonitor.online,
+          country = { AppContainer.countryStore.country },
+        )
+      }
     },
   )
   val online by AppContainer.networkMonitor.online.collectAsState()
@@ -142,7 +147,7 @@ fun ReceiptDetailScreen(
   LaunchedEffect(Unit) {
     NavigationResults.newStore?.let {
       NavigationResults.newStore = null
-      viewModel.onStoreSelected(it)
+      viewModel.onStoreCreated(it)
     }
     NavigationResults.newProduct?.let {
       NavigationResults.newProduct = null
@@ -266,7 +271,7 @@ private fun ReceiptContent(
       contentPadding = PaddingValues(Spacing.lg),
       verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
-      item { HeaderCard(receipt, viewModel, onAddStore, onRescan) }
+      item { HeaderCard(receipt, viewModel, online, onAddStore, onRescan) }
       if (receipt.imagePaths.isNotEmpty() || receipt.imagesDeletedAt != null) {
         item { ImagesRow(receipt, viewModel, onOpen = { zoomedPath = it }) }
       }
@@ -378,7 +383,13 @@ private fun ReceiptContent(
 }
 
 @Composable
-private fun HeaderCard(receipt: Receipt, viewModel: ReceiptDetailViewModel, onAddStore: () -> Unit, onRescan: () -> Unit) {
+private fun HeaderCard(
+  receipt: Receipt,
+  viewModel: ReceiptDetailViewModel,
+  online: Boolean,
+  onAddStore: () -> Unit,
+  onRescan: () -> Unit,
+) {
   val homeCountry = AppContainer.countryStore.country
   val money = rememberMoneyFormatter(receipt.currency)
   var pickingDate by remember { mutableStateOf(false) }
@@ -423,6 +434,13 @@ private fun HeaderCard(receipt: Receipt, viewModel: ReceiptDetailViewModel, onAd
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
           }
+          // Nabídka z OpenStreetMap kolem adresy z účtenky — GPS tu nedává smysl, účtenka se
+          // zpracovává doma. Načte se sama, jakmile je výběr obchodu vidět, a znovu po návratu
+          // připojení, pokud se kvůli výpadku ptát nešlo (ReceiptOsmOffer.kt).
+          val osmAtAddress = viewModel.osmQuery != null
+          if (osmAtAddress) {
+            LaunchedEffect(online, homeCountry) { viewModel.autoLoadOsmAtAddress() }
+          }
           StorePicker(
             query = viewModel.storeQuery,
             onQueryChange = viewModel::onStoreQueryChange,
@@ -431,6 +449,17 @@ private fun HeaderCard(receipt: Receipt, viewModel: ReceiptDetailViewModel, onAd
             selectedStoreId = store?.id,
             onSelect = viewModel::onStoreSelected,
             onAddNew = {
+              NavigationResults.storePrefill = receiptStorePrefill(receipt)
+              onAddStore()
+            },
+            osmState = viewModel.osmState,
+            osmAtReceiptAddress = osmAtAddress,
+            onSearchOsm = viewModel::loadOsmAtAddress,
+            onSelectOsmCandidate = { candidate ->
+              NavigationResults.osmStoreCandidate = candidate.candidate
+              NavigationResults.osmStoreAttribution = viewModel.osmAttribution()
+              // Kvůli IČO (a adrese u kandidáta bez města) — název nechá formulář z OSM
+              // (StoreFormViewModel.applyReceiptPrefill, besideOsmCandidate).
               NavigationResults.storePrefill = receiptStorePrefill(receipt)
               onAddStore()
             },

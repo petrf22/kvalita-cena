@@ -71,4 +71,50 @@ class ReceiptStorePrefillTest {
     assertNull(receiptStorePrefill(receipt()))
     assertNull(receiptStorePrefill(receipt(name = " ", address = "", ico = " ")))
   }
+
+  @Test
+  fun vedleKandidataZOsmJenIco() {
+    assertEquals(
+      StorePrefill(name = null, street = null, postalCode = null, city = null, ico = "12345678"),
+      StorePrefill("albert", "Nádražní 1", "100 00", "Vzorov", "12345678").besideOsmCandidate(candidateHasCity = true),
+    )
+  }
+
+  @Test
+  fun vedleKandidataZOsmBezIcoNeniCoPrevzit() {
+    assertNull(StorePrefill("albert", "Nádražní 1", "100 00", "Vzorov", null).besideOsmCandidate(candidateHasCity = true))
+  }
+
+  @Test
+  fun kandidatBezMestaPrevezmeCelouAdresuZUctenky() {
+    // OSM provozovna bez addr:city — bez města by formulář nešel uložit. Celá adresa, ne jen
+    // město, ať nevznikne smíchaná adresa ze dvou zdrojů (stejně jako web).
+    assertEquals(
+      StorePrefill(name = null, street = "Nádražní 1", postalCode = "100 00", city = "Vzorov", ico = null),
+      StorePrefill("albert", "Nádražní 1", "100 00", "Vzorov", null).besideOsmCandidate(candidateHasCity = false),
+    )
+    assertNull(StorePrefill("albert", "Nádražní 1", null, null, null).besideOsmCandidate(candidateHasCity = false))
+  }
+
+  @Test
+  fun dotazDoOsmZHlavicky() {
+    assertEquals(
+      ReceiptOsmQuery(name = "albert", street = "Nádražní 1", city = "Vzorov", postalCode = "100 00"),
+      receiptOsmQuery(receipt(" albert ", "Nádražní 1, 100 00 Vzorov", "12345678")),
+    )
+  }
+
+  @Test
+  fun bezUliceSeDoOsmNeptame() {
+    // Jen „PSČ Město" — Nominatim by vrátil střed obce a nabídka by byla náhodné obchody z centra.
+    assertNull(receiptOsmQuery(receipt(address = "100 00 Praha 10")))
+  }
+
+  @Test
+  fun bezMestaSeDoOsmNeptame() {
+    // Parser PSČ nenašel — celý text skončí v ulici a město chybí (server ho vyžaduje).
+    assertNull(receiptOsmQuery(receipt(name = "albert", address = "Nádražní 1", ico = "12345678")))
+    assertNull(receiptOsmQuery(receipt(name = "albert")))
+    assertNull(receiptOsmQuery(receipt()))
+  }
 }

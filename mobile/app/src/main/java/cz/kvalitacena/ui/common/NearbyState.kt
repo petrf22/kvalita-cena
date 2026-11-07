@@ -6,7 +6,12 @@ import cz.kvalitacena.network.Store
 /** Obchod z okolí i se vzdáleností spočítanou z PŘESNÉ polohy, kterou zná jen telefon. */
 data class NearbyStore(val store: Store, val distanceMeters: Double)
 
-/** Kandidát z OSM i se vzdáleností přepočítanou z přesné polohy (server ji zná jen zaokrouhleně). */
+/**
+ * Kandidát z OSM se vzdáleností, kterou picker ukáže. Při zápisu ceny je přepočítaná z přesné
+ * polohy telefonu (server ji zná jen zaokrouhleně); u účtenky (`osmStoresAtAddress`) je to
+ * vzdálenost od geokódované ADRESY obchodu, jak ji poslal server — s polohou uživatele nemá nic
+ * společného a picker ji tak i popíše (StorePicker, `osmAtReceiptAddress`).
+ */
 data class NearbyOsmStore(val candidate: OsmStoreCandidate, val distanceMeters: Double)
 
 /**
@@ -39,4 +44,10 @@ sealed interface OsmState {
   data class Loaded(val candidates: List<NearbyOsmStore>, val attribution: String) : OsmState
   data object Unavailable : OsmState
   data class Failed(val message: UiText) : OsmState
+  /**
+   * Bez připojení se nedotazovalo vůbec — nabídka se načte, až bude síť (docs/design.md,
+   * „Čtyři stavy": offline není chyba). Zatím ho nastavuje jen detail účtenky; zápis ceny
+   * výpadek sítě hlásí už u hledání v okolí (NearbyState.Failed) a sem se nedostane.
+   */
+  data object Offline : OsmState
 }

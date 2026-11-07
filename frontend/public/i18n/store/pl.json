@@ -30,6 +30,8 @@
     },
     "similarWarning": "Czy nie masz na myśli jednego z już istniejących sklepów?",
     "prefilledFromReceipt": "Wypełnione wstępnie z paragonu — sprawdź dane, maszyna mogła je źle odczytać.",
+    "prefilledFromOsm": "Wypełnione wstępnie z OpenStreetMap — sprawdź dane i w razie potrzeby popraw.",
+    "companyIdFromReceipt": "{{label}} przejęliśmy z paragonu.",
     "saveChanges": "Zapisz zmiany",
     "createStore": "Dodaj sklep"
   },
@@ -65,6 +67,7 @@
     "findCoordinates": "Znajdź współrzędne",
     "useMyLocation": "Użyj mojej lokalizacji",
     "willUseMapPosition": "Zostanie użyta pozycja z mapy poniżej / twoja aktualna lokalizacja.",
+    "fromOsm": "Zostanie użyta lokalizacja sklepu z OpenStreetMap. Możesz ją przesunąć na mapie.",
     "notFound": "Nie udało się znaleźć adresu. Sprawdź połączenie lub wpisz go ręcznie; lokalizację możesz wybrać na mapie.",
     "unavailable": "Adresu nie można teraz wyszukać — usługa OpenStreetMap jest niedostępna. Wpisany adres pozostał bez zmian, sprawdź go."
   },
@@ -95,6 +98,16 @@
     "noNearbyStores": "Nie znaleźliśmy żadnego sklepu w okolicy.",
     "geoPermissionDenied": "Dostęp do lokalizacji został odrzucony — wybierz sklep ręcznie.",
     "change": "Zmień sklep",
-    "clear": "Wyczyść sklep"
+    "clear": "Wyczyść sklep",
+    "osm": {
+      "title": "W OpenStreetMap przy adresie z paragonu",
+      "hint": "Sklepy, których aplikacja jeszcze nie zna. Wybór otworzy formularz nowego sklepu wypełniony danymi z OpenStreetMap.",
+      "loading": "Szukamy sklepów przy adresie z paragonu…",
+      "empty": "Przy adresie z paragonu OpenStreetMap nie zna żadnego sklepu, którego aplikacja jeszcze nie ma. Spróbuj go znaleźć w wyszukiwaniu powyżej albo dodaj go jako nowy.",
+      "unavailable": "OpenStreetMap jest teraz niedostępna, więc nie wiemy, czy ten sklep tam jest. Spróbuj ponownie za chwilę albo znajdź lub dodaj sklep sam.",
+      "offline": "Jesteś offline — sklepy z OpenStreetMap wczytamy, gdy się połączysz.",
+      "retry": "Spróbuj ponownie",
+      "showMore": "Pokaż więcej ({{count}})"
+    }
   }
 }

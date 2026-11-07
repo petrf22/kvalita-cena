@@ -18,6 +18,7 @@ import type {
   FlaggedRecordsQuery,
   FxInfoQuery,
   GeocodeAddressQuery,
+  OsmStoresAtAddressQuery,
   ModerationObservationsQuery,
   MyEditsQuery,
   MyObservationsQuery,
@@ -143,6 +144,13 @@ export type StoreSearchResult = SearchStoresQuery['searchStores'];
 /** Kandidát ze serveru OpenStreetMap Nominatim — nic z tohohle se neukládá kromě lat/lon/osmRef zvoleného kandidáta. */
 export type GeocodeCandidate = GeocodeAddressQuery['geocodeAddress']['candidates'][number];
 export type GeocodeResult = GeocodeAddressQuery['geocodeAddress'];
+
+/**
+ * Provozovna z OpenStreetMap kolem adresy z účtenky (`osmStoresAtAddress`) — nabídka k založení
+ * obchodu. Nic se samo neukládá; potvrzený kandidát vznikne jako `dataOrigin = OSM_DERIVED`.
+ */
+export type OsmStoreCandidate = OsmStoresAtAddressQuery['osmStoresAtAddress']['candidates'][number];
+export type OsmStoreCandidateResult = OsmStoresAtAddressQuery['osmStoresAtAddress'];
 
 /** Opačný směr — souřadnice na adresu, pro tlačítko "Použít mou polohu" při editaci obchodu. */
 export type ReverseGeocodeResult = ReverseGeocodeQuery['reverseGeocode'];

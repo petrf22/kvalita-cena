@@ -961,6 +961,17 @@ export type FlagStoreMutationVariables = Exact<{
 
 export type FlagStoreMutation = { flagRecord: { flagCount: number, hidden: boolean } };
 
+export type OsmStoresAtAddressQueryVariables = Exact<{
+  name?: string | null | undefined;
+  street?: string | null | undefined;
+  city: string;
+  postalCode?: string | null | undefined;
+  country?: string | null | undefined;
+}>;
+
+
+export type OsmStoresAtAddressQuery = { osmStoresAtAddress: { status: OsmLookupStatus, attribution: string, candidates: Array<{ name: string, street: string | null, city: string | null, postalCode: string | null, country: string | null, lat: number, lon: number, osmRef: string, brand: string | null }> } };
+
 export type GeocodeAddressQueryVariables = Exact<{
   street?: string | null | undefined;
   city: string;
@@ -5247,6 +5258,31 @@ export const FlagStoreDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<FlagStoreMutation, FlagStoreMutationVariables>;
+export const OsmStoresAtAddressDocument = new TypedDocumentString(`
+    query OsmStoresAtAddress($name: String, $street: String, $city: String!, $postalCode: String, $country: String) {
+  osmStoresAtAddress(
+    name: $name
+    street: $street
+    city: $city
+    postalCode: $postalCode
+    country: $country
+  ) {
+    status
+    attribution
+    candidates {
+      name
+      street
+      city
+      postalCode
+      country
+      lat
+      lon
+      osmRef
+      brand
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<OsmStoresAtAddressQuery, OsmStoresAtAddressQueryVariables>;
 export const GeocodeAddressDocument = new TypedDocumentString(`
     query GeocodeAddress($street: String, $city: String!, $postalCode: String, $country: String) {
   geocodeAddress(

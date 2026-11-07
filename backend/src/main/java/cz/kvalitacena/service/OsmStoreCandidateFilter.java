@@ -4,6 +4,7 @@ import cz.kvalitacena.controller.OsmStoreCandidate;
 import cz.kvalitacena.db.entity.Store;
 
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -49,6 +50,45 @@ public final class OsmStoreCandidateFilter {
             candidate.name(), candidate.city(), candidate.street())))
         .toList();
   }
+
+  /**
+   * Seřadí nabídku tak, aby nahoře byly provozovny, jejichž název nebo značka sdílí slovo
+   * s názvem obchodu z účtenky; pořadí uvnitř skupin (podle vzdálenosti) zůstává. Neshodné
+   * kandidáty NEvyřazuje — účtenka často tiskne provozovatele („AHOLD Czech Republic"), ne
+   * značku z OSM („Albert"), a správná provozovna by pak z nabídky zmizela.
+   */
+  public static List<OsmStoreCandidate> rankByName(List<OsmStoreCandidate> candidates, String receiptName) {
+    Set<String> receiptWords = words(receiptName);
+    if (candidates.size() < 2 || receiptWords.isEmpty()) {
+      return candidates;
+    }
+    List<OsmStoreCandidate> matching = new ArrayList<>();
+    List<OsmStoreCandidate> others = new ArrayList<>();
+    for (OsmStoreCandidate candidate : candidates) {
+      Set<String> candidateWords = words(candidate.name());
+      candidateWords.addAll(words(candidate.brand()));
+      candidateWords.retainAll(receiptWords);
+      (candidateWords.isEmpty() ? others : matching).add(candidate);
+    }
+    matching.addAll(others);
+    return List.copyOf(matching);
+  }
+
+  /** Slova z názvu — bez právních forem a krátkých zkratek, které by shodu dělaly náhodnou. */
+  private static Set<String> words(String value) {
+    Set<String> words = new HashSet<>();
+    for (String word : norm(value).split("[^\\p{L}\\p{N}]+")) {
+      if (word.length() >= 3 && !NAME_NOISE.contains(word)) {
+        words.add(word);
+      }
+    }
+    return words;
+  }
+
+  private static final Set<String> NAME_NOISE = Set.of("sro", "spol", "ceska", "czech", "republika", "republic",
+      "slovenska", "slovakia", "slovensko", "polska", "obchod", "prodejna", "group", "potraviny", "potravin",
+      "market", "supermarket", "hypermarket", "minimarket", "drogerie", "drogeria", "stores", "store", "shop",
+      "sklep", "trade", "trading", "holding", "spolecnost");
 
   private static String identity(String country, String name, String city, String street) {
     return String.join("|", norm(country), norm(name), norm(city), norm(street));

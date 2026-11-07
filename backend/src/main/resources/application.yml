@@ -287,7 +287,8 @@ app:
       user-agent: ${OVERPASS_USER_AGENT:KvalitaACena/0.1 (dev@example.com)}
       # MUSÍ zůstat pod HTTP timeoutem klientů (mobil má readTimeout 10 s, AppContainer) —
       # server má stihnout odpovědět "UNAVAILABLE" dřív, než to klient vzdá. Jinak uživatel
-      # místo srozumitelné hlášky uvidí obecnou chybu sítě.
+      # místo srozumitelné hlášky uvidí obecnou chybu sítě. osmStoresAtAddress před Overpassem
+      # volá ještě Nominatim — mobil mu proto dává 30 s (OSM_AT_ADDRESS_READ_TIMEOUT_S).
       timeout: PT7S
       # Jde do [timeout:N] v samotném dotazu a MUSÍ být kratší než timeout výš — Overpass si má
       # dotaz zabít sám dřív než my, svou chybu pak pošle v `remark` (hlásí se jako UNAVAILABLE).

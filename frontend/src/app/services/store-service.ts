@@ -99,6 +99,57 @@ export class StoreService {
   }
 
   /**
+   * Provozovny z OpenStreetMap kolem ADRESY obchodu — nabídka k založení obchodu z hlavičky
+   * účtenky, kterou uživatel zpracovává doma, takže hledání podle jeho polohy nedává smysl.
+   * Posílá se adresa obchodu, ne poloha uživatele (docs/soukromi.md). `country` je země zvolená
+   * na klientovi (CountryService) — rozhoduje klient, ne země uložená v účtu (CLAUDE.md, „Volba
+   * jazyka je na klientovi"). Výpadek OSM je `status: UNAVAILABLE`, nikdy prázdný seznam.
+   * Vyžaduje přihlášení. `distanceMeters` se tu měří od geokódované adresy, ne od uživatele.
+   */
+  osmAtAddress(
+    name: string | null,
+    street: string,
+    city: string,
+    postalCode: string | null,
+    country: string,
+  ) {
+    const document = graphql(`
+      query OsmStoresAtAddress(
+        $name: String
+        $street: String
+        $city: String!
+        $postalCode: String
+        $country: String
+      ) {
+        osmStoresAtAddress(
+          name: $name
+          street: $street
+          city: $city
+          postalCode: $postalCode
+          country: $country
+        ) {
+          status
+          attribution
+          candidates {
+            name
+            street
+            city
+            postalCode
+            country
+            lat
+            lon
+            osmRef
+            brand
+          }
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { name, street, city, postalCode, country })
+      .pipe(map((data) => data.osmStoresAtAddress));
+  }
+
+  /**
    * Geokódování adresy přes server (nikdy přímo z prohlížeče, viz docs/soukromi.md — jinak
    * by šla na Nominatim přímo IP uživatele). Výpadek na backendu se projeví jako prázdný
    * seznam kandidátů, ne jako chyba.
