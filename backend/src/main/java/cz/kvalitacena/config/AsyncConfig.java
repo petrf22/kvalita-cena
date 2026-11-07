@@ -11,10 +11,11 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import java.lang.reflect.Method;
 
 /**
- * Zapíná {@code @Async} — v etapě 1 jediný konzument je {@link cz.kvalitacena.service.SmtpOtpMailSender}
+ * Zapíná {@code @Async} — výchozí konzument je {@link cz.kvalitacena.service.SmtpOtpMailSender}
  * (OTP e-mail, změna e-mailu, výmaz účtu), aby pomalé/nedostupné SMTP nezablokovalo HTTP request
  * ani DB transakci kolem něj (viz OtpService.requestOtp — testování ukázalo, že uživatel dostane
  * "nepodařilo se odeslat kód" i v případě, kdy se e-mail nakonec v pořádku odešle, jen pozdě).
+ * Vedle něj {@link #receiptTaskExecutor()} pro přepočet návrhu obchodu u účtenek.
  *
  * <p>Vlastní {@link ThreadPoolTaskExecutor}, ne výchozí {@code SimpleAsyncTaskExecutor} — ten by
  * pro každé volání vytvořil nové vlákno bez limitu, což by při výpadku SMTP (fronta requestů
@@ -33,6 +34,29 @@ public class AsyncConfig implements AsyncConfigurer {
     executor.setMaxPoolSize(10);
     executor.setQueueCapacity(100);
     executor.setThreadNamePrefix("mail-async-");
+    executor.initialize();
+    return executor;
+  }
+
+  /**
+   * Přepočet návrhu obchodu ostatním účtenkám vlastníka po potvrzení obchodu
+   * ({@link cz.kvalitacena.service.ReceiptStoreResuggester}) — čeká na zámky účtenek a páruje
+   * řádky (i s dotazy do Open Food Facts), takže ve vlákně requestu by odpověď na už uložené
+   * potvrzení mohla přetéct timeout klienta.
+   *
+   * <p>Jedno vlákno záměrně: přepočty se neprolínají a čekání na zámky neblokuje víc spojení
+   * z poolu. Přepočet je idempotentní (počítá vždy z aktuálního stavu), pořadí úloh tedy
+   * nerozhoduje — rozhoduje jen, že po posledním potvrzení nějaká proběhne.
+   */
+  @Bean(name = "receiptTaskExecutor")
+  public ThreadPoolTaskExecutor receiptTaskExecutor() {
+    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(1);
+    executor.setMaxPoolSize(1);
+    executor.setQueueCapacity(500);
+    executor.setThreadNamePrefix("receipt-resuggest-");
+    executor.setWaitForTasksToCompleteOnShutdown(true);
+    executor.setAwaitTerminationSeconds(10);
     executor.initialize();
     return executor;
   }
