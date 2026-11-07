@@ -292,6 +292,46 @@ class ReceiptFlowIntegrationTest {
   }
 
   @Test
+  void workerFinishingAfterStoreConfirmationStillGetsSuggestion() throws Exception {
+    AppUser owner = persistUser();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    String name = "Obchudek " + suffix;
+    String address = "Lipova 11, 100 00 Vzorov " + suffix;
+    Long first = uploadWithHeader(owner, name, address, null, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    Receipt pending = receiptService.upload(owner.getPublicUid(), List.of(jpeg(), jpeg()), 1, false,
+        OffsetDateTime.now(), null);
+    workerService.lease(10);
+
+    // Worker spočítá návrh dřív, než obchod existuje, ale commitne až po jeho potvrzení u první
+    // účtenky — do té doby je druhá účtenka pro ostatní transakce PROCESSING.
+    var computed = new java.util.concurrent.CountDownLatch(1);
+    var worker = java.util.concurrent.CompletableFuture.runAsync(() ->
+        new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+          workerService.submitResult(pending.getId(), new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED,
+              "test-model", "raw", null, name, address, null, OffsetDateTime.now().minusHours(2),
+              new BigDecimal("2.90"), "CZK", List.of(
+                  line("ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR))));
+          computed.countDown();
+          try {
+            Thread.sleep(1500);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+        }));
+    assertThat(computed.await(30, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+    Store created = storeRepository.saveAndFlush(Store.builder()
+        .name(name).street("Lipova 11").city("Vzorov " + suffix).country("CZ").status(StoreStatus.PENDING).build());
+    reviewService.updateHeader(owner.getPublicUid(), first, created.getId(), null);
+
+    worker.get(30, java.util.concurrent.TimeUnit.SECONDS);
+    awaitResuggest();
+    Receipt processed = receiptRepository.findById(pending.getId()).orElseThrow();
+    assertThat(processed.getProcessingStatus()).isEqualTo(ReceiptProcessingStatus.PROCESSED);
+    assertThat(processed.getSuggestedStoreId()).isEqualTo(created.getId());
+  }
+
+  @Test
   void storeNamedDifferentlyThanReceiptIsSuggestedFromOwnersConfirmedHeader() {
     AppUser owner = persistUser();
     AppUser stranger = persistUser();
