@@ -112,7 +112,9 @@ public class ReceiptMatchingService {
   /**
    * Kroky 1–3a kaskády pro řádky, které ještě nikdo ručně nepotvrdil. Řádky spárované
    * uživatelem ({@code USER}/{@code NEW_PRODUCT}), ignorované nebo s cenou se nemění — po
-   * změně obchodu se tak přepočítají jen strojové návrhy.
+   * změně obchodu se tak přepočítají jen strojové návrhy. Řádek se zrušeným návrhem
+   * ({@code rejectedProductId}/{@code codeRejected}) se párovat smí, ale odmítnuté zboží ani
+   * jeho kód (včetně OFF) znovu nedostane.
    *
    * <p>Globální EAN nezávisí na obchodu, páruje se proto i bez něj; vnitroobchodní kód
    * a naučené označení obchod (řetězec) potřebují. EAN, který katalog nezná, ale zná ho Open
@@ -130,22 +132,27 @@ public class ReceiptMatchingService {
       if (line.getMatchSource() == ReceiptMatchSource.USER || line.getMatchSource() == ReceiptMatchSource.NEW_PRODUCT) {
         continue;
       }
-      Optional<Long> productId = byCode(line.getInternalCode(), chainId);
+      // Zrušený návrh (unmatchLine) stroj znovu nenabídne: odmítnuté zboží ani kód řádku,
+      // na kterém odmítnutý návrh stál — ani po změně obchodu nebo přepočtu návrhu obchodu.
+      Long rejected = line.getRejectedProductId();
+      boolean codeAllowed = !line.isCodeRejected();
+      Optional<Long> productId = codeAllowed
+          ? byCode(line.getInternalCode(), chainId).filter(id -> !id.equals(rejected)) : Optional.empty();
       ReceiptMatchSource source = ReceiptMatchSource.CODE;
       if (productId.isEmpty() && store != null) {
         productId = labelRepository.findExact(line.getLabelRaw(), store.getId(), chainId, viewerId).stream()
-            .findFirst().map(ProductStoreLabel::getProductId);
+            .findFirst().map(ProductStoreLabel::getProductId).filter(id -> !id.equals(rejected));
         source = ReceiptMatchSource.LABEL;
       }
       if (productId.isEmpty() && store != null) {
-        productId = unambiguousByName(line, store, viewerId);
+        productId = unambiguousByName(line, store, viewerId).filter(id -> !id.equals(rejected));
         source = ReceiptMatchSource.FUZZY;
       }
       if (productId.isPresent()) {
         line.setProductId(productId.get());
         line.setMatchSource(source);
         line.setStatus(ReceiptLineStatus.SUGGESTED);
-      } else if (offCandidate(line).isPresent()) {
+      } else if (codeAllowed && offCandidate(line).isPresent()) {
         line.setProductId(null);
         line.setMatchSource(ReceiptMatchSource.OFF);
         line.setStatus(ReceiptLineStatus.SUGGESTED);
