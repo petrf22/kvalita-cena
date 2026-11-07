@@ -7,6 +7,16 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [0.13.5] – 2026-11-08
+
+### Přidáno
+- U účtenky appka nabídne obchody z OpenStreetMap podle adresy vytištěné na účtence, ne podle místa, kde zrovna jste; vybraný obchod předvyplní formulář nového obchodu (server, web, mobil)
+
+### Opraveno
+- Účtenka dostane návrh obchodu, i když jste ho mezitím založili u jiné účtenky; návrh se řídí obchodem, který jste naposledy potvrdili u účtenky se stejnou hlavičkou (server)
+- Návrh zboží na účtence už nenabízí zboží ani kód, který jste u řádku dřív odmítli (server)
+- Potvrzení obchodu u účtenky už nevyprší kvůli dlouhému přepočtu ostatních účtenek, ten běží na pozadí (server)
+
 ## [0.13.4] – 2026-11-06
 
 ### Změněno

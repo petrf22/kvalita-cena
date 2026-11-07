@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "0.13.4",
+  "version": "0.13.5",
   "scripts": {
     "ng": "ng",
     "prestart": "node tools/version/write-version.mjs",

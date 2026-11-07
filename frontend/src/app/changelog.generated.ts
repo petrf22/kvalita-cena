@@ -20,6 +20,16 @@ export interface ChangelogRelease {
 
 // Nejnovější vydání první.
 export const CHANGELOG: ChangelogRelease[] = [
+  { version: "0.13.5", date: "2026-11-08", sections: [
+      { title: "Přidáno", items: [
+        { text: "U účtenky appka nabídne obchody z OpenStreetMap podle adresy vytištěné na účtence, ne podle místa, kde zrovna jste; vybraný obchod předvyplní formulář nového obchodu", parts: ["server", "web", "mobil"] },
+      ] },
+      { title: "Opraveno", items: [
+        { text: "Účtenka dostane návrh obchodu, i když jste ho mezitím založili u jiné účtenky; návrh se řídí obchodem, který jste naposledy potvrdili u účtenky se stejnou hlavičkou", parts: ["server"] },
+        { text: "Návrh zboží na účtence už nenabízí zboží ani kód, který jste u řádku dřív odmítli", parts: ["server"] },
+        { text: "Potvrzení obchodu u účtenky už nevyprší kvůli dlouhému přepočtu ostatních účtenek, ten běží na pozadí", parts: ["server"] },
+      ] },
+  ] },
   { version: "0.13.4", date: "2026-11-06", sections: [
       { title: "Změněno", items: [
         { text: "Databáze serveru je pro správu dostupná přes zabezpečené SSH spojení, zvenku zůstává uzavřená", parts: ["server"] },
