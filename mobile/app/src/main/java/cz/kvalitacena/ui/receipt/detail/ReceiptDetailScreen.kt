@@ -135,7 +135,10 @@ fun ReceiptDetailScreen(
   val viewModel: ReceiptDetailViewModel = viewModel(
     factory = viewModelFactory {
       initializer {
-        ReceiptDetailViewModel(receiptId, AppContainer.graphQlClient, AppContainer.mediaClient, AppContainer.networkMonitor.online)
+        ReceiptDetailViewModel(
+          receiptId, AppContainer.graphQlClient, AppContainer.mediaClient, AppContainer.networkMonitor.online,
+          country = { AppContainer.countryStore.country },
+        )
       }
     },
   )
@@ -436,7 +439,7 @@ private fun HeaderCard(
           // připojení, pokud se kvůli výpadku ptát nešlo (ReceiptOsmOffer.kt).
           val osmAtAddress = viewModel.osmQuery != null
           if (osmAtAddress) {
-            LaunchedEffect(online) { viewModel.autoLoadOsmAtAddress() }
+            LaunchedEffect(online, homeCountry) { viewModel.autoLoadOsmAtAddress() }
           }
           StorePicker(
             query = viewModel.storeQuery,
@@ -455,8 +458,8 @@ private fun HeaderCard(
             onSelectOsmCandidate = { candidate ->
               NavigationResults.osmStoreCandidate = candidate.candidate
               NavigationResults.osmStoreAttribution = viewModel.osmAttribution()
-              // Kvůli IČO — název a adresu nechá formulář z OSM (StoreFormViewModel
-              // .applyReceiptPrefill bere vedle kandidáta jen IČO, besideOsmCandidate).
+              // Kvůli IČO (a adrese u kandidáta bez města) — název nechá formulář z OSM
+              // (StoreFormViewModel.applyReceiptPrefill, besideOsmCandidate).
               NavigationResults.storePrefill = receiptStorePrefill(receipt)
               onAddStore()
             },

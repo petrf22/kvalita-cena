@@ -45,6 +45,15 @@ class ReceiptOsmOfferTest {
   }
 
   @Test
+  fun poZmeneZemeSeNacteZnovu() {
+    // Stará nabídka se hledala v jiné zemi — změna v Nastavení ji musí obnovit, i po výsledku.
+    assertTrue(shouldAutoLoadOsmAtAddress(OsmState.Loaded(emptyList(), "© OpenStreetMap"), true, countryChanged = true))
+    assertTrue(shouldAutoLoadOsmAtAddress(OsmState.Unavailable, hasAddress = true, countryChanged = true))
+    assertFalse(shouldAutoLoadOsmAtAddress(OsmState.Loading, hasAddress = true, countryChanged = true))
+    assertFalse(shouldAutoLoadOsmAtAddress(OsmState.Idle, hasAddress = false, countryChanged = true))
+  }
+
+  @Test
   fun vypadekNeniPrazdnyVysledek() {
     assertEquals(
       OsmState.Unavailable,

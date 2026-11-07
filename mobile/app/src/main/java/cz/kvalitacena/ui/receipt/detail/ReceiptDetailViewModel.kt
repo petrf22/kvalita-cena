@@ -38,6 +38,11 @@ class ReceiptDetailViewModel(
   private val mediaClient: MediaClient,
   /** NetworkMonitor.online — bez sítě se nabídka z OSM nedotazuje, jen se řekne proč. */
   private val online: StateFlow<Boolean>,
+  /**
+   * Země zvolená v appce (CountryStore) — v ní server adresu z účtenky geokóduje. Rozhoduje
+   * klient, ne země uložená v účtu (kořenový CLAUDE.md, „Volba jazyka je na klientovi").
+   */
+  private val country: () -> String,
 ) : ViewModel() {
 
   var receipt by mutableStateOf<Receipt?>(null)
@@ -81,6 +86,8 @@ class ReceiptDetailViewModel(
   var osmState by mutableStateOf<OsmState>(OsmState.Idle)
     private set
   private var osmJob: Job? = null
+  /** Země, ve které se hledala aktuální nabídka — po změně v Nastavení se načte znovu. */
+  private var osmCountry: String? = null
 
   /** Adresa z hlavičky, kolem které se v OSM hledá; `null` = na účtence chybí město. */
   val osmQuery: ReceiptOsmQuery?
@@ -215,7 +222,8 @@ class ReceiptDetailViewModel(
    * ([shouldAutoLoadOsmAtAddress]).
    */
   fun autoLoadOsmAtAddress() {
-    if (shouldAutoLoadOsmAtAddress(osmState, osmQuery != null)) loadOsmAtAddress()
+    val countryChanged = osmCountry != null && osmCountry != country()
+    if (shouldAutoLoadOsmAtAddress(osmState, osmQuery != null, countryChanged)) loadOsmAtAddress()
   }
 
   /** Načtení i „Zkusit znovu". Bez sítě se neptá — stav [OsmState.Offline] to řekne místo chyby. */
@@ -226,11 +234,14 @@ class ReceiptDetailViewModel(
       osmState = OsmState.Offline
       return
     }
+    val searchCountry = country()
+    osmCountry = searchCountry
     osmState = OsmState.Loading
     osmJob = viewModelScope.launch {
       osmState = try {
-        // Země null = server vezme zemi uživatele; účtenka ji netiskne.
-        osmStateAtAddress(graphQlClient.osmStoresAtAddress(query.name, query.street, query.city, query.postalCode))
+        osmStateAtAddress(
+          graphQlClient.osmStoresAtAddress(query.name, query.street, query.city, query.postalCode, searchCountry),
+        )
       } catch (e: CancellationException) {
         // Zrušeno z onStoreCreated — stav už je zase Idle, chyba by ho přepsala.
         throw e

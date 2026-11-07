@@ -15,10 +15,11 @@ import cz.kvalitacena.ui.common.OsmState
  * Má se nabídka načíst sama? Jen dokud se ještě neptalo ([OsmState.Idle]) nebo se kvůli chybějící
  * síti ptát nešlo ([OsmState.Offline]) — tak se dotaz zopakuje po návratu připojení. Po výsledku,
  * výpadku OSM nebo chybě už ne: další dotaz na cizí službu je volba uživatele (tlačítko „Zkusit
- * znovu"), ne smyčka při každém přerolování seznamu. Bez města na účtence se neptá vůbec.
+ * znovu"), ne smyčka při každém přerolování seznamu. Výjimkou je změna země v appce
+ * ([countryChanged]) — stará nabídka se hledala jinde. Bez adresy na účtence se neptá vůbec.
  */
-fun shouldAutoLoadOsmAtAddress(state: OsmState, hasAddress: Boolean): Boolean =
-  hasAddress && (state is OsmState.Idle || state is OsmState.Offline)
+fun shouldAutoLoadOsmAtAddress(state: OsmState, hasAddress: Boolean, countryChanged: Boolean = false): Boolean =
+  hasAddress && (state is OsmState.Idle || state is OsmState.Offline || (countryChanged && state !is OsmState.Loading))
 
 /**
  * Odpověď serveru jako stav nabídky. Výpadek geokodéru či Overpassu (`status != OK`) je

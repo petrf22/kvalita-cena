@@ -230,22 +230,36 @@ class StoreFormViewModel(
    * ([scheduleGeocode]); ARES se sám nevolá, IČO z účtenky je sídlo firmy, ne provozovna.
    *
    * Vybral-li uživatel na účtence kandidáta z OpenStreetMap, přijde hlavička spolu s ním
-   * (StoreFormScreen vyzvedává kandidáta PRVNÍ). Pak se z účtenky vezme jen IČO
-   * ([besideOsmCandidate]): název a adresa zůstanou z OSM a `dataOrigin` OSM_DERIVED — přečtený
+   * (StoreFormScreen vyzvedává kandidáta PRVNÍ). Pak se z účtenky vezme jen IČO, u kandidáta
+   * bez města i adresa ([besideOsmCandidate]): název zůstane z OSM a `dataOrigin` OSM_DERIVED — přečtený
    * tisk by jinak přepsal údaje, ke kterým se značka původu vztahuje. Pravidlo žije tady, ne
    * jen v pořadí vyzvedávání — volající (detail účtenky) předává celou hlavičku stejně jako
    * u ručního založení a co z ní platí, rozhoduje formulář, který o kandidátovi ví.
    */
   fun applyReceiptPrefill(prefill: StorePrefill) {
     if (isEditing || prefilledFromReceipt) return
-    val applied = if (osmCandidate != null) prefill.besideOsmCandidate() ?: return else prefill
+    val osm = osmCandidate
+    if (osm != null) {
+      val beside = prefill.besideOsmCandidate(candidateHasCity = !osm.city.isNullOrBlank()) ?: return
+      prefilledFromReceipt = true
+      beside.ico?.let { ico = it }
+      beside.city?.let {
+        // Celá adresa z účtenky, i s prázdnými částmi — ne smíchaná s ulicí z OSM.
+        street = beside.street.orEmpty()
+        postalCode = beside.postalCode.orEmpty()
+        city = it
+      }
+      // Bod je z OSM kandidáta — geokódovat adresu z účtenky nemá smysl.
+      scheduleSimilarCheck()
+      return
+    }
     prefilledFromReceipt = true
-    applied.name?.let { name = it }
-    applied.street?.let { street = it }
-    applied.city?.let { city = it }
-    applied.postalCode?.let { postalCode = it }
-    applied.ico?.let { ico = it }
-    prefillChainFromBrand(applied.name)
+    prefill.name?.let { name = it }
+    prefill.street?.let { street = it }
+    prefill.city?.let { city = it }
+    prefill.postalCode?.let { postalCode = it }
+    prefill.ico?.let { ico = it }
+    prefillChainFromBrand(prefill.name)
     scheduleSimilarCheck()
     scheduleGeocode()
   }

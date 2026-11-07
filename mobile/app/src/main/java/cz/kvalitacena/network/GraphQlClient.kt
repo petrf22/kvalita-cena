@@ -5,6 +5,7 @@ import cz.kvalitacena.auth.AuthRepository
 import cz.kvalitacena.crash.AppLog
 import cz.kvalitacena.ui.common.normalizeCode
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
@@ -170,6 +171,15 @@ internal val RECEIPT_DETAIL_FIELDS = """
  * Bez Apollo — appka je malá, jeden POST /graphql endpoint stačí (stejná konvence jako
  * frontend/src/app/services/graphql-service.ts).
  */
+/**
+ * Read timeout pro `osmStoresAtAddress`. Server postupně volá Nominatim a Overpass (každý
+ * s vlastním timeoutem 5 s / 7 s, connect + read, a s frontou sdíleného throttlu), takže běžných
+ * 10 s z AppContainer nestačí ani na dvě pomalejší, ale úspěšné odpovědi — uživatel by místo
+ * nabídky nebo hlášky „OpenStreetMap je nedostupná" dostal obecnou chybu sítě. Nabídka se
+ * načítá v pozadí pickeru, delší čekání nic neblokuje.
+ */
+internal const val OSM_AT_ADDRESS_READ_TIMEOUT_S = 30L
+
 class GraphQlClient(private val authRepository: AuthRepository, private val client: OkHttpClient) {
 
   private val json = Json { ignoreUnknownKeys = true }
@@ -259,7 +269,8 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
    * zpracovává doma, takže poloha telefonu ([nearbyOsmStores]) nic neříká. Server adresu
    * geokóduje a vrací stejný typ; kandidáty s názvem podobným [name] řadí nahoru a obchody, které
    * katalog už zná, vyřazuje. `distanceMeters` je proto vzdálenost od ADRESY, ne od uživatele.
-   * [country] `null` = server vezme zemi uživatele. Okruh se neposílá: explicitní `null` by
+   * [country] je země zvolená v appce (CountryStore) — rozhoduje klient, ne země uložená v účtu
+   * (kořenový CLAUDE.md, „Volba jazyka je na klientovi"). Okruh se neposílá: explicitní `null` by
    * v GraphQL přebil výchozí hodnotu ze schématu. Vyžaduje přihlášení jako [nearbyOsmStores].
    */
   suspend fun osmStoresAtAddress(
@@ -267,7 +278,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     street: String?,
     city: String,
     postalCode: String?,
-    country: String? = null,
+    country: String?,
   ): OsmStoreCandidateResult {
     val query = """
       query(${'$'}name: String, ${'$'}street: String, ${'$'}city: String!, ${'$'}postalCode: String, ${'$'}country: String) {
@@ -284,7 +295,10 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
       put("postalCode", postalCode)
       put("country", country)
     }
-    return execute(query, variables, GraphQlResponse.serializer(OsmStoresAtAddressData.serializer())).osmStoresAtAddress
+    return execute(
+      query, variables, GraphQlResponse.serializer(OsmStoresAtAddressData.serializer()),
+      readTimeoutSeconds = OSM_AT_ADDRESS_READ_TIMEOUT_S,
+    ).osmStoresAtAddress
   }
 
   /**
@@ -1051,9 +1065,10 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     query: String,
     variables: JsonObject,
     responseSerializer: KSerializer<GraphQlResponse<T>>,
+    readTimeoutSeconds: Long? = null,
   ): T = withContext(Dispatchers.IO) {
     try {
-      executeAttempt(query, variables, responseSerializer, allowRecovery = true)
+      executeAttempt(query, variables, responseSerializer, allowRecovery = true, readTimeoutSeconds)
     } catch (e: Exception) {
       // Jediné hrdlo pro všechny GraphQL dotazy — appka do teď chybu jen zabalila do UiText
       // a zahodila (ui/common/ErrorMessages.kt), takže v logcatu po ní nezůstala žádná stopa.
@@ -1075,6 +1090,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     variables: JsonObject,
     responseSerializer: KSerializer<GraphQlResponse<T>>,
     allowRecovery: Boolean,
+    readTimeoutSeconds: Long? = null,
   ): T {
     // validAccessToken() token podle potřeby rovnou obnoví — čekat s obnovou na chybu ze
     // serveru nejde, prošlý token odbaví server jako anonyma bez jediné chyby (viz tam).
@@ -1084,7 +1100,10 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
     val builder = Request.Builder().url("${ApiConfig.BASE_URL}/graphql").post(requestBody)
     token?.let { builder.header("Authorization", "Bearer $it") }
 
-    client.newCall(builder.build()).execute().use { response ->
+    // Delší timeout jen pro dotaz, který na serveru řetězí pomalé cizí služby — newBuilder sdílí
+    // pool spojení i interceptory, mění jen tenhle jeden hovor.
+    val callClient = readTimeoutSeconds?.let { client.newBuilder().readTimeout(it, TimeUnit.SECONDS).build() } ?: client
+    callClient.newCall(builder.build()).execute().use { response ->
       if (!response.isSuccessful) {
         throw TransportException("GraphQL požadavek selhal (${response.code})")
       }
@@ -1097,7 +1116,7 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
         if (token != null && allowRecovery && first.extensions?.classification == "UNAUTHORIZED"
           && authRepository.recoverFromUnauthorized(token)
         ) {
-          return executeAttempt(query, variables, responseSerializer, allowRecovery = false)
+          return executeAttempt(query, variables, responseSerializer, allowRecovery = false, readTimeoutSeconds)
         }
         throw GraphQlAppException(
           first.extensions?.code,
