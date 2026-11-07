@@ -40,4 +40,21 @@ class GeocodingServiceTest {
     // (docs/lokalizace.md — text jde přes Messages/messages/attribution*.properties).
     assertThat(result.attribution()).isEqualTo(TestMessages.instance().get("attribution.osm"));
   }
+
+  @Test
+  void addressLookupTellsOutageFromEmptyResult() {
+    NominatimProperties properties = new NominatimProperties();
+    properties.setBaseUrl("http://127.0.0.1:1");
+    properties.setUserAgent("KvalitaACenaTest/0.1 (test@example.com)");
+    properties.setTimeout(Duration.ofSeconds(1));
+    properties.setCacheTtl(Duration.ofDays(1));
+    GeocodingService service = new GeocodingService(properties, TestMessages.instance());
+
+    // Výpadek je prázdný Optional (UNAVAILABLE pro osmStoresAtAddress), ne „adresa neexistuje",
+    // a necachuje se — druhý dotaz to zkusí znovu a dopadne stejně, ne z cache prázdným seznamem.
+    assertThat(service.lookup("Hlavní 1", "Praha", null, "CZ")).isEmpty();
+    assertThat(service.lookup("Hlavní 1", "Praha", null, "CZ")).isEmpty();
+    // geocodeAddress se chová jako dřív: výpadek je prázdný seznam, nikdy výjimka.
+    assertThat(service.geocode("Hlavní 1", "Praha", null, "CZ").candidates()).isEmpty();
+  }
 }

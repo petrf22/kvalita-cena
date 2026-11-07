@@ -178,6 +178,25 @@ type Query {
   nearbyOsmStores(lat: Float!, lon: Float!, radiusKm: Float = 0.5): OsmStoreCandidateResult!
 
   """
+  Provozovny podle OpenStreetMap kolem ADRESY obchodu — nabídka k založení obchodu z hlavičky
+  účtenky, kterou uživatel zpracovává doma, takže hledání podle jeho polohy (nearbyOsmStores)
+  nedává smysl. Server adresu geokóduje (Nominatim) a kolem bodu hledá jako nearbyOsmStores,
+  včetně vyřazení známých obchodů. Kandidáti, jejichž název nebo značka sdílí slovo s name
+  (název obchodu z účtenky), jsou na začátku; ostatní zůstávají, protože účtenka často tiskne
+  provozovatele, ne značku. Výpadek geokodéru i Overpassu je status UNAVAILABLE, neznámá
+  adresa OK s prázdným seznamem. Posílá se adresa obchodu, ne poloha uživatele
+  (docs/soukromi.md). Vyžaduje přihlášení jako nearbyOsmStores.
+  """
+  osmStoresAtAddress(
+    name: String
+    street: String
+    city: String!
+    postalCode: String
+    country: String
+    radiusKm: Float = 0.3
+  ): OsmStoreCandidateResult!
+
+  """
   Denní řada z agg.price_daily. Graf NIKDY nečte core.price_observation
   (docs/datovy-model.md). Bez storeId je to medián mediánů přes provozovny
   (docs/reputace.md), se storeId jedna provozovna.

@@ -75,4 +75,24 @@ class OsmStoreCandidateFilterTest {
 
     assertThat(result).hasSize(1);
   }
+
+  @Test
+  void ranksCandidatesSharingAWordWithReceiptNameFirstAndKeepsTheRest() {
+    OsmStoreCandidate lidl = candidate("Lidl", "Hlavní 1", "Brno", "CZ", "node/1");
+    OsmStoreCandidate albert = new OsmStoreCandidate("Albert Supermarket", "Hlavní 3", "Brno", "60200", "CZ",
+        49.2, 16.6, "node/2", 200, null);
+    OsmStoreCandidate billa = new OsmStoreCandidate("Prodejna U Nádraží", "Hlavní 5", "Brno", "60200", "CZ",
+        49.2, 16.6, "node/3", 300, "BILLA");
+
+    // Shoda přes název i přes značku; právní forma a „Česká republika" shodu nedělají.
+    assertThat(OsmStoreCandidateFilter.rankByName(List.of(lidl, albert, billa), "ALBERT Česká republika, s.r.o."))
+        .containsExactly(albert, lidl, billa);
+    assertThat(OsmStoreCandidateFilter.rankByName(List.of(lidl, albert, billa), "BILLA, spol. s r.o."))
+        .containsExactly(billa, lidl, albert);
+    // Bez shody i bez názvu zůstává pořadí podle vzdálenosti.
+    assertThat(OsmStoreCandidateFilter.rankByName(List.of(lidl, albert, billa), "XYZ TRADE s.r.o."))
+        .containsExactly(lidl, albert, billa);
+    assertThat(OsmStoreCandidateFilter.rankByName(List.of(lidl, albert, billa), null))
+        .containsExactly(lidl, albert, billa);
+  }
 }

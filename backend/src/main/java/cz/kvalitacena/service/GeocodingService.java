@@ -17,6 +17,7 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -89,10 +90,28 @@ public class GeocodingService {
   }
 
   public GeocodeResult geocode(String street, String city, String postalCode, String country) {
+    return new GeocodeResult(lookup(street, city, postalCode, country).orElse(List.of()), attribution());
+  }
+
+  /**
+   * Jako {@link #geocode}, ale výpadek se odliší od prázdného výsledku: prázdný {@code Optional}
+   * znamená „Nominatim nevíme", prázdný seznam „adresa neexistuje". Selhání se NEcachuje
+   * (výjimka z mapovací funkce Caffeine nic neuloží), jinak by krátký výpadek přežil celé TTL —
+   * stejně jako u reverseGeocode a OverpassPoiService.
+   */
+  public Optional<List<GeocodeCandidate>> lookup(String street, String city, String postalCode, String country) {
     String key = String.join("|",
         n(street), n(city), n(postalCode), n(country));
-    List<GeocodeCandidate> candidates = cache().get(key, k -> fetchFromNominatim(street, city, postalCode, country));
-    return new GeocodeResult(candidates, attribution());
+    try {
+      return Optional.of(cache().get(key, k -> fetchFromNominatim(street, city, postalCode, country)));
+    } catch (NominatimUnavailableException e) {
+      return Optional.empty();
+    }
+  }
+
+  /** Text zdroje/licence OSM (ODbL) — UI ho musí zobrazit u každého výsledku z OSM. */
+  public String attribution() {
+    return messages.get("attribution.osm");
   }
 
   /**
@@ -128,10 +147,6 @@ public class GeocodingService {
   private ReverseGeocodeResult withAttribution(ReverseGeocodeResult result) {
     return new ReverseGeocodeResult(result.status(), result.street(), result.city(), result.postalCode(),
         result.country(), result.osmRef(), attribution());
-  }
-
-  private String attribution() {
-    return messages.get("attribution.osm");
   }
 
   private ReverseGeocodeResult fetchReverseFromNominatim(double lat, double lon) {
@@ -218,10 +233,17 @@ public class GeocodingService {
           .toList();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      return List.of();
+      throw new NominatimUnavailableException();
     } catch (RuntimeException e) {
       log.warn("Geokódování adresy přes Nominatim selhalo, obchod se založí bez souřadnic: {}", e.getMessage());
-      return List.of();
+      throw new NominatimUnavailableException();
+    }
+  }
+
+  /** Výpadek Nominatimu uvnitř cache — ven se nikdy nedostane, {@link #lookup} ho převede. */
+  private static final class NominatimUnavailableException extends RuntimeException {
+    NominatimUnavailableException() {
+      super(null, null, false, false);
     }
   }
 
