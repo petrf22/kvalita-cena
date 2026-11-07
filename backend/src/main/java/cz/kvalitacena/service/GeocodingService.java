@@ -53,6 +53,14 @@ public class GeocodingService {
 
   private final AtomicLong lastRequestAtMs = new AtomicLong(0);
 
+  /**
+   * Jak dlouho se po výpadku Nominatim vůbec nevolá. Výpadek se necachuje (jinak by přežil celé
+   * TTL jako „adresa neexistuje"), takže bez téhle pauzy by každý dotaz během výpadku čekal ve
+   * frontě sdíleného throttlu a pak ještě na timeout — u osmStoresAtAddress navíc před Overpassem.
+   */
+  static final long OUTAGE_BACKOFF_MS = 30_000;
+  private final AtomicLong unavailableUntilMs = new AtomicLong(0);
+
   private synchronized RestClient restClient() {
     if (restClient == null) {
       HttpClient httpClient = HttpClient.newBuilder()
@@ -102,9 +110,17 @@ public class GeocodingService {
   public Optional<List<GeocodeCandidate>> lookup(String street, String city, String postalCode, String country) {
     String key = String.join("|",
         n(street), n(city), n(postalCode), n(country));
+    List<GeocodeCandidate> cached = cache().getIfPresent(key);
+    if (cached != null) {
+      return Optional.of(cached);
+    }
+    if (System.currentTimeMillis() < unavailableUntilMs.get()) {
+      return Optional.empty();
+    }
     try {
       return Optional.of(cache().get(key, k -> fetchFromNominatim(street, city, postalCode, country)));
     } catch (NominatimUnavailableException e) {
+      unavailableUntilMs.set(System.currentTimeMillis() + OUTAGE_BACKOFF_MS);
       return Optional.empty();
     }
   }

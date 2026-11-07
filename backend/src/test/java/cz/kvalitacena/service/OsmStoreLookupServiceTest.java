@@ -4,6 +4,7 @@ import cz.kvalitacena.controller.GeocodeCandidate;
 import cz.kvalitacena.controller.OsmLookupStatus;
 import cz.kvalitacena.controller.OsmStoreCandidate;
 import cz.kvalitacena.controller.OsmStoreCandidateResult;
+import cz.kvalitacena.db.entity.Store;
 import cz.kvalitacena.db.repo.StoreRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,15 +82,34 @@ class OsmStoreLookupServiceTest {
     assertThat(result.status()).isEqualTo(OsmLookupStatus.OK);
     assertThat(result.candidates()).containsExactly(albert, lidl);
     // Bod se zaokrouhlí stejně jako poloha u nearbyOsmStores (sdílená cache Overpassu).
-    verify(overpass).nearby(49.195, 16.608, 0.3, OsmStoreLookupService.ROUNDING_SLACK_M);
+    verify(overpass).nearby(49.195, 16.608, 0.3, Coordinates.ROUNDING_SLACK_M);
   }
 
   @Test
-  void addressWithoutCityIsNotGeocoded() {
-    OsmStoreCandidateResult result = service.atAddress("Albert", "Hlavní 1", " ", null, null, 0.3, 1L);
-
-    assertThat(result.status()).isEqualTo(OsmLookupStatus.OK);
-    assertThat(result.candidates()).isEmpty();
+  void addressWithoutCityOrStreetIsNotGeocoded() {
+    // Bez ulice by Nominatim vrátil střed obce a nabídka by byla náhodné obchody z centra.
+    assertThat(service.atAddress("Albert", "Hlavní 1", " ", null, null, 0.3, 1L).candidates()).isEmpty();
+    assertThat(service.atAddress("Albert", null, "Brno", "602 00", null, 0.3, 1L).candidates()).isEmpty();
+    assertThat(service.atAddress("Albert", " ", "Brno", "602 00", null, 0.3, 1L).status())
+        .isEqualTo(OsmLookupStatus.OK);
     verify(geocoding, org.mockito.Mockito.never()).lookup(any(), any(), any(), any());
+  }
+
+  @Test
+  void knownStoresAreMatchedInTheCountryThatWasSearched() {
+    when(geocoding.lookup(eq("Obchodná 5"), eq("Bratislava"), eq(null), eq("SK")))
+        .thenReturn(Optional.of(List.of(new GeocodeCandidate(48.1486, 17.1077, "Obchodná 5", "way/1"))));
+    // Kandidát z OSM bez addr:country — porovnat se musí v SK, ne v zemi z účtu (CZ).
+    OsmStoreCandidate lidl = new OsmStoreCandidate("Lidl", "Obchodná 5", "Bratislava", null, null, 48.1486,
+        17.1077, "node/7", 10, null);
+    when(overpass.nearby(anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+        .thenReturn(new OsmStoreCandidateResult(OsmLookupStatus.OK, List.of(lidl), "© OpenStreetMap"));
+    when(stores.findIdentityCandidates(anyString(), anyString())).thenReturn(List.of(Store.builder()
+        .name("Lidl").street("Obchodná 5").city("Bratislava").country("SK").build()));
+
+    OsmStoreCandidateResult result = service.atAddress("Lidl SR v.o.s.", "Obchodná 5", "Bratislava", null, "SK",
+        0.3, 1L);
+
+    assertThat(result.candidates()).isEmpty();
   }
 }

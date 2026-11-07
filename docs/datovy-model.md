@@ -283,9 +283,14 @@ jako v `uq_store_identity`) ještě před odesláním nabídky.
 **Nabídka kolem adresy (`osmStoresAtAddress`, `OsmStoreLookupService.atAddress`)** slouží
 zakládání obchodu z hlavičky účtenky — tu uživatel zpracovává doma, takže hledání kolem jeho
 polohy by nenašlo nic. Server adresu nejdřív geokóduje (`GeocodingService.lookup`, první bod
-Nominatimu) a kolem bodu hledá stejnou cestou jako `nearbyOsmStores`. Výpadek geokodéru je
-taky `UNAVAILABLE` (`lookup` vrací prázdný `Optional`, ne prázdný seznam, a výpadek
-necachuje), neznámá adresa `OK` s prázdným seznamem. Kandidáty, jejichž název nebo značka sdílí
+Nominatimu) a kolem bodu hledá stejnou cestou jako `nearbyOsmStores`; známé obchody porovná
+v zemi, ve které hledal. Bez ulice se nehledá — Nominatim by vrátil střed obce a nabídka by
+byla náhodné obchody z centra. Zemi posílá klient (zvolenou v appce, ne `auth.app_user.country`).
+Výpadek geokodéru je taky `UNAVAILABLE` (`lookup` vrací prázdný `Optional`, ne prázdný seznam,
+a výpadek necachuje — místo toho se Nominatim 30 s po výpadku vůbec nevolá, ať dotazy nečekají
+ve frontě throttlu na další timeout), neznámá adresa `OK` s prázdným seznamem. Dotaz řetězí
+Nominatim a Overpass, proto mu mobil dává vlastní read timeout 30 s
+(`OSM_AT_ADDRESS_READ_TIMEOUT_S`) místo běžných 10 s. Kandidáty, jejichž název nebo značka sdílí
 slovo s názvem z účtenky, posune nahoru `OsmStoreCandidateFilter.rankByName`; ostatní zůstávají,
 protože účtenka často tiskne provozovatele („AHOLD Czech Republic"), ne značku („Albert").
 

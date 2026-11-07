@@ -184,7 +184,10 @@ type Query {
   včetně vyřazení známých obchodů. Kandidáti, jejichž název nebo značka sdílí slovo s name
   (název obchodu z účtenky), jsou na začátku; ostatní zůstávají, protože účtenka často tiskne
   provozovatele, ne značku. Výpadek geokodéru i Overpassu je status UNAVAILABLE, neznámá
-  adresa OK s prázdným seznamem. Posílá se adresa obchodu, ne poloha uživatele
+  adresa OK s prázdným seznamem. Bez ulice se nehledá (OK, prázdný seznam) — Nominatim by
+  vrátil střed obce a nabídka by byla náhodné obchody z centra. country je země zvolená
+  v klientovi (rozhoduje klient, ne auth.app_user.country); bez ní server vezme zemi účtu.
+  Dotaz řetězí Nominatim a Overpass — klient mu musí dát delší timeout než obvyklým dotazům. Posílá se adresa obchodu, ne poloha uživatele
   (docs/soukromi.md). Vyžaduje přihlášení jako nearbyOsmStores.
   """
   osmStoresAtAddress(

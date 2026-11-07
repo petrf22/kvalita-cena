@@ -24,15 +24,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class OsmStoreLookupService {
 
-  /**
-   * Kolik metrů se přidá k hledanému okruhu jako kompenzace za zaokrouhlení polohy na 3
-   * desetinná místa. Mřížka 0,001° je 111 m na šířce a ~71 m na délce (50° s. š.), takže se
-   * střed hledání může posunout až o ~66 m — u okruhu 200 m třetina. Bez kompenzace by
-   * uživateli vypadl obchod, ve kterém právě stojí. Klient seznam dofiltruje podle skutečné
-   * vzdálenosti (docs/soukromi.md), takže navíc přišlých pár řádků nikdo neuvidí.
-   */
-  public static final double ROUNDING_SLACK_M = 70;
-
   private final OverpassPoiService overpassPoiService;
   private final GeocodingService geocodingService;
   private final StoreRepository storeRepository;
@@ -43,10 +34,19 @@ public class OsmStoreLookupService {
    * ({@link OsmStoreCandidateFilter}) — jinak by uživatel založil duplicitu.
    */
   public OsmStoreCandidateResult nearby(double lat, double lon, double radiusKm, Long viewerId) {
+    return nearby(lat, lon, radiusKm, viewerId, countryResolver.resolve(null, viewerId));
+  }
+
+  /**
+   * {@code fallbackCountry} je země, ve které se hledalo — kandidát z OSM bez addr:country
+   * se s katalogem porovná v ní, jinak by se známý obchod v jiné zemi než v účtu nepoznal.
+   */
+  private OsmStoreCandidateResult nearby(double lat, double lon, double radiusKm, Long viewerId,
+      String fallbackCountry) {
     double roundedLat = Coordinates.round(lat, 3);
     double roundedLon = Coordinates.round(lon, 3);
 
-    OsmStoreCandidateResult result = overpassPoiService.nearby(roundedLat, roundedLon, radiusKm, ROUNDING_SLACK_M);
+    OsmStoreCandidateResult result = overpassPoiService.nearby(roundedLat, roundedLon, radiusKm, Coordinates.ROUNDING_SLACK_M);
     if (result.candidates().isEmpty()) {
       return result;
     }
@@ -55,7 +55,7 @@ public class OsmStoreLookupService {
     // obchod bez souřadnic ani cizí PENDING v něm nejsou, a uq_store_identity by je přesto
     // srazil — proto ještě dotaz podle názvu a města kandidátů.
     Map<Long, Store> known = new LinkedHashMap<>();
-    storeRepository.findNearby(roundedLat, roundedLon, radiusKm * 1000 + ROUNDING_SLACK_M, viewerId)
+    storeRepository.findNearby(roundedLat, roundedLon, radiusKm * 1000 + Coordinates.ROUNDING_SLACK_M, viewerId)
         .forEach(store -> known.put(store.getId(), store));
     List<String> names = result.candidates().stream().map(OsmStoreCandidate::name).toList();
     List<String> cities = result.candidates().stream().map(OsmStoreCandidate::city)
@@ -64,7 +64,6 @@ public class OsmStoreLookupService {
       storeRepository.findIdentityCandidates(pgArray(names), pgArray(cities))
           .forEach(store -> known.putIfAbsent(store.getId(), store));
     }
-    String fallbackCountry = countryResolver.resolve(null, viewerId);
     return new OsmStoreCandidateResult(result.status(),
         OsmStoreCandidateFilter.withoutKnownStores(result.candidates(), List.copyOf(known.values()), fallbackCountry),
         result.attribution());
@@ -80,11 +79,14 @@ public class OsmStoreLookupService {
   public OsmStoreCandidateResult atAddress(String name, String street, String city, String postalCode,
       String country, double radiusKm, Long viewerId) {
     String attribution = geocodingService.attribution();
-    if (city == null || city.isBlank()) {
+    // Bez ulice by Nominatim vrátil střed obce a nabídka by ukázala náhodné obchody z centra
+    // jako obchody „u adresy z účtenky" — to je horší než žádná nabídka.
+    if (city == null || city.isBlank() || street == null || street.isBlank()) {
       return new OsmStoreCandidateResult(OsmLookupStatus.OK, List.of(), attribution);
     }
-    Optional<List<GeocodeCandidate>> points = geocodingService.lookup(blankToNull(street), city.trim(),
-        blankToNull(postalCode), countryResolver.resolve(country, viewerId));
+    String resolvedCountry = countryResolver.resolve(country, viewerId);
+    Optional<List<GeocodeCandidate>> points = geocodingService.lookup(street.trim(), city.trim(),
+        blankToNull(postalCode), resolvedCountry);
     if (points.isEmpty()) {
       return new OsmStoreCandidateResult(OsmLookupStatus.UNAVAILABLE, List.of(), attribution);
     }
@@ -93,7 +95,7 @@ public class OsmStoreLookupService {
     }
     // Nominatim řadí podle relevance — první bod je nejlepší shoda s adresou.
     GeocodeCandidate point = points.get().getFirst();
-    OsmStoreCandidateResult result = nearby(point.lat(), point.lon(), radiusKm, viewerId);
+    OsmStoreCandidateResult result = nearby(point.lat(), point.lon(), radiusKm, viewerId, resolvedCountry);
     return new OsmStoreCandidateResult(result.status(),
         OsmStoreCandidateFilter.rankByName(result.candidates(), name), result.attribution());
   }

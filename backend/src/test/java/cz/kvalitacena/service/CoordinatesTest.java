@@ -54,7 +54,7 @@ class CoordinatesTest {
   @Test
   void roundingToThreeDecimalsCanShiftThePointByTensOfMeters() {
     // Důvod, proč nearbyStores hledá s okruhem zvětšeným o ROUNDING_SLACK_M
-    // (StoreGraphQlController): mřížka 0,001° posune střed hledání o desítky metrů, což je
+    // (Coordinates): mřížka 0,001° posune střed hledání o desítky metrů, což je
     // u okruhu 200 m znát.
     // Roh buňky mřížky 0,001° — nejhorší možný případ (půlka úhlopříčky buňky).
     double lat = 49.1995;

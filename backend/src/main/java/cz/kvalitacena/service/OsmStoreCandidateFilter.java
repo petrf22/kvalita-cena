@@ -86,7 +86,9 @@ public final class OsmStoreCandidateFilter {
   }
 
   private static final Set<String> NAME_NOISE = Set.of("sro", "spol", "ceska", "czech", "republika", "republic",
-      "slovakia", "slovensko", "polska", "obchod", "prodejna", "group");
+      "slovenska", "slovakia", "slovensko", "polska", "obchod", "prodejna", "group", "potraviny", "potravin",
+      "market", "supermarket", "hypermarket", "minimarket", "drogerie", "drogeria", "stores", "store", "shop",
+      "sklep", "trade", "trading", "holding", "spolecnost");
 
   private static String identity(String country, String name, String city, String street) {
     return String.join("|", norm(country), norm(name), norm(city), norm(street));

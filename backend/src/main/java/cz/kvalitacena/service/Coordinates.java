@@ -14,6 +14,16 @@ public final class Coordinates {
   }
 
   /**
+   * Kolik metrů se přidá k hledanému okruhu jako kompenzace za zaokrouhlení polohy na 3
+   * desetinná místa ({@link #round}). Mřížka 0,001° je 111 m na šířce a ~71 m na délce
+   * (50° s. š.), takže se střed hledání může posunout až o ~66 m — u okruhu 200 m třetina. Bez
+   * kompenzace by uživateli vypadl obchod, ve kterém právě stojí. Klient seznam dofiltruje podle
+   * skutečné vzdálenosti (docs/soukromi.md), takže navíc přišlých pár řádků nikdo neuvidí.
+   * Platí pro nearbyStores i nabídku z OpenStreetMap.
+   */
+  public static final double ROUNDING_SLACK_M = 70;
+
+  /**
    * Zaokrouhlí na daný počet desetinných míst deterministicky přes {@link BigDecimal} — na
    * rozdíl od {@code Math.round(value * 10^n) / 10^n} netrpí binární nepřesností {@code double}.
    * {@code HALF_UP} je jen konzistentní volba, na výsledku (adresa/rádius vyhledávání) nezáleží,

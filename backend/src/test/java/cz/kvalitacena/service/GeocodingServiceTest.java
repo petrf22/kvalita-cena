@@ -51,9 +51,13 @@ class GeocodingServiceTest {
     GeocodingService service = new GeocodingService(properties, TestMessages.instance());
 
     // Výpadek je prázdný Optional (UNAVAILABLE pro osmStoresAtAddress), ne „adresa neexistuje",
-    // a necachuje se — druhý dotaz to zkusí znovu a dopadne stejně, ne z cache prázdným seznamem.
+    // a necachuje se jako prázdný výsledek.
     assertThat(service.lookup("Hlavní 1", "Praha", null, "CZ")).isEmpty();
-    assertThat(service.lookup("Hlavní 1", "Praha", null, "CZ")).isEmpty();
+    // Během pauzy po výpadku se Nominatim nevolá vůbec — odpověď je okamžitá, ne další čekání
+    // na throttle a timeout.
+    long start = System.nanoTime();
+    assertThat(service.lookup("Jiná 2", "Brno", null, "CZ")).isEmpty();
+    assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofMillis(200));
     // geocodeAddress se chová jako dřív: výpadek je prázdný seznam, nikdy výjimka.
     assertThat(service.geocode("Hlavní 1", "Praha", null, "CZ").candidates()).isEmpty();
   }

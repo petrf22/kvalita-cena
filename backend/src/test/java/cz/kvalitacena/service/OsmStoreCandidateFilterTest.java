@@ -94,5 +94,14 @@ class OsmStoreCandidateFilterTest {
         .containsExactly(lidl, albert, billa);
     assertThat(OsmStoreCandidateFilter.rankByName(List.of(lidl, albert, billa), null))
         .containsExactly(lidl, albert, billa);
+    // Obecná slova z názvů prodejen shodu nedělají — nahoru jde jen skutečná značka.
+    OsmStoreCandidate potraviny = new OsmStoreCandidate("Potraviny U Lípy", "Hlavní 7", "Brno", "60200", "CZ",
+        49.2, 16.6, "node/4", 50, null);
+    OsmStoreCandidate coop = new OsmStoreCandidate("COOP", "Hlavní 9", "Brno", "60200", "CZ",
+        49.2, 16.6, "node/5", 400, null);
+    assertThat(OsmStoreCandidateFilter.rankByName(List.of(potraviny, coop), "COOP Potraviny Jednota"))
+        .containsExactly(coop, potraviny);
+    assertThat(OsmStoreCandidateFilter.rankByName(List.of(lidl, potraviny), "Jednota Slovenská republika s.r.o."))
+        .containsExactly(lidl, potraviny);
   }
 }

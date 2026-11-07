@@ -63,7 +63,7 @@ public class StoreGraphQlController {
     double roundedLat = Coordinates.round(lat, 3);
     double roundedLon = Coordinates.round(lon, 3);
     return storeOverlayService.applyOverlay(
-        storeRepository.findNearby(roundedLat, roundedLon, radius * 1000 + OsmStoreLookupService.ROUNDING_SLACK_M, viewerId),
+        storeRepository.findNearby(roundedLat, roundedLon, radius * 1000 + Coordinates.ROUNDING_SLACK_M, viewerId),
         viewerId);
   }
 
