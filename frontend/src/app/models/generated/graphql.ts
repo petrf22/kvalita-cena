@@ -966,6 +966,7 @@ export type OsmStoresAtAddressQueryVariables = Exact<{
   street?: string | null | undefined;
   city: string;
   postalCode?: string | null | undefined;
+  country?: string | null | undefined;
 }>;
 
 
@@ -5258,12 +5259,13 @@ export const FlagStoreDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<FlagStoreMutation, FlagStoreMutationVariables>;
 export const OsmStoresAtAddressDocument = new TypedDocumentString(`
-    query OsmStoresAtAddress($name: String, $street: String, $city: String!, $postalCode: String) {
+    query OsmStoresAtAddress($name: String, $street: String, $city: String!, $postalCode: String, $country: String) {
   osmStoresAtAddress(
     name: $name
     street: $street
     city: $city
     postalCode: $postalCode
+    country: $country
   ) {
     status
     attribution

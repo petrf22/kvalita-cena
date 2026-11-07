@@ -121,6 +121,7 @@ describe('StorePicker – nabídka z OpenStreetMap u adresy z účtenky', () => 
   let online: ReturnType<typeof signal<boolean>>;
   let reconnected: Subject<void>;
   let addressInput: ReturnType<typeof signal<OsmLookupAddress | null>>;
+  let country: ReturnType<typeof signal<string>>;
   let picker: StorePicker;
 
   beforeEach(() => {
@@ -129,6 +130,7 @@ describe('StorePicker – nabídka z OpenStreetMap u adresy z účtenky', () => 
     online = signal(true);
     reconnected = new Subject();
     addressInput = signal<OsmLookupAddress | null>(address);
+    country = signal('CZ');
     TestBed.configureTestingModule({
       providers: [
         { provide: StoreService, useValue: { osmAtAddress } },
@@ -137,7 +139,7 @@ describe('StorePicker – nabídka z OpenStreetMap u adresy z účtenky', () => 
           useValue: { read: () => null, remember: vi.fn(), clear: vi.fn() },
         },
         { provide: AuthService, useValue: { isLoggedIn: loggedIn } },
-        { provide: CountryService, useValue: { country: signal('CZ') } },
+        { provide: CountryService, useValue: { country } },
         { provide: ConnectivityService, useValue: { online, reconnected$: reconnected } },
         // Překlad odlišný od klíče — translateError jinak bere klíč za chybějící překlad.
         { provide: TranslocoService, useValue: { translate: (key: string) => `[${key}]` } },
@@ -149,13 +151,14 @@ describe('StorePicker – nabídka z OpenStreetMap u adresy z účtenky', () => 
       addressInput();
   });
 
-  it('jednou na adresu se zeptá bez země a přenačtená účtenka dotaz nezopakuje', () => {
+  it('jednou na adresu se zeptá v zemi klienta a přenačtená účtenka dotaz nezopakuje', () => {
     TestBed.tick();
     expect(osmAtAddress).toHaveBeenCalledExactlyOnceWith(
       'ALBERT',
       'Nádražní 1',
       'Vzorov',
       '100 00',
+      'CZ',
     );
     expect(picker['osmVisible']()).toEqual([candidate('node/1')]);
     expect(picker['osmAttribution']()).toBe('© přispěvatelé OpenStreetMap');
@@ -164,8 +167,19 @@ describe('StorePicker – nabídka z OpenStreetMap u adresy z účtenky', () => 
     expect(osmAtAddress).toHaveBeenCalledOnce();
   });
 
-  it('bez města ani nepřihlášenému se neptá a sekci neukáže', () => {
+  it('po změně země se zeptá znovu — stará nabídka se hledala jinde', () => {
+    TestBed.tick();
+    country.set('SK');
+    TestBed.tick();
+    expect(osmAtAddress).toHaveBeenCalledTimes(2);
+    expect(osmAtAddress).toHaveBeenLastCalledWith('ALBERT', 'Nádražní 1', 'Vzorov', '100 00', 'SK');
+  });
+
+  it('bez města, bez ulice ani nepřihlášenému se neptá a sekci neukáže', () => {
     addressInput.set({ ...address, city: '  ' });
+    TestBed.tick();
+    // Jen „PSČ Město" — Nominatim by vrátil střed obce, nabídka by byla náhodná.
+    addressInput.set({ ...address, street: null });
     TestBed.tick();
     addressInput.set(address);
     loggedIn.set(false);
@@ -233,5 +247,12 @@ describe('StorePicker – nabídka z OpenStreetMap u adresy z účtenky', () => 
     expect(picker['osmPick']()).toBeNull();
     picker.openNewStore();
     expect(picker['osmPick']()).toBeNull();
+  });
+
+  it('po ručním založení obchodu nabídku načte znovu, ať nenabízí právě založený', () => {
+    TestBed.tick();
+    picker.openNewStore();
+    picker.onStoreCreated({ id: '9', name: 'Albert', city: 'Vzorov', country: 'CZ' } as Store);
+    expect(osmAtAddress).toHaveBeenCalledTimes(2);
   });
 });

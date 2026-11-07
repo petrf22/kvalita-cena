@@ -175,13 +175,17 @@ export class StorePicker implements OnInit {
   private searchTimer?: ReturnType<typeof setTimeout>;
 
   constructor() {
-    // Jednou na adresu: dotaz jde přes Nominatim a Overpass, přenačtení účtenky (polling, uložení
-    // řádku) ho opakovat nesmí. Anonymovi se nenabízí — dotaz i createStore vyžadují přihlášení.
+    // Jednou na adresu a zemi: dotaz jde přes Nominatim a Overpass, přenačtení účtenky (polling,
+    // uložení řádku) ho opakovat nesmí; změna země ano — stará nabídka se hledala jinde.
+    // Anonymovi se nenabízí — dotaz i createStore vyžadují přihlášení. Bez ulice se neptá:
+    // Nominatim by vrátil střed obce a nabídka by byla náhodné obchody z centra.
     effect(() => {
       const address = this.osmAddress();
       const city = address?.city?.trim();
-      if (!address || !city || !this.auth.isLoggedIn()) return;
-      const key = [address.name, address.street, address.postalCode, city]
+      const street = address?.street?.trim();
+      const country = this.countryService.country();
+      if (!address || !city || !street || !this.auth.isLoggedIn()) return;
+      const key = [address.name, street, address.postalCode, city, country]
         .map((part) => part?.trim() ?? '')
         .join('|');
       if (key === this.osmQueryKey) return;
@@ -289,7 +293,8 @@ export class StorePicker implements OnInit {
   loadOsm(): void {
     const address = this.osmAddress();
     const city = address?.city?.trim();
-    if (!address || !city) return;
+    const street = address?.street?.trim();
+    if (!address || !city || !street) return;
     const request = ++this.osmRequest;
     this.osmShowAll.set(false);
     if (!this.connectivity.online()) {
@@ -300,9 +305,10 @@ export class StorePicker implements OnInit {
     this.storeService
       .osmAtAddress(
         address.name?.trim() || null,
-        address.street?.trim() || null,
+        street,
         city,
         address.postalCode?.trim() || null,
+        this.countryService.country(),
       )
       .subscribe({
         next: (result) => {
@@ -342,6 +348,9 @@ export class StorePicker implements OnInit {
   onStoreCreated(store: Store): void {
     this.showAddModal.set(false);
     // Založená provozovna už v katalogu je — v nabídce by zůstala jako pozvánka k duplicitě.
+    // Kandidáta z nabídky stačí odebrat; obchod založený ručně („+ Nový obchod") může odpovídat
+    // libovolnému kandidátovi, takže se nabídka načte znovu (server známé obchody vyřadí) —
+    // stejně jako na mobilu (ReceiptDetailViewModel.onStoreCreated).
     const picked = this.osmPick();
     if (picked) {
       this.osm.update((state) =>
@@ -350,6 +359,8 @@ export class StorePicker implements OnInit {
           : state,
       );
       this.osmPick.set(null);
+    } else if (this.osm().kind !== 'idle') {
+      this.loadOsm();
     }
     this.suggestions.update((list) => [store, ...list]);
     this.onSelectId(store.id);
