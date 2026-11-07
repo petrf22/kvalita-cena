@@ -610,6 +610,9 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   `observed_at` všech cen z účtenky) + `total_amount`/`currency`; `store_id` je obchod, který
   uživatel potvrdil, `suggested_store_id` jen návrh serveru — počítá se při rozpoznání
   a znovu, když vlastník potvrdí obchod u jiné své účtenky (`docs/ai.md`, „Návrh obchodu").
+  `store_confirmed_at` je čas posledního potvrzení obchodu (`chk_receipt_store_confirmed_at`:
+  vyplněný, kdykoli je `store_id`) — u stejné hlavičky z víc účtenek rozhoduje návrh poslední
+  potvrzení, ne poslední nahrání (migrace `2026-11-07/`).
   `consent_version`/`archive_consent` — viz soukromí.
   `seen_at` řídí notifikaci/odznak (novinka = návrh od jiných lidí, vlastní úprava ne),
   `images_deleted_at` retenci obrázků. `client_upload_id` je klíč idempotence nahrání
