@@ -426,6 +426,13 @@
     <string name="store_picker_osm_search">Try stores from OpenStreetMap</string>
     <string name="store_picker_osm_unavailable">OpenStreetMap is unavailable right now, so we know nothing about this area. Try again in a moment, or enter the store yourself.</string>
     <string name="store_picker_osm_none">Not even OpenStreetMap knows a store here.</string>
+    <string name="store_picker_osm_address_title">In OpenStreetMap near the receipt address</string>
+    <string name="store_picker_osm_address_search">Search OpenStreetMap near the receipt address</string>
+    <string name="store_picker_osm_address_searching">Searching OpenStreetMap near the receipt address…</string>
+    <string name="store_picker_osm_address_unavailable">OpenStreetMap is unavailable right now, so we know nothing about stores near the receipt address. Try again, or enter the store yourself.</string>
+    <string name="store_picker_osm_address_none">OpenStreetMap found no store near the receipt address that we don\'t know yet. Try searching for it by name above, or add it.</string>
+    <string name="store_picker_osm_offline">Without a connection, suggestions from OpenStreetMap won\'t load — they\'ll appear on their own once you\'re online.</string>
+    <string name="store_picker_osm_distance_from_address">%1$s from the address</string>
     <string name="store_picker_add_new_action">The store is not here — add a new one</string>
     <string name="store_picker_add_new">+ Add new store</string>
     <string name="store_picker_hint_anonymous">Type the store name or city — adding a new store requires signing in.</string>

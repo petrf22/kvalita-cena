@@ -428,6 +428,13 @@
     <string name="store_picker_osm_search">Geschäfte aus OpenStreetMap versuchen</string>
     <string name="store_picker_osm_unavailable">OpenStreetMap ist gerade nicht erreichbar, wir wissen über diese Umgebung also nichts. Versuche es gleich noch einmal oder gib das Geschäft selbst ein.</string>
     <string name="store_picker_osm_none">Auch OpenStreetMap kennt hier kein Geschäft.</string>
+    <string name="store_picker_osm_address_title">In OpenStreetMap bei der Adresse vom Kassenbon</string>
+    <string name="store_picker_osm_address_search">In OpenStreetMap bei der Adresse vom Kassenbon suchen</string>
+    <string name="store_picker_osm_address_searching">Suche in OpenStreetMap bei der Adresse vom Kassenbon…</string>
+    <string name="store_picker_osm_address_unavailable">OpenStreetMap ist gerade nicht erreichbar, wir wissen über Geschäfte bei der Adresse vom Kassenbon also nichts. Versuche es noch einmal oder gib das Geschäft selbst ein.</string>
+    <string name="store_picker_osm_address_none">OpenStreetMap hat bei der Adresse vom Kassenbon kein Geschäft gefunden, das wir noch nicht kennen. Suche es oben nach dem Namen oder füge es hinzu.</string>
+    <string name="store_picker_osm_offline">Ohne Verbindung lädt der Vorschlag aus OpenStreetMap nicht — er erscheint von selbst, sobald du online bist.</string>
+    <string name="store_picker_osm_distance_from_address">%1$s von der Adresse</string>
     <string name="store_picker_add_new_action">Das Geschäft fehlt hier — neues hinzufügen</string>
     <string name="store_picker_add_new">+ Neues Geschäft hinzufügen</string>
     <string name="store_picker_hint_anonymous">Gib Namen oder Stadt des Geschäfts ein — ein neues Geschäft anzulegen erfordert eine Anmeldung.</string>

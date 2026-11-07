@@ -31,6 +31,29 @@ fun receiptStorePrefill(receipt: Receipt): StorePrefill? {
   return prefill.takeIf { listOf(it.name, it.street, it.postalCode, it.city, it.ico).any { part -> part != null } }
 }
 
+/**
+ * Co z hlavičky účtenky smí do formuláře obchodu, který už předvyplnil kandidát z OpenStreetMap
+ * (StoreFormViewModel.applyReceiptPrefill): jen IČO, které OSM nezná. Název a adresa zůstávají
+ * z OSM — přečtený tisk by jinak přepsal údaje, které si uživatel v nabídce vybral, a obchod by
+ * se přitom dál ukládal jako `OSM_DERIVED`. `null`, když účtenka IČO nemá: pak není co převzít.
+ */
+fun StorePrefill.besideOsmCandidate(): StorePrefill? =
+  ico?.let { StorePrefill(name = null, street = null, postalCode = null, city = null, ico = it) }
+
+/**
+ * Adresa obchodu z hlavičky účtenky pro nabídku z OpenStreetMap (`osmStoresAtAddress`) a název,
+ * podle kterého server řadí podobné kandidáty nahoru. Je to adresa OBCHODU vytištěná na účtence,
+ * ne poloha uživatele (docs/soukromi.md).
+ */
+data class ReceiptOsmQuery(val name: String?, val street: String?, val city: String, val postalCode: String?)
+
+/** `null`, když na účtence chybí město — server ho vyžaduje, bez něj adresu negeokóduje. */
+fun receiptOsmQuery(receipt: Receipt): ReceiptOsmQuery? {
+  val prefill = receiptStorePrefill(receipt) ?: return null
+  val city = prefill.city ?: return null
+  return ReceiptOsmQuery(name = prefill.name, street = prefill.street, city = city, postalCode = prefill.postalCode)
+}
+
 data class ReceiptAddress(val street: String?, val postalCode: String?, val city: String?)
 
 /**

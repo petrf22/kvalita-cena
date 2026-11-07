@@ -71,4 +71,41 @@ class ReceiptStorePrefillTest {
     assertNull(receiptStorePrefill(receipt()))
     assertNull(receiptStorePrefill(receipt(name = " ", address = "", ico = " ")))
   }
+
+  @Test
+  fun vedleKandidataZOsmJenIco() {
+    assertEquals(
+      StorePrefill(name = null, street = null, postalCode = null, city = null, ico = "12345678"),
+      StorePrefill("albert", "Nádražní 1", "100 00", "Vzorov", "12345678").besideOsmCandidate(),
+    )
+  }
+
+  @Test
+  fun vedleKandidataZOsmBezIcoNeniCoPrevzit() {
+    assertNull(StorePrefill("albert", "Nádražní 1", "100 00", "Vzorov", null).besideOsmCandidate())
+  }
+
+  @Test
+  fun dotazDoOsmZHlavicky() {
+    assertEquals(
+      ReceiptOsmQuery(name = "albert", street = "Nádražní 1", city = "Vzorov", postalCode = "100 00"),
+      receiptOsmQuery(receipt(" albert ", "Nádražní 1, 100 00 Vzorov", "12345678")),
+    )
+  }
+
+  @Test
+  fun dotazDoOsmStaciMesto() {
+    assertEquals(
+      ReceiptOsmQuery(name = null, street = null, city = "Praha 10", postalCode = "100 00"),
+      receiptOsmQuery(receipt(address = "100 00 Praha 10")),
+    )
+  }
+
+  @Test
+  fun bezMestaSeDoOsmNeptame() {
+    // Parser PSČ nenašel — celý text skončí v ulici a město chybí (server ho vyžaduje).
+    assertNull(receiptOsmQuery(receipt(name = "albert", address = "Nádražní 1", ico = "12345678")))
+    assertNull(receiptOsmQuery(receipt(name = "albert")))
+    assertNull(receiptOsmQuery(receipt()))
+  }
 }

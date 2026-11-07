@@ -11,11 +11,16 @@ import cz.kvalitacena.network.ProductSummary
 import cz.kvalitacena.network.Receipt
 import cz.kvalitacena.network.ReceiptLine
 import cz.kvalitacena.network.Store
+import cz.kvalitacena.ui.common.OsmState
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.toUiText
+import cz.kvalitacena.ui.receipt.ReceiptOsmQuery
+import cz.kvalitacena.ui.receipt.receiptOsmQuery
 import java.time.OffsetDateTime
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 private const val SEARCH_DEBOUNCE_MS = 300L
@@ -31,6 +36,8 @@ class ReceiptDetailViewModel(
   private val receiptId: String,
   private val graphQlClient: GraphQlClient,
   private val mediaClient: MediaClient,
+  /** NetworkMonitor.online — bez sítě se nabídka z OSM nedotazuje, jen se řekne proč. */
+  private val online: StateFlow<Boolean>,
 ) : ViewModel() {
 
   var receipt by mutableStateOf<Receipt?>(null)
@@ -69,6 +76,15 @@ class ReceiptDetailViewModel(
   var storeSearching by mutableStateOf(false)
     private set
   private var storeSearchJob: Job? = null
+
+  // --- nabídka z OpenStreetMap u adresy z účtenky (ReceiptOsmOffer.kt) ---
+  var osmState by mutableStateOf<OsmState>(OsmState.Idle)
+    private set
+  private var osmJob: Job? = null
+
+  /** Adresa z hlavičky, kolem které se v OSM hledá; `null` = na účtence chybí město. */
+  val osmQuery: ReceiptOsmQuery?
+    get() = receipt?.let(::receiptOsmQuery)
 
   // --- našeptávač zboží k řádku ---
   var suggestionLine by mutableStateOf<ReceiptLine?>(null)
@@ -181,6 +197,52 @@ class ReceiptDetailViewModel(
     storeSuggestions = emptyList()
     updateHeader(storeId = store.id)
   }
+
+  /**
+   * Návrat z formuláře nového obchodu. Katalog se tím změnil — server obchody, které zná,
+   * z nabídky OSM vyřazuje, takže starý výsledek by nově založený obchod nabízel dál. Při
+   * dalším „Změnit" se nabídka načte znovu.
+   */
+  fun onStoreCreated(store: Store) {
+    osmJob?.cancel()
+    osmState = OsmState.Idle
+    onStoreSelected(store)
+  }
+
+  /**
+   * Volá obrazovka, kdykoli je výběr obchodu vidět a změní se připojení — nabídka se tak načte
+   * sama jednou, a znovu jen tehdy, když se kvůli výpadku sítě ptát nešlo
+   * ([shouldAutoLoadOsmAtAddress]).
+   */
+  fun autoLoadOsmAtAddress() {
+    if (shouldAutoLoadOsmAtAddress(osmState, osmQuery != null)) loadOsmAtAddress()
+  }
+
+  /** Načtení i „Zkusit znovu". Bez sítě se neptá — stav [OsmState.Offline] to řekne místo chyby. */
+  fun loadOsmAtAddress() {
+    val query = osmQuery ?: return
+    if (osmState is OsmState.Loading) return
+    if (!online.value) {
+      osmState = OsmState.Offline
+      return
+    }
+    osmState = OsmState.Loading
+    osmJob = viewModelScope.launch {
+      osmState = try {
+        // Země null = server vezme zemi uživatele; účtenka ji netiskne.
+        osmStateAtAddress(graphQlClient.osmStoresAtAddress(query.name, query.street, query.city, query.postalCode))
+      } catch (e: CancellationException) {
+        // Zrušeno z onStoreCreated — stav už je zase Idle, chyba by ho přepsala.
+        throw e
+      } catch (e: Exception) {
+        // Signál spadl během dotazu: offline, ne chyba — po připojení se nabídka načte sama.
+        if (!online.value) OsmState.Offline else OsmState.Failed(e.toUiText())
+      }
+    }
+  }
+
+  /** Atribuce k aktuální nabídce z OSM — formulář nového obchodu ji musí zobrazit (ODbL). */
+  fun osmAttribution(): String? = (osmState as? OsmState.Loaded)?.attribution
 
   fun setPurchasedAt(value: OffsetDateTime) {
     updateHeader(purchasedAt = value.toString())

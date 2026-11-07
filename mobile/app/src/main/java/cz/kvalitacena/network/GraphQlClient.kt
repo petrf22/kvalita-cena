@@ -255,6 +255,39 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
   }
 
   /**
+   * Provozovny podle OpenStreetMap kolem ADRESY obchodu z hlavičky účtenky — účtenka se
+   * zpracovává doma, takže poloha telefonu ([nearbyOsmStores]) nic neříká. Server adresu
+   * geokóduje a vrací stejný typ; kandidáty s názvem podobným [name] řadí nahoru a obchody, které
+   * katalog už zná, vyřazuje. `distanceMeters` je proto vzdálenost od ADRESY, ne od uživatele.
+   * [country] `null` = server vezme zemi uživatele. Okruh se neposílá: explicitní `null` by
+   * v GraphQL přebil výchozí hodnotu ze schématu. Vyžaduje přihlášení jako [nearbyOsmStores].
+   */
+  suspend fun osmStoresAtAddress(
+    name: String?,
+    street: String?,
+    city: String,
+    postalCode: String?,
+    country: String? = null,
+  ): OsmStoreCandidateResult {
+    val query = """
+      query(${'$'}name: String, ${'$'}street: String, ${'$'}city: String!, ${'$'}postalCode: String, ${'$'}country: String) {
+        osmStoresAtAddress(name: ${'$'}name, street: ${'$'}street, city: ${'$'}city, postalCode: ${'$'}postalCode, country: ${'$'}country) {
+          status attribution
+          candidates { name street city postalCode country lat lon osmRef distanceMeters brand }
+        }
+      }
+    """
+    val variables = buildJsonObject {
+      put("name", name)
+      put("street", street)
+      put("city", city)
+      put("postalCode", postalCode)
+      put("country", country)
+    }
+    return execute(query, variables, GraphQlResponse.serializer(OsmStoresAtAddressData.serializer())).osmStoresAtAddress
+  }
+
+  /**
    * Hledání s volitelným filtrem obchod/město/země a řazením — mobilní protějšek k
    * frontend product-service.ts. storeId/city/country null = appka nechá server dosadit
    * (viewerova země, jinak app.i18n.default-country) — country ale posíláme explicitně z

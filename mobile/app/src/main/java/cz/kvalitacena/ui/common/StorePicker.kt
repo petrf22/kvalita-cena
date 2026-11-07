@@ -49,6 +49,12 @@ private val ROW_MIN_HEIGHT = 44.dp
  *
  * Prázdný stav neříká jen "nic jsme nenašli": vysvětlí proč a nabídne pokračování včetně
  * nabídky z OpenStreetMap ([osmState]), viz docs/design.md, "Čtyři stavy každé obrazovky".
+ *
+ * Nabídka z OpenStreetMap se standardně váže na hledání v okolí podle polohy telefonu. Detail
+ * účtenky ji místo toho hledá kolem ADRESY vytištěné na účtence (`osmAtReceiptAddress`) — účtenka
+ * se zpracovává doma, kde poloha telefonu o obchodu nic neříká. Pak se sekce ukáže i bez
+ * hledání v okolí, sama se nenačítá (to řídí volající, který ví, jestli je síť) a vzdálenost
+ * popíše jako vzdálenost od adresy, ne od uživatele.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +77,12 @@ fun StorePicker(
   widerRadiusLabel: String? = null,
   onSearchOsm: () -> Unit = {},
   onSelectOsmCandidate: (NearbyOsmStore) -> Unit = {},
+  /**
+   * [osmState] je nabídka kolem adresy z účtenky (`osmStoresAtAddress`), ne kolem polohy
+   * telefonu: sekce se ukáže bez ohledu na [nearbyState], sama nic nenačítá a [onSearchOsm]
+   * slouží jako „Zkusit znovu". Zápis ceny nechává výchozí `false`.
+   */
+  osmAtReceiptAddress: Boolean = false,
   /** Systém dává jen zaokrouhlenou polohu — v malém okruhu pak nemá co najít, viz [EmptyNearby]. */
   approximateLocation: Boolean = false,
   isLoggedIn: Boolean,
@@ -135,12 +147,16 @@ fun StorePicker(
     }
 
     // Nabídka z OpenStreetMap se ukáže jen tam, kde má smysl — poloha je známá a vlastní
-    // katalog v okolí nestačil. Bez přihlášení se nenačítá vůbec: kandidát je bez createStore
-    // (které přihlášení vyžaduje, docs/reputace.md T1) k ničemu.
-    if (isLoggedIn && nearbyState is NearbyState.Loaded) {
+    // katalog v okolí nestačil, nebo volající hledá kolem adresy z účtenky. Bez přihlášení se
+    // nenačítá vůbec: kandidát je bez createStore (které přihlášení vyžaduje, docs/reputace.md
+    // T1) k ničemu.
+    if (isLoggedIn && (osmAtReceiptAddress || nearbyState is NearbyState.Loaded)) {
       OsmSection(
         state = osmState,
-        empty = nearbyState.stores.isEmpty(),
+        atReceiptAddress = osmAtReceiptAddress,
+        // U adresy z účtenky načítání řídí volající (ví, jestli je síť) — tady by se ptal
+        // naslepo i offline.
+        autoSearch = !osmAtReceiptAddress && (nearbyState as? NearbyState.Loaded)?.stores?.isEmpty() == true,
         onSearchOsm = onSearchOsm,
         onSelectCandidate = onSelectOsmCandidate,
       )
@@ -274,7 +290,8 @@ private fun EmptyNearby(approximateLocation: Boolean) {
 @Composable
 private fun OsmSection(
   state: OsmState,
-  empty: Boolean,
+  atReceiptAddress: Boolean,
+  autoSearch: Boolean,
   onSearchOsm: () -> Unit,
   onSelectCandidate: (NearbyOsmStore) -> Unit,
 ) {
@@ -282,41 +299,69 @@ private fun OsmSection(
   // načte sama. Jinak je jen doplněk na vyžádání, ať se cizí služba nedotazuje při každém skenu.
   // Sekce se kreslí jen přihlášenému (viz volající), takže se anonym na Overpass neptá.
   val idle = state is OsmState.Idle
-  LaunchedEffect(idle, empty) {
-    if (idle && empty) onSearchOsm()
+  LaunchedEffect(idle, autoSearch) {
+    if (idle && autoSearch) onSearchOsm()
   }
   Column(modifier = Modifier.padding(top = Spacing.sm)) {
     when (state) {
       // Tlačítko zůstává i při prázdném katalogu — kdyby automatické načtení neproběhlo,
       // nesmí nabídka zůstat nedostupná.
       is OsmState.Idle -> TextButton(onClick = onSearchOsm) {
-        Text(stringResource(R.string.store_picker_osm_search))
+        Text(
+          stringResource(
+            if (atReceiptAddress) R.string.store_picker_osm_address_search else R.string.store_picker_osm_search,
+          ),
+        )
       }
 
-      is OsmState.Loading -> StatusLine(stringResource(R.string.store_picker_searching_nearby), loading = true)
+      is OsmState.Loading -> StatusLine(
+        stringResource(
+          if (atReceiptAddress) R.string.store_picker_osm_address_searching else R.string.store_picker_searching_nearby,
+        ),
+        loading = true,
+      )
 
-      is OsmState.Unavailable -> Text(
-        stringResource(R.string.store_picker_osm_unavailable),
+      // Bez sítě se neptalo vůbec — žádná chybová barva ani tlačítko: nabídka se načte sama,
+      // až bude připojení (volající sleduje NetworkMonitor).
+      is OsmState.Offline -> Text(
+        stringResource(R.string.store_picker_osm_offline),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
 
-      is OsmState.Failed -> Text(
-        state.message.asString(),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.error,
-      )
+      // Výpadek NENÍ prázdný výsledek — jinak by uživatel zakládal obchod, který v OSM dávno je.
+      is OsmState.Unavailable -> {
+        Text(
+          stringResource(
+            if (atReceiptAddress) R.string.store_picker_osm_address_unavailable else R.string.store_picker_osm_unavailable,
+          ),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        // Zápis ceny opakování nenabízí (hledání v okolí se opakuje celé) — u účtenky jiná cesta
+        // k nabídce není, takže tlačítko být musí.
+        if (atReceiptAddress) RetryButton(onSearchOsm)
+      }
+
+      is OsmState.Failed -> {
+        Text(
+          state.message.asString(),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.error,
+        )
+        if (atReceiptAddress) RetryButton(onSearchOsm)
+      }
 
       is OsmState.Loaded -> if (state.candidates.isEmpty()) {
         Text(
-          stringResource(R.string.store_picker_osm_none),
+          stringResource(if (atReceiptAddress) R.string.store_picker_osm_address_none else R.string.store_picker_osm_none),
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
       } else {
         HorizontalDivider()
         Text(
-          stringResource(R.string.store_picker_osm_title),
+          stringResource(if (atReceiptAddress) R.string.store_picker_osm_address_title else R.string.store_picker_osm_title),
           style = MaterialTheme.typography.titleSmall,
           modifier = Modifier.padding(top = Spacing.sm),
         )
@@ -325,9 +370,16 @@ private fun OsmSection(
         var showAllOsm by remember(state.candidates) { mutableStateOf(false) }
         val visibleOsm = if (showAllOsm) state.candidates else state.candidates.take(VISIBLE_NEARBY_COUNT)
         visibleOsm.forEach { candidate ->
+          val distance = distanceLabel(candidate.distanceMeters)
           NearbyRow(
             label = osmCandidateLabel(candidate),
-            distance = distanceLabel(candidate.distanceMeters).asString(),
+            // U účtenky je to vzdálenost od geokódované adresy, ne od uživatele — bez dovětku by
+            // „80 m" doma u stolu tvrdilo nesmysl.
+            distance = if (atReceiptAddress) {
+              stringResource(R.string.store_picker_osm_distance_from_address, distance.asString())
+            } else {
+              distance.asString()
+            },
             note = null,
             selected = false,
             onClick = { onSelectCandidate(candidate) },
@@ -348,6 +400,11 @@ private fun OsmSection(
       }
     }
   }
+}
+
+@Composable
+private fun RetryButton(onRetry: () -> Unit) {
+  TextButton(onClick = onRetry) { Text(stringResource(R.string.store_picker_retry)) }
 }
 
 /** Název a adresa kandidáta ve stejném duchu jako [storeLabel] u vlastních obchodů. */
