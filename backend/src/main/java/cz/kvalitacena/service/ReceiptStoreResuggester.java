@@ -111,8 +111,12 @@ public class ReceiptStoreResuggester {
   }
 
   private void resuggest(Long receiptId, Long ownerId) {
+    // Zámek počká i na commit workeru, který účtenku právě dokončuje — PostgreSQL pak vrátí
+    // čerstvou verzi řádku, už PROCESSED s návrhem spočítaným před potvrzením obchodu.
     Receipt other = receiptRepository.findForUpdateById(receiptId).orElse(null);
-    // Mezi výběrem a zámkem mohl vlastník obchod potvrdit nebo účtenku uzavřít.
+    // Mezi výběrem a zámkem mohl vlastník obchod potvrdit nebo účtenku uzavřít. Pořád PROCESSING
+    // znamená, že worker výsledek ještě neposlal: submitResult účtenku zamyká DŘÍV, než návrh
+    // počítá, takže ho spočítá až po tomhle zámku — a potvrzení obchodu už uvidí.
     if (other == null || !ownerId.equals(other.getOwnerUserId()) || other.getStoreId() != null
         || other.getProcessingStatus() != ReceiptProcessingStatus.PROCESSED
         || other.getReviewStatus() == ReceiptReviewStatus.DONE) {

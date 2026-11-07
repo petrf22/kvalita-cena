@@ -81,14 +81,19 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
   Optional<Receipt> findByOwnerUserIdAndClientUploadId(Long ownerUserId, UUID clientUploadId);
 
   /**
-   * Ostatní rozpoznané účtenky vlastníka, které ještě čekají na potvrzení obchodu — po potvrzení
-   * obchodu u jedné z nich se jim přepočítá návrh (ReceiptReviewService.updateHeader). Bez
-   * zámku: každá se pak zamyká zvlášť ({@link #findForUpdateById}) a podmínky se ověří znovu.
+   * Ostatní účtenky vlastníka, které ještě čekají na potvrzení obchodu — po potvrzení obchodu
+   * u jedné z nich se jim přepočítá návrh (ReceiptStoreResuggester). Bez zámku: každá se pak
+   * zamyká zvlášť ({@link #findForUpdateById}) a podmínky se ověří znovu.
+   *
+   * <p>I {@code PROCESSING}: worker mohl návrh spočítat před potvrzením a commitnout až po něm
+   * — commitnutý stav je pak ještě PROCESSING a bez téhle podmínky by účtenka zůstala
+   * s prázdným návrhem natrvalo. Zámek počká na commit workeru a přečte už PROCESSED.
    */
   @Query(value = """
       SELECT r.id FROM core.receipt r
       WHERE r.owner_user_id = :ownerId AND r.id <> :exceptId
-        AND r.processing_status = 'PROCESSED' AND r.store_id IS NULL AND r.review_status <> 'DONE'
+        AND r.processing_status IN ('PROCESSING', 'PROCESSED') AND r.store_id IS NULL
+        AND r.review_status <> 'DONE'
       ORDER BY r.id
       """, nativeQuery = true)
   List<Long> findOpenWithoutStoreIds(@Param("ownerId") Long ownerId, @Param("exceptId") Long exceptId);
