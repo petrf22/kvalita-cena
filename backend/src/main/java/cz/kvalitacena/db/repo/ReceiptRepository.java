@@ -79,4 +79,41 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
   List<Receipt> findArchiveCandidates(@Param("limit") int limit);
 
   Optional<Receipt> findByOwnerUserIdAndClientUploadId(Long ownerUserId, UUID clientUploadId);
+
+  /**
+   * Ostatní rozpoznané účtenky vlastníka, které ještě čekají na potvrzení obchodu — po potvrzení
+   * obchodu u jedné z nich se jim přepočítá návrh (ReceiptReviewService.updateHeader). Zamčené
+   * se přeskočí: tu právě zpracovává worker a návrh si spočítá sám.
+   */
+  @Query(value = """
+      SELECT * FROM core.receipt r
+      WHERE r.owner_user_id = :ownerId AND r.id <> :exceptId
+        AND r.processing_status = 'PROCESSED' AND r.store_id IS NULL AND r.review_status <> 'DONE'
+      ORDER BY r.id
+      FOR UPDATE SKIP LOCKED
+      """, nativeQuery = true)
+  List<Receipt> findOpenWithoutStoreForUpdate(@Param("ownerId") Long ownerId, @Param("exceptId") Long exceptId);
+
+  /**
+   * Obchod, který vlastník už potvrdil u jiné své účtenky se stejnou hlavičkou — stejné IČO
+   * (bez IČO stejný název) a stejná adresa, obojí po normalizaci. Pokryje i obchod pojmenovaný
+   * jinak, než ho tiskne účtenka, který by textová shoda ({@code StoreRepository
+   * .findReceiptCandidates}) nenašla. Jen vlastní účtenky — cizí potvrzení se nepoužívají.
+   */
+  @Query(value = """
+      SELECT r.store_id FROM core.receipt r
+      JOIN core.store s ON s.id = r.store_id
+      WHERE r.owner_user_id = :ownerId AND r.id <> :receiptId
+        AND s.status IN ('ACTIVE', 'PENDING') AND s.hidden_at IS NULL
+        AND r.store_address_raw IS NOT NULL
+        AND core.norm_text(r.store_address_raw) = core.norm_text(CAST(:address AS TEXT))
+        AND ((CAST(:ico AS TEXT) IS NOT NULL
+              AND regexp_replace(COALESCE(r.store_ico_raw, ''), '[^0-9]', '', 'g') = CAST(:ico AS TEXT))
+          OR (CAST(:ico AS TEXT) IS NULL AND r.store_name_raw IS NOT NULL
+              AND core.norm_text(r.store_name_raw) = core.norm_text(CAST(:name AS TEXT))))
+      ORDER BY r.created_at DESC, r.id DESC
+      LIMIT 1
+      """, nativeQuery = true)
+  Optional<Long> findConfirmedStoreForHeader(@Param("ownerId") Long ownerId, @Param("receiptId") Long receiptId,
+      @Param("ico") String ico, @Param("name") String name, @Param("address") String address);
 }

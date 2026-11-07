@@ -204,6 +204,74 @@ class ReceiptFlowIntegrationTest {
   }
 
   @Test
+  void storeConfirmedOnOneReceiptIsSuggestedForOtherOpenReceipts() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    String name = "Obchudek " + suffix;
+    String address = "Lipova 7, 100 00 Vzorov " + suffix;
+    // Obě účtenky se rozpoznají dřív, než obchod v katalogu existuje — návrh nemají.
+    Long first = uploadWithHeader(owner, name, address, null, List.of(
+        line("TUK.ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    Long second = uploadWithHeader(owner, name, address, null, List.of(
+        line("TUK.ROHLIK", "2", QuantityUnit.PCS, "2.90", "5.80", null, PriceKind.REGULAR),
+        line("BANANY", "1", QuantityUnit.KG, "29.90", "29.90", null, PriceKind.REGULAR)));
+    Long done = uploadWithHeader(owner, name, address, null, List.of(
+        line("TUK.ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    jdbcTemplate.update("UPDATE core.receipt SET review_status = 'DONE' WHERE id = ?", done);
+    assertThat(receiptRepository.findById(second).orElseThrow().getSuggestedStoreId()).isNull();
+    assertThat(lines(second).getFirst().getMatchSource()).isNull();
+    // Ruční volba na druhé účtence přepočet návrhu přežije.
+    reviewService.matchLine(owner.getPublicUid(), lines(second).get(1).getId(), f.banany().getId(), false);
+
+    // Uživatel u první účtenky založí obchod z hlavičky a potvrdí ho.
+    Store created = storeRepository.saveAndFlush(Store.builder()
+        .name(name).street("Lipova 7").city("Vzorov " + suffix).country("CZ").chain(f.chain())
+        .status(StoreStatus.PENDING).build());
+    reviewService.updateHeader(owner.getPublicUid(), first, created.getId(), null);
+
+    Receipt other = receiptRepository.findById(second).orElseThrow();
+    assertThat(other.getStoreId()).isNull();
+    assertThat(other.getSuggestedStoreId()).isEqualTo(created.getId());
+    // S obchodem (řetězcem) se strojové návrhy řádků spárovaly znovu, ruční volba zůstala.
+    assertThat(lines(second)).extracting(ReceiptLine::getMatchSource)
+        .containsExactly(ReceiptMatchSource.FUZZY, ReceiptMatchSource.USER);
+    assertThat(lines(second)).extracting(ReceiptLine::getProductId)
+        .containsExactly(f.rohlik().getId(), f.banany().getId());
+    // Uzavřená účtenka se nemění.
+    assertThat(receiptRepository.findById(done).orElseThrow().getSuggestedStoreId()).isNull();
+  }
+
+  @Test
+  void storeNamedDifferentlyThanReceiptIsSuggestedFromOwnersConfirmedHeader() {
+    AppUser owner = persistUser();
+    AppUser stranger = persistUser();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    String name = "XYZ TRADE S.R.O. " + suffix;
+    String address = "Kratka 3, 602 00 Brno " + suffix;
+    Long first = uploadWithHeader(owner, name, address, null, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    Long second = uploadWithHeader(owner, name, address, null, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    Long foreign = uploadWithHeader(stranger, name, address, null, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+
+    // Název obchodu nemá s názvem na účtence nic společného — textová shoda ho nenajde.
+    Store created = storeRepository.saveAndFlush(Store.builder()
+        .name("Krámek u nádraží " + suffix).street("Krátká 3").city("Brno").country("CZ")
+        .status(StoreStatus.PENDING).build());
+    reviewService.updateHeader(owner.getPublicUid(), first, created.getId(), null);
+
+    assertThat(receiptRepository.findById(second).orElseThrow().getSuggestedStoreId()).isEqualTo(created.getId());
+    // Další účtenka s toutéž hlavičkou dostane návrh rovnou při rozpoznání.
+    Long third = uploadWithHeader(owner, name, address, null, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    assertThat(receiptRepository.findById(third).orElseThrow().getSuggestedStoreId()).isEqualTo(created.getId());
+    // Cizí potvrzení se nepoužívají.
+    assertThat(receiptRepository.findById(foreign).orElseThrow().getSuggestedStoreId()).isNull();
+  }
+
+  @Test
   void duplicateSameDayIsSkippedWithoutFailingOtherLines() {
     Fixture f = fixture();
     AppUser owner = persistUser();
@@ -1667,6 +1735,18 @@ class ReceiptFlowIntegrationTest {
     workerService.submitResult(receipt.getId(), new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED,
         "test-model", "raw", Map.of("k", "v"), f.store().getName(), "Hlavní 1, Praha", "CZ" + f.ico(),
         OffsetDateTime.now().minusHours(2), new BigDecimal("46.52"), "CZK", lines));
+    return receipt.getId();
+  }
+
+  /** Rozpoznaná účtenka s vlastní hlavičkou — obchod z ní v katalogu být nemusí. */
+  private Long uploadWithHeader(AppUser owner, String storeName, String storeAddress, String storeIco,
+      List<WorkerReceiptResult.Line> lines) {
+    Receipt receipt = receiptService.upload(owner.getPublicUid(), List.of(jpeg(), jpeg()), 1, false, OffsetDateTime.now(),
+        null);
+    workerService.lease(10);
+    workerService.submitResult(receipt.getId(), new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED,
+        "test-model", "raw", null, storeName, storeAddress, storeIco, OffsetDateTime.now().minusHours(2),
+        new BigDecimal("46.52"), "CZK", lines));
     return receipt.getId();
   }
 

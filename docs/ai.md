@@ -236,6 +236,15 @@ Na testovacích účtenkách zařazoval 7B model znatelně hůř (svíčka → p
 papírové zboží), proto 14B. Ten se do 8 GB VRAM nevejde celý a běží zčásti na CPU (~30 s za
 účtenku), což u dávkové úlohy nevadí. Ani 14B se nestrefí vždy, a proto jde jen o návrh.
 
+**Návrh obchodu** (`ReceiptMatchingService.suggestStore`, jen návrh — potvrzuje uživatel):
+nejdřív obchod, který vlastník už potvrdil u jiné SVÉ účtenky se stejnou hlavičkou (stejné
+IČO, bez IČO stejný název, a vždy stejná adresa — po `core.norm_text`; cizí potvrzení se
+nepoužívají), pak textová shoda IČO/názvu s katalogem a adresa mezi pobočkami. Kromě
+rozpoznání se počítá znovu, když vlastník potvrdí obchod u jiné účtenky (`updateHeader` →
+`resuggestOpenReceipts`, jen rozpoznané a neuzavřené účtenky bez obchodu) — jinak by
+účtenka rozpoznaná dřív, než obchod někdo založil, zůstala bez návrhu natrvalo. Se změnou
+návrhu se znovu spárují strojové návrhy řádků; ruční volby zůstávají.
+
 **Nové rozpoznání** (od 2026-11-03). Po opravě OCR nebo normalizace ve workeru vrátí
 provozovatel už zpracované účtenky do fronty: `worker.py --requeue ID…` nebo
 `--requeue-since DATUM` → `POST /api/worker/receipts/requeue` (token `RECEIPT_WORKER`,
