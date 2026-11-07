@@ -593,7 +593,9 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   uživatel s párováním). Vytěžená hlavička je syrový text (`store_name_raw`,
   `store_address_raw`, `store_ico_raw`) + `purchased_at` (datum A čas nákupu, stává se
   `observed_at` všech cen z účtenky) + `total_amount`/`currency`; `store_id` je obchod, který
-  uživatel potvrdil (server jen navrhne). `consent_version`/`archive_consent` — viz soukromí.
+  uživatel potvrdil, `suggested_store_id` jen návrh serveru — počítá se při rozpoznání
+  a znovu, když vlastník potvrdí obchod u jiné své účtenky (`docs/ai.md`, „Návrh obchodu").
+  `consent_version`/`archive_consent` — viz soukromí.
   `seen_at` řídí notifikaci/odznak (novinka = návrh od jiných lidí, vlastní úprava ne),
   `images_deleted_at` retenci obrázků. `client_upload_id` je klíč idempotence nahrání
   (unikátní na vlastníka): mobil po ztracené odpovědi upload opakuje se stejným klíčem

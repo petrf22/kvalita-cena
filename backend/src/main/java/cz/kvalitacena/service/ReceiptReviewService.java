@@ -122,9 +122,34 @@ public class ReceiptReviewService {
         lineRepository.saveAll(lines);
         lineRepository.flush();
       }
+      touchReview(receipt);
+      resuggestOpenReceipts(owner, receiptId);
+      return receipt;
     }
     touchReview(receipt);
     return receipt;
+  }
+
+  /**
+   * Obchod potvrzený u jedné účtenky (často právě založený z její hlavičky) může patřit i dalším
+   * účtenkám vlastníka, které se rozpoznaly dřív, než obchod existoval — jejich návrh se proto
+   * přepočítá. Při změně návrhu se znovu spárují i strojové návrhy řádků, protože naučená
+   * označení a vnitroobchodní kódy závisí na obchodě; ruční volby {@code matchLines} nemění.
+   */
+  private void resuggestOpenReceipts(AppUser owner, Long exceptReceiptId) {
+    for (Receipt other : receiptRepository.findOpenWithoutStoreForUpdate(owner.getId(), exceptReceiptId)) {
+      Optional<Store> suggested = matchingService.suggestStore(other);
+      Long suggestedId = suggested.map(Store::getId).orElse(null);
+      if (Objects.equals(suggestedId, other.getSuggestedStoreId())) {
+        continue;
+      }
+      other.setSuggestedStoreId(suggestedId);
+      List<ReceiptLine> lines = lineRepository.findByReceiptIdOrderByLineNoAsc(other.getId());
+      matchingService.matchLines(lines, suggested.orElse(null), owner.getId());
+      lineRepository.saveAll(lines);
+      receiptRepository.save(other);
+    }
+    lineRepository.flush();
   }
 
   @Transactional

@@ -505,6 +505,10 @@ vstup `prefill` v `app-store-picker`/`app-store-form`). Adresa chodí jako jeden
 dohledá přesnou shodou s číselníkem, ARES se sám nevolá (IČO z účtenky je sídlo firmy, ne
 provozovna). Souřadnice se z adresy dohledají samy jen na mobilu (`scheduleGeocode`), web je
 jako u ručně vyplněné adresy hledá až tlačítkem. Data jsou vlastní, `data_origin` zůstává `OWN`.
+Potvrzení obchodu u jedné účtenky přepočítá návrh u ostatních otevřených účtenek vlastníka
+(`ReceiptReviewService.resuggestOpenReceipts`), takže druhá účtenka ze stejného, právě
+založeného obchodu ho dostane navržený. Naučená vazba hlavička → obchod viz `docs/ai.md`,
+„Návrh obchodu".
 
 **EAN z účtenky** (`ReceiptLine.internalCode`, u účtenek, které ho tisknou): server podle něj
 spáruje zboží (`ReceiptMatchingService.byCode`) — od 2026-11-03 i bez známého obchodu, protože

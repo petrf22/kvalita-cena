@@ -18,6 +18,7 @@ import cz.kvalitacena.db.repo.CategoryRepository;
 import cz.kvalitacena.db.repo.ProductCodeRepository;
 import cz.kvalitacena.db.repo.ProductRepository;
 import cz.kvalitacena.db.repo.ProductStoreLabelRepository;
+import cz.kvalitacena.db.repo.ReceiptRepository;
 import cz.kvalitacena.db.repo.StoreRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +57,7 @@ public class ReceiptMatchingService {
   private static final int FUZZY_MIN_LETTERS = 4;
 
   private final StoreRepository storeRepository;
+  private final ReceiptRepository receiptRepository;
   private final ProductCodeRepository productCodeRepository;
   private final ProductStoreLabelRepository labelRepository;
   private final ProductRepository productRepository;
@@ -66,7 +68,12 @@ public class ReceiptMatchingService {
   private final OffNetContentConverter netContentConverter;
   private final CategoryRepository categoryRepository;
 
-  /** Návrh obchodu z hlavičky — jen návrh, potvrdí ho uživatel (updateReceiptHeader). */
+  /**
+   * Návrh obchodu z hlavičky — jen návrh, potvrdí ho uživatel (updateReceiptHeader). Počítá se
+   * při rozpoznání a znovu po potvrzení obchodu u jiné účtenky téhož vlastníka
+   * (ReceiptReviewService.updateHeader), jinak by účtenka rozpoznaná dřív, než obchod vznikl,
+   * zůstala bez návrhu natrvalo.
+   */
   @Transactional(readOnly = true)
   public Optional<Store> suggestStore(Receipt receipt) {
     String ico = normalizeIco(receipt.getStoreIcoRaw());
@@ -74,6 +81,16 @@ public class ReceiptMatchingService {
     String address = blankToNull(receipt.getStoreAddressRaw());
     if (ico == null && name == null) {
       return Optional.empty();
+    }
+    // Krok 0: stejnou hlavičku už vlastník u jiné účtenky potvrdil — jeho volba má přednost
+    // před textovou shodou, která obchod pojmenovaný jinak než na účtence nenajde.
+    if (address != null && receipt.getOwnerUserId() != null) {
+      Optional<Store> confirmed = receiptRepository.findConfirmedStoreForHeader(receipt.getOwnerUserId(),
+              receipt.getId() == null ? -1L : receipt.getId(), ico, name, address)
+          .flatMap(storeRepository::findById);
+      if (confirmed.isPresent()) {
+        return confirmed;
+      }
     }
     List<Store> candidates = storeRepository.findReceiptCandidates(ico, name, address);
     if (candidates.isEmpty()) {
