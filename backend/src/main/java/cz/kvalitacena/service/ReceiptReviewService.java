@@ -43,6 +43,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
@@ -123,7 +125,7 @@ public class ReceiptReviewService {
         lineRepository.flush();
       }
       touchReview(receipt);
-      resuggestOpenReceipts(owner, receiptId);
+      resuggestOpenReceiptsAfterCommit(owner, receiptId);
       return receipt;
     }
     touchReview(receipt);
@@ -134,22 +136,67 @@ public class ReceiptReviewService {
    * Obchod potvrzený u jedné účtenky (často právě založený z její hlavičky) může patřit i dalším
    * účtenkám vlastníka, které se rozpoznaly dřív, než obchod existoval — jejich návrh se proto
    * přepočítá. Při změně návrhu se znovu spárují i strojové návrhy řádků, protože naučená
-   * označení a vnitroobchodní kódy závisí na obchodě; ruční volby {@code matchLines} nemění.
+   * označení a vnitroobchodní kódy závisí na obchodě; ruční volby a zrušené návrhy
+   * {@code matchLines} respektuje.
+   *
+   * <p>Běží až PO commitu potvrzení, každá účtenka ve vlastní transakci s blokujícím zámkem.
+   * Přeskočit zamčenou účtenku (SKIP LOCKED) nejde — zámek drží i matchLine/unmatchLine, které
+   * návrh obchodu samy nepřepočítají, a účtenka by zůstala bez návrhu natrvalo. Čekat na zámek
+   * uvnitř transakce updateHeader zase nejde: ta drží zámek své účtenky a dvě souběžná
+   * potvrzení by se zablokovala navzájem. Po commitu se drží vždy jen jeden zámek.
    */
-  private void resuggestOpenReceipts(AppUser owner, Long exceptReceiptId) {
-    for (Receipt other : receiptRepository.findOpenWithoutStoreForUpdate(owner.getId(), exceptReceiptId)) {
-      Optional<Store> suggested = matchingService.suggestStore(other);
-      Long suggestedId = suggested.map(Store::getId).orElse(null);
-      if (Objects.equals(suggestedId, other.getSuggestedStoreId())) {
-        continue;
+  private void resuggestOpenReceiptsAfterCommit(AppUser owner, Long exceptReceiptId) {
+    Long ownerId = owner.getId();
+    Runnable resuggest = () -> {
+      List<Long> ids = resuggestTx().execute(status -> receiptRepository.findOpenWithoutStoreIds(ownerId,
+          exceptReceiptId));
+      for (Long id : ids) {
+        try {
+          resuggestTx().executeWithoutResult(status -> resuggest(id, ownerId));
+        } catch (RuntimeException e) {
+          // Návrh je jen pohodlí — potvrzení obchodu už platí a selhání u jedné účtenky nesmí
+          // zastavit ostatní.
+          log.warn("Přepočet návrhu obchodu u účtenky {} selhal: {}", id, e.getMessage());
+        }
       }
-      other.setSuggestedStoreId(suggestedId);
-      List<ReceiptLine> lines = lineRepository.findByReceiptIdOrderByLineNoAsc(other.getId());
-      matchingService.matchLines(lines, suggested.orElse(null), owner.getId());
-      lineRepository.saveAll(lines);
-      receiptRepository.save(other);
+    };
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          resuggest.run();
+        }
+      });
+    } else {
+      resuggest.run();
     }
-    lineRepository.flush();
+  }
+
+  /** Nová transakce i uvnitř afterCommit, kde jsou prostředky skončené transakce ještě navázané. */
+  private TransactionTemplate resuggestTx() {
+    TransactionTemplate tx = new TransactionTemplate(transactionManager);
+    tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+    return tx;
+  }
+
+  private void resuggest(Long receiptId, Long ownerId) {
+    Receipt other = receiptRepository.findForUpdateById(receiptId).orElse(null);
+    // Mezi výběrem a zámkem mohl vlastník obchod potvrdit nebo účtenku uzavřít.
+    if (other == null || !ownerId.equals(other.getOwnerUserId()) || other.getStoreId() != null
+        || other.getProcessingStatus() != ReceiptProcessingStatus.PROCESSED
+        || other.getReviewStatus() == ReceiptReviewStatus.DONE) {
+      return;
+    }
+    Optional<Store> suggested = matchingService.suggestStore(other);
+    Long suggestedId = suggested.map(Store::getId).orElse(null);
+    if (Objects.equals(suggestedId, other.getSuggestedStoreId())) {
+      return;
+    }
+    other.setSuggestedStoreId(suggestedId);
+    List<ReceiptLine> lines = lineRepository.findByReceiptIdOrderByLineNoAsc(receiptId);
+    matchingService.matchLines(lines, suggested.orElse(null), ownerId);
+    lineRepository.saveAll(lines);
+    receiptRepository.save(other);
   }
 
   @Transactional

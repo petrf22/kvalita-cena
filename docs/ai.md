@@ -241,9 +241,13 @@ nejdřív obchod, který vlastník už potvrdil u jiné SVÉ účtenky se stejno
 IČO, bez IČO stejný název, a vždy stejná adresa — po `core.norm_text`; cizí potvrzení se
 nepoužívají), pak textová shoda IČO/názvu s katalogem a adresa mezi pobočkami. Kromě
 rozpoznání se počítá znovu, když vlastník potvrdí obchod u jiné účtenky (`updateHeader` →
-`resuggestOpenReceipts`, jen rozpoznané a neuzavřené účtenky bez obchodu) — jinak by
-účtenka rozpoznaná dřív, než obchod někdo založil, zůstala bez návrhu natrvalo. Se změnou
-návrhu se znovu spárují strojové návrhy řádků; ruční volby zůstávají.
+`resuggestOpenReceiptsAfterCommit`, jen rozpoznané a neuzavřené účtenky bez obchodu) — jinak
+by účtenka rozpoznaná dřív, než obchod někdo založil, zůstala bez návrhu natrvalo. Přepočet
+běží až po commitu potvrzení, každá účtenka ve vlastní transakci s blokujícím zámkem: zamčenou
+účtenku (párování řádku) přeskočit nejde, protože by o návrh přišla, a čekat uvnitř
+`updateHeader` taky ne — dvě souběžná potvrzení by se zablokovala navzájem. Se změnou návrhu se
+znovu spárují strojové návrhy řádků; ruční volby zůstávají a zrušený návrh (`unmatchLine` →
+`rejected_product_id`/`code_rejected`) `matchLines` znovu nenabídne — ani při změně obchodu.
 
 **Nové rozpoznání** (od 2026-11-03). Po opravě OCR nebo normalizace ve workeru vrátí
 provozovatel už zpracované účtenky do fronty: `worker.py --requeue ID…` nebo

@@ -82,17 +82,16 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
 
   /**
    * Ostatní rozpoznané účtenky vlastníka, které ještě čekají na potvrzení obchodu — po potvrzení
-   * obchodu u jedné z nich se jim přepočítá návrh (ReceiptReviewService.updateHeader). Zamčené
-   * se přeskočí: tu právě zpracovává worker a návrh si spočítá sám.
+   * obchodu u jedné z nich se jim přepočítá návrh (ReceiptReviewService.updateHeader). Bez
+   * zámku: každá se pak zamyká zvlášť ({@link #findForUpdateById}) a podmínky se ověří znovu.
    */
   @Query(value = """
-      SELECT * FROM core.receipt r
+      SELECT r.id FROM core.receipt r
       WHERE r.owner_user_id = :ownerId AND r.id <> :exceptId
         AND r.processing_status = 'PROCESSED' AND r.store_id IS NULL AND r.review_status <> 'DONE'
       ORDER BY r.id
-      FOR UPDATE SKIP LOCKED
       """, nativeQuery = true)
-  List<Receipt> findOpenWithoutStoreForUpdate(@Param("ownerId") Long ownerId, @Param("exceptId") Long exceptId);
+  List<Long> findOpenWithoutStoreIds(@Param("ownerId") Long ownerId, @Param("exceptId") Long exceptId);
 
   /**
    * Obchod, který vlastník už potvrdil u jiné své účtenky se stejnou hlavičkou — stejné IČO

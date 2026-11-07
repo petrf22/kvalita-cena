@@ -506,7 +506,7 @@ dohledá přesnou shodou s číselníkem, ARES se sám nevolá (IČO z účtenky
 provozovna). Souřadnice se z adresy dohledají samy jen na mobilu (`scheduleGeocode`), web je
 jako u ručně vyplněné adresy hledá až tlačítkem. Data jsou vlastní, `data_origin` zůstává `OWN`.
 Potvrzení obchodu u jedné účtenky přepočítá návrh u ostatních otevřených účtenek vlastníka
-(`ReceiptReviewService.resuggestOpenReceipts`), takže druhá účtenka ze stejného, právě
+(`ReceiptReviewService.resuggestOpenReceiptsAfterCommit`), takže druhá účtenka ze stejného, právě
 založeného obchodu ho dostane navržený. Naučená vazba hlavička → obchod viz `docs/ai.md`,
 „Návrh obchodu".
 

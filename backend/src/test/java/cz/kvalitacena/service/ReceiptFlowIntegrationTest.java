@@ -213,9 +213,14 @@ class ReceiptFlowIntegrationTest {
     // Obě účtenky se rozpoznají dřív, než obchod v katalogu existuje — návrh nemají.
     Long first = uploadWithHeader(owner, name, address, null, List.of(
         line("TUK.ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    Product coded = packaged(f, "S kódem");
+    String ean = randomEan13();
+    jdbcTemplate.update("INSERT INTO core.product_code (product_id, code, code_type, is_primary) VALUES (?, ?, 'GTIN', true)",
+        coded.getId(), "0" + ean);
     Long second = uploadWithHeader(owner, name, address, null, List.of(
         line("TUK.ROHLIK", "2", QuantityUnit.PCS, "2.90", "5.80", null, PriceKind.REGULAR),
-        line("BANANY", "1", QuantityUnit.KG, "29.90", "29.90", null, PriceKind.REGULAR)));
+        line("BANANY", "1", QuantityUnit.KG, "29.90", "29.90", null, PriceKind.REGULAR),
+        lineWithCode("CIZI ZBOZI", ean)));
     Long done = uploadWithHeader(owner, name, address, null, List.of(
         line("TUK.ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
     jdbcTemplate.update("UPDATE core.receipt SET review_status = 'DONE' WHERE id = ?", done);
@@ -223,6 +228,9 @@ class ReceiptFlowIntegrationTest {
     assertThat(lines(second).getFirst().getMatchSource()).isNull();
     // Ruční volba na druhé účtence přepočet návrhu přežije.
     reviewService.matchLine(owner.getPublicUid(), lines(second).get(1).getId(), f.banany().getId(), false);
+    // Zrušený návrh podle EAN taky — přepočet ho nesmí vrátit.
+    assertThat(lines(second).get(2).getMatchSource()).isEqualTo(ReceiptMatchSource.CODE);
+    reviewService.unmatchLine(owner.getPublicUid(), lines(second).get(2).getId());
 
     // Uživatel u první účtenky založí obchod z hlavičky a potvrdí ho.
     Store created = storeRepository.saveAndFlush(Store.builder()
@@ -233,13 +241,49 @@ class ReceiptFlowIntegrationTest {
     Receipt other = receiptRepository.findById(second).orElseThrow();
     assertThat(other.getStoreId()).isNull();
     assertThat(other.getSuggestedStoreId()).isEqualTo(created.getId());
-    // S obchodem (řetězcem) se strojové návrhy řádků spárovaly znovu, ruční volba zůstala.
+    // S obchodem (řetězcem) se strojové návrhy řádků spárovaly znovu, ruční volba i zrušený
+    // návrh zůstaly.
     assertThat(lines(second)).extracting(ReceiptLine::getMatchSource)
-        .containsExactly(ReceiptMatchSource.FUZZY, ReceiptMatchSource.USER);
+        .containsExactly(ReceiptMatchSource.FUZZY, ReceiptMatchSource.USER, null);
     assertThat(lines(second)).extracting(ReceiptLine::getProductId)
-        .containsExactly(f.rohlik().getId(), f.banany().getId());
+        .containsExactly(f.rohlik().getId(), f.banany().getId(), null);
+    assertThat(lines(second).get(2).getStatus()).isEqualTo(ReceiptLineStatus.UNMATCHED);
     // Uzavřená účtenka se nemění.
     assertThat(receiptRepository.findById(done).orElseThrow().getSuggestedStoreId()).isNull();
+  }
+
+  @Test
+  void receiptLockedDuringStoreConfirmationStillGetsSuggestion() throws Exception {
+    AppUser owner = persistUser();
+    String suffix = UUID.randomUUID().toString().substring(0, 8);
+    String name = "Obchudek " + suffix;
+    String address = "Lipova 9, 100 00 Vzorov " + suffix;
+    Long first = uploadWithHeader(owner, name, address, null, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    Long second = uploadWithHeader(owner, name, address, null, List.of(
+        line("ROHLIK", "1", QuantityUnit.PCS, "2.90", "2.90", null, PriceKind.REGULAR)));
+    Store created = storeRepository.saveAndFlush(Store.builder()
+        .name(name).street("Lipova 9").city("Vzorov " + suffix).country("CZ").status(StoreStatus.PENDING).build());
+
+    // Druhou účtenku právě zamyká jiná úprava vlastníka (třeba párování řádku) — přepočet ji
+    // nesmí přeskočit, jinak by zůstala bez návrhu natrvalo.
+    var locked = new java.util.concurrent.CountDownLatch(1);
+    var otherEdit = java.util.concurrent.CompletableFuture.runAsync(() ->
+        new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+          receiptRepository.findForUpdateById(second).orElseThrow();
+          locked.countDown();
+          try {
+            Thread.sleep(700);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+        }));
+    assertThat(locked.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+
+    reviewService.updateHeader(owner.getPublicUid(), first, created.getId(), null);
+
+    otherEdit.get(30, java.util.concurrent.TimeUnit.SECONDS);
+    assertThat(receiptRepository.findById(second).orElseThrow().getSuggestedStoreId()).isEqualTo(created.getId());
   }
 
   @Test
