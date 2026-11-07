@@ -112,6 +112,8 @@ class ReceiptFlowIntegrationTest {
   @Autowired private cz.kvalitacena.controller.worker.WorkerReceiptController workerController;
   @Autowired private cz.kvalitacena.config.OpenFoodFactsProperties offProperties;
   @Autowired private cz.kvalitacena.config.ReceiptProperties receiptProperties;
+  @Autowired @org.springframework.beans.factory.annotation.Qualifier("receiptTaskExecutor")
+  private org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor receiptTaskExecutor;
   // Skutečné Open Food Facts se nevolá nikdy — test obnovy cache si odpověď nastaví sám.
   @org.springframework.test.context.bean.override.mockito.MockitoBean
   private cz.kvalitacena.service.OpenFoodFactsApiClient offApiClient;
@@ -135,7 +137,7 @@ class ReceiptFlowIntegrationTest {
     assertThat(lines(receiptId)).extracting(ReceiptLine::getProductId)
         .containsExactly(f.rohlik().getId(), f.banany().getId(), null);
 
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     List<ReceiptLine> lines = lines(receiptId);
     reviewService.matchLine(owner.getPublicUid(), lines.get(0).getId(), f.rohlik().getId(), false);
     reviewService.matchLine(owner.getPublicUid(), lines.get(1).getId(), f.banany().getId(), false);
@@ -184,7 +186,7 @@ class ReceiptFlowIntegrationTest {
         line("ROHLIK", "1", QuantityUnit.PCS, "0.15", "0.15", null, PriceKind.REGULAR)));
     assertThat(receiptRepository.findById(receiptId).orElseThrow().getCurrency()).isEqualTo("CZK");
 
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, slovak.getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, slovak.getId(), null);
     assertThat(receiptRepository.findById(receiptId).orElseThrow().getCurrency()).isEqualTo("EUR");
     ReceiptLine line = lines(receiptId).getFirst();
     reviewService.matchLine(owner.getPublicUid(), line.getId(), f.rohlik().getId(), false);
@@ -236,7 +238,7 @@ class ReceiptFlowIntegrationTest {
     Store created = storeRepository.saveAndFlush(Store.builder()
         .name(name).street("Lipova 7").city("Vzorov " + suffix).country("CZ").chain(f.chain())
         .status(StoreStatus.PENDING).build());
-    reviewService.updateHeader(owner.getPublicUid(), first, created.getId(), null);
+    updateHeader(owner.getPublicUid(), first, created.getId(), null);
 
     Receipt other = receiptRepository.findById(second).orElseThrow();
     assertThat(other.getStoreId()).isNull();
@@ -273,7 +275,7 @@ class ReceiptFlowIntegrationTest {
           receiptRepository.findForUpdateById(second).orElseThrow();
           locked.countDown();
           try {
-            Thread.sleep(700);
+            Thread.sleep(2000);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
           }
@@ -281,8 +283,11 @@ class ReceiptFlowIntegrationTest {
     assertThat(locked.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
 
     reviewService.updateHeader(owner.getPublicUid(), first, created.getId(), null);
+    // Potvrzení na zamčenou účtenku nečeká — přepočet běží na pozadí, odpověď klientovi ne.
+    assertThat(otherEdit).isNotDone();
 
     otherEdit.get(30, java.util.concurrent.TimeUnit.SECONDS);
+    awaitResuggest();
     assertThat(receiptRepository.findById(second).orElseThrow().getSuggestedStoreId()).isEqualTo(created.getId());
   }
 
@@ -304,7 +309,7 @@ class ReceiptFlowIntegrationTest {
     Store created = storeRepository.saveAndFlush(Store.builder()
         .name("Krámek u nádraží " + suffix).street("Krátká 3").city("Brno").country("CZ")
         .status(StoreStatus.PENDING).build());
-    reviewService.updateHeader(owner.getPublicUid(), first, created.getId(), null);
+    updateHeader(owner.getPublicUid(), first, created.getId(), null);
 
     assertThat(receiptRepository.findById(second).orElseThrow().getSuggestedStoreId()).isEqualTo(created.getId());
     // Další účtenka s toutéž hlavičkou dostane návrh rovnou při rozpoznání.
@@ -321,7 +326,7 @@ class ReceiptFlowIntegrationTest {
     AppUser owner = persistUser();
     Long first = uploadAndProcess(owner, f, List.of(
         line("ROHLIK A", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR)));
-    reviewService.updateHeader(owner.getPublicUid(), first, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), first, f.store().getId(), null);
     ReceiptLine l1 = lines(first).getFirst();
     reviewService.matchLine(owner.getPublicUid(), l1.getId(), f.rohlik().getId(), false);
     reviewService.confirmLines(owner.getPublicUid(), first, List.of(l1.getId()), ObservationSource.WEB);
@@ -329,7 +334,7 @@ class ReceiptFlowIntegrationTest {
     Long second = uploadAndProcess(owner, f, List.of(
         line("ROHLIK B", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR),
         line("BANAN", "1", QuantityUnit.KG, "29.90", "29.90", null, PriceKind.REGULAR)));
-    reviewService.updateHeader(owner.getPublicUid(), second, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), second, f.store().getId(), null);
     List<ReceiptLine> lines = lines(second);
     reviewService.matchLine(owner.getPublicUid(), lines.get(0).getId(), f.rohlik().getId(), false);
     reviewService.matchLine(owner.getPublicUid(), lines.get(1).getId(), f.banany().getId(), false);
@@ -389,7 +394,7 @@ class ReceiptFlowIntegrationTest {
         line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR)));
     receiptService.markSeen(owner.getPublicUid(), receiptId);
 
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     reviewService.matchLine(owner.getPublicUid(), lines(receiptId).getFirst().getId(), f.rohlik().getId(), false);
 
     // Novinka je jen návrh od jiných lidí — vlastní úprava odznak ani notifikaci nespouští.
@@ -423,7 +428,7 @@ class ReceiptFlowIntegrationTest {
     AppUser owner = persistUser();
     Long receiptId = uploadAndProcess(owner, f, List.of(
         line("ROHLIK", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR)));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     ReceiptLine line = lines(receiptId).getFirst();
     reviewService.matchLine(owner.getPublicUid(), line.getId(), f.rohlik().getId(), false);
 
@@ -686,7 +691,7 @@ class ReceiptFlowIntegrationTest {
 
     // Vlastník opravuje obchod a datum ve chvíli, kdy worker odevzdává nové rozpoznání.
     var worker = new org.springframework.transaction.support.TransactionTemplate(transactionManager).execute(tx -> {
-      reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), ownersTime);
+      updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), ownersTime);
       var submit = java.util.concurrent.CompletableFuture.runAsync(() -> workerService.submitResult(receiptId,
           new WorkerReceiptResult(ReceiptProcessingStatus.PROCESSED, "test-model-2", "raw2", null,
               f.store().getName(), "Nová 2, Brno", null, null, null, "EUR", List.of(
@@ -748,7 +753,7 @@ class ReceiptFlowIntegrationTest {
   }
 
   private ReceiptReviewService.ConfirmResult confirmSingle(AppUser owner, Fixture f, Long receiptId, Product product) {
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     ReceiptLine line = lines(receiptId).getFirst();
     reviewService.matchLine(owner.getPublicUid(), line.getId(), product.getId(), false);
     return reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(line.getId()), ObservationSource.WEB);
@@ -761,7 +766,7 @@ class ReceiptFlowIntegrationTest {
     String ean = randomEan13();
     AppUser owner = persistUser();
     Long first = uploadAndProcess(owner, f, List.of(lineWithCode("NAKL. OKURKY", ean)));
-    reviewService.updateHeader(owner.getPublicUid(), first, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), first, f.store().getId(), null);
     ReceiptLine line = lines(first).getFirst();
     reviewService.matchLine(owner.getPublicUid(), line.getId(), okurky.getId(), false);
     reviewService.confirmLines(owner.getPublicUid(), first, List.of(line.getId()), ObservationSource.WEB);
@@ -771,7 +776,7 @@ class ReceiptFlowIntegrationTest {
     // Jiný uživatel, jiný text řádku — spáruje se podle EAN, ne podle naučeného označení.
     AppUser other = persistUser();
     Long second = uploadAndProcess(other, f, List.of(lineWithCode("OKURKY STERIL.", ean)));
-    reviewService.updateHeader(other.getPublicUid(), second, f.store().getId(), null);
+    updateHeader(other.getPublicUid(), second, f.store().getId(), null);
     ReceiptLine auto = lines(second).getFirst();
     assertThat(auto.getMatchSource()).isEqualTo(ReceiptMatchSource.CODE);
     assertThat(auto.getProductId()).isEqualTo(okurky.getId());
@@ -793,7 +798,7 @@ class ReceiptFlowIntegrationTest {
         lineWithCode("SPATNE PRECTENY", misread),     // kontrolní číslice nesedí
         lineWithCode("CIZI EAN", existing),           // EAN patří jinému zboží
         lineWithCode("ROHLIK", randomEan13())));      // bezkódová položka
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     List<ReceiptLine> lines = lines(receiptId);
     reviewService.matchLine(owner.getPublicUid(), lines.get(0).getId(), withEan.getId(), false);
     reviewService.matchLine(owner.getPublicUid(), lines.get(1).getId(), withoutEan.getId(), false);
@@ -875,7 +880,7 @@ class ReceiptFlowIntegrationTest {
     assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM core.product_code WHERE product_id = ?",
         Integer.class, kesu.getId())).isZero();
 
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     assertThat(lines(receiptId).get(0).getMatchSource()).isEqualTo(ReceiptMatchSource.FUZZY);
     var result = reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(lines.get(0).getId()),
         ObservationSource.WEB);
@@ -897,7 +902,7 @@ class ReceiptFlowIntegrationTest {
     Product right = chainProduct(f, "Plnotučné mléko 3,9 %", new BigDecimal("1"), NetContentUom.L);
     Long receiptId = uploadAndProcess(first, f, List.of(
         displayLine("OLMA SELS.MLÉ.3,9%1L", "Olma Selské mléko 3,9% 1l", "1", "L", null)));
-    reviewService.updateHeader(first.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(first.getPublicUid(), receiptId, f.store().getId(), null);
     ReceiptLine line = lines(receiptId).getFirst();
     reviewService.matchLine(first.getPublicUid(), line.getId(), right.getId(), false);
     reviewService.confirmLines(first.getPublicUid(), receiptId, List.of(line.getId()), ObservationSource.WEB);
@@ -951,7 +956,7 @@ class ReceiptFlowIntegrationTest {
     assertThat(lines(receiptId)).allMatch(l -> moravia.getId().equals(l.getProductId()));
 
     // Uživatel, který řádek spáruje jinak, mapování provozovatele nepřepíše.
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     ReceiptLine first = lines(receiptId).getFirst();
     reviewService.matchLine(owner.getPublicUid(), first.getId(), gran.getId(), false);
     reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(first.getId()), ObservationSource.WEB);
@@ -999,7 +1004,7 @@ class ReceiptFlowIntegrationTest {
     AppUser owner = persistUser();
     Long receiptId = uploadAndProcess(owner, f, List.of(
         displayLine("TESTOV.VRETENA 500G", "Těstoviny vřetena 500g", "500", "G", ean)));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
 
     ReceiptLine line = lines(receiptId).getFirst();
     assertThat(line.getStatus()).isEqualTo(ReceiptLineStatus.SUGGESTED);
@@ -1045,7 +1050,7 @@ class ReceiptFlowIntegrationTest {
     offSnapshot(ean, f.rohlik().getCategory().getSlug(), "1", "L", Map.of("de", "Milch"));
     AppUser owner = persistUser();
     Long receiptId = uploadAndProcess(owner, f, List.of(lineWithCode("MLEKO 1L", ean)));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     assertThat(lines(receiptId).getFirst().getMatchSource()).isEqualTo(ReceiptMatchSource.OFF);
     Product meanwhile = packaged(f, "Mléko mezitím");
     jdbcTemplate.update("INSERT INTO core.product_code (product_id, code, code_type, is_primary) VALUES (?, ?, 'GTIN', true)",
@@ -1065,7 +1070,7 @@ class ReceiptFlowIntegrationTest {
     AppUser owner = persistUser();
     Long receiptId = uploadAndProcess(owner, f, List.of(
         lineWithCode("TESTOV.KOLINKA", ean), lineWithCode("TESTOV.KOLINKA", ean)));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     assertThat(lines(receiptId)).extracting(ReceiptLine::getMatchSource).containsOnly(ReceiptMatchSource.OFF);
 
     var result = reviewService.confirmLines(owner.getPublicUid(), receiptId,
@@ -1239,7 +1244,7 @@ class ReceiptFlowIntegrationTest {
     Long receiptId = uploadAndProcess(owner, f, List.of(
         line(label, "1", QuantityUnit.PCS, "39.90", "39.90", null, PriceKind.REGULAR),
         line("ZALOHA LAHEV", "1", QuantityUnit.PCS, "3.00", "3.00", null, PriceKind.REGULAR)));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     List<ReceiptLine> lines = lines(receiptId);
     assertThat(lines.get(0).getStatus()).isEqualTo(ReceiptLineStatus.UNMATCHED);
 
@@ -1280,7 +1285,7 @@ class ReceiptFlowIntegrationTest {
       String label = "HORCICE PLNOTUCNA " + f.ico();
       Long receiptId = uploadAndProcess(owner, f, List.of(
           line(label, "1", QuantityUnit.PCS, "24.90", "24.90", null, PriceKind.REGULAR)));
-      reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+      updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
       List<ReceiptLine> lines = lines(receiptId);
 
       reviewService.confirmLines(owner.getPublicUid(), receiptId,
@@ -1301,7 +1306,7 @@ class ReceiptFlowIntegrationTest {
     AppUser owner = persistUser();
     String ean = randomEan13();
     Long receiptId = uploadAndProcess(owner, f, List.of(lineWithCode("NUDLE RYZOVE " + f.ico(), ean)));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     ReceiptLine line = lines(receiptId).getFirst();
     assertThat(line.getStatus()).isEqualTo(ReceiptLineStatus.UNMATCHED);
 
@@ -1334,7 +1339,7 @@ class ReceiptFlowIntegrationTest {
     AppUser owner = persistUser();
     // 27160840 je EAN-8 s prefixem 2 — vnitroobchodní kód, ne globální identifikátor.
     Long receiptId = uploadAndProcess(owner, f, List.of(lineWithCode("SALAM VLASTNI " + f.ico(), "27160840")));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     ReceiptLine line = lines(receiptId).getFirst();
 
     reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(line.getId()), ObservationSource.WEB, true);
@@ -1354,7 +1359,7 @@ class ReceiptFlowIntegrationTest {
     String label = "HORCICE PLNOTUCNA " + f.ico();
     Long first = uploadAndProcess(owner, f, List.of(
         line(label, "1", QuantityUnit.PCS, "19.90", "19.90", null, PriceKind.REGULAR)));
-    reviewService.updateHeader(owner.getPublicUid(), first, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), first, f.store().getId(), null);
     reviewService.confirmLines(owner.getPublicUid(), first, List.of(lines(first).getFirst().getId()),
         ObservationSource.WEB, true);
     Long itemId = lines(first).getFirst().getProductId();
@@ -1368,7 +1373,7 @@ class ReceiptFlowIntegrationTest {
       ReceiptLine auto = lines(receiptId).getFirst();
       assertThat(auto.getMatchSource()).isEqualTo(ReceiptMatchSource.LABEL);
       assertThat(auto.getProductId()).isEqualTo(itemId);
-      reviewService.updateHeader(other.getPublicUid(), receiptId, f.store().getId(), null);
+      updateHeader(other.getPublicUid(), receiptId, f.store().getId(), null);
       reviewService.confirmLines(other.getPublicUid(), receiptId, List.of(auto.getId()), ObservationSource.WEB, true);
     }
     assertThat(productRepository.findById(itemId).orElseThrow().getStatus()).isEqualTo(ProductStatus.ACTIVE);
@@ -1380,7 +1385,7 @@ class ReceiptFlowIntegrationTest {
     AppUser owner = persistUser();
     Long receiptId = uploadAndProcess(owner, f, List.of(
         line("OCET KVASNY " + f.ico(), "1", QuantityUnit.PCS, "12.90", "12.90", null, PriceKind.REGULAR)));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     ReceiptLine line = lines(receiptId).getFirst();
 
     var result = reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(line.getId()), ObservationSource.WEB);
@@ -1441,7 +1446,7 @@ class ReceiptFlowIntegrationTest {
     // Cizí starší účtenka se stejným řádkem — zatím nespárovaná, obchod bez návrhu.
     Long otherReceipt = uploadAndProcess(other, f, List.of(
         line(label, "1", QuantityUnit.PCS, "45.90", "45.90", null, PriceKind.REGULAR)));
-    reviewService.updateHeader(other.getPublicUid(), otherReceipt, f.store().getId(), null);
+    updateHeader(other.getPublicUid(), otherReceipt, f.store().getId(), null);
     AppUser owner = persistUser();
     Long itemId = publishedItem(owner, f, label);
     // Naučené označení dalo cizímu řádku návrh na zboží z účtenky — cena z něj nevznikla.
@@ -1464,13 +1469,13 @@ class ReceiptFlowIntegrationTest {
     AppUser b = persistUser();
     Long receiptB = uploadAndProcess(b, f, List.of(line(label, "1", QuantityUnit.PCS, "99.90", "99.90", null,
         PriceKind.REGULAR)));
-    reviewService.updateHeader(b.getPublicUid(), receiptB, f.store().getId(), null);
+    updateHeader(b.getPublicUid(), receiptB, f.store().getId(), null);
     reviewService.confirmLines(b.getPublicUid(), receiptB, List.of(lines(receiptB).getFirst().getId()),
         ObservationSource.WEB, true);
     AppUser c = persistUser();
     Long receiptC = uploadAndProcess(c, f, List.of(line(label, "1", QuantityUnit.PCS, "98.90", "98.90", null,
         PriceKind.REGULAR)));
-    reviewService.updateHeader(c.getPublicUid(), receiptC, f.store().getId(), null);
+    updateHeader(c.getPublicUid(), receiptC, f.store().getId(), null);
     reviewService.confirmLines(c.getPublicUid(), receiptC, List.of(lines(receiptC).getFirst().getId()),
         ObservationSource.WEB, true);
 
@@ -1506,7 +1511,7 @@ class ReceiptFlowIntegrationTest {
     AppUser b = persistUser();
     Long receiptB = uploadAndProcess(b, f, List.of(line(label, "1", QuantityUnit.PCS, "31.90", "31.90", null,
         PriceKind.REGULAR)));
-    reviewService.updateHeader(b.getPublicUid(), receiptB, f.store().getId(), null);
+    updateHeader(b.getPublicUid(), receiptB, f.store().getId(), null);
     reviewService.confirmLines(b.getPublicUid(), receiptB, List.of(lines(receiptB).getFirst().getId()),
         ObservationSource.WEB, true);
     Product chleb = chainProduct(f, "Chléb " + f.ico());
@@ -1582,7 +1587,7 @@ class ReceiptFlowIntegrationTest {
     AppUser b = persistUser();
     Long receiptB = uploadAndProcess(b, f, List.of(line(label, "1", QuantityUnit.PCS, "31.90", "31.90", null,
         PriceKind.REGULAR)));
-    reviewService.updateHeader(b.getPublicUid(), receiptB, f.store().getId(), null);
+    updateHeader(b.getPublicUid(), receiptB, f.store().getId(), null);
     reviewService.confirmLines(b.getPublicUid(), receiptB, List.of(lines(receiptB).getFirst().getId()),
         ObservationSource.WEB, true);
     Product med250 = chainProduct(f, "Med 250 g " + f.ico(), new BigDecimal("250"), NetContentUom.G);
@@ -1617,7 +1622,7 @@ class ReceiptFlowIntegrationTest {
     // A cena za kg na zboží, které se prodává za kus, taky ne.
     Long receiptId = uploadAndProcess(owner, f, List.of(
         line("SUNKA VAZENA " + f.ico(), "0.250", QuantityUnit.KG, "320.00", "80.00", null, PriceKind.REGULAR)));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(lines(receiptId).getFirst().getId()),
         ObservationSource.WEB, true);
     Long weighedItem = lines(receiptId).getFirst().getProductId();
@@ -1636,7 +1641,7 @@ class ReceiptFlowIntegrationTest {
     AppUser teacher = persistUser();
     Long first = uploadAndProcess(teacher, f, List.of(line(label, "1", QuantityUnit.PCS, "3.90", "3.90", null,
         PriceKind.REGULAR)));
-    reviewService.updateHeader(teacher.getPublicUid(), first, f.store().getId(), null);
+    updateHeader(teacher.getPublicUid(), first, f.store().getId(), null);
     reviewService.matchLine(teacher.getPublicUid(), lines(first).getFirst().getId(), f.rohlik().getId(), false);
     reviewService.confirmLines(teacher.getPublicUid(), first, List.of(lines(first).getFirst().getId()),
         ObservationSource.WEB);
@@ -1644,7 +1649,7 @@ class ReceiptFlowIntegrationTest {
     AppUser owner = persistUser();
     Long receiptId = uploadAndProcess(owner, f, List.of(line(label, "1", QuantityUnit.PCS, "4.90", "4.90", null,
         PriceKind.REGULAR)));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     ReceiptLine suggested = lines(receiptId).getFirst();
     assertThat(suggested.getProductId()).isEqualTo(f.rohlik().getId());
 
@@ -1669,7 +1674,7 @@ class ReceiptFlowIntegrationTest {
     AppUser owner = persistUser();
     Long receiptId = uploadAndProcess(owner, f, List.of(line(label, "1", QuantityUnit.PCS, "24.90", "24.90", null,
         PriceKind.REGULAR)));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     ReceiptLine suggested = lines(receiptId).getFirst();
     assertThat(suggested.getProductId()).isEqualTo(itemId);
     reviewService.unmatchLine(owner.getPublicUid(), suggested.getId());
@@ -1704,7 +1709,7 @@ class ReceiptFlowIntegrationTest {
     AppUser owner = persistUser();
     String ean = randomEan13();
     Long receiptId = uploadAndProcess(owner, f, List.of(lineWithCode("CAJ ZELENY " + f.ico(), ean)));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(lines(receiptId).getFirst().getId()),
         ObservationSource.WEB, true);
     Long itemId = lines(receiptId).getFirst().getProductId();
@@ -1746,7 +1751,7 @@ class ReceiptFlowIntegrationTest {
   private Long publishedItem(AppUser owner, Fixture f, String label) {
     Long receiptId = uploadAndProcess(owner, f, List.of(
         line(label, "1", QuantityUnit.PCS, "29.90", "29.90", null, PriceKind.REGULAR)));
-    reviewService.updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
+    updateHeader(owner.getPublicUid(), receiptId, f.store().getId(), null);
     var result = reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(lines(receiptId).getFirst().getId()),
         ObservationSource.WEB, true);
     assertThat(result.confirmed()).isEqualTo(1);
@@ -1780,6 +1785,25 @@ class ReceiptFlowIntegrationTest {
         "test-model", "raw", Map.of("k", "v"), f.store().getName(), "Hlavní 1, Praha", "CZ" + f.ico(),
         OffsetDateTime.now().minusHours(2), new BigDecimal("46.52"), "CZK", lines));
     return receipt.getId();
+  }
+
+  /**
+   * Potvrzení hlavičky včetně přepočtu návrhu obchodu, který běží na pozadí
+   * (ReceiptStoreResuggester) — test pak čte stav až po něm, stejně jako kdyby běžel synchronně.
+   */
+  private Receipt updateHeader(UUID ownerPublicUid, Long receiptId, Long storeId, OffsetDateTime purchasedAt) {
+    Receipt receipt = reviewService.updateHeader(ownerPublicUid, receiptId, storeId, purchasedAt);
+    awaitResuggest();
+    return receipt;
+  }
+
+  /** Executor má jedno vlákno a frontu FIFO — prázdná úloha doběhne až po všech dřívějších. */
+  private void awaitResuggest() {
+    try {
+      receiptTaskExecutor.submit(() -> { }).get(30, java.util.concurrent.TimeUnit.SECONDS);
+    } catch (Exception e) {
+      throw new IllegalStateException("Přepočet návrhu obchodu nedoběhl", e);
+    }
   }
 
   /** Rozpoznaná účtenka s vlastní hlavičkou — obchod z ní v katalogu být nemusí. */
