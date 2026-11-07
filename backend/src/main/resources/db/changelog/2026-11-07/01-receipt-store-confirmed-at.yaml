@@ -1,0 +1,25 @@
+# 01-receipt-store-confirmed-at.yaml — kdy vlastník potvrdil obchod účtenky
+# (docs/datovy-model.md, „Účtenky"; docs/ai.md, „Návrh obchodu").
+#
+# core.receipt.store_confirmed_at: čas posledního potvrzení (nebo opravy) store_id. Řídí krok 0
+# návrhu obchodu (ReceiptRepository.findConfirmedStoreForHeader) — platí poslední POTVRZENÍ
+# stejné hlavičky, ne poslední nahraná účtenka. Dřív se řadilo podle created_at, takže oprava
+# obchodu u starší účtenky prohrála s chybnou volbou z novější.
+#
+# Existující potvrzené účtenky dostanou created_at — pořadí mezi nimi zůstává, jaké bylo.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-07-01-receipt-store-confirmed-at
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.receipt ADD COLUMN store_confirmed_at TIMESTAMPTZ;
+              UPDATE core.receipt SET store_confirmed_at = created_at WHERE store_id IS NOT NULL;
+              ALTER TABLE core.receipt ADD CONSTRAINT chk_receipt_store_confirmed_at
+                CHECK (store_id IS NULL OR store_confirmed_at IS NOT NULL);
+      rollback:
+        - sql:
+            sql: |
+              ALTER TABLE core.receipt DROP CONSTRAINT IF EXISTS chk_receipt_store_confirmed_at;
+              ALTER TABLE core.receipt DROP COLUMN IF EXISTS store_confirmed_at;

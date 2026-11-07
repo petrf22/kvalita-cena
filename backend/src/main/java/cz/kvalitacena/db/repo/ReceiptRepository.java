@@ -103,6 +103,8 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
    * (bez IČO stejný název) a stejná adresa, obojí po normalizaci. Pokryje i obchod pojmenovaný
    * jinak, než ho tiskne účtenka, který by textová shoda ({@code StoreRepository
    * .findReceiptCandidates}) nenašla. Jen vlastní účtenky — cizí potvrzení se nepoužívají.
+   * Vyhrává poslední POTVRZENÍ ({@code store_confirmed_at}), ne poslední nahraná účtenka —
+   * jinak by oprava obchodu u starší účtenky prohrála s chybnou volbou z novější.
    */
   @Query(value = """
       SELECT r.store_id FROM core.receipt r
@@ -115,7 +117,7 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
               AND regexp_replace(COALESCE(r.store_ico_raw, ''), '[^0-9]', '', 'g') = CAST(:ico AS TEXT))
           OR (CAST(:ico AS TEXT) IS NULL AND r.store_name_raw IS NOT NULL
               AND core.norm_text(r.store_name_raw) = core.norm_text(CAST(:name AS TEXT))))
-      ORDER BY r.created_at DESC, r.id DESC
+      ORDER BY r.store_confirmed_at DESC, r.id DESC
       LIMIT 1
       """, nativeQuery = true)
   Optional<Long> findConfirmedStoreForHeader(@Param("ownerId") Long ownerId, @Param("receiptId") Long receiptId,
