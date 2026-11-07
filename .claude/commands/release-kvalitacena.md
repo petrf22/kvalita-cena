@@ -51,17 +51,19 @@ za skutečně spočítanou verzi (krok 1) — dosaď ji, než příkaz spustíš
    ```
    Skript končí chybou, pokud si `VERSION` a nejnovější sekce `CHANGELOG.md` neodpovídají.
 
-5. **Zkontroluj `git diff --stat`** — měly by být jen `VERSION`, `CHANGELOG.md` a pět
-   generovaných souborů (`backend/build.gradle`, `frontend/package.json`,
+5. **Zkontroluj `git diff --stat`** — měly by být jen `VERSION`, `CHANGELOG.md` a sedm
+   generovaných výstupů z tabulky v `docs/vydani.md`, „Verzování a vydání" (`backend/build.gradle`,
+   `frontend/package.json`, `frontend/package-lock.json`, `frontend/src/app/version.ts`,
    `mobile/app/build.gradle.kts`, `frontend/src/app/changelog.generated.ts`,
-   `mobile/app/src/main/assets/changelog.json`). Cokoli navíc je podezřelé — zastav se.
+   `mobile/app/src/main/assets/changelog.json`) — dohromady devět souborů. Cokoli navíc je
+   podezřelé — zastav se.
 
 6. **Commit na krátkodobé větvi, ne na `main`.** `main` je chráněná GitHub rulesetem „Ochrana
    main" (PR + 5 zelených status checků, bez výjimky i pro admina) — přímý push i tag na `main`
    by ruleset odmítl:
    ```bash
    git checkout -b release/X.Y.Z
-   git add <jen těch 7 souborů z kroku 5>
+   git add <jen těch 9 souborů z kroku 5>
    git commit -m 'Vydat X.Y.Z'
    git push -u origin release/X.Y.Z
    gh pr create --title 'Vydat X.Y.Z' --body '<shrnutí changelogu>'
