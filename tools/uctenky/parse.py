@@ -148,10 +148,17 @@ def build_document(texts: list[str] | str, profile_name: str | None = None) -> d
     if footer.purchased_at is None:
         warnings.append("na účtence se nenašlo datum nákupu")
 
+    # Stát podle prefixu DIČ / VAT ID má přednost před státem profilu. Když se liší, profil čte
+    # účtenku cizího obchodu s českými pravidly (měna, časové pásmo) — musí to být vidět.
+    vat_country = generic.find_vat_country(raw_lines)
+    if vat_country and header.country and vat_country != header.country:
+        warnings.append(f"podle DIČ je obchod ze státu {vat_country}, profil {profile.name} čte účtenky "
+                        f"ze státu {header.country} (měna {profile.currency})")
+
     merchant = {
         "rawName": header.raw_name,
         "chainSlug": header.chain_slug,
-        "country": header.country,
+        "country": vat_country or header.country,
         "street": header.street,
         "postalCode": header.postal_code,
         "city": header.city,

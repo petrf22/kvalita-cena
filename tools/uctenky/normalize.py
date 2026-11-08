@@ -53,6 +53,24 @@ def format_amount(value: Decimal) -> str:
 _GTIN_LENGTHS = {8, 12, 13, 14}
 
 
+def is_valid_ico(code: str) -> bool:
+    """České IČO s platnou kontrolní číslicí (váhy 8..2, modulo 11).
+
+    Pojistka pro IČO pod popiskem, který OCR zkomolilo („ICU: 64945880"): bez platné
+    kontrolní číslice se takový řádek za IČO nepovažuje.
+    """
+    if not code.isdigit() or len(code) != 8:
+        return False
+    weighted = sum(int(digit) * weight for digit, weight in zip(code[:7], range(8, 1, -1)))
+    return (11 - weighted % 11) % 10 == int(code[7])
+
+
+# Prefix DIČ / VAT ID -> kód státu (ISO 3166-1). Řecko má ve VIES prefix EL, ne GR.
+VAT_PREFIX_COUNTRY = {code: code for code in (
+    "AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "HR", "HU", "IE", "IT", "LT",
+    "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK", "GB")} | {"EL": "GR"}
+
+
 def is_valid_gtin(code: str) -> bool:
     """EAN-8/UPC-A/EAN-13/GTIN-14 s platnou kontrolní číslicí (GS1, váhy 3-1 zprava).
 

@@ -95,7 +95,7 @@ def read_header(raw_lines: list[str]) -> ReceiptHeader:
     if any(ICO in line for line in header):
         ico, raw_name = ICO, COMPANY_NAME
     else:
-        ico, raw_name = generic.find_ico(raw_lines), header[0] if header else None
+        ico, raw_name = generic.find_ico(raw_lines), generic.store_name(header)
     return ReceiptHeader(raw_name=raw_name, country=COUNTRY, street=street,
                          postal_code=postal, city=city, ico=ico)
 
