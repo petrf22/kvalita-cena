@@ -495,6 +495,36 @@ class ReceiptFlowIntegrationTest {
   }
 
   @Test
+  void loyaltyCardTicksPlainDiscountAsClubPrice() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    // „SLEVA -5,00" bez slova klub/karta — worker ji odhadne jako běžnou slevu.
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line("MLEKO", "1", QuantityUnit.PCS, "24.90", "24.90", "5.00", PriceKind.REGULAR)));
+    reviewService.setLoyaltyCard(owner.getPublicUid(), receiptId, true);
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getLoyaltyCardUsed()).isTrue();
+
+    confirmSingle(owner, f, receiptId, f.rohlik());
+
+    assertThat(jdbcTemplate.queryForList(
+        "SELECT price_kind FROM core.price_observation WHERE product_id = ? ORDER BY price_kind",
+        String.class, f.rohlik().getId())).containsExactly("CLUB_CARD", "REGULAR");
+  }
+
+  @Test
+  void loyaltyCardOfForeignReceiptCannotBeSet() {
+    Fixture f = fixture();
+    AppUser owner = persistUser();
+    AppUser other = persistUser();
+    Long receiptId = uploadAndProcess(owner, f, List.of(
+        line("MLEKO", "1", QuantityUnit.PCS, "24.90", "24.90", "5.00", PriceKind.REGULAR)));
+
+    assertThatThrownBy(() -> reviewService.setLoyaltyCard(other.getPublicUid(), receiptId, true))
+        .isInstanceOf(NotFoundException.class);
+    assertThat(receiptRepository.findById(receiptId).orElseThrow().getLoyaltyCardUsed()).isNull();
+  }
+
+  @Test
   void unknownLineIdFailsBeforeAnyPriceIsRecorded() {
     Fixture f = fixture();
     AppUser owner = persistUser();

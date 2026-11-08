@@ -100,6 +100,19 @@ public class ReceiptReviewService {
   public record ConfirmResult(Receipt receipt, int confirmed, List<ReceiptLine> skipped) {
   }
 
+  /**
+   * Nakoupeno s kartou obchodu ano/ne/nevyplněno. Mění jen druh ceny po slevě u řádků, které
+   * se teprve potvrdí — už zapsané ceny zůstávají, jak byly.
+   */
+  @Transactional
+  public Receipt setLoyaltyCard(UUID ownerPublicUid, Long receiptId, Boolean used) {
+    AppUser owner = requireUser(ownerPublicUid);
+    Receipt receipt = ownedReceiptForUpdate(receiptId, owner);
+    receipt.setLoyaltyCardUsed(used);
+    touchReview(receipt);
+    return receipt;
+  }
+
   @Transactional
   public Receipt updateHeader(UUID ownerPublicUid, Long receiptId, Long storeId, OffsetDateTime purchasedAt) {
     AppUser owner = requireUser(ownerPublicUid);
@@ -305,7 +318,7 @@ public class ReceiptReviewService {
     ReceiptLine line = lineRepository.findById(lineId).orElseThrow();
     // Cena se ověří dřív, než vznikne zboží z účtenky — řádek bez ceny by ho jinak založil
     // a hned zahodil rollbackem.
-    PriceRows rows = priceRows(line);
+    PriceRows rows = priceRows(line, receipt.getLoyaltyCardUsed());
     if (line.getProductId() == null && line.getMatchSource() == ReceiptMatchSource.OFF) {
       line.setProductId(productFromOff(line, ownerPublicUid));
     }
@@ -480,12 +493,12 @@ public class ReceiptReviewService {
    *   <li>váhové zboží ({@code KG}/{@code L}) se zapisuje jako cena ZA kg/l, nikdy jako
    *       zaplacená částka — ta říká jen, kolik toho člověk koupil;</li>
    *   <li>sleva z vlastního řádku pod položkou dá vedle běžné ceny i cenu po slevě, druh
-   *       podle toho, co worker rozpoznal (klubová jen výslovně, jinak akční);</li>
+   *       podle {@link #discountKind} (zaškrtnutí karty u účtenky, jinak odhad workeru);</li>
    *   <li>chybí-li jednotková cena, dopočítá se z celkové a množství — u váhového zboží jen
    *       se známým množstvím, jinak by se zaplacená částka zapsala jako cena za kg/l.</li>
    * </ul>
    */
-  static PriceRows priceRows(ReceiptLine line) {
+  static PriceRows priceRows(ReceiptLine line, Boolean loyaltyCardUsed) {
     QuantityBasis basis = switch (line.getQuantityUnit() == null ? QuantityUnit.PCS : line.getQuantityUnit()) {
       case KG -> QuantityBasis.PER_KG;
       case L -> QuantityBasis.PER_L;
@@ -515,14 +528,45 @@ public class ReceiptReviewService {
       BigDecimal discounted = total.subtract(discount).divide(quantity, 2, RoundingMode.HALF_UP);
       prices.add(price(PriceKind.REGULAR, unit));
       if (discounted.signum() > 0 && discounted.compareTo(unit) < 0) {
-        PriceKind kind = guess == PriceKind.CLUB_CARD || guess == PriceKind.CLEARANCE ? guess : PriceKind.PROMO;
-        prices.add(price(kind, discounted));
+        prices.add(price(discountKind(guess, loyaltyCardUsed), discounted));
       }
     } else {
       // MULTIBUY z jednoho řádku nerekonstruujeme (chybí počet kusů v akci) — běží jako běžná.
       prices.add(price(guess == PriceKind.MULTIBUY ? PriceKind.REGULAR : guess, unit));
     }
     return new PriceRows(basis, prices);
+  }
+
+  /**
+   * Druh ceny po slevě. Výprodej zůstává výprodejem. Zaškrtnutí „nakoupeno s kartou obchodu"
+   * u účtenky má přednost před odhadem workeru: Billa tiskne jen „SLEVA -35,00" bez slova
+   * klub/karta, a bez karty zase klubová sleva vzniknout nemohla (regex workeru `karta|card`
+   * je široký). Nevyplněné zaškrtnutí = dnešní odhad (klubová jen výslovně, jinak akční).
+   */
+  static PriceKind discountKind(PriceKind guess, Boolean loyaltyCardUsed) {
+    if (guess == PriceKind.CLEARANCE) {
+      return PriceKind.CLEARANCE;
+    }
+    if (loyaltyCardUsed != null) {
+      return loyaltyCardUsed ? PriceKind.CLUB_CARD : PriceKind.PROMO;
+    }
+    return guess == PriceKind.CLUB_CARD ? PriceKind.CLUB_CARD : PriceKind.PROMO;
+  }
+
+  /**
+   * Druh ceny po slevě, kterou by potvrzení řádku zapsalo — pro zobrazení u řádku, ať klient
+   * nic nepočítá sám. {@code null}, když řádek slevu nemá nebo z ní cena po slevě nevznikne.
+   */
+  public static PriceKind discountPriceKind(ReceiptLine line, Boolean loyaltyCardUsed) {
+    if (line.getDiscountAmount() == null || line.getDiscountAmount().signum() <= 0) {
+      return null;
+    }
+    try {
+      List<ObservationPriceInput> prices = priceRows(line, loyaltyCardUsed).prices();
+      return prices.size() > 1 ? prices.get(1).priceKind() : null;
+    } catch (ValidationException e) {
+      return null;
+    }
   }
 
   private static ObservationPriceInput price(PriceKind kind, BigDecimal amount) {

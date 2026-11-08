@@ -1,0 +1,16 @@
+# 01-receipt-loyalty-card.yaml — nakoupeno s kartou obchodu (docs/datovy-model.md, „Účtenky").
+#
+# core.receipt.loyalty_card_used: vlastník u účtenky zaškrtl, že platil s věrnostní kartou
+# obchodu. Určuje druh ceny po slevě při potvrzení řádku (ReceiptReviewService.discountKind):
+# TRUE → CLUB_CARD, FALSE → PROMO, NULL (nevyplněno) → odhad workeru. Ukládá se jen ano/ne
+# k účtence, ne seznam karet uživatele (docs/soukromi.md, „Účtenky").
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-08-01-receipt-loyalty-card
+      author: Petr F.
+      changes:
+        - sql:
+            sql: ALTER TABLE core.receipt ADD COLUMN loyalty_card_used BOOLEAN;
+      rollback:
+        - sql:
+            sql: ALTER TABLE core.receipt DROP COLUMN IF EXISTS loyalty_card_used;

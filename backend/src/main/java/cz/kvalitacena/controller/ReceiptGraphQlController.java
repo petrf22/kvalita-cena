@@ -39,6 +39,7 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -134,6 +135,11 @@ public class ReceiptGraphQlController {
   public Receipt updateReceiptHeader(@Argument Long id, @Argument Long storeId,
       @Argument java.time.OffsetDateTime purchasedAt, Authentication authentication) {
     return reviewService.updateHeader(viewer(authentication).publicUid(), id, storeId, purchasedAt);
+  }
+
+  @MutationMapping
+  public Receipt setReceiptLoyaltyCard(@Argument Long id, @Argument Boolean used, Authentication authentication) {
+    return reviewService.setLoyaltyCard(viewer(authentication).publicUid(), id, used);
   }
 
   @MutationMapping
@@ -245,6 +251,23 @@ public class ReceiptGraphQlController {
   @SchemaMapping(typeName = "ReceiptLine", field = "priceKind")
   public PriceKind priceKind(ReceiptLine line) {
     return line.getPriceKindGuess();
+  }
+
+  /** Dávkově — zaškrtnutí karty je na účtence, ne na řádku. */
+  @BatchMapping(typeName = "ReceiptLine", field = "discountPriceKind")
+  public Map<ReceiptLine, PriceKind> discountPriceKind(List<ReceiptLine> lines) {
+    Map<Long, Boolean> cardByReceipt = new HashMap<>();
+    receiptRepository.findAllById(lines.stream().map(ReceiptLine::getReceiptId).distinct().toList())
+        .forEach(r -> cardByReceipt.put(r.getId(), r.getLoyaltyCardUsed()));
+    Map<ReceiptLine, PriceKind> result = new LinkedHashMap<>();
+    // Řádek bez ceny po slevě v mapě chybí — BatchMapping pak pole vrátí jako null.
+    for (ReceiptLine line : lines) {
+      PriceKind kind = ReceiptReviewService.discountPriceKind(line, cardByReceipt.get(line.getReceiptId()));
+      if (kind != null) {
+        result.put(line, kind);
+      }
+    }
+    return result;
   }
 
   @SchemaMapping(typeName = "ReceiptLine", field = "nonProduct")

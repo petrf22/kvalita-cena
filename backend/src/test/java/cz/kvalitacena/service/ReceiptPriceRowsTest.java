@@ -18,7 +18,7 @@ class ReceiptPriceRowsTest {
 
   @Test
   void weighedGoodsUsePricePerKgNotPaidAmount() {
-    var rows = ReceiptReviewService.priceRows(line("0.432", QuantityUnit.KG, "29.90", "12.92", null, PriceKind.REGULAR));
+    var rows = ReceiptReviewService.priceRows(line("0.432", QuantityUnit.KG, "29.90", "12.92", null, PriceKind.REGULAR), null);
     assertThat(rows.basis()).isEqualTo(QuantityBasis.PER_KG);
     assertThat(rows.prices()).singleElement()
         .satisfies(p -> assertThat(p.priceAmount()).isEqualByComparingTo("29.90"));
@@ -26,14 +26,14 @@ class ReceiptPriceRowsTest {
 
   @Test
   void missingUnitPriceIsDerivedFromTotal() {
-    var rows = ReceiptReviewService.priceRows(line("3", QuantityUnit.PCS, null, "8.70", null, PriceKind.REGULAR));
+    var rows = ReceiptReviewService.priceRows(line("3", QuantityUnit.PCS, null, "8.70", null, PriceKind.REGULAR), null);
     assertThat(rows.basis()).isEqualTo(QuantityBasis.PACKAGE);
     assertThat(rows.prices().getFirst().priceAmount()).isEqualByComparingTo("2.90");
   }
 
   @Test
   void discountLineGivesRegularAndClubPrice() {
-    var rows = ReceiptReviewService.priceRows(line("2", QuantityUnit.PCS, "24.90", "49.80", "10.00", PriceKind.CLUB_CARD));
+    var rows = ReceiptReviewService.priceRows(line("2", QuantityUnit.PCS, "24.90", "49.80", "10.00", PriceKind.CLUB_CARD), null);
     assertThat(rows.prices()).extracting(ObservationPriceInput::priceKind)
         .containsExactly(PriceKind.REGULAR, PriceKind.CLUB_CARD);
     assertThat(rows.prices().get(1).priceAmount()).isEqualByComparingTo("19.90");
@@ -41,27 +41,64 @@ class ReceiptPriceRowsTest {
 
   @Test
   void discountWithoutExplicitKindIsPromo() {
-    var rows = ReceiptReviewService.priceRows(line("1", QuantityUnit.PCS, "20.00", "20.00", "5.00", PriceKind.REGULAR));
+    var rows = ReceiptReviewService.priceRows(line("1", QuantityUnit.PCS, "20.00", "20.00", "5.00", PriceKind.REGULAR), null);
     assertThat(rows.prices()).extracting(ObservationPriceInput::priceKind)
         .containsExactly(PriceKind.REGULAR, PriceKind.PROMO);
   }
 
   @Test
+  void loyaltyCardTurnsPlainDiscountIntoClubPrice() {
+    // Billa tiskne jen „SLEVA -5,00" — klubová je až díky zaškrtnutí karty u účtenky.
+    var rows = ReceiptReviewService.priceRows(line("1", QuantityUnit.PCS, "20.00", "20.00", "5.00", PriceKind.REGULAR), true);
+    assertThat(rows.prices()).extracting(ObservationPriceInput::priceKind)
+        .containsExactly(PriceKind.REGULAR, PriceKind.CLUB_CARD);
+  }
+
+  @Test
+  void withoutLoyaltyCardClubGuessIsPromo() {
+    // Bez karty klubová sleva vzniknout nemohla — odhad workeru („karta|card") se přebije.
+    var rows = ReceiptReviewService.priceRows(line("1", QuantityUnit.PCS, "20.00", "20.00", "5.00", PriceKind.CLUB_CARD), false);
+    assertThat(rows.prices()).extracting(ObservationPriceInput::priceKind)
+        .containsExactly(PriceKind.REGULAR, PriceKind.PROMO);
+  }
+
+  @Test
+  void clearanceStaysClearanceWhateverTheCard() {
+    assertThat(ReceiptReviewService.discountKind(PriceKind.CLEARANCE, true)).isEqualTo(PriceKind.CLEARANCE);
+    assertThat(ReceiptReviewService.discountKind(PriceKind.CLEARANCE, false)).isEqualTo(PriceKind.CLEARANCE);
+    assertThat(ReceiptReviewService.discountKind(PriceKind.CLEARANCE, null)).isEqualTo(PriceKind.CLEARANCE);
+  }
+
+  @Test
+  void discountPriceKindMatchesWhatConfirmationWrites() {
+    var discounted = line("1", QuantityUnit.PCS, "20.00", "20.00", "5.00", PriceKind.REGULAR);
+    assertThat(ReceiptReviewService.discountPriceKind(discounted, null)).isEqualTo(PriceKind.PROMO);
+    assertThat(ReceiptReviewService.discountPriceKind(discounted, true)).isEqualTo(PriceKind.CLUB_CARD);
+    // Bez slevy, nebo když cena po slevě nevznikne (váhové zboží bez množství), nic.
+    assertThat(ReceiptReviewService.discountPriceKind(line("1", QuantityUnit.PCS, "20.00", "20.00", null, PriceKind.REGULAR), true))
+        .isNull();
+    assertThat(ReceiptReviewService.discountPriceKind(line(null, QuantityUnit.KG, "44.90", "20.50", "3.00", PriceKind.CLUB_CARD), true))
+        .isNull();
+    assertThat(ReceiptReviewService.discountPriceKind(line("1", QuantityUnit.PCS, null, null, "3.00", PriceKind.REGULAR), true))
+        .isNull();
+  }
+
+  @Test
   void lineWithoutAnyPriceIsRejected() {
-    assertThatThrownBy(() -> ReceiptReviewService.priceRows(line("1", QuantityUnit.PCS, null, null, null, PriceKind.REGULAR)))
+    assertThatThrownBy(() -> ReceiptReviewService.priceRows(line("1", QuantityUnit.PCS, null, null, null, PriceKind.REGULAR), null))
         .isInstanceOf(ValidationException.class);
   }
 
   @Test
   void weighedLineWithoutQuantityDoesNotTurnPaidAmountIntoPricePerKg() {
     // Zaplacených 20,50 Kč za neznámé množství není 20,50 Kč/kg.
-    assertThatThrownBy(() -> ReceiptReviewService.priceRows(line(null, QuantityUnit.KG, null, "20.50", null, PriceKind.REGULAR)))
+    assertThatThrownBy(() -> ReceiptReviewService.priceRows(line(null, QuantityUnit.KG, null, "20.50", null, PriceKind.REGULAR), null))
         .isInstanceOf(ValidationException.class);
   }
 
   @Test
   void weighedLineWithoutQuantityKeepsPrintedPricePerKgAndSkipsDiscount() {
-    var rows = ReceiptReviewService.priceRows(line(null, QuantityUnit.KG, "44.90", "20.50", "3.00", PriceKind.CLUB_CARD));
+    var rows = ReceiptReviewService.priceRows(line(null, QuantityUnit.KG, "44.90", "20.50", "3.00", PriceKind.CLUB_CARD), null);
     assertThat(rows.basis()).isEqualTo(QuantityBasis.PER_KG);
     assertThat(rows.prices()).singleElement().satisfies(p -> {
       assertThat(p.priceKind()).isEqualTo(PriceKind.REGULAR);
@@ -71,7 +108,7 @@ class ReceiptPriceRowsTest {
 
   @Test
   void packageWithoutQuantityIsOnePiece() {
-    var rows = ReceiptReviewService.priceRows(line(null, QuantityUnit.PCS, null, "24.90", null, PriceKind.REGULAR));
+    var rows = ReceiptReviewService.priceRows(line(null, QuantityUnit.PCS, null, "24.90", null, PriceKind.REGULAR), null);
     assertThat(rows.prices().getFirst().priceAmount()).isEqualByComparingTo("24.90");
   }
 
