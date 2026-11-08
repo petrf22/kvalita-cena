@@ -45,6 +45,8 @@ export const receiptLineFieldsFragment = graphql(`
     lineTotal
     discountAmount
     priceKind
+    # Druh ceny po slevě, kterou potvrzení zapíše — podle zaškrtnutí karty u účtenky.
+    discountPriceKind
     status
     matchSource
     product {
@@ -85,6 +87,7 @@ export const receiptDetailFieldsFragment = graphql(`
     # Kontrolní součet workeru — řídí jen upozornění nad seznamem řádků (receipt-status.ts, sumCheck).
     sumStatus
     computedTotal
+    loyaltyCardUsed
     suggestedStore {
       ...StoreFields
     }
@@ -255,6 +258,23 @@ export class ReceiptService {
     return this.graphQl
       .execute(document, { id, storeId, purchasedAt })
       .pipe(map((data) => data.updateReceiptHeader));
+  }
+
+  /**
+   * Nakoupeno s kartou obchodu ano/ne/nevyplněno — určí druh ceny po slevě u řádků, které se
+   * teprve potvrdí. Na server jde jen ano/ne k účtence, ne seznam karet uživatele.
+   */
+  setLoyaltyCard(id: string, used: boolean | null) {
+    const document = graphql(`
+      mutation SetReceiptLoyaltyCard($id: ID!, $used: Boolean) {
+        setReceiptLoyaltyCard(id: $id, used: $used) {
+          ...ReceiptDetailFields
+        }
+      }
+    `);
+    return this.graphQl
+      .execute(document, { id, used })
+      .pipe(map((data) => data.setReceiptLoyaltyCard));
   }
 
   /** Jen připraví řádek k potvrzení (stav SUGGESTED) — cenu zapíše až `confirmLines`. */

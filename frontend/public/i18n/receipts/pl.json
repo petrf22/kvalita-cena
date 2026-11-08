@@ -154,6 +154,11 @@
     "quantityWeighed": "{{quantity}} {{unit}} × {{price}} za {{unit}}",
     "pricePerUnit": "{{price}} za {{unit}}",
     "discount": "rabat −{{amount}}",
+    "discountKind": {
+      "CLUB_CARD": "cena klubowa",
+      "PROMO": "cena promocyjna",
+      "CLEARANCE": "wyprzedaż"
+    },
     "ean": "EAN {{code}}",
     "raw": "Tak pozycja jest wydrukowana na paragonie",
     "matchedByEan": "według EAN z paragonu",
@@ -225,5 +230,10 @@
     "mismatchText": "Różnica wynosi {{difference}}. Któraś pozycja mogła zostać źle odczytana albo jej brakuje — przejrzyj pozycje oznaczone „Sprawdź” i odznacz to, czego nie chcesz publikować.",
     "unknownTitle": "Nie udało się sprawdzić sumy — sprawdź pozycje",
     "unknownText": "Aplikacja nie ma z czym porównać sumy pozycji — na paragonie nie znaleziono kwoty łącznej albo odczytała go starsza wersja. Przejrzyj pozycje (zwłaszcza oznaczone „Sprawdź”) i odznacz to, czego nie chcesz publikować."
+  },
+  "loyaltyCard": {
+    "label": "Zakupy z kartą lojalnościową sklepu",
+    "labelChain": "Zakupy z kartą lojalnościową {{chain}}",
+    "hint": "Rabaty z paragonu zostaną wtedy zapisane jako ceny klubowe, bez karty jako promocyjne. Na serwer trafia tylko tak/nie dla tego paragonu; wybór zostanie zapamiętany w tej przeglądarce na kolejne zakupy w tym sklepie."
   }
 }

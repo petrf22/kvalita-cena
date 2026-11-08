@@ -254,6 +254,31 @@
                   </span>
                 </div>
 
+                @if (showLoyaltyCard()) {
+                  <!-- Billa tiskne slevu bez slova „klub" — klubová je až podle téhle volby. -->
+                  <div class="block">
+                    <label
+                      nz-checkbox
+                      [ngModel]="receipt.loyaltyCardUsed === true"
+                      (ngModelChange)="onLoyaltyCardChange($event)"
+                      [nzDisabled]="savingLoyaltyCard() || !connectivity.online()"
+                      name="receiptLoyaltyCard"
+                    >
+                      {{
+                        receipt.store?.chain
+                          ? t('receipts.loyaltyCard.labelChain', {
+                              chain: receipt.store!.chain!.name,
+                            })
+                          : t('receipts.loyaltyCard.label')
+                      }}
+                    </label>
+                    <p class="raw-hint">{{ t('receipts.loyaltyCard.hint') }}</p>
+                    @if (loyaltyCardError()) {
+                      <nz-alert nzType="error" nzShowIcon [nzMessage]="loyaltyCardError()" />
+                    }
+                  </div>
+                }
+
                 @if (!receipt.store) {
                   <nz-alert
                     nzType="warning"
@@ -365,11 +390,17 @@
                                 <span>{{ quantity }}</span>
                               }
                               @if (line.discountAmount) {
-                                <span class="line-discount">{{
-                                  t('receipts.line.discount', {
-                                    amount: format.money(line.discountAmount, receipt.currency),
-                                  })
-                                }}</span>
+                                <span class="line-discount"
+                                  >{{
+                                    t('receipts.line.discount', {
+                                      amount: format.money(line.discountAmount, receipt.currency),
+                                    })
+                                  }}
+                                  @if (line.discountPriceKind) {
+                                    ·
+                                    {{ t('receipts.line.discountKind.' + line.discountPriceKind) }}
+                                  }
+                                </span>
                               }
                               <!--
                             Syrový tisk vedle EANu: obojí je z účtenky. Tisk jde porovnat
