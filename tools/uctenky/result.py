@@ -94,7 +94,7 @@ def to_payload(document: dict, raw_text: str | None, model: str,
         payload["lines"].append(out)
     _add_display_names(payload["lines"], chain_of(document), dictionary, prettifier, log)
     # Až po čitelných názvech — model zatřiďuje „Mléko polotučné", ne „MLEKO POL.".
-    ai_classify.classify(payload["lines"], categories or [], classifier, log)
+    ai_classify.classify(payload["lines"], categories or [], classifier, log, dictionary, chain_of(document))
     return payload
 
 

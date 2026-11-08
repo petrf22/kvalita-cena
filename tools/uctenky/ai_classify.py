@@ -31,7 +31,8 @@ SYSTEM_PROMPT = (
     "{\"kategorie\": {slug: cesta}, \"polozky\": {id: název}}. Pro KAŽDOU položku vrať pod "
     "stejným id objekt {\"category\": slug, \"unit\": jednotka}. category je PŘESNĚ jeden klíč "
     "ze slovníku kategorie (třeba \"jogurty\"), nikdy cesta ani nový slug — hodnota u klíče je jen "
-    "česká cesta pro orientaci. Vyber kategorii, kam by zboží zařadil prodavač v supermarketu — vyber nejkonkrétnější, která sedí "
+    "česká cesta pro orientaci. Vyber kategorii, kam by zboží zařadil prodavač v supermarketu, "
+    "a to nejkonkrétnější, která sedí "
     "(rohlík -> pečivo, Gran Moravia je sýr, losos je ryba). null jen tehdy, když nejde o zboží "
     "(záloha, taška, sleva) nebo název vůbec nerozumíš. unit je jednotka, ve které se gramáž "
     "tohoto zboží píše na obalu: G nebo KG pro hmotnost, ML nebo L pro objem (nápoje, mléko, "
@@ -113,29 +114,63 @@ class OllamaClassifier:
         return {str(key): value for key, value in parsed.items()}
 
 
-def classify(out_lines: list[dict], categories: list[dict], classifier, log=print) -> None:
+def classify(out_lines: list[dict], categories: list[dict], classifier, log=print,
+             dictionary=None, chain: str | None = None) -> None:
     """Doplní k řádkům `categoryHint` a `unitHint` (jedna dávka na účtenku).
 
-    Bez modelu nebo bez seznamu kategorií se nic nedoplní; výpadek modelu není chyba účtenky.
+    Kategorie ze slovníku provozovatele (slovnik/kategorie.tsv) má přednost před modelem
+    — model nezná značky (Míša, Twister) a tipuje podle slov v názvu. Jednotku dál navrhuje
+    model. Bez seznamu kategorií se nic nedoplní; výpadek modelu není chyba účtenky.
     """
-    if classifier is None or not categories or not out_lines:
+    if not categories or not out_lines:
         return
     by_slug = {c["slug"]: c.get("path") or c["slug"] for c in categories if c.get("slug")}
-    items = {str(index): line.get("labelDisplay") or line["label"] for index, line in enumerate(out_lines)}
-    try:
-        answers = classifier.complete(by_slug, items)
-    except (urllib.error.URLError, OSError, ValueError, KeyError, json.JSONDecodeError) as error:
-        log(f"     ~ kategorie: model nedostupný ({error}), formulář zůstane bez návrhu")
-        return
     slugs = set(by_slug)
+    items = {str(index): line.get("labelDisplay") or line["label"] for index, line in enumerate(out_lines)}
+    known = _dictionary_categories(out_lines, items, dictionary, chain, slugs, log)
+
+    answers = None
+    if classifier is not None:
+        try:
+            answers = classifier.complete(by_slug, items)
+        except (urllib.error.URLError, OSError, ValueError, KeyError, json.JSONDecodeError) as error:
+            log(f"     ~ kategorie: model nedostupný ({error}), návrh jen ze slovníku")
+    if answers is None:
+        for key, slug in known.items():
+            out_lines[int(key)].update(categoryHint=slug, unitHint=None)
+        return
+
     for key, name in items.items():
         line = out_lines[int(key)]
+        answer = answers.get(key)
+        if key in known:
+            # Kategorii určil slovník — co si o ní myslel model, je jedno; od modelu se bere
+            # jen jednotka (pod stejnou kontrolou).
+            answer = {**answer, "category": known[key]} if isinstance(answer, dict) else {"category": known[key]}
         try:
-            category, unit, reasons = accept(answers.get(key), line, slugs)
+            category, unit, reasons = accept(answer, line, slugs)
         except (TypeError, ValueError, AttributeError) as error:
             # Poradní výstup — nečekaný tvar odpovědi je jen řádek bez návrhu, ne chyba účtenky.
-            category, unit, reasons = None, None, [f"nečekaný tvar odpovědi ({error})"]
+            category, unit, reasons = known.get(key), None, [f"nečekaný tvar odpovědi ({error})"]
         for reason in reasons:
             log(f"     ~ kategorie „{name}“: model zamítnut — {reason}")
         line["categoryHint"] = category
         line["unitHint"] = unit
+
+
+def _dictionary_categories(out_lines: list[dict], items: dict[str, str], dictionary, chain: str | None,
+                           slugs: set[str], log) -> dict[str, str]:
+    """{id řádku: slug} ze slovníku; hledá se v čitelném názvu i v syrovém tisku."""
+    if dictionary is None:
+        return {}
+    known: dict[str, str] = {}
+    for key, name in items.items():
+        line = out_lines[int(key)]
+        slug = dictionary.category(name, chain) or dictionary.category(line["label"], chain)
+        if slug is None:
+            continue
+        if slug not in slugs:
+            log(f"     ~ kategorie „{name}“: slovník míří na neznámý slug „{slug}“, ignoruje se")
+            continue
+        known[key] = slug
+    return known
