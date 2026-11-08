@@ -29,13 +29,19 @@ _MASS = {"G", "KG"}
 SYSTEM_PROMPT = (
     "Zatřiďuješ zboží z českých pokladních účtenek do kategorií obchodu. Dostaneš JSON "
     "{\"kategorie\": {slug: cesta}, \"polozky\": {id: název}}. Pro KAŽDOU položku vrať pod "
-    "stejným id objekt {\"category\": slug, \"unit\": jednotka}. category je slug z nabídnutých "
-    "kategorií, kam by zboží zařadil prodavač v supermarketu — vyber nejkonkrétnější, která sedí "
+    "stejným id objekt {\"category\": slug, \"unit\": jednotka}. category je PŘESNĚ jeden klíč "
+    "ze slovníku kategorie (třeba \"jogurty\"), nikdy cesta ani nový slug — hodnota u klíče je jen "
+    "česká cesta pro orientaci. Vyber kategorii, kam by zboží zařadil prodavač v supermarketu — vyber nejkonkrétnější, která sedí "
     "(rohlík -> pečivo, Gran Moravia je sýr, losos je ryba). null jen tehdy, když nejde o zboží "
     "(záloha, taška, sleva) nebo název vůbec nerozumíš. unit je jednotka, ve které se gramáž "
     "tohoto zboží píše na obalu: G nebo KG pro hmotnost, ML nebo L pro objem (nápoje, mléko, "
     "olej); null, když se prodává po kusech bez gramáže. Odpověz jen JSON objektem."
 )
+
+
+def _leaf_slug(category: str) -> str:
+    """Poslední segment cesty „rodic/potomek" nebo „Rodič › Potomek" — kandidát na slug."""
+    return category.replace("›", "/").rsplit("/", 1)[-1].strip()
 
 
 def accept(answer, line: dict, slugs: set[str]) -> tuple[str | None, str | None, list[str]]:
@@ -46,6 +52,13 @@ def accept(answer, line: dict, slugs: set[str]) -> tuple[str | None, str | None,
     # Model vrací platný JSON, ale ne nutně tvar, o který si řekl („unit": ["L"], objekt…) —
     # cokoli jiného než řetězec se zahodí, nesmí to shodit celou účtenku (seznam není hashovatelný).
     category = answer.get("category")
+    if isinstance(category, str) and category not in slugs:
+        leaf = _leaf_slug(category)
+        if leaf in slugs:
+            # Model občas vrátí vymyšlenou cestu („mlecko-vyrobky/jogurty") místo klíče.
+            # Slug je v číselníku unikátní, takže poslední segment určuje kategorii jednoznačně;
+            # neznámý poslední segment se dál zamítá níž.
+            category = leaf
     if category is not None and (not isinstance(category, str) or category not in slugs):
         reasons.append(f"neznámá kategorie „{category}“")
         category = None

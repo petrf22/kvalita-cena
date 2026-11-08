@@ -961,6 +961,22 @@ class ClassifyTest(unittest.TestCase):
                              log=lambda *_: None)
         self.assertEqual((lines[0]["categoryHint"], lines[0]["unitHint"]), (None, None))
 
+    def test_slug_podany_jako_cesta_se_prijme_podle_posledniho_segmentu(self):
+        # Skutečná odpověď qwen2.5:14b — rodič „mlecko-vyrobky" neexistuje, slug „mleko" ano.
+        lines = [{"label": "MLEKO", "quantityUnit": "PCS"}, {"label": "SPAGETY", "quantityUnit": "PCS"}]
+        answers = {"0": {"category": "mlecko-vyrobky/mleko", "unit": None},
+                   "1": {"category": "Potraviny › Trvanlivé › testoviny", "unit": None}}
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier(answers), log=lambda *_: None)
+        self.assertEqual([l["categoryHint"] for l in lines], ["mleko", "testoviny"])
+
+    def test_cesta_s_neznamym_poslednim_segmentem_se_zahodi(self):
+        lines = [{"label": "JOGURT", "quantityUnit": "PCS"}]
+        logged = []
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": {"category": "mleko/jogurty"}}),
+                             log=logged.append)
+        self.assertIsNone(lines[0]["categoryHint"])
+        self.assertTrue(any("neznámá kategorie „mleko/jogurty“" in message for message in logged))
+
     def test_jednotka_proti_vytistene_gramazi_se_zahodi(self):
         lines = [{"label": "TESTOV. 500G", "quantityUnit": "PCS", "netContentUom": "G"}]
         ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": {"category": "testoviny", "unit": "L"}}),
