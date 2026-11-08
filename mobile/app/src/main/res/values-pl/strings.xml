@@ -704,6 +704,12 @@
     <string name="receipt_line_qty_kg">%1$s kg × %2$s/kg</string>
     <string name="receipt_line_qty_l">%1$s l × %2$s/l</string>
     <string name="receipt_line_discount">Rabat −%1$s</string>
+    <string name="receipt_line_discount_club">cena klubowa</string>
+    <string name="receipt_line_discount_promo">cena promocyjna</string>
+    <string name="receipt_line_discount_clearance">wyprzedaż</string>
+    <string name="receipt_loyalty_card">Zakupy z kartą lojalnościową sklepu</string>
+    <string name="receipt_loyalty_card_chain">Zakupy z kartą lojalnościową %1$s</string>
+    <string name="receipt_loyalty_card_hint">Rabaty z paragonu zostaną wtedy zapisane jako ceny klubowe, bez karty jako promocyjne. Na serwer trafia tylko tak/nie dla tego paragonu; wybór zostanie zapamiętany w telefonie na kolejne zakupy w tym sklepie.</string>
     <string name="receipt_line_ean">EAN %1$s</string>
     <string name="receipt_line_actions">Akcje pozycji</string>
     <string name="receipt_line_choose">Wybierz produkt</string>

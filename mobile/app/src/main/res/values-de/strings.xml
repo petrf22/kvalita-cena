@@ -706,6 +706,12 @@
     <string name="receipt_line_qty_kg">%1$s kg × %2$s/kg</string>
     <string name="receipt_line_qty_l">%1$s l × %2$s/l</string>
     <string name="receipt_line_discount">Rabatt −%1$s</string>
+    <string name="receipt_line_discount_club">Clubpreis</string>
+    <string name="receipt_line_discount_promo">Aktionspreis</string>
+    <string name="receipt_line_discount_clearance">Abverkauf</string>
+    <string name="receipt_loyalty_card">Mit der Kundenkarte des Geschäfts eingekauft</string>
+    <string name="receipt_loyalty_card_chain">Mit der Kundenkarte von %1$s eingekauft</string>
+    <string name="receipt_loyalty_card_hint">Rabatte auf dem Kassenbon werden dann als Clubpreise erfasst, ohne Karte als Aktionspreise. An den Server geht nur Ja/Nein zu diesem Bon; die Wahl wird auf diesem Telefon für die nächsten Einkäufe in diesem Geschäft gespeichert.</string>
     <string name="receipt_line_ean">EAN %1$s</string>
     <string name="receipt_line_actions">Aktionen für die Zeile</string>
     <string name="receipt_line_choose">Artikel wählen</string>

@@ -704,6 +704,12 @@
     <string name="receipt_line_qty_kg">%1$s kg × %2$s/kg</string>
     <string name="receipt_line_qty_l">%1$s l × %2$s/l</string>
     <string name="receipt_line_discount">Discount −%1$s</string>
+    <string name="receipt_line_discount_club">club price</string>
+    <string name="receipt_line_discount_promo">promotional price</string>
+    <string name="receipt_line_discount_clearance">clearance</string>
+    <string name="receipt_loyalty_card">Bought with the store\'s loyalty card</string>
+    <string name="receipt_loyalty_card_chain">Bought with the %1$s loyalty card</string>
+    <string name="receipt_loyalty_card_hint">Discounts on the receipt are then recorded as club prices, without the card as promotional ones. Only yes/no for this receipt goes to the server; the choice is remembered on this phone for your next purchases in this store.</string>
     <string name="receipt_line_ean">EAN %1$s</string>
     <string name="receipt_line_actions">Line actions</string>
     <string name="receipt_line_choose">Choose product</string>

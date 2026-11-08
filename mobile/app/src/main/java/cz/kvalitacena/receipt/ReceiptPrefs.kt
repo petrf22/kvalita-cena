@@ -14,12 +14,14 @@ private const val KEY_NOTIFICATION_ASKED = "notification_permission_asked"
 private const val KEY_LAST_NOTIFIED_UNSEEN = "last_notified_unseen"
 private const val KEY_CAPTURE_START_DELAY = "capture_start_delay_seconds"
 private const val KEY_CAPTURE_TIPS_SEEN = "capture_tips_seen"
+private const val KEY_LOYALTY_CARD_PREFIX = "loyalty_card."
 
 /**
  * Lokální stav účtenek (docs/soukromi.md, „Účtenky"): odsouhlasená verze textu a volba
  * archivace, poslední známá verze ze serveru, jestli uživatel účtenky vůbec používá (jen pak
  * běží periodická kontrola), na kolik neviděných účtenek už notifikace upozornila, délka
- * odpočtu před snímáním a jestli už uživatel viděl návod ke snímání.
+ * odpočtu před snímáním, jestli už uživatel viděl návod ke snímání a poslední volba „nakoupeno
+ * s kartou obchodu" pro řetězec (jen předvyplnění — na server jde jen ano/ne u účtenky).
  * Nic z toho není citlivé — obsah nákupu se sem neukládá.
  */
 class ReceiptPrefs(context: Context) {
@@ -39,6 +41,17 @@ class ReceiptPrefs(context: Context) {
 
   /** Poslední známá verze ze serveru je jiná, než jakou appka umí ukázat (consentOutdated). */
   val consentOutdated: Boolean get() = consentOutdated(serverConsentVersion)
+
+  /** Poslední volba karty pro řetězec/obchod ([loyaltyCardKey]); null = zatím nic. */
+  fun rememberedLoyaltyCard(key: String?): Boolean? {
+    if (key == null || !prefs.contains(KEY_LOYALTY_CARD_PREFIX + key)) return null
+    return prefs.getBoolean(KEY_LOYALTY_CARD_PREFIX + key, false)
+  }
+
+  fun rememberLoyaltyCard(key: String?, used: Boolean) {
+    if (key == null) return
+    prefs.edit { putBoolean(KEY_LOYALTY_CARD_PREFIX + key, used) }
+  }
 
   fun needsConsent(): Boolean = consentRequired(acceptedConsentVersion, RECEIPT_CONSENT_VERSION)
 

@@ -145,7 +145,7 @@ internal val PUBLICATION_STATUS_FIELDS = """
 /** Řádek účtenky i se spárovaným zbožím (docs/datovy-model.md, „Účtenky"). */
 internal val RECEIPT_LINE_FIELDS = """
   id lineNo labelRaw labelDisplay internalCode quantity quantityUnit unitPrice lineTotal discountAmount
-  priceKind status matchSource observationId confirmed skipReason nonProduct suspicious
+  priceKind discountPriceKind status matchSource observationId confirmed skipReason nonProduct suspicious
   product { $PRODUCT_SUMMARY_FIELDS }
   offCandidate { code name nameLang brandName netContentValue netContentUom image { url thumbnailUrl kind lang attribution } sourceUrl attribution }
 """
@@ -163,7 +163,7 @@ internal val RECEIPT_FIELDS = """
 /** Kontrolní součet (`sumStatus`, `computedTotal`) jen v detailu — seznam účtenek ho nepotřebuje. */
 internal val RECEIPT_DETAIL_FIELDS = """
   $RECEIPT_FIELDS
-  sumStatus computedTotal
+  sumStatus computedTotal loyaltyCardUsed
   lines { $RECEIPT_LINE_FIELDS }
 """
 
@@ -970,6 +970,20 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
       purchasedAt?.let { put("purchasedAt", it) }
     }
     return execute(gql, variables, GraphQlResponse.serializer(UpdateReceiptHeaderData.serializer())).updateReceiptHeader
+  }
+
+  /** Nakoupeno s kartou obchodu ano/ne/nevyplněno — druh ceny po slevě u nepotvrzených řádků. */
+  suspend fun setReceiptLoyaltyCard(id: String, used: Boolean?): Receipt {
+    val gql = """
+      mutation(${'$'}id: ID!, ${'$'}used: Boolean) {
+        setReceiptLoyaltyCard(id: ${'$'}id, used: ${'$'}used) { $RECEIPT_DETAIL_FIELDS }
+      }
+    """
+    val variables = buildJsonObject {
+      put("id", id)
+      put("used", used)
+    }
+    return execute(gql, variables, GraphQlResponse.serializer(SetReceiptLoyaltyCardData.serializer())).setReceiptLoyaltyCard
   }
 
   suspend fun matchReceiptLine(lineId: String, productId: String, newProduct: Boolean = false): ReceiptLine {
