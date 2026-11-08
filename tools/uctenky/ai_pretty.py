@@ -140,7 +140,8 @@ def polish(items: list[pretty.Pretty], prettifier, log=print) -> list[pretty.Pre
             continue
         reason = accept(rules_text, answer)
         if reason:
-            log(f"     ~ čitelný název „{rules_text}“: model zamítnut — {reason}")
+            # I zamítnutý výstup se vypíše — podle něj jde rovnou doplnit slovnik/*.tsv.
+            log(f"     ~ čitelný název „{rules_text}“: model zamítnut — {reason}: „{answer}“")
             continue
         index = int(key)
         result[index] = replace(items[index], text=pretty._capitalize(answer.strip()), source=pretty.SOURCE_AI)
