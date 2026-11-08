@@ -33,6 +33,7 @@ import replay  # noqa: E402
 import result as result_mod  # noqa: E402
 import worker  # noqa: E402
 from profiles import coop as coop_profile  # noqa: E402
+from profiles import generic  # noqa: E402
 
 TESTDATA = Path(__file__).resolve().parent / "testdata"
 
@@ -129,6 +130,66 @@ Platební karta **** 1234
     def test_maskovane_cislo_karty_vypadne_i_nad_patickou(self):
         text = parse.server_text("CHLÉB 54,90 B\nKarta XXXXXXXXXXXX1234\nCelkem k úhradě 54,90 Kč")
         self.assertNotIn("1234", text)
+
+
+class HeaderIdTest(unittest.TestCase):
+    """IČO, DIČ a název obchodu z hlavičky, i když je useknutá nebo ji OCR zkomolí."""
+
+    # Horní okraj useknutý — název chybí a OCR přečetlo „IČO" jako „ICU" (2026-11-08).
+    CUT = """ICU: 64945880
+DIČ: CZ64945880
+TUK.ROHLIK 43G
+10 x 3,50 Kč 35,00 B
+Celkem k úhradě 35,00 Kč
+30.09.2026 07:42:11
+"""
+
+    def test_useknuta_hlavicka_ico_ze_zkomoleneho_popisku_a_bez_nazvu(self):
+        document = parse.build_document(self.CUT)
+        merchant = document["merchant"]
+        self.assertEqual(merchant["ico"], "64945880")
+        self.assertEqual(merchant["country"], "CZ")
+        self.assertNotIn("rawName", merchant)
+        self.assertEqual([line["rawLabel"] for line in document["lines"]], ["TUK.ROHLIK 43G"])
+        self.assertEqual(document["warnings"], [])
+
+    def test_ulice_nad_psc_neni_nazev(self):
+        document = parse.build_document("Hlavní 12\n123 45 Vzorov\n" + self.CUT)
+        merchant = document["merchant"]
+        self.assertNotIn("rawName", merchant)
+        self.assertEqual((merchant["street"], merchant["city"]), ("Hlavní 12", "Vzorov"))
+
+    def test_zkomoleny_popisek_bez_platne_kontrolni_cislice_ico_neni(self):
+        self.assertIsNone(generic.find_ico(["ICU: 64945881"]))
+        self.assertEqual(generic.find_ico(["JČO: 27160840"]), "27160840")
+        self.assertEqual(generic.find_ico(["IC0: 00031747"]), "00031747")
+
+    def test_dic_fyzicke_osoby_neni_ico_a_neodchazi(self):
+        document = parse.build_document(self.CUT.replace("ICU: 64945880\nDIČ: CZ64945880",
+                                                         "Řeznictví Novák\nDIČ: CZ7801011234"))
+        self.assertNotIn("ico", document["merchant"])
+        self.assertEqual(document["merchant"]["country"], "CZ")
+        self.assertNotIn("7801011234", json.dumps(document))
+
+    def test_stat_podle_prefixu_dic_v_ruznych_jazycich(self):
+        cases = {"USt-IdNr.: DE123456789": "DE", "UID: ATU12345678": "AT", "IČ DPH: SK2020123456": "SK",
+                 "VAT No. GB123456789": "GB", "VAT Number: EL123456789": "GR", "DIC: CZ64945880": "CZ",
+                 "NIP: 5260250929": None, "Tel: 123456789": None}
+        for line, country in cases.items():
+            with self.subTest(line=line):
+                self.assertEqual(generic.find_vat_country([line]), country)
+
+    def test_dic_ciziho_statu_v_ceskem_profilu_je_varovani(self):
+        document = parse.build_document(self.CUT.replace("ICU: 64945880\nDIČ: CZ64945880",
+                                                         "Potraviny Žilina\nIČ DPH: SK2020123456"))
+        self.assertEqual(document["merchant"]["country"], "SK")
+        self.assertTrue(any("ze státu SK" in warning for warning in document["warnings"]), document["warnings"])
+
+    def test_kontrolni_cislice_ica(self):
+        for code in ("64945880", "27160840", "00031747"):
+            self.assertTrue(normalize.is_valid_ico(code), code)
+        self.assertFalse(normalize.is_valid_ico("12345678"))
+        self.assertFalse(normalize.is_valid_ico("6494588"))
 
 
 class InfoLineTest(unittest.TestCase):

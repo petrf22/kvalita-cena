@@ -18,7 +18,7 @@ from datetime import datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
-from normalize import AMOUNT, AMOUNT_RE, parse_amount
+from normalize import AMOUNT, AMOUNT_RE, VAT_PREFIX_COUNTRY, is_valid_ico, parse_amount
 from profiles.base import Footer, Profile, ReceiptHeader
 
 COUNTRY = "CZ"
@@ -28,7 +28,19 @@ HEADER_LINES = 10
 
 _POSTAL_CITY_RE = re.compile(r"^(?P<postal>\d{3}\s?\d{2})\s+(?P<city>\D.*)$")
 _ICO_RE = re.compile(r"\b(?:IČO?|ICO?)\s*[:.]?\s*(?P<ico>\d{8})\b", re.IGNORECASE)
-_DIC_RE = re.compile(r"\bDIČ\s*[:.]?\s*(?:CZ)?\s*(?P<ico>\d{8,10})\b", re.IGNORECASE)
+# IČO pod popiskem, který OCR zkomolilo: „ICU", „IC0", „JČO", „1ČO". Bere se jen s platnou
+# kontrolní číslicí (normalize.is_valid_ico) a nesmí to být konec slova („DIČ: 12345678").
+_ICO_OCR_RE = re.compile(r"(?<![^\W\d_])[IJl1|][ČčCc][OoUuQ0D]?\s*[:.]?\s*(?P<ico>\d{8})\b")
+# DIČ a jeho obdoby v dalších jazycích: VAT No./Number/ID, USt-IdNr. (DE), UID (AT), IČ DPH
+# (SK), NIP (PL). Prefix před číslem je kód státu (normalize.VAT_PREFIX_COUNTRY). U české
+# právnické osoby je DIČ = „CZ" + IČO; u fyzické osoby je za CZ rodné číslo (9-10 číslic),
+# a to se nikam dál neposílá (docs/soukromi.md).
+_VAT_ID_RE = re.compile(
+    r"\b(?P<label>DI[ČC]|I[ČC]\s*DPH|VAT(?:\s*(?:Reg\.?\s*)?(?:No\.?|Number|ID))?"
+    r"|USt\.?\s*-?\s*Id\.?\s*-?\s*Nr\.?|UID(?:\s*-?\s*Nr\.?)?|NIP)"
+    r"\s*[:.]?\s*(?P<prefix>[A-Z]{2})?\s*(?P<number>U?\d[\dA-Z]{1,13})\b",
+    re.IGNORECASE,
+)
 _COMPANY_LINE_RE = re.compile(
     r"\b(IČO?|DIČ|ICO?|s\.\s?r\.\s?o\.|a\.\s?s\.|spol\.|soud|spis\.?\s*zn|zaps[aá]n|datum|čas|cas\s*:|"
     r"pokladn|provozovna|filiálka|tel\.?|www\.)",
@@ -61,32 +73,90 @@ def _header_end(raw_lines: list[str]) -> int:
     """Index prvního řádku bloku položek: za posledním řádkem adresy/IČ v hlavičce."""
     end = 0
     for index, line in enumerate(raw_lines[:HEADER_LINES]):
-        if AMOUNT_RE.search(line) and not _COMPANY_LINE_RE.search(line):
+        if AMOUNT_RE.search(line) and not _is_company_line(line):
             break
-        if _POSTAL_CITY_RE.match(line) or _COMPANY_LINE_RE.search(line):
+        if _POSTAL_CITY_RE.match(line) or _is_company_line(line):
             end = index + 1
     return end
 
 
-def find_ico(raw_lines: list[str]) -> str | None:
+def _is_company_line(line: str) -> bool:
+    return bool(_COMPANY_LINE_RE.search(line) or _ICO_OCR_RE.search(line) or _VAT_ID_RE.search(line))
+
+
+def _vat_ids(raw_lines: list[str]) -> list[tuple[str, str | None, str]]:
+    """(popisek, prefix státu velkými písmeny nebo None, číslo) z hlavičky."""
+    found = []
     for line in raw_lines[:HEADER_LINES + 5]:
-        for pattern in (_ICO_RE, _DIC_RE):
-            match = pattern.search(line)
-            if match:
-                return match["ico"][-8:]
+        for match in _VAT_ID_RE.finditer(line):
+            prefix = match["prefix"].upper() if match["prefix"] else None
+            found.append((match["label"], prefix, match["number"]))
+    return found
+
+
+def find_ico(raw_lines: list[str]) -> str | None:
+    """IČO z hlavičky: popisek IČO, pak IČO pod zkomoleným popiskem, nakonec české DIČ."""
+    lines = raw_lines[:HEADER_LINES + 5]
+    for line in lines:
+        match = _ICO_RE.search(line)
+        if match:
+            return match["ico"]
+    for line in lines:
+        for match in _ICO_OCR_RE.finditer(line):
+            if is_valid_ico(match["ico"]):
+                return match["ico"]
+    for label, prefix, number in _vat_ids(raw_lines):
+        # Bez prefixu jen pod českým popiskem DIČ — „NIP: 52602509" IČO není.
+        czech = prefix == "CZ" or (prefix is None and label.upper().startswith("DI"))
+        if czech and len(number) == 8 and number.isdigit():
+            return number
+    return None
+
+
+def find_vat_country(raw_lines: list[str]) -> str | None:
+    """Stát provozovatele podle prefixu DIČ / VAT ID („CZ64945880" -> CZ)."""
+    for _, prefix, _ in _vat_ids(raw_lines):
+        if prefix in VAT_PREFIX_COUNTRY:
+            return VAT_PREFIX_COUNTRY[prefix]
+    return None
+
+
+# Řádky hlavičky, které nejsou název obchodu, ani když je horní okraj účtenky useknutý
+# a název chybí: identifikátory, kontakt a údaje pokladny. „s.r.o." sem nepatří — to v názvu je.
+_NOT_NAME_RE = re.compile(r"\b(?:tel\.?|www\.|datum|čas|cas\s*:|pokladn|e-?mail)", re.IGNORECASE)
+
+
+# Ulice s číslem domu na konci („Hlavní 12", „Nádražní 1520/3a").
+_STREET_RE = re.compile(r"\D\s\d+[a-zA-Z]?(?:/\d+[a-zA-Z]?)?$")
+
+
+def store_name(header: list[str]) -> str | None:
+    """První řádek hlavičky, který je název — ne IČO/DIČ, adresa ani kontakt.
+
+    Když je horní okraj účtenky useknutý, název chybí úplně; pak je lepší žádný název než
+    „ICU: 64945880" nebo ulice — obchod se dál dá najít podle IČO a adresy.
+    """
+    for index, line in enumerate(header):
+        if (_ICO_RE.search(line) or _ICO_OCR_RE.search(line) or _VAT_ID_RE.search(line)
+                or _POSTAL_CITY_RE.match(line) or _NOT_NAME_RE.search(line)):
+            continue
+        before_city = index + 1 < len(header) and _POSTAL_CITY_RE.match(header[index + 1])
+        if before_city and _STREET_RE.search(line):
+            continue
+        return line
     return None
 
 
 def read_header(raw_lines: list[str]) -> ReceiptHeader:
     end = _header_end(raw_lines)
     header = raw_lines[:end] if end else raw_lines[:1]
-    raw_name = header[0] if header else None
+    raw_name = store_name(header)
     street, postal, city = None, None, None
     for index, line in enumerate(header):
         match = _POSTAL_CITY_RE.match(line)
         if match:
             postal, city = match["postal"], match["city"].strip()
-            if index > 0 and not _COMPANY_LINE_RE.search(header[index - 1]) and index - 1 > 0:
+            if index > 0 and not _is_company_line(header[index - 1]) and header[index - 1] != raw_name:
                 street = header[index - 1]
             break
     return ReceiptHeader(raw_name=raw_name, country=COUNTRY, street=street, postal_code=postal,

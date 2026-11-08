@@ -246,6 +246,21 @@ ceny určuje obchod, který uživatel u účtenky potvrdí, ne `currency` z work
 (`docs/lokalizace.md`, „Multi-měna“). Profil další země potřebuje vlastní zemi, měnu
 i časové pásmo a reálnou anonymizovanou účtenku jako fixture.
 
+Stát provozovatele se pozná podle prefixu DIČ / VAT ID (`CZ64945880` → CZ). Hledá se pod
+českým popiskem DIČ i pod obdobami v dalších jazycích: VAT No./Number, USt-IdNr. (DE), UID
+(AT), IČ DPH (SK) a NIP (PL). Zjištěný stát jde do `extraction.merchant.country`. Když se liší
+od státu profilu, worker vypíše varování: účtenka cizího obchodu se pak čte českými pravidly.
+
+**IČO z hlavičky** (`profiles/generic.py`, `find_ico`) se hledá v tomto pořadí:
+1. pod popiskem IČO/IČ;
+2. pod popiskem, který OCR zkomolilo („ICU", „IC0", „JČO"). Tady jen s platnou kontrolní
+   číslicí (`normalize.is_valid_ico`);
+3. z českého DIČ právnické osoby (`CZ` + 8 číslic = IČO).
+
+DIČ fyzické osoby je `CZ` + rodné číslo. Za IČO se nebere a nikam se neposílá. Řádky
+s IČO/DIČ, ulice nad PSČ ani kontakt nejsou název obchodu. Když je horní okraj účtenky
+useknutý, název zůstane prázdný a obchod se dál hledá podle IČO a adresy.
+
 ## Soukromí
 
 Z patičky účtenky parser vezme jen datum, čas a celkovou částku. Číslo karty, autorizační
