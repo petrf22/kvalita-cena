@@ -813,6 +813,9 @@ data class ReceiptLine(
   val lineTotal: Double? = null,
   val discountAmount: Double? = null,
   val priceKind: String = "REGULAR",
+  // Druh ceny po slevě, kterou potvrzení zapíše (CLUB_CARD/PROMO/CLEARANCE) — podle zaškrtnutí
+  // karty u účtenky; null bez slevy.
+  val discountPriceKind: String? = null,
   val status: String,
   val matchSource: String? = null,
   val product: ProductSummary? = null,
@@ -875,6 +878,8 @@ data class Receipt(
   // Neznámá hodnota se bere jako UNKNOWN: upozornit navíc je bezpečnější než mlčet.
   val sumStatus: String = "UNKNOWN",
   val computedTotal: Double? = null,
+  // Nakoupeno s kartou obchodu (setReceiptLoyaltyCard) — jen v detailu; null = nevyplněno.
+  val loyaltyCardUsed: Boolean? = null,
   val store: Store? = null,
   val suggestedStore: Store? = null,
   val imagePaths: List<String> = emptyList(),
@@ -1173,6 +1178,9 @@ data class ReceiptLineSuggestionsData(val receiptLineSuggestions: List<ProductSu
 
 @Serializable
 data class UpdateReceiptHeaderData(val updateReceiptHeader: Receipt)
+
+@Serializable
+data class SetReceiptLoyaltyCardData(val setReceiptLoyaltyCard: Receipt)
 
 @Serializable
 data class MatchReceiptLineData(val matchReceiptLine: ReceiptLine)

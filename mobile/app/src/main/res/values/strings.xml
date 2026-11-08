@@ -789,6 +789,12 @@
     <string name="receipt_line_qty_kg">%1$s kg × %2$s/kg</string>
     <string name="receipt_line_qty_l">%1$s l × %2$s/l</string>
     <string name="receipt_line_discount">Sleva −%1$s</string>
+    <string name="receipt_line_discount_club">klubová cena</string>
+    <string name="receipt_line_discount_promo">akční cena</string>
+    <string name="receipt_line_discount_clearance">výprodej</string>
+    <string name="receipt_loyalty_card">Nakoupeno s věrnostní kartou obchodu</string>
+    <string name="receipt_loyalty_card_chain">Nakoupeno s věrnostní kartou %1$s</string>
+    <string name="receipt_loyalty_card_hint">Slevy z účtenky se pak zapíšou jako klubové ceny, bez karty jako akční. Na server jde jen ano/ne u téhle účtenky; volba se zapamatuje v telefonu pro další nákupy v tomhle obchodě.</string>
     <string name="receipt_line_ean">EAN %1$s</string>
     <string name="receipt_line_actions">Akce s řádkem</string>
     <string name="receipt_line_choose">Vybrat zboží</string>

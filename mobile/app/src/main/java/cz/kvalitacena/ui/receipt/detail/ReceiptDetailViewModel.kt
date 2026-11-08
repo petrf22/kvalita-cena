@@ -1,5 +1,8 @@
 package cz.kvalitacena.ui.receipt.detail
 
+import cz.kvalitacena.receipt.ReceiptPrefs
+import cz.kvalitacena.receipt.hasDiscountLine
+import cz.kvalitacena.receipt.loyaltyCardKey
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -43,6 +46,8 @@ class ReceiptDetailViewModel(
    * klient, ne země uložená v účtu (kořenový CLAUDE.md, „Volba jazyka je na klientovi").
    */
   private val country: () -> String,
+  /** Předvyplnění karty obchodu — jen lokální paměť telefonu, na server nic z ní nejde. */
+  private val receiptPrefs: ReceiptPrefs,
 ) : ViewModel() {
 
   var receipt by mutableStateOf<Receipt?>(null)
@@ -59,6 +64,14 @@ class ReceiptDetailViewModel(
     private set
   var headerSaving by mutableStateOf(false)
     private set
+  var loyaltyCardSaving by mutableStateOf(false)
+    private set
+  /** Předvyplnění z telefonu se zkusí jen jednou za otevření detailu. */
+  private var loyaltyCardPrefilled = false
+
+  /** „Nakoupeno s kartou obchodu" — jen u účtenky se slevou a známým obchodem. */
+  val showLoyaltyCard: Boolean
+    get() = receipt?.let { it.store != null && hasDiscountLine(it.lines) } == true
 
   /** Řádky zaškrtnuté ke zveřejnění — výchozí výběr je [defaultSelectedLineIds]. */
   var selected by mutableStateOf<Set<String>>(emptySet())
@@ -150,6 +163,34 @@ class ReceiptDetailViewModel(
   private fun apply(updated: Receipt, resetSelection: Boolean) {
     receipt = updated
     selected = selectionAfterLoad(selected, updated.lines, reset = resetSelection)
+    prefillLoyaltyCard(updated)
+  }
+
+  /** Nevyplněnou kartu předvyplní poslední volba pro tenhle řetězec z telefonu. */
+  private fun prefillLoyaltyCard(updated: Receipt) {
+    if (loyaltyCardPrefilled || updated.loyaltyCardUsed != null) return
+    if (updated.store == null || !hasDiscountLine(updated.lines)) return
+    val remembered = receiptPrefs.rememberedLoyaltyCard(loyaltyCardKey(updated.store)) ?: return
+    loyaltyCardPrefilled = true
+    saveLoyaltyCard(remembered, remember = false)
+  }
+
+  fun setLoyaltyCard(used: Boolean) = saveLoyaltyCard(used, remember = true)
+
+  private fun saveLoyaltyCard(used: Boolean, remember: Boolean) {
+    loyaltyCardSaving = true
+    actionError = null
+    viewModelScope.launch {
+      try {
+        val updated = graphQlClient.setReceiptLoyaltyCard(receiptId, used)
+        if (remember) receiptPrefs.rememberLoyaltyCard(loyaltyCardKey(updated.store), used)
+        apply(updated, resetSelection = false)
+      } catch (e: Exception) {
+        actionError = e.toUiText()
+      } finally {
+        loyaltyCardSaving = false
+      }
+    }
   }
 
   private fun replaceLine(line: ReceiptLine) {

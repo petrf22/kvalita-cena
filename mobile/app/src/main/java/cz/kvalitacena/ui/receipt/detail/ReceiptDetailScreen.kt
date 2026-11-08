@@ -5,6 +5,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
@@ -138,6 +140,7 @@ fun ReceiptDetailScreen(
         ReceiptDetailViewModel(
           receiptId, AppContainer.graphQlClient, AppContainer.mediaClient, AppContainer.networkMonitor.online,
           country = { AppContainer.countryStore.country },
+          receiptPrefs = AppContainer.receiptPrefs,
         )
       }
     },
@@ -292,6 +295,11 @@ private fun ReceiptContent(
               style = MaterialTheme.typography.bodyMedium,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+          }
+        }
+        if (viewModel.showLoyaltyCard) {
+          item(key = "loyalty-card") {
+            LoyaltyCardRow(receipt, viewModel.loyaltyCardSaving, online, viewModel::setLoyaltyCard)
           }
         }
         warning?.let {
@@ -766,7 +774,46 @@ internal fun LinePriceSummary(line: ReceiptLine, currency: String?) {
     Text(it.joinToString("  ·  "), style = MaterialTheme.typography.bodySmall)
   }
   line.discountAmount?.takeIf { it > 0 }?.let {
-    Text(stringResource(R.string.receipt_line_discount, money.format(it)), style = MaterialTheme.typography.bodySmall)
+    val discount = stringResource(R.string.receipt_line_discount, money.format(it))
+    // Jaká cena potvrzením vznikne — klubová jen se zaškrtnutou kartou (nebo výslovně na účtence).
+    val kind = when (line.discountPriceKind) {
+      "CLUB_CARD" -> stringResource(R.string.receipt_line_discount_club)
+      "PROMO" -> stringResource(R.string.receipt_line_discount_promo)
+      "CLEARANCE" -> stringResource(R.string.receipt_line_discount_clearance)
+      else -> null
+    }
+    Text(listOfNotNull(discount, kind).joinToString("  ·  "), style = MaterialTheme.typography.bodySmall)
+  }
+}
+
+/**
+ * „Nakoupeno s věrnostní kartou" — Billa tiskne slevu bez slova „klub", takže klubová cena se
+ * pozná až podle téhle volby. Na server jde jen ano/ne u účtenky (docs/soukromi.md, „Účtenky").
+ */
+@Composable
+private fun LoyaltyCardRow(receipt: Receipt, saving: Boolean, online: Boolean, onChange: (Boolean) -> Unit) {
+  val checked = receipt.loyaltyCardUsed == true
+  val enabled = !saving && online
+  Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .toggleable(value = checked, enabled = enabled, role = Role.Checkbox, onValueChange = onChange),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+    ) {
+      Checkbox(checked = checked, onCheckedChange = null, enabled = enabled)
+      Text(
+        receipt.store?.chain?.let { stringResource(R.string.receipt_loyalty_card_chain, it.name) }
+          ?: stringResource(R.string.receipt_loyalty_card),
+        style = MaterialTheme.typography.bodyMedium,
+      )
+    }
+    Text(
+      stringResource(R.string.receipt_loyalty_card_hint),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
   }
 }
 
