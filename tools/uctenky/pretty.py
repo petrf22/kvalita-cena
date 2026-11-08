@@ -197,8 +197,10 @@ def _quantity_token(token: str) -> tuple[str, tuple[str, str] | None] | None:
         text = f"{count}x"
         if number:
             text += _format_number(number) + (_UNITS[unit.upper()] if unit else "")
-        # Násobné balení: gramáž na balení by byla vodítkem jen pro jeden kus.
-        return text, None
+        # Násobné balení „8x50ml" je 8 kusů po 50 ml a cena na účtence je za celé balení —
+        # vodítkem je proto celková gramáž 400 ml, ne gramáž jednoho kusu.
+        return text, _net_content_hint(Decimal(count) * Decimal(number.replace(",", ".")),
+                                       _UNITS[unit.upper()]) if number and unit else None
     quantity = _QUANTITY_RE.match(token)
     if not quantity:
         return None
@@ -206,14 +208,18 @@ def _quantity_token(token: str) -> tuple[str, tuple[str, str] | None] | None:
     if not unit:
         return number, None
     pretty_unit = _UNITS[unit.upper()]
-    hint = None
-    if pretty_unit in _NET_CONTENT_UOM:
-        try:
-            value = Decimal(number.replace(",", "."))
-            hint = (f"{value.normalize():f}", _NET_CONTENT_UOM[pretty_unit])
-        except InvalidOperation:
-            hint = None
+    try:
+        hint = _net_content_hint(Decimal(number.replace(",", ".")), pretty_unit)
+    except InvalidOperation:
+        hint = None
     return _format_number(number) + pretty_unit, hint
+
+
+def _net_content_hint(value: Decimal, pretty_unit: str) -> tuple[str, str] | None:
+    """Vodítko gramáže ("400", "ML") — jen v jednotkách, které umí NetContentCalculator."""
+    if pretty_unit not in _NET_CONTENT_UOM:
+        return None
+    return f"{value.normalize():f}", _NET_CONTENT_UOM[pretty_unit]
 
 
 def _is_shouting(label: str) -> bool:

@@ -733,8 +733,11 @@ class PrettyLabelTest(unittest.TestCase):
         self.assertEqual(self._pretty("ROHLÍK43GR").net_content, ("43", "G"))
         self.assertEqual(self._pretty("RED BULL 0,25L").net_content, ("0.25", "L"))
         self.assertIsNone(self._pretty("WM TORTILLA 25CM").net_content)
-        # Násobné balení — gramáž by platila jen pro jeden kus.
-        self.assertIsNone(self._pretty("UNI TWISTER 8X50ML").net_content)
+        # Násobné balení: cena je za celé balení, vodítkem je celková gramáž (8 x 50 ml).
+        self.assertEqual(self._pretty("UNI TWISTER 8X50ML").net_content, ("400", "ML"))
+        self.assertEqual(self._pretty("VODA 4X1,5L").net_content, ("6", "L"))
+        self.assertIsNone(self._pretty("JOGURT 6X").net_content)
+        self.assertIsNone(self._pretty("PAPIR 4X10KS").net_content)
         self.assertEqual(self._pretty("UNI TWISTER 8X50ML").text, "Uni twister 8x50ml")
 
     def test_zkratka_retezce_plati_jen_pro_nej(self):
