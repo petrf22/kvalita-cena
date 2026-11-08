@@ -41,6 +41,14 @@ _VAT_ID_RE = re.compile(
     r"\s*[:.]?\s*(?P<prefix>[A-Z]{2})?\s*(?P<number>U?\d[\dA-Z]{1,13})\b",
     re.IGNORECASE,
 )
+# Nejkratší DIČ v EU má 7 číslic (Irsko: 1234567X). Kratší „číslo" je gramáž nebo cena —
+# „NIP 250ML 49,90 A" je položka, ne daňový identifikátor, a nesmí posunout konec hlavičky.
+_VAT_MIN_DIGITS = 7
+
+
+def _vat_matches(line: str) -> list[re.Match]:
+    return [match for match in _VAT_ID_RE.finditer(line)
+            if sum(char.isdigit() for char in match["number"]) >= _VAT_MIN_DIGITS]
 _COMPANY_LINE_RE = re.compile(
     r"\b(IČO?|DIČ|ICO?|s\.\s?r\.\s?o\.|a\.\s?s\.|spol\.|soud|spis\.?\s*zn|zaps[aá]n|datum|čas|cas\s*:|"
     r"pokladn|provozovna|filiálka|tel\.?|www\.)",
@@ -81,14 +89,14 @@ def _header_end(raw_lines: list[str]) -> int:
 
 
 def _is_company_line(line: str) -> bool:
-    return bool(_COMPANY_LINE_RE.search(line) or _ICO_OCR_RE.search(line) or _VAT_ID_RE.search(line))
+    return bool(_COMPANY_LINE_RE.search(line) or _ICO_OCR_RE.search(line) or _vat_matches(line))
 
 
 def _vat_ids(raw_lines: list[str]) -> list[tuple[str, str | None, str]]:
     """(popisek, prefix státu velkými písmeny nebo None, číslo) z hlavičky."""
     found = []
     for line in raw_lines[:HEADER_LINES + 5]:
-        for match in _VAT_ID_RE.finditer(line):
+        for match in _vat_matches(line):
             prefix = match["prefix"].upper() if match["prefix"] else None
             found.append((match["label"], prefix, match["number"]))
     return found
@@ -142,7 +150,7 @@ def store_name(header: list[str]) -> str | None:
     „ICU: 64945880" nebo ulice — obchod se dál dá najít podle IČO a adresy.
     """
     for index, line in enumerate(header):
-        if (_ICO_RE.search(line) or _ICO_OCR_RE.search(line) or _VAT_ID_RE.search(line)
+        if (_ICO_RE.search(line) or _ICO_OCR_RE.search(line) or _vat_matches(line)
                 or _POSTAL_CITY_RE.match(line) or _NOT_NAME_RE.search(line)):
             continue
         before_city = index + 1 < len(header) and _POSTAL_CITY_RE.match(header[index + 1])

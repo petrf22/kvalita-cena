@@ -186,6 +186,13 @@ Celkem k úhradě 35,00 Kč
         self.assertEqual(document["merchant"]["country"], "SK")
         self.assertTrue(any("ze státu SK" in warning for warning in document["warnings"]), document["warnings"])
 
+    def test_polozka_s_kratkym_cislem_za_nip_neni_dic(self):
+        # „NIP" je tu název zboží a 250ML gramáž — položka nesmí zmizet v hlavičce.
+        document = parse.build_document("NIP 250ML 49,90 A\nCelkem k úhradě 49,90 Kč\n30.09.2026 07:42:11\n")
+        self.assertEqual([line["rawLabel"] for line in document["lines"]], ["NIP 250ML"])
+        self.assertTrue(document["totalMatches"], document["warnings"])
+        self.assertEqual(generic.find_vat_country(["VAT No. IE1234567X"]), "IE")
+
     def test_kontrolni_cislice_ica(self):
         for code in ("64945880", "27160840", "00031747"):
             self.assertTrue(normalize.is_valid_ico(code), code)
@@ -459,6 +466,30 @@ class WorkerLoopTest(unittest.TestCase):
         self.assertEqual(api.results[2]["status"], "PROCESSED")
         self.assertTrue(all(isinstance(v, (str, type(None))) for line in api.results[2]["lines"]
                             for v in (line["unitPrice"], line["quantity"])))
+
+
+class CategoryDictionaryWorkerTest(unittest.TestCase):
+    def test_slovnik_kategorii_plati_i_bez_modelu(self):
+        class CategoriesApi(FakeApi):
+            def categories(self):
+                return [{"slug": "zmrzlina", "path": "Potraviny › Mražené › Zmrzlina"}]
+
+        class NanukOcr:
+            model = "fake"
+
+            def ocr(self, image):
+                return "NANUK 50ML 19,90 A\nCelkem k úhradě 19,90 Kč\n30.09.2026 07:42:11\n"
+
+        dictionary = pretty.Dictionary()
+        dictionary.add_category("nanuk", "zmrzlina")
+        api = CategoriesApi([{"receiptId": 1, "imagePaths": ["/x/ok"]}])
+        worker.run_batch(api, NanukOcr(), 5, log=lambda *_: None, dictionary=dictionary, classifier=None)
+        self.assertEqual([line["categoryHint"] for line in api.results[1]["lines"]], ["zmrzlina"])
+
+    def test_misa_v_kuchynskem_nadobi_neni_zmrzlina(self):
+        dictionary = pretty.load_dictionary()
+        self.assertIsNone(dictionary.category("MÍSA PLASTOVÁ 2L", None))
+        self.assertEqual(dictionary.category("MÍšA TVAROHOVY6X45ML", None), "zmrzlina")
 
 
 class ReprocessTest(unittest.TestCase):

@@ -5,9 +5,12 @@
 # vždycky (značka, druh zboží), ne slovo, které se objevuje i v jiném zboží („borůvky" je
 # i v jogurtu a mraženém ovoci). Slug musí existovat v core.category, jinak se řádek ignoruje.
 #
+# Diakritika se při porovnání ztrácí (OCR ji čte nespolehlivě), takže krátké slovo může
+# kolidovat s jiným: „míša" i „mísa" je „misa". Značku proto zapisuj jako sousloví.
+#
 # Zmrzlina — model značky nezná a tipuje podle slov („tvarohový" -> tvaroh)
 nanuk	zmrzlina
-míša	zmrzlina
+míša tvarohový	zmrzlina
 uni twister	zmrzlina
 #
 # Maso a uzeniny — model kuřecí řízky dával do čerstvého masa a uzeniny jen do nadřazené
