@@ -120,14 +120,16 @@ class Dictionary:
         Řetězcová položka má přednost, mezi stejně specifickými vyhraje delší klíč
         („uni twister" přebije „twister").
         """
-        words = norm_label(label).split()
+        # Stejně jako u override i po rozdělení slepených tokenů („SME.KYS15%175G").
+        variants = {tuple(norm_label(text).split()) for text in (label, " ".join(tokenize(label)))}
         best: tuple[bool, int, str] | None = None
         for (key, key_chain), slug in self.categories.items():
             if key_chain and key_chain != (chain or ""):
                 continue
-            key_words = key.split()
+            key_words = tuple(key.split())
             size = len(key_words)
-            if not any(words[i:i + size] == key_words for i in range(len(words) - size + 1)):
+            if not any(words[i:i + size] == key_words
+                       for words in variants for i in range(len(words) - size + 1)):
                 continue
             rank = (bool(key_chain), size, slug)
             if best is None or rank[:2] > best[:2]:

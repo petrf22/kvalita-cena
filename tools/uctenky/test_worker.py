@@ -1149,6 +1149,13 @@ class ClassifyTest(unittest.TestCase):
         self.assertIsNone(dictionary.category("Misanka sýr", None))
         self.assertEqual(dictionary.category("MÍŠA TVAROHOVÝ", None), "zmrzlina")
 
+    def test_klic_slovniku_sedi_i_na_slepeny_tisk(self):
+        dictionary = pretty.Dictionary()
+        dictionary.add_category("sme kys", "smetana-a-zakysane-vyrobky")
+        dictionary.add_category("kuř prs", "drubez")
+        self.assertEqual(dictionary.category("NPBIO SME.KYS15%175G", None), "smetana-a-zakysane-vyrobky")
+        self.assertEqual(dictionary.category("Kuř. prs.řízkyDM", None), "drubez")
+
     def test_retezcova_polozka_slovniku_ma_prednost(self):
         dictionary = pretty.Dictionary()
         dictionary.add_category("tip", "mleko")

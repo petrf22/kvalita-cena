@@ -161,6 +161,8 @@ v katalogu (docs/ai.md, „Návrh kategorie a jednotky"). Výpadek modelu není 
 
 Offline: `replay.py … --classify-model qwen2.5:14b-instruct --categories kategorie.json`
 vypíše návrh za čitelným názvem. Soubor `kategorie.json` je uložená odpověď endpointu výš.
+Bez `--classify-model` vypíše jen kategorie ze slovníku, což stačí na rychlou kontrolu
+úpravy `kategorie.tsv`.
 
 ## Kurátorství
 
