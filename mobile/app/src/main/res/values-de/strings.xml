@@ -622,6 +622,10 @@
     <string name="receipt_review_no_masks">Nichts abgedeckt</string>
     <string name="receipt_review_masks">Abgedeckte Stellen: %1$d</string>
     <string name="receipt_review_mask">Abdecken</string>
+    <string name="receipt_review_masks_off">Abdecken aus — dieser Teil wird unverdeckt gesendet</string>
+    <string name="receipt_review_mask_edit">Abdeckung bearbeiten</string>
+    <string name="receipt_review_mask_legend">Schraffierte Stellen werden beim Senden geschwärzt und erreichen den Server nicht. Der Standardstreifen ist nur eine Schätzung — wenn darunter nichts Sensibles steht, schalten Sie ihn aus oder löschen Sie ihn.</string>
+    <string name="receipt_review_mask_legend_off">Abdecken ist ausgeschaltet — die gestrichelten Stellen werden unverdeckt gesendet.</string>
     <string name="receipt_review_move_up">Nach oben</string>
     <string name="receipt_review_move_down">Nach unten</string>
     <string name="receipt_review_retake">Neu aufnehmen</string>
@@ -635,8 +639,8 @@
     <string name="receipt_review_delete_title">Teil löschen?</string>
     <string name="receipt_review_delete_text">Teil %1$d wird aus dem Kassenbon entfernt.</string>
     <string name="receipt_mask_editor_title">Sensible Daten abdecken</string>
-    <string name="receipt_mask_editor_hint">Ziehen Sie mit dem Finger ein schwarzes Rechteck über Kartennummer, Kundenkarte oder Kassiernamen. Tippen Sie auf ein Rechteck, um es zu entfernen.</string>
-    <string name="receipt_mask_undo">Letztes rückgängig</string>
+    <string name="receipt_mask_editor_hint">Ziehen Sie mit dem Finger über eine freie Stelle, um ein neues Rechteck über Kartennummer, Kundenkarte oder Kassiernamen zu zeichnen. Ziehen Sie innen, um es zu verschieben, an einer Ecke, um die Größe zu ändern. Tippen Sie darauf, um es auszuwählen und dann zu löschen.</string>
+    <string name="receipt_mask_remove_selected">Auswahl löschen</string>
     <string name="receipt_mask_clear">Alle entfernen</string>
     <string name="receipt_mask_save">Speichern</string>
     <string name="receipt_consent_title">Einwilligung zur Verarbeitung des Kassenbons</string>

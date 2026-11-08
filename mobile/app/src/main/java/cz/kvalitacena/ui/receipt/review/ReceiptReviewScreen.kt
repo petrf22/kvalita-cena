@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -133,6 +134,7 @@ fun ReceiptReviewScreen(
           index = index,
           count = draft.parts.size,
           onEditMasks = { viewModel.editingIndex = index },
+          onMasksEnabledChange = { viewModel.setMasksEnabled(index, it) },
           onMoveUp = { viewModel.moveUp(index) },
           onMoveDown = { viewModel.moveDown(index) },
           onRetake = { onRetake(index) },
@@ -225,6 +227,7 @@ private fun PartCard(
   index: Int,
   count: Int,
   onEditMasks: () -> Unit,
+  onMasksEnabledChange: (Boolean) -> Unit,
   onMoveUp: () -> Unit,
   onMoveDown: () -> Unit,
   onRetake: () -> Unit,
@@ -238,10 +241,14 @@ private fun PartCard(
       )
       val masked = part.masks.size
       Text(
-        if (masked == 0) stringResource(R.string.receipt_review_no_masks)
-        else stringResource(R.string.receipt_review_masks, masked),
+        when {
+          masked == 0 -> stringResource(R.string.receipt_review_no_masks)
+          !part.masksEnabled -> stringResource(R.string.receipt_review_masks_off)
+          else -> stringResource(R.string.receipt_review_masks, masked)
+        },
         style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = if (masked > 0 && !part.masksEnabled) MaterialTheme.colorScheme.error
+        else MaterialTheme.colorScheme.onSurfaceVariant,
       )
       Box(Modifier.fillMaxWidth().clickable(onClick = onEditMasks)) {
         MaskedPartImage(
@@ -249,11 +256,32 @@ private fun PartCard(
           width = part.width,
           height = part.height,
           masks = part.masks,
+          enabled = part.masksEnabled,
           modifier = Modifier.fillMaxWidth().aspectRatio(part.width.toFloat() / part.height.coerceAtLeast(1)),
         )
       }
-      FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-        Button(onClick = onEditMasks) { Text(stringResource(R.string.receipt_review_mask)) }
+      if (masked > 0) {
+        Text(
+          stringResource(if (part.masksEnabled) R.string.receipt_review_mask_legend else R.string.receipt_review_mask_legend_off),
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+      FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
+        itemVerticalAlignment = Alignment.CenterVertically,
+      ) {
+        if (masked > 0) {
+          // Přepínač, ne mazání: vypnutý návrh zůstane vidět jako obrys a jde hned vrátit.
+          FilterChip(
+            selected = part.masksEnabled,
+            onClick = { onMasksEnabledChange(!part.masksEnabled) },
+            label = { Text(stringResource(R.string.receipt_review_mask)) },
+          )
+          OutlinedButton(onClick = onEditMasks) { Text(stringResource(R.string.receipt_review_mask_edit)) }
+        } else {
+          Button(onClick = onEditMasks) { Text(stringResource(R.string.receipt_review_mask)) }
+        }
         TextButton(onClick = onMoveUp, enabled = index > 0) { Text(stringResource(R.string.receipt_review_move_up)) }
         TextButton(onClick = onMoveDown, enabled = index < count - 1) {
           Text(stringResource(R.string.receipt_review_move_down))

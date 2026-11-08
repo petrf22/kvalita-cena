@@ -620,6 +620,10 @@
     <string name="receipt_review_no_masks">Nič nezakryté</string>
     <string name="receipt_review_masks">Zakryté miesta: %1$d</string>
     <string name="receipt_review_mask">Zakryť</string>
+    <string name="receipt_review_masks_off">Zakrytie vypnuté — diel odíde nezakrytý</string>
+    <string name="receipt_review_mask_edit">Upraviť zakrytie</string>
+    <string name="receipt_review_mask_legend">Šrafované miesta sa pri odoslaní začiernia a na server sa nedostanú. Predvolený pás je len odhad — keď pod ním nič citlivé nie je, vypnite ho alebo ho zmažte.</string>
+    <string name="receipt_review_mask_legend_off">Zakrytie je vypnuté — čiarkované miesta odídu nezakryté.</string>
     <string name="receipt_review_move_up">Nahor</string>
     <string name="receipt_review_move_down">Nadol</string>
     <string name="receipt_review_retake">Odfotiť znova</string>
@@ -633,8 +637,8 @@
     <string name="receipt_review_delete_title">Zmazať diel?</string>
     <string name="receipt_review_delete_text">Diel %1$d sa z účtenky zmaže.</string>
     <string name="receipt_mask_editor_title">Zakryť citlivé údaje</string>
-    <string name="receipt_mask_editor_hint">Ťahaním prsta nakreslite čierny obdĺžnik cez číslo karty, vernostnú kartu alebo meno pokladníčky. Ťuknutím na obdĺžnik ho zmažete.</string>
-    <string name="receipt_mask_undo">Vrátiť posledné</string>
+    <string name="receipt_mask_editor_hint">Ťahaním prsta po voľnom mieste nakreslíte nový obdĺžnik cez číslo karty, vernostnú kartu alebo meno pokladníčky. Obdĺžnik posuniete ťahaním vnútri, veľkosť zmeníte ťahaním za roh. Ťuknutím ho vyberiete a potom zmažete.</string>
+    <string name="receipt_mask_remove_selected">Zmazať vybrané</string>
     <string name="receipt_mask_clear">Odkryť všetko</string>
     <string name="receipt_mask_save">Uložiť zakrytie</string>
     <string name="receipt_consent_title">Súhlas so spracovaním účtenky</string>

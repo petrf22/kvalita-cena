@@ -620,6 +620,10 @@
     <string name="receipt_review_no_masks">Nic nie zasłonięto</string>
     <string name="receipt_review_masks">Zasłonięte miejsca: %1$d</string>
     <string name="receipt_review_mask">Zasłoń</string>
+    <string name="receipt_review_masks_off">Zasłanianie wyłączone — część zostanie wysłana bez zasłonięcia</string>
+    <string name="receipt_review_mask_edit">Edytuj zasłonięcie</string>
+    <string name="receipt_review_mask_legend">Zakreskowane miejsca zostaną przy wysyłaniu zaczernione i nie trafią na serwer. Domyślny pas to tylko przypuszczenie — jeśli nie ma pod nim nic wrażliwego, wyłącz go albo usuń.</string>
+    <string name="receipt_review_mask_legend_off">Zasłanianie jest wyłączone — miejsca z przerywaną ramką zostaną wysłane bez zasłonięcia.</string>
     <string name="receipt_review_move_up">W górę</string>
     <string name="receipt_review_move_down">W dół</string>
     <string name="receipt_review_retake">Zrób ponownie</string>
@@ -633,8 +637,8 @@
     <string name="receipt_review_delete_title">Usunąć część?</string>
     <string name="receipt_review_delete_text">Część %1$d zostanie usunięta z paragonu.</string>
     <string name="receipt_mask_editor_title">Zasłoń dane wrażliwe</string>
-    <string name="receipt_mask_editor_hint">Przeciągnij palcem, aby narysować czarny prostokąt na numerze karty, karcie lojalnościowej lub nazwisku kasjera. Dotknij prostokąta, aby go usunąć.</string>
-    <string name="receipt_mask_undo">Cofnij ostatni</string>
+    <string name="receipt_mask_editor_hint">Przeciągnij palcem po wolnym miejscu, aby narysować nowy prostokąt na numerze karty, karcie lojalnościowej lub nazwisku kasjera. Przeciągnij wewnątrz, aby go przesunąć, za róg, aby zmienić rozmiar. Dotknij, aby go zaznaczyć, a potem usuń.</string>
+    <string name="receipt_mask_remove_selected">Usuń zaznaczone</string>
     <string name="receipt_mask_clear">Usuń wszystkie</string>
     <string name="receipt_mask_save">Zapisz</string>
     <string name="receipt_consent_title">Zgoda na przetwarzanie paragonu</string>

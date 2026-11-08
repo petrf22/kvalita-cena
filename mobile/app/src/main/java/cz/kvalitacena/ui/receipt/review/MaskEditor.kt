@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,7 +29,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -38,20 +43,50 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
 import cz.kvalitacena.R
+import cz.kvalitacena.ui.receipt.capture.MaskCorner
+import cz.kvalitacena.ui.receipt.capture.MaskHit
 import cz.kvalitacena.ui.receipt.capture.MaskRect
+import cz.kvalitacena.ui.receipt.capture.hitTest
 import cz.kvalitacena.ui.receipt.capture.maskFromDrag
+import cz.kvalitacena.ui.receipt.capture.movedBy
+import cz.kvalitacena.ui.receipt.capture.resizedTo
 import cz.kvalitacena.ui.theme.Spacing
 import java.io.File
 import kotlin.math.min
 
 /**
- * Díl účtenky s maskami přes obrázek — v seznamu kontroly i v editoru. Maska je plná, ne
- * průhledná: uživatel má vidět výsledek, ne návrh. Barva `scrim` je v Material schématu černá
- * v obou režimech — přesně tak skončí maska vypálená v pixelech (`ReceiptImageProcessor.burnMasks`).
+ * Barva návrhu zakrytí — vědomá výjimka z `MaterialTheme.colorScheme` (docs/design.md,
+ * „Barevné tokeny"): podklad je fotka papírové účtenky, ne povrch appky, takže barva podle
+ * tématu (v tmavém režimu bledá `error`) by na bílém papíře zanikla. Stejná jako webová
+ * `--kc-mask-stroke`.
+ */
+private val MaskStroke = Color(0xFFFF4D4F)
+private const val HATCH_ALPHA = 0.45f
+private const val TINT_ALPHA = 0.12f
+
+/**
+ * Díl účtenky s maskami přes obrázek — v seznamu kontroly i v editoru. Maska je NÁVRH, ne
+ * výsledek: průsvitná šrafa s obrysem, pod kterou je obsah vidět. Výchozí pás appka navrhuje
+ * slepě podle pozice (`defaultMaskProposal`), takže uživatel musí poznat, když zakrývá položky
+ * místo karty. Černě se maska vypálí až při odeslání (`ReceiptImageProcessor.burnMasks`).
+ * Vypnuté zakrytí ([enabled] = false) je jen čárkovaný obrys — při odeslání se nezačerní.
  */
 @Composable
-fun MaskedPartImage(file: File, width: Int, height: Int, masks: List<MaskRect>, modifier: Modifier = Modifier) {
-  val maskColor = MaterialTheme.colorScheme.scrim
+fun MaskedPartImage(
+  file: File,
+  width: Int,
+  height: Int,
+  masks: List<MaskRect>,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  selectedIndex: Int? = null,
+  showHandles: Boolean = false,
+) {
+  val density = LocalDensity.current
+  val stroke = with(density) { 2.dp.toPx() }
+  val hatchGap = with(density) { Spacing.sm.toPx() }
+  val handleRadius = with(density) { Spacing.sm.toPx() }
+  val selectedColor = MaterialTheme.colorScheme.primary
   Box(modifier) {
     AsyncImage(
       model = file,
@@ -60,20 +95,66 @@ fun MaskedPartImage(file: File, width: Int, height: Int, masks: List<MaskRect>, 
       modifier = Modifier.fillMaxSize(),
     )
     Canvas(Modifier.fillMaxSize()) {
-      masks.forEach { mask ->
-        drawRect(
-          maskColor,
-          topLeft = Offset(mask.left * size.width, mask.top * size.height),
-          size = Size((mask.right - mask.left) * size.width, (mask.bottom - mask.top) * size.height),
-        )
+      masks.forEachIndexed { index, mask ->
+        val topLeft = Offset(mask.left * size.width, mask.top * size.height)
+        val rectSize = Size((mask.right - mask.left) * size.width, (mask.bottom - mask.top) * size.height)
+        val color = if (index == selectedIndex) selectedColor else MaskStroke
+        if (enabled) {
+          drawRect(MaskStroke.copy(alpha = TINT_ALPHA), topLeft, rectSize)
+          drawHatch(topLeft, rectSize, MaskStroke.copy(alpha = HATCH_ALPHA), hatchGap, stroke / 2)
+          drawRect(color, topLeft, rectSize, style = Stroke(width = stroke))
+        } else {
+          drawRect(
+            color,
+            topLeft,
+            rectSize,
+            style = Stroke(width = stroke, pathEffect = PathEffect.dashPathEffect(floatArrayOf(hatchGap, hatchGap / 2))),
+          )
+        }
+        if (showHandles) {
+          listOf(
+            topLeft,
+            Offset(topLeft.x + rectSize.width, topLeft.y),
+            Offset(topLeft.x, topLeft.y + rectSize.height),
+            Offset(topLeft.x + rectSize.width, topLeft.y + rectSize.height),
+          ).forEach { drawCircle(color, handleRadius, it) }
+        }
       }
     }
   }
 }
 
+/** Diagonální šrafa uvnitř obdélníku — čáry pod 45° po [gap] pixelech, oříznuté na obdélník. */
+private fun DrawScope.drawHatch(topLeft: Offset, rectSize: Size, color: Color, gap: Float, width: Float) {
+  clipRect(topLeft.x, topLeft.y, topLeft.x + rectSize.width, topLeft.y + rectSize.height) {
+    var offset = -rectSize.height
+    while (offset < rectSize.width) {
+      drawLine(
+        color,
+        start = Offset(topLeft.x + offset, topLeft.y + rectSize.height),
+        end = Offset(topLeft.x + offset + rectSize.height, topLeft.y),
+        strokeWidth = width,
+      )
+      offset += gap
+    }
+  }
+}
+
+/** Co právě dělá prst v editoru — rozhoduje se jednou, na začátku tažení ([hitTest]). */
+private sealed interface MaskDrag {
+  data class Draw(val start: Offset, val end: Offset) : MaskDrag
+
+  data class Move(val index: Int, val original: MaskRect, val start: Offset) : MaskDrag
+
+  data class Resize(val index: Int, val corner: MaskCorner) : MaskDrag
+}
+
 /**
- * Editor zakrytí přes celou obrazovku — tažením prstu se kreslí obdélník, ťuknutím na existující
- * se smaže. Obrázek se vejde celý (bez posouvání), aby tažení nesoupeřilo se scrollem.
+ * Editor zakrytí přes celou obrazovku (podle webového `receipt-mask-editor`): tažení za roh
+ * mění velikost, tažení uvnitř masku posouvá, tažení po volné ploše kreslí novou. Ťuknutí
+ * masku vybere — smaže se až tlačítkem, protože když se maskou dá hýbat, mazání ťuknutím by
+ * ji smazalo omylem při každém nepovedeném posunu. Obrázek se vejde celý (bez posouvání), aby
+ * tažení nesoupeřilo se scrollem.
  */
 @Composable
 fun MaskEditorDialog(
@@ -85,10 +166,13 @@ fun MaskEditorDialog(
   onDismiss: () -> Unit,
 ) {
   var masks by remember(file) { mutableStateOf(initialMasks) }
-  var dragStart by remember { mutableStateOf<Offset?>(null) }
-  var dragEnd by remember { mutableStateOf<Offset?>(null) }
+  var selected by remember(file) { mutableStateOf<Int?>(null) }
+  var drag by remember { mutableStateOf<MaskDrag?>(null) }
   val highlight = MaterialTheme.colorScheme.primary
-  val stroke = with(LocalDensity.current) { 2.dp.toPx() }
+  val density = LocalDensity.current
+  val stroke = with(density) { 2.dp.toPx() }
+  // Dosah úchytu = polovina dotykového cíle 48 dp (docs/design.md, „Dotykové cíle").
+  val handleReach = with(density) { 24.dp.toPx() }
 
   Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
@@ -100,7 +184,6 @@ fun MaskEditorDialog(
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-          val density = LocalDensity.current
           val boxWidth = with(density) { maxWidth.toPx() }
           val boxHeight = with(density) { maxHeight.toPx() }
           val scale = min(boxWidth / imageWidth, boxHeight / imageHeight)
@@ -112,51 +195,104 @@ fun MaskEditorDialog(
               .background(MaterialTheme.colorScheme.surfaceVariant)
               .pointerInput(file) {
                 detectTapGestures { tap ->
-                  val x = tap.x / size.width
-                  val y = tap.y / size.height
-                  val hit = masks.lastOrNull { it.contains(x, y) }
-                  if (hit != null) masks = masks - hit
+                  val hit = hitTest(
+                    masks, tap.x / size.width, tap.y / size.height,
+                    handleReach / size.width, handleReach / size.height,
+                  )
+                  selected = when (hit) {
+                    is MaskHit.Corner -> hit.index
+                    is MaskHit.Inside -> hit.index
+                    MaskHit.None -> null
+                  }
                 }
               }
               .pointerInput(file) {
                 detectDragGestures(
-                  onDragStart = { dragStart = it; dragEnd = it },
-                  onDrag = { change, _ -> dragEnd = change.position },
-                  onDragEnd = {
-                    val start = dragStart
-                    val end = dragEnd
-                    if (start != null && end != null) {
-                      maskFromDrag(
-                        start.x / size.width,
-                        start.y / size.height,
-                        end.x / size.width,
-                        end.y / size.height,
-                      )?.let { masks = masks + it }
+                  onDragStart = { start ->
+                    val hit = hitTest(
+                      masks, start.x / size.width, start.y / size.height,
+                      handleReach / size.width, handleReach / size.height,
+                    )
+                    drag = when (hit) {
+                      is MaskHit.Corner -> MaskDrag.Resize(hit.index, hit.corner)
+                      is MaskHit.Inside -> MaskDrag.Move(hit.index, masks[hit.index], start)
+                      MaskHit.None -> MaskDrag.Draw(start, start)
                     }
-                    dragStart = null
-                    dragEnd = null
+                    selected = when (hit) {
+                      is MaskHit.Corner -> hit.index
+                      is MaskHit.Inside -> hit.index
+                      MaskHit.None -> null
+                    }
                   },
-                  onDragCancel = { dragStart = null; dragEnd = null },
+                  onDrag = { change, _ ->
+                    val position = change.position
+                    when (val current = drag) {
+                      is MaskDrag.Draw -> drag = current.copy(end = position)
+                      is MaskDrag.Move -> {
+                        // Od původní polohy, ne po krocích — posun pak „neujíždí" zaokrouhlením.
+                        val moved = current.original.movedBy(
+                          (position.x - current.start.x) / size.width,
+                          (position.y - current.start.y) / size.height,
+                        )
+                        masks = masks.mapIndexed { i, m -> if (i == current.index) moved else m }
+                      }
+                      is MaskDrag.Resize -> {
+                        val x = position.x / size.width
+                        val y = position.y / size.height
+                        masks = masks.mapIndexed { i, m -> if (i == current.index) m.resizedTo(current.corner, x, y) else m }
+                      }
+                      null -> Unit
+                    }
+                    change.consume()
+                  },
+                  onDragEnd = {
+                    val current = drag
+                    if (current is MaskDrag.Draw) {
+                      maskFromDrag(
+                        current.start.x / size.width,
+                        current.start.y / size.height,
+                        current.end.x / size.width,
+                        current.end.y / size.height,
+                      )?.let {
+                        masks = masks + it
+                        selected = masks.lastIndex
+                      }
+                    }
+                    drag = null
+                  },
+                  onDragCancel = { drag = null },
                 )
               },
           ) {
-            MaskedPartImage(file, imageWidth, imageHeight, masks, Modifier.fillMaxSize())
+            MaskedPartImage(
+              file, imageWidth, imageHeight, masks, Modifier.fillMaxSize(),
+              selectedIndex = selected, showHandles = true,
+            )
             Canvas(Modifier.fillMaxSize()) {
-              val start = dragStart
-              val end = dragEnd
-              if (start != null && end != null) {
-                val topLeft = Offset(min(start.x, end.x), min(start.y, end.y))
-                val rectSize = Size(kotlin.math.abs(end.x - start.x), kotlin.math.abs(end.y - start.y))
+              val current = drag
+              if (current is MaskDrag.Draw) {
+                val topLeft = Offset(min(current.start.x, current.end.x), min(current.start.y, current.end.y))
+                val rectSize = Size(
+                  kotlin.math.abs(current.end.x - current.start.x),
+                  kotlin.math.abs(current.end.y - current.start.y),
+                )
                 drawRect(highlight, topLeft = topLeft, size = rectSize, style = Stroke(width = stroke))
               }
             }
           }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-          TextButton(onClick = { masks = masks.dropLast(1) }, enabled = masks.isNotEmpty()) {
-            Text(stringResource(R.string.receipt_mask_undo))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalArrangement = Arrangement.Center) {
+          TextButton(
+            onClick = {
+              val index = selected ?: return@TextButton
+              masks = masks.filterIndexed { i, _ -> i != index }
+              selected = null
+            },
+            enabled = selected != null,
+          ) {
+            Text(stringResource(R.string.receipt_mask_remove_selected))
           }
-          TextButton(onClick = { masks = emptyList() }, enabled = masks.isNotEmpty()) {
+          TextButton(onClick = { masks = emptyList(); selected = null }, enabled = masks.isNotEmpty()) {
             Text(stringResource(R.string.receipt_mask_clear))
           }
         }
