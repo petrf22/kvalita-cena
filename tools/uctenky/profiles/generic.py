@@ -122,8 +122,13 @@ def find_vat_country(raw_lines: list[str]) -> str | None:
 
 
 # Řádky hlavičky, které nejsou název obchodu, ani když je horní okraj účtenky useknutý
-# a název chybí: identifikátory, kontakt a údaje pokladny. „s.r.o." sem nepatří — to v názvu je.
-_NOT_NAME_RE = re.compile(r"\b(?:tel\.?|www\.|datum|čas|cas\s*:|pokladn|e-?mail)", re.IGNORECASE)
+# a název chybí: identifikátory, zápis v obchodním rejstříku („MĚST. SOUD PRAHA C/42812"),
+# kontakt a údaje pokladny. „s.r.o." sem nepatří — to v názvu je.
+_NOT_NAME_RE = re.compile(
+    r"\b(?:tel\.?|www\.|datum|čas|cas\s*:|pokladn|e-?mail|soud|spis\.?\s*zn|zaps[aá]n|rejst[řr]ík)"
+    r"|\b[A-Z]{1,2}\s*/\s*\d{3,}\b",
+    re.IGNORECASE,
+)
 
 
 # Ulice s číslem domu na konci („Hlavní 12", „Nádražní 1520/3a").

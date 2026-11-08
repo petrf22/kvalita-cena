@@ -138,6 +138,7 @@ class HeaderIdTest(unittest.TestCase):
     # Horní okraj useknutý — název chybí a OCR přečetlo „IČO" jako „ICU" (2026-11-08).
     CUT = """ICU: 64945880
 DIČ: CZ64945880
+MŠT. SOUD PRAHA C/42812
 TUK.ROHLIK 43G
 10 x 3,50 Kč 35,00 B
 Celkem k úhradě 35,00 Kč
