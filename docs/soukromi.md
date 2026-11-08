@@ -229,16 +229,17 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   částkou" jen odhaduje podle pozice). Proto se v kontrole kreslí jako **návrh**: průsvitná
   šrafa s obrysem, pod kterou je obsah vidět, ne černě — u účtenek, kde dole nic citlivého
   není, by černý pás tiše zakryl položky. Uživatel ho posune, zvětší za roh, smaže, nebo
-  přepínačem „Zakrýt" u části vypne (masky zůstanou, jen se nevypálí). Výchozí stav je
+  přepínačem „Zakrýt" u části nebo v editoru vypne (masky zůstanou, jen se nevypálí; nově
+  nakreslené zakrytí přepínač zase zapne). Výchozí stav je
   zakryto: kdo na návrh nesáhne, odešle ho začerněný.
   Server navíc obrázek překreslí z pixelů stejně jako fotky (EXIF výš) a worker řádky
   s kartou/věrnostním číslem zahodí jako druhou pojistku — ze strukturovaného výsledku
   i ze syrového textu (`ai.receipt_job.raw_text`): ten se ořízne za řádkem s celkovou
   částkou (`parse.server_text`), bez něj se neposílá vůbec, a řádky s maskovaným číslem
   karty vypadnou i nad ním.
-- **Věrnostní karta se ukládá jen jako ano/ne u účtenky.** Zaškrtnutí „Nakoupeno s věrnostní
-  kartou" v detailu účtenky (`core.receipt.loyalty_card_used`) určí, jestli se slevy zapíšou
-  jako klubové, nebo akční ceny (`docs/datovy-model.md`, „Účtenky"). Seznam karet, které
+- **Věrnostní karta se ukládá jen jako ano/ne u účtenky.** Volba „S kartou / Bez karty"
+  v detailu účtenky (`core.receipt.loyalty_card_used`, nevyplněno = odhad z účtenky) určí,
+  jestli se slevy zapíšou jako klubové, nebo akční ceny (`docs/datovy-model.md`, „Účtenky"). Seznam karet, které
   člověk má, server nikdy nedostane: poslední volbu pro řetězec si pamatuje jen klient
   (`ReceiptPrefs` na mobilu, `localStorage` na webu) a předvyplní ji u další účtenky
   z téhož řetězce.

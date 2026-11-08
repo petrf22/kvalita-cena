@@ -232,8 +232,11 @@
     "unknownText": "The app has nothing to compare the items with — the total was not found on the receipt, or an older version read it. Go through the items (especially those tagged “Check”) and untick what you do not want to publish."
   },
   "loyaltyCard": {
-    "label": "Bought with the store's loyalty card",
-    "labelChain": "Bought with the {{chain}} loyalty card",
-    "hint": "Discounts on the receipt are then recorded as club prices, without the card as promotional ones. Only yes/no for this receipt goes to the server; the choice is remembered in this browser for your next purchases in this store."
+    "label": "Bought with the store's loyalty card?",
+    "labelChain": "Bought with the {{chain}} loyalty card?",
+    "yes": "With card",
+    "no": "Without card",
+    "unset": "Not set yet — discounts are recorded according to what the app read from the receipt.",
+    "hint": "With the card, discounts are recorded as club prices, without it as promotional ones. Only this choice for this receipt goes to the server; it is remembered in this browser for your next purchases in this store."
   }
 }

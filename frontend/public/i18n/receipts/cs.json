@@ -232,8 +232,11 @@
     "unknownText": "Appka nemá s čím součet položek porovnat — celková částka se na účtence nenašla, nebo ji četla starší verze. Projdi položky (hlavně se štítkem „Zkontrolovat“) a odškrtni, co zveřejnit nechceš."
   },
   "loyaltyCard": {
-    "label": "Nakoupeno s věrnostní kartou obchodu",
-    "labelChain": "Nakoupeno s věrnostní kartou {{chain}}",
-    "hint": "Slevy z účtenky se pak zapíšou jako klubové ceny, bez karty jako akční. Na server jde jen ano/ne u téhle účtenky; volba se zapamatuje v tomhle prohlížeči pro další nákupy v tomhle obchodě."
+    "label": "Nakoupeno s věrnostní kartou obchodu?",
+    "labelChain": "Nakoupeno s věrnostní kartou {{chain}}?",
+    "yes": "S kartou",
+    "no": "Bez karty",
+    "unset": "Zatím nevyplněno — slevy se zapíšou podle toho, co appka přečetla z účtenky.",
+    "hint": "S kartou se slevy zapíšou jako klubové ceny, bez karty jako akční. Na server jde jen tahle volba u téhle účtenky; zapamatuje se v tomhle prohlížeči pro další nákupy v tomhle obchodě."
   }
 }

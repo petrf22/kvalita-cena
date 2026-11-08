@@ -84,6 +84,14 @@ fun hitTest(masks: List<MaskRect>, x: Float, y: Float, radiusX: Float, radiusY: 
   return if (inside >= 0) MaskHit.Inside(inside) else MaskHit.None
 }
 
+/**
+ * Přepínač „Zakrýt" po úpravě masek: nově nakreslené zakrytí ho zapne (kdo kreslí obdélník přes
+ * číslo karty, chce ho zakrýt), posun ani smazání existující masky ho nemění. Stejně jako web
+ * (`masksEnabledAfterEdit` v `receipt-mask.ts`).
+ */
+fun masksEnabledAfterEdit(wasEnabled: Boolean, oldCount: Int, newCount: Int): Boolean =
+  wasEnabled || newCount > oldCount
+
 /** Posun o [dx],[dy] (podíly) se zachovanou velikostí — u okraje obrázku se zastaví. */
 fun MaskRect.movedBy(dx: Float, dy: Float): MaskRect {
   val width = right - left

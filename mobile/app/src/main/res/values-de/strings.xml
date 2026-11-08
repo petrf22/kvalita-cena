@@ -709,9 +709,12 @@
     <string name="receipt_line_discount_club">Clubpreis</string>
     <string name="receipt_line_discount_promo">Aktionspreis</string>
     <string name="receipt_line_discount_clearance">Abverkauf</string>
-    <string name="receipt_loyalty_card">Mit der Kundenkarte des Geschäfts eingekauft</string>
-    <string name="receipt_loyalty_card_chain">Mit der Kundenkarte von %1$s eingekauft</string>
-    <string name="receipt_loyalty_card_hint">Rabatte auf dem Kassenbon werden dann als Clubpreise erfasst, ohne Karte als Aktionspreise. An den Server geht nur Ja/Nein zu diesem Bon; die Wahl wird auf diesem Telefon für die nächsten Einkäufe in diesem Geschäft gespeichert.</string>
+    <string name="receipt_loyalty_card">Mit der Kundenkarte des Geschäfts eingekauft?</string>
+    <string name="receipt_loyalty_card_chain">Mit der Kundenkarte von %1$s eingekauft?</string>
+    <string name="receipt_loyalty_card_yes">Mit Karte</string>
+    <string name="receipt_loyalty_card_no">Ohne Karte</string>
+    <string name="receipt_loyalty_card_unset">Noch nicht gewählt — Rabatte werden so erfasst, wie die App sie vom Kassenbon gelesen hat.</string>
+    <string name="receipt_loyalty_card_hint">Mit Karte werden Rabatte als Clubpreise erfasst, ohne Karte als Aktionspreise. An den Server geht nur diese Wahl zu diesem Bon; sie wird auf diesem Telefon für die nächsten Einkäufe in diesem Geschäft gespeichert.</string>
     <string name="receipt_line_ean">EAN %1$s</string>
     <string name="receipt_line_actions">Aktionen für die Zeile</string>
     <string name="receipt_line_choose">Artikel wählen</string>

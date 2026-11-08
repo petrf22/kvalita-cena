@@ -256,14 +256,12 @@
 
                 @if (showLoyaltyCard()) {
                   <!-- Billa tiskne slevu bez slova „klub" — klubová je až podle téhle volby. -->
-                  <div class="block">
-                    <label
-                      nz-checkbox
-                      [ngModel]="receipt.loyaltyCardUsed === true"
-                      (ngModelChange)="onLoyaltyCardChange($event)"
-                      [nzDisabled]="savingLoyaltyCard() || !connectivity.online()"
-                      name="receiptLoyaltyCard"
-                    >
+                  <!--
+                    Tři stavy, ne zaškrtávátko: nevyplněno (null) = odhad z účtenky, „bez karty"
+                    (false) ho výslovně přebije. Nezaškrtnuté políčko by obojí vydávalo za totéž.
+                  -->
+                  <div class="block" role="group" aria-labelledby="receipt-loyalty-card-label">
+                    <p id="receipt-loyalty-card-label" class="field-label">
                       {{
                         receipt.store?.chain
                           ? t('receipts.loyaltyCard.labelChain', {
@@ -271,8 +269,27 @@
                             })
                           : t('receipts.loyaltyCard.label')
                       }}
-                    </label>
-                    <p class="raw-hint">{{ t('receipts.loyaltyCard.hint') }}</p>
+                    </p>
+                    <nz-radio-group
+                      [ngModel]="receipt.loyaltyCardUsed"
+                      (ngModelChange)="onLoyaltyCardChange($event)"
+                      [nzDisabled]="savingLoyaltyCard() || confirming() || !connectivity.online()"
+                      nzButtonStyle="solid"
+                      name="receiptLoyaltyCard"
+                    >
+                      <label nz-radio-button [nzValue]="true">{{
+                        t('receipts.loyaltyCard.yes')
+                      }}</label>
+                      <label nz-radio-button [nzValue]="false">{{
+                        t('receipts.loyaltyCard.no')
+                      }}</label>
+                    </nz-radio-group>
+                    <p class="raw-hint">
+                      @if (receipt.loyaltyCardUsed == null) {
+                        {{ t('receipts.loyaltyCard.unset') }}
+                      }
+                      {{ t('receipts.loyaltyCard.hint') }}
+                    </p>
                     @if (loyaltyCardError()) {
                       <nz-alert nzType="error" nzShowIcon [nzMessage]="loyaltyCardError()" />
                     }
@@ -644,7 +661,9 @@
                       nzType="primary"
                       type="button"
                       [nzLoading]="confirming()"
-                      [disabled]="blocker() !== null || !connectivity.online()"
+                      [disabled]="
+                        blocker() !== null || savingLoyaltyCard() || !connectivity.online()
+                      "
                       (click)="confirm()"
                     >
                       <span nz-icon nzType="check"></span>

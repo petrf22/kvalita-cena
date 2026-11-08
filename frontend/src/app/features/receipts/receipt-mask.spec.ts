@@ -5,6 +5,7 @@ import {
   ReceiptPart,
   defaultBand,
   effectiveMasks,
+  masksEnabledAfterEdit,
   isUsableMask,
   maskPixelRect,
   movePart,
@@ -38,6 +39,18 @@ describe('effectiveMasks', () => {
     expect(effectiveMasks(off)).toEqual([]);
     expect(off.masks).toEqual([band]);
     expect(effectiveMasks({ ...off, masksEnabled: true })).toEqual([band]);
+  });
+});
+
+describe('masksEnabledAfterEdit', () => {
+  it('nová maska u vypnutého zakrytí ho zapne, posun ani smazání ne', () => {
+    const band = defaultBand(1000, 2000);
+    const off = { masks: [band], masksEnabled: false };
+    const drawn = { x: 10, y: 10, w: 100, h: 50 };
+    expect(masksEnabledAfterEdit(off, [band, drawn])).toBe(true);
+    expect(masksEnabledAfterEdit(off, [{ ...band, y: 100 }])).toBe(false);
+    expect(masksEnabledAfterEdit(off, [])).toBe(false);
+    expect(masksEnabledAfterEdit({ masks: [], masksEnabled: true }, [])).toBe(true);
   });
 });
 

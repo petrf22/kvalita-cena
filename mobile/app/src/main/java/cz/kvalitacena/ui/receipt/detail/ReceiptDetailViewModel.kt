@@ -178,6 +178,8 @@ class ReceiptDetailViewModel(
   fun setLoyaltyCard(used: Boolean) = saveLoyaltyCard(used, remember = true)
 
   private fun saveLoyaltyCard(used: Boolean, remember: Boolean) {
+    // Během zveřejnění se volba nemění — server by ceny zapsal podle té, která tam zrovna je.
+    if (confirming || loyaltyCardSaving) return
     loyaltyCardSaving = true
     actionError = null
     viewModelScope.launch {
@@ -503,7 +505,9 @@ class ReceiptDetailViewModel(
   fun confirm() {
     val current = receipt ?: return
     val lineIds = publishableSelection(current.lines, selected).map { it.id }
-    if (lineIds.isEmpty() || confirming) return
+    // Rozpracovaná volba karty určuje druh zapsaných cen — potvrdit dřív by zapsalo ceny podle
+    // staré volby a ty už pak nic nepřepíše.
+    if (lineIds.isEmpty() || confirming || loyaltyCardSaving) return
     confirming = true
     actionError = null
     viewModelScope.launch {

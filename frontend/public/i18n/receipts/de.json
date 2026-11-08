@@ -232,8 +232,11 @@
     "unknownText": "Die App hat nichts, womit sie die Summe der Positionen vergleichen kann — der Gesamtbetrag wurde auf dem Kassenbon nicht gefunden, oder eine ältere Version hat ihn gelesen. Geh die Positionen durch (vor allem die mit „Prüfen“ markierten) und entferne das Häkchen bei allem, was du nicht veröffentlichen willst."
   },
   "loyaltyCard": {
-    "label": "Mit der Kundenkarte des Geschäfts eingekauft",
-    "labelChain": "Mit der Kundenkarte von {{chain}} eingekauft",
-    "hint": "Rabatte auf dem Kassenbon werden dann als Clubpreise erfasst, ohne Karte als Aktionspreise. An den Server geht nur Ja/Nein zu diesem Bon; die Wahl wird in diesem Browser für die nächsten Einkäufe in diesem Geschäft gespeichert."
+    "label": "Mit der Kundenkarte des Geschäfts eingekauft?",
+    "labelChain": "Mit der Kundenkarte von {{chain}} eingekauft?",
+    "yes": "Mit Karte",
+    "no": "Ohne Karte",
+    "unset": "Noch nicht gewählt — Rabatte werden so erfasst, wie die App sie vom Kassenbon gelesen hat.",
+    "hint": "Mit Karte werden Rabatte als Clubpreise erfasst, ohne Karte als Aktionspreise. An den Server geht nur diese Wahl zu diesem Bon; sie wird in diesem Browser für die nächsten Einkäufe in diesem Geschäft gespeichert."
   }
 }

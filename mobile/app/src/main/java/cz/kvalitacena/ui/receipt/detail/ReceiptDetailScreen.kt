@@ -5,7 +5,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +20,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -299,7 +299,7 @@ private fun ReceiptContent(
         }
         if (viewModel.showLoyaltyCard) {
           item(key = "loyalty-card") {
-            LoyaltyCardRow(receipt, viewModel.loyaltyCardSaving, online, viewModel::setLoyaltyCard)
+            LoyaltyCardRow(receipt, enabled = !viewModel.loyaltyCardSaving && !viewModel.confirming && online, viewModel::setLoyaltyCard)
           }
         }
         warning?.let {
@@ -787,30 +787,39 @@ internal fun LinePriceSummary(line: ReceiptLine, currency: String?) {
 }
 
 /**
- * „Nakoupeno s věrnostní kartou" — Billa tiskne slevu bez slova „klub", takže klubová cena se
- * pozná až podle téhle volby. Na server jde jen ano/ne u účtenky (docs/soukromi.md, „Účtenky").
+ * „Nakoupeno s věrnostní kartou?" — Billa tiskne slevu bez slova „klub", takže klubová cena se
+ * pozná až podle téhle volby. Tři stavy, ne zaškrtávátko: nevyplněno (null) = odhad z účtenky,
+ * „Bez karty" (false) ho výslovně přebije — nezaškrtnuté políčko by obojí vydávalo za totéž.
+ * Na server jde jen tahle volba u účtenky (docs/soukromi.md, „Účtenky").
  */
 @Composable
-private fun LoyaltyCardRow(receipt: Receipt, saving: Boolean, online: Boolean, onChange: (Boolean) -> Unit) {
-  val checked = receipt.loyaltyCardUsed == true
-  val enabled = !saving && online
+private fun LoyaltyCardRow(receipt: Receipt, enabled: Boolean, onChange: (Boolean) -> Unit) {
+  val used = receipt.loyaltyCardUsed
   Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-    Row(
-      Modifier
-        .fillMaxWidth()
-        .toggleable(value = checked, enabled = enabled, role = Role.Checkbox, onValueChange = onChange),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-    ) {
-      Checkbox(checked = checked, onCheckedChange = null, enabled = enabled)
-      Text(
-        receipt.store?.chain?.let { stringResource(R.string.receipt_loyalty_card_chain, it.name) }
-          ?: stringResource(R.string.receipt_loyalty_card),
-        style = MaterialTheme.typography.bodyMedium,
+    Text(
+      receipt.store?.chain?.let { stringResource(R.string.receipt_loyalty_card_chain, it.name) }
+        ?: stringResource(R.string.receipt_loyalty_card),
+      style = MaterialTheme.typography.bodyMedium,
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+      FilterChip(
+        selected = used == true,
+        onClick = { if (used != true) onChange(true) },
+        enabled = enabled,
+        label = { Text(stringResource(R.string.receipt_loyalty_card_yes)) },
+      )
+      FilterChip(
+        selected = used == false,
+        onClick = { if (used != false) onChange(false) },
+        enabled = enabled,
+        label = { Text(stringResource(R.string.receipt_loyalty_card_no)) },
       )
     }
     Text(
-      stringResource(R.string.receipt_loyalty_card_hint),
+      listOfNotNull(
+        if (used == null) stringResource(R.string.receipt_loyalty_card_unset) else null,
+        stringResource(R.string.receipt_loyalty_card_hint),
+      ).joinToString(" "),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -977,7 +986,8 @@ private fun ConfirmBar(receipt: Receipt, viewModel: ReceiptDetailViewModel, onli
       }
       Button(
         onClick = viewModel::confirm,
-        enabled = !missingStore && !missingDate && online && count > 0 && !viewModel.confirming,
+        enabled = !missingStore && !missingDate && online && count > 0 && !viewModel.confirming &&
+          !viewModel.loyaltyCardSaving,
         modifier = Modifier.fillMaxWidth(),
       ) {
         if (viewModel.confirming) CircularProgressIndicator(Modifier.size(20.dp))

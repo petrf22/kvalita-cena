@@ -54,16 +54,16 @@ uživatelskou editaci řetězce vůbec zavést, nebo název dát jen na `core.st
 
 Agregace se nemění — jde čistě o zobrazovací text, klíč agregátu zůstává `price_kind`.
 
-První krok je hotový u účtenek: zaškrtnutí „Nakoupeno s věrnostní kartou <řetězec>"
+První krok je hotový u účtenek: volba „Nakoupeno s věrnostní kartou <řetězec>?"
 (`core.receipt.loyalty_card_used`, `docs/datovy-model.md`, „Účtenky") rozhodne, jestli se sleva
 zapíše jako klubová, a popisek už nese název řetězce. Až bude mít řetězec název programu, patří
 sem místo obecného „věrnostní kartou".
 
 ## Ruční druh ceny u jednotlivého řádku účtenky (NÁPAD)
 
-Zaškrtnutí karty u účtenky platí pro všechny slevy na ní. Jenže i s kartou může být jedna ze
+Volba karty u účtenky platí pro všechny slevy na ní. Jenže i s kartou může být jedna ze
 slev obyčejná akce pro všechny — pak se zapíše jako klubová. Řešení: u řádku se slevou nabídnout
-přepnutí klubová/akční, které přebije zaškrtnutí u účtenky (`core.receipt_line`, nový sloupec
+přepnutí klubová/akční, které přebije volbu u účtenky (`core.receipt_line`, nový sloupec
 vedle `price_kind_guess`, `ReceiptReviewService.discountKind`). Zatím se nedělá, dokud se
 neukáže, že je to v praxi časté.
 

@@ -22,7 +22,13 @@ import {
   renderMaskedJpeg,
 } from './receipt-image';
 import { consentOutdated, RECEIPT_CONSENT_VERSION } from './receipt-status';
-import { MaskRect, ReceiptPart, movePart, withDefaultBand } from './receipt-mask';
+import {
+  MaskRect,
+  ReceiptPart,
+  masksEnabledAfterEdit,
+  movePart,
+  withDefaultBand,
+} from './receipt-mask';
 import { ReceiptMaskEditor } from './receipt-mask-editor';
 
 /** Proč odeslání zatím nejde — klíč `receipts.upload.blocker.*`. */
@@ -176,7 +182,12 @@ export class ReceiptUpload {
     this.parts.update((parts) =>
       parts.map((part) =>
         part.id === id
-          ? { ...part, masks: masks.map(({ auto: _auto, ...rest }) => rest), masksTouched: true }
+          ? {
+              ...part,
+              masks: masks.map(({ auto: _auto, ...rest }) => rest),
+              masksTouched: true,
+              masksEnabled: masksEnabledAfterEdit(part, masks),
+            }
           : part,
       ),
     );

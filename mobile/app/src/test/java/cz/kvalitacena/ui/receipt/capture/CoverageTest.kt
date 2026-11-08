@@ -213,6 +213,14 @@ class CoverageTest {
     assertEquals(MIN_MASK_SIZE, collapsed.bottom - collapsed.top, 1e-6f)
   }
 
+  @Test
+  fun noveZakrytiZapnePrepinacPosunNeboSmazaniNe() {
+    assertTrue(masksEnabledAfterEdit(wasEnabled = false, oldCount = 1, newCount = 2))
+    assertFalse(masksEnabledAfterEdit(wasEnabled = false, oldCount = 1, newCount = 1))
+    assertFalse(masksEnabledAfterEdit(wasEnabled = false, oldCount = 1, newCount = 0))
+    assertTrue(masksEnabledAfterEdit(wasEnabled = true, oldCount = 1, newCount = 0))
+  }
+
   private fun MaskRect.rounded(): MaskRect {
     fun Float.r() = kotlin.math.round(this * 1000f) / 1000f
     return MaskRect(left.r(), top.r(), right.r(), bottom.r())

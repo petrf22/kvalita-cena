@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -48,6 +49,7 @@ import cz.kvalitacena.ui.receipt.capture.MaskHit
 import cz.kvalitacena.ui.receipt.capture.MaskRect
 import cz.kvalitacena.ui.receipt.capture.hitTest
 import cz.kvalitacena.ui.receipt.capture.maskFromDrag
+import cz.kvalitacena.ui.receipt.capture.masksEnabledAfterEdit
 import cz.kvalitacena.ui.receipt.capture.movedBy
 import cz.kvalitacena.ui.receipt.capture.resizedTo
 import cz.kvalitacena.ui.theme.Spacing
@@ -155,6 +157,10 @@ private sealed interface MaskDrag {
  * masku vybere — smaže se až tlačítkem, protože když se maskou dá hýbat, mazání ťuknutím by
  * ji smazalo omylem při každém nepovedeném posunu. Obrázek se vejde celý (bez posouvání), aby
  * tažení nesoupeřilo se scrollem.
+ *
+ * Přepínač „Zakrýt" je i tady ([initialEnabled]), ať náhled odpovídá tomu, co se odešle.
+ * Nově nakreslené zakrytí ho zapne ([masksEnabledAfterEdit]) — kdo kreslí obdélník přes číslo
+ * karty, chce ho zakrýt, a vypnutý přepínač by ho tiše poslal čitelný.
  */
 @Composable
 fun MaskEditorDialog(
@@ -162,10 +168,12 @@ fun MaskEditorDialog(
   imageWidth: Int,
   imageHeight: Int,
   initialMasks: List<MaskRect>,
-  onSave: (List<MaskRect>) -> Unit,
+  initialEnabled: Boolean,
+  onSave: (masks: List<MaskRect>, enabled: Boolean) -> Unit,
   onDismiss: () -> Unit,
 ) {
   var masks by remember(file) { mutableStateOf(initialMasks) }
+  var enabled by remember(file) { mutableStateOf(initialEnabled) }
   var selected by remember(file) { mutableStateOf<Int?>(null) }
   var drag by remember { mutableStateOf<MaskDrag?>(null) }
   val highlight = MaterialTheme.colorScheme.primary
@@ -254,6 +262,7 @@ fun MaskEditorDialog(
                         current.end.x / size.width,
                         current.end.y / size.height,
                       )?.let {
+                        enabled = masksEnabledAfterEdit(enabled, masks.size, masks.size + 1)
                         masks = masks + it
                         selected = masks.lastIndex
                       }
@@ -266,7 +275,7 @@ fun MaskEditorDialog(
           ) {
             MaskedPartImage(
               file, imageWidth, imageHeight, masks, Modifier.fillMaxSize(),
-              selectedIndex = selected, showHandles = true,
+              enabled = enabled, selectedIndex = selected, showHandles = true,
             )
             Canvas(Modifier.fillMaxSize()) {
               val current = drag
@@ -281,7 +290,22 @@ fun MaskEditorDialog(
             }
           }
         }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalArrangement = Arrangement.Center) {
+        Text(
+          stringResource(if (enabled) R.string.receipt_review_mask_legend else R.string.receipt_review_mask_legend_off),
+          style = MaterialTheme.typography.bodySmall,
+          color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+        )
+        FlowRow(
+          horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+          itemVerticalAlignment = Alignment.CenterVertically,
+        ) {
+          if (masks.isNotEmpty()) {
+            FilterChip(
+              selected = enabled,
+              onClick = { enabled = !enabled },
+              label = { Text(stringResource(R.string.receipt_review_mask)) },
+            )
+          }
           TextButton(
             onClick = {
               val index = selected ?: return@TextButton
@@ -300,7 +324,7 @@ fun MaskEditorDialog(
           OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
             Text(stringResource(R.string.common_cancel))
           }
-          Button(onClick = { onSave(masks) }, modifier = Modifier.weight(1f)) {
+          Button(onClick = { onSave(masks, enabled) }, modifier = Modifier.weight(1f)) {
             Text(stringResource(R.string.receipt_mask_save))
           }
         }

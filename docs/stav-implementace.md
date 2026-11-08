@@ -494,7 +494,8 @@ Testy `ReceiptFlowIntegrationTest` (Testcontainers), `ReceiptPriceRowsTest`,
 umí jako webový posun i změnu velikosti za roh (`hitTest`/`movedBy`/`resizedTo`
 v `MaskGeometry.kt`, testy `CoverageTest`). Přepínač „Zakrýt" u části (`DraftPart.masksEnabled`,
 web `ReceiptPart.masksEnabled`/`effectiveMasks`) masky vypne bez smazání. V detailu účtenky se
-slevou je zaškrtnutí „Nakoupeno s věrnostní kartou" (`setReceiptLoyaltyCard`, web
+slevou je volba „S kartou / Bez karty" — tři stavy, nevyplněno je odhad z účtenky — a
+zveřejnění i změna volby se navzájem blokují, dokud druhá akce běží (`setReceiptLoyaltyCard`, web
 `receipt-loyalty-card.ts`, mobil `receipt/ReceiptLoyaltyCard.kt`) a u řádku je vidět druh ceny
 po slevě (`discountPriceKind`). Testy `ReceiptPriceRowsTest` a `ReceiptFlowIntegrationTest`.
 

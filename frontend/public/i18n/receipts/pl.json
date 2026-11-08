@@ -232,8 +232,11 @@
     "unknownText": "Aplikacja nie ma z czym porównać sumy pozycji — na paragonie nie znaleziono kwoty łącznej albo odczytała go starsza wersja. Przejrzyj pozycje (zwłaszcza oznaczone „Sprawdź”) i odznacz to, czego nie chcesz publikować."
   },
   "loyaltyCard": {
-    "label": "Zakupy z kartą lojalnościową sklepu",
-    "labelChain": "Zakupy z kartą lojalnościową {{chain}}",
-    "hint": "Rabaty z paragonu zostaną wtedy zapisane jako ceny klubowe, bez karty jako promocyjne. Na serwer trafia tylko tak/nie dla tego paragonu; wybór zostanie zapamiętany w tej przeglądarce na kolejne zakupy w tym sklepie."
+    "label": "Zakupy z kartą lojalnościową sklepu?",
+    "labelChain": "Zakupy z kartą lojalnościową {{chain}}?",
+    "yes": "Z kartą",
+    "no": "Bez karty",
+    "unset": "Jeszcze nie wybrano — rabaty zostaną zapisane według tego, co aplikacja odczytała z paragonu.",
+    "hint": "Z kartą rabaty zostaną zapisane jako ceny klubowe, bez karty jako promocyjne. Na serwer trafia tylko ten wybór dla tego paragonu; zostanie zapamiętany w tej przeglądarce na kolejne zakupy w tym sklepie."
   }
 }
