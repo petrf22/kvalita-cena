@@ -1,0 +1,11 @@
+# Slovo nebo sousloví z účtenky -> slug kategorie appky (tools/uctenky/README.md, „Návrh kategorie
+# a jednotky"). Formát: slovo<TAB>slug[<TAB>řetězec]. Klíč se porovnává jako core.norm_label (bez
+# diakritiky, interpunkce a velikosti písmen) a v názvu musí stát jako CELÁ slova; delší klíč
+# a řetězcová položka mají přednost. Slovník přebije návrh modelu — patří sem jen to, co platí
+# vždycky (značka, druh zboží), ne slovo, které se objevuje i v jiném zboží („borůvky" je
+# i v jogurtu a mraženém ovoci). Slug musí existovat v core.category, jinak se řádek ignoruje.
+#
+# Zmrzlina — model značky nezná a tipuje podle slov („tvarohový" -> tvaroh)
+nanuk	zmrzlina
+míša	zmrzlina
+uni twister	zmrzlina

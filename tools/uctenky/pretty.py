@@ -30,6 +30,7 @@ from pathlib import Path
 DICT_DIR = Path(__file__).resolve().parent / "slovnik"
 ABBREVIATIONS_FILE = "zkratky.tsv"
 OVERRIDES_FILE = "nazvy.tsv"
+CATEGORIES_FILE = "kategorie.tsv"
 
 SOURCE_DICT = "DICT"
 SOURCE_RULES = "RULES"
@@ -97,6 +98,8 @@ class Dictionary:
 
     abbreviations: dict[tuple[str, str], str] = field(default_factory=dict)
     overrides: dict[tuple[str, str], str] = field(default_factory=dict)
+    # Slovo nebo sousloví (klíč jako norm_label) -> slug kategorie appky (ai_classify.py).
+    categories: dict[tuple[str, str], str] = field(default_factory=dict)
 
     def abbreviation(self, token: str, chain: str | None) -> str | None:
         key = _key(token)
@@ -105,6 +108,29 @@ class Dictionary:
     def override(self, raw_label: str, chain: str | None) -> str | None:
         key = norm_label(raw_label)
         return self.overrides.get((key, chain or "")) or self.overrides.get((key, ""))
+
+    def category(self, label: str, chain: str | None) -> str | None:
+        """Slug kategorie podle slovníku — klíč musí v označení stát jako celá slova.
+
+        Řetězcová položka má přednost, mezi stejně specifickými vyhraje delší klíč
+        („uni twister" přebije „twister").
+        """
+        words = norm_label(label).split()
+        best: tuple[bool, int, str] | None = None
+        for (key, key_chain), slug in self.categories.items():
+            if key_chain and key_chain != (chain or ""):
+                continue
+            key_words = key.split()
+            size = len(key_words)
+            if not any(words[i:i + size] == key_words for i in range(len(words) - size + 1)):
+                continue
+            rank = (bool(key_chain), size, slug)
+            if best is None or rank[:2] > best[:2]:
+                best = rank
+        return best[2] if best else None
+
+    def add_category(self, keyword: str, slug: str, chain: str | None = None) -> None:
+        self.categories[(norm_label(keyword), chain or "")] = slug
 
     def add_abbreviation(self, token: str, expansion: str, chain: str | None = None) -> None:
         self.abbreviations[(_key(token), chain or "")] = expansion
@@ -133,6 +159,9 @@ def load_dictionary(directory: Path = DICT_DIR) -> Dictionary:
     for row in _read_tsv(directory / OVERRIDES_FILE):
         if len(row) >= 2:
             dictionary.overrides[(norm_label(row[0]), row[2] if len(row) > 2 else "")] = row[1]
+    for row in _read_tsv(directory / CATEGORIES_FILE):
+        if len(row) >= 2 and norm_label(row[0]) and row[1]:
+            dictionary.add_category(row[0], row[1], row[2] if len(row) > 2 else None)
     return dictionary
 
 

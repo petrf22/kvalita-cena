@@ -1010,6 +1010,70 @@ class ClassifyTest(unittest.TestCase):
         ai_classify.classify(lines, self.CATEGORIES, FakeClassifier(answers), log=lambda *_: None)
         self.assertEqual([(l["categoryHint"], l["unitHint"]) for l in lines], [(None, None), (None, None)])
 
+    ICE_CREAM = CATEGORIES + [{"slug": "zmrzlina", "path": "Potraviny › Mražené › Zmrzlina"},
+                              {"slug": "jogurty", "path": "Potraviny › Mléčné výrobky › Jogurty"}]
+
+    def _dictionary(self):
+        dictionary = pretty.Dictionary()
+        dictionary.add_category("twister", "jogurty")
+        dictionary.add_category("uni twister", "zmrzlina")
+        dictionary.add_category("míša", "zmrzlina")
+        return dictionary
+
+    def test_slovnik_prebije_kategorii_modelu_jednotka_zustava(self):
+        lines = [{"label": "MISA TVAROHOVY 6X45ML", "labelDisplay": "Míša tvarohový nanuk 6x45ml",
+                  "quantityUnit": "PCS", "netContentUom": "ML"}]
+        logged = []
+        ai_classify.classify(lines, self.ICE_CREAM,
+                             FakeClassifier({"0": {"category": "mlecko-vyrobky/tvaroh", "unit": "ML"}}),
+                             log=logged.append, dictionary=self._dictionary())
+        self.assertEqual((lines[0]["categoryHint"], lines[0]["unitHint"]), ("zmrzlina", "ML"))
+        self.assertEqual(logged, [])
+
+    def test_delsi_klic_slovniku_ma_prednost(self):
+        lines = [{"label": "UNI TWISTER 8X50ML", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.ICE_CREAM, None, log=lambda *_: None, dictionary=self._dictionary())
+        self.assertEqual(lines[0]["categoryHint"], "zmrzlina")
+
+    def test_slovnik_plati_i_pri_vypadku_modelu(self):
+        lines = [{"label": "MISA 6X45ML", "quantityUnit": "PCS"}, {"label": "MLEKO", "quantityUnit": "PCS"}]
+        ai_classify.classify(lines, self.ICE_CREAM, FakeClassifier(error=urllib.error.URLError("down")),
+                             log=lambda *_: None, dictionary=self._dictionary())
+        self.assertEqual((lines[0]["categoryHint"], lines[0]["unitHint"]), ("zmrzlina", None))
+        self.assertNotIn("categoryHint", lines[1])
+
+    def test_slovnik_s_neznamym_slugem_se_ignoruje(self):
+        dictionary = pretty.Dictionary()
+        dictionary.add_category("mleko", "vymysl")
+        lines = [{"label": "MLEKO", "quantityUnit": "PCS"}]
+        logged = []
+        ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": {"category": "mleko"}}),
+                             log=logged.append, dictionary=dictionary)
+        self.assertEqual(lines[0]["categoryHint"], "mleko")
+        self.assertTrue(any("neznámý slug „vymysl“" in message for message in logged))
+
+    def test_klic_slovniku_musi_byt_cele_slovo(self):
+        dictionary = pretty.Dictionary()
+        dictionary.add_category("misa", "zmrzlina")
+        self.assertIsNone(dictionary.category("Misanka sýr", None))
+        self.assertEqual(dictionary.category("MÍŠA TVAROHOVÝ", None), "zmrzlina")
+
+    def test_retezcova_polozka_slovniku_ma_prednost(self):
+        dictionary = pretty.Dictionary()
+        dictionary.add_category("tip", "mleko")
+        dictionary.add_category("tip", "testoviny", "coop")
+        self.assertEqual(dictionary.category("Tip", "coop"), "testoviny")
+        self.assertEqual(dictionary.category("Tip", "albert"), "mleko")
+
+    def test_slovnik_se_nacte_ze_souboru(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "kategorie.tsv").write_text("# komentář\nmíša\tzmrzlina\ntip\tchleba\tcoop\n",
+                                                       encoding="utf-8")
+            dictionary = pretty.load_dictionary(Path(directory))
+        self.assertEqual(dictionary.category("Míša tvarohový", None), "zmrzlina")
+        self.assertEqual(dictionary.category("Tip", "coop"), "chleba")
+        self.assertIsNone(dictionary.category("Tip", None))
+
     def test_odpoved_ktera_neni_objekt_se_zahodi(self):
         lines = [{"label": "MLEKO", "quantityUnit": "PCS"}]
         ai_classify.classify(lines, self.CATEGORIES, FakeClassifier({"0": ["mleko", "L"]}), log=lambda *_: None)
