@@ -28,12 +28,20 @@ _D = "[0-9Oo]"
 AMOUNT = rf"-?(?:{_D}{{1,3}}(?:[  ]{_D}{{3}})+|{_D}+)[.,]{_D}{{2}}"
 AMOUNT_RE = re.compile(AMOUNT)
 
+# Jednotková cena na řádku s množstvím („1.000 ks x 49:90 Kč /ks") — OCR tam čte desetinnou
+# tečku i jako dvojtečku. Jen tam: řádek je ukotvený množstvím, „x" a „/jednotka", takže
+# dvojtečka nemůže být čas. Obecná AMOUNT dvojtečku nepřipouští, jinak by čas „13:07"
+# z hlavičky vypadal jako částka.
+UNIT_AMOUNT = AMOUNT.replace("[.,]", "[.,:]")
+
 _ZERO_LIKE = str.maketrans({"O": "0", "o": "0"})
 
 
 def parse_amount(text: str) -> Decimal:
-    """Částka z účtenky na Decimal. Desetinná čárka, mezera v tisících, O místo nuly."""
-    cleaned = text.translate(_ZERO_LIKE).replace(" ", "").replace(" ", "").replace(",", ".")
+    """Částka z účtenky na Decimal. Desetinná čárka i dvojtečka (UNIT_AMOUNT), mezera v tisících,
+    O místo nuly."""
+    cleaned = (text.translate(_ZERO_LIKE).replace(" ", "").replace(" ", "").replace(",", ".")
+               .replace(":", "."))
     return Decimal(cleaned)
 
 

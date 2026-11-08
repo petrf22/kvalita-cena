@@ -32,7 +32,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 import lines as lines_mod
-from normalize import AMOUNT, is_valid_gtin, parse_amount
+from normalize import AMOUNT, UNIT_AMOUNT, is_valid_gtin, parse_amount
 from profiles import generic
 from profiles.base import Footer, Profile, ReceiptHeader
 
@@ -64,7 +64,7 @@ ITEM_HEAD_RE = re.compile(
 )
 CODE_RE = re.compile(
     rf"^(?P<code>\d{{8,14}})"
-    rf"(?:\s+(?P<qty>\d+(?:[.,]\d+)?)\s*(?P<uom>{_UOM})\s*x\s*(?P<unit>{AMOUNT})\s*"
+    rf"(?:\s+(?P<qty>\d+(?:[.,]\d+)?)\s*(?P<uom>{_UOM})\s*x\s*(?P<unit>{UNIT_AMOUNT})\s*"
     rf"(?:Kč|Kc|CZK)?\s*/\s*(?P<peruom>{_UOM}))?"
     rf"(?:\s+(?P<total>{AMOUNT}))?\s*$",
     re.IGNORECASE,
