@@ -137,13 +137,17 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
 - **Zakrytí účtenky se čte přes `effectiveMasks`, nikdy přímo z `masks`** (mobil
   `DraftPart.effectiveMasks`, web `effectiveMasks(part)` v `receipt-mask.ts`). Přepínač
   „Zakrýt" (`masksEnabled`) masky NEMAŽE, jen je vypne, aby šel falešný poplach výchozího pásu
-  hned vrátit. Kdo vezme `masks` přímo, vypálí i zakrytí, které uživatel vypnul. A naopak:
+  hned vrátit. Kdo vezme `masks` přímo, vypálí i zakrytí, které uživatel vypnul. Nově nakreslená
+  maska přepínač zase zapne (`masksEnabledAfterEdit`), jinak by šla nakreslená přes číslo karty
+  ven čitelná; editor proto stav přepínače dostává a vrací spolu s maskami. A naopak:
   maska v kontrole je šrafovaný návrh, černě se vypaluje jen při odeslání
   (`ReceiptImageProcessor.burnMasks`, `renderMaskedJpeg`).
 - **`core.receipt.loyalty_card_used = NULL` neznamená „bez karty", ale „nevyplněno"** — pak
   platí odhad workeru (`price_kind_guess`). `FALSE` je výslovné „bez karty" a přebije i odhad
-  `CLUB_CARD` (`ReceiptReviewService.discountKind`). Změna zaškrtnutí platí jen pro řádky, které
-  se teprve potvrdí — zapsané ceny se nepřepisují. Klient druh ceny po slevě nepočítá sám, čte
+  `CLUB_CARD` (`ReceiptReviewService.discountKind`), takže UI je volba o třech stavech, ne
+  zaškrtávátko (nezaškrtnuté by vydávalo „nevyplněno" za „bez karty"). Změna volby platí jen pro
+  řádky, které se teprve potvrdí — zapsané ceny se nepřepisují, proto se ukládání volby
+  a zveřejnění na klientovi navzájem blokují. Klient druh ceny po slevě nepočítá sám, čte
   `ReceiptLine.discountPriceKind`. Seznam karet uživatele na server nejde, předvyplnění podle
   řetězce žije jen v zařízení (`docs/soukromi.md`, „Účtenky").
 - **Účtenka: strukturu z OCR textu tahají výhradně regexy, nikdy jazykový model**

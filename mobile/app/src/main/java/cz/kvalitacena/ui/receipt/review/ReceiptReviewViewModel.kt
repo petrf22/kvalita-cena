@@ -92,8 +92,9 @@ class ReceiptReviewViewModel(
   /** Přepínač „Zakrýt" u dílu — masky zůstávají, jen se při vypnutí nevypálí. */
   fun setMasksEnabled(index: Int, enabled: Boolean) = draftStore.setMasksEnabled(index, enabled)
 
-  fun saveMasks(index: Int, masks: List<MaskRect>) {
+  fun saveMasks(index: Int, masks: List<MaskRect>, enabled: Boolean) {
     draftStore.setMasks(index, masks)
+    draftStore.setMasksEnabled(index, enabled)
     editingIndex = null
   }
 

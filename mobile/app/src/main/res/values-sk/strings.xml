@@ -707,9 +707,12 @@
     <string name="receipt_line_discount_club">klubová cena</string>
     <string name="receipt_line_discount_promo">akciová cena</string>
     <string name="receipt_line_discount_clearance">výpredaj</string>
-    <string name="receipt_loyalty_card">Nakúpené s vernostnou kartou obchodu</string>
-    <string name="receipt_loyalty_card_chain">Nakúpené s vernostnou kartou %1$s</string>
-    <string name="receipt_loyalty_card_hint">Zľavy z bločku sa potom zapíšu ako klubové ceny, bez karty ako akciové. Na server ide len áno/nie pri tomto bločku; voľba sa zapamätá v telefóne pre ďalšie nákupy v tomto obchode.</string>
+    <string name="receipt_loyalty_card">Nakúpené s vernostnou kartou obchodu?</string>
+    <string name="receipt_loyalty_card_chain">Nakúpené s vernostnou kartou %1$s?</string>
+    <string name="receipt_loyalty_card_yes">S kartou</string>
+    <string name="receipt_loyalty_card_no">Bez karty</string>
+    <string name="receipt_loyalty_card_unset">Zatiaľ nevyplnené — zľavy sa zapíšu podľa toho, čo appka prečítala z bločku.</string>
+    <string name="receipt_loyalty_card_hint">S kartou sa zľavy zapíšu ako klubové ceny, bez karty ako akciové. Na server ide len táto voľba pri tomto bločku; zapamätá sa v telefóne pre ďalšie nákupy v tomto obchode.</string>
     <string name="receipt_line_ean">EAN %1$s</string>
     <string name="receipt_line_actions">Akcie s riadkom</string>
     <string name="receipt_line_choose">Vybrať tovar</string>

@@ -175,7 +175,8 @@ fun ReceiptReviewScreen(
         imageWidth = part.width,
         imageHeight = part.height,
         initialMasks = part.masks,
-        onSave = { viewModel.saveMasks(index, it) },
+        initialEnabled = part.masksEnabled,
+        onSave = { masks, enabled -> viewModel.saveMasks(index, masks, enabled) },
         onDismiss = { viewModel.editingIndex = null },
       )
     }

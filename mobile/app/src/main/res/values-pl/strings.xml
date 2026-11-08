@@ -707,9 +707,12 @@
     <string name="receipt_line_discount_club">cena klubowa</string>
     <string name="receipt_line_discount_promo">cena promocyjna</string>
     <string name="receipt_line_discount_clearance">wyprzedaż</string>
-    <string name="receipt_loyalty_card">Zakupy z kartą lojalnościową sklepu</string>
-    <string name="receipt_loyalty_card_chain">Zakupy z kartą lojalnościową %1$s</string>
-    <string name="receipt_loyalty_card_hint">Rabaty z paragonu zostaną wtedy zapisane jako ceny klubowe, bez karty jako promocyjne. Na serwer trafia tylko tak/nie dla tego paragonu; wybór zostanie zapamiętany w telefonie na kolejne zakupy w tym sklepie.</string>
+    <string name="receipt_loyalty_card">Zakupy z kartą lojalnościową sklepu?</string>
+    <string name="receipt_loyalty_card_chain">Zakupy z kartą lojalnościową %1$s?</string>
+    <string name="receipt_loyalty_card_yes">Z kartą</string>
+    <string name="receipt_loyalty_card_no">Bez karty</string>
+    <string name="receipt_loyalty_card_unset">Jeszcze nie wybrano — rabaty zostaną zapisane według tego, co aplikacja odczytała z paragonu.</string>
+    <string name="receipt_loyalty_card_hint">Z kartą rabaty zostaną zapisane jako ceny klubowe, bez karty jako promocyjne. Na serwer trafia tylko ten wybór dla tego paragonu; zostanie zapamiętany w telefonie na kolejne zakupy w tym sklepie.</string>
     <string name="receipt_line_ean">EAN %1$s</string>
     <string name="receipt_line_actions">Akcje pozycji</string>
     <string name="receipt_line_choose">Wybierz produkt</string>

@@ -232,8 +232,11 @@
     "unknownText": "Appka nemá s čím súčet položiek porovnať — celková suma sa na bločku nenašla alebo ho čítala staršia verzia. Prejdi položky (hlavne so štítkom „Skontrolovať“) a odškrtni, čo zverejniť nechceš."
   },
   "loyaltyCard": {
-    "label": "Nakúpené s vernostnou kartou obchodu",
-    "labelChain": "Nakúpené s vernostnou kartou {{chain}}",
-    "hint": "Zľavy z bločku sa potom zapíšu ako klubové ceny, bez karty ako akciové. Na server ide len áno/nie pri tomto bločku; voľba sa zapamätá v tomto prehliadači pre ďalšie nákupy v tomto obchode."
+    "label": "Nakúpené s vernostnou kartou obchodu?",
+    "labelChain": "Nakúpené s vernostnou kartou {{chain}}?",
+    "yes": "S kartou",
+    "no": "Bez karty",
+    "unset": "Zatiaľ nevyplnené — zľavy sa zapíšu podľa toho, čo appka prečítala z bločku.",
+    "hint": "S kartou sa zľavy zapíšu ako klubové ceny, bez karty ako akciové. Na server ide len táto voľba pri tomto bločku; zapamätá sa v tomto prehliadači pre ďalšie nákupy v tomto obchode."
   }
 }

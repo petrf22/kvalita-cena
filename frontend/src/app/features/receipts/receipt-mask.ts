@@ -40,6 +40,18 @@ export interface ReceiptPart {
   masksEnabled: boolean;
 }
 
+/**
+ * Nově nakreslené zakrytí u vypnuté části zakrytí zase zapne — kdo kreslí obdélník přes číslo
+ * karty, chce ho zakrýt, a vypnutý přepínač by ho tiše poslal čitelný. Posun nebo smazání
+ * existující masky přepínač nemění.
+ */
+export function masksEnabledAfterEdit(
+  part: Pick<ReceiptPart, 'masks' | 'masksEnabled'>,
+  masks: readonly MaskRect[],
+): boolean {
+  return part.masksEnabled || masks.length > part.masks.length;
+}
+
 /** Masky, které se při odeslání opravdu vypálí — u vypnutého zakrytí žádné. */
 export function effectiveMasks(part: Pick<ReceiptPart, 'masks' | 'masksEnabled'>): MaskRect[] {
   return part.masksEnabled ? part.masks : [];

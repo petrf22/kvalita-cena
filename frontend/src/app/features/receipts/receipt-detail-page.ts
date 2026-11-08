@@ -15,6 +15,7 @@ import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
+import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
@@ -108,6 +109,7 @@ type PageState = 'loading' | 'ready' | 'notFound' | 'error' | 'offline';
     NzIconModule,
     NzModalModule,
     NzPopconfirmModule,
+    NzRadioModule,
     NzSpinModule,
     NzTagModule,
     NzTooltipModule,
@@ -345,7 +347,8 @@ export class ReceiptDetailPage {
 
   private saveLoyaltyCard(used: boolean, remember: boolean): void {
     const receipt = this.receipt();
-    if (!receipt) return;
+    // Během zveřejnění se volba nemění — server by ceny zapsal podle té, která tam zrovna je.
+    if (!receipt || this.confirming() || this.savingLoyaltyCard()) return;
     this.savingLoyaltyCard.set(true);
     this.loyaltyCardError.set(null);
     this.receiptService.setLoyaltyCard(receipt.id, used).subscribe({
@@ -651,7 +654,10 @@ export class ReceiptDetailPage {
 
   protected confirm(): void {
     const receipt = this.receipt();
-    if (!receipt || this.blocker() !== null || this.confirming()) return;
+    // Rozpracovaná volba karty určuje druh zapsaných cen — potvrdit dřív by zapsalo ceny podle
+    // staré volby a ty už pak nic nepřepíše.
+    if (!receipt || this.blocker() !== null || this.confirming() || this.savingLoyaltyCard())
+      return;
     const lineIds = receipt.lines.filter((l) => this.selected().has(l.id)).map((l) => l.id);
     this.confirming.set(true);
     this.confirmError.set(null);
