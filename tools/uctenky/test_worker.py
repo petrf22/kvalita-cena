@@ -285,6 +285,24 @@ Vážená položka byla zadána:
         self.assertEqual(document["purchasedAt"], "2026-09-07T10:15:00+02:00")
 
 
+    def test_dvojtecka_misto_desetinne_tecky_v_cene_za_jednotku(self):
+        # Účtenka 24 (2026-11-08): OCR přečetlo „49.90" jako „49:90" a řádek se ztratil.
+        document = parse.build_document(self.TEXT.replace("3.000 ks x 36.90", "3.000 ks x 36:90"))
+        self.assertEqual(document["warnings"], [])
+        balsyr = next(line for line in document["lines"] if line["kind"] == lines_mod.ITEM)
+        self.assertEqual((balsyr["quantity"], balsyr["unitPrice"], balsyr["lineTotal"]), ("3", "36.90", "110.70"))
+        self.assertEqual([line["kind"] for line in document["lines"]], [lines_mod.ITEM] * 2)
+
+    def test_mnozstvi_krat_cena_nesedi_s_castkou(self):
+        document = parse.build_document(self.TEXT.replace("3.000 ks x 36.90", "3.000 ks x 38.90"))
+        self.assertTrue(any("nesedí s částkou u 'Balsýr bloček 47% 200g'" in warning
+                            for warning in document["warnings"]), document["warnings"])
+
+    def test_cas_s_dvojteckou_neni_castka(self):
+        self.assertIsNone(normalize.AMOUNT_RE.search("Čas: 13:07:15"))
+        self.assertEqual(normalize.parse_amount("49:90"), Decimal("49.90"))
+
+
 class SegmentsTest(unittest.TestCase):
     def test_prekryv_dvou_casti_se_nezapocita_dvakrat(self):
         first = "albert\nNádražní 1\n100 00 Vzorov\nROHLÍK43GR\n5 x 2,90 Kč 14,50 A\nGRAN MORAV.STR.100G 59,90 A"

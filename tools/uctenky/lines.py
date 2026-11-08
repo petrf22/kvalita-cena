@@ -18,7 +18,7 @@ import re
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from normalize import AMOUNT, parse_amount
+from normalize import AMOUNT, UNIT_AMOUNT, parse_amount
 
 ITEM = "ITEM"
 DISCOUNT = "DISCOUNT"
@@ -34,12 +34,14 @@ _UOM_TO_FACTOR = {"kg": Decimal(1), "g": Decimal(1000), "l": Decimal(1), "ml": D
 _BASIS_UOM = {PER_KG: "kg", PER_L: "l"}
 
 _UOM = "kg|g|ml|l"
+# Zaplacená částka je zaokrouhlená na haléře, množství × cena za jednotku ne (0,526 kg × 109,90).
+_LINE_TOLERANCE = Decimal("0.01")
 _VAT_TAIL = r"(?:\s+(?P<vat>[A-Z]))?\s*$"
 
 # 0,302 kg x 289,00 Kč/kg 87,30 A   (název může být na stejném řádku i na předchozím)
 WEIGHT_RE = re.compile(
     rf"^(?P<name>.*?)\s*(?P<qty>[0-9]+(?:[.,][0-9]+)?)\s*(?P<uom>{_UOM})\s*x\s*"
-    rf"(?P<unit>{AMOUNT})\s*(?:Kč|Kc|CZK)?\s*/\s*(?P<peruom>{_UOM})\s+"
+    rf"(?P<unit>{UNIT_AMOUNT})\s*(?:Kč|Kc|CZK)?\s*/\s*(?P<peruom>{_UOM})\s+"
     rf"(?P<total>{AMOUNT}){_VAT_TAIL}",
     re.IGNORECASE,
 )
@@ -60,7 +62,7 @@ SIMPLE_RE = re.compile(rf"^(?P<name>.*?)\s+(?:(?P<vatpre>[A-Z])\s+)?(?P<total>{A
 # 0.526 kg (E) x 109.90 Kč /kg — u váženého zboží Penny za jednotkou tiskne, jak byla
 # hmotnost zadána: (V) z pokladní váhy, (E) jinak (legenda v patičce účtenky).
 PRE_QTY_RE = re.compile(
-    rf"^(?P<qty>[0-9]+(?:[.,][0-9]+)?)\s*(?P<uom>ks|kg|g|l|ml)(?:\s*\([A-Z]\))?\s*x\s*(?P<unit>{AMOUNT})\s*"
+    rf"^(?P<qty>[0-9]+(?:[.,][0-9]+)?)\s*(?P<uom>ks|kg|g|l|ml)(?:\s*\([A-Z]\))?\s*x\s*(?P<unit>{UNIT_AMOUNT})\s*"
     rf"(?:Kč|Kc|CZK)?\s*/\s*(?P<peruom>ks|kg|g|l|ml)\s*$",
     re.IGNORECASE,
 )
@@ -245,6 +247,13 @@ def parse_item_lines(raw_lines: list[str]) -> ParseResult:
                     )
                 )
                 continue
+            if pending_qty is not None and abs(pending_qty[0] * pending_qty[2] - total) > _LINE_TOLERANCE:
+                # Množství × cena za jednotku musí dát zaplacenou částku. Nesoulad znamená chybně
+                # přečtenou cenu (OCR „49:90", záměna číslice) — součet účtenky to nepozná,
+                # protože ten sčítá jen zaplacené částky.
+                result.warnings.append(
+                    f"množství × cena za jednotku nesedí s částkou u {simple['name'].strip()!r}: "
+                    f"{pending_qty[0]} × {pending_qty[2]} ≠ {total}")
             qty, basis, unit, note = pending_qty or (Decimal(1), PACKAGE, total, None)
             pending_qty = None
             last_item_no = append(
