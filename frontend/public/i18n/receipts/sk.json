@@ -40,8 +40,10 @@
     "drawModeOn": "Ukončiť kreslenie",
     "addBand": "Zakryť spodný pás",
     "clearAll": "Odobrať všetky zakrytia",
-    "hintMouse": "Ťahaj myšou cez údaj, ktorý chceš zakryť. Čierny obdĺžnik sa dá posunúť a za rohy zväčšiť. Čo je čierne, na server neodíde.",
-    "hintTouch": "Zapni „Kresliť zakrytie“ a ťahaj prstom cez údaj. Čierny obdĺžnik sa dá posunúť a za rohy zväčšiť. Čo je čierne, na server neodíde."
+    "hintMouse": "Ťahaj myšou cez údaj, ktorý chceš zakryť. Obdĺžnik sa dá posunúť a za rohy zväčšiť.",
+    "hintTouch": "Zapni „Kresliť zakrytie“ a ťahaj prstom cez údaj. Obdĺžnik sa dá posunúť a za rohy zväčšiť.",
+    "legend": "Šrafované miesta sa pri odoslaní začiernia a na server neodídu. Predvolený pás je len odhad — keď pod ním nič citlivé nie je, vypni ho alebo ho zmaž.",
+    "legendOff": "Zakrytie je vypnuté — čiarkované miesta odídu nezakryté."
   },
   "upload": {
     "title": "Nový bloček",
@@ -55,6 +57,7 @@
     "partName": "Časť {{index}}",
     "partMasks": "{count, plural, one {# zakrytie} few {# zakrytia} other {# zakrytí}}",
     "partMasksNone": "bez zakrytia",
+    "partMasksOff": "zakrytie vypnuté",
     "moveUp": "Posunúť časť {{index}} nahor",
     "moveDown": "Posunúť časť {{index}} nadol",
     "removePart": "Odobrať časť {{index}}",
@@ -81,7 +84,8 @@
     "unsupportedFile": "Súbor {{name}} sa nepodarilo otvoriť ako obrázok. Skús JPEG alebo PNG.",
     "fileFailed": "Fotku {{name}} sa nepodarilo načítať.",
     "renderFailed": "Fotky sa nepodarilo pripraviť na odoslanie. Skús ich vybrať znova.",
-    "tooLarge": "Bloček je na odoslanie príliš veľký. Skús menej častí."
+    "tooLarge": "Bloček je na odoslanie príliš veľký. Skús menej častí.",
+    "maskToggle": "Zakryť"
   },
   "images": {
     "title": "Obrázok bločku",

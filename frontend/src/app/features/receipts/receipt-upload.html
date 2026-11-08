@@ -55,7 +55,9 @@
                 <span class="part-meta">{{
                   maskCount(part) === 0
                     ? t('receipts.upload.partMasksNone')
-                    : t('receipts.upload.partMasks', { count: maskCount(part) })
+                    : part.masksEnabled
+                      ? t('receipts.upload.partMasks', { count: maskCount(part) })
+                      : t('receipts.upload.partMasksOff')
                 }}</span>
               </span>
             </button>
@@ -106,6 +108,17 @@
       <h3 id="receipt-upload-mask" class="step-title">
         {{ t('receipts.upload.stepMask', { index: selectedIndex() + 1, total: parts().length }) }}
       </h3>
+      @if (part.masks.length > 0) {
+        <label class="mask-toggle">
+          <nz-switch
+            [ngModel]="part.masksEnabled"
+            (ngModelChange)="setMasksEnabled(part.id, $event)"
+            [disabled]="sending()"
+            name="receiptMasksEnabled"
+          />
+          {{ t('receipts.upload.maskToggle') }}
+        </label>
+      }
       <app-receipt-mask-editor [part]="part" (masksChange)="onMasksChange(part.id, $event)" />
     </section>
   }

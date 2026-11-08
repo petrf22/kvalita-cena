@@ -1,4 +1,4 @@
-import { MaskRect, ReceiptPart, maskPixelRect, scaledSize } from './receipt-mask';
+import { MaskRect, ReceiptPart, effectiveMasks, maskPixelRect, scaledSize } from './receipt-mask';
 
 /**
  * Limity nahrání účtenky — zdroj pravdy je `app.receipt.*` na serveru (docs/ai.md, tabulka
@@ -66,6 +66,7 @@ export async function loadReceiptPart(file: File, id: number): Promise<ReceiptPa
       height: size.height,
       masks: [],
       masksTouched: false,
+      masksEnabled: true,
     };
   } finally {
     bitmap.close();
@@ -82,7 +83,7 @@ export async function renderMaskedJpeg(part: ReceiptPart): Promise<Blob> {
     const context = canvas.getContext('2d');
     if (!context) throw new UnsupportedImageError();
     context.drawImage(bitmap, 0, 0, part.width, part.height);
-    paintMasks(context, part.masks);
+    paintMasks(context, effectiveMasks(part));
     let blob: Blob | null = null;
     for (const quality of EXPORT_QUALITIES) {
       blob = await toBlob(canvas, quality);

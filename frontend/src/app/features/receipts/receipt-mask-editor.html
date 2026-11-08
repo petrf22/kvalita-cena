@@ -19,12 +19,12 @@
         @let pos = percent(mask);
         <div
           class="mask"
+          [class.off]="!part().masksEnabled"
           [class.selected]="selectedIndex() === i"
           [style.left]="pos.left"
           [style.top]="pos.top"
           [style.width]="pos.width"
           [style.height]="pos.height"
-          [style.background]="maskFill"
           role="button"
           tabindex="0"
           [attr.aria-label]="t('receipts.mask.maskLabel', { index: i + 1 })"
@@ -63,7 +63,6 @@
           [style.top]="pos.top"
           [style.width]="pos.width"
           [style.height]="pos.height"
-          [style.background]="maskFill"
         ></div>
       }
     </div>
@@ -91,6 +90,7 @@
     </button>
   </div>
   <p class="mask-hint">
+    {{ part().masksEnabled ? t('receipts.mask.legend') : t('receipts.mask.legendOff') }}
     {{ coarsePointer ? t('receipts.mask.hintTouch') : t('receipts.mask.hintMouse') }}
   </p>
 </ng-container>

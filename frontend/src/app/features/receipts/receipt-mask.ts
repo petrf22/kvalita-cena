@@ -33,6 +33,16 @@ export interface ReceiptPart {
   masks: MaskRect[];
   /** Uživatel masky téhle části upravoval — výchozí pás se jí pak už nepřidává. */
   masksTouched: boolean;
+  /**
+   * Přepínač „Zakrýt" — vypnutá část odejde bez masek, ale ty zůstanou, ať je jde jedním
+   * klepnutím vrátit (falešný poplach výchozího pásu nemá stát smazání a nové kreslení).
+   */
+  masksEnabled: boolean;
+}
+
+/** Masky, které se při odeslání opravdu vypálí — u vypnutého zakrytí žádné. */
+export function effectiveMasks(part: Pick<ReceiptPart, 'masks' | 'masksEnabled'>): MaskRect[] {
+  return part.masksEnabled ? part.masks : [];
 }
 
 /**

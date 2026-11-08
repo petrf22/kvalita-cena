@@ -40,8 +40,10 @@
     "drawModeOn": "Zeichnen beenden",
     "addBand": "Unteren Streifen abdecken",
     "clearAll": "Alle Abdeckungen entfernen",
-    "hintMouse": "Zieh mit der Maus über die Angabe, die du verdecken willst. Das schwarze Rechteck lässt sich verschieben und an den Ecken vergrößern. Was schwarz ist, erreicht den Server nicht.",
-    "hintTouch": "Schalte „Abdeckung zeichnen“ ein und zieh mit dem Finger über die Angabe. Das schwarze Rechteck lässt sich verschieben und an den Ecken vergrößern. Was schwarz ist, erreicht den Server nicht."
+    "hintMouse": "Zieh mit der Maus über die Angabe, die du verdecken willst. Das Rechteck lässt sich verschieben und an den Ecken vergrößern.",
+    "hintTouch": "Schalte „Abdeckung zeichnen“ ein und zieh mit dem Finger über die Angabe. Das Rechteck lässt sich verschieben und an den Ecken vergrößern.",
+    "legend": "Schraffierte Stellen werden beim Senden geschwärzt und erreichen den Server nicht. Der Standardstreifen ist nur eine Schätzung — wenn darunter nichts Sensibles steht, schalte ihn aus oder lösche ihn.",
+    "legendOff": "Abdecken ist ausgeschaltet — die gestrichelten Stellen werden unverdeckt gesendet."
   },
   "upload": {
     "title": "Neuer Kassenbon",
@@ -55,6 +57,7 @@
     "partName": "Teil {{index}}",
     "partMasks": "{count, plural, one {# Abdeckung} other {# Abdeckungen}}",
     "partMasksNone": "keine Abdeckung",
+    "partMasksOff": "Abdeckung aus",
     "moveUp": "Teil {{index}} nach oben verschieben",
     "moveDown": "Teil {{index}} nach unten verschieben",
     "removePart": "Teil {{index}} entfernen",
@@ -81,7 +84,8 @@
     "unsupportedFile": "Die Datei {{name}} ließ sich nicht als Bild öffnen. Versuch JPEG oder PNG.",
     "fileFailed": "Das Foto {{name}} konnte nicht geladen werden.",
     "renderFailed": "Die Fotos konnten nicht zum Senden vorbereitet werden. Wähle sie erneut aus.",
-    "tooLarge": "Der Kassenbon ist zum Senden zu groß. Versuch es mit weniger Teilen."
+    "tooLarge": "Der Kassenbon ist zum Senden zu groß. Versuch es mit weniger Teilen.",
+    "maskToggle": "Abdecken"
   },
   "images": {
     "title": "Bild des Kassenbons",

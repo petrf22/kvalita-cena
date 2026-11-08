@@ -40,8 +40,10 @@
     "drawModeOn": "Stop drawing",
     "addBand": "Cover the bottom strip",
     "clearAll": "Remove all covers",
-    "hintMouse": "Drag the mouse across the detail you want to hide. The black rectangle can be moved and resized by its corners. Anything black never reaches the server.",
-    "hintTouch": "Turn on “Draw a cover” and drag your finger across the detail. The black rectangle can be moved and resized by its corners. Anything black never reaches the server."
+    "hintMouse": "Drag the mouse across the detail you want to hide. The rectangle can be moved and resized by its corners.",
+    "hintTouch": "Turn on “Draw a cover” and drag your finger across the detail. The rectangle can be moved and resized by its corners.",
+    "legend": "Hatched areas are blacked out when you send the receipt and never reach the server. The default strip is only a guess — if nothing sensitive is under it, turn it off or delete it.",
+    "legendOff": "Covering is off — the dashed areas will be sent uncovered."
   },
   "upload": {
     "title": "New receipt",
@@ -55,6 +57,7 @@
     "partName": "Part {{index}}",
     "partMasks": "{count, plural, one {# cover} other {# covers}}",
     "partMasksNone": "no covers",
+    "partMasksOff": "covering off",
     "moveUp": "Move part {{index}} up",
     "moveDown": "Move part {{index}} down",
     "removePart": "Remove part {{index}}",
@@ -81,7 +84,8 @@
     "unsupportedFile": "The file {{name}} could not be opened as an image. Try JPEG or PNG.",
     "fileFailed": "The photo {{name}} could not be loaded.",
     "renderFailed": "The photos could not be prepared for sending. Try choosing them again.",
-    "tooLarge": "The receipt is too large to send. Try fewer parts."
+    "tooLarge": "The receipt is too large to send. Try fewer parts.",
+    "maskToggle": "Cover"
   },
   "images": {
     "title": "Receipt image",

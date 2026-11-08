@@ -4,6 +4,7 @@ import {
   MIN_MASK_PX,
   ReceiptPart,
   defaultBand,
+  effectiveMasks,
   isUsableMask,
   maskPixelRect,
   movePart,
@@ -25,9 +26,20 @@ function part(id: number, overrides: Partial<ReceiptPart> = {}): ReceiptPart {
     height: 2000,
     masks: [],
     masksTouched: false,
+    masksEnabled: true,
     ...overrides,
   };
 }
+
+describe('effectiveMasks', () => {
+  it('vypnuté zakrytí nevypálí nic, ale masky zůstanou k návratu', () => {
+    const band = defaultBand(1000, 2000);
+    const off = part(1, { masks: [band], masksEnabled: false });
+    expect(effectiveMasks(off)).toEqual([]);
+    expect(off.masks).toEqual([band]);
+    expect(effectiveMasks({ ...off, masksEnabled: true })).toEqual([band]);
+  });
+});
 
 describe('defaultBand', () => {
   it('zakryje spodní pás přes celou šířku', () => {

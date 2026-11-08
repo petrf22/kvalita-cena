@@ -30,12 +30,30 @@
   touch-action: none;
 }
 
-/* Barva se bere z MASK_FILL (receipt-image.ts) — přesně ta, která se vypálí do pixelů. */
+/*
+ * Návrh zakrytí, ne výsledek: šrafa s průsvitným podkladem, pod kterou je obsah účtenky vidět.
+ * Černě se vypálí až při odeslání (MASK_FILL, receipt-image.ts). Barva je vázaná na fotku
+ * papíru, ne na téma (docs/design.md, „Barevné tokeny").
+ */
 .mask {
   position: absolute;
   cursor: move;
   touch-action: none;
   outline: none;
+  border: 2px solid var(--kc-mask-stroke);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      var(--kc-mask-hatch) 0 2px,
+      transparent 2px var(--kc-space-2)
+    ),
+    var(--kc-mask-tint);
+}
+
+/* Zakrytí vypnuté — místo zůstává vidět jako obrys, při odeslání se nezačerní. */
+.mask.off {
+  border-style: dashed;
+  background: none;
 }
 
 .mask.selected,

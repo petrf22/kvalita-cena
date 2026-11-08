@@ -40,8 +40,10 @@
     "drawModeOn": "Ukončit kreslení",
     "addBand": "Zakrýt spodní pás",
     "clearAll": "Odebrat všechna zakrytí",
-    "hintMouse": "Táhni myší přes údaj, který chceš zakrýt. Černý obdélník jde posunout a za rohy zvětšit. Co je černé, na server neodejde.",
-    "hintTouch": "Zapni „Kreslit zakrytí“ a táhni prstem přes údaj. Černý obdélník jde posunout a za rohy zvětšit. Co je černé, na server neodejde."
+    "hintMouse": "Táhni myší přes údaj, který chceš zakrýt. Obdélník jde posunout a za rohy zvětšit.",
+    "hintTouch": "Zapni „Kreslit zakrytí“ a táhni prstem přes údaj. Obdélník jde posunout a za rohy zvětšit.",
+    "legend": "Šrafovaná místa se při odeslání začerní a na server neodejdou. Výchozí pás je jen odhad — když pod ním nic citlivého není, vypni ho nebo ho smaž.",
+    "legendOff": "Zakrytí je vypnuté — čárkovaná místa odejdou nezakrytá."
   },
   "upload": {
     "title": "Nová účtenka",
@@ -55,6 +57,7 @@
     "partName": "Část {{index}}",
     "partMasks": "{count, plural, other {# zakrytí}}",
     "partMasksNone": "bez zakrytí",
+    "partMasksOff": "zakrytí vypnuto",
     "moveUp": "Posunout část {{index}} nahoru",
     "moveDown": "Posunout část {{index}} dolů",
     "removePart": "Odebrat část {{index}}",
@@ -81,7 +84,8 @@
     "unsupportedFile": "Soubor {{name}} se nepodařilo otevřít jako obrázek. Zkus JPEG nebo PNG.",
     "fileFailed": "Fotku {{name}} se nepodařilo načíst.",
     "renderFailed": "Fotky se nepodařilo připravit k odeslání. Zkus je vybrat znovu.",
-    "tooLarge": "Účtenka je na odeslání moc velká. Zkus méně částí."
+    "tooLarge": "Účtenka je na odeslání moc velká. Zkus méně částí.",
+    "maskToggle": "Zakrýt"
   },
   "images": {
     "title": "Obrázek účtenky",
