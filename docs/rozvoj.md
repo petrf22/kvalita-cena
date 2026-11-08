@@ -54,6 +54,39 @@ uživatelskou editaci řetězce vůbec zavést, nebo název dát jen na `core.st
 
 Agregace se nemění — jde čistě o zobrazovací text, klíč agregátu zůstává `price_kind`.
 
+První krok je hotový u účtenek: zaškrtnutí „Nakoupeno s věrnostní kartou <řetězec>"
+(`core.receipt.loyalty_card_used`, `docs/datovy-model.md`, „Účtenky") rozhodne, jestli se sleva
+zapíše jako klubová, a popisek už nese název řetězce. Až bude mít řetězec název programu, patří
+sem místo obecného „věrnostní kartou".
+
+## Ruční druh ceny u jednotlivého řádku účtenky (NÁPAD)
+
+Zaškrtnutí karty u účtenky platí pro všechny slevy na ní. Jenže i s kartou může být jedna ze
+slev obyčejná akce pro všechny — pak se zapíše jako klubová. Řešení: u řádku se slevou nabídnout
+přepnutí klubová/akční, které přebije zaškrtnutí u účtenky (`core.receipt_line`, nový sloupec
+vedle `price_kind_guess`, `ReceiptReviewService.discountKind`). Zatím se nedělá, dokud se
+neukáže, že je to v praxi časté.
+
+## Zboží, u kterého obchod nesmí dát klubovou cenu (NÁPAD)
+
+**Zadání:** prý existuje zboží (rohlíky, chléb, máslo…), které nesmí být ve slevě jen pro
+držitele karty. Pokud by to platilo, appka by u takového zboží neměla klubovou cenu zapsat
+(nebo ji přepsat na akční), a pravidlo by se mohlo lišit podle země.
+
+**Ověření pro ČR (2026-11-08):** takový předpis jsem nenašel. Novela zákona o ochraně
+spotřebitele (účinná od 6. 1. 2023, § 12a — uvádění nejnižší ceny před slevou) se na věrnostní
+programy výslovně nevztahuje a ČOI věrnostní ceny toleruje, pokud obchodník jasně řekne, která
+cena platí pro členy a která pro ostatní. Pravidlo o uvádění slev má navíc výjimky pro
+rychle se kazící potraviny, což se snadno splete se „zákazem klubové slevy na pečivo". Jiné země
+regulují ceny základních potravin jinak (stropy cen v Maďarsku a Chorvatsku), ani tam jsem ale
+zákaz cen jen pro členy nenašel. Zdroje: [MPO — Označování výrobků slevami](https://mpo.gov.cz/cz/ochrana-spotrebitele/prehledne-o-ochrane-spotrebitele/oznacovani-vyrobku-slevami--273320/),
+[CHS Legal — Slevy nově II.](https://www.chslegal.eu/aktualne/detail/slevy-nove-ii-na-co-se-novela-nevztahuje-75/),
+[Echo24 — Tesco a věrnostní kartičky](https://www.echo24.cz/a/HCjxr/zpravy-supermarkety-retezce-ceny-potravin-slevy-vernostni-karticky-tesco-clubcard-coi).
+
+**Kdyby se to změnilo:** pravidlo podle země nad kategorií zboží (kategorie × země → zakázané
+druhy ceny), uplatněné v `ReceiptReviewService.discountKind` a ve validaci ručního zápisu ceny.
+Seznam patří do konfigurace nebo do číselníku, ne natvrdo do kódu. Do té doby se nic nedělá.
+
 ## Ceny předem z akčního letáku a časově omezená nabídka (ROZHODNOUT)
 
 **Zadání:** umožnit zadat akční ceny z letáku dopředu — leták obvykle platí týden (např. úterý

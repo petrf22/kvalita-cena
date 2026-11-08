@@ -342,7 +342,9 @@ typicky ještě během míření — nakloněný, nebo s rámečkem chyceným za
 jen na první díl (a na „nafotit znovu" jednoho dílu); další díly řídí posun (`NEW_PART_SHIFT_RATIO`).
 
 Web díly nesnímá kamerou — uživatel vybírá fotky sám (`frontend/.../features/receipts/`);
-výchozí maska je spodní pás 20 % výšky poslední části a odesílaná šířka nejvýš 1600 px.
+výchozí maska je spodní pás 20 % výšky poslední části (na mobilu 25 %, `DEFAULT_MASK_TOP`)
+a odesílaná šířka nejvýš 1600 px. Pás je jen odhad podle pozice, proto se na obou klientech
+kreslí jako šrafovaný návrh s přepínačem „Zakrýt" (`docs/soukromi.md`, „Účtenky").
 
 ## Konfigurace (až přijde čas)
 

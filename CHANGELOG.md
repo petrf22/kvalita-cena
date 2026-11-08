@@ -7,6 +7,14 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [Nezveřejněno]
+
+### Přidáno
+- V detailu účtenky se slevou jde zaškrtnout „Nakoupeno s věrnostní kartou“ — slevy se pak zapíšou jako klubové ceny, bez karty jako akční, a u řádku je vidět, jaká cena vznikne; volba se pamatuje jen v zařízení pro další účtenky ze stejného řetězce (server, web, mobil)
+
+### Změněno
+- Navržené zakrytí účtenky je průsvitné šrafované, ne černé, takže je vidět, co zakrývá; jde ho přepínačem „Zakrýt“ vypnout a na mobilu prstem posunout a zvětšit nebo zmenšit, černě se vypálí až při odeslání (web, mobil)
+
 ## [0.13.5] – 2026-11-08
 
 ### Přidáno

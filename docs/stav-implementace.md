@@ -489,6 +489,15 @@ ne shodí dávku), `ProductStoreLabelService`, `ReceiptImageRetentionService` (d
 Testy `ReceiptFlowIntegrationTest` (Testcontainers), `ReceiptPriceRowsTest`,
 `ReceiptQueueNotifierTest`.
 
+**Zakrytí a karta obchodu:** výchozí pás zakrytí je šrafovaný návrh, ne černá plocha (mobil
+`MaskedPartImage`, web `.mask` v `receipt-mask-editor.css`). Mobilní editor (`MaskEditorDialog`)
+umí jako webový posun i změnu velikosti za roh (`hitTest`/`movedBy`/`resizedTo`
+v `MaskGeometry.kt`, testy `CoverageTest`). Přepínač „Zakrýt" u části (`DraftPart.masksEnabled`,
+web `ReceiptPart.masksEnabled`/`effectiveMasks`) masky vypne bez smazání. V detailu účtenky se
+slevou je zaškrtnutí „Nakoupeno s věrnostní kartou" (`setReceiptLoyaltyCard`, web
+`receipt-loyalty-card.ts`, mobil `receipt/ReceiptLoyaltyCard.kt`) a u řádku je vidět druh ceny
+po slevě (`discountPriceKind`). Testy `ReceiptPriceRowsTest` a `ReceiptFlowIntegrationTest`.
+
 **Snímání na mobilu:** první díl se uloží až po odpočtu (výchozí 2 s, volba 1–5 s v Nastavení,
 `ReceiptPrefs.captureStartDelaySeconds`), během kterého rámeček účtenky drží na místě
 (`CoverageTracker.updateStart`, prahy `docs/ai.md`); do té doby náhled ukazuje vodítko pro horní

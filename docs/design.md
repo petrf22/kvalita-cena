@@ -111,6 +111,13 @@ tématu (v tmavém režimu tmavá) by na ní zmizela. Rámeček nalezené účte
 snímání podle rámečku) jsou na `colorScheme.surface` s průhledností 0,9 — čitelné na
 jakémkoli obrazu z kamery a v obou režimech.
 
+Třetí výjimka je **návrh zakrytí přes fotku účtenky** (`--kc-mask-stroke` `#ff4d4f`,
+`--kc-mask-hatch` `rgba(255, 77, 79, 0.45)`, `--kc-mask-tint` `rgba(255, 77, 79, 0.12)`; mobil
+`MaskStroke` v `ui/receipt/review/MaskEditor.kt` se stejnou hodnotou a průhlednostmi): podklad
+je bílý papír na fotce, ne povrch appky, takže barva podle tématu — v tmavém režimu bledá
+`error` — by na něm zanikla. Maska je průsvitná šrafa s plným obrysem (obsah pod ní musí být
+vidět, je to jen návrh), vypnuté zakrytí jen čárkovaný obrys. Černě se vypálí až při odeslání.
+
 Rozměry komponent, ne rozestupy: miniatura zboží z Open Food Facts v panelu řádku účtenky je
 56 px / 56 dp, seznam návrhů zboží v panelu má na mobilu strop výšky 320 dp, aby se panel
 vešel i s klávesnicí.
