@@ -1,3 +1,6 @@
 # Ruční přepis celého označení z účtenky -> čitelný název (tools/uctenky/README.md).
 # Formát: označení<TAB>čitelný název[<TAB>řetězec]. Označení se porovnává jako
 # core.norm_label (bez diakritiky, interpunkce a velikosti písmen). Zapisuje i curate.py.
+MÍŠA TVAROHOVÝ 6X45ML	Míša tvarohový nanuk 6x45ml
+UNI TWISTER 8X50ML	Uni Twister nanuk 8x50ml
+KLADENSKÁ PEČENÉ TIP	Kladenská pečeně tip
