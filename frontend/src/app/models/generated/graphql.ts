@@ -818,9 +818,9 @@ export type SubmitObservationsMutation = { submitObservations: Array<{ id: strin
 
 export type ReceiptListFieldsFragment = { id: string, processingStatus: ReceiptProcessingStatus, reviewStatus: ReceiptReviewStatus, createdAt: string, processedAt: string | null, purchasedAt: string | null, storeNameRaw: string | null, totalAmount: number | null, currency: string | null, unseen: boolean, imagesDeletedAt: string | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lineCounts: { total: number, unmatched: number, suggested: number, matched: number, ignored: number } };
 
-export type ReceiptLineFieldsFragment = { id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null };
+export type ReceiptLineFieldsFragment = { id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, discountPriceKind: PriceKind | null, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null };
 
-export type ReceiptDetailFieldsFragment = { storeAddressRaw: string | null, storeIcoRaw: string | null, sumStatus: ReceiptSumStatus, computedTotal: number | null, imagePaths: Array<string>, id: string, processingStatus: ReceiptProcessingStatus, reviewStatus: ReceiptReviewStatus, createdAt: string, processedAt: string | null, purchasedAt: string | null, storeNameRaw: string | null, totalAmount: number | null, currency: string | null, unseen: boolean, imagesDeletedAt: string | null, suggestedStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lines: Array<{ id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null }>, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lineCounts: { total: number, unmatched: number, suggested: number, matched: number, ignored: number } };
+export type ReceiptDetailFieldsFragment = { storeAddressRaw: string | null, storeIcoRaw: string | null, sumStatus: ReceiptSumStatus, computedTotal: number | null, loyaltyCardUsed: boolean | null, imagePaths: Array<string>, id: string, processingStatus: ReceiptProcessingStatus, reviewStatus: ReceiptReviewStatus, createdAt: string, processedAt: string | null, purchasedAt: string | null, storeNameRaw: string | null, totalAmount: number | null, currency: string | null, unseen: boolean, imagesDeletedAt: string | null, suggestedStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lines: Array<{ id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, discountPriceKind: PriceKind | null, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null }>, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lineCounts: { total: number, unmatched: number, suggested: number, matched: number, ignored: number } };
 
 export type ReceiptSummaryQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -840,7 +840,7 @@ export type ReceiptQueryVariables = Exact<{
 }>;
 
 
-export type ReceiptQuery = { receipt: { storeAddressRaw: string | null, storeIcoRaw: string | null, sumStatus: ReceiptSumStatus, computedTotal: number | null, imagePaths: Array<string>, id: string, processingStatus: ReceiptProcessingStatus, reviewStatus: ReceiptReviewStatus, createdAt: string, processedAt: string | null, purchasedAt: string | null, storeNameRaw: string | null, totalAmount: number | null, currency: string | null, unseen: boolean, imagesDeletedAt: string | null, suggestedStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lines: Array<{ id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null }>, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lineCounts: { total: number, unmatched: number, suggested: number, matched: number, ignored: number } } | null };
+export type ReceiptQuery = { receipt: { storeAddressRaw: string | null, storeIcoRaw: string | null, sumStatus: ReceiptSumStatus, computedTotal: number | null, loyaltyCardUsed: boolean | null, imagePaths: Array<string>, id: string, processingStatus: ReceiptProcessingStatus, reviewStatus: ReceiptReviewStatus, createdAt: string, processedAt: string | null, purchasedAt: string | null, storeNameRaw: string | null, totalAmount: number | null, currency: string | null, unseen: boolean, imagesDeletedAt: string | null, suggestedStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lines: Array<{ id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, discountPriceKind: PriceKind | null, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null }>, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lineCounts: { total: number, unmatched: number, suggested: number, matched: number, ignored: number } } | null };
 
 export type ReceiptLineSuggestionsQueryVariables = Exact<{
   lineId: string;
@@ -865,7 +865,15 @@ export type UpdateReceiptHeaderMutationVariables = Exact<{
 }>;
 
 
-export type UpdateReceiptHeaderMutation = { updateReceiptHeader: { storeAddressRaw: string | null, storeIcoRaw: string | null, sumStatus: ReceiptSumStatus, computedTotal: number | null, imagePaths: Array<string>, id: string, processingStatus: ReceiptProcessingStatus, reviewStatus: ReceiptReviewStatus, createdAt: string, processedAt: string | null, purchasedAt: string | null, storeNameRaw: string | null, totalAmount: number | null, currency: string | null, unseen: boolean, imagesDeletedAt: string | null, suggestedStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lines: Array<{ id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null }>, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lineCounts: { total: number, unmatched: number, suggested: number, matched: number, ignored: number } } };
+export type UpdateReceiptHeaderMutation = { updateReceiptHeader: { storeAddressRaw: string | null, storeIcoRaw: string | null, sumStatus: ReceiptSumStatus, computedTotal: number | null, loyaltyCardUsed: boolean | null, imagePaths: Array<string>, id: string, processingStatus: ReceiptProcessingStatus, reviewStatus: ReceiptReviewStatus, createdAt: string, processedAt: string | null, purchasedAt: string | null, storeNameRaw: string | null, totalAmount: number | null, currency: string | null, unseen: boolean, imagesDeletedAt: string | null, suggestedStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lines: Array<{ id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, discountPriceKind: PriceKind | null, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null }>, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lineCounts: { total: number, unmatched: number, suggested: number, matched: number, ignored: number } } };
+
+export type SetReceiptLoyaltyCardMutationVariables = Exact<{
+  id: string;
+  used?: boolean | null | undefined;
+}>;
+
+
+export type SetReceiptLoyaltyCardMutation = { setReceiptLoyaltyCard: { storeAddressRaw: string | null, storeIcoRaw: string | null, sumStatus: ReceiptSumStatus, computedTotal: number | null, loyaltyCardUsed: boolean | null, imagePaths: Array<string>, id: string, processingStatus: ReceiptProcessingStatus, reviewStatus: ReceiptReviewStatus, createdAt: string, processedAt: string | null, purchasedAt: string | null, storeNameRaw: string | null, totalAmount: number | null, currency: string | null, unseen: boolean, imagesDeletedAt: string | null, suggestedStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lines: Array<{ id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, discountPriceKind: PriceKind | null, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null }>, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lineCounts: { total: number, unmatched: number, suggested: number, matched: number, ignored: number } } };
 
 export type MatchReceiptLineMutationVariables = Exact<{
   lineId: string;
@@ -874,21 +882,21 @@ export type MatchReceiptLineMutationVariables = Exact<{
 }>;
 
 
-export type MatchReceiptLineMutation = { matchReceiptLine: { id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null } };
+export type MatchReceiptLineMutation = { matchReceiptLine: { id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, discountPriceKind: PriceKind | null, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null } };
 
 export type IgnoreReceiptLineMutationVariables = Exact<{
   lineId: string;
 }>;
 
 
-export type IgnoreReceiptLineMutation = { ignoreReceiptLine: { id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null } };
+export type IgnoreReceiptLineMutation = { ignoreReceiptLine: { id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, discountPriceKind: PriceKind | null, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null } };
 
 export type UnmatchReceiptLineMutationVariables = Exact<{
   lineId: string;
 }>;
 
 
-export type UnmatchReceiptLineMutation = { unmatchReceiptLine: { id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null } };
+export type UnmatchReceiptLineMutation = { unmatchReceiptLine: { id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, discountPriceKind: PriceKind | null, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null } };
 
 export type ConfirmReceiptLinesMutationVariables = Exact<{
   receiptId: string;
@@ -897,7 +905,7 @@ export type ConfirmReceiptLinesMutationVariables = Exact<{
 }>;
 
 
-export type ConfirmReceiptLinesMutation = { confirmReceiptLines: { confirmed: number, receipt: { storeAddressRaw: string | null, storeIcoRaw: string | null, sumStatus: ReceiptSumStatus, computedTotal: number | null, imagePaths: Array<string>, id: string, processingStatus: ReceiptProcessingStatus, reviewStatus: ReceiptReviewStatus, createdAt: string, processedAt: string | null, purchasedAt: string | null, storeNameRaw: string | null, totalAmount: number | null, currency: string | null, unseen: boolean, imagesDeletedAt: string | null, suggestedStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lines: Array<{ id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null }>, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lineCounts: { total: number, unmatched: number, suggested: number, matched: number, ignored: number } }, skipped: Array<{ id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null }> } };
+export type ConfirmReceiptLinesMutation = { confirmReceiptLines: { confirmed: number, receipt: { storeAddressRaw: string | null, storeIcoRaw: string | null, sumStatus: ReceiptSumStatus, computedTotal: number | null, loyaltyCardUsed: boolean | null, imagePaths: Array<string>, id: string, processingStatus: ReceiptProcessingStatus, reviewStatus: ReceiptReviewStatus, createdAt: string, processedAt: string | null, purchasedAt: string | null, storeNameRaw: string | null, totalAmount: number | null, currency: string | null, unseen: boolean, imagesDeletedAt: string | null, suggestedStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lines: Array<{ id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, discountPriceKind: PriceKind | null, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null }>, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lineCounts: { total: number, unmatched: number, suggested: number, matched: number, ignored: number } }, skipped: Array<{ id: string, lineNo: number, labelRaw: string, labelDisplay: string | null, internalCode: string | null, quantity: number | null, quantityUnit: QuantityUnit, unitPrice: number | null, lineTotal: number | null, discountAmount: number | null, priceKind: PriceKind, discountPriceKind: PriceKind | null, status: ReceiptLineStatus, matchSource: ReceiptMatchSource | null, observationId: string | null, confirmed: boolean, skipReason: string | null, nonProduct: boolean, suspicious: boolean, product: { id: string, name: string, nameLang: string | null, unitBase: UnitBase, netContentValue: number | null, isVariableWeight: boolean, isGeneric: boolean, status: ProductStatus, catalogScope: ProductScope, createdVia: ProductCreatedVia, verified: boolean, editedByMe: boolean, brand: { id: string, name: string, slug: string } | null, category: { id: string, name: string, slug: string, path: string }, scopeChain: { id: string, name: string, chainType: ChainType } | null, scopeStore: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, photos: Array<{ id: string, thumbnailUrl: string }>, externalImage: { thumbnailUrl: string, attribution: string } | null } | null, offCandidate: { code: string, name: string | null, nameLang: string | null, brandName: string | null, netContentValue: number | null, netContentUom: NetContentUom | null, sourceUrl: string, attribution: string, image: { url: string, thumbnailUrl: string, kind: PhotoKind, lang: string | null, attribution: string } | null } | null }> } };
 
 export type MarkReceiptSeenMutationVariables = Exact<{
   id: string;
@@ -1704,6 +1712,7 @@ export const ReceiptLineFieldsFragmentDoc = new TypedDocumentString(`
   lineTotal
   discountAmount
   priceKind
+  discountPriceKind
   status
   matchSource
   product {
@@ -1801,6 +1810,7 @@ export const ReceiptDetailFieldsFragmentDoc = new TypedDocumentString(`
   storeIcoRaw
   sumStatus
   computedTotal
+  loyaltyCardUsed
   suggestedStore {
     ...StoreFields
   }
@@ -1906,6 +1916,7 @@ fragment ReceiptLineFields on ReceiptLine {
   lineTotal
   discountAmount
   priceKind
+  discountPriceKind
   status
   matchSource
   product {
@@ -4325,6 +4336,7 @@ fragment ReceiptLineFields on ReceiptLine {
   lineTotal
   discountAmount
   priceKind
+  discountPriceKind
   status
   matchSource
   product {
@@ -4359,6 +4371,7 @@ fragment ReceiptDetailFields on Receipt {
   storeIcoRaw
   sumStatus
   computedTotal
+  loyaltyCardUsed
   suggestedStore {
     ...StoreFields
   }
@@ -4554,6 +4567,7 @@ fragment ReceiptLineFields on ReceiptLine {
   lineTotal
   discountAmount
   priceKind
+  discountPriceKind
   status
   matchSource
   product {
@@ -4588,6 +4602,7 @@ fragment ReceiptDetailFields on Receipt {
   storeIcoRaw
   sumStatus
   computedTotal
+  loyaltyCardUsed
   suggestedStore {
     ...StoreFields
   }
@@ -4596,6 +4611,153 @@ fragment ReceiptDetailFields on Receipt {
     ...ReceiptLineFields
   }
 }`) as unknown as TypedDocumentString<UpdateReceiptHeaderMutation, UpdateReceiptHeaderMutationVariables>;
+export const SetReceiptLoyaltyCardDocument = new TypedDocumentString(`
+    mutation SetReceiptLoyaltyCard($id: ID!, $used: Boolean) {
+  setReceiptLoyaltyCard(id: $id, used: $used) {
+    ...ReceiptDetailFields
+  }
+}
+    fragment StoreFields on Store {
+  id
+  name
+  street
+  city
+  postalCode
+  country
+  lat
+  lon
+  geoSource
+  ico
+  url
+  chain {
+    id
+    name
+    chainType
+  }
+  verified
+  editedByMe
+  pendingConfirmation
+}
+fragment ProductSummaryFields on Product {
+  id
+  name
+  nameLang
+  brand {
+    id
+    name
+    slug
+  }
+  category {
+    id
+    name
+    slug
+    path
+  }
+  unitBase
+  netContentValue
+  isVariableWeight
+  isGeneric
+  status
+  catalogScope
+  createdVia
+  scopeChain {
+    id
+    name
+    chainType
+  }
+  scopeStore {
+    ...StoreFields
+  }
+  verified
+  editedByMe
+  photos {
+    id
+    thumbnailUrl
+  }
+  externalImage {
+    thumbnailUrl
+    attribution
+  }
+}
+fragment ReceiptListFields on Receipt {
+  id
+  processingStatus
+  reviewStatus
+  createdAt
+  processedAt
+  purchasedAt
+  storeNameRaw
+  totalAmount
+  currency
+  store {
+    ...StoreFields
+  }
+  unseen
+  imagesDeletedAt
+  lineCounts {
+    total
+    unmatched
+    suggested
+    matched
+    ignored
+  }
+}
+fragment ReceiptLineFields on ReceiptLine {
+  id
+  lineNo
+  labelRaw
+  labelDisplay
+  internalCode
+  quantity
+  quantityUnit
+  unitPrice
+  lineTotal
+  discountAmount
+  priceKind
+  discountPriceKind
+  status
+  matchSource
+  product {
+    ...ProductSummaryFields
+  }
+  observationId
+  confirmed
+  skipReason
+  nonProduct
+  suspicious
+  offCandidate {
+    code
+    name
+    nameLang
+    brandName
+    netContentValue
+    netContentUom
+    image {
+      url
+      thumbnailUrl
+      kind
+      lang
+      attribution
+    }
+    sourceUrl
+    attribution
+  }
+}
+fragment ReceiptDetailFields on Receipt {
+  ...ReceiptListFields
+  storeAddressRaw
+  storeIcoRaw
+  sumStatus
+  computedTotal
+  loyaltyCardUsed
+  suggestedStore {
+    ...StoreFields
+  }
+  imagePaths
+  lines {
+    ...ReceiptLineFields
+  }
+}`) as unknown as TypedDocumentString<SetReceiptLoyaltyCardMutation, SetReceiptLoyaltyCardMutationVariables>;
 export const MatchReceiptLineDocument = new TypedDocumentString(`
     mutation MatchReceiptLine($lineId: ID!, $productId: ID!, $newProduct: Boolean) {
   matchReceiptLine(
@@ -4680,6 +4842,7 @@ fragment ReceiptLineFields on ReceiptLine {
   lineTotal
   discountAmount
   priceKind
+  discountPriceKind
   status
   matchSource
   product {
@@ -4788,6 +4951,7 @@ fragment ReceiptLineFields on ReceiptLine {
   lineTotal
   discountAmount
   priceKind
+  discountPriceKind
   status
   matchSource
   product {
@@ -4896,6 +5060,7 @@ fragment ReceiptLineFields on ReceiptLine {
   lineTotal
   discountAmount
   priceKind
+  discountPriceKind
   status
   matchSource
   product {
@@ -5037,6 +5202,7 @@ fragment ReceiptLineFields on ReceiptLine {
   lineTotal
   discountAmount
   priceKind
+  discountPriceKind
   status
   matchSource
   product {
@@ -5071,6 +5237,7 @@ fragment ReceiptDetailFields on Receipt {
   storeIcoRaw
   sumStatus
   computedTotal
+  loyaltyCardUsed
   suggestedStore {
     ...StoreFields
   }

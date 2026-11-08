@@ -73,6 +73,12 @@ import {
   unselectedGuessCount,
 } from './receipt-status';
 import { receiptStorePrefill } from './receipt-store-prefill';
+import {
+  hasDiscountLine,
+  loyaltyCardKey,
+  rememberLoyaltyCard,
+  rememberedLoyaltyCard,
+} from './receipt-loyalty-card';
 
 /** Stejná perioda jako seznam (`receipts-page.ts`) — dokud stroj účtenku nezpracoval. */
 const PENDING_POLL_MS = 30_000;
@@ -173,6 +179,15 @@ export class ReceiptDetailPage {
     return receipt != null && isProcessingDeadEnd(receipt);
   });
   protected readonly summary = computed(() => lineSummary(this.receipt()?.lines ?? []));
+  /** „Nakoupeno s kartou obchodu" — jen u účtenky se slevou a známým obchodem. */
+  protected readonly showLoyaltyCard = computed(() => {
+    const receipt = this.receipt();
+    return receipt?.store != null && hasDiscountLine(receipt.lines);
+  });
+  protected readonly savingLoyaltyCard = signal(false);
+  protected readonly loyaltyCardError = signal<string | null>(null);
+  /** Předvyplnění z prohlížeče se zkusí jen jednou za návštěvu stránky. */
+  private loyaltyCardPrefilled = false;
   /** Kontrolní součet nesouhlasí nebo ho nešlo ověřit — upozornění a zvýraznění podezřelých řádků. */
   protected readonly sumWarning = computed(() => {
     const receipt = this.receipt();
@@ -308,6 +323,42 @@ export class ReceiptDetailPage {
     this.receipt.set(receipt);
     if (resetDraft || !previous) this.purchasedAtDraft.set(purchasedAtToDate(receipt.purchasedAt));
     this.markSeenOnce(receipt);
+    this.prefillLoyaltyCard(receipt);
+  }
+
+  /**
+   * Nevyplněnou kartu předvyplní poslední volba pro tenhle řetězec z prohlížeče — server se
+   * o ní dozví až jako ano/ne u této účtenky, seznam karet uživatele nikam nejde.
+   */
+  private prefillLoyaltyCard(receipt: ReceiptDetail): void {
+    if (this.loyaltyCardPrefilled || receipt.loyaltyCardUsed != null) return;
+    if (!receipt.store || !hasDiscountLine(receipt.lines)) return;
+    const remembered = rememberedLoyaltyCard(loyaltyCardKey(receipt.store));
+    if (remembered === null) return;
+    this.loyaltyCardPrefilled = true;
+    this.saveLoyaltyCard(remembered, false);
+  }
+
+  protected onLoyaltyCardChange(used: boolean): void {
+    this.saveLoyaltyCard(used, true);
+  }
+
+  private saveLoyaltyCard(used: boolean, remember: boolean): void {
+    const receipt = this.receipt();
+    if (!receipt) return;
+    this.savingLoyaltyCard.set(true);
+    this.loyaltyCardError.set(null);
+    this.receiptService.setLoyaltyCard(receipt.id, used).subscribe({
+      next: (updated) => {
+        this.savingLoyaltyCard.set(false);
+        if (remember) rememberLoyaltyCard(loyaltyCardKey(updated.store), used);
+        this.applyReceipt(updated, false);
+      },
+      error: (err: unknown) => {
+        this.savingLoyaltyCard.set(false);
+        this.loyaltyCardError.set(this.actionErrorMessage(err));
+      },
+    });
   }
 
   /**

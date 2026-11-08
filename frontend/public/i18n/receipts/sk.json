@@ -154,6 +154,11 @@
     "quantityWeighed": "{{quantity}} {{unit}} × {{price}} za {{unit}}",
     "pricePerUnit": "{{price}} za {{unit}}",
     "discount": "zľava −{{amount}}",
+    "discountKind": {
+      "CLUB_CARD": "klubová cena",
+      "PROMO": "akciová cena",
+      "CLEARANCE": "výpredaj"
+    },
     "ean": "EAN {{code}}",
     "raw": "Takto je položka vytlačená na bločku",
     "matchedByEan": "podľa EAN z bločku",
@@ -225,5 +230,10 @@
     "mismatchText": "Rozdiel je {{difference}}. Niektorá položka sa mohla prečítať zle alebo chýba — prejdi riadky so štítkom „Skontrolovať“ a odškrtni, čo zverejniť nechceš.",
     "unknownTitle": "Súčet nebolo možné overiť, skontroluj položky",
     "unknownText": "Appka nemá s čím súčet položiek porovnať — celková suma sa na bločku nenašla alebo ho čítala staršia verzia. Prejdi položky (hlavne so štítkom „Skontrolovať“) a odškrtni, čo zverejniť nechceš."
+  },
+  "loyaltyCard": {
+    "label": "Nakúpené s vernostnou kartou obchodu",
+    "labelChain": "Nakúpené s vernostnou kartou {{chain}}",
+    "hint": "Zľavy z bločku sa potom zapíšu ako klubové ceny, bez karty ako akciové. Na server ide len áno/nie pri tomto bločku; voľba sa zapamätá v tomto prehliadači pre ďalšie nákupy v tomto obchode."
   }
 }
