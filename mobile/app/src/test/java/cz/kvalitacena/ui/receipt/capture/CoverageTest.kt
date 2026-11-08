@@ -185,6 +185,40 @@ class CoverageTest {
   }
 
   @Test
+  fun rohMaPrednostPredVnitrkemAHorniMaskaPredSpodni() {
+    val band = defaultMaskProposal()
+    val small = MaskRect(0.4f, 0.8f, 0.6f, 0.9f)
+    assertEquals(MaskHit.Corner(0, MaskCorner.TOP_LEFT), hitTest(listOf(band), 0.01f, 0.76f, 0.03f, 0.02f))
+    assertEquals(MaskHit.Inside(1), hitTest(listOf(band, small), 0.5f, 0.85f, 0.03f, 0.02f))
+    assertEquals(MaskHit.Inside(0), hitTest(listOf(band, small), 0.2f, 0.95f, 0.03f, 0.02f))
+    assertEquals(MaskHit.None, hitTest(listOf(band, small), 0.5f, 0.3f, 0.03f, 0.02f))
+  }
+
+  @Test
+  fun posunZachovaVelikostAZastaviSeUOkraje() {
+    val mask = MaskRect(0.2f, 0.7f, 0.6f, 0.9f)
+    assertEquals(MaskRect(0.3f, 0.5f, 0.7f, 0.7f), mask.movedBy(0.1f, -0.2f).rounded())
+    assertEquals(MaskRect(0.6f, 0.8f, 1f, 1f), mask.movedBy(0.9f, 0.9f).rounded())
+    assertEquals(MaskRect(0f, 0f, 0.4f, 0.2f), mask.movedBy(-5f, -5f).rounded())
+  }
+
+  @Test
+  fun zmenaVelikostiZaRohNeprevratiMaskuANeopustiObrazek() {
+    val band = defaultMaskProposal()
+    assertEquals(MaskRect(0f, 0.6f, 1f, 1f), band.resizedTo(MaskCorner.TOP_LEFT, -0.2f, 0.6f).rounded())
+    assertEquals(MaskRect(0f, 0.75f, 0.5f, 0.9f), band.resizedTo(MaskCorner.BOTTOM_RIGHT, 0.5f, 0.9f).rounded())
+    // Přes protější roh se nepřetáhne — zůstane nejmenší chytitelná maska.
+    val collapsed = band.resizedTo(MaskCorner.TOP_RIGHT, -1f, 1.5f)
+    assertEquals(MIN_MASK_SIZE, collapsed.right - collapsed.left, 1e-6f)
+    assertEquals(MIN_MASK_SIZE, collapsed.bottom - collapsed.top, 1e-6f)
+  }
+
+  private fun MaskRect.rounded(): MaskRect {
+    fun Float.r() = kotlin.math.round(this * 1000f) / 1000f
+    return MaskRect(left.r(), top.r(), right.r(), bottom.r())
+  }
+
+  @Test
   fun preskladaniDilu() {
     assertEquals(listOf("b", "a", "c"), listOf("a", "b", "c").moved(0, 1))
     assertEquals(listOf("c", "a", "b"), listOf("a", "b", "c").moved(2, 0))

@@ -69,7 +69,7 @@ class PendingReceiptStore(filesDir: File) {
     withContext(Dispatchers.IO) {
       val draft = draftStore.draft.value
       if (draft.parts.isEmpty()) throw DraftCommitException("Koncept účtenky je prázdný")
-      if (draft.parts.any { it.masks.isNotEmpty() } && !ReceiptImageProcessor.ensureLoaded()) {
+      if (draft.parts.any { it.effectiveMasks.isNotEmpty() } && !ReceiptImageProcessor.ensureLoaded()) {
         throw DraftCommitException("Zakrytí nejde vypálit — OpenCV není k dispozici")
       }
       val id = UUID.randomUUID().toString()
@@ -78,7 +78,7 @@ class PendingReceiptStore(filesDir: File) {
       try {
         draft.parts.forEachIndexed { index, part ->
           val source = draftStore.fileOf(part).readBytes()
-          val burned = ReceiptImageProcessor.burnMasks(source, part.masks)
+          val burned = ReceiptImageProcessor.burnMasks(source, part.effectiveMasks)
           File(dir, "part_%02d.jpg".format(java.util.Locale.ROOT, index)).writeBytes(burned)
         }
         val now = OffsetDateTime.now().toString()

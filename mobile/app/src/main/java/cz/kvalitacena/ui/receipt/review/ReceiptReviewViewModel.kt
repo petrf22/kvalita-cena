@@ -89,6 +89,9 @@ class ReceiptReviewViewModel(
 
   fun remove(index: Int) = draftStore.removePart(index)
 
+  /** Přepínač „Zakrýt" u dílu — masky zůstávají, jen se při vypnutí nevypálí. */
+  fun setMasksEnabled(index: Int, enabled: Boolean) = draftStore.setMasksEnabled(index, enabled)
+
   fun saveMasks(index: Int, masks: List<MaskRect>) {
     draftStore.setMasks(index, masks)
     editingIndex = null

@@ -20,7 +20,15 @@ data class DraftPart(
   val width: Int,
   val height: Int,
   val masks: List<MaskRect> = emptyList(),
-)
+  /**
+   * Přepínač „Zakrýt" — vypnutý díl odejde bez masek, ale ty zůstanou, ať jde falešný poplach
+   * výchozího pásu jedním ťuknutím vrátit. Výchozí `true` platí i pro starší `draft.json`.
+   */
+  val masksEnabled: Boolean = true,
+) {
+  /** Masky, které se při odeslání opravdu vypálí. */
+  val effectiveMasks: List<MaskRect> get() = if (masksEnabled) masks else emptyList()
+}
 
 @Serializable
 data class ReceiptDraft(
@@ -106,6 +114,13 @@ class ReceiptDraftStore(filesDir: File) {
   @Synchronized
   fun setMasks(index: Int, masks: List<MaskRect>) {
     update { draft -> draft.copy(parts = draft.parts.mapIndexed { i, p -> if (i == index) p.copy(masks = masks) else p }) }
+  }
+
+  @Synchronized
+  fun setMasksEnabled(index: Int, enabled: Boolean) {
+    update { draft ->
+      draft.copy(parts = draft.parts.mapIndexed { i, p -> if (i == index) p.copy(masksEnabled = enabled) else p })
+    }
   }
 
   /**

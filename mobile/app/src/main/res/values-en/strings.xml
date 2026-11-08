@@ -620,6 +620,10 @@
     <string name="receipt_review_no_masks">Nothing hidden</string>
     <string name="receipt_review_masks">Hidden areas: %1$d</string>
     <string name="receipt_review_mask">Hide data</string>
+    <string name="receipt_review_masks_off">Covering off — this part will be sent uncovered</string>
+    <string name="receipt_review_mask_edit">Edit covering</string>
+    <string name="receipt_review_mask_legend">Hatched areas are blacked out when you send the receipt and never reach the server. The default strip is only a guess — if nothing sensitive is under it, turn it off or delete it.</string>
+    <string name="receipt_review_mask_legend_off">Covering is off — the dashed areas will be sent uncovered.</string>
     <string name="receipt_review_move_up">Up</string>
     <string name="receipt_review_move_down">Down</string>
     <string name="receipt_review_retake">Retake</string>
@@ -633,8 +637,8 @@
     <string name="receipt_review_delete_title">Delete part?</string>
     <string name="receipt_review_delete_text">Part %1$d will be removed from the receipt.</string>
     <string name="receipt_mask_editor_title">Hide sensitive data</string>
-    <string name="receipt_mask_editor_hint">Drag your finger to draw a black box over the card number, loyalty card or cashier name. Tap a box to remove it.</string>
-    <string name="receipt_mask_undo">Undo last</string>
+    <string name="receipt_mask_editor_hint">Drag your finger across an empty spot to draw a new box over the card number, loyalty card or cashier name. Drag inside a box to move it, drag a corner to resize it. Tap a box to select it, then delete it.</string>
+    <string name="receipt_mask_remove_selected">Delete selected</string>
     <string name="receipt_mask_clear">Remove all</string>
     <string name="receipt_mask_save">Save</string>
     <string name="receipt_consent_title">Consent to receipt processing</string>
