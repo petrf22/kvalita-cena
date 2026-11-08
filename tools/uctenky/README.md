@@ -83,7 +83,11 @@ Změna se projeví do 60 s.
    (hlavička, patička, vymezení bloku položek); co profil nemá, jde přes obecný profil.
    Známé tištěné poznámky se přeskakují: cena po slevě v závorce (Billa) se jen porovná
    s položkou a slevou nad ní, „Věkový limit" (Albert) se zahodí. Každý jiný řádek bez ceny
-   zůstane vidět jako nerozpoznaný a vyvolá varování.
+   zůstane vidět jako nerozpoznaný a vyvolá varování. V ceně za jednotku řádku s množstvím
+   (`1.000 ks x 49:90 Kč /ks`) se připouští i dvojtečka, kterou OCR čte místo desetinné tečky
+   (`normalize.UNIT_AMOUNT`); obecná částka ji nebere, jinak by byl částkou i čas z hlavičky.
+   Když množství × cena za jednotku nedá zaplacenou částku, worker to hlásí jako varování —
+   kontrolní součet chybně přečtenou jednotkovou cenu nepozná.
 4. **Kontrolní součet**: součet položek a slev se porovná s vytištěnou částkou „Celkem"
    (`totalMatches`). Když nesedí, výsledek se přesto pošle. Uživatel řádky potvrzuje jednotlivě
    a varování zůstane v `extraction` u úlohy.
@@ -92,6 +96,8 @@ Změna se projeví do 60 s.
    Když jsou na obrázku částky, ale žádná položka, stav je `UNREADABLE`.
 6. **Čitelný název**: [`pretty.py`](pretty.py) a [`ai_pretty.py`](ai_pretty.py). Ke každému
    řádku přidá `labelDisplay` („ROHLÍK43GR" → „Rohlík 43g") a vodítko gramáže pro párování.
+   Násobné balení „8X50ML" je 8 kusů po 50 ml a cena je za celé balení, takže vodítkem je
+   celková gramáž 400 ml.
    Podrobně „Čitelné názvy" níž.
 
 ## Čitelné názvy
@@ -131,17 +137,26 @@ kategorii a jednotku gramáže, aby stačilo zkontrolovat a uložit. Worker k to
 
 - `categoryHint` je slug kategorie appky. Seznam s cestami česky si worker stáhne jednou za
   dávku z `GET /api/worker/receipts/categories` (stejný token).
+- **Slovník kategorií** [`slovnik/kategorie.tsv`](slovnik/kategorie.tsv)
+  (`slovo nebo sousloví<TAB>slug[<TAB>řetězec]`) má přednost před modelem. Model značky nezná
+  a tipuje podle slov („Míša tvarohový" → tvaroh, „Uni Twister" → jogurty). Klíč se porovnává
+  jako `core.norm_label` a v názvu musí stát jako celá slova; delší klíč a řetězcová položka
+  vyhrávají. Hledá se v čitelném názvu i v syrovém tisku. Slovník platí i bez modelu a při jeho
+  výpadku, jednotku dál navrhuje model. Patří sem jen to, co platí vždycky (značka, druh
+  zboží). Slovo, které se objevuje i v jiném zboží („borůvky" je i v jogurtu), sem nepatří.
 - `unitHint` je jen rozměr gramáže (`G`/`KG`/`ML`/`L`). Číslo model nedodává nikdy, to umí
   jen vytištěné označení.
 
 Výstup projde kontrolou `ai_classify.accept`, která zahodí:
-- slug mimo seznam,
+- slug mimo seznam (model občas vrátí vymyšlenou cestu `mlecko-vyrobky/jogurty` místo klíče
+  `jogurty`; když je poslední segment známý slug, přijme se, protože slug je unikátní),
 - jinou jednotku,
 - jednotku u váhového zboží,
 - jednotku, která odporuje vytištěné gramáži (hmotnost proti objemu).
 
-Server totéž ověří znovu a uloží do `ai.receipt_line_hint`. Návrh modelu má nejnižší
-přednost: před ním je vytištěná gramáž a kategorie, na které se shodne podobné zboží
+Server totéž ověří znovu a uloží do `ai.receipt_line_hint`. Kategorie ze slovníku jde na
+server stejnou cestou jako návrh modelu, takže formulář ji ukáže jako návrh ke kontrole.
+Návrh modelu má nejnižší přednost: před ním je vytištěná gramáž a kategorie, na které se shodne podobné zboží
 v katalogu (docs/ai.md, „Návrh kategorie a jednotky"). Výpadek modelu není chyba účtenky.
 
 Offline: `replay.py … --classify-model qwen2.5:14b-instruct --categories kategorie.json`
