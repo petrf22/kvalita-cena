@@ -134,6 +134,18 @@ přijde řada, se stavem NÁPAD/ROZHODNOUT/PLÁNOVÁNO/ČÁSTEČNĚ) jsou v `doc
   posílá poloha zaokrouhlená na ~110 m a `nearbyStores` hledá s okruhem zvětšeným o tuhle chybu
   (`ROUNDING_SLACK_M`), takže dofiltrovat a seřadit podle skutečné vzdálenosti umí jen zařízení,
   které zná přesnou polohu (`docs/soukromi.md`).
+- **Zakrytí účtenky se čte přes `effectiveMasks`, nikdy přímo z `masks`** (mobil
+  `DraftPart.effectiveMasks`, web `effectiveMasks(part)` v `receipt-mask.ts`). Přepínač
+  „Zakrýt" (`masksEnabled`) masky NEMAŽE, jen je vypne, aby šel falešný poplach výchozího pásu
+  hned vrátit. Kdo vezme `masks` přímo, vypálí i zakrytí, které uživatel vypnul. A naopak:
+  maska v kontrole je šrafovaný návrh, černě se vypaluje jen při odeslání
+  (`ReceiptImageProcessor.burnMasks`, `renderMaskedJpeg`).
+- **`core.receipt.loyalty_card_used = NULL` neznamená „bez karty", ale „nevyplněno"** — pak
+  platí odhad workeru (`price_kind_guess`). `FALSE` je výslovné „bez karty" a přebije i odhad
+  `CLUB_CARD` (`ReceiptReviewService.discountKind`). Změna zaškrtnutí platí jen pro řádky, které
+  se teprve potvrdí — zapsané ceny se nepřepisují. Klient druh ceny po slevě nepočítá sám, čte
+  `ReceiptLine.discountPriceKind`. Seznam karet uživatele na server nejde, předvyplnění podle
+  řetězce žije jen v zařízení (`docs/soukromi.md`, „Účtenky").
 - **Účtenka: strukturu z OCR textu tahají výhradně regexy, nikdy jazykový model**
   (`tools/uctenky/normalize.py`) — model nad textem účtenky tiše zahodil řádek
   `3.000 ks x 36.90 Kč /ks` a jindy přejmenoval zboží. OCR model dělá jen obrázek → text.
