@@ -223,13 +223,25 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   s předstihem, ne tichou výměnu enginu. Zvlášť a **volitelně** se uživatel rozhoduje, jestli
   si provozovatel smí obrázky účtenky ponechat pro zlepšení rozpoznávání (`archive_consent`).
 - **Citlivé údaje se zakrývají na zařízení.** Číslo platební karty, věrnostní karta, jméno
-  pokladní — klient před odesláním nabídne zakrytí (výchozí návrh: pás pod celkovou částkou),
-  maska se vypálí do pixelů v telefonu/prohlížeči, na server zakrytý obsah vůbec nedorazí.
+  pokladní — klient před odesláním nabídne zakrytí, maska se vypálí do pixelů
+  v telefonu/prohlížeči, na server zakrytý obsah vůbec nedorazí. Výchozí návrh je pás přes
+  spodek poslední části (mobil 25 %, web 20 % výšky — klient text nečte, takže „pod celkovou
+  částkou" jen odhaduje podle pozice). Proto se v kontrole kreslí jako **návrh**: průsvitná
+  šrafa s obrysem, pod kterou je obsah vidět, ne černě — u účtenek, kde dole nic citlivého
+  není, by černý pás tiše zakryl položky. Uživatel ho posune, zvětší za roh, smaže, nebo
+  přepínačem „Zakrýt" u části vypne (masky zůstanou, jen se nevypálí). Výchozí stav je
+  zakryto: kdo na návrh nesáhne, odešle ho začerněný.
   Server navíc obrázek překreslí z pixelů stejně jako fotky (EXIF výš) a worker řádky
   s kartou/věrnostním číslem zahodí jako druhou pojistku — ze strukturovaného výsledku
   i ze syrového textu (`ai.receipt_job.raw_text`): ten se ořízne za řádkem s celkovou
   částkou (`parse.server_text`), bez něj se neposílá vůbec, a řádky s maskovaným číslem
   karty vypadnou i nad ním.
+- **Věrnostní karta se ukládá jen jako ano/ne u účtenky.** Zaškrtnutí „Nakoupeno s věrnostní
+  kartou" v detailu účtenky (`core.receipt.loyalty_card_used`) určí, jestli se slevy zapíšou
+  jako klubové, nebo akční ceny (`docs/datovy-model.md`, „Účtenky"). Seznam karet, které
+  člověk má, server nikdy nedostane: poslední volbu pro řetězec si pamatuje jen klient
+  (`ReceiptPrefs` na mobilu, `localStorage` na webu) a předvyplní ji u další účtenky
+  z téhož řetězce.
 - **Obrázky mají krátkou retenci, text ne.** Obrázky se mažou `app.receipt.image-retention-days`
   (30) dní po zpracování (`ReceiptImageRetentionService`, denní job) — u účtenek s
   `archive_consent` až poté, co si je provozovatel stáhl do lokálního archivu (nejvýš o
@@ -285,8 +297,9 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   (`tools/uctenky/profiles/coop.py`) z něj vezme výhradně název prodejny, ulici, PSČ
   a město. Jsou to údaje prodejce stejně jako hlavička. Čtení končí na řádku IČO/terminálu
   nebo na prvním řádku s maskovaným číslem karty. Do syrového textu se patička dál
-  nedostane (`parse.server_text`). Když uživatel blok zakryje (výchozí maska je pás pod
-  celkovou částkou) nebo platí hotově, adresa se nepošle a obchod vybere sám.
+  nedostane (`parse.server_text`). Když uživatel blok zakryje (výchozí návrh zakrytí je pás
+  přes spodek poslední části, viz výš) nebo platí hotově, adresa se nepošle a obchod vybere
+  sám. Vypnutý přepínač „Zakrýt" nezakryje nic, adresa pak odejde.
 - **Stroj nemá identitu uživatele.** Stroje se přihlašují strojovým tokenem
   (`auth.api_token`, v DB jen SHA-256), ne účtem člověka, a každý token má jen jeden scope.
   Worker (`RECEIPT_WORKER`) vidí obrázky ve frontě a zapisuje vytěžený text, nic víc.

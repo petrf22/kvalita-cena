@@ -613,6 +613,14 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   `store_confirmed_at` je čas posledního potvrzení obchodu (`chk_receipt_store_confirmed_at`:
   vyplněný, kdykoli je `store_id`) — u stejné hlavičky z víc účtenek rozhoduje návrh poslední
   potvrzení, ne poslední nahrání (migrace `2026-11-07/`).
+  `loyalty_card_used` (nullable, migrace `2026-11-08/`) je zaškrtnutí „Nakoupeno s věrnostní
+  kartou" — určuje druh ceny po slevě při potvrzení řádku
+  (`ReceiptReviewService.discountKind`): `TRUE` → `CLUB_CARD`, `FALSE` → `PROMO`, `NULL` →
+  odhad workeru (`price_kind_guess`, klubová jen výslovně). `CLEARANCE` zůstává vždy. Má
+  přednost před odhadem, protože třeba Billa tiskne slevu jen jako „SLEVA -35,00" bez slova
+  klub/karta. Změna platí jen pro řádky, které se teprve potvrdí — zapsané ceny se
+  nepřepisují. GraphQL `ReceiptLine.discountPriceKind` vrací, jakou cenu by potvrzení
+  zapsalo, ať to klient nemusí počítat sám.
   `consent_version`/`archive_consent` — viz soukromí.
   `seen_at` řídí notifikaci/odznak (novinka = návrh od jiných lidí, vlastní úprava ne),
   `images_deleted_at` retenci obrázků. `client_upload_id` je klíč idempotence nahrání
