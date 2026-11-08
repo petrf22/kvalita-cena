@@ -156,7 +156,8 @@ rozhraním `Extractor` (`ocr.py`) — jiný model nebo služba jde vyměnit bez 
 ale **cloud jen s novou verzí souhlasu** (`app.receipt.consent-version`) a změnou zásad.
 
 **Čitelný název řádku** (`tools/uctenky/pretty.py`, `ai_pretty.py`, od 2026-11): worker ke
-každému řádku přidá `labelDisplay` („ROHLÍK43GR" → „Rohlík 43g") a vodítko gramáže. Postup:
+každému řádku přidá `labelDisplay` („ROHLÍK43GR" → „Rohlík 43g") a vodítko gramáže. U násobného
+balení („8X50ML") je vodítkem celková gramáž (400 ml), protože cena je za celé balení. Postup:
 
 1. Ruční přepis celého označení ze slovníku provozovatele (`slovnik/nazvy.tsv`).
 2. Jinak deterministická pravidla: jednotky kompaktně česky a zkratky ze slovníku
@@ -213,9 +214,13 @@ Postup:
    appky s cestou česky (`GET /api/worker/receipts/categories`).
 2. Model vrací slug kategorie a jen ROZMĚR gramáže (`G`/`KG`/`ML`/`L`). Číslo nikdy, to umí
    jen vytištěné označení.
+   Kategorii ze slovníku provozovatele (`tools/uctenky/slovnik/kategorie.tsv`, slovo nebo
+   značka → slug) model přebít nemůže. Značky nezná a tipuje podle slov („Míša tvarohový"
+   → tvaroh). Slovník platí i bez modelu.
 3. `ai_classify.accept` výstup deterministicky zkontroluje a server totéž ověří znovu
    (`ReceiptWorkerService.unitHint`). Zahodí se:
-   - slug mimo seznam,
+   - slug mimo seznam. Vymyšlená cesta (`mlecko-vyrobky/jogurty`) se přijme podle posledního
+     segmentu, pokud je to známý slug, protože slugy jsou unikátní,
    - jiná jednotka,
    - jednotka u váhového zboží,
    - jednotka v rozporu s vytištěnou gramáží (hmotnost proti objemu).
