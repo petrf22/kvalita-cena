@@ -106,8 +106,13 @@ class Dictionary:
         return self.abbreviations.get((key, chain or "")) or self.abbreviations.get((key, ""))
 
     def override(self, raw_label: str, chain: str | None) -> str | None:
-        key = norm_label(raw_label)
-        return self.overrides.get((key, chain or "")) or self.overrides.get((key, ""))
+        # Nejdřív přesně jako core.norm_label, pak po rozdělení slepených tokenů — OCR jednou
+        # čte „TVAROHOVY 6X45ML", jindy „TVAROHOVY6X45ML", a přepis má platit pro obojí.
+        for key in dict.fromkeys((norm_label(raw_label), norm_label(" ".join(tokenize(raw_label))))):
+            found = self.overrides.get((key, chain or "")) or self.overrides.get((key, ""))
+            if found:
+                return found
+        return None
 
     def category(self, label: str, chain: str | None) -> str | None:
         """Slug kategorie podle slovníku — klíč musí v označení stát jako celá slova.

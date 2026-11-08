@@ -820,6 +820,14 @@ class PrettyLabelTest(unittest.TestCase):
         self.assertIsNone(self._pretty("PAPIR 4X10KS").net_content)
         self.assertEqual(self._pretty("UNI TWISTER 8X50ML").text, "Uni twister 8x50ml")
 
+    def test_rucni_prepis_plati_i_pro_slepene_tokeny(self):
+        # Účtenka 20: OCR jednou přečte „TVAROHOVY 6X45ML", jindy „TVAROHOVY6X45ML".
+        dictionary = pretty.Dictionary()
+        dictionary.add_override("MÍŠA TVAROHOVÝ 6X45ML", "Míša tvarohový nanuk 6x45ml")
+        result = pretty.pretty_label("MÍšA TVAROHOVY6X45ML", "albert", dictionary)
+        self.assertEqual((result.text, result.source, result.net_content),
+                         ("Míša tvarohový nanuk 6x45ml", pretty.SOURCE_DICT, ("270", "ML")))
+
     def test_zkratka_retezce_plati_jen_pro_nej(self):
         self.assertEqual(self._pretty("GRAN MORAV.100G", "albert").text, "Gran Moravia 100g")
         self.assertEqual(self._pretty("GRAN MORAV.100G", "obecny").text, "Gran morav. 100g")
