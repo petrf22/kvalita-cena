@@ -65,7 +65,9 @@ def process_job(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, job: dict,
 def run_batch(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, limit: int, log=print,
               dictionary: pretty.Dictionary | None = None, prettifier=None, classifier=None) -> int:
     jobs = api.lease(limit)
-    categories = _categories(api, log) if jobs and classifier is not None else []
+    # Číselník je potřeba i bez modelu — slovník kategorií (slovnik/kategorie.tsv) se ověřuje proti němu.
+    wants_categories = classifier is not None or bool(dictionary and dictionary.categories)
+    categories = _categories(api, log) if jobs and wants_categories else []
     for job in jobs:
         try:
             process_job(api, extractor, job, log, dictionary, prettifier, classifier, categories)
