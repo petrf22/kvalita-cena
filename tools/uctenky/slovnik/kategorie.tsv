@@ -9,3 +9,27 @@
 nanuk	zmrzlina
 míša	zmrzlina
 uni twister	zmrzlina
+#
+# Maso a uzeniny — model kuřecí řízky dával do čerstvého masa a uzeniny jen do nadřazené
+# kategorie. Klíč je bez interpunkce: „Kuř. prs.řízkyDM" (Penny) je „kur prs …".
+prsní řízky	drubez
+kuř prs	drubez
+šunka	uzeniny-a-salamy
+debrecínka	uzeniny-a-salamy
+kladenská pečeně	uzeniny-a-salamy
+#
+# Mléčné — model dával sýry do nadřazených Mléčných výrobků a kysanou smetanu do mléka
+smetana	smetana-a-zakysane-vyrobky
+sme kys	smetana-a-zakysane-vyrobky
+eidam	syry
+mozzarella	syry
+mozzar	syry
+mozza	syry
+#
+# Trvanlivé a nápoje — model tipoval Mléčné výrobky nebo Mražené
+gnocchi	testoviny
+udon	testoviny
+udong	testoviny
+kühne m f	omacky-a-dochucovadla
+yo sirup	dzusy-a-siropy
+yo sir	dzusy-a-siropy

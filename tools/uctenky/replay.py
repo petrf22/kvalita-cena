@@ -105,7 +105,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pretty-model", default="",
                         help=f"dočistit čitelné názvy modelem (např. {ai_pretty.DEFAULT_MODEL}; prázdné = jen slovník)")
     parser.add_argument("--classify-model", default="",
-                        help="navrhnout kategorii a jednotku modelem (potřebuje --categories)")
+                        help="navrhnout kategorii a jednotku modelem (potřebuje --categories; bez modelu jen slovník)")
     parser.add_argument("--categories", type=Path,
                         help="JSON [{slug, path}] — výstup GET /api/worker/receipts/categories")
     args = parser.parse_args(argv)
@@ -121,9 +121,11 @@ def main(argv: list[str] | None = None) -> int:
     prettifier = ai_pretty.OllamaPrettifier(args.ollama, args.pretty_model) if args.pretty_model else None
     classifier = None
     categories: list[dict] = []
-    if args.classify_model and args.categories:
-        classifier = ai_classify.OllamaClassifier(args.ollama, args.classify_model)
+    if args.categories:
+        # I bez modelu — kategorie ze slovníku (slovnik/kategorie.tsv) se ověřují proti seznamu.
         categories = json.loads(args.categories.read_text(encoding="utf-8"))
+        if args.classify_model:
+            classifier = ai_classify.OllamaClassifier(args.ollama, args.classify_model)
     report_names(document, pretty.load_dictionary(), prettifier, classifier=classifier, categories=categories)
     if args.json:
         print(json.dumps(document, ensure_ascii=False, indent=2))
