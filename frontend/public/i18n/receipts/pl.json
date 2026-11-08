@@ -40,8 +40,10 @@
     "drawModeOn": "Zakończ rysowanie",
     "addBand": "Zasłoń dolny pas",
     "clearAll": "Usuń wszystkie zasłonięcia",
-    "hintMouse": "Przeciągnij myszką przez dane, które chcesz zasłonić. Czarny prostokąt można przesunąć i powiększyć za rogi. To, co czarne, nie trafi na serwer.",
-    "hintTouch": "Włącz „Rysuj zasłonięcie” i przeciągnij palcem przez dane. Czarny prostokąt można przesunąć i powiększyć za rogi. To, co czarne, nie trafi na serwer."
+    "hintMouse": "Przeciągnij myszką przez dane, które chcesz zasłonić. Prostokąt można przesunąć i powiększyć za rogi.",
+    "hintTouch": "Włącz „Rysuj zasłonięcie” i przeciągnij palcem przez dane. Prostokąt można przesunąć i powiększyć za rogi.",
+    "legend": "Zakreskowane miejsca zostaną przy wysyłaniu zaczernione i nie trafią na serwer. Domyślny pas to tylko przypuszczenie — jeśli nie ma pod nim nic wrażliwego, wyłącz go albo usuń.",
+    "legendOff": "Zasłanianie jest wyłączone — miejsca z przerywaną ramką zostaną wysłane bez zasłonięcia."
   },
   "upload": {
     "title": "Nowy paragon",
@@ -55,6 +57,7 @@
     "partName": "Część {{index}}",
     "partMasks": "{count, plural, one {# zasłonięcie} few {# zasłonięcia} many {# zasłonięć} other {# zasłonięcia}}",
     "partMasksNone": "bez zasłonięć",
+    "partMasksOff": "zasłanianie wyłączone",
     "moveUp": "Przesuń część {{index}} w górę",
     "moveDown": "Przesuń część {{index}} w dół",
     "removePart": "Usuń część {{index}}",
@@ -81,7 +84,8 @@
     "unsupportedFile": "Nie udało się otworzyć pliku {{name}} jako obrazu. Spróbuj JPEG lub PNG.",
     "fileFailed": "Nie udało się wczytać zdjęcia {{name}}.",
     "renderFailed": "Nie udało się przygotować zdjęć do wysłania. Spróbuj wybrać je ponownie.",
-    "tooLarge": "Paragon jest za duży do wysłania. Spróbuj mniejszej liczby części."
+    "tooLarge": "Paragon jest za duży do wysłania. Spróbuj mniejszej liczby części.",
+    "maskToggle": "Zasłoń"
   },
   "images": {
     "title": "Zdjęcie paragonu",

@@ -2,7 +2,6 @@ import { Component, ElementRef, computed, input, output, signal, viewChild } fro
 import { TranslocoDirective } from '@jsverse/transloco';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { MASK_FILL } from './receipt-image';
 import {
   Corner,
   MaskRect,
@@ -39,8 +38,10 @@ type Drag =
 const KEYBOARD_STEP = 0.01;
 
 /**
- * Editor zakrytí jedné části účtenky: náhled obrázku a nad ním černé obdélníky přesně v té
- * barvě, která se vypálí do pixelů (`renderMaskedJpeg`). Tažením po volné ploše vznikne nový
+ * Editor zakrytí jedné části účtenky: náhled obrázku a nad ním šrafované obdélníky — návrh,
+ * pod kterým je obsah pořád vidět, ať si uživatel všimne, že výchozí pás zakrývá položky
+ * místo karty. Černě se vypálí až při odeslání (`renderMaskedJpeg`); u vypnutého zakrytí
+ * (`ReceiptPart.masksEnabled`) jen čárkovaný obrys. Tažením po volné ploše vznikne nový
  * obdélník, vybraný jde posunout, zvětšit za rohy, smazat křížkem nebo klávesou Delete.
  *
  * Na dotykovém displeji by kreslení po celé ploše obrázku znemožnilo posouvat stránku (dlouhá
@@ -57,7 +58,6 @@ export class ReceiptMaskEditor {
   readonly part = input.required<ReceiptPart>();
   readonly masksChange = output<MaskRect[]>();
 
-  protected readonly maskFill = MASK_FILL;
   protected readonly corners: readonly Corner[] = ['nw', 'ne', 'sw', 'se'];
   protected readonly selectedIndex = signal<number | null>(null);
   protected readonly draft = signal<MaskRect | null>(null);

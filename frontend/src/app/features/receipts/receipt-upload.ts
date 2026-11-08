@@ -9,6 +9,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
+import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { Subscription } from 'rxjs';
 import { ErrorCode } from '../../models/generated/enums';
 import { ConnectivityService, isNetworkError } from '../../services/connectivity-service';
@@ -51,6 +52,7 @@ type UploadBlocker = 'noParts' | 'loading' | 'consentOutdated' | 'noConsent' | '
     NzCheckboxModule,
     NzIconModule,
     NzProgressModule,
+    NzSwitchModule,
     ReceiptMaskEditor,
   ],
   templateUrl: './receipt-upload.html',
@@ -177,6 +179,13 @@ export class ReceiptUpload {
           ? { ...part, masks: masks.map(({ auto: _auto, ...rest }) => rest), masksTouched: true }
           : part,
       ),
+    );
+  }
+
+  /** Přepínač „Zakrýt" — masky zůstávají, jen se při vypnutí nevypálí. */
+  protected setMasksEnabled(id: number, enabled: boolean): void {
+    this.parts.update((parts) =>
+      parts.map((part) => (part.id === id ? { ...part, masksEnabled: enabled } : part)),
     );
   }
 

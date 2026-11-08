@@ -34,4 +34,8 @@
   --kc-border-split: #f0f0f0; /* dělicí linka, okraj karty */
   --kc-bg-subtle: #fafafa;
   --kc-danger: #ff4d4f;
+  /* Návrh zakrytí přes fotku účtenky (docs/design.md) — šrafa, pod kterou je obsah vidět. */
+  --kc-mask-stroke: #ff4d4f;
+  --kc-mask-hatch: rgba(255, 77, 79, 0.45);
+  --kc-mask-tint: rgba(255, 77, 79, 0.12);
 }
