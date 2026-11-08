@@ -94,6 +94,13 @@ public class Receipt implements Persistable<Long> {
   @Column(name = "store_confirmed_at", columnDefinition = "TIMESTAMPTZ")
   private OffsetDateTime storeConfirmedAt;
 
+  /**
+   * Vlastník nakoupil s věrnostní kartou obchodu — určuje druh ceny po slevě
+   * ({@code ReceiptReviewService.discountKind}); {@code null} = nevyplněno.
+   */
+  @Column(name = "loyalty_card_used")
+  private Boolean loyaltyCardUsed;
+
   @Column(name = "suggested_store_id")
   private Long suggestedStoreId;
 

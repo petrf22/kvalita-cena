@@ -334,6 +334,13 @@ type Mutation {
   updateReceiptHeader(id: ID!, storeId: ID, purchasedAt: DateTime): Receipt!
 
   """
+  Nakoupeno s věrnostní kartou obchodu — true/false, null = nevyplněno. Určuje druh ceny po
+  slevě (klubová/akční) u řádků, které se teprve potvrdí; už zapsané ceny nemění. Ukládá se jen
+  ano/ne k účtence, ne seznam karet uživatele (docs/soukromi.md, „Účtenky").
+  """
+  setReceiptLoyaltyCard(id: ID!, used: Boolean): Receipt!
+
+  """
   Spáruje řádek účtenky se zbožím (z našeptávače, nebo právě založeným — newProduct: true).
   Cenu nezapisuje, jen připraví řádek k potvrzení.
   """
@@ -1955,6 +1962,8 @@ type Receipt {
   computedTotal: BigDecimal
   "Obchod potvrzený uživatelem."
   store: Store
+  "Nakoupeno s věrnostní kartou obchodu (setReceiptLoyaltyCard); null = nevyplněno."
+  loyaltyCardUsed: Boolean
   "Obchod navržený serverem podle IČO/adresy — uživatel ho potvrdí přes updateReceiptHeader."
   suggestedStore: Store
   "Relativní cesty REST GET /api/receipts/{id}/images/{seq} v pořadí; prázdné po uplynutí retence."
@@ -1992,6 +2001,12 @@ type ReceiptLine {
   lineTotal: BigDecimal
   discountAmount: BigDecimal
   priceKind: PriceKind!
+  """
+  Druh ceny po slevě, kterou zapíše potvrzení řádku (CLUB_CARD/PROMO/CLEARANCE) — podle
+  Receipt.loyaltyCardUsed, jinak podle odhadu workeru. Null bez slevy, nebo když cena po slevě
+  nevznikne (váhové zboží bez množství).
+  """
+  discountPriceKind: PriceKind
   status: ReceiptLineStatus!
   matchSource: ReceiptMatchSource
   product: Product
