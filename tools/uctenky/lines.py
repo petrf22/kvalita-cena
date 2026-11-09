@@ -256,16 +256,20 @@ def parse_item_lines(raw_lines: list[str]) -> ParseResult:
                     f"{pending_qty[0]} × {pending_qty[2]} ≠ {total}")
             qty, basis, unit, note = pending_qty or (Decimal(1), PACKAGE, total, None)
             pending_qty = None
+            name, vat = simple["name"], simple["vat"] or simple["vatpre"]
+            if simple["vat"] and simple["vatpre"]:
+                # Sazba je za cenou, takže písmeno před cenou je konec názvu: „MLEKO 1 L 39,90 B".
+                name = f"{name} {simple['vatpre']}"
             last_item_no = append(
                 ParsedLine(
                     line_no=0,
                     kind=ITEM,
-                    raw_label=take_name(simple["name"]),
+                    raw_label=take_name(name),
                     line_total=total,
                     quantity=qty,
                     quantity_basis=basis,
                     unit_price=unit,
-                    vat_code=simple["vat"] or simple["vatpre"],
+                    vat_code=vat,
                     note=note,
                 )
             ).line_no

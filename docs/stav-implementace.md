@@ -541,7 +541,7 @@ oběh (2x, 02, 04, kupóny 05/98/99; u GTIN-14 prefix za indikátorem balení).
 rozdělená na 5 dílů s překryvem): OCR → řádky se součtem na haléř → párování → cena s
 `RECEIPT_OCR` → naučené označení v „Názvech na účtenkách".
 
-**Profily řetězců** (`tools/uctenky/profiles/`): Albert, TAMDA FOODS, COOP a obecný profil.
+**Profily řetězců** (`tools/uctenky/profiles/`): Albert, TAMDA FOODS, COOP, Tesco a obecný profil.
 COOP ověřen 2026-11-03 na reálné účtence (COOP Hořovice, formát TIP, 2 díly). Sazba DPH
 stojí před názvem a jde do `vatCode`, množství a `váhový kód:` stojí pod názvem. Váhový kód
 se neposílá: není to globální GTIN a mění se s hmotností. Adresa prodejny se bere z bloku
@@ -554,6 +554,12 @@ obecný profil (ověřeno 2026-11-02 na účtence s váženým zbožím). Ten um
 i se značkou zadání hmotnosti `0.526 kg (E) x …`, datum a čas na dvou řádcích
 a mezisoučet se zaokrouhlením nad „Celkem“. Zaokrouhlení není položka, ale do kontrolního
 součtu se připočte (`Footer.rounding`), protože u hotovosti dosahuje až ±0,50 Kč.
+Tesco ověřeno 2026-11-09 na reálné účtence (hypermarket, 2 díly, 24 položek, součet sedí na
+haléř). Tiskne `*` místo `x`, sazbu DPH přilepenou k ceně (`227,15B`) a u váženého zboží
+značku `BA`/`SC` v cenovém sloupci. Slevy Clubcard stojí až pod mezisoučtem a k položce je
+váže jen prvních 17 znaků názvu (`CC LEE MIN.CUB.SYR 1`). Profil je k položce přiřadí podle
+začátku názvu a označí cenu jako klubovou. Hlavička nese sídlo společnosti, a tak se adresa
+neposílá; na server jde jen název prodejny („Tesco Hypermarket …“) a IČO.
 
 **Čitelné názvy, odhad a kurátorství (2026-11-02):**
 
