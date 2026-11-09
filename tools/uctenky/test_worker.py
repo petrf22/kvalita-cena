@@ -955,6 +955,26 @@ class PrettyLabelTest(unittest.TestCase):
         dictionary = pretty.load_dictionary()
         self.assertEqual(dictionary.abbreviation("sels.", None), "Selské")
 
+    def test_zkratky_z_ucetenek_20_22_30_rozepise_slovnik(self):
+        # Model tyhle názvy zkoušel opravit a neprošel kontrolou — slovník je teď vyřeší sám,
+        # takže se na ně model vůbec neptá.
+        dictionary = pretty.load_dictionary()
+        cases = [
+            ("KUŘ.ŠUNKA ZAUZ.NJ", "albert", "Kuřecí šunka zauzená nejvyšší jakosti"),
+            ("RUST.BRAM.CHLEB 420G", "albert", "Rustikální bramborový chleb 420g"),
+            ("KUŘECÍ ŠUNKA NEJ.J.100G", "albert", "Kuřecí šunka nejvyšší jakosti 100g"),
+            ("KOFOLA 2L", "coop", "Kofola 2l"),
+        ]
+        for raw, chain, expected in cases:
+            with self.subTest(raw=raw):
+                result = pretty.pretty_label(raw, chain, dictionary)
+                self.assertEqual((result.text, result.source, result.unresolved),
+                                 (expected, pretty.SOURCE_RULES, ()))
+        # Rod „bramborový" sedí jen na Albertův chleb — jinde zkratka zůstává.
+        self.assertIn("BRAM.", pretty.pretty_label("RUST.BRAM.CHLEB 420G", "coop", dictionary).unresolved)
+        self.assertEqual(dictionary.category("Rustikální bramborový chleb 420g", "albert"), "chleba")
+        self.assertEqual(dictionary.category("Kofola 2l", "coop"), "limonady-a-kola")
+
     def test_citelny_tisk_se_zkratkami_prepise_jen_rucni_prepis(self):
         # Tisk malými písmeny pravidla nechávají, jak je — zkratky v něm rozepíše jen nazvy.tsv.
         # „10" je useknutá gramáž (100g), na vodítko gramáže se z ní proto nesahá.
@@ -970,6 +990,24 @@ class PrettyLabelTest(unittest.TestCase):
                 self.assertEqual((result.text, result.source, result.net_content),
                                  (expected, pretty.SOURCE_DICT, net_content))
         self.assertEqual(dictionary.category("Zmrzlina s karamelovou příchutí 200ml", None), "zmrzlina")
+
+    def test_zkratky_z_ucetenky_tesco_38_rozepise_slovnik(self):
+        dictionary = pretty.load_dictionary()
+        cases = [
+            # DZK a BL zatím nikdo nerozluštil — zůstanou na model.
+            ("DZK K.ŠUNKA ZAU.100g", "Dzk kuřecí šunka zauzená 100g", ("DZK",), "uzeniny-a-salamy"),
+            ("HOL JOGU.BOR.BL 85ml", "Holandia jogurt borůvkový bl 85ml", ("BL",), "jogurty"),
+            ("MIL MLÉČNA ČOKO.250g", "Milka mléčná čokoláda 250g", (), "cokolada"),
+            ("TVAROH TUCNY 250 g", "Tvaroh tučný 250g", (), "tvaroh-a-termix"),
+        ]
+        for raw, expected, unresolved, category in cases:
+            with self.subTest(raw=raw):
+                result = pretty.pretty_label(raw, "tesco", dictionary)
+                self.assertEqual((result.text, result.source, result.unresolved),
+                                 (expected, pretty.SOURCE_RULES, unresolved))
+                self.assertEqual(dictionary.category(result.text, "tesco"), category)
+        # Jednopísmenné K. platí jen pro Tesco.
+        self.assertIn("K.", pretty.pretty_label("DZK K.ŠUNKA ZAU.100g", "albert", dictionary).unresolved)
 
     def test_zapis_do_slovniku_a_zpet(self):
         with tempfile.TemporaryDirectory() as tmp:

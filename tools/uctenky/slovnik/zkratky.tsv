@@ -15,6 +15,7 @@ KUŘ.	kuřecí
 CELOZ.	celozrnné
 ČERST.	čerstvé
 JOG.	jogurt
+JOGU.	jogurt
 # Slova, kterým OCR nebo pokladna bere diakritiku
 ARAŠÍDOVÁ	arašídová
 BORŮVKY	borůvky
@@ -32,6 +33,14 @@ PRSNÍ	prsní
 ROHLÍK	rohlík
 MLÉKO	mléko
 LEŽÁK	ležák
+ŠUNKA	šunka
+MLÉČNA	mléčná
+TUČNÝ	tučný
+# Slova, která jsou správně — položka jen ušetří dotaz na model
+CHLEB	chleb
+TVAROH	tvaroh
+# Značky
+KOFOLA	Kofola
 # Značky a certifikace, které mají zůstat velkými písmeny
 ASC	ASC
 BIO	BIO
@@ -44,3 +53,19 @@ ROM.	Romana	albert
 JAROM.	Jaroměřický	albert
 NP	NP	albert
 WM	WM	albert
+# Zatím jen u Albertu: ZAUZ. a BRAM. mají rod podle jednoho zboží (zauzená šunka,
+# bramborový chleb), jednopísmenné J. může jinde znamenat něco jiného.
+ZAUZ.	zauzená	albert
+NJ	nejvyšší jakosti	albert
+NEJ.	nejvyšší	albert
+J.	jakosti	albert
+RUST.	rustikální	albert
+BRAM.	bramborový	albert
+# Tesco. K. a ZAU. jen tady: jednopísmenné K. může jinde znamenat něco jiného a ZAU. má rod
+# podle šunky; BOR. a ČOKO. podle jogurtu a čokolády.
+K.	kuřecí	tesco
+ZAU.	zauzená	tesco
+HOL	Holandia	tesco
+BOR.	borůvkový	tesco
+MIL	Milka	tesco
+ČOKO.	čokoláda	tesco

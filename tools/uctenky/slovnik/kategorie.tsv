@@ -29,11 +29,18 @@ eidam	syry
 mozzarella	syry
 mozzar	syry
 mozza	syry
+tvaroh	tvaroh-a-termix
+jogurt	jogurty
 #
 # Trvanlivé a nápoje — model tipoval Mléčné výrobky nebo Mražené
 gnocchi	testoviny
 udon	testoviny
 udong	testoviny
 kühne m f	omacky-a-dochucovadla
+mléčná čokoláda	cokolada
 yo sirup	dzusy-a-siropy
 yo sir	dzusy-a-siropy
+#
+# Pečivo a nápoje z účtenek 20 a 30
+chleb	chleba
+kofola	limonady-a-kola
