@@ -758,6 +758,13 @@ class TescoProfileTest(unittest.TestCase):
         self.assertEqual([(line.raw_label, line.vat_code) for line in parsed.lines],
                          [("MLEKO 1 L", "B"), ("Balsýr bloček 200g", "C")])
 
+    def test_gramaz_s_mezerou_da_voditko(self):
+        dictionary = pretty.Dictionary()
+        self.assertEqual(pretty.pretty_label("JAHODY 500 g", "tesco", dictionary).net_content, ("500", "G"))
+        self.assertEqual(pretty.pretty_label("JAHODY 500 g", "tesco", dictionary).text, "Jahody 500g")
+        self.assertEqual(pretty.pretty_label("MLEKO 1 L", "tesco", dictionary).net_content, ("1", "L"))
+        self.assertIsNone(pretty.pretty_label("VEJCE 10 M", "tesco", dictionary).net_content)
+
 
 class ReplayTest(unittest.TestCase):
     """Offline přehrání (replay.py) — stejný rozbor jako worker, jen nad lokálními soubory."""
