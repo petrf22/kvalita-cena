@@ -244,9 +244,26 @@ def tokenize(label: str) -> list[str]:
     return _TOKEN_RE.findall(label.strip().rstrip(_TRAILING_NOISE).strip())
 
 
+# Jednotky gramáže, které se smí přilepit k číslu před mezerou („JAHODY 500 g", Tesco).
+# Ne „M" ani „KS": „VEJCE 10 M" je velikost vajec, ne 10 metrů.
+_SPACED_UNITS = {"G", "GR", "KG", "ML", "CL", "DL", "L"}
+_PLAIN_NUMBER_RE = re.compile(rf"^{_NUMBER}$")
+
+
+def _join_spaced_units(tokens: list[str]) -> list[str]:
+    """„500", „g" → „500g" — gramáž vytištěná s mezerou mezi číslem a jednotkou."""
+    joined: list[str] = []
+    for token in tokens:
+        if joined and token.upper() in _SPACED_UNITS and _PLAIN_NUMBER_RE.match(joined[-1]):
+            joined[-1] += token
+        else:
+            joined.append(token)
+    return joined
+
+
 def pretty_label(raw: str, chain: str | None, dictionary: Dictionary) -> Pretty:
     override = dictionary.override(raw, chain)
-    tokens = tokenize(raw)
+    tokens = _join_spaced_units(tokenize(raw))
     hint = None
     for token in tokens:
         quantity = _quantity_token(token)
