@@ -896,6 +896,22 @@ class PrettyLabelTest(unittest.TestCase):
         dictionary = pretty.load_dictionary()
         self.assertEqual(dictionary.abbreviation("sels.", None), "Selské")
 
+    def test_citelny_tisk_se_zkratkami_prepise_jen_rucni_prepis(self):
+        # Tisk malými písmeny pravidla nechávají, jak je — zkratky v něm rozepíše jen nazvy.tsv.
+        # „10" je useknutá gramáž (100g), na vodítko gramáže se z ní proto nesahá.
+        dictionary = pretty.load_dictionary()
+        cases = [
+            ("Jihoč.eidam plát.45% 10", "Jihočeský eidam 45% plátky 100g", None),
+            ("Vepř.mělněné maso XXL 1kg", "Vepřové mělněné maso XXL 1kg", ("1", "KG")),
+            ("Zmrz.s karam.přích.200ml", "Zmrzlina s karamelovou příchutí 200ml", ("200", "ML")),
+        ]
+        for raw, expected, net_content in cases:
+            with self.subTest(raw=raw):
+                result = pretty.pretty_label(raw, None, dictionary)
+                self.assertEqual((result.text, result.source, result.net_content),
+                                 (expected, pretty.SOURCE_DICT, net_content))
+        self.assertEqual(dictionary.category("Zmrzlina s karamelovou příchutí 200ml", None), "zmrzlina")
+
     def test_zapis_do_slovniku_a_zpet(self):
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp)

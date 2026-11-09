@@ -11,6 +11,7 @@
 # Zmrzlina — model značky nezná a tipuje podle slov („tvarohový" -> tvaroh)
 nanuk	zmrzlina
 míša tvarohový	zmrzlina
+zmrzlina	zmrzlina
 uni twister	zmrzlina
 #
 # Maso a uzeniny — model kuřecí řízky dával do čerstvého masa a uzeniny jen do nadřazené
