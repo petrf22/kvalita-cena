@@ -707,6 +707,58 @@ class CoopProfileTest(unittest.TestCase):
         self.assertNotIn("Lhotská", text)
 
 
+class TescoProfileTest(unittest.TestCase):
+    """„*" místo „x", sazba přilepená k ceně, značky BA/SC a slevy Clubcard pod mezisoučtem."""
+
+    def setUp(self):
+        self.document = parse.build_document([_text("tesco-dil1"), _text("tesco-dil2")])
+        self.items = [line for line in self.document["lines"] if line["kind"] == "ITEM"]
+        self.discounts = [line for line in self.document["lines"] if line["kind"] == "DISCOUNT"]
+
+    def test_polozky_i_slevy_daji_vytistenou_castku(self):
+        self.assertEqual(self.document["profile"], "tesco")
+        self.assertTrue(self.document["totalMatches"])
+        self.assertEqual(self.document["printedTotal"], "536.92")
+        # Datum je v dolní části účtenky, kterou fixture (stejně jako reálná fotka) nemá.
+        self.assertEqual(self.document["warnings"], ["na účtence se nenašlo datum nákupu"])
+        self.assertEqual([line["rawLabel"] for line in self.items], [
+            "RODO.PRSNI RIZKY", "CARPACCIO 100 g", "OLMA MLEKO 3,9% 1 L", "OR.STP MLECNA 170g",
+            "JABLKA GOL. DELI. Kg", "LEE MIN.CUB.SYR 110g", "DREVORUB. CHLEB 405g",
+        ])
+
+    def test_hvezdicka_je_nasobeni(self):
+        rizky, carpaccio = self.items[:2]
+        self.assertEqual((rizky["quantity"], rizky["quantityBasis"], rizky["unitPrice"], rizky["vatCode"]),
+                         ("0.874", "PER_KG", "259.90", "B"))
+        self.assertEqual((carpaccio["quantity"], carpaccio["unitPrice"], carpaccio["lineTotal"]),
+                         ("2", "65.90", "131.80"))
+
+    def test_sleva_clubcard_patri_k_polozce_podle_zacatku_nazvu(self):
+        by_no = {line["lineNo"]: line["rawLabel"] for line in self.items}
+        self.assertEqual([(line["rawLabel"], by_no[line["appliesToLineNo"]]) for line in self.discounts], [
+            ("CC LEE MIN.CUB.SYR 1", "LEE MIN.CUB.SYR 110g"),
+            ("CC OR.STP MLECNA 170", "OR.STP MLECNA 170g"),
+        ])
+        payload = result_mod.to_payload(self.document, None, "test")
+        syr = next(line for line in payload["lines"] if line["label"] == "LEE MIN.CUB.SYR 110g")
+        self.assertEqual((syr["discountAmount"], syr["priceKind"]), ("20.00", "CLUB_CARD"))
+
+    def test_sleva_bez_polozky_se_ohlasi(self):
+        document = parse.build_document([_text("tesco-dil1"),
+                                         _text("tesco-dil2").replace("CC LEE MIN", "CC XYZ ABC")])
+        self.assertIn("sleva 'CC XYZ ABC.CUB.SYR 1 -20,00' nenašla položku, které se týká", document["warnings"])
+
+    def test_adresa_sidla_se_neposle(self):
+        merchant = self.document["merchant"]
+        self.assertEqual(merchant, {"rawName": "Tesco Hypermarket Vzorov", "chainSlug": "tesco",
+                                    "country": "CZ", "ico": "45308314"})
+
+    def test_pismeno_pred_cenou_patri_k_nazvu_kdyz_je_sazba_za_cenou(self):
+        parsed = lines_mod.parse_item_lines(["MLEKO 1 L 39,90 B", "Balsýr bloček 200g C 110.70"])
+        self.assertEqual([(line.raw_label, line.vat_code) for line in parsed.lines],
+                         [("MLEKO 1 L", "B"), ("Balsýr bloček 200g", "C")])
+
+
 class ReplayTest(unittest.TestCase):
     """Offline přehrání (replay.py) — stejný rozbor jako worker, jen nad lokálními soubory."""
 

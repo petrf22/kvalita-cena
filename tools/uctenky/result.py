@@ -16,7 +16,8 @@ import lines as lines_mod
 import pretty
 
 _BASIS_TO_UNIT = {lines_mod.PER_KG: "KG", lines_mod.PER_L: "L", lines_mod.PACKAGE: "PCS"}
-_CLUB_RE = re.compile(r"klub|club|karta|card|lidl\s*plus|moje\s*billa|albert\s*plus|penny\s*karta",
+# „CC" na začátku řádku slevy je Tesco Clubcard (profiles/tesco.py).
+_CLUB_RE = re.compile(r"klub|club|karta|card|lidl\s*plus|moje\s*billa|albert\s*plus|penny\s*karta|^cc\b",
                       re.IGNORECASE)
 
 

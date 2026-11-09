@@ -347,6 +347,9 @@ poznají podle pořadového čísla. Druhý příklad je [`profiles/coop.py`](pr
 COOP tiskne množství POD název, kdežto společné skládání (Penny) ho čeká NAD názvem.
 Bez vlastního rozboru by se množství přilepilo k sousední položce a kontrolní součet by
 to nepoznal.
+Třetí je [`profiles/tesco.py`](profiles/tesco.py): slevy Clubcard až pod mezisoučtem,
+které na položku odkazují jen useknutým názvem. Položky nad mezisoučtem převede na tvar
+společného skládání a nechá je složit tam.
 
 **EAN z účtenky** jde na server jako `internalCode` a server podle něj spáruje zboží
 (`ReceiptMatchingService.byCode`). Server kontroluje jen formát, proto worker posílá jen
