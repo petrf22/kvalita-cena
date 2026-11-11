@@ -541,7 +541,7 @@ oběh (2x, 02, 04, kupóny 05/98/99; u GTIN-14 prefix za indikátorem balení).
 rozdělená na 5 dílů s překryvem): OCR → řádky se součtem na haléř → párování → cena s
 `RECEIPT_OCR` → naučené označení v „Názvech na účtenkách".
 
-**Profily řetězců** (`tools/uctenky/profiles/`): Albert, TAMDA FOODS, COOP, Tesco a obecný profil.
+**Profily řetězců** (`tools/uctenky/profiles/`): Albert, TAMDA FOODS, COOP, Tesco, pokladna WinShop a obecný profil.
 COOP ověřen 2026-11-03 na reálné účtence (COOP Hořovice, formát TIP, 2 díly). Sazba DPH
 stojí před názvem a jde do `vatCode`, množství a `váhový kód:` stojí pod názvem. Váhový kód
 se neposílá: není to globální GTIN a mění se s hmotností. Adresa prodejny se bere z bloku
@@ -560,6 +560,12 @@ značku `BA`/`SC` v cenovém sloupci. Slevy Clubcard stojí až pod mezisoučtem
 váže jen prvních 17 znaků názvu (`CC LEE MIN.CUB.SYR 1`). Profil je k položce přiřadí podle
 začátku názvu a označí cenu jako klubovou. Hlavička nese sídlo společnosti, a tak se adresa
 neposílá; na server jde jen název prodejny („Tesco Hypermarket …“) a IČO.
+WinShop (pokladní software menších obchodů) ověřen 2026-11-11 na reálné účtence Viet Han
+Market (6 položek, součet sedí na haléř). Profil se pozná podle hlavičky sloupců a patičky,
+ne podle obchodu, a řetězec neurčuje. Sazba DPH, kód zboží, množství a ceny stojí na řádku
+NAD názvem; zaokrouhlení `ZAOK` není položka, do součtu se připočte. Kód zboží je číslo
+v pokladně, ne EAN, a neposílá se. Desetinné množství netiskne jednotku, bere se proto jako
+balení s varováním.
 
 **Čitelné názvy, odhad a kurátorství (2026-11-02):**
 
