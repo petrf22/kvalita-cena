@@ -350,6 +350,9 @@ to nepoznal.
 Třetí je [`profiles/tesco.py`](profiles/tesco.py): slevy Clubcard až pod mezisoučtem,
 které na položku odkazují jen useknutým názvem. Položky nad mezisoučtem převede na tvar
 společného skládání a nechá je složit tam.
+Čtvrtý je [`profiles/winshop.py`](profiles/winshop.py) pro pokladní software WinShop:
+název stojí POD řádkem s cenou, společné skládání ho čeká nad ním. Profil není řetězec,
+pozná se podle tvaru účtenky, a proto se zkouší až za profily řetězců.
 
 **EAN z účtenky** jde na server jako `internalCode` a server podle něj spáruje zboží
 (`ReceiptMatchingService.byCode`). Server kontroluje jen formát, proto worker posílá jen

@@ -766,6 +766,61 @@ class TescoProfileTest(unittest.TestCase):
         self.assertIsNone(pretty.pretty_label("VEJCE 10 M", "tesco", dictionary).net_content)
 
 
+class WinShopProfileTest(unittest.TestCase):
+    """Pokladna WinShop: sazba, kód, množství a ceny na řádku NAD názvem, zaokrouhlení jako řádek."""
+
+    def setUp(self):
+        self.text = _text("winshop")
+        self.document = parse.build_document(self.text)
+        self.lines = self.document["lines"]
+
+    def test_nazev_patri_k_cene_nad_nim(self):
+        self.assertEqual(self.document["profile"], "winshop")
+        self.assertEqual(self.document["warnings"], [])
+        self.assertTrue(self.document["totalMatches"])
+        self.assertEqual(self.document["purchasedAt"], "2026-09-07T10:15:00+02:00")
+        self.assertEqual([(line["rawLabel"], line["lineTotal"]) for line in self.lines], [
+            ("FLYING GOOSE Chilli Omáčka Sriracha Hot 100ml", "55.00"),
+            ("A Select Kimchi 490g", "330.00"),
+            ("CHOYA SAKE vino 14,5 % 750 ml", "339.90"),
+            # Zalomený název se spojí.
+            ("BIBIGO Gyoza Dumpling S Krevety A Zeleninou 400g", "199.90"),
+        ])
+
+    def test_mnozstvi_sazba_a_zaokrouhleni(self):
+        kimchi, sake = self.lines[1], self.lines[2]
+        self.assertEqual((kimchi["quantity"], kimchi["quantityBasis"], kimchi["unitPrice"], kimchi["vatCode"]),
+                         ("2", "PACKAGE", "165.00", "12"))
+        self.assertEqual(sake["vatCode"], "21")
+        # Zaokrouhlení není položka, ale do součtu patří.
+        self.assertEqual(self.document["computedTotal"], "925.00")
+
+    def test_kod_zbozi_se_neposila(self):
+        self.assertTrue(all("code" not in line for line in self.lines))
+        payload = result_mod.to_payload(self.document, None, "test")
+        self.assertTrue(all(line["internalCode"] is None for line in payload["lines"]))
+
+    def test_hlavicka_konci_nad_polozkami(self):
+        self.assertEqual(self.document["merchant"], {
+            "rawName": "OBCHOD VZOR", "country": "CZ", "street": "Nádražní 1", "postalCode": "11111",
+            "city": "Vzorov", "ico": "12345678",
+        })
+        self.assertTrue(parse.server_text(self.text).endswith("Celkem k úhradě 925,00"))
+
+    def test_desetinne_mnozstvi_bez_jednotky_je_baleni(self):
+        document = parse.build_document(self.text.replace("2,00 165,00 330,00", "0,452 730,10 330,00"))
+        kimchi = document["lines"][1]
+        self.assertEqual((kimchi["quantity"], kimchi["quantityBasis"], kimchi["unitPrice"]), ("1", "PACKAGE", "330.00"))
+        self.assertIn("množství 0,452 u 'A Select Kimchi 490g' je bez jednotky, bráno jako balení",
+                      document["warnings"])
+
+    def test_mnozstvi_ktere_nesedi_s_cenou_se_ohlasi(self):
+        document = parse.build_document(self.text.replace("2,00 165,00 330,00", "2,00 160,00 330,00"))
+        kimchi = document["lines"][1]
+        self.assertEqual((kimchi["quantity"], kimchi["unitPrice"]), ("1", "330.00"))
+        self.assertTrue(any("nesedí s částkou u 'A Select Kimchi 490g'" in warning for warning in document["warnings"]))
+
+
 class ReplayTest(unittest.TestCase):
     """Offline přehrání (replay.py) — stejný rozbor jako worker, jen nad lokálními soubory."""
 
