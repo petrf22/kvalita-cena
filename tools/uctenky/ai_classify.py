@@ -23,6 +23,11 @@ import urllib.request
 # a běží částečně na CPU, ale úloha je dávková a na latenci nikdo nečeká (docs/ai.md).
 DEFAULT_MODEL = "qwen2.5:14b-instruct"
 
+# Kontext pro seznam ~100 kategorií. Sdílí ho i ai_pretty: Ollama model s jiným num_ctx
+# nahraje do paměti znovu, takže rozdílná hodnota by mezi čitelnými názvy a kategoriemi
+# 14B pokaždé vyhodila a nahrála (ověřeno 2026-11-12 přes `ollama ps`).
+NUM_CTX = 8192
+
 UNITS = {"G", "KG", "ML", "L"}
 _MASS = {"G", "KG"}
 
@@ -98,7 +103,7 @@ class OllamaClassifier:
             ],
             "format": "json",
             "stream": False,
-            "options": {"temperature": 0, "seed": 0, "num_ctx": 8192},
+            "options": {"temperature": 0, "seed": 0, "num_ctx": NUM_CTX},
             "keep_alive": "5m",
         }
         request = urllib.request.Request(
