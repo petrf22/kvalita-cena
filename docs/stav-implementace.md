@@ -571,7 +571,7 @@ balení s varováním.
 
 - **Čitelný název.** Worker posílá `labelDisplay`. Vzniká ze slovníku
   `tools/uctenky/slovnik/*.tsv` a pravidel (`pretty.py`). Lokální model
-  `qwen2.5:7b-instruct` (`ai_pretty.py`) ho smí jen dočistit pod kontrolou `accept`. Výsledek
+  `qwen2.5:14b-instruct` (`ai_pretty.py`, tentýž jako u návrhu kategorie) ho smí jen dočistit pod kontrolou `accept`. Výsledek
   ukazuje `replay.py`.
 - **Odhad.** Server nespárovaný řádek zkusí spárovat jednoznačnou podobností názvu
   (`ReceiptMatchingService.unambiguousByName`, `match_source = FUZZY`). Hlídá přitom gramáž

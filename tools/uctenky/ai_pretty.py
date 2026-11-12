@@ -20,11 +20,13 @@ import urllib.error
 import urllib.request
 from dataclasses import replace
 
+import ai_classify
 import pretty
 
-# Qwen2.5 7B Instruct je pod Apache-2.0 (pozor: varianty 3B a 72B mají vlastní licenci Qwen)
-# — v souladu s pravidlem „pouze svobodné licence" (docs/ai.md, „Hardware a volba modelu").
-DEFAULT_MODEL = "qwen2.5:7b-instruct"
+# Stejný model jako návrh kategorie (Qwen2.5 14B Instruct, Apache-2.0): obě volání jdou
+# v jedné fázi dávky za sebou, takže zůstane nahraný ve VRAM a nestřídá se s menším 7B.
+# Kosmetiku hlídá `accept`, větší model tu nic nerozhoduje (docs/ai.md, „Hardware a volba modelu").
+DEFAULT_MODEL = ai_classify.DEFAULT_MODEL
 
 SYSTEM_PROMPT = (
     "Jsi korektor názvů zboží z českých pokladních účtenek. Dostaneš JSON objekt "

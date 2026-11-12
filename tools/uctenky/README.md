@@ -16,6 +16,7 @@ Stačí standardní knihovna Pythonu 3.12, žádné `pip install` není potřeba
 
 ```bash
 ollama pull glm-ocr:bf16                        # jednorázově (licence MIT)
+ollama pull qwen2.5:14b-instruct                # čitelné názvy a kategorie (Apache-2.0)
 
 export KC_API_URL=https://api.kvalitacena.cz    # lokálně http://localhost:8080
 export KC_WORKER_TOKEN="$(cat ~/.config/kvalitacena-worker-token)"   # viz „Token" níž
@@ -116,8 +117,8 @@ Postup:
    klíč bez diakritiky; „SELS." → „Selské", „RIZKY" → „řízky"). Slova mimo slovník převede na
    malá písmena, první slovo velkým. Zdroj `RULES`. Popisek, který obchod tiskne malými
    písmeny (TAMDA), zůstane, jak je.
-3. **Lokální model** (`--pretty-model`, výchozí `qwen2.5:7b-instruct`, Apache-2.0; prázdné
-   = vypnuto): dostane jen názvy se slovy, která slovník nevyřešil, jednou dávkou za účtenku.
+3. **Lokální model** (`--pretty-model`, výchozí `qwen2.5:14b-instruct`, Apache-2.0, stejný
+   jako u návrhu kategorie, aby se ve VRAM nestřídaly dva; prázdné = vypnuto): dostane jen názvy se slovy, která slovník nevyřešil, jednou dávkou za účtenku.
    Smí doplnit diakritiku, opravit velikost písmen a rozepsat zkratku s tečkou.
    **Každý výstup projde kontrolou** `ai_pretty.accept`: stejný počet slov, čísla a jednotky
    beze změny, písmena beze změny kromě PŘIDANÉ diakritiky, zkratka smí jen pokračovat
@@ -126,7 +127,7 @@ Postup:
 
 Slovník je v gitu a worker ho čte před každou dávkou. Doplňuje se ručně, nebo přes
 `curate.py` (níž). Na offline ladění vypíše `replay.py` čitelné názvy pod rozborem
-(`--pretty-model qwen2.5:7b-instruct` přidá i model).
+(`--pretty-model qwen2.5:14b-instruct` přidá i model).
 
 ## Návrh kategorie a jednotky
 
@@ -192,7 +193,7 @@ Příkazy (`?` je vypíše):
 - `s`: přeskočit, `q`: konec.
 
 **Úpravy slovníku commitni do gitu.** Worker ho čte před každou dávkou, takže oprava platí už
-při normalizaci dalších účtenek. `--pretty-model qwen2.5:7b-instruct` dočistí názvy modelem
+při normalizaci dalších účtenek. `--pretty-model qwen2.5:14b-instruct` dočistí názvy modelem
 i tady.
 
 Token kurátora vzniká stejně jako token workeru (viz „Token" výš), jen s jiným rozsahem
