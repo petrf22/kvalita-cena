@@ -85,9 +85,11 @@ výš: rozlišení je v datech od chvíle, kdy funkce vznikla, ne dopisované po
 
 Zjištěný stroj (srpen 2026): **NVIDIA RTX 4060 Ti, 8 GB VRAM**, AMD Ryzen 9 7900 (24 vláken),
 61 GB RAM, Ollama nainstalovaná a spuštěná lokálně (2026-09: verze 0.32, `glm-ocr:bf16` pro
-OCR účtenek; 2026-11 přibyl `qwen2.5:7b-instruct`, Apache-2.0, na dočištění čitelných názvů
-řádků, a `qwen2.5:14b-instruct`, Apache-2.0, na návrh kategorie a jednotky nového zboží — model se volá jednou dávkou za účtenku až po OCR, takže se s OCR modelem ve VRAM
-střídá přes `keep_alive`, viz „Účtenky").
+OCR účtenek; 2026-11 přibyl `qwen2.5:14b-instruct`, Apache-2.0, na dočištění čitelných názvů
+řádků i na návrh kategorie a jednotky nového zboží). Worker zpracuje dávku po fázích: nejdřív
+OCR všech účtenek, pak textový model nad všemi. Oba modely se tak ve VRAM vystřídají jen
+dvakrát za dávku, ne u každé účtenky. Do 2026-11 čistil názvy zvlášť `qwen2.5:7b-instruct`,
+takže se u každé účtenky nahrávaly tři modely za sebou.
 
 Dvě omezení určují volbu:
 
@@ -162,8 +164,9 @@ balení („8X50ML") je vodítkem celková gramáž (400 ml), protože cena je z
 1. Ruční přepis celého označení ze slovníku provozovatele (`slovnik/nazvy.tsv`).
 2. Jinak deterministická pravidla: jednotky kompaktně česky a zkratky ze slovníku
    (`slovnik/zkratky.tsv`).
-3. Teprve zbytek smí dočistit lokální model `qwen2.5:7b-instruct`. Má licenci Apache-2.0;
-   pozor, varianty 3B a 72B mají vlastní licenci Qwen.
+3. Teprve zbytek smí dočistit lokální model `qwen2.5:14b-instruct`, tentýž, který navrhuje
+   kategorii, aby se ve VRAM nestřídal s dalším. Má licenci Apache-2.0; pozor, varianty 3B
+   a 72B mají vlastní licenci Qwen.
 
 Model tu dělá **jen kosmetiku pod deterministickou kontrolou** (`ai_pretty.accept`). Smí
 doplnit diakritiku, opravit velikost písmen a rozepsat zkratku s tečkou. Kontrola zamítne
@@ -239,7 +242,7 @@ návrh z OFF výš, i když OFF chybí jen kategorie.
 
 Na testovacích účtenkách zařazoval 7B model znatelně hůř (svíčka → pečivo, mikrovlnka →
 papírové zboží), proto 14B. Ten se do 8 GB VRAM nevejde celý a běží zčásti na CPU (~30 s za
-účtenku), což u dávkové úlohy nevadí. Ani 14B se nestrefí vždy, a proto jde jen o návrh.
+účtenku), což u dávkové úlohy nevadí. Od 2026-11 dělá 14B i čitelné názvy a 7B se nepoužívá. Ani 14B se nestrefí vždy, a proto jde jen o návrh.
 
 **Návrh obchodu** (`ReceiptMatchingService.suggestStore`, jen návrh — potvrzuje uživatel):
 nejdřív obchod, který vlastník už potvrdil u jiné SVÉ účtenky se stejnou hlavičkou (stejné

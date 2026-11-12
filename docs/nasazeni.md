@@ -453,11 +453,10 @@ provozovatele — na serveru se nic dalšího nespouští, appka bez běžícíh
 3. Spouštět `KC_API_URL=https://api.kvalitacena.cz KC_WORKER_TOKEN=kcw_… python3
    tools/uctenky/worker.py` (smyčka), nebo `--once` ze systemd timeru.
 4. Volitelně `ARCHIVE_DIR` pro obrázky se souhlasem s archivací (mimo git, mimo cloud).
-   Čitelné názvy řádků dočišťuje `qwen2.5:7b-instruct` (`ollama pull qwen2.5:7b-instruct`,
-   jinak `--pretty-model ''` a zůstanou jen slovník s pravidly).
-   Kategorii a jednotku nového zboží navrhuje `qwen2.5:14b-instruct`
-   (`ollama pull qwen2.5:14b-instruct`, jinak `--classify-model ''` a formulář bude bez
-   návrhu modelu).
+   Čitelné názvy řádků dočišťuje a kategorii s jednotkou nového zboží navrhuje jeden model,
+   `qwen2.5:14b-instruct` (`ollama pull qwen2.5:14b-instruct`). Bez něj spouštět s
+   `--pretty-model '' --classify-model ''`: názvy zůstanou ze slovníku a pravidel a formulář
+   bude bez návrhu modelu.
    Volitelně párování označení provozovatelem: `tools/uctenky/run-curate.sh`, s vlastním
    tokenem se scope `LABEL_CURATOR` v `KC_CURATOR_TOKEN` (`tools/uctenky/README.md`,
    „Kurátorství").
