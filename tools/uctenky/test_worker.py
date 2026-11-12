@@ -467,6 +467,44 @@ class WorkerLoopTest(unittest.TestCase):
         self.assertTrue(all(isinstance(v, (str, type(None))) for line in api.results[2]["lines"]
                             for v in (line["unitPrice"], line["quantity"])))
 
+    def test_davka_nejdriv_ocr_vsech_pak_textovy_model(self):
+        # Každé přepnutí OCR ↔ textový model = nahrání modelu do VRAM (docs/ai.md).
+        calls = []
+
+        class CategoriesApi(FakeApi):
+            def categories(self):
+                return [{"slug": "pecivo", "path": "Potraviny › Pečivo"}]
+
+        class LoggingOcr(FakeOcr):
+            def ocr(self, image):
+                calls.append("ocr")
+                return super().ocr(image)
+
+        class LoggingClassifier:
+            def complete(self, categories, items):
+                calls.append("model")
+                return {}
+
+        api = CategoriesApi([{"receiptId": 1, "imagePaths": ["/x/a"]}, {"receiptId": 2, "imagePaths": ["/x/b"]},
+                             {"receiptId": 3, "imagePaths": ["/x/broken"]}])
+        worker.run_batch(api, LoggingOcr(), 5, log=lambda *_: None, classifier=LoggingClassifier())
+        self.assertEqual(calls, ["ocr", "ocr", "model", "model"])
+        self.assertEqual(sorted(api.results), [1, 2])
+        self.assertEqual(list(api.failed), [3])
+
+    def test_chyba_ve_druhe_fazi_nezastavi_davku(self):
+        class FailingOnceApi(FakeApi):
+            def result(self, receipt_id, payload):
+                if receipt_id == 1:
+                    raise ValueError("server odmítl výsledek")
+                super().result(receipt_id, payload)
+
+        api = FailingOnceApi([{"receiptId": 1, "imagePaths": ["/x/a"], "leaseUntil": "L1"},
+                              {"receiptId": 2, "imagePaths": ["/x/b"]}])
+        worker.run_batch(api, FakeOcr(), 5, log=lambda *_: None)
+        self.assertEqual(api.failed[1], ("ValueError: server odmítl výsledek", "L1"))
+        self.assertEqual(api.results[2]["status"], "PROCESSED")
+
 
 class CategoryDictionaryWorkerTest(unittest.TestCase):
     def test_slovnik_kategorii_plati_i_bez_modelu(self):

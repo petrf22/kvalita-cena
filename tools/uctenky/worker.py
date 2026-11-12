@@ -5,7 +5,8 @@
     python3 tools/uctenky/worker.py --once          # jedna dávka a konec (cron/systemd timer)
 
 Cyklus: vyzvedne dávku účtenek (lease), každou část přečte OCR modelem (obrázek -> text),
-text deterministicky rozebere (parse.py) a výsledek pošle zpět. Server z něj udělá NÁVRH,
+text deterministicky rozebere (parse.py), teprve pak nad celou dávkou dočistí názvy a navrhne
+kategorie textovým modelem a výsledek pošle zpět. Server z něj udělá NÁVRH,
 cenu zapíše až potvrzení uživatele. Chyba jedné účtenky se nahlásí (`fail`) a pokračuje se
 další — po několika pokusech ji server označí FAILED.
 
@@ -37,19 +38,25 @@ import pretty  # noqa: E402
 import result as result_mod  # noqa: E402
 
 
-def process_job(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, job: dict, log=print,
-                dictionary: pretty.Dictionary | None = None, prettifier=None,
-                classifier=None, categories: list[dict] | None = None) -> str:
-    receipt_id = job["receiptId"]
+def read_job(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, job: dict,
+             log=print) -> tuple[list[str], str | None, dict]:
+    """Fáze 1: OCR (obrázek -> text) a deterministický rozbor — bez textového modelu."""
     if not job.get("imagePaths") and job.get("rawText"):
         # Nové rozpoznání po retenci obrázků: server pošle uložený syrový text, OCR se nedělá
         # a model se neposílá (na serveru zůstane ten, který text kdysi přečetl).
+        log(f"~  účtenka {job['receiptId']}: obrázky už nejsou, znovu z uloženého textu")
         texts, model = [job["rawText"]], None
-        log(f"~  účtenka {receipt_id}: obrázky už nejsou, znovu z uloženého textu")
     else:
         texts = [extractor.ocr(api.image(path)) for path in job["imagePaths"]]
         model = extractor.model
-    document = parse.build_document(texts)
+    return texts, model, parse.build_document(texts)
+
+
+def finish_job(api: api_mod.WorkerApi, job: dict, texts: list[str], model: str | None, document: dict,
+               log=print, dictionary: pretty.Dictionary | None = None, prettifier=None,
+               classifier=None, categories: list[dict] | None = None) -> str:
+    """Fáze 2: čitelné názvy a návrh kategorie textovým modelem, odeslání výsledku."""
+    receipt_id = job["receiptId"]
     payload = result_mod.to_payload(document, parse.server_text(texts), model,
                                     dictionary, prettifier, log, classifier, categories)
     api.result(receipt_id, payload)
@@ -64,20 +71,36 @@ def process_job(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, job: dict,
 
 def run_batch(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, limit: int, log=print,
               dictionary: pretty.Dictionary | None = None, prettifier=None, classifier=None) -> int:
+    """Dávka po fázích: nejdřív OCR všech účtenek, pak textový model nad všemi.
+
+    OCR model a textový model se do 8 GB VRAM nevejdou najednou a každé přepnutí znamená
+    nahrání modelu (docs/ai.md, „Hardware a volba modelu"). Po účtenkách by se střídaly
+    u každé z nich, po fázích jen dvakrát za dávku. Lease (15 min) na pět účtenek stačí.
+    """
     jobs = api.lease(limit)
     # Číselník je potřeba i bez modelu — slovník kategorií (slovnik/kategorie.tsv) se ověřuje proti němu.
     wants_categories = classifier is not None or bool(dictionary and dictionary.categories)
     categories = _categories(api, log) if jobs and wants_categories else []
+    read = []
     for job in jobs:
         try:
-            process_job(api, extractor, job, log, dictionary, prettifier, classifier, categories)
+            read.append((job, *read_job(api, extractor, job, log)))
         except Exception as error:  # noqa: BLE001 — jedna vadná účtenka nesmí zastavit dávku
-            log(f"!! účtenka {job.get('receiptId')}: {error}")
-            try:
-                api.fail(job["receiptId"], f"{type(error).__name__}: {error}", job.get("leaseUntil"))
-            except Exception as report_error:  # noqa: BLE001
-                log(f"!! nepodařilo se nahlásit chybu: {report_error}")
+            _report_failure(api, job, error, log)
+    for job, texts, model, document in read:
+        try:
+            finish_job(api, job, texts, model, document, log, dictionary, prettifier, classifier, categories)
+        except Exception as error:  # noqa: BLE001
+            _report_failure(api, job, error, log)
     return len(jobs)
+
+
+def _report_failure(api: api_mod.WorkerApi, job: dict, error: Exception, log=print) -> None:
+    log(f"!! účtenka {job.get('receiptId')}: {error}")
+    try:
+        api.fail(job["receiptId"], f"{type(error).__name__}: {error}", job.get("leaseUntil"))
+    except Exception as report_error:  # noqa: BLE001
+        log(f"!! nepodařilo se nahlásit chybu: {report_error}")
 
 
 def _categories(api: api_mod.WorkerApi, log=print) -> list[dict]:
