@@ -103,7 +103,7 @@ class OllamaPrettifier:
             ],
             "format": "json",
             "stream": False,
-            "options": {"temperature": 0, "seed": 0},
+            "options": {"temperature": 0, "seed": 0, "num_ctx": ai_classify.NUM_CTX},
             "keep_alive": "5m",
         }
         request = urllib.request.Request(
