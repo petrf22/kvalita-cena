@@ -7,6 +7,11 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
+## [Nezveřejněno]
+
+### Opraveno
+- Aktuální cena v obchodě se po zdražení nebo zlevnění přizpůsobí hned — starší zápisy v ní váží méně (poločas 14 dní), dřív rozhodovala celá historie (server)
+
 ## [0.13.6] – 2026-11-08
 
 ### Přidáno

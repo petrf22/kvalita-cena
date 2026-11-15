@@ -113,6 +113,11 @@ app:
     # na datech. Odchylka je poznamenaná i v docs/reputace.md.
     max-days: 730
     anonymous-max-days: 90
+  aggregation:
+    # Poločas f_recency (docs/reputace.md, "Váha jednoho cenového záznamu") — o kolik dní starší
+    # záznam než nejnovější v buňce váží v AKTUÁLNÍ ceně polovinu. Na graf historie se
+    # neuplatňuje. 0 útlum vypíná.
+    recency-half-life-days: 14
   quality:
     # Pod tímto počtem hodnocení klienti známku zobrazí ztlumeně jako "orientační" — obdoba
     # pravidla n_eff < 2 u cen (docs/reputace.md).
