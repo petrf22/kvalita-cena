@@ -107,6 +107,11 @@ app:
       web-ttl: P30D
       android-ttl: P180D
       reuse-grace-period: PT30S
+  graphql:
+    # Strop hloubky dotazu (GraphQlConfig). Nejhlubší dotaz webu i mobilu má dnes hloubku 5,
+    # standardní introspekční dotaz GraphiQL 13 — proto 15, ne těsněji. Při přidání hlubšího
+    # dotazu do klienta zvednout DŘÍV, než klient vyjde: starou appku v terénu opravit nejde.
+    max-query-depth: 15
   history:
     # Odstupňování přístupu (docs/reputace.md, T0 vs. T1) — anonymní okno je v etapě 1 vědomě
     # velkorysejší než dokument uvádí (7 dní): studený start je větší riziko než parazitování
