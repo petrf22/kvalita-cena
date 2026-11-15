@@ -13,6 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -46,6 +47,9 @@ class PriceAggregationServiceTest {
   @Mock
   private ProductRepository productRepository;
 
+  @Mock
+  private PlatformTransactionManager transactionManager;
+
   @Captor
   private ArgumentCaptor<PriceCurrent> priceCurrentCaptor;
 
@@ -57,10 +61,11 @@ class PriceAggregationServiceTest {
 
   private void givenQueuedCell(boolean generic) {
     service = new PriceAggregationService(recomputeQueueRepository, priceObservationRepository,
-        priceCurrentRepository, priceDailyRepository, productRepository, new AggregationProperties());
+        priceCurrentRepository, priceDailyRepository, productRepository, new AggregationProperties(),
+        transactionManager);
     RecomputeQueue queued = RecomputeQueue.builder()
-        .productId(PRODUCT_ID).storeId(STORE_ID).reason(RecomputeReason.NEW_OBS).build();
-    when(recomputeQueueRepository.findTop200ByProcessedAtIsNullOrderByEnqueuedAtAsc())
+        .id(100L).productId(PRODUCT_ID).storeId(STORE_ID).reason(RecomputeReason.NEW_OBS).build();
+    when(recomputeQueueRepository.findTop200ByProcessedAtIsNullAndAttemptsLessThanOrderByEnqueuedAtAsc(5))
         .thenReturn(List.of(queued));
     // lenient: testy s prázdným seznamem observací (rejectedObservationsClearExistingDailyRow)
     // nikdy neupsertují agg.price_current, takže findById by tam byl "unnecessary stubbing".
@@ -299,6 +304,46 @@ class PriceAggregationServiceTest {
         .containsExactlyInAnyOrder(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 2));
     assertThat(saved).extracting(PriceDaily::getPriceKind)
         .containsExactlyInAnyOrder(PriceKind.REGULAR, PriceKind.PROMO, PriceKind.REGULAR);
+  }
+
+  @Test
+  void failingCellDoesNotBlockTheRestOfTheBatch() {
+    givenQueuedCell();
+    Long poisonProduct = 2L;
+    RecomputeQueue poison = RecomputeQueue.builder()
+        .id(200L).productId(poisonProduct).storeId(STORE_ID).reason(RecomputeReason.NEW_OBS).build();
+    RecomputeQueue healthy = RecomputeQueue.builder()
+        .id(100L).productId(PRODUCT_ID).storeId(STORE_ID).reason(RecomputeReason.NEW_OBS).build();
+    // Vadná položka stojí v čele fronty — zdravá za ní se přesto musí přepočítat.
+    when(recomputeQueueRepository.findTop200ByProcessedAtIsNullAndAttemptsLessThanOrderByEnqueuedAtAsc(5))
+        .thenReturn(List.of(poison, healthy));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(poisonProduct, STORE_ID, ObservationStatus.ACTIVE))
+        .thenThrow(new IllegalStateException("rozbitá buňka"));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(List.of(observation(new BigDecimal("10"), SubmitterKind.REGISTERED, PriceKind.REGULAR,
+            OffsetDateTime.parse("2026-07-01T10:00:00Z"))));
+
+    service.processQueue();
+
+    verify(priceCurrentRepository).save(priceCurrentCaptor.capture());
+    assertThat(priceCurrentCaptor.getValue().getUnitPrice()).isEqualByComparingTo("10");
+    verify(recomputeQueueRepository).incrementAttempts(List.of(200L));
+    verify(recomputeQueueRepository).markProcessed(eq(List.of(100L)), any());
+    verify(recomputeQueueRepository, never()).markProcessed(eq(List.of(200L)), any());
+  }
+
+  @Test
+  void purgeDeletesOnlyProcessedItemsOlderThanRetention() {
+    service = new PriceAggregationService(recomputeQueueRepository, priceObservationRepository,
+        priceCurrentRepository, priceDailyRepository, productRepository, new AggregationProperties(),
+        transactionManager);
+    ArgumentCaptor<OffsetDateTime> cutoff = ArgumentCaptor.forClass(OffsetDateTime.class);
+
+    service.purgeProcessedQueue();
+
+    verify(recomputeQueueRepository).deleteProcessedBefore(cutoff.capture());
+    assertThat(cutoff.getValue()).isBetween(OffsetDateTime.now().minusDays(7).minusMinutes(1),
+        OffsetDateTime.now().minusDays(7).plusMinutes(1));
   }
 
   @Test

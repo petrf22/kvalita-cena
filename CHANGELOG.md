@@ -11,6 +11,7 @@ za jednoduchost skriptu.
 
 ### Opraveno
 - Aktuální cena v obchodě se po zdražení nebo zlevnění přizpůsobí hned — starší zápisy v ní váží méně (poločas 14 dní), dřív rozhodovala celá historie (server)
+- Chyba při přepočtu ceny jednoho zboží už nezastaví přepočet cen ostatním a fronta přepočtu se průběžně uklízí (server)
 
 ## [0.13.6] – 2026-11-08
 
