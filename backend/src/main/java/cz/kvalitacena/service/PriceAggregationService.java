@@ -1,5 +1,6 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.config.AggregationProperties;
 import cz.kvalitacena.db.entity.*;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
 import cz.kvalitacena.db.repo.PriceDailyRepository;
@@ -14,10 +15,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -27,8 +31,9 @@ import java.util.stream.Collectors;
  * přepočítat jen konkrétní buňky (produkt, obchod), ne celou tabulku — do fronty se zapisuje
  * synchronně při zápisu observace, samotný přepočet běží asynchronně přes {@link #processQueue()}.
  *
- * <p>Etapa 1 (MVP): váha záznamu je jen složka {@code L} z docs/reputace.md — anonym 0,15,
- * registrovaný 1,00. Plný vzorec (přesnost, zkušenost, stáří účtu, penalizace, skupiny
+ * <p>Etapa 1 (MVP): váha záznamu je složka {@code L} z docs/reputace.md — anonym 0,15,
+ * registrovaný 1,00 — a u aktuální ceny navíc {@code f_recency} ({@link #recencyFactor}).
+ * Plný vzorec (přesnost, zkušenost, stáří účtu, penalizace, skupiny
  * důvěry) přijde s reputačním systémem v etapě 2/3, až budou existovat data, ze kterých by
  * šel počítat (potvrzení, historie souhlasu).
  */
@@ -46,6 +51,7 @@ public class PriceAggregationService {
   private final PriceCurrentRepository priceCurrentRepository;
   private final PriceDailyRepository priceDailyRepository;
   private final ProductRepository productRepository;
+  private final AggregationProperties aggregationProperties;
 
   @Transactional
   public void enqueueRecompute(Long productId, Long storeId, RecomputeReason reason) {
@@ -124,12 +130,13 @@ public class PriceAggregationService {
 
   private void upsertPriceCurrent(Long productId, Long storeId, KindCurrency kindCurrency,
       List<PriceObservation> observations, boolean generic) {
-    WeightedStats stats = computeWeighted(observations);
-
     OffsetDateTime lastObservedAt = observations.stream()
         .map(PriceObservation::getObservedAt)
         .max(Comparator.naturalOrder())
         .orElse(null);
+
+    WeightedStats stats = computeWeighted(observations,
+        o -> weightFor(o).multiply(recencyFactor(o.getObservedAt(), lastObservedAt)));
 
     // MAX napříč observacemi buňky, ne medián — radši akci zobrazit o něco déle než skrýt
     // ještě platnou (docs/datovy-model.md). Vypršelou akci teprve filtruje čtecí vrstva
@@ -158,8 +165,8 @@ public class PriceAggregationService {
   }
 
   /**
-   * Denní řada pro graf (agg.price_daily) — používá TÝŽ {@link #computeWeighted}, tedy tytéž
-   * váhy (0,15 / 1,00) jako aktuální cena. f_recency z docs/reputace.md se na historii záměrně
+   * Denní řada pro graf (agg.price_daily) — používá TÝŽ {@link #computeWeighted} a tutéž
+   * složku L (0,15 / 1,00) jako aktuální cena. f_recency z docs/reputace.md se na historii záměrně
    * NEAPLIKUJE ("jen pro aktuální cenu, ne pro historii v grafu"), jinak by starší body v grafu
    * klesaly bez důvodu.
    *
@@ -178,7 +185,7 @@ public class PriceAggregationService {
         .collect(Collectors.groupingBy(o -> new DayKey(o.getPriceKind(), o.getCurrency(), utcDay(o.getObservedAt()))));
 
     byDay.forEach((key, group) -> {
-      WeightedStats stats = computeWeighted(group);
+      WeightedStats stats = computeWeighted(group, this::weightFor);
       priceDailyRepository.save(PriceDaily.builder()
           .productId(productId)
           .storeId(storeId)
@@ -210,9 +217,10 @@ public class PriceAggregationService {
    * Vážený medián a Kishova efektivní velikost vzorku — na jednom místě, aby se za čas
    * nerozešel denní ({@link #recomputeDaily}) a aktuální ({@link #upsertPriceCurrent}) medián.
    */
-  private WeightedStats computeWeighted(List<PriceObservation> observations) {
+  private WeightedStats computeWeighted(List<PriceObservation> observations,
+      Function<PriceObservation, BigDecimal> weight) {
     List<WeightedValue> values = observations.stream()
-        .map(o -> new WeightedValue(o.getUnitPrice(), o.getPriceAmount(), weightFor(o)))
+        .map(o -> new WeightedValue(o.getUnitPrice(), o.getPriceAmount(), weight.apply(o)))
         .sorted(Comparator.comparing(WeightedValue::unitPrice))
         .toList();
 
@@ -256,6 +264,24 @@ public class PriceAggregationService {
     // Bezkódová položka nemá jednoznačný identifikátor jako EAN — i shoda víc lidí na stejné
     // ceně je slabší důkaz, proto strop MEDIUM bez ohledu na n_eff (docs/reputace.md).
     return generic && raw == Confidence.HIGH ? Confidence.MEDIUM : raw;
+  }
+
+  /**
+   * {@code f_recency = 0,5^(stáří_dní / poločas)} z docs/reputace.md — bez něj by aktuální cena
+   * byla medián CELÉ historie buňky a po zdražení by ukazovala starou cenu, dokud nových zápisů
+   * není víc než starých.
+   *
+   * <p>Stáří se měří proti NEJNOVĚJŠÍMU záznamu skupiny, ne proti dnešku: vážený medián i
+   * Kishovo n_eff závisí jen na poměru vah a ten je u exponenciálního útlumu v čase stálý
+   * (posun reference vynásobí všechny váhy stejnou konstantou). Výsledek se tak mění jen
+   * s novou událostí a buňku není potřeba přepočítávat podle kalendáře.
+   */
+  private BigDecimal recencyFactor(OffsetDateTime observedAt, OffsetDateTime newest) {
+    double halfLifeDays = aggregationProperties.getRecencyHalfLifeDays();
+    if (halfLifeDays <= 0 || observedAt == null || newest == null) return BigDecimal.ONE;
+    double ageDays = Duration.between(observedAt, newest).toSeconds() / 86_400.0;
+    if (ageDays <= 0) return BigDecimal.ONE;
+    return BigDecimal.valueOf(Math.pow(0.5, ageDays / halfLifeDays)).setScale(6, RoundingMode.HALF_UP);
   }
 
   private BigDecimal weightFor(PriceObservation observation) {

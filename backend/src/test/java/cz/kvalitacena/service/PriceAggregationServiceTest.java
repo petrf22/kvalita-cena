@@ -1,5 +1,6 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.config.AggregationProperties;
 import cz.kvalitacena.db.entity.*;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
 import cz.kvalitacena.db.repo.PriceDailyRepository;
@@ -56,7 +57,7 @@ class PriceAggregationServiceTest {
 
   private void givenQueuedCell(boolean generic) {
     service = new PriceAggregationService(recomputeQueueRepository, priceObservationRepository,
-        priceCurrentRepository, priceDailyRepository, productRepository);
+        priceCurrentRepository, priceDailyRepository, productRepository, new AggregationProperties());
     RecomputeQueue queued = RecomputeQueue.builder()
         .productId(PRODUCT_ID).storeId(STORE_ID).reason(RecomputeReason.NEW_OBS).build();
     when(recomputeQueueRepository.findTop200ByProcessedAtIsNullOrderByEnqueuedAtAsc())
@@ -83,9 +84,10 @@ class PriceAggregationServiceTest {
   @Test
   void weightedMedianFavorsRegisteredSubmittersOverAnonymousOutlier() {
     givenQueuedCell();
-    OffsetDateTime t1 = OffsetDateTime.parse("2026-07-01T10:00:00Z");
-    OffsetDateTime t2 = OffsetDateTime.parse("2026-07-02T10:00:00Z");
+    // Všechno ve stejný okamžik — test hlídá jen složku L, útlum stářím má vlastní testy níž.
     OffsetDateTime latest = OffsetDateTime.parse("2026-07-03T10:00:00Z");
+    OffsetDateTime t1 = latest;
+    OffsetDateTime t2 = latest;
 
     // Dva registrovaní (váha 1,00) kolem 10-12 Kč, jeden anonym (váha 0,15) s odlehlou
     // hodnotou 20 Kč — anonymní odlehlá hodnota nesmí medián strhnout k sobě.
@@ -106,6 +108,73 @@ class PriceAggregationServiceTest {
     assertThat(saved.getLastObservedAt()).isEqualTo(latest);
     // nEff = (Σw)²/Σw² = 2,15² / (1²+1²+0,15²) ≈ 2,29 → MEDIUM (práh 2, pod 5).
     assertThat(saved.getConfidence()).isEqualTo(Confidence.MEDIUM);
+  }
+
+  @Test
+  void currentPriceFollowsRecentObservationsAfterPriceChange() {
+    givenQueuedCell();
+    OffsetDateTime now = OffsetDateTime.parse("2026-10-01T10:00:00Z");
+
+    // Pět zápisů staré ceny před dvěma měsíci, dva zápisy nové ceny teď. Bez f_recency by
+    // medián celé historie zůstal na 50; s poločasem 14 dní váží starý záznam ~0,05.
+    List<PriceObservation> observations = List.of(
+        observation(new BigDecimal("50"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(62)),
+        observation(new BigDecimal("50"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(61)),
+        observation(new BigDecimal("50"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(60)),
+        observation(new BigDecimal("50"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(59)),
+        observation(new BigDecimal("50"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(58)),
+        observation(new BigDecimal("60"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(1)),
+        observation(new BigDecimal("60"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(observations);
+
+    service.processQueue();
+
+    verify(priceCurrentRepository).save(priceCurrentCaptor.capture());
+    PriceCurrent saved = priceCurrentCaptor.getValue();
+    assertThat(saved.getUnitPrice()).isEqualByComparingTo("60");
+    assertThat(saved.getNObs()).isEqualTo(7);
+    // Staré záznamy do efektivního vzorku skoro nepřispívají — důvěra odpovídá dvěma čerstvým.
+    assertThat(saved.getConfidence()).isEqualTo(Confidence.MEDIUM);
+  }
+
+  @Test
+  void observationOneHalfLifeOlderWeighsHalf() {
+    givenQueuedCell();
+    OffsetDateTime now = OffsetDateTime.parse("2026-10-01T10:00:00Z");
+
+    List<PriceObservation> observations = List.of(
+        observation(new BigDecimal("10"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(14)),
+        observation(new BigDecimal("12"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(observations);
+
+    service.processQueue();
+
+    verify(priceCurrentRepository).save(priceCurrentCaptor.capture());
+    PriceCurrent saved = priceCurrentCaptor.getValue();
+    assertThat(saved.getSumWeight()).isEqualByComparingTo("1.5");
+    assertThat(saved.getUnitPrice()).isEqualByComparingTo("12");
+  }
+
+  @Test
+  void recencyDoesNotApplyToDailyHistory() {
+    givenQueuedCell();
+    OffsetDateTime now = OffsetDateTime.parse("2026-10-01T10:00:00Z");
+
+    List<PriceObservation> observations = List.of(
+        observation(new BigDecimal("50"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(60)),
+        observation(new BigDecimal("60"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(observations);
+
+    service.processQueue();
+
+    ArgumentCaptor<PriceDaily> dailyCaptor = ArgumentCaptor.forClass(PriceDaily.class);
+    verify(priceDailyRepository, times(2)).save(dailyCaptor.capture());
+    // Starý bod v grafu drží plnou váhu — jinak by historie klesala bez důvodu.
+    assertThat(dailyCaptor.getAllValues()).extracting(PriceDaily::getSumWeight)
+        .allSatisfy(w -> assertThat(w).isEqualByComparingTo("1"));
   }
 
   @Test
