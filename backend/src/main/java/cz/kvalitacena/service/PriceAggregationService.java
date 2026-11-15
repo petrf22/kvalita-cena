@@ -11,7 +11,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -52,6 +54,7 @@ public class PriceAggregationService {
   private final PriceDailyRepository priceDailyRepository;
   private final ProductRepository productRepository;
   private final AggregationProperties aggregationProperties;
+  private final PlatformTransactionManager transactionManager;
 
   @Transactional
   public void enqueueRecompute(Long productId, Long storeId, RecomputeReason reason) {
@@ -62,27 +65,69 @@ public class PriceAggregationService {
         .build());
   }
 
-  /** Drénuje frontu po dávkách — viz docs/datovy-model.md, "Agregace jsou tabulky, ne materialized view". */
+  /**
+   * Drénuje frontu po dávkách — viz docs/datovy-model.md, "Agregace jsou tabulky, ne materialized view".
+   *
+   * <p>Každá buňka má VLASTNÍ transakci. V jedné společné by výjimka z jediné buňky vrátila celou
+   * dávku, a protože se bere vždy čelo fronty, padala by tatáž dávka při každém běhu — agregace
+   * by tiše stála pro všechny. Buňce, která selže, se zvedne počítadlo pokusů a po
+   * {@code app.aggregation.queue-max-attempts} se přestane brát.
+   */
   @Scheduled(fixedDelay = 5000)
-  @Transactional
   public void processQueue() {
-    List<RecomputeQueue> pending = recomputeQueueRepository.findTop200ByProcessedAtIsNullOrderByEnqueuedAtAsc();
+    List<RecomputeQueue> pending = recomputeQueueRepository
+        .findTop200ByProcessedAtIsNullAndAttemptsLessThanOrderByEnqueuedAtAsc(aggregationProperties.getQueueMaxAttempts());
     if (pending.isEmpty()) return;
 
     // Víc událostí pro stejnou buňku (produkt, obchod) přepočítáme jen jednou za dávku.
     record Cell(Long productId, Long storeId) {
     }
-    Set<Cell> cells = pending.stream().map(q -> new Cell(q.getProductId(), q.getStoreId())).collect(Collectors.toSet());
+    Map<Cell, List<Long>> idsByCell = pending.stream().collect(Collectors.groupingBy(
+        q -> new Cell(q.getProductId(), q.getStoreId()), LinkedHashMap::new,
+        Collectors.mapping(RecomputeQueue::getId, Collectors.toList())));
 
-    for (Cell cell : cells) {
-      recomputeCell(cell.productId(), cell.storeId());
+    TransactionTemplate tx = new TransactionTemplate(transactionManager);
+    int failed = 0;
+    for (Map.Entry<Cell, List<Long>> entry : idsByCell.entrySet()) {
+      Cell cell = entry.getKey();
+      List<Long> ids = entry.getValue();
+      try {
+        tx.executeWithoutResult(status -> {
+          recomputeCell(cell.productId(), cell.storeId());
+          recomputeQueueRepository.markProcessed(ids, OffsetDateTime.now());
+        });
+      } catch (RuntimeException ex) {
+        failed++;
+        log.error("Přepočet buňky (produkt {}, obchod {}) selhal, položky fronty {} zůstávají nevyřízené.",
+            cell.productId(), cell.storeId(), ids, ex);
+        tx.executeWithoutResult(status -> recomputeQueueRepository.incrementAttempts(ids));
+      }
     }
 
-    OffsetDateTime now = OffsetDateTime.now();
-    pending.forEach(q -> q.setProcessedAt(now));
-    recomputeQueueRepository.saveAll(pending);
+    log.info("Přepočet cen: {} buněk (produkt, obchod) z {} položek fronty, selhalo {}.",
+        idsByCell.size(), pending.size(), failed);
+  }
 
-    log.info("Přepočet cen: {} buněk (produkt, obchod) z {} položek fronty.", cells.size(), pending.size());
+  /**
+   * Denní úklid fronty — vyřízené položky nemají po přepočtu žádný význam a bez mazání by
+   * tabulka rostla s každou zapsanou cenou. Položky, které vyčerpaly pokusy, se NEMAŽOU
+   * (nemají {@code processed_at}); úklid na ně jen upozorní v logu.
+   */
+  @Scheduled(cron = "@daily")
+  @Transactional
+  public void purgeProcessedQueue() {
+    OffsetDateTime cutoff = OffsetDateTime.now().minusDays(aggregationProperties.getQueueRetentionDays());
+    int deleted = recomputeQueueRepository.deleteProcessedBefore(cutoff);
+    if (deleted > 0) {
+      log.info("Fronta přepočtu: smazáno {} vyřízených položek starších {} dní.",
+          deleted, aggregationProperties.getQueueRetentionDays());
+    }
+    long stuck = recomputeQueueRepository
+        .countByProcessedAtIsNullAndAttemptsGreaterThanEqual(aggregationProperties.getQueueMaxAttempts());
+    if (stuck > 0) {
+      log.error("Fronta přepočtu: {} položek vyčerpalo pokusy a čeká na ruční zásah "
+          + "(agg.recompute_queue, processed_at IS NULL).", stuck);
+    }
   }
 
   private void recomputeCell(Long productId, Long storeId) {

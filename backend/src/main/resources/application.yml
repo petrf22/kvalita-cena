@@ -118,6 +118,10 @@ app:
     # záznam než nejnovější v buňce váží v AKTUÁLNÍ ceně polovinu. Na graf historie se
     # neuplatňuje. 0 útlum vypíná.
     recency-half-life-days: 14
+    # Fronta přepočtu (agg.recompute_queue): po kolika selháních se vadná položka přestane
+    # brát (zůstane v tabulce nevyřízená jako stopa) a po kolika dnech se mažou vyřízené.
+    queue-max-attempts: 5
+    queue-retention-days: 7
   quality:
     # Pod tímto počtem hodnocení klienti známku zobrazí ztlumeně jako "orientační" — obdoba
     # pravidla n_eff < 2 u cen (docs/reputace.md).
