@@ -1,0 +1,31 @@
+albert
+Nádražní 1
+100 00 Vzorov
+
+Kč
+ROHLÍK43GR
+5 x 2,90 Kč 14,50 A
+GRAN MORAV.STR.100G 59,90 A
+TAPAS SPIAN.ROM.70G
+2 x 79,00 Kč 158,00 A
+Tapas 2+1 zdarma -79,00
+LOSOS FILET ASC E
+0,302 kg x 289,00 Kč/kg 87,30 A
+SÝR VÁŽENÝ E
+250 g x 320,00 Kč/kg 80,00 A
+OLEJ STÁČENÝ P
+0,750 l x 89,00 Kč/l 66,75 A
+
+Celkem 387,45
+
+07/09/26 10:15 Účtenka číslo 00001
+Terminal: (XXXX0000-00000000)
+PRODEJ 387,45 Kč
+**** **** **** 0000 / 00 (L) VISA
+SEQ ID: 000:000:000, Autoriz. kód 000000
+Platební karty Kč 387,45
+A 12% DPH z 345,94 41,51
+Datum čas Obch Pokl Obsl Trans
+07.09.26 10:15 0000 00 0000 0000000
+Tímto nákupem získáváte 0 bodů.
+000000000000000000000000000000000000

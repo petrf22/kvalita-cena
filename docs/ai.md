@@ -354,6 +354,15 @@ výchozí maska je spodní pás 20 % výšky poslední části (na mobilu 25 %, 
 a odesílaná šířka nejvýš 1600 px. Pás je jen odhad podle pozice, proto se na obou klientech
 kreslí jako šrafovaný návrh s přepínačem „Zakrýt" (`docs/soukromi.md`, „Účtenky").
 
+### Regresní sada a měření kvality
+
+Každá účtenka, která prošla, má jít uložit jako regresní případ (OCR text + očekávaný rozbor)
+a kvalita čtení má být číslo, ne dojem: `tools/uctenky/regrese.py` porovnává rozbor s uloženým
+očekáváním a s `--ocr` měří OCR model nad uloženými obrázky, `ops/sql/receipt-quality.sql`
+počítá z provozních dat, kolik řádků trefil stroj a kolik musel dohledat člověk. Názvy modelů
+k tomu worker zapisuje do `ai.receipt_job.extraction.models`. Postup:
+`tools/uctenky/README.md`, „Regresní sada" a „Měření kvality".
+
 ## Konfigurace (až přijde čas)
 
 Prefix `app.ai.*`, přes `@ConfigurationProperties` stejným vzorem jako `ModerationProperties`/

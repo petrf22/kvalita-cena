@@ -1,0 +1,130 @@
+{
+  "profile": "tamda",
+  "merchant": {
+    "rawName": "TAMDA FOODS s.r.o.",
+    "country": "CZ",
+    "street": "Nádražní 1",
+    "postalCode": "100 00",
+    "city": "Vzorov",
+    "ico": "27160840"
+  },
+  "purchasedAt": "2026-09-07T10:15:00+02:00",
+  "currency": "CZK",
+  "printedTotal": "5983.60",
+  "computedTotal": "5983.60",
+  "totalMatches": true,
+  "hasAmounts": true,
+  "lines": [
+    {
+      "lineNo": 1,
+      "kind": "ITEM",
+      "rawLabel": "GREEN LOTUS Rýže jasminová 18,18kg TH",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "950.00",
+      "lineTotal": "950.00",
+      "vatCode": "12",
+      "code": "8851212221408"
+    },
+    {
+      "lineNo": 2,
+      "kind": "ITEM",
+      "rawLabel": "Lenor aviváž 1239ml 59PD Sensitive",
+      "quantity": "8",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "79.90",
+      "lineTotal": "639.20",
+      "vatCode": "21",
+      "code": "8700216723824"
+    },
+    {
+      "lineNo": 3,
+      "kind": "ITEM",
+      "rawLabel": "Ariel plus praci prášek 5,5kg 100PD Unstopp",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "479.90",
+      "lineTotal": "479.90",
+      "vatCode": "21",
+      "code": "8006540940815"
+    },
+    {
+      "lineNo": 4,
+      "kind": "ITEM",
+      "rawLabel": "Nakl. okurky 680g 7 - 9 cm Znojmia",
+      "quantity": "8",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "44.90",
+      "lineTotal": "359.20",
+      "vatCode": "12",
+      "code": "8594001740659"
+    },
+    {
+      "lineNo": 5,
+      "kind": "ITEM",
+      "rawLabel": "Garak Udon @3x213g Kimchi",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "79.90",
+      "lineTotal": "79.90",
+      "vatCode": "12",
+      "code": "8800242940117"
+    },
+    {
+      "lineNo": 6,
+      "kind": "ITEM",
+      "rawLabel": "Bispol Svička 500g Apple Cinnamon",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "129.90",
+      "lineTotal": "129.90",
+      "vatCode": "21",
+      "code": "5906927034812"
+    },
+    {
+      "lineNo": 7,
+      "kind": "ITEM",
+      "rawLabel": "Finish Allin1 Max tablety do myčky nádobi 8",
+      "quantity": "2",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "339.90",
+      "lineTotal": "679.80",
+      "vatCode": "21",
+      "code": "5997321736297"
+    },
+    {
+      "lineNo": 8,
+      "kind": "ITEM",
+      "rawLabel": "Avokádo 25g skořice mletá",
+      "quantity": "4",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "9.50",
+      "lineTotal": "38.00",
+      "vatCode": "12",
+      "code": "8595012035352"
+    },
+    {
+      "lineNo": 9,
+      "kind": "ITEM",
+      "rawLabel": "Mikrovlnná trouba 20L",
+      "quantity": "2",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "1299.90",
+      "lineTotal": "2599.80",
+      "vatCode": "21",
+      "code": "8590000000015"
+    },
+    {
+      "lineNo": 10,
+      "kind": "ITEM",
+      "rawLabel": "Varmuža pomazánka 135g tuňáková",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "27.90",
+      "lineTotal": "27.90",
+      "vatCode": "12",
+      "code": "8594002060138"
+    }
+  ],
+  "warnings": []
+}
