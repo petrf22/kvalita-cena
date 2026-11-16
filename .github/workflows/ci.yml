@@ -112,4 +112,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       # testDebugUnitTest/lintDebug dřív běžely jen lokálně — lint teď navíc hlídá
       # MissingTranslation/ExtraTranslation/MissingQuantity (docs/lokalizace.md).
+      # testDebugUnitTest zahrnuje i GraphQlSchemaContractTest — dotazy z GraphQlClient.kt se
+      # validují proti backend/src/main/resources/graphql/schema.graphqls, takže PR, který mění
+      # schéma způsobem neslučitelným s mobilem, spadne tady, ne u uživatele.
       - run: ./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+      # Release varianta zvlášť: jen ona zapíná R8 (isMinifyEnabled) a proguard-rules.pro.
+      # Chybějící keep pravidlo nebo závislost, kterou R8 neumí dořešit, by se jinak poprvé
+      # ukázala až při publishableBundle na PC provozovatele v den vydání. Bez podpisového klíče
+      # vznikne nepodepsané APK (app/build.gradle.kts, hasReleaseSigning) — to ke kontrole stačí.
+      - run: ./gradlew :app:assembleRelease
