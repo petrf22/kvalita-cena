@@ -2,14 +2,17 @@
 # Nasazovací skript pro produkci (docs/vydani.md, "Z čeho stavět" — nahrazuje tam popsaný ruční
 # postup). Spustit na serveru z checkoutu repa: aktualizuje repo na zadaný tag, sekvenčně sestaví
 # backend a web (ne najednou — docs/nasazeni.md, "Sekvenční build", malá instance by se sestavením
-# obou naráz vedle Postgresu mohla dostat do OOM), appku nastartuje a ověří, že běží na správné
-# verzi.
+# obou naráz vedle Postgresu mohla dostat do OOM), ZAZÁLOHUJE databázi a média, appku nastartuje
+# a ověří, že běží na správné verzi. Cesta zpět je ops/rollback.sh (ops/README.md).
 #
 # Použití:
 #   ./ops/deploy.sh <verze>          # např. ./ops/deploy.sh 0.3.0  nebo  ./ops/deploy.sh v0.3.0
 #
 # Očekává existující tag vX.Y.Z (docs/vydani.md, "Postup vydání" ho vytváří při vydání appky) a
 # .env vedle compose.prod.yaml (docs/nasazeni.md, ".env.example").
+#
+# SKIP_BACKUP=1 vynechá zálohu před nasazením — jen pro případ, že záloha sama nejde udělat
+# (plný disk) a nasazení tu chybu opravuje. Bez zálohy nemá rollback.sh z čeho vrátit databázi.
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -37,50 +40,79 @@ cd "$REPO_DIR"
 # wait_for "databázi" krátce po startu, dřívější pozdní source ho tam nechávalo prázdné.
 # shellcheck disable=SC1090
 set -a && source "$ENV_FILE" && set +a
-SITE_ADDRESS="${SITE_ADDRESS:-http://localhost}"
-API_ADDRESS="${API_ADDRESS:-http://api.localhost}"
 
-# Bezpečnostní pojistka: server checkout nemá mít rozpracované změny (na rozdíl od vývojového
-# stroje se sem nic needituje ručně) — necommitnutá úprava by šla checkoutem tagu tiše ztratit.
-if [ -n "$(git status --porcelain)" ]; then
-  echo "Repo v $REPO_DIR má necommitnuté změny — zastavuji se, ať se nic neztratí (git status)." >&2
-  exit 1
+# --- 1. fáze: přepnout repo na tag a spustit se znovu z něj ---
+#
+# Tenhle soubor se spouští z checkoutu PŘEDCHOZÍ verze a teprve tady repo přepíná na novou. Bez
+# přespuštění by nasazení verze N řídil skript z verze N-1 — oprava nasazovacího postupu by se
+# projevila až o jedno vydání později a sourcované knihovny (už z nového tagu) by se s ním
+# nemusely shodnout. Po checkoutu se proto skript spustí znovu ze souboru nového tagu;
+# DEPLOY_REEXEC brání smyčce a DEPLOY_PREV_VERSION přenáší, co bylo nasazené před přepnutím.
+if [ -z "${DEPLOY_REEXEC:-}" ]; then
+  # Bezpečnostní pojistka: server checkout nemá mít rozpracované změny (na rozdíl od vývojového
+  # stroje se sem nic needituje ručně) — necommitnutá úprava by šla checkoutem tagu tiše ztratit.
+  if [ -n "$(git status --porcelain)" ]; then
+    echo "Repo v $REPO_DIR má necommitnuté změny — zastavuji se, ať se nic neztratí (git status)." >&2
+    exit 1
+  fi
+
+  # Co běží teď: stavový soubor z minulého nasazení/návratu, jinak tag, na kterém repo stojí
+  # (první nasazení novým skriptem — stavový soubor ještě neexistuje).
+  # shellcheck disable=SC1091
+  source "$REPO_DIR/ops/lib-deploy.sh" 2>/dev/null || true
+  PREV_VERSION=""
+  if declare -F state_get >/dev/null; then
+    PREV_VERSION="$(state_get CURRENT_VERSION)"
+  fi
+  if [ -z "$PREV_VERSION" ]; then
+    PREV_VERSION="$(git describe --tags --exact-match HEAD 2>/dev/null | sed 's/^v//' || true)"
+  fi
+
+  echo "Aktualizuji repository..."
+  git fetch origin --tags --prune
+  if ! git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+    echo "Tag $TAG neexistuje ani po fetch. Dostupné tagy:" >&2
+    git tag -l 'v*' --sort=-v:refname | head -10 >&2
+    exit 1
+  fi
+  git -c advice.detachedHead=false checkout "$TAG"
+
+  DEPLOY_REEXEC=1 DEPLOY_PREV_VERSION="$PREV_VERSION" exec "$REPO_DIR/ops/deploy.sh" "$@"
 fi
 
-echo "Aktualizuji repository..."
-git fetch origin --tags --prune
-if ! git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-  echo "Tag $TAG neexistuje ani po fetch. Dostupné tagy:" >&2
-  git tag -l 'v*' --sort=-v:refname | head -10 >&2
-  exit 1
-fi
-git -c advice.detachedHead=false checkout "$TAG"
+# --- 2. fáze: už běží skript z nasazovaného tagu ---
+# shellcheck disable=SC1091
+source "$REPO_DIR/ops/lib-deploy.sh"
+PREV_VERSION="${DEPLOY_PREV_VERSION:-}"
 
 GIT_SHA="$(git rev-parse --short HEAD)"
 export GIT_SHA
-echo "Checkout $TAG (commit $GIT_SHA) hotový."
+echo "Checkout $TAG (commit $GIT_SHA) hotový, dosud běžela verze: ${PREV_VERSION:-neznámá}."
 
-# --- pomocná funkce (stejný vzor jako start-dev.sh) ---
-wait_for() {
-  local desc="$1" timeout="$2" cond="$3"
-  local waited=0
-  echo -n "Čekám na $desc"
-  until eval "$cond" >/dev/null 2>&1; do
-    if [ "$waited" -ge "$timeout" ]; then
-      echo " nedoběhlo do ${timeout}s."
-      return 1
+# Běžící image dostanou tag s číslem dosavadní verze, pokud ho ještě nemají. Běžně je to
+# zbytečné (otagovalo je nasazení, které je sestavilo), ale při PRVNÍM nasazení tímhle skriptem
+# běží image sestavené ještě pod starým jménem bez čísla — bez tohohle kroku by právě první
+# nasazení nemělo kam couvnout.
+if [ -n "$PREV_VERSION" ] && [ "$PREV_VERSION" != "$VERSION" ]; then
+  for pair in "backend:$BACKEND_IMAGE" "web:$WEB_IMAGE"; do
+    service="${pair%%:*}"
+    image="${pair#*:}"
+    if ! image_exists "$image:$PREV_VERSION"; then
+      container="$(compose ps -q "$service" 2>/dev/null || true)"
+      if [ -n "$container" ]; then
+        docker tag "$(docker inspect -f '{{.Image}}' "$container")" "$image:$PREV_VERSION"
+        echo "Běžící $service uschován jako $image:$PREV_VERSION."
+      fi
     fi
-    echo -n "."
-    sleep 3
-    waited=$((waited + 3))
   done
-  echo " OK"
-}
+fi
 
 echo "Stavím backend..."
-docker compose -f "$COMPOSE_FILE" build backend
+compose build backend
 echo "Stavím web..."
-docker compose -f "$COMPOSE_FILE" build web
+compose build web
+docker tag "$BACKEND_IMAGE:latest" "$BACKEND_IMAGE:$VERSION"
+docker tag "$WEB_IMAGE:latest" "$WEB_IMAGE:$VERSION"
 
 # Build cache Dockeru sám neuklízí — každé nasazení přidá mezivrstvy Gradle a `npm ci`, za necelé
 # dva měsíce provozu (2026-10) jí na serveru bylo 21,6 GB proti 1,4 GB images a 74 MB volumes.
@@ -90,102 +122,55 @@ docker compose -f "$COMPOSE_FILE" build web
 echo "Uklízím build cache starší než týden..."
 docker builder prune -f --filter until=168h || echo "Pozor: úklid build cache selhal (nasazení pokračuje)." >&2
 
+# Záloha AŽ PO sestavení a těsně před `up -d`: build trvá minuty a appka mezitím dál přijímá
+# zápisy, takže dřívější záloha by o ně přišla. Liquibase migrace proběhnou při startu nového
+# backendu — tohle je poslední okamžik, kdy databáze ještě odpovídá starému kódu. Když záloha
+# selže, nasazení se zastaví (set -e): staré kontejnery běží dál, nic se nezměnilo.
+PREDEPLOY_DB=""
+PREDEPLOY_MEDIA=""
+if [ "${SKIP_BACKUP:-0}" = "1" ]; then
+  echo "SKIP_BACKUP=1 — zálohu před nasazením vynechávám, rollback nebude mít z čeho vrátit databázi." >&2
+elif [ -z "$(compose ps -a -q postgres 2>/dev/null || true)" ]; then
+  echo "Databázový kontejner ještě neexistuje (první instalace) — není co zálohovat."
+else
+  # Zastavená databáze (server po restartu, ruční `stop`) by zálohu shodila — nejdřív ji zvednout.
+  compose up -d postgres
+  wait_for "databázi před zálohou" 60 _postgres_ready
+  echo "Zálohuji databázi a média před nasazením..."
+  "$REPO_DIR/ops/backup.sh"
+  # backup.sh pojmenovává soubory vlastním časem; nejnovější dvojice je ta právě vytvořená.
+  PREDEPLOY_DB="$(find "$BACKUP_ROOT" -maxdepth 1 -name 'db-*.sql.gz' | sort | tail -n1)"
+  PREDEPLOY_MEDIA="$(find "$BACKUP_ROOT" -maxdepth 1 -name 'media-*.tar.gz' | sort | tail -n1)"
+fi
+
+# Stav zapsat PŘED `up -d`: když nový backend po migraci nenastartuje, rollback.sh musí vědět,
+# kam couvnout a kterou zálohu vzít, i když tenhle skript skončí chybou.
+state_write \
+  "CURRENT_VERSION=$VERSION" \
+  "PREVIOUS_VERSION=$PREV_VERSION" \
+  "PREDEPLOY_DB=$PREDEPLOY_DB" \
+  "PREDEPLOY_MEDIA=$PREDEPLOY_MEDIA" \
+  "DEPLOYED_AT=$(date -Is)"
+
 echo "Spouštím appku..."
-docker compose -f "$COMPOSE_FILE" up -d
+compose up -d
 
-# --- ověření ---
 FAILED=0
-
-wait_for "databázi" 60 \
-  "docker compose -f '$COMPOSE_FILE' exec -T postgres pg_isready -U \"\$POSTGRES_USER\" -d kvalitaacena" \
-  || FAILED=1
-
-wait_for "start backendu (Spring Boot log)" 180 \
-  "docker compose -f '$COMPOSE_FILE' logs backend 2>&1 | grep -qE 'Started .* in [0-9.]+ seconds'" \
-  || FAILED=1
-
-if docker compose -f "$COMPOSE_FILE" logs backend 2>&1 | grep -qiE 'ERROR|Exception'; then
-  echo "Pozor: v logu backendu je ERROR/Exception — zkontroluj ručně (nezastavuje ověření):"
-  docker compose -f "$COMPOSE_FILE" logs backend 2>&1 | grep -iE 'ERROR|Exception' | tail -10
-fi
-
-echo "Stav kontejnerů:"
-docker compose -f "$COMPOSE_FILE" ps
-
-# SITE_ADDRESS/API_ADDRESS už jsou načtené z .env výš — než je DNS/doména nastavená (docs/
-# nasazeni.md, "Doporučené pořadí prací"), zůstávají na výchozích *.localhost hodnotách a appka
-# je zvenčí nedostupná; v tom případě vnější kontroly jen přeskočíme s poznámkou.
-if [[ "$SITE_ADDRESS" == *localhost* ]]; then
-  echo "SITE_ADDRESS ($SITE_ADDRESS) je pořád na výchozí hodnotě — vnější ověření webu přeskakuji" \
-       "(docs/nasazeni.md, dřív než se přepne DNS ověřuj proti IP ručně: curl http://<IP>/)."
-else
-  echo "Ověřuji web na $SITE_ADDRESS..."
-  # Caddy po prvním startu (nový server, smazaná caddy-data) teprve žádá Let's Encrypt
-  # o certifikát — 2026-10-28 při přechodu na nový server ho měl až ~7 s po startu kontejneru
-  # a jediný pokus hned po `up -d` hlásil falešné selhání. Stejné opakování jako u health níž.
-  WEB_TRIES=5
-  WEB_DELAY=5
-  WEB_OK=0
-  for ((i = 1; i <= WEB_TRIES; i++)); do
-    curl -sf -o /dev/null "$SITE_ADDRESS" && { WEB_OK=1; break; }
-    [ "$i" -lt "$WEB_TRIES" ] && sleep "$WEB_DELAY"
-  done
-  if [ "$WEB_OK" -eq 1 ]; then
-    echo "  web OK"
-  else
-    echo "  web NEODPOVÍDÁ na $SITE_ADDRESS ani po $WEB_TRIES pokusech" >&2
-    FAILED=1
-  fi
-fi
-
-if [[ "$API_ADDRESS" == *localhost* ]]; then
-  echo "API_ADDRESS ($API_ADDRESS) je pořád na výchozí hodnotě — vnější ověření backendu" \
-       "přeskakuji."
-else
-  echo "Ověřuji backend na $API_ADDRESS..."
-  # management.health.mail.enabled testuje SMTP spojení při každém volání /actuator/health —
-  # těsně po restartu kontejneru umí být tenhle test na první pokus DOWN (503, curl -f tělo
-  # zahodí), i když appka i SMTP jsou v pořádku. Pár opakování s prodlevou tomu dá šanci se
-  # ustálit, než to nahlásíme jako selhané nasazení.
-  HEALTH_TRIES=5
-  HEALTH_DELAY=5
-  for ((i = 1; i <= HEALTH_TRIES; i++)); do
-    HEALTH="$(curl -sf "$API_ADDRESS/actuator/health" || true)"
-    [[ "$HEALTH" == *'"status":"UP"'* ]] && break
-    [ "$i" -lt "$HEALTH_TRIES" ] && sleep "$HEALTH_DELAY"
-  done
-  if [[ "$HEALTH" == *'"status":"UP"'* ]]; then
-    echo "  health OK ($HEALTH)"
-  else
-    echo "  health CHYBA po $HEALTH_TRIES pokusech: '$HEALTH'" >&2
-    FAILED=1
-  fi
-
-  # /actuator/info vrací {"build":{"version":"...","commit":"...", ...}} — "commit" je vlastní
-  # additional property z backend/build.gradle (buildInfo), plochý string, ne vnořený objekt.
-  INFO="$(curl -sf "$API_ADDRESS/actuator/info" || true)"
-  DEPLOYED_VERSION="$(echo "$INFO" | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4)"
-  DEPLOYED_COMMIT="$(echo "$INFO" | grep -o '"commit":"[^"]*"' | head -1 | cut -d'"' -f4)"
-
-  if [ "$DEPLOYED_VERSION" = "$VERSION" ]; then
-    echo "  verze OK ($DEPLOYED_VERSION)"
-  else
-    echo "  verze NESEDÍ: očekáváno $VERSION, appka hlásí '$DEPLOYED_VERSION' ($INFO)" >&2
-    FAILED=1
-  fi
-
-  if [ -n "$DEPLOYED_COMMIT" ] && [[ "$DEPLOYED_COMMIT" == "$GIT_SHA"* ]]; then
-    echo "  commit OK ($DEPLOYED_COMMIT)"
-  else
-    echo "  commit se neshoduje nebo chybí: očekáváno $GIT_SHA, appka hlásí '$DEPLOYED_COMMIT'" >&2
-    FAILED=1
-  fi
-fi
+verify_deploy "$VERSION" "$GIT_SHA" || FAILED=1
 
 echo
 if [ "$FAILED" -eq 0 ]; then
+  echo "Uklízím staré verze image (nechávám $KEEP_IMAGE_VERSIONS nejnovější)..."
+  prune_image_versions "$VERSION" "$PREV_VERSION"
   echo "Nasazení $TAG (commit $GIT_SHA) proběhlo a ověření prošlo."
 else
   echo "Nasazení $TAG (commit $GIT_SHA) doběhlo, ALE aspoň jedno ověření selhalo — viz výš." >&2
+  if [ -n "$PREV_VERSION" ] && [ "$PREV_VERSION" != "$VERSION" ]; then
+    echo "Návrat na předchozí verzi:" >&2
+    if [ -n "$PREDEPLOY_DB" ]; then
+      echo "  ./ops/rollback.sh $PREV_VERSION --restore-db    # i s databází ze zálohy před nasazením" >&2
+    fi
+    echo "  ./ops/rollback.sh $PREV_VERSION                 # jen kód, databáze zůstane po migraci" >&2
+  fi
   exit 1
 fi
