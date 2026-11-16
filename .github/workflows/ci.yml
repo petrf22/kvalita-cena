@@ -65,9 +65,9 @@ jobs:
           distribution: temurin
           java-version: '25'
       - uses: gradle/actions/setup-gradle@v6
-      # `build` spouští i testy (unit, bez DB — spring-boot-docker-compose je jen
-      # developmentOnly a žádný test nestartuje Spring context) a ověří, že se Liquibase
-      # changelogy parsují.
+      # `build` spouští i testy — jednotkové i integrační, které startují Spring kontext nad
+      # PostgreSQL v Testcontainers (Docker je na runneru k dispozici), takže Liquibase
+      # changelogy se nejen parsují, ale i skutečně provedou.
       - run: ./gradlew build
 
   frontend:
@@ -84,6 +84,10 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # Formát PŘED codegenem, ne po něm: `graphql(...)` volání matchují dotaz na přesný string
+      # zachycený při generování, takže neformátovaný soubor by po pozdějším Prettieru rozešel
+      # typovou kontrolu i běhový match (kořenový CLAUDE.md, „Monorepo").
+      - run: npm run format:check
       # Přegeneruje typy ze schema.graphqls (npm run codegen, viz codegen.ts) a ověří, že
       # commitnutý výstup v src/app/models/generated/ pořád sedí — jinak backend a frontend
       # potichu rozejdou kontrakt (viz historie duplicitně definovaného PriceKind/MULTIBUY).

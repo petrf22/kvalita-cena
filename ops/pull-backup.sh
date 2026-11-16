@@ -34,6 +34,17 @@ BACKUP_SSH_KEY="${BACKUP_SSH_KEY:-$HOME/.ssh/id_ed25519_kvalitacena_backup}"
 
 # shellcheck disable=SC1091
 source "$REPO_DIR/ops/lib-retention.sh"
+# shellcheck disable=SC1091
+source "$REPO_DIR/ops/lib-heartbeat.sh"
+
+# Heartbeat (ops/lib-heartbeat.sh) — PULL_HEARTBEAT_URL. Cron nedědí prostředí shellu, proto se
+# čte ze souboru mimo repo (repo je veřejné a adresa je tajemství: kdo ji zná, může pingat za
+# skript a selhání tím zamaskovat). Soubor je nepovinný, bez něj je heartbeat vypnutý.
+PULL_BACKUP_CONFIG="${PULL_BACKUP_CONFIG:-$HOME/.config/kvalitacena/pull-backup.env}"
+if [[ -f "$PULL_BACKUP_CONFIG" ]]; then
+  # shellcheck disable=SC1090
+  source "$PULL_BACKUP_CONFIG"
+fi
 
 mkdir -p "$LOCAL_DIR"
 rotate_log "$LOCAL_DIR/pull.log" 524288 2000
@@ -89,7 +100,7 @@ final_checks() {
     notify "Stahování selhalo (exit $exit_code) — zkontroluj $LOCAL_DIR/pull.log"
   fi
 
-  local db_timestamps=() f ts newest_db newest_epoch age_days
+  local db_timestamps=() f ts newest_db newest_epoch age_days stale=0
   for f in "$LOCAL_DIR"/db-*.sql.gz; do
     [[ -e "$f" ]] || continue
     ts="$(basename "$f" | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{4}')"
@@ -98,6 +109,7 @@ final_checks() {
   if (( ${#db_timestamps[@]} == 0 )); then
     echo "[$TIMESTAMP] VAROVÁNÍ: v $LOCAL_DIR není žádná stažená záloha DB." >&2
     notify "V $LOCAL_DIR není žádná stažená záloha DB."
+    stale=1
   else
     newest_db="$(printf '%s\n' "${db_timestamps[@]}" | sort | tail -n1)"
     newest_epoch="$(date -d "${newest_db:0:10} ${newest_db:11:2}:${newest_db:13:2}" +%s)"
@@ -105,12 +117,22 @@ final_checks() {
     if (( age_days > 2 )); then
       echo "[$TIMESTAMP] VAROVÁNÍ: nejnovější stažená záloha DB je stará $age_days dní (poslední: $newest_db) — zkontroluj cron na serveru." >&2
       notify "Nejnovější stažená záloha DB je stará $age_days dní (poslední: $newest_db)."
+      stale=1
     fi
+  fi
+
+  # Úspěch = běh doběhl A nejnovější záloha je čerstvá. Úspěšný rsync, který nic nového
+  # nepřinesl (na serveru neběží cron), je pořád selhání — jinak by lokální ping kryl serverový.
+  if (( exit_code == 0 && stale == 0 )); then
+    ping_heartbeat "${PULL_HEARTBEAT_URL:-}"
+  else
+    ping_heartbeat "${PULL_HEARTBEAT_URL:-}" fail
   fi
 
   exit "$exit_code"
 }
 trap final_checks EXIT
+ping_heartbeat "${PULL_HEARTBEAT_URL:-}" start
 
 echo "[$TIMESTAMP] Stahuji zálohy z $REMOTE_SRC do $LOCAL_DIR..."
 # `-e` bere jeden string, který rsync sám dál dělí na slova mezerou (ne plnohodnotný shell

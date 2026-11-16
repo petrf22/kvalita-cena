@@ -360,8 +360,10 @@ navíc jediný způsob, jak umožnit rebase/fixup PR před schválením bez dopa
 ### Z čeho stavět
 
 - **Server**: `./ops/deploy.sh X.Y.Z` (viz `ops/README.md`) — aktualizuje repo na tag, sekvenčně
-  sestaví backend a web (`docs/nasazeni.md`, „Sekvenční build"), spustí a ověří
-  `/actuator/health`/`/actuator/info` proti `version`/`commit`. Ruční ekvivalent, když je potřeba
+  sestaví backend a web (`docs/nasazeni.md`, „Sekvenční build"), před migrací zazálohuje
+  databázi a média, spustí a ověří `/actuator/health`/`/actuator/info` proti `version`/`commit`.
+  Cesta zpět je `./ops/rollback.sh <předchozí verze> [--restore-db]` (`ops/README.md`,
+  „rollback.sh" — kdy stačí vrátit kód a kdy je potřeba i databáze). Ruční ekvivalent, když je potřeba
   krok po kroku: `git checkout vX.Y.Z`, `export GIT_SHA=$(git rev-parse --short HEAD)`,
   `docker compose -f compose.prod.yaml build backend && docker compose -f compose.prod.yaml build
   web && docker compose -f compose.prod.yaml up -d`.
