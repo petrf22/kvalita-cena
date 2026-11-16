@@ -659,7 +659,7 @@ uživatel sáhl, zůstanou (`ReceiptLineMerger`), po retenci obrázků se znovu 
 Jemnější viditelnost recenzí `PUBLIC`/`GROUPS`/`PRIVATE` a `ViewerContext` (textové recenze
 samotné už implementované jsou, viz „Textové recenze" výš — chybí jen odstupňování nad
 binární přihlášený/anonym, dokud neexistují skupiny důvěry), skupiny důvěry, plný reputační
-vzorec (jen složka `L`), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo
+vzorec (jen složka `L` a `f_recency` u aktuální ceny), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo
 jednorázové geokódování adresy,
 `agg.price_weekly_national`, offline fronta v mobilu, konsolidační job nad uživatelskou vrstvou
 (jen datový model a fronta, vyhodnocovací pravidlo zatím není známé — viz „Uživatelská vrstva

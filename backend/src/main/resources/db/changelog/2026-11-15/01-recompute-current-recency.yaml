@@ -1,0 +1,21 @@
+# 01-recompute-current-recency.yaml — jednorázový přepočet agg.price_current po zavedení
+# f_recency (docs/reputace.md, „Váha jednoho cenového záznamu").
+#
+# Aktuální cena se do té doby počítala jako medián celé historie buňky. Přepočet buňky spouští
+# jen nová událost, takže bez tohohle by staré buňky držely starý výsledek, dokud do nich někdo
+# nezapíše další cenu. Zařadí každou buňku (zboží, obchod) s aktivní cenou do fronty jednou;
+# PriceAggregationService ji odbaví po dávkách. Na agg.price_daily se nic nemění.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-15-01-recompute-current-recency
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO agg.recompute_queue (product_id, store_id, reason)
+              SELECT DISTINCT product_id, store_id, 'WEIGHT_CHANGE'
+              FROM core.price_observation
+              WHERE status = 'ACTIVE';
+      rollback:
+        - sql:
+            sql: SELECT 1;

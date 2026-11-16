@@ -78,6 +78,37 @@ class ApplicationSmokeTest {
         .jsonPath("$.errors").doesNotExist();
   }
 
+  /** Dotaz hlubší než app.graphql.max-query-depth skončí chybou a nic nespustí (GraphQlConfig). */
+  @Test
+  void tooDeepGraphQlQueryIsRejected() {
+    String deep = "{ __schema { types { fields { type "
+        + "{ ofType ".repeat(14) + "{ name }" + " }".repeat(14) + " } } } }";
+
+    client.post().uri("/graphql")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Map.of("query", deep))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.errors").isNotEmpty()
+        .jsonPath("$.data").doesNotExist();
+  }
+
+  /** Standardní introspekční dotaz GraphiQL (hloubka 13) se pod strop musí vejít — jinak by ve vývoji nešel GraphiQL. */
+  @Test
+  void introspectionDepthFitsUnderLimit() {
+    String introspection = "{ __schema { types { fields { args { type "
+        + "{ ofType ".repeat(7) + "{ name }" + " }".repeat(7) + " } } } } }";
+
+    client.post().uri("/graphql")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Map.of("query", introspection))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.errors").doesNotExist();
+  }
+
   /**
    * Chyba vykreslená přes {@code sendError} jde ERROR dispatchem na {@code /error}, kde už
    * auth filtry neběží — bez {@code dispatcherTypeMatchers(ERROR).permitAll()} ze

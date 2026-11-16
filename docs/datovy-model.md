@@ -168,6 +168,13 @@ denní řady tedy vždy smaže a znovu spočítá celou historii buňky (`produc
 ne jen změněný den. Pro dnešní objemy v pořádku; až přepočet začne měřitelně trvat, signál
 je přidat nullable `day` do fronty (`NULL` = přepočítat vše), ne to řešit preventivně teď.
 
+Každá buňka se přepočítává ve vlastní transakci (`PriceAggregationService.processQueue`).
+Položce, jejíž přepočet selže, se zvedne `attempts` a po `app.aggregation.queue-max-attempts`
+se přestane brát — zůstane v tabulce s `processed_at IS NULL` jako stopa a denní úklid na ni
+upozorní v logu na úrovni ERROR. Ve společné transakci by jediná vadná buňka zastavila agregaci
+všem, protože se bere vždy čelo fronty. Vyřízené položky maže denní úklid po
+`app.aggregation.queue-retention-days`.
+
 Čtení grafu je vždy z `agg.*`, nikdy ze syrových `core.price_observation` — index-only
 scan, jednotky milisekund i při statisících záznamů.
 

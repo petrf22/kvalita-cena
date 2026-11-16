@@ -4,7 +4,7 @@ Jedno zadání určuje celý tento systém: komunita má být pozitivní, ne tox
 veřejné negativní hodnocení uživatelů, i když by bylo technicky nejjednodušší — viz níže.
 
 > **Stav v MVP:** implementovaná je zatím jen složka `L` (anonym 0,15 / registrovaný
-> 1,00) a vážený medián v agregaci. Zbytek vzorce (přesnost, zkušenost, stáří účtu, penalizace,
+> 1,00), `f_recency` u aktuální ceny a vážený medián v agregaci. Zbytek vzorce (přesnost, zkušenost, stáří účtu, penalizace,
 > detekce zneužití, skupiny důvěry) je popsaný tady jako cílový stav pro další rozvoj, aby ladění
 > mělo od začátku jedno místo, kam patří — ne aby se prahy rozsely po kódu.
 
@@ -50,6 +50,16 @@ f_evid    = 1,30 účtenka+OCR / 1,15 foto cedulky / 1,00 bez důkazu
 f_recency = 0,5^(stáří_dní / 14)           jen pro "aktuální cenu", ne pro historii v grafu
 f_group   = 3,0 autor je v mé skupině důvěry / 1,5 vzdálenost 2 kroky / 1,0 jinak
 ```
+
+**`f_recency` je implementované** (`PriceAggregationService.recencyFactor`, poločas
+`app.aggregation.recency-half-life-days`). Bez něj by aktuální cena byla medián celé historie
+buňky a po zdražení by ukazovala starou cenu, dokud nových zápisů není víc než starých. Stáří
+se měří proti nejnovějšímu záznamu buňky, ne proti dnešku: vážený medián i `n_eff` závisí jen
+na poměru vah a ten je u exponenciálního útlumu v čase stálý, takže se buňka nemusí
+přepočítávat podle kalendáře, jen při nové události. Důsledek: `n_eff` (a s ním důvěra) u buňky
+s jedním čerstvým a mnoha starými záznamy klesne — odpovídá to tomu, kolik lidí aktuální cenu
+skutečně vidělo. Stáří samotné buňky (poslední zápis před půl rokem) útlum neřeší, to ukazuje
+`last_observed_at`.
 
 Rozlišení `f_evid` mezi „účtenka+OCR" a „foto cedulky" předpokládá, že schéma ukládá **druh
 důkazu**, ne jen odkaz na fotku — až se bude psát fotka jako důkaz ceny (nedodělek MVP), viz

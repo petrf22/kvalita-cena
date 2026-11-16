@@ -261,8 +261,9 @@ jakoukoli změnou v katalogu/cenách:
 ### Reputace: vzorce jsou jen v `docs/reputace.md`
 
 **Stav v MVP**: implementovaná je jen složka `L` v `PriceAggregationService.weightFor()`
-(anonym 0,15 / registrovaný 1,00) a vážený medián samotný. Plný vzorec `S` (přesnost ×
-zkušenost × stáří účtu × úroveň identity × penalizace), `f_conf`/`f_evid`/`f_recency`/`f_group`,
+(anonym 0,15 / registrovaný 1,00), `f_recency` u aktuální ceny (`recencyFactor`, na graf se
+neuplatňuje) a vážený medián samotný. Plný vzorec `S` (přesnost ×
+zkušenost × stáří účtu × úroveň identity × penalizace), `f_conf`/`f_evid`/`f_group`,
 `ReputationService` a `core.access_policy` jsou cílový stav pro další rozvoj — až se budou psát,
 prahy patří do `docs/reputace.md`, ne rozeseté po kódu jako vlastní konstanty na více místech.
 Klíčové už teď: souhlas (až bude implementovaný) se musí počítat **leave-one-out** (medián bez

@@ -1,5 +1,6 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.config.AggregationProperties;
 import cz.kvalitacena.db.entity.*;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
 import cz.kvalitacena.db.repo.PriceDailyRepository;
@@ -12,6 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -45,6 +47,9 @@ class PriceAggregationServiceTest {
   @Mock
   private ProductRepository productRepository;
 
+  @Mock
+  private PlatformTransactionManager transactionManager;
+
   @Captor
   private ArgumentCaptor<PriceCurrent> priceCurrentCaptor;
 
@@ -56,10 +61,11 @@ class PriceAggregationServiceTest {
 
   private void givenQueuedCell(boolean generic) {
     service = new PriceAggregationService(recomputeQueueRepository, priceObservationRepository,
-        priceCurrentRepository, priceDailyRepository, productRepository);
+        priceCurrentRepository, priceDailyRepository, productRepository, new AggregationProperties(),
+        transactionManager);
     RecomputeQueue queued = RecomputeQueue.builder()
-        .productId(PRODUCT_ID).storeId(STORE_ID).reason(RecomputeReason.NEW_OBS).build();
-    when(recomputeQueueRepository.findTop200ByProcessedAtIsNullOrderByEnqueuedAtAsc())
+        .id(100L).productId(PRODUCT_ID).storeId(STORE_ID).reason(RecomputeReason.NEW_OBS).build();
+    when(recomputeQueueRepository.findTop200ByProcessedAtIsNullAndAttemptsLessThanOrderByEnqueuedAtAsc(5))
         .thenReturn(List.of(queued));
     // lenient: testy s prázdným seznamem observací (rejectedObservationsClearExistingDailyRow)
     // nikdy neupsertují agg.price_current, takže findById by tam byl "unnecessary stubbing".
@@ -83,9 +89,10 @@ class PriceAggregationServiceTest {
   @Test
   void weightedMedianFavorsRegisteredSubmittersOverAnonymousOutlier() {
     givenQueuedCell();
-    OffsetDateTime t1 = OffsetDateTime.parse("2026-07-01T10:00:00Z");
-    OffsetDateTime t2 = OffsetDateTime.parse("2026-07-02T10:00:00Z");
+    // Všechno ve stejný okamžik — test hlídá jen složku L, útlum stářím má vlastní testy níž.
     OffsetDateTime latest = OffsetDateTime.parse("2026-07-03T10:00:00Z");
+    OffsetDateTime t1 = latest;
+    OffsetDateTime t2 = latest;
 
     // Dva registrovaní (váha 1,00) kolem 10-12 Kč, jeden anonym (váha 0,15) s odlehlou
     // hodnotou 20 Kč — anonymní odlehlá hodnota nesmí medián strhnout k sobě.
@@ -106,6 +113,73 @@ class PriceAggregationServiceTest {
     assertThat(saved.getLastObservedAt()).isEqualTo(latest);
     // nEff = (Σw)²/Σw² = 2,15² / (1²+1²+0,15²) ≈ 2,29 → MEDIUM (práh 2, pod 5).
     assertThat(saved.getConfidence()).isEqualTo(Confidence.MEDIUM);
+  }
+
+  @Test
+  void currentPriceFollowsRecentObservationsAfterPriceChange() {
+    givenQueuedCell();
+    OffsetDateTime now = OffsetDateTime.parse("2026-10-01T10:00:00Z");
+
+    // Pět zápisů staré ceny před dvěma měsíci, dva zápisy nové ceny teď. Bez f_recency by
+    // medián celé historie zůstal na 50; s poločasem 14 dní váží starý záznam ~0,05.
+    List<PriceObservation> observations = List.of(
+        observation(new BigDecimal("50"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(62)),
+        observation(new BigDecimal("50"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(61)),
+        observation(new BigDecimal("50"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(60)),
+        observation(new BigDecimal("50"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(59)),
+        observation(new BigDecimal("50"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(58)),
+        observation(new BigDecimal("60"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(1)),
+        observation(new BigDecimal("60"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(observations);
+
+    service.processQueue();
+
+    verify(priceCurrentRepository).save(priceCurrentCaptor.capture());
+    PriceCurrent saved = priceCurrentCaptor.getValue();
+    assertThat(saved.getUnitPrice()).isEqualByComparingTo("60");
+    assertThat(saved.getNObs()).isEqualTo(7);
+    // Staré záznamy do efektivního vzorku skoro nepřispívají — důvěra odpovídá dvěma čerstvým.
+    assertThat(saved.getConfidence()).isEqualTo(Confidence.MEDIUM);
+  }
+
+  @Test
+  void observationOneHalfLifeOlderWeighsHalf() {
+    givenQueuedCell();
+    OffsetDateTime now = OffsetDateTime.parse("2026-10-01T10:00:00Z");
+
+    List<PriceObservation> observations = List.of(
+        observation(new BigDecimal("10"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(14)),
+        observation(new BigDecimal("12"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(observations);
+
+    service.processQueue();
+
+    verify(priceCurrentRepository).save(priceCurrentCaptor.capture());
+    PriceCurrent saved = priceCurrentCaptor.getValue();
+    assertThat(saved.getSumWeight()).isEqualByComparingTo("1.5");
+    assertThat(saved.getUnitPrice()).isEqualByComparingTo("12");
+  }
+
+  @Test
+  void recencyDoesNotApplyToDailyHistory() {
+    givenQueuedCell();
+    OffsetDateTime now = OffsetDateTime.parse("2026-10-01T10:00:00Z");
+
+    List<PriceObservation> observations = List.of(
+        observation(new BigDecimal("50"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(60)),
+        observation(new BigDecimal("60"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(observations);
+
+    service.processQueue();
+
+    ArgumentCaptor<PriceDaily> dailyCaptor = ArgumentCaptor.forClass(PriceDaily.class);
+    verify(priceDailyRepository, times(2)).save(dailyCaptor.capture());
+    // Starý bod v grafu drží plnou váhu — jinak by historie klesala bez důvodu.
+    assertThat(dailyCaptor.getAllValues()).extracting(PriceDaily::getSumWeight)
+        .allSatisfy(w -> assertThat(w).isEqualByComparingTo("1"));
   }
 
   @Test
@@ -230,6 +304,46 @@ class PriceAggregationServiceTest {
         .containsExactlyInAnyOrder(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 2));
     assertThat(saved).extracting(PriceDaily::getPriceKind)
         .containsExactlyInAnyOrder(PriceKind.REGULAR, PriceKind.PROMO, PriceKind.REGULAR);
+  }
+
+  @Test
+  void failingCellDoesNotBlockTheRestOfTheBatch() {
+    givenQueuedCell();
+    Long poisonProduct = 2L;
+    RecomputeQueue poison = RecomputeQueue.builder()
+        .id(200L).productId(poisonProduct).storeId(STORE_ID).reason(RecomputeReason.NEW_OBS).build();
+    RecomputeQueue healthy = RecomputeQueue.builder()
+        .id(100L).productId(PRODUCT_ID).storeId(STORE_ID).reason(RecomputeReason.NEW_OBS).build();
+    // Vadná položka stojí v čele fronty — zdravá za ní se přesto musí přepočítat.
+    when(recomputeQueueRepository.findTop200ByProcessedAtIsNullAndAttemptsLessThanOrderByEnqueuedAtAsc(5))
+        .thenReturn(List.of(poison, healthy));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(poisonProduct, STORE_ID, ObservationStatus.ACTIVE))
+        .thenThrow(new IllegalStateException("rozbitá buňka"));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(List.of(observation(new BigDecimal("10"), SubmitterKind.REGISTERED, PriceKind.REGULAR,
+            OffsetDateTime.parse("2026-07-01T10:00:00Z"))));
+
+    service.processQueue();
+
+    verify(priceCurrentRepository).save(priceCurrentCaptor.capture());
+    assertThat(priceCurrentCaptor.getValue().getUnitPrice()).isEqualByComparingTo("10");
+    verify(recomputeQueueRepository).incrementAttempts(List.of(200L));
+    verify(recomputeQueueRepository).markProcessed(eq(List.of(100L)), any());
+    verify(recomputeQueueRepository, never()).markProcessed(eq(List.of(200L)), any());
+  }
+
+  @Test
+  void purgeDeletesOnlyProcessedItemsOlderThanRetention() {
+    service = new PriceAggregationService(recomputeQueueRepository, priceObservationRepository,
+        priceCurrentRepository, priceDailyRepository, productRepository, new AggregationProperties(),
+        transactionManager);
+    ArgumentCaptor<OffsetDateTime> cutoff = ArgumentCaptor.forClass(OffsetDateTime.class);
+
+    service.purgeProcessedQueue();
+
+    verify(recomputeQueueRepository).deleteProcessedBefore(cutoff.capture());
+    assertThat(cutoff.getValue()).isBetween(OffsetDateTime.now().minusDays(7).minusMinutes(1),
+        OffsetDateTime.now().minusDays(7).plusMinutes(1));
   }
 
   @Test
