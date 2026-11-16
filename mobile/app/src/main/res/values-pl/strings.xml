@@ -851,4 +851,6 @@
         <item quantity="many">%d cen wymaga twojej reakcji</item>
         <item quantity="other">%d ceny wymaga twojej reakcji</item>
     </plurals>
+    <!-- Odznak čekajících cen (sken, Moje příspěvky) -->
+    <string name="pending_prices_badge_open">Pokaż</string>
 </resources>

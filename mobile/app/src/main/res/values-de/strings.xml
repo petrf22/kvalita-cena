@@ -849,4 +849,6 @@
         <item quantity="one">%d Preis braucht deine Hilfe</item>
         <item quantity="other">%d Preise brauchen deine Hilfe</item>
     </plurals>
+    <!-- Odznak čekajících cen (sken, Moje příspěvky) -->
+    <string name="pending_prices_badge_open">Anzeigen</string>
 </resources>

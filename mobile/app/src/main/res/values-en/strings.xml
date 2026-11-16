@@ -847,4 +847,6 @@
         <item quantity="one">%d price needs your attention</item>
         <item quantity="other">%d prices need your attention</item>
     </plurals>
+    <!-- Odznak čekajících cen (sken, Moje příspěvky) -->
+    <string name="pending_prices_badge_open">View</string>
 </resources>

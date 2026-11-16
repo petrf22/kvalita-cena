@@ -287,6 +287,7 @@ private fun AppScaffold() {
         ScanScreen(
           onBarcodeDetected = { code -> navController.navigate(priceEntryRouteByBarcode(code)) },
           onScanReceipt = { navController.navigate(receiptCaptureRoute()) },
+          onOpenPendingPrices = { navController.navigate(ROUTE_PENDING_PRICES) },
         )
       }
       composable(TopLevelDestination.SEARCH.route) {
@@ -504,6 +505,7 @@ private fun AppScaffold() {
         MyContributionsScreen(
           onProductClick = { productId -> navController.navigate(productDetailRoute(productId)) },
           onStoreClick = { storeId -> navController.navigate(storeDetailRoute(storeId)) },
+          onOpenPendingPrices = { navController.navigate(ROUTE_PENDING_PRICES) },
         )
       }
       composable(ROUTE_TERMS) {
