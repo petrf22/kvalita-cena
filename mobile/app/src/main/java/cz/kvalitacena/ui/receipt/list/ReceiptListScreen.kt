@@ -51,9 +51,9 @@ import cz.kvalitacena.receipt.CODE_REQUIRES_LOGIN
 import cz.kvalitacena.receipt.PendingReceipt
 import cz.kvalitacena.receipt.ReceiptWork
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
-import cz.kvalitacena.ui.receipt.OfflineBanner
+import cz.kvalitacena.ui.common.OfflineBanner
 import cz.kvalitacena.ui.receipt.ReceiptLoginRequired
-import cz.kvalitacena.ui.receipt.ReceiptStateMessage
+import cz.kvalitacena.ui.common.StateMessage
 import cz.kvalitacena.ui.receipt.formatReceiptDateTime
 import cz.kvalitacena.ui.receipt.processingStatusLabel
 import cz.kvalitacena.ui.receipt.review.ReceiptConsentDialog
@@ -115,7 +115,7 @@ fun ReceiptListScreen(
       viewModel.loading && pending.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
       }
-      viewModel.error != null && pending.isEmpty() && viewModel.items.isEmpty() -> ReceiptStateMessage(
+      viewModel.error != null && pending.isEmpty() && viewModel.items.isEmpty() -> StateMessage(
         title = stringResource(if (online) R.string.receipts_error_title else R.string.receipts_offline_title),
         text = if (online) viewModel.error?.asString() else stringResource(R.string.receipts_offline_text),
         actionLabel = stringResource(R.string.common_retry),
@@ -123,7 +123,7 @@ fun ReceiptListScreen(
         secondaryLabel = stringResource(R.string.receipts_capture),
         onSecondary = onCapture,
       )
-      !viewModel.loading && viewModel.items.isEmpty() && pending.isEmpty() -> ReceiptStateMessage(
+      !viewModel.loading && viewModel.items.isEmpty() && pending.isEmpty() -> StateMessage(
         title = stringResource(R.string.receipts_empty_title),
         text = stringResource(R.string.receipts_empty_text),
         actionLabel = stringResource(R.string.receipts_capture),

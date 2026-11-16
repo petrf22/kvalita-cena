@@ -75,9 +75,9 @@ import cz.kvalitacena.ui.common.isReceiptItem
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
 import cz.kvalitacena.ui.common.rememberNetContentLabeler
 import cz.kvalitacena.ui.common.storeLabel
-import cz.kvalitacena.ui.receipt.OfflineBanner
+import cz.kvalitacena.ui.common.OfflineBanner
 import cz.kvalitacena.ui.receipt.ReceiptLoginRequired
-import cz.kvalitacena.ui.receipt.ReceiptStateMessage
+import cz.kvalitacena.ui.common.StateMessage
 import cz.kvalitacena.ui.receipt.formatReceiptDateTime
 import cz.kvalitacena.ui.receipt.processingStatusExplanation
 import cz.kvalitacena.ui.receipt.processingStatusLabel
@@ -173,11 +173,11 @@ fun ReceiptDetailScreen(
       viewModel.loading && receipt == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator()
       }
-      viewModel.notFound -> ReceiptStateMessage(
+      viewModel.notFound -> StateMessage(
         title = stringResource(R.string.receipt_detail_not_found_title),
         text = stringResource(R.string.receipt_detail_not_found_text),
       )
-      receipt == null -> ReceiptStateMessage(
+      receipt == null -> StateMessage(
         title = stringResource(if (online) R.string.receipts_error_title else R.string.receipts_offline_title),
         text = if (online) viewModel.error?.asString() else stringResource(R.string.receipt_detail_offline),
         actionLabel = stringResource(R.string.common_retry),

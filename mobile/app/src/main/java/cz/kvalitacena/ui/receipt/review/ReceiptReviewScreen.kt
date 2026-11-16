@@ -46,9 +46,9 @@ import cz.kvalitacena.R
 import cz.kvalitacena.receipt.DraftPart
 import cz.kvalitacena.receipt.ReceiptNotifications
 import cz.kvalitacena.ui.common.KeepScreenOn
-import cz.kvalitacena.ui.receipt.OfflineBanner
+import cz.kvalitacena.ui.common.OfflineBanner
 import cz.kvalitacena.ui.receipt.ReceiptLoginRequired
-import cz.kvalitacena.ui.receipt.ReceiptStateMessage
+import cz.kvalitacena.ui.common.StateMessage
 import cz.kvalitacena.ui.theme.Spacing
 
 /**
@@ -111,7 +111,7 @@ fun ReceiptReviewScreen(
   }
 
   if (draft.parts.isEmpty() && !viewModel.submitted) {
-    ReceiptStateMessage(
+    StateMessage(
       title = stringResource(R.string.receipt_review_empty_title),
       text = stringResource(R.string.receipt_review_empty_text),
       actionLabel = stringResource(R.string.receipt_review_capture),

@@ -1,94 +1,28 @@
 package cz.kvalitacena.ui.receipt
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import cz.kvalitacena.R
-import cz.kvalitacena.ui.theme.Spacing
+import cz.kvalitacena.ui.common.StateMessage
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
 /**
- * Prázdný, chybový a „nejdřív se přihlaste" stav obrazovek účtenek — jeden vzhled pro seznam,
- * detail, snímání i kontrolu (docs/design.md, „Čtyři stavy": text říká proč a co s tím).
+ * Účtenky jsou soukromé a na server jdou pod účtem — anonym dostane vysvětlení a cestu
+ * k přihlášení. Vzhled je společný stav obrazovky ([StateMessage], `ui/common/StateMessage.kt`).
  */
 @Composable
-fun ReceiptStateMessage(
-  title: String,
-  text: String?,
-  modifier: Modifier = Modifier,
-  actionLabel: String? = null,
-  onAction: (() -> Unit)? = null,
-  secondaryLabel: String? = null,
-  onSecondary: (() -> Unit)? = null,
-) {
-  Column(
-    modifier = modifier.fillMaxSize().padding(Spacing.xxl),
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.spacedBy(Spacing.md, Alignment.CenterVertically),
-  ) {
-    Text(title, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-    text?.let {
-      Text(
-        it,
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
-      )
-    }
-    if (actionLabel != null && onAction != null) {
-      Button(onClick = onAction) { Text(actionLabel) }
-    }
-    if (secondaryLabel != null && onSecondary != null) {
-      OutlinedButton(onClick = onSecondary) { Text(secondaryLabel) }
-    }
-  }
-}
-
-/** Účtenky jsou soukromé a na server jdou pod účtem — anonym dostane vysvětlení a cestu k přihlášení. */
-@Composable
 fun ReceiptLoginRequired(onOpenAccount: () -> Unit) {
-  ReceiptStateMessage(
+  StateMessage(
     title = stringResource(R.string.receipts_login_title),
     text = stringResource(R.string.receipts_login_text),
     actionLabel = stringResource(R.string.receipts_login_action),
     onAction = onOpenAccount,
   )
-}
-
-/**
- * Pruh „jste offline" — neříká „chyba", ale co se stane dál (docs/design.md, „Offline": zápis
- * se odešle později). Barvy z `secondaryContainer`, ne z `errorContainer`: nejde o chybu.
- */
-@Composable
-fun OfflineBanner(text: String, modifier: Modifier = Modifier) {
-  Surface(
-    color = MaterialTheme.colorScheme.secondaryContainer,
-    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-    modifier = modifier.fillMaxWidth(),
-  ) {
-    Text(
-      text,
-      style = MaterialTheme.typography.bodySmall,
-      modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.sm),
-    )
-  }
 }
 
 /** Datum a čas nákupu podle jazyka appky, v časovém pásmu telefonu. */
