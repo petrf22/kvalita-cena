@@ -31,6 +31,10 @@ services:
       retries: 10
 
   backend:
+    # Pevné jméno bez tagu (= `:latest`) místo výchozího `<projekt>-backend`: `ops/deploy.sh` týž
+    # obraz po sestavení označí i číslem verze a `ops/rollback.sh` vrací starší verzi jen
+    # přehozením `:latest` (`ops/lib-deploy.sh`). Holé `up -d` tak vždy spustí právě nasazené.
+    image: kvalitacena-backend
     build:
       context: ./backend
       # Commit vidět v /actuator/info (docs/vydani.md, "Verzování a vydání") — nastavit
@@ -61,6 +65,7 @@ services:
         condition: service_healthy
 
   web:
+    image: kvalitacena-web
     build:
       context: ./frontend
     restart: unless-stopped

@@ -171,7 +171,7 @@ dependencies {
     implementation("androidx.security:security-crypto:1.1.0")
 
     implementation("com.squareup.okhttp3:okhttp:5.5.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.13.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 
     // Zobrazení fotek zboží/obchodů (core.media) — Apache-2.0, sdílí OkHttp s GraphQlClient/
@@ -188,6 +188,10 @@ dependencies {
 
     // Jednotkové testy čisté logiky (PriceChartGeometry) bez Androidu/emulátoru.
     testImplementation("junit:junit:4.13.2")
+    // Jen pro GraphQlSchemaContractTest — validace dotazů z GraphQlClient.kt proti schématu
+    // backendu. MIT, stejná knihovna a řada, na které backend schéma provozuje (přes
+    // spring-boot-starter-graphql); do APK se nedostane, je jen v testovací classpath.
+    testImplementation("com.graphql-java:graphql-java:25.1")
 }
 
 // ---- Publikace: podepsaný a OVĚŘENÝ release (docs/vydani.md, "Podpisový klíč" a "Nahrávaný

@@ -25,7 +25,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$REPO_DIR/compose.prod.yaml"
 ENV_FILE="$REPO_DIR/.env"
 BACKUP_ROOT="${BACKUP_ROOT:-/var/backups/kvalitacena}"
-MEDIA_VOLUME="kvalita-a-cena-media-prod"
+MEDIA_VOLUME="${MEDIA_VOLUME:-kvalita-a-cena-media-prod}"
 RETENTION_DAYS="${RETENTION_DAYS:-14}"
 RETENTION_COPIES="${RETENTION_COPIES:-14}"
 MIN_FREE_MB="${MIN_FREE_MB:-2048}"
@@ -33,6 +33,11 @@ TIMESTAMP="$(date +%F-%H%M)"
 
 # shellcheck disable=SC1091
 source "$REPO_DIR/ops/lib-retention.sh"
+# shellcheck disable=SC1091
+source "$REPO_DIR/ops/lib-heartbeat.sh"
+# Kvůli `compose` (docker compose nad compose.prod.yaml, případně s COMPOSE_OVERRIDE_FILE).
+# shellcheck disable=SC1091
+source "$REPO_DIR/ops/lib-deploy.sh"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Chybí $ENV_FILE — bez POSTGRES_USER nejde spustit pg_dump." >&2
@@ -42,6 +47,18 @@ fi
 set -a && source "$ENV_FILE" && set +a
 
 mkdir -p "$BACKUP_ROOT"
+
+# Název nese čas na minuty, takže druhý běh v téže minutě by první zálohu PŘEPSAL — a při
+# selhání by ji `cleanup_partial` níž dokonce smazal. Není to jen teorie: ops/rollback.sh dělá
+# pojistnou zálohu těsně před obnovou a při zkoušce (2026-11-16) jí takhle přepsal zálohu před
+# nasazením, ze které se vzápětí obnovovalo — obnovil se tedy stav, který se měl zahodit.
+# Formát názvu zůstává (čte ho retence i pull-backup.sh), skript jen počká na další minutu.
+while [[ -e "$BACKUP_ROOT/db-$TIMESTAMP.sql.gz" || -e "$BACKUP_ROOT/media-$TIMESTAMP.tar.gz" ]]; do
+  echo "[$TIMESTAMP] Záloha s touhle časovou značkou už existuje — čekám na další minutu, ať ji nepřepíšu."
+  sleep $(( 61 - 10#$(date +%S) ))
+  TIMESTAMP="$(date +%F-%H%M)"
+done
+
 rotate_log "$BACKUP_ROOT/backup.log" 524288 2000
 
 # Smazat rozdělané soubory TOHOTO běhu při jakémkoli selhání — jinak po pádu uprostřed `pg_dump`
@@ -50,6 +67,21 @@ cleanup_partial() {
   rm -f "$BACKUP_ROOT/db-$TIMESTAMP.sql.gz" "$BACKUP_ROOT/media-$TIMESTAMP.tar.gz"
 }
 trap 'cleanup_partial' ERR
+
+# Heartbeat (ops/lib-heartbeat.sh): BACKUP_HEARTBEAT_URL z .env, prázdná = vypnuto. Výsledek se
+# hlásí v `trap EXIT`, ne na konci skriptu — pokryje i `exit 1` při plném disku níž, který
+# `trap ERR` nespouští. Chybějící .env výš se neohlásí (URL je právě v něm); to pozná služba
+# sama podle toho, že nepřišel žádný ping.
+report_heartbeat() {
+  local exit_code=$?
+  if (( exit_code == 0 )); then
+    ping_heartbeat "${BACKUP_HEARTBEAT_URL:-}"
+  else
+    ping_heartbeat "${BACKUP_HEARTBEAT_URL:-}" fail
+  fi
+}
+trap 'report_heartbeat' EXIT
+ping_heartbeat "${BACKUP_HEARTBEAT_URL:-}" start
 
 # Radši žádná nová záloha než zaplněný disk, který by shodil i běžící appku — kontrola PŘED
 # jakýmkoli zápisem, ne až po pg_dump.
@@ -60,7 +92,7 @@ if (( free_mb < MIN_FREE_MB )); then
 fi
 
 echo "[$TIMESTAMP] Zálohuji databázi..."
-docker compose -f "$COMPOSE_FILE" exec -T postgres \
+compose exec -T postgres \
   pg_dump -U "$POSTGRES_USER" -d kvalitaacena \
   | gzip > "$BACKUP_ROOT/db-$TIMESTAMP.sql.gz"
 

@@ -360,8 +360,10 @@ navíc jediný způsob, jak umožnit rebase/fixup PR před schválením bez dopa
 ### Z čeho stavět
 
 - **Server**: `./ops/deploy.sh X.Y.Z` (viz `ops/README.md`) — aktualizuje repo na tag, sekvenčně
-  sestaví backend a web (`docs/nasazeni.md`, „Sekvenční build"), spustí a ověří
-  `/actuator/health`/`/actuator/info` proti `version`/`commit`. Ruční ekvivalent, když je potřeba
+  sestaví backend a web (`docs/nasazeni.md`, „Sekvenční build"), před migrací zazálohuje
+  databázi a média, spustí a ověří `/actuator/health`/`/actuator/info` proti `version`/`commit`.
+  Cesta zpět je `./ops/rollback.sh <předchozí verze> [--restore-db]` (`ops/README.md`,
+  „rollback.sh" — kdy stačí vrátit kód a kdy je potřeba i databáze). Ruční ekvivalent, když je potřeba
   krok po kroku: `git checkout vX.Y.Z`, `export GIT_SHA=$(git rev-parse --short HEAD)`,
   `docker compose -f compose.prod.yaml build backend && docker compose -f compose.prod.yaml build
   web && docker compose -f compose.prod.yaml up -d`.
@@ -388,6 +390,12 @@ Kvůli Play review nebo uzavřenému testu může appka v obchodě běžet na st
 nasazená na serveru — to je žádoucí a je to hned vidět (appka i server ukazují svou verzi).
 Kompatibilitu hlídá `X-Client-Version` + `app.client.min-android-version` (`ClientVersionFilter`),
 což je teď čitelný `versionCode` (např. `200` = „aspoň 0.2.0").
+
+Že se kontrakt změnil, pozná CI: `GraphQlSchemaContractTest` (job Mobile) validuje každý dotaz
+z `GraphQlClient.kt` proti `schema.graphqls`. Když po změně schématu spadne, není to jen pokyn
+upravit dotaz v appce — už vydané appky ten starý dotaz posílají dál. Buď změnu udělat zpětně
+slučitelně (pole nejdřív jen přidat, staré nechat), nebo s vydáním serveru zvednout
+`app.client.min-android-version`. Test hlídá jen dotazy aktuálního zdrojáku, ne appek v terénu.
 
 **První skutečné použití gate: 0.5.0.** Do vydání 0.5.0 byl `app.client.min-android-version`
 natvrdo `0` (kontrola vypnutá) — appka byla jen v Internal testing (1 tester, sám
