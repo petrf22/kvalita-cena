@@ -9,6 +9,9 @@ za jednoduchost skriptu.
 
 ## [Nezveřejněno]
 
+### Přidáno
+- Cenu jde zapsat i v obchodě bez signálu: stačí naskenovat kód, vybrat obchod z těch, které telefon už zná, a cena se uloží v telefonu a odešle sama po připojení; co čeká a co potřebuje doplnit, ukazuje nová obrazovka Čekající ceny (mobil)
+
 ### Opraveno
 - Aktuální cena v obchodě se po zdražení nebo zlevnění přizpůsobí hned — starší zápisy v ní váží méně (poločas 14 dní), dřív rozhodovala celá historie (server)
 - Chyba při přepočtu ceny jednoho zboží už nezastaví přepočet cen ostatním a fronta přepočtu se průběžně uklízí (server)
