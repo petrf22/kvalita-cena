@@ -10,6 +10,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "codegen": "graphql-codegen",
+    "format:check": "prettier --check \"src/**/*.{ts,html,css}\"",
     "write-version": "node tools/version/write-version.mjs"
   },
   "private": true,
