@@ -12,6 +12,9 @@ ověřeno) — **aktivně nehotové jsou jen položky ze sekcí níž, shrnuté 
 
 ## Zbývá
 
+- [ ] **Zřídit heartbeat záloh na healthchecks.io** — skripty i workflow dostupnosti jsou
+  hotové (2026-11-16), chybí účet, dvě kontroly a jejich adresy v `.env` na serveru
+  a v `~/.config/kvalitacena/pull-backup.env` na PC (`ops/README.md`, „Monitorování").
 - [ ] Před veřejnou betou vrátit `SPRING_PROFILES_ACTIVE` na `prod` a povolit indexaci
   (sekce 4) — tím se zároveň zapne `app.feedback.challenge.required` (viz níž), appka jinak
   drží prod hodnotu `true` implicitně, jen `beta` profil ji dočasně vrací na `false`.
