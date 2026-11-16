@@ -9,6 +9,18 @@
 	acme_ca {$ACME_CA:https://acme-v02.api.letsencrypt.org/directory}
 }
 
+# Bezpečnostní hlavičky společné webu i API. HSTS bez `includeSubDomains`/`preload` — obojí je
+# závazek, který nejde rychle vzít zpět, a pod doménou můžou vzniknout i služby mimo tenhle
+# server. Na holém http (lokální zkouška na *.localhost) prohlížeč HSTS ignoruje, neškodí.
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}
+
 # SITE_ADDRESS = doména appky (kvalitacena.cz v produkci) — Caddy si pro ni sám obstará TLS
 # (Let's Encrypt). Bez proměnné/DNS namířeného na server naslouchá jen na :80, ať jde image
 # vyzkoušet i lokálně (docs/vydani.md plán, fáze "minimální produkční nasazení"). Dva site
@@ -16,6 +28,21 @@
 # spadne na "unrecognized directive".
 {$SITE_ADDRESS:http://localhost} {
 	encode gzip
+	import security_headers
+
+	# Web se nikam nevkládá (clickjacking) a z rozhraní prohlížeče potřebuje jen kameru (sken
+	# kódu, focení) a polohu (obchody v okolí) — obojí jen sám pro sebe.
+	#
+	# CSP zatím jen Report-Only: porušení se vypíše do konzole prohlížeče, ale nic se neblokuje.
+	# Ostrou hlavičku zapnout až po projití webu s otevřenou konzolí (docs/nasazeni.md, „Zbývá")
+	# — špatně odhadnutý zdroj by jinak rozbil web všem. `style-src 'unsafe-inline'` je nutné
+	# (Angular i ng-zorro vkládají <style> za běhu), obrázky jdou i z cizích domén (dlaždice mapy,
+	# fotky z Open Food Facts), `blob:` kvůli náhledům fotek a Web Workeru s proof-of-work.
+	header {
+		X-Frame-Options DENY
+		Permissions-Policy "camera=(self), geolocation=(self), microphone=(), payment=(), usb=()"
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+	}
 
 	# Stejný origin jako web (viz komentář v Dockerfile) — /api a /graphql jdou na backend
 	# kontejner podle jména služby z compose.prod.yaml, ne přes veřejnou adresu.
@@ -37,8 +64,20 @@
 	}
 
 	# Angular SPA — neznámá cesta padá na index.html, o zbytek routingu se postará klient.
+	#
+	# Cache: soubory s hashem v názvu (`main-ABC123XY.js`, `outputHashing: all` v angular.json) se
+	# nikdy nemění, takže smí zůstat v cache napořád. Všechno ostatní — hlavně index.html, i ten
+	# vrácený jako fallback pro cestu `/product/…` — se musí pokaždé ověřit u serveru: prohlížeč
+	# se starým shellem by po nasazení žádal hashované soubory, které už neexistují, a web by
+	# zůstal bílý do ručního obnovení. `no-cache` není „neukládat", jen „před použitím se zeptat"
+	# (ETag → 304), takže to nic nestojí. Matchery se musí vylučovat: `header` není koncová
+	# direktiva a při dvou shodách by vyhrála ta provedená později.
 	handle {
 		root * /srv
+		@hashed path_regexp -[A-Za-z0-9_]{8}\.(js|css|woff2?)$
+		@unhashed not path_regexp -[A-Za-z0-9_]{8}\.(js|css|woff2?)$
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		header @unhashed Cache-Control no-cache
 		try_files {path} /index.html
 		file_server
 	}
@@ -50,6 +89,7 @@
 # proxuje se sem rovnou celý provoz, žádný SPA fallback.
 {$API_ADDRESS:http://api.localhost} {
 	encode gzip
+	import security_headers
 
 	reverse_proxy backend:8080 {
 		header_up X-Forwarded-For {remote_host}

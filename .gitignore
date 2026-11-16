@@ -79,3 +79,6 @@ mail.txt
 
 # Sezení Kotlin kompilátoru (vzniká při každém Gradle buildu mobilu)
 mobile/.kotlin/
+
+# Osobní dokumenty odložené do kořene repa — repo je veřejné, jedno `git add -A` by je odeslalo.
+/*.docx
