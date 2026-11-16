@@ -21,7 +21,7 @@ class PendingPriceStoreTest {
 
   private fun draft(barcode: String = "8594001234585", minute: Long = 0, productId: String? = null) = pendingPriceDraft(
     ownerUid = "u1", productId = productId, barcode = barcode, productName = null,
-    storeId = "s1", storeLabel = "Albert, Vzorov", productAlias = null,
+    storeId = "s1", storeLabel = "Albert, Vzorov", currency = "CZK", productAlias = null,
     quantityBasis = "PACKAGE", observedAt = null,
     prices = listOf(
       ObservationPriceInput(priceKind = "REGULAR", priceAmount = 29.9),

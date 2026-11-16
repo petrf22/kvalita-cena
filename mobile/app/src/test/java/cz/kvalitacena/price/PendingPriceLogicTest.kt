@@ -118,7 +118,7 @@ class PendingPriceLogicTest {
   fun zapisBezNactenehoZboziUkladaKodAZakladOdklada() {
     val draft = pendingPriceDraft(
       ownerUid = "u1", productId = null, barcode = "8594001234585", productName = null,
-      storeId = "s1", storeLabel = "Albert, Vzorov", productAlias = null,
+      storeId = "s1", storeLabel = "Albert, Vzorov", currency = "CZK", productAlias = null,
       quantityBasis = "PER_KG", observedAt = null, prices = prices, now = now,
     )
     assertEquals("8594001234585", draft.barcode)
@@ -132,19 +132,21 @@ class PendingPriceLogicTest {
   fun zapisSNactenymZbozimDrziZvolenyZaklad() {
     val draft = pendingPriceDraft(
       ownerUid = null, productId = "p1", barcode = "8594001234585", productName = "Rajčata",
-      storeId = "s1", storeLabel = "Albert, Vzorov", productAlias = "rajče",
+      storeId = "s1", storeLabel = "Albert, Vzorov", currency = "EUR", productAlias = "rajče",
       quantityBasis = "PER_KG", observedAt = null, prices = prices, now = now,
     )
     assertEquals("PER_KG", draft.quantityBasis)
     assertTrue(draft.basisChosenByUser)
     assertEquals("rajče", draft.productAlias)
+    // Měna je jen pro zobrazení ve frontě — podle země obchodu, ne podle Nastavení.
+    assertEquals("EUR", draft.currency)
   }
 
   @Test(expected = IllegalArgumentException::class)
   fun cenaBezZboziIBezKoduSeNezaradi() {
     pendingPriceDraft(
       ownerUid = null, productId = null, barcode = null, productName = null,
-      storeId = "s1", storeLabel = "x", productAlias = null,
+      storeId = "s1", storeLabel = "x", currency = null, productAlias = null,
       quantityBasis = "PACKAGE", observedAt = null, prices = prices, now = now,
     )
   }

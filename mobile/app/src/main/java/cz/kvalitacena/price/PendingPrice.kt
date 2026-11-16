@@ -41,6 +41,11 @@ enum class PendingPriceState {
  *
  * [ownerUid] je `publicUid` účtu, který cenu zapsal (`null` = zapsáno bez přihlášení). Pod jiným
  * účtem neodejde.
+ *
+ * [currency] je jen pro zobrazení ve frontě (měna podle země obchodu, `currencyForCountry`) —
+ * server ji nedostane, měnu určuje sám podle obchodu (`CurrencyResolver.forStore`). Bez ní by
+ * seznam čekajících cen ukázal holé číslo, nebo hůř měnu země z Nastavení u ceny ze Slovenska.
+ * `null` = neznámá (položka zapsaná dřív, než se měna začala ukládat).
  */
 @Serializable
 data class PendingPrice(
@@ -51,6 +56,7 @@ data class PendingPrice(
   val productName: String? = null,
   val storeId: String,
   val storeLabel: String,
+  val currency: String? = null,
   val productAlias: String? = null,
   val quantityBasis: String = "PACKAGE",
   val basisChosenByUser: Boolean = false,

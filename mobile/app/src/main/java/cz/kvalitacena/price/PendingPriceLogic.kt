@@ -123,6 +123,7 @@ fun pendingPriceDraft(
   productName: String?,
   storeId: String,
   storeLabel: String,
+  currency: String?,
   productAlias: String?,
   quantityBasis: String,
   observedAt: String?,
@@ -138,6 +139,7 @@ fun pendingPriceDraft(
     productName = productName,
     storeId = storeId,
     storeLabel = storeLabel,
+    currency = currency,
     productAlias = productAlias,
     // Bez načteného zboží appka neví, že je váhové — uloží PACKAGE a rozhodnutí odloží.
     quantityBasis = if (productId != null) quantityBasis else "PACKAGE",

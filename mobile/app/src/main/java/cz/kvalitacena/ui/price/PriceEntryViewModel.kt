@@ -17,6 +17,7 @@ import cz.kvalitacena.price.shouldQueueAfterFailure
 import cz.kvalitacena.ui.common.NearbyState
 import cz.kvalitacena.ui.common.OsmState
 import cz.kvalitacena.ui.common.UiText
+import cz.kvalitacena.ui.common.currencyForCountry
 import cz.kvalitacena.ui.common.storeLabel
 import cz.kvalitacena.ui.common.toUiText
 import cz.kvalitacena.ui.settings.CountryStore
@@ -569,6 +570,8 @@ class PriceEntryViewModel(
           productName = currentProduct?.name,
           storeId = store.id,
           storeLabel = storeLabel(store, countryStore.country),
+          // Stejné odvození jako popisek pole ceny (měna podle země obchodu) — jen pro seznam čekajících.
+          currency = currencyForCountry(store.country),
           productAlias = productAlias,
           quantityBasis = currentProduct?.let { effectiveQuantityBasis(it) } ?: "PACKAGE",
           observedAt = toObservedAtIso(observedAt),

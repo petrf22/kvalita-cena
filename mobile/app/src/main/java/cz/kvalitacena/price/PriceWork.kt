@@ -7,6 +7,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import cz.kvalitacena.AppContainer
@@ -14,6 +15,9 @@ import cz.kvalitacena.crash.AppLog
 import cz.kvalitacena.network.GraphQlAppException
 import cz.kvalitacena.network.SubmitObservationsInput
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
 /**
  * Odesílání cen z fronty ([PendingPriceStore]) přes WorkManager — stejný důvod jako u účtenek
@@ -42,6 +46,15 @@ object PriceWork {
       enqueueUpload(context)
     }
   }
+
+  /**
+   * Běží právě odesílání fronty? Pro obrazovku čekajících cen („Odesílá se…" místo „čeká").
+   * Jedna práce na celou frontu, takže říká jen „něco se posílá", ne kterou položku.
+   */
+  fun uploadRunning(context: Context): Flow<Boolean> =
+    WorkManager.getInstance(context).getWorkInfosForUniqueWorkFlow(UPLOAD_WORK)
+      .map { infos -> infos.any { it.state == WorkInfo.State.RUNNING } }
+      .distinctUntilChanged()
 }
 
 /**
