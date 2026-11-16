@@ -334,11 +334,76 @@ Testy proto nesmí sahat na Ollamu ani na server, obojí se podvrhuje (`FakeOcr`
 Fixtures v `testdata/` jsou **anonymizované**. Reálné účtenky (složka `uctenky/` v kořeni,
 mimo git) do repozitáře nepatří.
 
+## Regresní sada
+
+Profily řetězců jsou regexy laděné na jednotky účtenek a `profiles.detect` bere první profil,
+který se přihlásí — úprava jednoho tak umí tiše rozbít čtení jiného. `regrese.py` proto drží
+ke každé účtence, která už jednou prošla, její OCR text a celý výsledek rozboru:
+
+```bash
+python3 tools/uctenky/regrese.py              # porovná všechny případy s očekáváním
+python3 tools/uctenky/regrese.py --add        # založí expected.json tam, kde chybí
+python3 tools/uctenky/regrese.py --update     # přijme změnu rozboru (přepíše expected.json)
+```
+
+**Případ** je adresář s díly `*.ocr.txt` (pořadí podle názvu, shora dolů) a souborem
+`expected.json` — dokument z `parse.build_document`, tedy přesně to, co z textu udělá worker.
+Porovnává se jen deterministická část (regexy, profily), jazykový model do ní nevstupuje.
+
+Sady jsou dvě:
+
+- `testdata/regrese/` — **anonymizované** případy v gitu. Běží v CI (`test_regrese.py`), které
+  navíc hlídá, že každý případ pozná svůj profil i mezi ostatními, a vede seznam profilů, pro
+  které v gitu žádný případ není (`regrese_bez_pripadu()` — dnes `coop` a `obecny`; cílem je
+  prázdná množina).
+- `uctenky/` v kořeni repa — **skutečné** účtenky provozovatele, mimo git. Sem sada roste:
+  `replay.py --save-ocr uctenky/<n>/*.jpg` uloží OCR text vedle obrázku a `regrese.py --add`
+  k němu založí očekávání. `expected.json` leží vedle účtenky a do repa se taky nedostane.
+
+`expected.json` je pravda jen tehdy, když ho někdo zkontroloval proti účtence. `--add` proto
+založí očekávání jen účtence, které sedí součet a nemá varování; ostatním až po ruční kontrole
+výpisu z `replay.py` přes `--add --force`. `--update` přepisuje jen na výslovný pokyn a diff
+anonymizovaných případů patří do review.
+
+Před úpravou regexu nebo profilu: `regrese.py` musí být čisté. Po úpravě: buď je čisté dál,
+nebo se liší jen případy, kterých se změna týkat měla.
+
+## Měření kvality
+
+Dvě čísla, podle kterých jde říct, jestli výměna modelu nebo úprava workeru pomohla.
+
+**OCR model nad uloženými účtenkami** (lokálně, potřebuje Ollamu):
+
+```bash
+python3 tools/uctenky/regrese.py --ocr --model glm-ocr:bf16
+python3 tools/uctenky/regrese.py --ocr --model <jiný-model>
+python3 tools/uctenky/regrese.py --compare uctenky/metriky/<A>.json uctenky/metriky/<B>.json
+```
+
+`--ocr` vezme případy, které mají ke každému dílu obrázek stejného jména (`00.ocr.txt` ↔
+`00.jpg`), přečte obrázky znovu zadaným modelem a rozbor porovná s `expected.json`: podíl
+účtenek se sedícím součtem, podíl řádků se správnou cenou a množstvím (spárovaných v pořadí,
+takže vypadlý řádek neposune všechny za ním) a znakovou podobnost názvů. Měření se uloží do
+`uctenky/metriky/<datum>-<model>.json`; `--compare` postaví dvě vedle sebe nad společnými
+účtenkami a vyjmenuje ty, které nový model čte hůř. Čím víc ověřených účtenek v `uctenky/`,
+tím víc čísla znamenají — na třech účtenkách vyjde každý slušný model na 100 %.
+
+Textové modely (čitelné názvy, kategorie) tohle neměří; jejich výstup není deterministický
+a nemá „správnou odpověď" v `expected.json`. Pro ně je druhé číslo.
+
+**Z provozu** — [`ops/sql/receipt-quality.sql`](../../ops/sql/receipt-quality.sql), jen čte:
+po měsících, modelech a profilech podíl účtenek se sedícím součtem a u uzavřených účtenek podíl
+řádků, kde zboží trefil stroj, kde ho musel dohledat člověk a které uživatel vyřadil; druhý
+dotaz ukazuje, odkud se bral čitelný název (slovník, pravidla, model). Worker k tomu od 2026-11
+zapisuje do `extraction.models` názvy všech tří modelů (`result.to_payload`) — OCR model měl
+vlastní sloupec `ai.receipt_job.model` už dřív, textové nebyly zapsané nikde.
+
 ## Nový řetězec
 
 Do `profiles/` přidej modul se třemi funkcemi (`matches`, `read_header`, `split_body`)
 a zaregistruj ho v `profiles/__init__.py`. Skládání řádků je společné. K tomu patří
-anonymizovaná fixture v `testdata/` a test. Dlouhou účtenku dej do fixture po dílech
+anonymizovaná fixture v `testdata/`, test a **případ v `testdata/regrese/`** (viz „Regresní
+sada" — bez něj `test_regrese.py` spadne na profilu bez případu). Dlouhou účtenku dej do fixture po dílech
 (`<řetězec>-dil1.ocr.txt`, …), aby test pokryl i spojení překryvu.
 
 Čtvrtá funkce `parse_items` je volitelná. Patří jen účtenkám, jejichž položky společné
