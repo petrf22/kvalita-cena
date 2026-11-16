@@ -120,6 +120,10 @@ Na co se naráží:
   formulářů, výpočty pro graf, i18n kontrakty) vytažená do vlastního souboru — ta JUnit testy
   má (`src/test/java/cz/kvalitacena/`, přes deset souborů dnes) a při přidání dalšího nápadu
   na testovatelnou logiku je žádoucí ji stejně vytáhnout a otestovat.
+- **Nový dotaz v `GraphQlClient.kt` piš jako řetězcový literál uvnitř funkce, která ho volá**
+  (začíná `query`/`mutation`/`{`, fragmenty přes `$NAZEV_FIELDS`). `GraphQlSchemaContractTest`
+  dotazy vytahuje ze zdrojového textu a validuje proti schématu backendu; dotaz poskládaný
+  jinak (spojování řetězců, předaný parametrem) by neviděl — a druhý test v něm na to upozorní.
 - **UI hodnoty** (rozestupy, hierarchie typografie, barvy) ber z `../docs/design.md`:
   rozestupy přes `Spacing.*` (`ui/theme/Spacing.kt`), písmo výhradně přes
   `MaterialTheme.typography.*` (hardcoded `.sp` appka nemá ani jednou), barvy přes
