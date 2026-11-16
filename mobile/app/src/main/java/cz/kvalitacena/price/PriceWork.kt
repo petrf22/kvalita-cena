@@ -42,9 +42,12 @@ object PriceWork {
 
   /** Při startu appky: zbylo-li něco čekajícího (práci mohl systém zahodit), naplánovat znovu. */
   fun enqueueIfPending(context: Context) {
-    if (AppContainer.pendingPrices.pending.value.any { it.state == PendingPriceState.WAITING }) {
-      enqueueUpload(context)
+    // I položky odložené kvůli přihlášení: jestli už vlastník přihlášený je, pozná až worker
+    // (přihlášení se po startu teprve obnovuje) a vrátí je mezi čekající sám.
+    val worthTrying = AppContainer.pendingPrices.pending.value.any {
+      it.state == PendingPriceState.WAITING || it.errorCode == CODE_PRICE_REQUIRES_LOGIN
     }
+    if (worthTrying) enqueueUpload(context)
   }
 
   /**
@@ -73,6 +76,11 @@ class PriceUploadWorker(context: Context, params: WorkerParameters) : CoroutineW
     // z uloženého refresh tokenu, nikdy z přítomnosti access tokenu (kořenový CLAUDE.md).
     val auth = AppContainer.authRepository
     if (!auth.sessionKnown.value) auth.restoreSession()
+
+    // Vlastník se mezitím přihlásil zpět — jeho odložené ceny se vracejí do fronty.
+    store.pending.value
+      .filter { revivesAfterLogin(it, auth.isLoggedIn.value, auth.currentUserUid()) }
+      .forEach { store.retry(it.id) }
 
     var retryLater = false
     for (queued in store.pending.value.filter { it.state == PendingPriceState.WAITING }) {

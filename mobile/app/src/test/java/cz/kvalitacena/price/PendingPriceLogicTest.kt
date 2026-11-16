@@ -142,6 +142,21 @@ class PendingPriceLogicTest {
     assertEquals("EUR", draft.currency)
   }
 
+  @Test
+  fun cenaOdlozenaKvuliPrihlaseniSeVraciJenSvemuVlastnikovi() {
+    val waitingForLogin = PendingPrice(
+      id = "x", ownerUid = "u1", productId = "p1", storeId = "s1", storeLabel = "x",
+      observedAt = now.toString(), prices = prices, queuedAt = now.toString(),
+      state = PendingPriceState.FAILED, errorCode = CODE_PRICE_REQUIRES_LOGIN,
+    )
+    assertTrue(revivesAfterLogin(waitingForLogin, loggedIn = true, currentUid = "u1"))
+    assertFalse(revivesAfterLogin(waitingForLogin, loggedIn = true, currentUid = "u2"))
+    assertFalse(revivesAfterLogin(waitingForLogin, loggedIn = false, currentUid = null))
+    // Jiný důvod selhání přihlášení nespraví.
+    assertFalse(revivesAfterLogin(waitingForLogin.copy(errorCode = "STORE_NOT_FOUND"), loggedIn = true, currentUid = "u1"))
+    assertFalse(revivesAfterLogin(waitingForLogin.copy(state = PendingPriceState.WAITING), loggedIn = true, currentUid = "u1"))
+  }
+
   @Test(expected = IllegalArgumentException::class)
   fun cenaBezZboziIBezKoduSeNezaradi() {
     pendingPriceDraft(

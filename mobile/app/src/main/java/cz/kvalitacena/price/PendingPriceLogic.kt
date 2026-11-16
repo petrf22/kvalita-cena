@@ -110,6 +110,15 @@ fun ownerCheck(ownerUid: String?, loggedIn: Boolean, currentUid: String?): Owner
 }
 
 /**
+ * Cena odložená kvůli přihlášení ([CODE_PRICE_REQUIRES_LOGIN]), jejíž vlastník je teď zase
+ * přihlášený — má se sama vrátit mezi čekající. Bez toho by po přihlášení ležela ve frontě
+ * jako selhaná, dokud by uživatel sám neklepl na „Zkusit znovu".
+ */
+fun revivesAfterLogin(price: PendingPrice, loggedIn: Boolean, currentUid: String?): Boolean =
+  price.state == PendingPriceState.FAILED && price.errorCode == CODE_PRICE_REQUIRES_LOGIN &&
+    ownerCheck(price.ownerUid, loggedIn, currentUid) == OwnerCheck.OK
+
+/**
  * Čas pozorování pro frontu: [chosen] je to, co by šlo serveru při přímém odeslání
  * (`toObservedAtIso` — `null` znamená „teď"). Fronta `null` uložit nesmí, viz [PendingPrice].
  */
