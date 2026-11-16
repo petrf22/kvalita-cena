@@ -389,6 +389,12 @@ nasazená na serveru — to je žádoucí a je to hned vidět (appka i server uk
 Kompatibilitu hlídá `X-Client-Version` + `app.client.min-android-version` (`ClientVersionFilter`),
 což je teď čitelný `versionCode` (např. `200` = „aspoň 0.2.0").
 
+Že se kontrakt změnil, pozná CI: `GraphQlSchemaContractTest` (job Mobile) validuje každý dotaz
+z `GraphQlClient.kt` proti `schema.graphqls`. Když po změně schématu spadne, není to jen pokyn
+upravit dotaz v appce — už vydané appky ten starý dotaz posílají dál. Buď změnu udělat zpětně
+slučitelně (pole nejdřív jen přidat, staré nechat), nebo s vydáním serveru zvednout
+`app.client.min-android-version`. Test hlídá jen dotazy aktuálního zdrojáku, ne appek v terénu.
+
 **První skutečné použití gate: 0.5.0.** Do vydání 0.5.0 byl `app.client.min-android-version`
 natvrdo `0` (kontrola vypnutá) — appka byla jen v Internal testing (1 tester, sám
 provozovatel), žádné APK se starším kontraktem nebylo skutečně v terénu. `rateProduct(grade:)`

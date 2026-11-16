@@ -126,7 +126,11 @@ za skutečně spočítanou verzi (krok 1) — dosaď ji, než příkaz spustíš
 
 14. **Zastavení č. 2 — shrnutí.** Napiš: cílovou verzi, cestu k `.aab`, `versionCode`, a
     připomeň dvě věci z `docs/vydani.md`, pokud se týkají téhle verze:
-    - jestli `app.client.min-android-version` potřebuje bump na nový `versionCode`,
+    - jestli `app.client.min-android-version` potřebuje bump na nový `versionCode` — vodítko:
+      od minulého tagu se v `GraphQlClient.kt` měnil existující dotaz kvůli změně schématu
+      (`git diff vPŘEDCHOZÍ -- mobile/app/src/main/java/cz/kvalitacena/network/GraphQlClient.kt
+      backend/src/main/resources/graphql/schema.graphqls`), tedy `GraphQlSchemaContractTest`
+      by se starým klientem neprošel,
     - že server (`./ops/deploy.sh X.Y.Z`) tenhle příkaz nespouští — to je samostatný krok.
 
     Shrnutí vždy končí textem z kroku 15.

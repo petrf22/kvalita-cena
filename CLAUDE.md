@@ -34,7 +34,9 @@ Sdílený mezi aplikacemi je kontrakt API (GraphQL schéma
 `backend/src/main/resources/graphql/schema.graphqls`). Frontend z něj přes `graphql-codegen`
 (`frontend/codegen.ts`) generuje TypeScript typy a konstanty enumů do
 `frontend/src/app/models/generated/` — čte schéma přímo z backendu, žádná kopie. Mobil zatím
-typy z GraphQL schématu negeneruje (`network/Dto.kt` mapuje enumy ručně na `String`). Pozor na
+typy z GraphQL schématu negeneruje (`network/Dto.kt` mapuje enumy ručně na `String`), dotazy
+z `GraphQlClient.kt` ale proti schématu validuje `GraphQlSchemaContractTest` — změna schématu
+neslučitelná s mobilem spadne v CI a je signálem zvednout `min-android-version`. Pozor na
 pořadí: `graphql(...)` volání ve frontendu matchují dotaz na přesný string zachycený při
 generování, takže Prettier musí proběhnout **před** posledním `npm run codegen`, jinak typová
 kontrola i běhový match spadnou.
