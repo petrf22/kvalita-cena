@@ -47,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
+import cz.kvalitacena.price.PriceWork
 import cz.kvalitacena.R
 import cz.kvalitacena.location.LOCATION_PERMISSIONS
 import cz.kvalitacena.location.LocationResult
@@ -105,6 +106,8 @@ fun PriceEntryScreen(
   onAddProduct: (barcode: String?) -> Unit,
   onSearchPrices: (query: String) -> Unit,
 ) {
+  val context = LocalContext.current
+  val appContext = context.applicationContext
   val viewModel: PriceEntryViewModel = viewModel(
     factory = viewModelFactory {
       initializer {
@@ -115,11 +118,17 @@ fun PriceEntryScreen(
           AppContainer.priceEntryVisibilityStore,
           AppContainer.lastStoreStore,
           AppContainer.nearbyRadiusStore,
+          pendingPrices = AppContainer.pendingPrices,
+          storeCache = AppContainer.storeCache,
+          isOnline = { AppContainer.networkMonitor.online.value },
+          currentUserUid = {
+            AppContainer.authRepository.currentUserUid().takeIf { AppContainer.authRepository.isLoggedIn.value }
+          },
+          scheduleUpload = { PriceWork.enqueueUpload(appContext) },
         )
       }
     },
   )
-  val context = LocalContext.current
   val scope = rememberCoroutineScope()
   val isLoggedIn by AppContainer.authRepository.isLoggedIn.collectAsState()
   val exitGuard = LocalNavigationExitGuard.current

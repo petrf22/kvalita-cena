@@ -10,6 +10,10 @@ import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Product
 import cz.kvalitacena.network.Store
 import cz.kvalitacena.network.SubmitObservationsInput
+import cz.kvalitacena.price.PendingPriceStore
+import cz.kvalitacena.price.StoreCache
+import cz.kvalitacena.price.pendingPriceDraft
+import cz.kvalitacena.price.shouldQueueAfterFailure
 import cz.kvalitacena.ui.common.NearbyState
 import cz.kvalitacena.ui.common.OsmState
 import cz.kvalitacena.ui.common.UiText
@@ -35,6 +39,15 @@ class PriceEntryViewModel(
   private val visibilityStore: PriceEntryVisibilityStore,
   private val lastStoreStore: LastStoreStore,
   private val nearbyRadiusStore: NearbyRadiusStore,
+  // Offline fronta (price/PendingPriceStore): bez signálu se cena zařadí a odejde později.
+  private val pendingPrices: PendingPriceStore,
+  private val storeCache: StoreCache,
+  /** Je telefon připojený (`NetworkMonitor.online`)? Jen zkratka — rozhoduje až výsledek odeslání. */
+  private val isOnline: () -> Boolean,
+  /** `publicUid` přihlášeného účtu, `null` bez přihlášení — pod jiným účtem cena z fronty neodejde. */
+  private val currentUserUid: () -> String?,
+  /** Naplánuje odeslání fronty (`PriceWork.enqueueUpload`) — potřebuje Context, proto zvenčí. */
+  private val scheduleUpload: () -> Unit,
 ) : ViewModel() {
 
   var loading by mutableStateOf(true)
@@ -45,6 +58,15 @@ class PriceEntryViewModel(
     private set
   /** OFF katalog je teď nedostupný (výpadek/rate limit) — jiná hláška než "neznáme ho" pod notFound. */
   var offUnavailable by mutableStateOf(false)
+    private set
+
+  /**
+   * Zboží se nepodařilo dotáhnout kvůli SÍTI (sken v obchodě bez signálu), ne proto, že by ho
+   * katalog neznal. Cenu jde i tak zapsat: uloží se s čárovým kódem do fronty a zboží dohledá
+   * `PriceUploadWorker` po připojení. Jen u vstupu z čárového kódu — vstup z detailu zboží bez
+   * sítě vůbec nevznikne.
+   */
+  var productPendingLookup by mutableStateOf(false)
     private set
 
   // Sekce "Zadat cenu" je schovaná za tlačítkem, dokud si uživatel jednou úspěšně nezapíše
@@ -126,11 +148,16 @@ class PriceEntryViewModel(
     private set
   var submitSuccess by mutableStateOf(false)
     private set
+
+  /** Cena neodešla, ale je uložená ve frontě — spolu se [submitSuccess], obrazovka jen řekne jinou větu. */
+  var submitQueued by mutableStateOf(false)
+    private set
   var submitError by mutableStateOf<UiText?>(null)
     private set
 
   val canSubmit: Boolean
-    get() = selectedStore != null && arePriceRowsValid(priceRows) && !submitting && !storeScopeMismatch
+    get() = selectedStore != null && arePriceRowsValid(priceRows) && !submitting && !storeScopeMismatch &&
+      (product != null || productPendingLookup)
 
   fun addPriceRow() {
     priceRows = priceRows + PriceRow(id = nextRowId++, priceKind = firstAvailablePriceKind(priceRows))
@@ -149,6 +176,15 @@ class PriceEntryViewModel(
   init {
     loadProduct()
     loadRememberedStore()
+  }
+
+  /** Nový pokus dotáhnout zboží (uživatel mezitím chytil signál). */
+  fun retryLoadProduct() {
+    if (loading) return
+    notFound = false
+    offUnavailable = false
+    productPendingLookup = false
+    loadProduct()
   }
 
   private fun loadProduct() {
@@ -181,7 +217,16 @@ class PriceEntryViewModel(
         }
         discardIncompatibleStore()
       } catch (e: Exception) {
-        notFound = true
+        // Výpadek sítě není „kód neznáme": zápis pokračuje naslepo (viz productPendingLookup).
+        // Dřív obojí skončilo jako notFound a appka v obchodě bez signálu nabízela založit
+        // zboží, které v katalogu dávno je.
+        if (target is PriceEntryTarget.ByBarcode && shouldQueueAfterFailure(e)) {
+          productPendingLookup = true
+          // Sekce zápisu se rozbalí sama — jiný smysl obrazovka bez zboží a bez sítě nemá.
+          priceEntryExpanded = true
+        } else {
+          notFound = true
+        }
       } finally {
         loading = false
       }
@@ -210,6 +255,7 @@ class PriceEntryViewModel(
     product = newProduct
     productAlias = alias?.trim()?.ifBlank { null }
     notFound = false
+    productPendingLookup = false
     discardIncompatibleStore()
   }
 
@@ -301,6 +347,8 @@ class PriceEntryViewModel(
         storeSuggestions = graphQlClient.searchStores(query = query).items
       } catch (e: Exception) {
         // Chyba našeptávače nesmí blokovat zápis — seznam z okolí a ruční výběr fungují dál.
+        // Bez signálu aspoň hledání v obchodech, které si zařízení pamatuje.
+        if (shouldQueueAfterFailure(e)) storeSuggestions = filterCachedStores(storeCache.all(), query)
       } finally {
         storeSearching = false
       }
@@ -317,6 +365,7 @@ class PriceEntryViewModel(
     // proč, ať mu výběr nezmizí beze stopy.
     storeScopeMismatch = product?.let { !productAvailableAtStore(it, store) } ?: false
     if (!storeScopeMismatch) lastStoreStore.remember(store)
+    storeCache.remember(listOf(store))
   }
 
   private fun selectStore(store: Store) {
@@ -352,17 +401,30 @@ class PriceEntryViewModel(
 
   fun onLocationPermissionMissing() {
     nearbyState = NearbyState.PermissionMissing
+    offerCachedStoresIfOffline()
     applyPreselection()
   }
 
   fun onLocationDisabled() {
     nearbyState = NearbyState.LocationDisabled
+    offerCachedStoresIfOffline()
     applyPreselection()
   }
 
   fun onLocationTimeout() {
     nearbyState = NearbyState.LocationTimeout
+    offerCachedStoresIfOffline()
     applyPreselection()
+  }
+
+  /**
+   * Bez polohy a bez sítě nemá uživatel jak obchod najít (okolí se nehledá, našeptávač
+   * neodpoví) — nabídnou se aspoň obchody, které si zařízení pamatuje. S připojením se nic
+   * nepředvyplňuje: tam funguje hledání psaním a nabídka naslepo by jen překážela.
+   */
+  private fun offerCachedStoresIfOffline() {
+    if (isOnline() || storeSuggestions.isNotEmpty()) return
+    storeSuggestions = offlineStoreSuggestions(storeCache.all(), null, null)
   }
 
   fun onLocationResolved(lat: Double, lon: Double) {
@@ -393,12 +455,19 @@ class PriceEntryViewModel(
           lat, lon, radiusMeters,
         )
         nearbyState = NearbyState.Loaded(stores)
+        // Zapamatovat pro výběr bez signálu (price/StoreCache) — ukládá se jen to, co server
+        // o obchodech veřejně vrátil, ne poloha, se kterou se ptalo.
+        storeCache.remember(stores.map { it.store })
         // Nabídka jde do stejného seznamu jako našeptávač, aby měl StorePicker jeden zdroj
         // pravdy i pro mapu; psaní do pole ji přepíše, což je správně.
         storeSuggestions = stores.map { it.store }
         applyPreselection()
       } catch (e: Exception) {
         nearbyState = NearbyState.Failed(e.toUiText())
+        // Server neodpověděl, ale poloha je známá — nabídka z paměti zařízení, nejbližší první.
+        if (shouldQueueAfterFailure(e)) {
+          storeSuggestions = offlineStoreSuggestions(storeCache.all(), lat, lon)
+        }
         applyPreselection()
       }
     }
@@ -438,21 +507,32 @@ class PriceEntryViewModel(
   }
 
   fun submit() {
-    val currentProduct = product ?: return
-    val storeId = selectedStore?.id ?: return
+    val store = selectedStore ?: return
     if (!arePriceRowsValid(priceRows)) return
+    val currentProduct = product
+    // Zboží se nenačetlo kvůli síti: cena jde do fronty jen s čárovým kódem.
+    if (currentProduct == null) {
+      if (productPendingLookup) queue(store, null)
+      return
+    }
 
-    submitting = true
     submitError = null
     submitSuccess = false
+    submitQueued = false
+    // Telefon o sobě ví, že je offline — nečekat na timeout spojení, zařadit rovnou.
+    if (!isOnline()) {
+      queue(store, currentProduct)
+      return
+    }
+    submitting = true
     viewModelScope.launch {
       try {
         graphQlClient.submitObservations(
           SubmitObservationsInput(
             productId = currentProduct.id,
-            storeId = storeId,
+            storeId = store.id,
             productAlias = productAlias,
-            quantityBasis = if (currentProduct.isVariableWeight) quantityBasis else "PACKAGE",
+            quantityBasis = effectiveQuantityBasis(currentProduct),
             observedAt = toObservedAtIso(observedAt),
             prices = toObservationPriceInputs(priceRows),
           ),
@@ -463,10 +543,45 @@ class PriceEntryViewModel(
         // Uživatel právě zapsal cenu — příští sken ať sekci rovnou rozbalí (PriceEntryVisibilityStore).
         visibilityStore.select(true)
       } catch (e: Exception) {
-        submitError = e.toUiText()
+        // Síť spadla až při odeslání (signál u regálu přichází a odchází) — zápis se neztratí.
+        // Odpověď serveru s chybou do fronty nepatří, tu musí uživatel vidět a opravit.
+        if (shouldQueueAfterFailure(e)) queue(store, currentProduct) else submitError = e.toUiText()
       } finally {
         submitting = false
       }
+    }
+  }
+
+  private fun effectiveQuantityBasis(currentProduct: Product): String =
+    if (currentProduct.isVariableWeight) quantityBasis else "PACKAGE"
+
+  /**
+   * Uloží cenu do fronty a naplánuje odeslání. [currentProduct] `null` = sken bez signálu, zboží
+   * určuje jen čárový kód. Čas pozorování se zapisuje vždy (i „teď") — viz `PendingPrice`.
+   */
+  private fun queue(store: Store, currentProduct: Product?) {
+    try {
+      pendingPrices.enqueue(
+        pendingPriceDraft(
+          ownerUid = currentUserUid(),
+          productId = currentProduct?.id,
+          barcode = barcodeForNewProduct(),
+          productName = currentProduct?.name,
+          storeId = store.id,
+          storeLabel = storeLabel(store, countryStore.country),
+          productAlias = productAlias,
+          quantityBasis = currentProduct?.let { effectiveQuantityBasis(it) } ?: "PACKAGE",
+          observedAt = toObservedAtIso(observedAt),
+          prices = toObservationPriceInputs(priceRows),
+        ),
+      )
+      scheduleUpload()
+      submitQueued = true
+      submitSuccess = true
+      visibilityStore.select(true)
+    } catch (e: Exception) {
+      // Plný disk apod. — cena uložená není, uživatel to musí vědět.
+      submitError = e.toUiText()
     }
   }
 }

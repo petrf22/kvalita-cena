@@ -87,4 +87,39 @@ class StorePickerLogicTest {
     assertNull(storeToPreselect(null, emptyList(), locationKnown = false))
     assertNull(storeToPreselect(null, emptyList(), locationKnown = true))
   }
+
+  // --- výběr obchodu bez signálu (price/StoreCache) ---
+
+  private fun cached(id: String, name: String, city: String, lat: Double? = null, lon: Double? = null, street: String? = null) =
+    Store(id = id, name = name, city = city, country = "CZ", lat = lat, lon = lon, street = street)
+
+  @Test
+  fun offlineNabidkaRadiPodleVzdalenostiAObchodyBezSouradnicNechavaNaKonec() {
+    val stores = listOf(
+      cached("daleko", "Daleký", "Brno", 49.30, 16.60),
+      cached("bez", "Bez souřadnic", "Brno"),
+      cached("blizko", "Blízký", "Brno", 49.2001, 16.6090),
+    )
+    assertEquals(listOf("blizko", "daleko", "bez"), offlineStoreSuggestions(stores, 49.2000, 16.6089).map { it.id })
+  }
+
+  @Test
+  fun offlineNabidkaBezPolohyDrziPoradiCache() {
+    val stores = (1..OFFLINE_STORE_SUGGESTIONS + 5).map { cached("s$it", "Obchod $it", "Brno", 49.0, 16.0) }
+    val offered = offlineStoreSuggestions(stores, null, null)
+    assertEquals(OFFLINE_STORE_SUGGESTIONS, offered.size)
+    assertEquals("s1", offered.first().id)
+  }
+
+  @Test
+  fun offlineHledaniBereVsechnaSlovaBezOhleduNaVelikostPismen() {
+    val stores = listOf(
+      cached("a", "Albert", "Brno", street = "Nádražní 1"),
+      cached("b", "Albert", "Praha"),
+      cached("c", "Billa", "Brno"),
+    )
+    assertEquals(listOf("a"), filterCachedStores(stores, "albert BRNO").map { it.id })
+    assertEquals(listOf("a"), filterCachedStores(stores, "nádražní").map { it.id })
+    assertEquals(emptyList<String>(), filterCachedStores(stores, "   ").map { it.id })
+  }
 }
