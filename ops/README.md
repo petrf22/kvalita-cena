@@ -267,10 +267,58 @@ stroji, nikdy při úspěchu) — bez lokálního MTA je to jediný kanál, kter
 desktopu skutečně všimne.
 
 **Slepé místo:** obě hlášení žijí uvnitř skriptu, takže nepomůžou, když se skript vůbec
-nespustí. Přesně tak zůstal lokál od 2026-09-19 do 2026-10-28 bez jediné zálohy — repo se
+nespustí — to kryje až heartbeat („Monitorování" níž). Přesně tak zůstal lokál od 2026-09-19 do 2026-10-28 bez jediné zálohy — repo se
 přestěhovalo do jiného adresáře a crontab volal starou cestu, shell selhal už na přesměrování
 logu (`docs/nasazeni.md`, sekce 1, „Přechod na CAX11"). Po přesunu repa zkontrolovat
 `crontab -l`; nejnovější soubor v `backup/` nesmí být starší než den.
+
+## Monitorování
+
+Dvě nezávislé věci, obě běží **mimo** produkční server i mimo PC provozovatele — hlídač na
+hlídaném stroji mlčí právě tehdy, když je potřeba.
+
+### Heartbeat záloh (healthchecks.io)
+
+`backup.sh` i `pull-backup.sh` po úspěchu pingnou adresu u [healthchecks.io](https://healthchecks.io)
+(zdarma do 20 kontrol) a služba pošle e-mail, když ping **nepřijde** včas. To je rozdíl proti
+hlášením uvnitř skriptů: obě dosavadní tichá selhání (cron na serveru 5 dní v 2026-08,
+`pull-backup.sh` od 2026-09-19 do 2026-10-28) vznikla tím, že se skript vůbec nespustil.
+
+Skript posílá tři signály (`lib-heartbeat.sh`): `/start` na začátku, holou adresu po úspěchu,
+`/fail` při selhání (upozornění přijde hned, nečeká se na lhůtu). U `pull-backup.sh` je úspěch
+jen běh, po kterém je nejnovější stažená záloha mladší než 2 dny — úspěšný `rsync`, který nic
+nového nepřinesl, se hlásí jako selhání. Nedostupnost healthchecks.io zálohu nikdy neshodí.
+
+Zřízení (jednorázově):
+
+1. Účet na healthchecks.io, e-mail pro upozornění.
+2. Kontrola **„záloha server"**: Schedule → Cron `0 3 * * *`, časové pásmo UTC, Grace Time 2 h.
+   Adresu (`https://hc-ping.com/<uuid>`) vložit na serveru do `.env` jako
+   `BACKUP_HEARTBEAT_URL=…`.
+3. Kontrola **„záloha lokál"**: Period 1 den, Grace Time 2 dny (PC bývá vypnuté — dřívější
+   upozornění by chodilo každý víkend). Adresu uložit na PC mimo repo:
+   ```bash
+   mkdir -p ~/.config/kvalitacena
+   echo 'PULL_HEARTBEAT_URL=https://hc-ping.com/<uuid>' > ~/.config/kvalitacena/pull-backup.env
+   chmod 600 ~/.config/kvalitacena/pull-backup.env
+   ```
+4. Ověřit: spustit oba skripty ručně a v přehledu healthchecks.io zkontrolovat, že obě kontroly
+   zezelenaly. Pak jednou vyzkoušet i upozornění (tlačítko „Send Test Notification").
+
+Adresy jsou tajemství (kdo ji zná, může pingat za skript), proto `.env` a soubor v `~/.config`,
+ne repo. Bez nich je heartbeat vypnutý a skripty se chovají jako dřív.
+
+### Dostupnost (GitHub Actions)
+
+`.github/workflows/uptime.yml` zhruba každých 15 minut zkontroluje `/actuator/health`, úvodní
+stránku webu, GraphQL přes doménu webu a platnost TLS certifikátů (méně než 14 dní = chyba,
+Caddy obnovuje ~30 dní předem). Každá kontrola má tři pokusy, takže restart při nasazení
+e-mail nevyvolá. Při selhání pošle GitHub e-mail tomu, kdo plán workflow naposledy upravil
+(Settings → Notifications → Actions musí mít zapnuté „Send notifications for failed workflows").
+
+- Ruční spuštění: `gh workflow run uptime.yml`, výsledky `gh run list --workflow uptime.yml`.
+- Plán GitHubu není přesný (zpoždění i desítky minut) a **po 60 dnech bez aktivity v repu se
+  plánované workflow vypne** — přijde o tom e-mail; zapnout `gh workflow enable uptime.yml`.
 
 ## `pull-env.sh`
 

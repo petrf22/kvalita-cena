@@ -12,6 +12,9 @@ ověřeno) — **aktivně nehotové jsou jen položky ze sekcí níž, shrnuté 
 
 ## Zbývá
 
+- [ ] **Zřídit heartbeat záloh na healthchecks.io** — skripty i workflow dostupnosti jsou
+  hotové (2026-11-16), chybí účet, dvě kontroly a jejich adresy v `.env` na serveru
+  a v `~/.config/kvalitacena/pull-backup.env` na PC (`ops/README.md`, „Monitorování").
 - [ ] **Smazat nešifrované kopie `kvalitacena-prod.env`** — na lokálním PC (`shred -u`), na
   externím disku a na NAS, až bude ověřená šifrovaná záloha z `ops/pull-env.sh`.
 - [ ] **Zapnout ostrou Content-Security-Policy** — `frontend/Caddyfile` ji od 2026-11-16 posílá

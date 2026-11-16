@@ -1,0 +1,86 @@
+name: Dostupnost
+
+# Hlídání produkce zvenčí (ops/README.md, „Monitorování"). Hlídač musí běžet mimo produkční
+# server i mimo PC provozovatele, jinak mlčí právě ve chvíli, kdy je potřeba. Když kontrola
+# spadne, GitHub pošle e-mail tomu, kdo plán naposledy upravil (výchozí nastavení notifikací
+# Actions) — žádná další služba ani tajemství.
+#
+# Dvě omezení, se kterými se počítá:
+# - Plán není přesný: ve špičce GitHub běh zpozdí i o desítky minut. Na „web je hodinu dole" to
+#   stačí, na minutovou přesnost ne.
+# - Po 60 dnech bez aktivity v repozitáři GitHub plánované workflow VYPNE (přijde o tom e-mail).
+#   Zapnout zpět jde na stránce workflow nebo `gh workflow enable uptime.yml`.
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *' # mimo celou hodinu, kdy je fronta plánovaných běhů nejdelší
+  workflow_dispatch:
+
+permissions: {}
+
+# Zpožděné běhy se neskládají za sebe — stačí jeden.
+concurrency:
+  group: uptime
+  cancel-in-progress: true
+
+env:
+  SITE_URL: https://kvalitacena.cz
+  API_URL: https://api.kvalitacena.cz
+  # Certifikát obnovuje Caddy sám ~30 dní před koncem; pod 14 dní znamená, že obnova nefunguje.
+  CERT_MIN_DAYS: '14'
+
+jobs:
+  check:
+    name: Web, API a certifikát
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Každá kontrola zkouší třikrát s odstupem — jediný nepovedený pokus (restart při nasazení,
+      # zakolísání sítě runneru) nemá budit e-mailem. Kroky běží všechny (`if: always()`), ať je
+      # z jednoho běhu vidět, co všechno nejde, ne jen první selhání.
+      - name: Backend /actuator/health
+        run: |
+          for i in 1 2 3; do
+            body="$(curl -sS -m 15 "$API_URL/actuator/health" || true)"
+            if [[ "$body" == *'"status":"UP"'* ]]; then echo "UP"; exit 0; fi
+            echo "pokus $i: '$body'"; sleep 20
+          done
+          echo "::error::Backend nehlásí UP na $API_URL/actuator/health"; exit 1
+
+      - name: Web (úvodní stránka)
+        if: always()
+        run: |
+          for i in 1 2 3; do
+            code="$(curl -sS -m 15 -o /dev/null -w '%{http_code}' "$SITE_URL/" || true)"
+            if [[ "$code" == "200" ]]; then echo "200"; exit 0; fi
+            echo "pokus $i: HTTP $code"; sleep 20
+          done
+          echo "::error::Web $SITE_URL neodpovídá 200"; exit 1
+
+      # Health backendu neříká nic o tom, jestli Caddy na doméně webu správně proxuje /graphql —
+      # přesně tudy chodí web. Dotaz na __typename nesahá do databáze a nic nezapisuje.
+      - name: GraphQL přes doménu webu
+        if: always()
+        run: |
+          for i in 1 2 3; do
+            body="$(curl -sS -m 15 -H 'Content-Type: application/json' \
+              -d '{"query":"{ __typename }"}' "$SITE_URL/graphql" || true)"
+            if [[ "$body" == *'"__typename":"Query"'* ]]; then echo "OK"; exit 0; fi
+            echo "pokus $i: '$body'"; sleep 20
+          done
+          echo "::error::GraphQL na $SITE_URL/graphql neodpovídá"; exit 1
+
+      - name: Platnost TLS certifikátů
+        if: always()
+        run: |
+          failed=0
+          for url in "$SITE_URL" "$API_URL"; do
+            host="${url#https://}"
+            if echo | openssl s_client -connect "$host:443" -servername "$host" 2>/dev/null \
+                | openssl x509 -noout -enddate -checkend "$((CERT_MIN_DAYS * 86400))"; then
+              echo "$host: v pořádku"
+            else
+              echo "::error::Certifikát pro $host vyprší do $CERT_MIN_DAYS dní nebo ho nejde přečíst"
+              failed=1
+            fi
+          done
+          exit "$failed"
