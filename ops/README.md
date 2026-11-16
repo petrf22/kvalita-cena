@@ -13,6 +13,23 @@ i zvenčí — `/actuator/health` je `UP` a `/actuator/info` hlásí přesně tu
 Zastaví se (bez checkoutu) na necommitnutých změnách v repu na serveru — tam se ručně needituje,
 takže by to byla rozdělaná práce, ne úmyslný stav.
 
+**Záloha před migrací.** Po sestavení a těsně před `up -d` skript sám spustí `backup.sh`.
+Liquibase migrace proběhnou až při startu nového backendu, takže je to poslední okamžik, kdy
+databáze odpovídá starému kódu — a denní záloha z 3:00 může být v tu chvíli 23 hodin stará.
+Selže-li záloha, nasazení se zastaví a staré kontejnery běží dál. `SKIP_BACKUP=1` ji vynechá
+(jen když záloha sama nejde udělat a nasazení tu chybu opravuje); `rollback.sh` pak nemá
+z čeho vrátit databázi.
+
+**Verze image.** `compose.prod.yaml` pojmenovává image `kvalitacena-backend`/`kvalitacena-web`
+bez tagu (`:latest`); skript je po sestavení označí i číslem verze (`kvalitacena-backend:0.13.6`)
+a nechává tři nejnovější (`KEEP_IMAGE_VERSIONS`), aktuální a předchozí vždy. Co bylo nasazené
+předtím a která záloha vznikla před migrací, zapisuje do `$BACKUP_ROOT/deploy-state.env` —
+odtud čte `rollback.sh`. Při selhaném ověření skript vypíše hotový příkaz k návratu.
+
+**Skript se po checkoutu spustí znovu ze souboru nového tagu.** Spouští se totiž z checkoutu
+předchozí verze — bez přespuštění by nasazení verze N řídil skript z N−1 a oprava nasazovacího
+postupu by se projevila až o vydání později.
+
 Po sestavení smaže build cache Dockeru starší než týden (`docker builder prune --filter
 until=168h`). Docker ji sám neuklízí a s každým nasazením roste — 2026-10 jí na serveru bylo
 21,6 GB, zatímco images měly 1,4 GB a volumes 74 MB. Nečekaný nárůst obsazeného disku se
@@ -23,6 +40,75 @@ Spustit z checkoutu repa na serveru:
 ```bash
 ./ops/deploy.sh 0.3.0
 ```
+
+## `rollback.sh`
+
+Návrat na dříve nasazenou verzi. Nic nestaví — přehodí `:latest` na image, které `deploy.sh`
+tehdy označil číslem verze, a appku restartuje (desítky sekund, ne minuty buildu).
+
+```bash
+./ops/rollback.sh --list                 # co je nasazené a kam se dá vrátit
+./ops/rollback.sh 0.13.5                 # jen kód, databáze zůstane, jak je
+./ops/rollback.sh 0.13.5 --restore-db    # + databáze a média ze zálohy před nasazením
+./ops/rollback.sh 0.13.5 --restore-db --backup 2026-11-16-0300   # konkrétní záloha
+```
+
+Před čímkoli se zeptá na potvrzení opsáním čísla verze (`--yes` ho přeskočí).
+
+**Kdy stačí kód a kdy `--restore-db`:**
+
+- Nasazení bez migrace, nebo s migrací, která jen přidává (nový sloupec/tabulka, o kterých
+  starý kód neví): stačí kód. Liquibase starší verze neznámé changesety v `databasechangelog`
+  ignoruje. O žádná data se nepřijde.
+- Migrace, po které starý kód nenastartuje (Hibernate `validate` spadne na přejmenovaném nebo
+  smazaném sloupci) nebo by psal špatně: `--restore-db`. Databáze se smaže a obnoví ze zálohy,
+  kterou `deploy.sh` udělal před migrací, média stejně. **Všechno zapsané od nasazení zmizí** —
+  skript proto před obnovou udělá ještě jednu zálohu aktuálního stavu, ze které jde zápisy
+  z mezidobí ručně dohledat.
+
+Bez `--backup` vezme `--restore-db` jen zálohu z posledního nasazení, a jen pokud patří k verzi,
+na kterou se vrací; jinou (starší denní) je potřeba jmenovat výslovně časovou značkou z názvu
+souboru. Po návratu se záloha ze stavu vyřadí, ať ji další návrat nepoužije omylem.
+
+**Repo zůstává na tagu novější verze** — skript ho nepřepíná (`compose.prod.yaml` starého tagu
+nemusí pojmenované image znát). `deploy.sh` si příště dosavadní verzi přečte ze stavového
+souboru, ne z repa.
+
+**První nasazení tímhle postupem** (vydání následující po 0.13.6): na serveru ještě běží starý
+`deploy.sh`, který se sám nepřespustí. Aby záloha a verze image fungovaly hned, přepnout repo
+ručně a teprve pak nasadit: `git fetch origin --tags && git checkout vX.Y.Z && ./ops/deploy.sh
+X.Y.Z`. Běžící image (ještě pod starým jménem) skript uschová pod číslem dosavadní verze, takže
+se dá couvnout i z tohohle prvního nasazení.
+
+### Zkouška nasazení nanečisto
+
+Celý cyklus nasazení → návrat jde vyzkoušet na vývojovém PC bez dotyku produkce i vývojové
+databáze — takhle byl skript ověřen (2026-11-16). V čistém klonu repa (`deploy.sh` vyžaduje
+čistý pracovní strom a existující tagy) založit `.env` s vlastním jménem projektu a přiložit
+druhý compose soubor s jinými porty a jménem volume médií:
+
+```bash
+# .env v klonu (vedle hodnot z .env.example; SITE_ADDRESS/API_ADDRESS nechat na *.localhost)
+COMPOSE_PROJECT_NAME=kctest
+COMPOSE_OVERRIDE_FILE=/cesta/override.yaml
+BACKUP_ROOT=/cesta/backups
+MEDIA_VOLUME=kctest-media
+```
+
+```yaml
+# override.yaml
+services:
+  postgres:
+    ports: !override ['127.0.0.1:15432:5432']
+  web:
+    ports: !override ['127.0.0.1:18080:80']
+volumes:
+  kvalita-a-cena-media-prod:
+    name: kctest-media
+```
+
+`COMPOSE_OVERRIDE_FILE` čtou všechny tři skripty (`deploy.sh`, `rollback.sh`, `backup.sh`); na
+produkci se nenastavuje. Úklid: `docker compose -p kctest down -v` a `docker volume rm kctest-media`.
 
 ## `prod-prompt.sh`
 
