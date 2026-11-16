@@ -188,6 +188,10 @@ dependencies {
 
     // Jednotkové testy čisté logiky (PriceChartGeometry) bez Androidu/emulátoru.
     testImplementation("junit:junit:4.13.2")
+    // Jen pro GraphQlSchemaContractTest — validace dotazů z GraphQlClient.kt proti schématu
+    // backendu. MIT, stejná knihovna a řada, na které backend schéma provozuje (přes
+    // spring-boot-starter-graphql); do APK se nedostane, je jen v testovací classpath.
+    testImplementation("com.graphql-java:graphql-java:25.1")
 }
 
 // ---- Publikace: podepsaný a OVĚŘENÝ release (docs/vydani.md, "Podpisový klíč" a "Nahrávaný
