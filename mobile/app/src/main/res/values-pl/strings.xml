@@ -415,7 +415,7 @@
     <string name="store_picker_open_location_settings">Włącz lokalizację</string>
     <string name="store_picker_location_timeout">Nie udało się ustalić lokalizacji — w budynku chwilę to trwa.</string>
     <string name="store_picker_retry">Spróbuj ponownie</string>
-    <string name="store_picker_nearby_failed">Nie udało się wczytać sklepów w okolicy — bez połączenia aplikacja zna tylko ostatnio użyty sklep.</string>
+    <string name="store_picker_nearby_failed">Nie udało się wczytać sklepów w okolicy — prawdopodobnie brak zasięgu.</string>
     <string name="store_picker_none_nearby_title">W okolicy nie znamy jeszcze żadnego sklepu</string>
     <string name="store_picker_none_nearby_hint">Katalog sklepów rośnie wraz z użytkownikami — jesteś tu prawdopodobnie pierwszy. Dodanie sklepu to kwestia kilku dotknięć.</string>
     <string name="store_picker_approximate_location">Masz przyznaną tylko przybliżoną lokalizację, którą system przesuwa nawet o kilometry — sklepu w promieniu kilkuset metrów tak nie znajdziemy. Zezwól aplikacji na dokładną lokalizację w ustawieniach systemu albo szukaj w szerszej okolicy.</string>
@@ -793,4 +793,17 @@
     <string name="receipt_item_rematch_open_target">Otwórz produkt</string>
     <!-- Účtenky — ladění (jen debug build) -->
     <string name="receipts_debug_check_status">Sprawdź przetwarzanie teraz (debug)</string>
+    <!-- Zápis ceny bez signálu — fronta v telefonu (price/PendingPriceStore) -->
+    <string name="price_entry_submit_queued">Zapisano w telefonie — cena zostanie wysłana po połączeniu.</string>
+    <string name="price_entry_submit_offline">Zapisz, wyślemy później</string>
+    <string name="price_entry_offline_hint">Cena zostanie zapisana w telefonie i wysłana automatycznie, gdy pojawi się połączenie. Oczekujące ceny znajdziesz w zakładce Skanuj.</string>
+    <string name="price_entry_pending_basis_hint">Jeśli produkt jest sprzedawany na wagę, po jego odnalezieniu aplikacja zapyta, czy cena była za kilogram, litr czy sztukę.</string>
+    <string name="price_entry_pending_lookup_title">Produkt zostanie odnaleziony po połączeniu</string>
+    <string name="price_entry_pending_lookup_text">Bez zasięgu aplikacja nie ustali, o jaki produkt chodzi. Cenę możesz jednak zapisać — zostanie w telefonie, a produkt zostanie do niej dopasowany automatycznie, gdy pojawi się połączenie.</string>
+    <string name="price_entry_pending_lookup_online">Połączenie wróciło — spróbuj wczytać produkt ponownie.</string>
+    <string name="price_entry_pending_lookup_retry">Wczytaj ponownie</string>
+    <string name="pending_price_barcode">Kod %1$s</string>
+    <string name="store_picker_device_title">Sklepy zapamiętane w telefonie</string>
+    <string name="store_picker_device_hint">Bez zasięgu aplikacja proponuje sklepy, które telefon już wcześniej widział.</string>
+    <string name="store_picker_device_search_hint">Bez zasięgu szukam tylko wśród sklepów zapamiętanych w telefonie.</string>
 </resources>

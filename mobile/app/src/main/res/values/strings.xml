@@ -500,7 +500,7 @@
     <string name="store_picker_open_location_settings">Zapnout polohu</string>
     <string name="store_picker_location_timeout">Polohu se nepodařilo zjistit — uvnitř budovy to chvíli trvá.</string>
     <string name="store_picker_retry">Zkusit znovu</string>
-    <string name="store_picker_nearby_failed">Obchody v okolí se nepodařilo načíst — bez připojení appka zná jen naposledy použitý obchod.</string>
+    <string name="store_picker_nearby_failed">Obchody v okolí se nepodařilo načíst — nejspíš chybí signál.</string>
     <string name="store_picker_none_nearby_title">V okolí zatím žádný obchod neznáme</string>
     <string name="store_picker_none_nearby_hint">Katalog obchodů roste s uživateli — tenhle jsi tu nejspíš první. Založit ho je otázka pár klepnutí.</string>
     <string name="store_picker_approximate_location">Máš povolenou jen přibližnou polohu, kterou systém posouvá až o kilometry — obchod v okruhu pár set metrů tak najít nejde. Povol appce přesnou polohu v nastavení systému, nebo hledej v širším okolí.</string>
@@ -878,4 +878,17 @@
     <string name="receipt_item_rematch_open_target">Otevřít zboží</string>
     <!-- Účtenky — ladění (jen debug build) -->
     <string name="receipts_debug_check_status">Zkontrolovat zpracování teď (ladění)</string>
+    <!-- Zápis ceny bez signálu — fronta v telefonu (price/PendingPriceStore) -->
+    <string name="price_entry_submit_queued">Uloženo v telefonu — cena se odešle po připojení.</string>
+    <string name="price_entry_submit_offline">Uložit, odešle se později</string>
+    <string name="price_entry_offline_hint">Cena se uloží v telefonu a odešle se sama, jakmile bude připojení. Čekající ceny najdeš na záložce Sken.</string>
+    <string name="price_entry_pending_basis_hint">Jestli se zboží prodává na váhu, appka se po dohledání zeptá, zda byla cena za kilogram, litr, nebo kus.</string>
+    <string name="price_entry_pending_lookup_title">Zboží se dohledá po připojení</string>
+    <string name="price_entry_pending_lookup_text">Bez signálu appka nezjistí, o jaké zboží jde. Cenu ale zapsat můžeš — uloží se v telefonu a zboží se k ní dohledá samo, až bude připojení.</string>
+    <string name="price_entry_pending_lookup_online">Připojení je zpět — zkus zboží načíst znovu.</string>
+    <string name="price_entry_pending_lookup_retry">Zkusit načíst znovu</string>
+    <string name="pending_price_barcode">Kód %1$s</string>
+    <string name="store_picker_device_title">Obchody z paměti telefonu</string>
+    <string name="store_picker_device_hint">Bez signálu appka nabízí obchody, které telefon už dřív viděl.</string>
+    <string name="store_picker_device_search_hint">Bez signálu hledám jen v obchodech z paměti telefonu.</string>
 </resources>

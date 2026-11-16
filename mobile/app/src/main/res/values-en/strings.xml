@@ -415,7 +415,7 @@
     <string name="store_picker_open_location_settings">Turn on location</string>
     <string name="store_picker_location_timeout">Could not determine your location — indoors it takes a while.</string>
     <string name="store_picker_retry">Try again</string>
-    <string name="store_picker_nearby_failed">Nearby stores could not be loaded — without a connection the app only knows the store you used last.</string>
+    <string name="store_picker_nearby_failed">Nearby stores could not be loaded — probably no signal.</string>
     <string name="store_picker_none_nearby_title">We do not know any store around here yet</string>
     <string name="store_picker_none_nearby_hint">The store catalogue grows with its users — you are probably the first one here. Adding it takes a few taps.</string>
     <string name="store_picker_approximate_location">You have only granted approximate location, which the system shifts by up to kilometres — a store within a few hundred metres cannot be found that way. Allow precise location in system settings, or search a wider area.</string>
@@ -793,4 +793,17 @@
     <string name="receipt_item_rematch_open_target">Open product</string>
     <!-- Účtenky — ladění (jen debug build) -->
     <string name="receipts_debug_check_status">Check processing now (debug)</string>
+    <!-- Zápis ceny bez signálu — fronta v telefonu (price/PendingPriceStore) -->
+    <string name="price_entry_submit_queued">Saved on your phone — the price will be sent once you\'re online.</string>
+    <string name="price_entry_submit_offline">Save, send later</string>
+    <string name="price_entry_offline_hint">The price will be saved on your phone and sent automatically once you\'re connected. You\'ll find pending prices on the Scan tab.</string>
+    <string name="price_entry_pending_basis_hint">If the product is sold by weight, the app will ask after looking it up whether the price was per kilogram, litre or piece.</string>
+    <string name="price_entry_pending_lookup_title">The product will be looked up once you\'re online</string>
+    <string name="price_entry_pending_lookup_text">Without a signal the app can\'t tell which product this is. You can still record the price — it will be saved on your phone and matched to the product automatically once you\'re connected.</string>
+    <string name="price_entry_pending_lookup_online">You\'re back online — try loading the product again.</string>
+    <string name="price_entry_pending_lookup_retry">Try loading again</string>
+    <string name="pending_price_barcode">Code %1$s</string>
+    <string name="store_picker_device_title">Stores remembered on this phone</string>
+    <string name="store_picker_device_hint">Without a signal the app offers stores this phone has seen before.</string>
+    <string name="store_picker_device_search_hint">Without a signal, only stores remembered on this phone are searched.</string>
 </resources>

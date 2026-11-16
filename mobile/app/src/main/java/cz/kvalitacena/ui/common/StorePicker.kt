@@ -50,6 +50,10 @@ private val ROW_MIN_HEIGHT = 44.dp
  * Prázdný stav neříká jen "nic jsme nenašli": vysvětlí proč a nabídne pokračování včetně
  * nabídky z OpenStreetMap ([osmState]), viz docs/design.md, "Čtyři stavy každé obrazovky".
  *
+ * Bez signálu ([suggestionsFromDevice]) nabízí obchody, které si telefon pamatuje
+ * (`price/StoreCache`), jako viditelný seznam s nadpisem, odkud jsou — v obchodě bez signálu je
+ * to jediná cesta k obchodu a nabídka bez vysvětlení by vypadala jako čerstvé hledání.
+ *
  * Nabídka z OpenStreetMap se standardně váže na hledání v okolí podle polohy telefonu. Detail
  * účtenky ji místo toho hledá kolem ADRESY vytištěné na účtence (`osmAtReceiptAddress`) — účtenka
  * se zpracovává doma, kde poloha telefonu o obchodu nic neříká. Pak se sekce ukáže i bez
@@ -85,6 +89,11 @@ fun StorePicker(
   osmAtReceiptAddress: Boolean = false,
   /** Systém dává jen zaokrouhlenou polohu — v malém okruhu pak nemá co najít, viz [EmptyNearby]. */
   approximateLocation: Boolean = false,
+  /**
+   * [suggestions] jsou obchody z paměti telefonu, ne odpověď serveru (zápis ceny bez signálu,
+   * `PriceEntryViewModel.storeSuggestionsFromDevice`).
+   */
+  suggestionsFromDevice: Boolean = false,
   isLoggedIn: Boolean,
   homeCountry: String?,
   modifier: Modifier = Modifier,
@@ -137,8 +146,29 @@ fun StorePicker(
       is NearbyState.Loaded -> if (nearbyState.stores.isEmpty()) {
         EmptyNearby(approximateLocation = approximateLocation)
       } else {
-        NearbyList(
-          stores = nearbyState.stores,
+        StoreRadioList(
+          title = stringResource(R.string.store_picker_nearby_title),
+          hint = null,
+          entries = nearbyState.stores.map { StoreEntry(it.store, distanceLabel(it.distanceMeters).asString()) },
+          selectedStoreId = selectedStoreId,
+          onSelect = onSelect,
+          homeCountry = homeCountry,
+        )
+      }
+    }
+
+    if (suggestionsFromDevice) {
+      // Psaní filtruje tutéž paměť telefonu (výsledky jsou v nabídce pole) — jen se řekne, že
+      // jinde se nehledá. Bez psaní je paměť vidět jako seznam; s polohou a odpovědí serveru by
+      // tu stál seznam v okolí, proto ne u Loaded.
+      val typing = query.isNotBlank() && selectedStoreId == null
+      if (typing) {
+        StatusLine(stringResource(R.string.store_picker_device_search_hint), loading = false)
+      } else if (nearbyState !is NearbyState.Loaded) {
+        StoreRadioList(
+          title = stringResource(R.string.store_picker_device_title),
+          hint = stringResource(R.string.store_picker_device_hint),
+          entries = suggestions.map { StoreEntry(it, distance = null) },
           selectedStoreId = selectedStoreId,
           onSelect = onSelect,
           homeCountry = homeCountry,
@@ -179,7 +209,8 @@ fun StorePicker(
 
     // Mapa se sama schová, když v suggestions není obchod se souřadnicemi (StoreMap.stores.isEmpty()),
     // a dlaždice se stahují až po klepnutí na "Zobrazit obchody na mapě" (docs/soukromi.md).
-    if (suggestions.isNotEmpty()) {
+    // Bez signálu ne — dlaždice by se stejně nenačetly a tlačítko by nevedlo nikam.
+    if (suggestions.isNotEmpty() && !suggestionsFromDevice) {
       StoreMap(
         stores = suggestions,
         selectedStoreId = selectedStoreId,
@@ -191,40 +222,46 @@ fun StorePicker(
   }
 }
 
+/** Řádek seznamu obchodů — [distance] chybí u obchodů z paměti telefonu bez známé polohy. */
+private data class StoreEntry(val store: Store, val distance: String?)
+
+/** Obchody v okolí, nebo bez signálu obchody z paměti telefonu — stejný vzhled, jiný nadpis. */
 @Composable
-private fun NearbyList(
-  stores: List<NearbyStore>,
+private fun StoreRadioList(
+  title: String,
+  hint: String?,
+  entries: List<StoreEntry>,
   selectedStoreId: String?,
   onSelect: (Store) -> Unit,
   homeCountry: String?,
 ) {
-  var showAll by remember(stores) { mutableStateOf(false) }
-  val visible = if (showAll) stores else stores.take(VISIBLE_NEARBY_COUNT)
+  var showAll by remember(entries) { mutableStateOf(false) }
+  val visible = if (showAll) entries else entries.take(VISIBLE_NEARBY_COUNT)
 
   Column(modifier = Modifier.padding(top = Spacing.sm)) {
-    Text(
-      stringResource(R.string.store_picker_nearby_title),
-      style = MaterialTheme.typography.titleSmall,
-    )
-    visible.forEach { nearby ->
+    Text(title, style = MaterialTheme.typography.titleSmall)
+    hint?.let {
+      Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    visible.forEach { entry ->
       NearbyRow(
-        label = storeLabel(nearby.store, homeCountry),
-        distance = distanceLabel(nearby.distanceMeters).asString(),
+        label = storeLabel(entry.store, homeCountry),
+        distance = entry.distance,
         // Provozovna od nedůvěryhodného autora čeká na potvrzení dalších přispěvatelů
         // (docs/reputace.md) a vidí ji jen autor — bez štítku by ji člověk považoval za
         // běžný obchod a příště ji založil znovu.
-        note = if (nearby.store.pendingConfirmation) {
+        note = if (entry.store.pendingConfirmation) {
           stringResource(R.string.store_picker_pending_confirmation)
         } else {
           null
         },
-        selected = nearby.store.id == selectedStoreId,
-        onClick = { onSelect(nearby.store) },
+        selected = entry.store.id == selectedStoreId,
+        onClick = { onSelect(entry.store) },
       )
     }
-    if (!showAll && stores.size > VISIBLE_NEARBY_COUNT) {
+    if (!showAll && entries.size > VISIBLE_NEARBY_COUNT) {
       TextButton(onClick = { showAll = true }) {
-        Text(stringResource(R.string.store_picker_show_more, stores.size - VISIBLE_NEARBY_COUNT))
+        Text(stringResource(R.string.store_picker_show_more, entries.size - VISIBLE_NEARBY_COUNT))
       }
     }
   }
@@ -233,7 +270,7 @@ private fun NearbyList(
 @Composable
 private fun NearbyRow(
   label: String,
-  distance: String,
+  distance: String?,
   note: String?,
   selected: Boolean,
   onClick: () -> Unit,
@@ -253,12 +290,14 @@ private fun NearbyRow(
         Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
       }
     }
-    Text(
-      distance,
-      style = MaterialTheme.typography.bodySmall,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-      modifier = Modifier.padding(start = Spacing.sm),
-    )
+    distance?.let {
+      Text(
+        it,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = Spacing.sm),
+      )
+    }
   }
 }
 

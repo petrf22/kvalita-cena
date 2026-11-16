@@ -83,6 +83,14 @@ class PriceEntryViewModel(
   var storeQuery by mutableStateOf("")
   var storeSuggestions by mutableStateOf<List<Store>>(emptyList())
     private set
+
+  /**
+   * [storeSuggestions] nejsou čerstvá odpověď serveru, ale obchody z paměti telefonu
+   * (`price/StoreCache`) — bez signálu. StorePicker je pak ukáže jako viditelný seznam
+   * s vysvětlením, odkud jsou; jinak by nabídka naslepo vypadala jako výsledek hledání.
+   */
+  var storeSuggestionsFromDevice by mutableStateOf(false)
+    private set
   var storeSearching by mutableStateOf(false)
     private set
   var selectedStore by mutableStateOf<Store?>(null)
@@ -338,18 +346,21 @@ class PriceEntryViewModel(
     if (query.isBlank()) {
       lastStoreStore.clear()
       storeScopeMismatch = false
-      storeSuggestions = emptyList()
+      // Bez signálu by vymazání pole zahodilo i nabídku z paměti telefonu — a jinou cestu
+      // k obchodu uživatel offline nemá. Vrátí se tedy celá, nejbližší první.
+      if (isOnline()) showSuggestions(emptyList(), fromDevice = false)
+      else showSuggestions(offlineStoreSuggestions(storeCache.all(), lastLat, lastLon), fromDevice = true)
       return
     }
     storeSearchJob = viewModelScope.launch {
       delay(STORE_SEARCH_DEBOUNCE_MS)
       storeSearching = true
       try {
-        storeSuggestions = graphQlClient.searchStores(query = query).items
+        showSuggestions(graphQlClient.searchStores(query = query).items, fromDevice = false)
       } catch (e: Exception) {
         // Chyba našeptávače nesmí blokovat zápis — seznam z okolí a ruční výběr fungují dál.
         // Bez signálu aspoň hledání v obchodech, které si zařízení pamatuje.
-        if (shouldQueueAfterFailure(e)) storeSuggestions = filterCachedStores(storeCache.all(), query)
+        if (shouldQueueAfterFailure(e)) showSuggestions(filterCachedStores(storeCache.all(), query), fromDevice = true)
       } finally {
         storeSearching = false
       }
@@ -374,10 +385,16 @@ class PriceEntryViewModel(
     storeQuery = storeLabel(store, countryStore.country)
   }
 
+  /** Jediné místo, kde se mění nabídka obchodů — ať příznak původu nikdy neodbloudí od seznamu. */
+  private fun showSuggestions(stores: List<Store>, fromDevice: Boolean) {
+    storeSuggestions = stores
+    storeSuggestionsFromDevice = fromDevice && stores.isNotEmpty()
+  }
+
   /** Návrat z formuláře nového obchodu (StoreFormScreen) — rovnou ho vybrat. */
   fun onNewStoreCreated(store: Store) {
     onStoreSelected(store)
-    storeSuggestions = emptyList()
+    showSuggestions(emptyList(), fromDevice = false)
     // Nabídka z OSM je po založení zastaralá — obsahuje i obchod, který právě vznikl, a jeho
     // dalším klepnutím by uživatel mířil na duplicitu. Načte se znovu, až si o ni řekne (nebo
     // sama, když vlastní katalog v okolí pořád nic nemá — server nový obchod už odfiltruje).
@@ -425,7 +442,7 @@ class PriceEntryViewModel(
    */
   private fun offerCachedStoresIfOffline() {
     if (isOnline() || storeSuggestions.isNotEmpty()) return
-    storeSuggestions = offlineStoreSuggestions(storeCache.all(), null, null)
+    showSuggestions(offlineStoreSuggestions(storeCache.all(), null, null), fromDevice = true)
   }
 
   fun onLocationResolved(lat: Double, lon: Double) {
@@ -461,13 +478,13 @@ class PriceEntryViewModel(
         storeCache.remember(stores.map { it.store })
         // Nabídka jde do stejného seznamu jako našeptávač, aby měl StorePicker jeden zdroj
         // pravdy i pro mapu; psaní do pole ji přepíše, což je správně.
-        storeSuggestions = stores.map { it.store }
+        showSuggestions(stores.map { it.store }, fromDevice = false)
         applyPreselection()
       } catch (e: Exception) {
         nearbyState = NearbyState.Failed(e.toUiText())
         // Server neodpověděl, ale poloha je známá — nabídka z paměti zařízení, nejbližší první.
         if (shouldQueueAfterFailure(e)) {
-          storeSuggestions = offlineStoreSuggestions(storeCache.all(), lat, lon)
+          showSuggestions(offlineStoreSuggestions(storeCache.all(), lat, lon), fromDevice = true)
         }
         applyPreselection()
       }
