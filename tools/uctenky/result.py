@@ -39,11 +39,20 @@ def to_payload(document: dict, raw_text: str | None, model: str,
                dictionary: pretty.Dictionary | None = None, prettifier=None, log=print,
                classifier=None, categories: list[dict] | None = None) -> dict:
     status = status_of(document)
+    # Které modely za výsledkem stojí. OCR model má na serveru vlastní sloupec
+    # (ai.receipt_job.model), textové modely by jinak nebyly zapsané nikde — a bez nich nejde
+    # z provozních dat poznat, jestli jejich výměna pomohla (ops/sql/receipt-quality.sql).
+    # Jdou do `extraction`, což je volný JSON: žádná migrace ani změna kontraktu workeru.
+    models = {
+        "ocr": model,
+        "pretty": getattr(prettifier, "model", None),
+        "classify": getattr(classifier, "model", None),
+    }
     payload = {
         "status": status,
         "model": model,
         "rawText": raw_text,
-        "extraction": document,
+        "extraction": {**document, "models": {key: value for key, value in models.items() if value}},
         "lines": [],
     }
     if status != "PROCESSED":

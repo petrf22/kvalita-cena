@@ -46,14 +46,39 @@ class RegresniSadaTest(unittest.TestCase):
     def test_kazdy_profil_retezce_ma_aspon_jeden_pripad(self):
         """Seznam profilů bez případu je vidět v testu, ne až když ho rozbije cizí úprava."""
         covered = {regrese.load_expected(case)["profile"] for case in self.cases}
-        known = set(parse.profiles.names()) | {"generic"}
+        known = set(parse.profiles.names()) | {parse.profiles.generic.PROFILE.name}
         self.assertEqual(known - covered, regrese_bez_pripadu(),
                          "profil přibyl nebo dostal případ — uprav seznam v regrese_bez_pripadu()")
 
 
 def regrese_bez_pripadu() -> set[str]:
     """Profily, pro které v gitu zatím není anonymizovaná účtenka. Cílem je prázdná množina."""
-    return {"coop", "generic"}
+    return {"coop", "obecny"}
+
+
+class ModelyVeVysledkuTest(unittest.TestCase):
+    """Worker k výsledku zapisuje, které modely za ním stojí (ops/sql/receipt-quality.sql)."""
+
+    def test_extraction_nese_nazvy_modelu_a_puvodni_dokument(self):
+        import result as result_mod
+
+        class Named:
+            def __init__(self, model):
+                self.model = model
+
+        document = regrese.analyze(regrese.GIT_ROOT / "albert-plny")
+        payload = result_mod.to_payload(document, "text", "ocr-x", None, Named("text-y"), print, None, None)
+        self.assertEqual(payload["extraction"]["models"], {"ocr": "ocr-x", "pretty": "text-y"})
+        self.assertEqual(payload["model"], "ocr-x")
+        # Server z extraction čte totalMatches (ReceiptWorkerService.sumCheck) — nesmí zmizet.
+        self.assertEqual({k: v for k, v in payload["extraction"].items() if k != "models"}, document)
+
+    def test_bez_modelu_zadne_prazdne_klice(self):
+        import result as result_mod
+
+        document = regrese.analyze(regrese.GIT_ROOT / "albert-plny")
+        payload = result_mod.to_payload(document, None, None)
+        self.assertEqual(payload["extraction"]["models"], {})
 
 
 class NastrojTest(unittest.TestCase):
