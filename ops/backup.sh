@@ -45,6 +45,18 @@ fi
 set -a && source "$ENV_FILE" && set +a
 
 mkdir -p "$BACKUP_ROOT"
+
+# Název nese čas na minuty, takže druhý běh v téže minutě by první zálohu PŘEPSAL — a při
+# selhání by ji `cleanup_partial` níž dokonce smazal. Není to jen teorie: ops/rollback.sh dělá
+# pojistnou zálohu těsně před obnovou a při zkoušce (2026-11-16) jí takhle přepsal zálohu před
+# nasazením, ze které se vzápětí obnovovalo — obnovil se tedy stav, který se měl zahodit.
+# Formát názvu zůstává (čte ho retence i pull-backup.sh), skript jen počká na další minutu.
+while [[ -e "$BACKUP_ROOT/db-$TIMESTAMP.sql.gz" || -e "$BACKUP_ROOT/media-$TIMESTAMP.tar.gz" ]]; do
+  echo "[$TIMESTAMP] Záloha s touhle časovou značkou už existuje — čekám na další minutu, ať ji nepřepíšu."
+  sleep $(( 61 - 10#$(date +%S) ))
+  TIMESTAMP="$(date +%F-%H%M)"
+done
+
 rotate_log "$BACKUP_ROOT/backup.log" 524288 2000
 
 # Smazat rozdělané soubory TOHOTO běhu při jakémkoli selhání — jinak po pádu uprostřed `pg_dump`
