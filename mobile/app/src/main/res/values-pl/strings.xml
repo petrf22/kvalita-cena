@@ -806,4 +806,49 @@
     <string name="store_picker_device_title">Sklepy zapamiętane w telefonie</string>
     <string name="store_picker_device_hint">Bez zasięgu aplikacja proponuje sklepy, które telefon już wcześniej widział.</string>
     <string name="store_picker_device_search_hint">Bez zasięgu szukam tylko wśród sklepów zapamiętanych w telefonie.</string>
+    <!-- Čekající ceny — fronta cen zapsaných bez signálu (ui/pending/) -->
+    <string name="pending_prices_title">Oczekujące ceny</string>
+    <string name="pending_prices_intro">Ceny zapisane bez zasięgu zostaną wysłane automatycznie, gdy pojawi się połączenie. Na górze są te, które bez ciebie nie mogą zostać wysłane.</string>
+    <string name="pending_prices_send_now">Wyślij teraz</string>
+    <string name="pending_prices_sending">Wysyłam…</string>
+    <string name="pending_prices_offline">Jesteś offline — oczekujące ceny zostaną wysłane automatycznie po połączeniu.</string>
+    <string name="pending_prices_empty_title">Nic nie czeka na wysłanie</string>
+    <string name="pending_prices_empty_text">Gdy zapiszesz cenę w sklepie bez zasięgu, trafi tutaj i zostanie wysłana automatycznie, gdy pojawi się połączenie. Znajdziesz tu też ceny, przy których aplikacja potrzebuje twojej pomocy.</string>
+    <string name="pending_prices_section_attention">Wymagają twojej reakcji</string>
+    <string name="pending_prices_section_waiting">Czekają na wysłanie</string>
+    <string name="pending_price_observed_label">Zapisano</string>
+    <string name="pending_price_multibuy_amount">%1$d szt. za %2$s</string>
+    <string name="pending_price_status_waiting_network">Czeka na zasięg — zostanie wysłana automatycznie po połączeniu.</string>
+    <string name="pending_price_status_queued">Zostanie wysłana za chwilę.</string>
+    <string name="pending_price_status_sending">Wysyłanie…</string>
+    <string name="pending_price_status_lookup_later">Produkt zostanie dopasowany według kodu przy wysyłaniu.</string>
+    <string name="pending_price_status_product_unknown">Produktu z tym kodem nie ma w katalogu</string>
+    <string name="pending_price_status_product_unknown_text">Uzupełnij go, a cena zostanie wysłana automatycznie.</string>
+    <string name="pending_price_status_product_unknown_login">Produkt może uzupełnić tylko zalogowany użytkownik. Zaloguj się albo usuń cenę.</string>
+    <string name="pending_price_status_basis">Za co była cena?</string>
+    <string name="pending_price_status_basis_text">Produkt jest sprzedawany na wagę. Wybierz, czy cena na etykiecie była za kilogram, litr czy sztukę.</string>
+    <string name="pending_price_status_requires_login">Czeka na zalogowanie</string>
+    <string name="pending_price_status_requires_login_text">Cena została zapisana na koncie, które nie jest teraz zalogowane. Nie wysyłamy jej z innego konta ani bez logowania — zostanie wysłana, gdy zalogujesz się na tamto konto.</string>
+    <string name="pending_price_status_login_restored">Konto jest znowu zalogowane</string>
+    <string name="pending_price_status_login_restored_text">Cena nie została wysłana, dopóki konto, na którym ją zapisano, nie było zalogowane. Teraz już jest — stuknij Spróbuj ponownie.</string>
+    <string name="pending_price_status_update_required">Ta wersja aplikacji nie wyśle cen</string>
+    <string name="pending_price_status_update_required_text">Zaktualizuj aplikację i stuknij Spróbuj ponownie.</string>
+    <string name="pending_price_status_failed">Serwer nie przyjął ceny</string>
+    <string name="pending_price_status_failed_text">Spróbuj ponownie albo usuń cenę.</string>
+    <string name="pending_price_action_complete_product">Uzupełnij produkt</string>
+    <string name="pending_price_action_log_in">Zaloguj się</string>
+    <string name="pending_price_delete_title">Usunąć oczekującą cenę?</string>
+    <string name="pending_price_delete_text">Cena nie została jeszcze wysłana. Zostanie usunięta tylko z telefonu i nigdzie nie trafi.</string>
+    <plurals name="pending_prices_badge_waiting">
+        <item quantity="one">%d cena czeka na wysłanie</item>
+        <item quantity="few">%d ceny czekają na wysłanie</item>
+        <item quantity="many">%d cen czeka na wysłanie</item>
+        <item quantity="other">%d ceny czeka na wysłanie</item>
+    </plurals>
+    <plurals name="pending_prices_badge_attention">
+        <item quantity="one">%d cena wymaga twojej reakcji</item>
+        <item quantity="few">%d ceny wymagają twojej reakcji</item>
+        <item quantity="many">%d cen wymaga twojej reakcji</item>
+        <item quantity="other">%d ceny wymaga twojej reakcji</item>
+    </plurals>
 </resources>

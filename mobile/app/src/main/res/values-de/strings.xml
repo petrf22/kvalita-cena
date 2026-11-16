@@ -808,4 +808,45 @@
     <string name="store_picker_device_title">Auf dem Telefon gemerkte Geschäfte</string>
     <string name="store_picker_device_hint">Ohne Empfang bietet die App Geschäfte an, die dieses Telefon schon gesehen hat.</string>
     <string name="store_picker_device_search_hint">Ohne Empfang wird nur in den auf dem Telefon gemerkten Geschäften gesucht.</string>
+    <!-- Čekající ceny — fronta cen zapsaných bez signálu (ui/pending/) -->
+    <string name="pending_prices_title">Wartende Preise</string>
+    <string name="pending_prices_intro">Ohne Empfang erfasste Preise werden automatisch gesendet, sobald eine Verbindung besteht. Oben stehen die, die ohne dich nicht gesendet werden können.</string>
+    <string name="pending_prices_send_now">Jetzt senden</string>
+    <string name="pending_prices_sending">Wird gesendet…</string>
+    <string name="pending_prices_offline">Du bist offline — wartende Preise werden automatisch gesendet, sobald eine Verbindung besteht.</string>
+    <string name="pending_prices_empty_title">Nichts wartet auf das Senden</string>
+    <string name="pending_prices_empty_text">Wenn du einen Preis im Geschäft ohne Empfang erfasst, wird er hier gespeichert und automatisch gesendet, sobald eine Verbindung besteht. Hier findest du auch Preise, bei denen die App deine Hilfe braucht.</string>
+    <string name="pending_prices_section_attention">Brauchen deine Hilfe</string>
+    <string name="pending_prices_section_waiting">Warten auf das Senden</string>
+    <string name="pending_price_observed_label">Erfasst</string>
+    <string name="pending_price_multibuy_amount">%1$d Stück für %2$s</string>
+    <string name="pending_price_status_waiting_network">Wartet auf Empfang — wird automatisch gesendet, sobald eine Verbindung besteht.</string>
+    <string name="pending_price_status_queued">Wird gleich gesendet.</string>
+    <string name="pending_price_status_sending">Wird gesendet…</string>
+    <string name="pending_price_status_lookup_later">Die Ware wird beim Senden anhand des Codes zugeordnet.</string>
+    <string name="pending_price_status_product_unknown">Ware mit diesem Code fehlt im Katalog</string>
+    <string name="pending_price_status_product_unknown_text">Ergänze sie, dann wird der Preis automatisch gesendet.</string>
+    <string name="pending_price_status_product_unknown_login">Ware können nur angemeldete Nutzer ergänzen. Melde dich an oder lösche den Preis.</string>
+    <string name="pending_price_status_basis">Wofür galt der Preis?</string>
+    <string name="pending_price_status_basis_text">Die Ware wird nach Gewicht verkauft. Wähle, ob der Preis auf dem Schild pro Kilogramm, Liter oder Stück galt.</string>
+    <string name="pending_price_status_requires_login">Wartet auf Anmeldung</string>
+    <string name="pending_price_status_requires_login_text">Du hast den Preis unter einem Konto erfasst, das jetzt nicht angemeldet ist. Unter einem anderen Konto oder ohne Anmeldung wird er nicht gesendet — er geht raus, sobald du dich mit diesem Konto anmeldest.</string>
+    <string name="pending_price_status_login_restored">Das Konto ist wieder angemeldet</string>
+    <string name="pending_price_status_login_restored_text">Der Preis wurde nicht gesendet, solange das Konto, unter dem er erfasst wurde, abgemeldet war. Jetzt ist es angemeldet — tippe auf Erneut versuchen.</string>
+    <string name="pending_price_status_update_required">Diese App-Version kann keine Preise senden</string>
+    <string name="pending_price_status_update_required_text">Aktualisiere die App und tippe auf Erneut versuchen.</string>
+    <string name="pending_price_status_failed">Der Server hat den Preis nicht angenommen</string>
+    <string name="pending_price_status_failed_text">Versuche es erneut oder lösche den Preis.</string>
+    <string name="pending_price_action_complete_product">Ware ergänzen</string>
+    <string name="pending_price_action_log_in">Anmelden</string>
+    <string name="pending_price_delete_title">Wartenden Preis löschen?</string>
+    <string name="pending_price_delete_text">Der Preis wurde noch nicht gesendet. Er wird nur von diesem Telefon gelöscht und geht nirgendwohin.</string>
+    <plurals name="pending_prices_badge_waiting">
+        <item quantity="one">%d Preis wartet auf das Senden</item>
+        <item quantity="other">%d Preise warten auf das Senden</item>
+    </plurals>
+    <plurals name="pending_prices_badge_attention">
+        <item quantity="one">%d Preis braucht deine Hilfe</item>
+        <item quantity="other">%d Preise brauchen deine Hilfe</item>
+    </plurals>
 </resources>

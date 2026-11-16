@@ -59,9 +59,11 @@ import cz.kvalitacena.location.hasOnlyApproximateLocation
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.ProductImagePreview
 import cz.kvalitacena.ui.common.SELECTABLE_PRICE_KINDS
+import cz.kvalitacena.ui.common.SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES
 import cz.kvalitacena.ui.common.formatShortDate
 import cz.kvalitacena.ui.common.netContentLabel
 import cz.kvalitacena.ui.common.priceKindLabel
+import cz.kvalitacena.ui.common.quantityBasisLabel
 import cz.kvalitacena.ui.common.productImageUrl
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.StorePicker
@@ -82,17 +84,6 @@ private val PRICE_INPUT_PATTERN = Regex("^\\d*[.,]?\\d*$")
 
 // Jen celé číslo — počet kusů u MULTIBUY ("3 za 50").
 private val QUANTITY_INPUT_PATTERN = Regex("^\\d*$")
-
-private val QUANTITY_BASIS_LABEL_RES = mapOf(
-  "PACKAGE" to R.string.quantity_basis_package,
-  "PER_KG" to R.string.quantity_basis_per_kg,
-  "PER_L" to R.string.quantity_basis_per_l,
-  "PER_PIECE" to R.string.quantity_basis_per_piece,
-)
-
-/** Nabídka pro váhové zboží (isVariableWeight) — bez PACKAGE, ten je výchozí jen pro ostatní
- *  zboží a u váhového nedává smysl (cena na cedulce je vždy za kg/l/kus). Web: shared/enum-labels.ts. */
-private val SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES = listOf("PER_KG", "PER_L", "PER_PIECE")
 
 /**
  * Obrazovky 2–4 flow "sken → cena → výběr provozovny → odeslání". Vstupem
@@ -592,7 +583,7 @@ private fun QuantityBasisDropdown(selected: String, options: List<String>, onSel
 
   ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
     SingleLineTextField(
-      value = QUANTITY_BASIS_LABEL_RES[selected]?.let { stringResource(it) } ?: selected,
+      value = quantityBasisLabel(selected),
       onValueChange = {},
       readOnly = true,
       label = stringResource(R.string.quantity_basis_field_label),
@@ -602,7 +593,7 @@ private fun QuantityBasisDropdown(selected: String, options: List<String>, onSel
     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
       options.forEach { value ->
         DropdownMenuItem(
-          text = { Text(QUANTITY_BASIS_LABEL_RES[value]?.let { stringResource(it) } ?: value) },
+          text = { Text(quantityBasisLabel(value)) },
           onClick = {
             onSelect(value)
             expanded = false

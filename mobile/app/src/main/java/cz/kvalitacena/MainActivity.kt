@@ -61,6 +61,8 @@ import cz.kvalitacena.ui.navigation.ROUTE_RECEIPT_CAPTURE
 import cz.kvalitacena.ui.navigation.ROUTE_RECEIPT_DETAIL
 import cz.kvalitacena.ui.navigation.ROUTE_RECEIPT_REVIEW
 import cz.kvalitacena.ui.navigation.ROUTE_SCAN_CODE
+import cz.kvalitacena.ui.navigation.ROUTE_PENDING_PRICES
+import cz.kvalitacena.ui.pending.PendingPricesScreen
 import cz.kvalitacena.ui.navigation.receiptCaptureRoute
 import cz.kvalitacena.ui.navigation.receiptDetailRoute
 import cz.kvalitacena.ui.receipt.capture.ReceiptCaptureScreen
@@ -424,6 +426,13 @@ private fun AppScaffold() {
             NavigationResults.scannedCode = code
             navController.popBackStack()
           },
+        )
+      }
+      composable(ROUTE_PENDING_PRICES) {
+        PendingPricesScreen(
+          // Výchozí onCreated formuláře = zpět sem; výsledek se předá přes NavigationResults.
+          onCompleteProduct = { barcode -> navController.navigate(productFormRoute(barcode = barcode)) },
+          onOpenAccount = { navController.navigate(TopLevelDestination.ACCOUNT.route) { launchSingleTop = true } },
         )
       }
       composable(ROUTE_RECEIPTS) {

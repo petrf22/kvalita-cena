@@ -891,4 +891,49 @@
     <string name="store_picker_device_title">Obchody z paměti telefonu</string>
     <string name="store_picker_device_hint">Bez signálu appka nabízí obchody, které telefon už dřív viděl.</string>
     <string name="store_picker_device_search_hint">Bez signálu hledám jen v obchodech z paměti telefonu.</string>
+    <!-- Čekající ceny — fronta cen zapsaných bez signálu (ui/pending/) -->
+    <string name="pending_prices_title">Čekající ceny</string>
+    <string name="pending_prices_intro">Ceny zapsané bez signálu se odešlou samy, jakmile bude připojení. Nahoře jsou ty, které bez tebe odejít nemůžou.</string>
+    <string name="pending_prices_send_now">Odeslat teď</string>
+    <string name="pending_prices_sending">Odesílám…</string>
+    <string name="pending_prices_offline">Jsi offline — čekající ceny se odešlou samy po připojení.</string>
+    <string name="pending_prices_empty_title">Nic nečeká na odeslání</string>
+    <string name="pending_prices_empty_text">Když zapíšeš cenu v obchodě bez signálu, uloží se sem a odešle se sama, jakmile bude připojení. Najdeš tu i ceny, se kterými appka potřebuje pomoct.</string>
+    <string name="pending_prices_section_attention">Potřebují tvůj zásah</string>
+    <string name="pending_prices_section_waiting">Čekají na odeslání</string>
+    <string name="pending_price_observed_label">Zapsáno</string>
+    <string name="pending_price_multibuy_amount">%1$d ks za %2$s</string>
+    <string name="pending_price_status_waiting_network">Čeká na signál — odešle se sama po připojení.</string>
+    <string name="pending_price_status_queued">Odešle se za chvíli.</string>
+    <string name="pending_price_status_sending">Odesílá se…</string>
+    <string name="pending_price_status_lookup_later">Zboží se k ní dohledá podle kódu při odeslání.</string>
+    <string name="pending_price_status_product_unknown">Zboží s tímhle kódem v katalogu chybí</string>
+    <string name="pending_price_status_product_unknown_text">Doplň ho a cena odejde sama.</string>
+    <string name="pending_price_status_product_unknown_login">Zboží může doplnit jen přihlášený uživatel. Přihlas se, nebo cenu smaž.</string>
+    <string name="pending_price_status_basis">Za co byla cena?</string>
+    <string name="pending_price_status_basis_text">Zboží se prodává na váhu. Vyber, jestli cena na cenovce byla za kilogram, litr, nebo kus.</string>
+    <string name="pending_price_status_requires_login">Čeká na přihlášení</string>
+    <string name="pending_price_status_requires_login_text">Cenu jsi zapsal(a) pod účtem, který teď není přihlášený. Pod jiným účtem ani bez přihlášení se neposílá — odejde, až se tím účtem přihlásíš.</string>
+    <string name="pending_price_status_login_restored">Účet je zase přihlášený</string>
+    <string name="pending_price_status_login_restored_text">Cena se neodeslala, dokud nebyl přihlášený účet, pod kterým je zapsaná. Teď už je — klepni na Zkusit znovu.</string>
+    <string name="pending_price_status_update_required">Tahle verze appky ceny neodešle</string>
+    <string name="pending_price_status_update_required_text">Aktualizuj appku a klepni na Zkusit znovu.</string>
+    <string name="pending_price_status_failed">Server cenu nepřijal</string>
+    <string name="pending_price_status_failed_text">Zkus to znovu, nebo cenu smaž.</string>
+    <string name="pending_price_action_complete_product">Doplnit zboží</string>
+    <string name="pending_price_action_log_in">Přihlásit se</string>
+    <string name="pending_price_delete_title">Smazat čekající cenu?</string>
+    <string name="pending_price_delete_text">Cena se ještě neodeslala. Smaže se jen z telefonu a nikam neodejde.</string>
+    <plurals name="pending_prices_badge_waiting">
+        <item quantity="one">%d cena čeká na odeslání</item>
+        <item quantity="few">%d ceny čekají na odeslání</item>
+        <item quantity="many">%d ceny čeká na odeslání</item>
+        <item quantity="other">%d cen čeká na odeslání</item>
+    </plurals>
+    <plurals name="pending_prices_badge_attention">
+        <item quantity="one">%d cena potřebuje tvůj zásah</item>
+        <item quantity="few">%d ceny potřebují tvůj zásah</item>
+        <item quantity="many">%d ceny potřebuje tvůj zásah</item>
+        <item quantity="other">%d cen potřebuje tvůj zásah</item>
+    </plurals>
 </resources>
