@@ -1,0 +1,31 @@
+OBCHOD VZOR
+
+Vzor Market s.r.o.
+Nádražní 1
+11111 Vzorov
+IČO:12345678 DIČ:CZ12345678
+
+Účtenka č.: 1 Pokladna č.:001
+Datum usk.zdan. pln. 07.09.2026 10:15:00
+
+%D. Kód zb. Mn. Cena/MJ Cena celk.
+12 2410108 1,00 55,00 55,00
+FLYING GOOSE Chilli Omáčka Sriracha Hot 100ml
+12 2530013 2,00 165,00 330,00
+A Select Kimchi 490g
+21 1030023 1,00 339,90 339,90
+CHOYA SAKE vino 14,5 % 750 ml
+12 2020027 1,00 199,90 199,90
+BIBIGO Gyoza Dumpling S Krevety A
+Zeleninou 400g
+ZAOK 1,00 0,20 0,20
+ZAOKROUHLENÍ
+
+DPH Základ
+Sazba DPH 21% 58,99 280,91
+Sazba DPH 12% 62,71 522,39
+
+Celkem k úhradě 925,00
+Přijatá hotovost 925,00
+
+© 2000-2025 WinShop software www.winshop.cz
