@@ -9,6 +9,8 @@ import cz.kvalitacena.network.DisplayCurrencyInterceptor
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.MediaClient
 import cz.kvalitacena.network.NetworkMonitor
+import cz.kvalitacena.price.PendingPriceStore
+import cz.kvalitacena.price.StoreCache
 import cz.kvalitacena.receipt.PendingReceiptStore
 import cz.kvalitacena.receipt.ReceiptDraftStore
 import cz.kvalitacena.receipt.ReceiptPrefs
@@ -66,6 +68,13 @@ object AppContainer {
   lateinit var pendingReceipts: PendingReceiptStore
     private set
 
+  /** Ceny zapsané bez signálu, čekající na odeslání, a obchody známé zařízení pro výběr offline. */
+  lateinit var pendingPrices: PendingPriceStore
+    private set
+
+  lateinit var storeCache: StoreCache
+    private set
+
   @Synchronized
   fun init(context: Context) {
     if (::authRepository.isInitialized) return
@@ -79,6 +88,8 @@ object AppContainer {
     receiptPrefs = ReceiptPrefs(context.applicationContext)
     receiptDraft = ReceiptDraftStore(context.applicationContext.filesDir)
     pendingReceipts = PendingReceiptStore(context.applicationContext.filesDir)
+    pendingPrices = PendingPriceStore(context.applicationContext.filesDir)
+    storeCache = StoreCache(context.applicationContext.filesDir)
     // Jeden sdílený klient pro GraphQL/REST/Coil místo tří samostatných OkHttpClient()
     // instancí — sdílí connection pool a všude jde stejný Accept-Language i X-Display-Currency
     // (docs/lokalizace.md).
