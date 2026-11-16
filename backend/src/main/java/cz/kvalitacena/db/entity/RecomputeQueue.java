@@ -35,6 +35,11 @@ public class RecomputeQueue implements Persistable<Long> {
   @Column(name = "processed_at", columnDefinition = "TIMESTAMPTZ")
   private OffsetDateTime processedAt;
 
+  /** Kolikrát přepočet téhle položky selhal (PriceAggregationService.processQueue). */
+  @Builder.Default
+  @Column(name = "attempts", nullable = false)
+  private int attempts = 0;
+
   @PrePersist
   protected void onCreate() {
     enqueuedAt = OffsetDateTime.now();

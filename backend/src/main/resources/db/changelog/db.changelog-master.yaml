@@ -65,3 +65,5 @@ databaseChangeLog:
   - include: { file: 2026-11-06/01-product-merge-vote-adopted.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-11-07/01-receipt-store-confirmed-at.yaml, relativeToChangelogFile: true }
   - include: { file: 2026-11-08/01-receipt-loyalty-card.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-11-15/01-recompute-current-recency.yaml, relativeToChangelogFile: true }
+  - include: { file: 2026-11-15/02-recompute-queue-attempts.yaml, relativeToChangelogFile: true }
