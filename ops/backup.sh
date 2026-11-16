@@ -33,6 +33,8 @@ TIMESTAMP="$(date +%F-%H%M)"
 
 # shellcheck disable=SC1091
 source "$REPO_DIR/ops/lib-retention.sh"
+# shellcheck disable=SC1091
+source "$REPO_DIR/ops/lib-heartbeat.sh"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Chybí $ENV_FILE — bez POSTGRES_USER nejde spustit pg_dump." >&2
@@ -50,6 +52,21 @@ cleanup_partial() {
   rm -f "$BACKUP_ROOT/db-$TIMESTAMP.sql.gz" "$BACKUP_ROOT/media-$TIMESTAMP.tar.gz"
 }
 trap 'cleanup_partial' ERR
+
+# Heartbeat (ops/lib-heartbeat.sh): BACKUP_HEARTBEAT_URL z .env, prázdná = vypnuto. Výsledek se
+# hlásí v `trap EXIT`, ne na konci skriptu — pokryje i `exit 1` při plném disku níž, který
+# `trap ERR` nespouští. Chybějící .env výš se neohlásí (URL je právě v něm); to pozná služba
+# sama podle toho, že nepřišel žádný ping.
+report_heartbeat() {
+  local exit_code=$?
+  if (( exit_code == 0 )); then
+    ping_heartbeat "${BACKUP_HEARTBEAT_URL:-}"
+  else
+    ping_heartbeat "${BACKUP_HEARTBEAT_URL:-}" fail
+  fi
+}
+trap 'report_heartbeat' EXIT
+ping_heartbeat "${BACKUP_HEARTBEAT_URL:-}" start
 
 # Radši žádná nová záloha než zaplněný disk, který by shodil i běžící appku — kontrola PŘED
 # jakýmkoli zápisem, ne až po pg_dump.
