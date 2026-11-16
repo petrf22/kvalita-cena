@@ -314,7 +314,15 @@ class PriceEntryViewModel(
     if (state is NearbyState.Idle || state is NearbyState.Locating) return
     val nearby = (state as? NearbyState.Loaded)?.stores ?: emptyList()
     val locationKnown = state is NearbyState.Loaded
-    val candidate = storeToPreselect(rememberedStore, nearby, locationKnown) ?: return
+    val lat = lastLat
+    val lon = lastLon
+    val candidate = if (state is NearbyState.Failed && lat != null && lon != null) {
+      // Polohu známe, jen server neodpověděl: bez tohohle by se v pražském obchodě bez signálu
+      // předvybral brněnský obchod z minula a cena by se k němu omylem zapsala.
+      storeToPreselectOffline(rememberedStore, lat, lon, activeRadius.meters)
+    } else {
+      storeToPreselect(rememberedStore, nearby, locationKnown)
+    } ?: return
     if (product != null && !productAvailableAtStore(product!!, candidate)) return
     selectStore(candidate)
   }

@@ -122,4 +122,20 @@ class StorePickerLogicTest {
     assertEquals(listOf("a"), filterCachedStores(stores, "nádražní").map { it.id })
     assertEquals(emptyList<String>(), filterCachedStores(stores, "   ").map { it.id })
   }
+
+  @Test
+  fun bezSiteSeZnamouPolohouSeVzdalenyZapamatovanyObchodNepredvybere() {
+    val brno = cached("brno", "Albert Brno", "Brno", 49.1951, 16.6068)
+    // Telefon stojí v Praze, zapamatovaný obchod je v Brně.
+    assertNull(storeToPreselectOffline(brno, 50.0752, 14.4410, 500))
+    // Stojí u něj — předvybere se.
+    assertEquals("brno", storeToPreselectOffline(brno, 49.1952, 16.6069, 500)?.id)
+  }
+
+  @Test
+  fun bezSiteSeObchodBezSouradnicPredvybereProtozeHoNejdeVyvratit() {
+    val unknown = cached("x", "Obchod bez GPS", "Brno")
+    assertEquals("x", storeToPreselectOffline(unknown, 50.0752, 14.4410, 500)?.id)
+    assertNull(storeToPreselectOffline(null, 50.0752, 14.4410, 500))
+  }
 }

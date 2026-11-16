@@ -78,6 +78,20 @@ fun storeToPreselect(remembered: Store?, nearby: List<NearbyStore>, locationKnow
   return nearby.firstOrNull { it.store.id == remembered.id }?.store
 }
 
+/**
+ * Předvýběr, když POLOHA známá je, ale server neodpověděl (obchod bez signálu — GPS funguje
+ * i bez sítě). Seznam obchodů v okolí chybí, důkaz „je jinde" ale ne: stačí vzdálenost
+ * zapamatovaného obchodu. Mimo okruh se nepředvybere nic — stejně jako online, kde zapamatovaný
+ * obchod mezi nalezenými v okolí není — a uživatel vybírá z obchodů v paměti telefonu seřazených
+ * od nejbližšího. Obchod bez souřadnic se vyvrátit nedá, ten se předvybere jako bez polohy.
+ */
+fun storeToPreselectOffline(remembered: Store?, lat: Double, lon: Double, radiusMeters: Int): Store? {
+  if (remembered == null) return null
+  val storeLat = remembered.lat ?: return remembered
+  val storeLon = remembered.lon ?: return remembered
+  return remembered.takeIf { isWithin(distanceMeters(lat, lon, storeLat, storeLon), radiusMeters) }
+}
+
 private fun identity(name: String, city: String, street: String?): String =
   "${norm(name)}|${norm(city)}|${norm(street.orEmpty())}"
 
