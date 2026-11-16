@@ -1,5 +1,6 @@
 package cz.kvalitacena.service;
 
+import cz.kvalitacena.config.AggregationProperties;
 import cz.kvalitacena.db.entity.*;
 import cz.kvalitacena.db.repo.PriceCurrentRepository;
 import cz.kvalitacena.db.repo.PriceDailyRepository;
@@ -10,14 +11,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -27,8 +33,9 @@ import java.util.stream.Collectors;
  * přepočítat jen konkrétní buňky (produkt, obchod), ne celou tabulku — do fronty se zapisuje
  * synchronně při zápisu observace, samotný přepočet běží asynchronně přes {@link #processQueue()}.
  *
- * <p>Etapa 1 (MVP): váha záznamu je jen složka {@code L} z docs/reputace.md — anonym 0,15,
- * registrovaný 1,00. Plný vzorec (přesnost, zkušenost, stáří účtu, penalizace, skupiny
+ * <p>Etapa 1 (MVP): váha záznamu je složka {@code L} z docs/reputace.md — anonym 0,15,
+ * registrovaný 1,00 — a u aktuální ceny navíc {@code f_recency} ({@link #recencyFactor}).
+ * Plný vzorec (přesnost, zkušenost, stáří účtu, penalizace, skupiny
  * důvěry) přijde s reputačním systémem v etapě 2/3, až budou existovat data, ze kterých by
  * šel počítat (potvrzení, historie souhlasu).
  */
@@ -46,6 +53,8 @@ public class PriceAggregationService {
   private final PriceCurrentRepository priceCurrentRepository;
   private final PriceDailyRepository priceDailyRepository;
   private final ProductRepository productRepository;
+  private final AggregationProperties aggregationProperties;
+  private final PlatformTransactionManager transactionManager;
 
   @Transactional
   public void enqueueRecompute(Long productId, Long storeId, RecomputeReason reason) {
@@ -56,27 +65,69 @@ public class PriceAggregationService {
         .build());
   }
 
-  /** Drénuje frontu po dávkách — viz docs/datovy-model.md, "Agregace jsou tabulky, ne materialized view". */
+  /**
+   * Drénuje frontu po dávkách — viz docs/datovy-model.md, "Agregace jsou tabulky, ne materialized view".
+   *
+   * <p>Každá buňka má VLASTNÍ transakci. V jedné společné by výjimka z jediné buňky vrátila celou
+   * dávku, a protože se bere vždy čelo fronty, padala by tatáž dávka při každém běhu — agregace
+   * by tiše stála pro všechny. Buňce, která selže, se zvedne počítadlo pokusů a po
+   * {@code app.aggregation.queue-max-attempts} se přestane brát.
+   */
   @Scheduled(fixedDelay = 5000)
-  @Transactional
   public void processQueue() {
-    List<RecomputeQueue> pending = recomputeQueueRepository.findTop200ByProcessedAtIsNullOrderByEnqueuedAtAsc();
+    List<RecomputeQueue> pending = recomputeQueueRepository
+        .findTop200ByProcessedAtIsNullAndAttemptsLessThanOrderByEnqueuedAtAsc(aggregationProperties.getQueueMaxAttempts());
     if (pending.isEmpty()) return;
 
     // Víc událostí pro stejnou buňku (produkt, obchod) přepočítáme jen jednou za dávku.
     record Cell(Long productId, Long storeId) {
     }
-    Set<Cell> cells = pending.stream().map(q -> new Cell(q.getProductId(), q.getStoreId())).collect(Collectors.toSet());
+    Map<Cell, List<Long>> idsByCell = pending.stream().collect(Collectors.groupingBy(
+        q -> new Cell(q.getProductId(), q.getStoreId()), LinkedHashMap::new,
+        Collectors.mapping(RecomputeQueue::getId, Collectors.toList())));
 
-    for (Cell cell : cells) {
-      recomputeCell(cell.productId(), cell.storeId());
+    TransactionTemplate tx = new TransactionTemplate(transactionManager);
+    int failed = 0;
+    for (Map.Entry<Cell, List<Long>> entry : idsByCell.entrySet()) {
+      Cell cell = entry.getKey();
+      List<Long> ids = entry.getValue();
+      try {
+        tx.executeWithoutResult(status -> {
+          recomputeCell(cell.productId(), cell.storeId());
+          recomputeQueueRepository.markProcessed(ids, OffsetDateTime.now());
+        });
+      } catch (RuntimeException ex) {
+        failed++;
+        log.error("Přepočet buňky (produkt {}, obchod {}) selhal, položky fronty {} zůstávají nevyřízené.",
+            cell.productId(), cell.storeId(), ids, ex);
+        tx.executeWithoutResult(status -> recomputeQueueRepository.incrementAttempts(ids));
+      }
     }
 
-    OffsetDateTime now = OffsetDateTime.now();
-    pending.forEach(q -> q.setProcessedAt(now));
-    recomputeQueueRepository.saveAll(pending);
+    log.info("Přepočet cen: {} buněk (produkt, obchod) z {} položek fronty, selhalo {}.",
+        idsByCell.size(), pending.size(), failed);
+  }
 
-    log.info("Přepočet cen: {} buněk (produkt, obchod) z {} položek fronty.", cells.size(), pending.size());
+  /**
+   * Denní úklid fronty — vyřízené položky nemají po přepočtu žádný význam a bez mazání by
+   * tabulka rostla s každou zapsanou cenou. Položky, které vyčerpaly pokusy, se NEMAŽOU
+   * (nemají {@code processed_at}); úklid na ně jen upozorní v logu.
+   */
+  @Scheduled(cron = "@daily")
+  @Transactional
+  public void purgeProcessedQueue() {
+    OffsetDateTime cutoff = OffsetDateTime.now().minusDays(aggregationProperties.getQueueRetentionDays());
+    int deleted = recomputeQueueRepository.deleteProcessedBefore(cutoff);
+    if (deleted > 0) {
+      log.info("Fronta přepočtu: smazáno {} vyřízených položek starších {} dní.",
+          deleted, aggregationProperties.getQueueRetentionDays());
+    }
+    long stuck = recomputeQueueRepository
+        .countByProcessedAtIsNullAndAttemptsGreaterThanEqual(aggregationProperties.getQueueMaxAttempts());
+    if (stuck > 0) {
+      log.error("Fronta přepočtu: {} položek vyčerpalo pokusy a čeká na ruční zásah "
+          + "(agg.recompute_queue, processed_at IS NULL).", stuck);
+    }
   }
 
   private void recomputeCell(Long productId, Long storeId) {
@@ -124,12 +175,13 @@ public class PriceAggregationService {
 
   private void upsertPriceCurrent(Long productId, Long storeId, KindCurrency kindCurrency,
       List<PriceObservation> observations, boolean generic) {
-    WeightedStats stats = computeWeighted(observations);
-
     OffsetDateTime lastObservedAt = observations.stream()
         .map(PriceObservation::getObservedAt)
         .max(Comparator.naturalOrder())
         .orElse(null);
+
+    WeightedStats stats = computeWeighted(observations,
+        o -> weightFor(o).multiply(recencyFactor(o.getObservedAt(), lastObservedAt)));
 
     // MAX napříč observacemi buňky, ne medián — radši akci zobrazit o něco déle než skrýt
     // ještě platnou (docs/datovy-model.md). Vypršelou akci teprve filtruje čtecí vrstva
@@ -158,8 +210,8 @@ public class PriceAggregationService {
   }
 
   /**
-   * Denní řada pro graf (agg.price_daily) — používá TÝŽ {@link #computeWeighted}, tedy tytéž
-   * váhy (0,15 / 1,00) jako aktuální cena. f_recency z docs/reputace.md se na historii záměrně
+   * Denní řada pro graf (agg.price_daily) — používá TÝŽ {@link #computeWeighted} a tutéž
+   * složku L (0,15 / 1,00) jako aktuální cena. f_recency z docs/reputace.md se na historii záměrně
    * NEAPLIKUJE ("jen pro aktuální cenu, ne pro historii v grafu"), jinak by starší body v grafu
    * klesaly bez důvodu.
    *
@@ -178,7 +230,7 @@ public class PriceAggregationService {
         .collect(Collectors.groupingBy(o -> new DayKey(o.getPriceKind(), o.getCurrency(), utcDay(o.getObservedAt()))));
 
     byDay.forEach((key, group) -> {
-      WeightedStats stats = computeWeighted(group);
+      WeightedStats stats = computeWeighted(group, this::weightFor);
       priceDailyRepository.save(PriceDaily.builder()
           .productId(productId)
           .storeId(storeId)
@@ -210,9 +262,10 @@ public class PriceAggregationService {
    * Vážený medián a Kishova efektivní velikost vzorku — na jednom místě, aby se za čas
    * nerozešel denní ({@link #recomputeDaily}) a aktuální ({@link #upsertPriceCurrent}) medián.
    */
-  private WeightedStats computeWeighted(List<PriceObservation> observations) {
+  private WeightedStats computeWeighted(List<PriceObservation> observations,
+      Function<PriceObservation, BigDecimal> weight) {
     List<WeightedValue> values = observations.stream()
-        .map(o -> new WeightedValue(o.getUnitPrice(), o.getPriceAmount(), weightFor(o)))
+        .map(o -> new WeightedValue(o.getUnitPrice(), o.getPriceAmount(), weight.apply(o)))
         .sorted(Comparator.comparing(WeightedValue::unitPrice))
         .toList();
 
@@ -256,6 +309,24 @@ public class PriceAggregationService {
     // Bezkódová položka nemá jednoznačný identifikátor jako EAN — i shoda víc lidí na stejné
     // ceně je slabší důkaz, proto strop MEDIUM bez ohledu na n_eff (docs/reputace.md).
     return generic && raw == Confidence.HIGH ? Confidence.MEDIUM : raw;
+  }
+
+  /**
+   * {@code f_recency = 0,5^(stáří_dní / poločas)} z docs/reputace.md — bez něj by aktuální cena
+   * byla medián CELÉ historie buňky a po zdražení by ukazovala starou cenu, dokud nových zápisů
+   * není víc než starých.
+   *
+   * <p>Stáří se měří proti NEJNOVĚJŠÍMU záznamu skupiny, ne proti dnešku: vážený medián i
+   * Kishovo n_eff závisí jen na poměru vah a ten je u exponenciálního útlumu v čase stálý
+   * (posun reference vynásobí všechny váhy stejnou konstantou). Výsledek se tak mění jen
+   * s novou událostí a buňku není potřeba přepočítávat podle kalendáře.
+   */
+  private BigDecimal recencyFactor(OffsetDateTime observedAt, OffsetDateTime newest) {
+    double halfLifeDays = aggregationProperties.getRecencyHalfLifeDays();
+    if (halfLifeDays <= 0 || observedAt == null || newest == null) return BigDecimal.ONE;
+    double ageDays = Duration.between(observedAt, newest).toSeconds() / 86_400.0;
+    if (ageDays <= 0) return BigDecimal.ONE;
+    return BigDecimal.valueOf(Math.pow(0.5, ageDays / halfLifeDays)).setScale(6, RoundingMode.HALF_UP);
   }
 
   private BigDecimal weightFor(PriceObservation observation) {
