@@ -272,6 +272,30 @@ přestěhovalo do jiného adresáře a crontab volal starou cestu, shell selhal 
 logu (`docs/nasazeni.md`, sekce 1, „Přechod na CAX11"). Po přesunu repa zkontrolovat
 `crontab -l`; nejnovější soubor v `backup/` nesmí být starší než den.
 
+## `pull-env.sh`
+
+Stáhne produkční `.env` a uloží ho na lokální stroj **zašifrovaný** do
+`backup/kvalitacena-prod.env.gpg` (`gpg --symmetric`, AES-256). Čistý text se na lokální disk
+nezapíše vůbec — jde rourou ze `ssh` rovnou do `gpg`.
+
+V `.env` je `EMAIL_ENC_KEY`, `JWT_SECRET` a heslo k databázi. Záloha databáze leží ve stejné
+složce a obojí spolu putuje na externí disk a NAS, takže s nešifrovaným `.env` by nálezce disku
+přečetl e-maily všech uživatelů; samotný dump je bez klíče nečitelný.
+
+```bash
+./ops/pull-env.sh                                  # gpg se dvakrát zeptá na heslo
+gpg --decrypt backup/kvalitacena-prod.env.gpg      # obnova — čistý text jen na výstup
+```
+
+Spouští se ručně po každé změně `.env` na serveru (z cronu nejde, `gpg` se ptá na heslo). Heslo
+patří do správce hesel, **ne** na disk vedle zálohy — a nesmí se ztratit: bez něj je soubor
+k ničemu a po zániku serveru by s ním zmizel i klíč k e-mailům v záloze databáze. Nová kopie
+přepíše starou až po úspěšném zašifrování (dočasný soubor + přejmenování), takže přerušené
+stahování poslední dobrou zálohu nezničí.
+
+Skript nahrazuje dřívější `scp` do nešifrovaného `backup/kvalitacena-prod.env`. Starou kopii
+smazat přes `shred -u` (i na externím disku a NAS); skript na ni při každém běhu upozorní.
+
 ## Zkouška obnovy — udělat PŘED zapnutím cronu, ne až při skutečné nehodě
 
 `docs/nasazeni.md` to vyžaduje explicitně: „vyzkoušet obnovu na čistou instanci, ne jen že záloha
