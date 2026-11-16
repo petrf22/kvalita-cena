@@ -15,6 +15,13 @@ ověřeno) — **aktivně nehotové jsou jen položky ze sekcí níž, shrnuté 
 - [ ] **Zřídit heartbeat záloh na healthchecks.io** — skripty i workflow dostupnosti jsou
   hotové (2026-11-16), chybí účet, dvě kontroly a jejich adresy v `.env` na serveru
   a v `~/.config/kvalitacena/pull-backup.env` na PC (`ops/README.md`, „Monitorování").
+- [ ] **Smazat nešifrované kopie `kvalitacena-prod.env`** — na lokálním PC (`shred -u`), na
+  externím disku a na NAS, až bude ověřená šifrovaná záloha z `ops/pull-env.sh`.
+- [ ] **Zapnout ostrou Content-Security-Policy** — `frontend/Caddyfile` ji od 2026-11-16 posílá
+  jen jako `Content-Security-Policy-Report-Only`. Projít web s otevřenou konzolí prohlížeče
+  (přihlášení, hledání, detail zboží s grafem a fotkami, mapa obchodu, zápis ceny, účtenka,
+  zpětná vazba s proof-of-work); až konzole nehlásí žádné porušení, přejmenovat hlavičku na
+  `Content-Security-Policy`.
 - [ ] Před veřejnou betou vrátit `SPRING_PROFILES_ACTIVE` na `prod` a povolit indexaci
   (sekce 4) — tím se zároveň zapne `app.feedback.challenge.required` (viz níž), appka jinak
   drží prod hodnotu `true` implicitně, jen `beta` profil ji dočasně vrací na `false`.
@@ -106,6 +113,10 @@ před první pozvánkou.
   původnímu doporučení (heslo manažer/šifrovaný trezor) — nešifrovaný soubor na třech místech
   místo trezoru s přístupovou kontrolou, ale řeší hlavní riziko (výpadek/reinstalace serveru).
   Přesun do skutečného heslo manažeru zůstává volitelné vylepšení, ne blokující krok.
+  **Od 2026-11-16 šifrovaně**: kopii stahuje `ops/pull-env.sh` rovnou do
+  `backup/kvalitacena-prod.env.gpg` (AES-256, heslo ve správci hesel) — `EMAIL_ENC_KEY` v čistém
+  textu vedle zálohy databáze znamenal, že kdo má složku `backup/`, přečte e-maily všech
+  uživatelů (`ops/README.md`, „`pull-env.sh`").
 - [x] **SMTP pro OTP e-maily: Gigaserver, ne dedikovaný poskytovatel** — rozhodnuto 2026-08-22.
   Použije se schránka `kontakt@kvalitacena.cz` (sekce výš) jako SMTP účet, `mail.gigaserver.cz`
   port **587** (STARTTLS). Detaily a past s portem 465 viz sekce 3. Výměna za Resend/Postmark
