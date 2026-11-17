@@ -307,6 +307,12 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
   Kurátor označení (`LABEL_CURATOR`, `tools/uctenky/curate.py`) vidí jen agregovaná
   nespárovaná označení (viz výš) a zapisuje mapování označení → zboží
   (`core.product_store_label`). Cenu nezapisuje žádný z nich.
+- **Čekající cena zůstává v zařízení a patří účtu, který ji zapsal.** Fronta cen zapsaných bez
+  signálu (`price/PendingPriceStore`) drží čárový kód nebo id zboží, obchod, ceny, čas zápisu
+  a `publicUid` účtu — **žádnou polohu**. Po odeslání se položka smaže; pod jiným účtem ani
+  anonymně neodejde. Vedle ní si zařízení pamatuje obchody, které už vidělo (`price/StoreCache`)
+  — jen to, co server o obchodech veřejně vrací, ne polohu, se kterou se na ně ptalo. Vzdálenost
+  k nim se bez signálu počítá v zařízení z aktuální polohy a nikam se neposílá.
 - **Čekající účtenka patří účtu, který ji zařadil.** Mobilní fronta (offline odeslání) si
   k účtence uloží `publicUid` přihlášeného účtu (`sub` z access tokenu); po odhlášení
   a přihlášení někoho jiného v témže telefonu se účtenka neukáže ani neodešle, dokud se

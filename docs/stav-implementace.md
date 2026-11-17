@@ -316,6 +316,35 @@ Zapamatovaný obchod se od 2026-09 ukládá celý (`LastStoreStore` drží snaps
 takže v obchodě bez signálu je předvybraný bez jediného dotazu na server — dřív se detail vždy
 dotahoval přes `storeById` a offline nebyl k dispozici ani on.
 
+**Zápis ceny bez signálu (mobil, 2026-11).** Hlavní scénář appky je zápis u regálu, kde signál
+často není. Dřív sken bez sítě skončil hláškou „kód neznáme" a nabídkou založit zboží; teď se
+cena uloží do fronty v zařízení a odejde sama po připojení:
+
+- **Fronta** (`price/PendingPriceStore`, `filesDir/prices/pending/<uuid>.json`) drží čárový kód
+  nebo id zboží, obchod, ceny a **čas, kdy uživatel cenu viděl** — ten jde serveru jako
+  `observedAt`, takže `observed_at` ≠ `created_at` konečně nese skutečný rozdíl
+  (`docs/datovy-model.md`). Odesílá `PriceUploadWorker` (WorkManager, jen s připojením, bez GMS).
+- **Sken úplně bez signálu**: zboží se nenačte, cena se zapíše jen s kódem
+  (`PriceEntryViewModel.productPendingLookup`) a zboží dohledá až worker přes
+  `productLookupByCode`. Zboží, které katalog nezná (ani to, které zná jen Open Food Facts), se
+  **nikdy nezakládá samo** — položka přejde do stavu „Doplnit zboží" a uživatel ho založí
+  běžným formulářem (ODbL, `createProductFromOff`). U zboží na váhu se appka po dohledání
+  zeptá, jestli byla cena za kg, litr, nebo kus — naslepo se zapisuje „za balení".
+- **Opakované odeslání cenu nezdvojí**: server drží jeden záznam na uživatele, zboží, obchod,
+  druh ceny a den pozorování, a odpověď „už zapsáno" bere fronta jako úspěch
+  (`submitFailureAction`). U anonymního zápisu tahle pojistka na serveru není — ztracená
+  odpověď tam zdvojení způsobit může; vážený medián jeden anonymní záznam navíc unese.
+- **Výběr obchodu bez signálu**: obchody, které zařízení už vidělo (`price/StoreCache`, nejvýš
+  200, 90 dní), se nabídnou seřazené podle vzdálenosti — GPS funguje i bez sítě. Zapamatovaný
+  obchod se předvybere, jen když je v okruhu (`storeToPreselectOffline`).
+- **Obrazovka „Čekající ceny"** (`ui/pending/`) a odznak na skenu a v „Moje příspěvky": co čeká,
+  co potřebuje zásah (doplnit zboží, zvolit základ ceny, přihlásit se) a proč server cenu
+  odmítl. Cena odejde jen pod účtem, který ji zapsal; po jeho přihlášení se vrátí do fronty sama.
+
+Ověřeno v emulátoru 2026-11-16: zápis s vypnutou sítí, po zapnutí cena do několika sekund
+odešla a `observed_at` nese čas zápisu. Ručně zbývá odklikat neznámý kód, zboží na váhu,
+odhlášení s čekající cenou a tmavý režim.
+
 **Neimplementováno na webu** — `shared/store-picker.ts` má pořád tlačítko „Najít v okolí",
 pevný okruh a žádnou nabídku z OSM. Backend je připravený (dotazy jsou aditivní), chybí jen
 frontend.
@@ -661,7 +690,8 @@ samotné už implementované jsou, viz „Textové recenze" výš — chybí jen
 binární přihlášený/anonym, dokud neexistují skupiny důvěry), skupiny důvěry, plný reputační
 vzorec (jen složka `L` a `f_recency` u aktuální ceny), notifikace, lokální dodavatelé, OFF/OSM synchronizace mimo
 jednorázové geokódování adresy,
-`agg.price_weekly_national`, offline fronta v mobilu, konsolidační job nad uživatelskou vrstvou
+`agg.price_weekly_national`, offline fronta cen na webu (mobil ji má, viz „Zápis ceny bez
+signálu"), konsolidační job nad uživatelskou vrstvou
 (jen datový model a fronta, vyhodnocovací pravidlo zatím není známé — viz „Uživatelská vrstva
 nad globálními daty" výš), fotka jako důkaz ceny
 (`core.price_observation`, `f_evid` v `docs/reputace.md` — fotky zatím váží jen na katalogový

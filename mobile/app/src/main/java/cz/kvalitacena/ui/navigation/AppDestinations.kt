@@ -70,6 +70,7 @@ fun nestedRouteTitle(route: String?): Int = when (route) {
   ROUTE_RECEIPT_CAPTURE -> R.string.receipt_capture_title
   ROUTE_RECEIPT_REVIEW -> R.string.receipt_review_title
   ROUTE_SCAN_CODE -> R.string.scan_code_title
+  ROUTE_PENDING_PRICES -> R.string.pending_prices_title
   else -> R.string.app_name
 }
 
@@ -181,3 +182,9 @@ const val ROUTE_RECEIPT_REVIEW = "receipt_review"
  * formuláře (NavigationResults.scannedCode).
  */
 const val ROUTE_SCAN_CODE = "scan_code"
+
+/**
+ * „Čekající ceny" — fronta cen zapsaných bez signálu ([cz.kvalitacena.ui.pending.PendingPricesScreen]).
+ * Vstup přes odznak na záložce Sken a v „Moje příspěvky", jen když fronta není prázdná.
+ */
+const val ROUTE_PENDING_PRICES = "pending_prices"

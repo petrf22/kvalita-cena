@@ -78,6 +78,20 @@ fun storeToPreselect(remembered: Store?, nearby: List<NearbyStore>, locationKnow
   return nearby.firstOrNull { it.store.id == remembered.id }?.store
 }
 
+/**
+ * Předvýběr, když POLOHA známá je, ale server neodpověděl (obchod bez signálu — GPS funguje
+ * i bez sítě). Seznam obchodů v okolí chybí, důkaz „je jinde" ale ne: stačí vzdálenost
+ * zapamatovaného obchodu. Mimo okruh se nepředvybere nic — stejně jako online, kde zapamatovaný
+ * obchod mezi nalezenými v okolí není — a uživatel vybírá z obchodů v paměti telefonu seřazených
+ * od nejbližšího. Obchod bez souřadnic se vyvrátit nedá, ten se předvybere jako bez polohy.
+ */
+fun storeToPreselectOffline(remembered: Store?, lat: Double, lon: Double, radiusMeters: Int): Store? {
+  if (remembered == null) return null
+  val storeLat = remembered.lat ?: return remembered
+  val storeLon = remembered.lon ?: return remembered
+  return remembered.takeIf { isWithin(distanceMeters(lat, lon, storeLat, storeLon), radiusMeters) }
+}
+
 private fun identity(name: String, city: String, street: String?): String =
   "${norm(name)}|${norm(city)}|${norm(street.orEmpty())}"
 
@@ -88,3 +102,30 @@ private fun norm(value: String): String =
     .lowercase(Locale.ROOT)
     .replace(Regex("\\s+"), " ")
     .trim()
+
+/** Kolik obchodů z cache nabídnout bez signálu — víc by se v nabídce stejně nedalo projít. */
+const val OFFLINE_STORE_SUGGESTIONS = 20
+
+/**
+ * Nabídka obchodů BEZ SIGNÁLU z toho, co si zařízení pamatuje (`price/StoreCache`). Se známou
+ * polohou nejbližší první (GPS funguje i bez sítě; obchody bez souřadnic až na konec), bez ní
+ * v pořadí cache, tedy naposledy viděné první. Okruh z Nastavení se tu záměrně neuplatňuje:
+ * cache je malá a prázdná nabídka by offline znamenala slepou uličku.
+ */
+fun offlineStoreSuggestions(cached: List<Store>, lat: Double?, lon: Double?): List<Store> {
+  if (lat == null || lon == null) return cached.take(OFFLINE_STORE_SUGGESTIONS)
+  val (located, unlocated) = cached.partition { it.lat != null && it.lon != null }
+  return (located.sortedBy { distanceMeters(lat, lon, it.lat!!, it.lon!!) } + unlocated)
+    .take(OFFLINE_STORE_SUGGESTIONS)
+}
+
+/** Našeptávač bez signálu — hledá psaný text v názvu, řetězci, ulici a městě obchodů z cache. */
+fun filterCachedStores(cached: List<Store>, query: String): List<Store> {
+  val words = query.trim().lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }
+  if (words.isEmpty()) return emptyList()
+  return cached.filter { store ->
+    val haystack = listOfNotNull(store.name, store.chain?.name, store.street, store.city)
+      .joinToString(" ").lowercase()
+    words.all { it in haystack }
+  }.take(OFFLINE_STORE_SUGGESTIONS)
+}

@@ -415,7 +415,7 @@
     <string name="store_picker_open_location_settings">Zapnúť polohu</string>
     <string name="store_picker_location_timeout">Polohu sa nepodarilo zistiť — vnútri budovy to chvíľu trvá.</string>
     <string name="store_picker_retry">Skúsiť znova</string>
-    <string name="store_picker_nearby_failed">Obchody v okolí sa nepodarilo načítať — bez pripojenia appka pozná len naposledy použitý obchod.</string>
+    <string name="store_picker_nearby_failed">Obchody v okolí sa nepodarilo načítať — asi chýba signál.</string>
     <string name="store_picker_none_nearby_title">V okolí zatiaľ žiadny obchod nepoznáme</string>
     <string name="store_picker_none_nearby_hint">Katalóg obchodov rastie s používateľmi — tento si tu asi prvý. Založiť ho je otázka pár klepnutí.</string>
     <string name="store_picker_approximate_location">Máš povolenú len približnú polohu, ktorú systém posúva až o kilometre — obchod v okruhu pár sto metrov sa tak nájsť nedá. Povoľ appke presnú polohu v nastaveniach systému, alebo hľadaj v širšom okolí.</string>
@@ -793,4 +793,64 @@
     <string name="receipt_item_rematch_open_target">Otvoriť tovar</string>
     <!-- Účtenky — ladění (jen debug build) -->
     <string name="receipts_debug_check_status">Skontrolovať spracovanie teraz (ladenie)</string>
+    <!-- Zápis ceny bez signálu — fronta v telefonu (price/PendingPriceStore) -->
+    <string name="price_entry_submit_queued">Uložené v telefóne — cena sa odošle po pripojení.</string>
+    <string name="price_entry_submit_offline">Uložiť, odošle sa neskôr</string>
+    <string name="price_entry_offline_hint">Cena sa uloží v telefóne a odošle sa sama, keď bude pripojenie. Čakajúce ceny nájdeš na záložke Sken.</string>
+    <string name="price_entry_pending_basis_hint">Ak sa tovar predáva na váhu, appka sa po dohľadaní opýta, či bola cena za kilogram, liter alebo kus.</string>
+    <string name="price_entry_pending_lookup_title">Tovar sa dohľadá po pripojení</string>
+    <string name="price_entry_pending_lookup_text">Bez signálu appka nezistí, o aký tovar ide. Cenu však zapísať môžeš — uloží sa v telefóne a tovar sa k nej dohľadá sám, keď bude pripojenie.</string>
+    <string name="price_entry_pending_lookup_online">Pripojenie je späť — skús tovar načítať znova.</string>
+    <string name="price_entry_pending_lookup_retry">Skúsiť načítať znova</string>
+    <string name="pending_price_barcode">Kód %1$s</string>
+    <string name="store_picker_device_title">Obchody z pamäte telefónu</string>
+    <string name="store_picker_device_hint">Bez signálu appka ponúka obchody, ktoré telefón už predtým videl.</string>
+    <string name="store_picker_device_search_hint">Bez signálu hľadám len v obchodoch z pamäte telefónu.</string>
+    <!-- Čekající ceny — fronta cen zapsaných bez signálu (ui/pending/) -->
+    <string name="pending_prices_title">Čakajúce ceny</string>
+    <string name="pending_prices_intro">Ceny zapísané bez signálu sa odošlú samy, keď bude pripojenie. Hore sú tie, ktoré bez teba odísť nemôžu.</string>
+    <string name="pending_prices_send_now">Odoslať teraz</string>
+    <string name="pending_prices_sending">Odosielam…</string>
+    <string name="pending_prices_offline">Si offline — čakajúce ceny sa odošlú samy po pripojení.</string>
+    <string name="pending_prices_empty_title">Nič nečaká na odoslanie</string>
+    <string name="pending_prices_empty_text">Keď zapíšeš cenu v obchode bez signálu, uloží sa sem a odošle sa sama, keď bude pripojenie. Nájdeš tu aj ceny, s ktorými appka potrebuje pomôcť.</string>
+    <string name="pending_prices_section_attention">Potrebujú tvoj zásah</string>
+    <string name="pending_prices_section_waiting">Čakajú na odoslanie</string>
+    <string name="pending_price_observed_label">Zapísané</string>
+    <string name="pending_price_multibuy_amount">%1$d ks za %2$s</string>
+    <string name="pending_price_status_waiting_network">Čaká na signál — odošle sa sama po pripojení.</string>
+    <string name="pending_price_status_queued">Odošle sa o chvíľu.</string>
+    <string name="pending_price_status_sending">Odosiela sa…</string>
+    <string name="pending_price_status_lookup_later">Tovar sa k nej dohľadá podľa kódu pri odoslaní.</string>
+    <string name="pending_price_status_product_unknown">Tovar s týmto kódom v katalógu chýba</string>
+    <string name="pending_price_status_product_unknown_text">Doplň ho a cena odíde sama.</string>
+    <string name="pending_price_status_product_unknown_login">Tovar môže doplniť len prihlásený používateľ. Prihlás sa, alebo cenu zmaž.</string>
+    <string name="pending_price_status_basis">Za čo bola cena?</string>
+    <string name="pending_price_status_basis_text">Tovar sa predáva na váhu. Vyber, či cena na cenovke bola za kilogram, liter alebo kus.</string>
+    <string name="pending_price_status_requires_login">Čaká na prihlásenie</string>
+    <string name="pending_price_status_requires_login_text">Cenu si zapísal(a) pod účtom, ktorý teraz nie je prihlásený. Pod iným účtom ani bez prihlásenia sa neposiela — odíde, keď sa týmto účtom prihlásiš.</string>
+    <string name="pending_price_status_login_restored">Účet je znova prihlásený</string>
+    <string name="pending_price_status_login_restored_text">Cena sa neodoslala, kým nebol prihlásený účet, pod ktorým je zapísaná. Teraz už je — ťukni na Skúsiť znova.</string>
+    <string name="pending_price_status_update_required">Táto verzia appky ceny neodošle</string>
+    <string name="pending_price_status_update_required_text">Aktualizuj appku a ťukni na Skúsiť znova.</string>
+    <string name="pending_price_status_failed">Server cenu neprijal</string>
+    <string name="pending_price_status_failed_text">Skús to znova, alebo cenu zmaž.</string>
+    <string name="pending_price_action_complete_product">Doplniť tovar</string>
+    <string name="pending_price_action_log_in">Prihlásiť sa</string>
+    <string name="pending_price_delete_title">Zmazať čakajúcu cenu?</string>
+    <string name="pending_price_delete_text">Cena sa ešte neodoslala. Zmaže sa len z telefónu a nikam neodíde.</string>
+    <plurals name="pending_prices_badge_waiting">
+        <item quantity="one">%d cena čaká na odoslanie</item>
+        <item quantity="few">%d ceny čakajú na odoslanie</item>
+        <item quantity="many">%d ceny čaká na odoslanie</item>
+        <item quantity="other">%d cien čaká na odoslanie</item>
+    </plurals>
+    <plurals name="pending_prices_badge_attention">
+        <item quantity="one">%d cena potrebuje tvoj zásah</item>
+        <item quantity="few">%d ceny potrebujú tvoj zásah</item>
+        <item quantity="many">%d ceny potrebuje tvoj zásah</item>
+        <item quantity="other">%d cien potrebuje tvoj zásah</item>
+    </plurals>
+    <!-- Odznak čekajících cen (sken, Moje příspěvky) -->
+    <string name="pending_prices_badge_open">Zobraziť</string>
 </resources>

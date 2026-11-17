@@ -415,7 +415,7 @@
     <string name="store_picker_open_location_settings">Turn on location</string>
     <string name="store_picker_location_timeout">Could not determine your location — indoors it takes a while.</string>
     <string name="store_picker_retry">Try again</string>
-    <string name="store_picker_nearby_failed">Nearby stores could not be loaded — without a connection the app only knows the store you used last.</string>
+    <string name="store_picker_nearby_failed">Nearby stores could not be loaded — probably no signal.</string>
     <string name="store_picker_none_nearby_title">We do not know any store around here yet</string>
     <string name="store_picker_none_nearby_hint">The store catalogue grows with its users — you are probably the first one here. Adding it takes a few taps.</string>
     <string name="store_picker_approximate_location">You have only granted approximate location, which the system shifts by up to kilometres — a store within a few hundred metres cannot be found that way. Allow precise location in system settings, or search a wider area.</string>
@@ -793,4 +793,60 @@
     <string name="receipt_item_rematch_open_target">Open product</string>
     <!-- Účtenky — ladění (jen debug build) -->
     <string name="receipts_debug_check_status">Check processing now (debug)</string>
+    <!-- Zápis ceny bez signálu — fronta v telefonu (price/PendingPriceStore) -->
+    <string name="price_entry_submit_queued">Saved on your phone — the price will be sent once you\'re online.</string>
+    <string name="price_entry_submit_offline">Save, send later</string>
+    <string name="price_entry_offline_hint">The price will be saved on your phone and sent automatically once you\'re connected. You\'ll find pending prices on the Scan tab.</string>
+    <string name="price_entry_pending_basis_hint">If the product is sold by weight, the app will ask after looking it up whether the price was per kilogram, litre or piece.</string>
+    <string name="price_entry_pending_lookup_title">The product will be looked up once you\'re online</string>
+    <string name="price_entry_pending_lookup_text">Without a signal the app can\'t tell which product this is. You can still record the price — it will be saved on your phone and matched to the product automatically once you\'re connected.</string>
+    <string name="price_entry_pending_lookup_online">You\'re back online — try loading the product again.</string>
+    <string name="price_entry_pending_lookup_retry">Try loading again</string>
+    <string name="pending_price_barcode">Code %1$s</string>
+    <string name="store_picker_device_title">Stores remembered on this phone</string>
+    <string name="store_picker_device_hint">Without a signal the app offers stores this phone has seen before.</string>
+    <string name="store_picker_device_search_hint">Without a signal, only stores remembered on this phone are searched.</string>
+    <!-- Čekající ceny — fronta cen zapsaných bez signálu (ui/pending/) -->
+    <string name="pending_prices_title">Pending prices</string>
+    <string name="pending_prices_intro">Prices recorded without a signal are sent automatically once you\'re connected. The ones that can\'t be sent without you are at the top.</string>
+    <string name="pending_prices_send_now">Send now</string>
+    <string name="pending_prices_sending">Sending…</string>
+    <string name="pending_prices_offline">You\'re offline — pending prices will be sent automatically once you\'re connected.</string>
+    <string name="pending_prices_empty_title">Nothing waiting to be sent</string>
+    <string name="pending_prices_empty_text">When you record a price in a store without a signal, it is saved here and sent automatically once you\'re connected. Prices the app needs your help with show up here too.</string>
+    <string name="pending_prices_section_attention">Need your attention</string>
+    <string name="pending_prices_section_waiting">Waiting to be sent</string>
+    <string name="pending_price_observed_label">Recorded</string>
+    <string name="pending_price_multibuy_amount">%1$d for %2$s</string>
+    <string name="pending_price_status_waiting_network">Waiting for a signal — it will be sent automatically once you\'re connected.</string>
+    <string name="pending_price_status_queued">Will be sent shortly.</string>
+    <string name="pending_price_status_sending">Sending…</string>
+    <string name="pending_price_status_lookup_later">The product will be matched by its code when the price is sent.</string>
+    <string name="pending_price_status_product_unknown">No product with this code in the catalog</string>
+    <string name="pending_price_status_product_unknown_text">Add it and the price will be sent automatically.</string>
+    <string name="pending_price_status_product_unknown_login">Only signed-in users can add products. Sign in, or delete the price.</string>
+    <string name="pending_price_status_basis">What was the price for?</string>
+    <string name="pending_price_status_basis_text">This product is sold by weight. Choose whether the shelf price was per kilogram, litre or piece.</string>
+    <string name="pending_price_status_requires_login">Waiting for sign-in</string>
+    <string name="pending_price_status_requires_login_text">You recorded this price under an account that isn\'t signed in now. It is never sent under another account or without signing in — it will go once you sign in to that account.</string>
+    <string name="pending_price_status_login_restored">The account is signed in again</string>
+    <string name="pending_price_status_login_restored_text">The price wasn\'t sent while the account it was recorded under was signed out. Now it is signed in — tap Try again.</string>
+    <string name="pending_price_status_update_required">This version of the app can\'t send prices</string>
+    <string name="pending_price_status_update_required_text">Update the app, then tap Try again.</string>
+    <string name="pending_price_status_failed">The server did not accept the price</string>
+    <string name="pending_price_status_failed_text">Try again, or delete the price.</string>
+    <string name="pending_price_action_complete_product">Add product</string>
+    <string name="pending_price_action_log_in">Sign in</string>
+    <string name="pending_price_delete_title">Delete pending price?</string>
+    <string name="pending_price_delete_text">The price hasn\'t been sent yet. It will only be deleted from this phone and won\'t go anywhere.</string>
+    <plurals name="pending_prices_badge_waiting">
+        <item quantity="one">%d price waiting to be sent</item>
+        <item quantity="other">%d prices waiting to be sent</item>
+    </plurals>
+    <plurals name="pending_prices_badge_attention">
+        <item quantity="one">%d price needs your attention</item>
+        <item quantity="other">%d prices need your attention</item>
+    </plurals>
+    <!-- Odznak čekajících cen (sken, Moje příspěvky) -->
+    <string name="pending_prices_badge_open">View</string>
 </resources>

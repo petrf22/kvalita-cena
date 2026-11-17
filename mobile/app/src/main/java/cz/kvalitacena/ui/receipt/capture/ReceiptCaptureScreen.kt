@@ -69,9 +69,9 @@ import cz.kvalitacena.BuildConfig
 import cz.kvalitacena.R
 import cz.kvalitacena.crash.AppLog
 import cz.kvalitacena.ui.common.KeepScreenOn
-import cz.kvalitacena.ui.receipt.OfflineBanner
+import cz.kvalitacena.ui.common.OfflineBanner
 import cz.kvalitacena.ui.receipt.ReceiptLoginRequired
-import cz.kvalitacena.ui.receipt.ReceiptStateMessage
+import cz.kvalitacena.ui.common.StateMessage
 import cz.kvalitacena.ui.theme.Spacing
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -154,7 +154,7 @@ fun ReceiptCaptureScreen(
   }
 
   if (!viewModel.openCvAvailable) {
-    ReceiptStateMessage(
+    StateMessage(
       title = stringResource(R.string.receipt_capture_unavailable_title),
       text = stringResource(R.string.receipt_capture_unavailable_text),
     )
@@ -171,7 +171,7 @@ fun ReceiptCaptureScreen(
     if (!online) OfflineBanner(stringResource(R.string.receipt_capture_offline))
     Box(Modifier.weight(1f).fillMaxWidth()) {
       when {
-        !hasCameraPermission -> ReceiptStateMessage(
+        !hasCameraPermission -> StateMessage(
           title = stringResource(R.string.receipt_capture_permission_title),
           text = stringResource(R.string.receipt_capture_permission_text),
           actionLabel = stringResource(R.string.receipt_capture_permission_action),
@@ -179,7 +179,7 @@ fun ReceiptCaptureScreen(
           secondaryLabel = importFromGallery?.let { stringResource(R.string.receipt_capture_import) },
           onSecondary = importFromGallery,
         )
-        viewModel.cameraError -> ReceiptStateMessage(
+        viewModel.cameraError -> StateMessage(
           title = stringResource(R.string.receipt_capture_camera_error_title),
           text = stringResource(R.string.receipt_capture_camera_error_text),
           actionLabel = stringResource(R.string.common_retry),

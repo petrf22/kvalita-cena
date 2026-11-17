@@ -26,6 +26,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,6 +48,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import cz.kvalitacena.AppContainer
+import cz.kvalitacena.network.Product
+import cz.kvalitacena.price.PriceWork
 import cz.kvalitacena.R
 import cz.kvalitacena.location.LOCATION_PERMISSIONS
 import cz.kvalitacena.location.LocationResult
@@ -56,9 +59,11 @@ import cz.kvalitacena.location.hasOnlyApproximateLocation
 import cz.kvalitacena.ui.common.NavigationResults
 import cz.kvalitacena.ui.common.ProductImagePreview
 import cz.kvalitacena.ui.common.SELECTABLE_PRICE_KINDS
+import cz.kvalitacena.ui.common.SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES
 import cz.kvalitacena.ui.common.formatShortDate
 import cz.kvalitacena.ui.common.netContentLabel
 import cz.kvalitacena.ui.common.priceKindLabel
+import cz.kvalitacena.ui.common.quantityBasisLabel
 import cz.kvalitacena.ui.common.productImageUrl
 import cz.kvalitacena.ui.common.SingleLineTextField
 import cz.kvalitacena.ui.common.StorePicker
@@ -68,6 +73,7 @@ import cz.kvalitacena.ui.common.rememberMoneyFormatter
 import cz.kvalitacena.ui.common.usesExternalImage
 import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
 import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
+import cz.kvalitacena.ui.theme.Spacing
 import java.time.LocalDate
 import java.util.Currency
 import kotlinx.coroutines.launch
@@ -78,17 +84,6 @@ private val PRICE_INPUT_PATTERN = Regex("^\\d*[.,]?\\d*$")
 
 // Jen celé číslo — počet kusů u MULTIBUY ("3 za 50").
 private val QUANTITY_INPUT_PATTERN = Regex("^\\d*$")
-
-private val QUANTITY_BASIS_LABEL_RES = mapOf(
-  "PACKAGE" to R.string.quantity_basis_package,
-  "PER_KG" to R.string.quantity_basis_per_kg,
-  "PER_L" to R.string.quantity_basis_per_l,
-  "PER_PIECE" to R.string.quantity_basis_per_piece,
-)
-
-/** Nabídka pro váhové zboží (isVariableWeight) — bez PACKAGE, ten je výchozí jen pro ostatní
- *  zboží a u váhového nedává smysl (cena na cedulce je vždy za kg/l/kus). Web: shared/enum-labels.ts. */
-private val SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES = listOf("PER_KG", "PER_L", "PER_PIECE")
 
 /**
  * Obrazovky 2–4 flow "sken → cena → výběr provozovny → odeslání". Vstupem
@@ -105,6 +100,8 @@ fun PriceEntryScreen(
   onAddProduct: (barcode: String?) -> Unit,
   onSearchPrices: (query: String) -> Unit,
 ) {
+  val context = LocalContext.current
+  val appContext = context.applicationContext
   val viewModel: PriceEntryViewModel = viewModel(
     factory = viewModelFactory {
       initializer {
@@ -115,11 +112,17 @@ fun PriceEntryScreen(
           AppContainer.priceEntryVisibilityStore,
           AppContainer.lastStoreStore,
           AppContainer.nearbyRadiusStore,
+          pendingPrices = AppContainer.pendingPrices,
+          storeCache = AppContainer.storeCache,
+          isOnline = { AppContainer.networkMonitor.online.value },
+          currentUserUid = {
+            AppContainer.authRepository.currentUserUid().takeIf { AppContainer.authRepository.isLoggedIn.value }
+          },
+          scheduleUpload = { PriceWork.enqueueUpload(appContext) },
         )
       }
     },
   )
-  val context = LocalContext.current
   val scope = rememberCoroutineScope()
   val isLoggedIn by AppContainer.authRepository.isLoggedIn.collectAsState()
   val exitGuard = LocalNavigationExitGuard.current
@@ -190,26 +193,35 @@ fun PriceEntryScreen(
 
   // Po úspěšném zápisu se obrazovka rovnou opouští (návrat tam, odkud se přišlo) — hláška
   // o úspěchu by na ní jen problikla, proto potvrzujeme Toastem, který přežije i tuhle navigaci.
+  // Cena uložená do fronty (bez signálu) dostane jinou větu: „zapsáno" by tvrdilo, že ji server
+  // už má, a uživatel by ji pak marně hledal v grafu.
   val submitSuccessMessage = stringResource(R.string.price_entry_submit_success)
+  val submitQueuedMessage = stringResource(R.string.price_entry_submit_queued)
   LaunchedEffect(viewModel.submitSuccess) {
     if (viewModel.submitSuccess) {
-      Toast.makeText(context, submitSuccessMessage, Toast.LENGTH_SHORT).show()
+      if (viewModel.submitQueued) Toast.makeText(context, submitQueuedMessage, Toast.LENGTH_LONG).show()
+      else Toast.makeText(context, submitSuccessMessage, Toast.LENGTH_SHORT).show()
       onDone()
     }
   }
+
+  val online by AppContainer.networkMonitor.online.collectAsState()
+  val product = viewModel.product
 
   Column(modifier = Modifier.fillMaxSize()) {
     when {
       viewModel.loading -> {
         Column(
-          modifier = Modifier.fillMaxSize().padding(16.dp),
+          modifier = Modifier.fillMaxSize().padding(Spacing.lg),
           horizontalAlignment = Alignment.CenterHorizontally,
           verticalArrangement = Arrangement.Center,
         ) { CircularProgressIndicator() }
       }
 
-      viewModel.notFound -> {
-        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+      // Zboží bez sítě (productPendingLookup) NENÍ „nenalezeno" — appka neví, jestli v katalogu
+      // je, takže tu nesmí nabízet založení nového (vznikla by duplicita zboží, které tam dávno je).
+      viewModel.notFound || (product == null && !viewModel.productPendingLookup) -> {
+        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.lg)) {
           val message = when {
             viewModel.offUnavailable -> stringResource(R.string.price_entry_off_unavailable)
             target is PriceEntryTarget.ByBarcode ->
@@ -235,86 +247,26 @@ fun PriceEntryScreen(
             )
           }
           Gap()
-            OutlinedButton(onClick = { exitGuard.requestNavigation(onDone) }, modifier = Modifier.fillMaxWidth()) {
+          OutlinedButton(onClick = { exitGuard.requestNavigation(onDone) }, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.common_back))
           }
         }
       }
 
       else -> {
-        val product = viewModel.product!!
-
         // Sekce "Zadat cenu" je schovaná za tlačítkem, dokud si ji uživatel sám nerozbalí nebo
         // dokud jednou úspěšně nezapíše cenu (PriceEntryViewModel.priceEntryExpanded) — appka
-        // slouží stejně dobře lidem, co jen hledají ceny poblíž.
-        Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp)) {
-          // Vizuální potvrzení, že sken trefil správné zboží — vlastní fotka, jinak obrázek
-          // z Open Food Facts; bez obojího se nevykreslí nic (ProductImagePreview).
-          ProductImagePreview(
-            name = product.name,
-            photos = product.photos,
-            externalImage = product.externalImage,
-            modifier = Modifier.fillMaxWidth(),
-          )
-          // Atribuce zdroje/licence MUSÍ být vidět — ODbL (docs/datovy-model.md).
-          if (usesExternalImage(product.photos, product.externalImage)) {
-            Text(
-              product.externalImage!!.attribution,
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-          }
-          if (productImageUrl(product.photos, product.externalImage, full = true) != null) Gap()
-
-          Text(product.name, style = MaterialTheme.typography.headlineSmall)
-          val subtitle = listOfNotNull(
-          product.brand?.name,
-          product.category.name,
-          netContentLabel(product.netContentValue, product.netContentUom, product.isVariableWeight),
-        ).joinToString(" · ")
-          Text(subtitle, style = MaterialTheme.typography.bodyMedium)
-          Gap()
-
-          Text(stringResource(R.string.price_entry_current_prices), style = MaterialTheme.typography.titleMedium)
-          if (product.prices.isEmpty()) {
-            Text(stringResource(R.string.product_no_price_be_first), style = MaterialTheme.typography.bodyMedium)
+        // slouží stejně dobře lidem, co jen hledají ceny poblíž. Bez načteného zboží je rozbalená
+        // vždycky (jiný smysl obrazovka bez zboží a bez sítě nemá).
+        Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(Spacing.lg)) {
+          if (product != null) {
+            ProductHeader(product = product, onSearchPrices = { onSearchPrices(viewModel.searchQueryForPrices()) })
           } else {
-            Column(modifier = Modifier.padding(top = 8.dp)) {
-              product.prices.forEach { price ->
-                Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                  Text("${price.store.name} — ${priceKindLabel(price.priceKind)}")
-                  val moneyFormatter = rememberMoneyFormatter(price.currency)
-                  Text(
-                    stringResource(
-                      R.string.price_entry_price_summary,
-                      price.priceAmount?.let { moneyFormatter.format(it) }.orEmpty(),
-                      price.unitPrice?.let { moneyFormatter.format(it) }.orEmpty(),
-                      price.nObs,
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                  )
-                  price.promoValidTo?.let { validTo ->
-                    Text(
-                      stringResource(R.string.product_promo_valid_until, formatShortDate(validTo)),
-                      style = MaterialTheme.typography.bodySmall,
-                      color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                  }
-                }
-                HorizontalDivider()
-              }
-            }
-          }
-          Gap()
-
-          // Výpis výš není zeměpisně omezený (jen zemí) — tlačítko přehodí do záložky Hledat
-          // s naskenovaným kódem (nebo názvem, viz searchQueryForPrices), kde jde omezit na
-          // město (NavigationResults.searchQuery, viz MainActivity).
-          OutlinedButton(
-            onClick = { onSearchPrices(viewModel.searchQueryForPrices()) },
-            modifier = Modifier.fillMaxWidth(),
-          ) {
-            Text(stringResource(R.string.price_entry_search_this_code))
+            PendingLookupNotice(
+              barcode = viewModel.barcodeForNewProduct().orEmpty(),
+              online = online,
+              onRetry = viewModel::retryLoadProduct,
+            )
           }
 
           if (viewModel.priceEntryExpanded) {
@@ -328,8 +280,11 @@ fun PriceEntryScreen(
               verticalAlignment = Alignment.CenterVertically,
             ) {
               Text(stringResource(R.string.price_entry_write_price), style = MaterialTheme.typography.titleMedium)
-              TextButton(onClick = { viewModel.hidePriceEntry() }) {
-                Text(stringResource(R.string.price_entry_hide))
+              // Bez zboží by po sbalení zůstala prázdná obrazovka s jediným tlačítkem.
+              if (product != null) {
+                TextButton(onClick = { viewModel.hidePriceEntry() }) {
+                  Text(stringResource(R.string.price_entry_hide))
+                }
               }
             }
             Gap()
@@ -364,6 +319,7 @@ fun PriceEntryScreen(
               // Přibližná poloha je od systému mimo až o kilometry — bez vysvětlení by prázdný
               // výsledek v okruhu 500 m vypadal jako chyba appky.
               approximateLocation = hasOnlyApproximateLocation(context),
+              suggestionsFromDevice = viewModel.storeSuggestionsFromDevice,
               isLoggedIn = isLoggedIn,
               homeCountry = AppContainer.countryStore.country,
               modifier = Modifier.fillMaxWidth(),
@@ -377,11 +333,20 @@ fun PriceEntryScreen(
             }
             Gap()
 
-            if (product.isVariableWeight) {
+            if (product?.isVariableWeight == true) {
               QuantityBasisDropdown(
                 selected = viewModel.quantityBasis,
                 options = SELECTABLE_VARIABLE_WEIGHT_QUANTITY_BASES,
                 onSelect = { viewModel.quantityBasis = it },
+              )
+              Gap()
+            } else if (product == null) {
+              // Appka zatím neví, jestli jde o váhové zboží — přepínač by se ptal naslepo. Cena
+              // se uloží „za balení" a po dohledání se appka zeptá (PendingPriceLogic, VARIABLE_WEIGHT).
+              Text(
+                stringResource(R.string.price_entry_pending_basis_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
               Gap()
             }
@@ -432,13 +397,28 @@ fun PriceEntryScreen(
             }
             Gap()
 
+            // Bez signálu (nebo bez dohledaného zboží) jde cena do fronty v telefonu — tlačítko
+            // to řekne PŘEDEM, ať uživatele nepřekvapí, že se nic „neodeslalo". Řádek nad ním
+            // radí, kde ji pak najde (PendingPricesScreen, vstup ze záložky Sken).
+            val savesForLater = !online || viewModel.productPendingLookup
+            if (savesForLater) {
+              Text(
+                stringResource(R.string.price_entry_offline_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+              Gap()
+            }
             Button(
               onClick = { viewModel.submit() },
               enabled = viewModel.canSubmit,
               modifier = Modifier.fillMaxWidth(),
             ) {
-              if (viewModel.submitting) CircularProgressIndicator(modifier = Modifier.size(20.dp))
-              else Text(stringResource(R.string.price_entry_submit))
+              if (viewModel.submitting) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp))
+              } else {
+                Text(stringResource(if (savesForLater) R.string.price_entry_submit_offline else R.string.price_entry_submit))
+              }
             }
             Gap()
 
@@ -456,12 +436,112 @@ fun PriceEntryScreen(
 
         if (!viewModel.priceEntryExpanded) {
           HorizontalDivider()
-          Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+          Column(modifier = Modifier.fillMaxWidth().padding(Spacing.lg)) {
             Button(onClick = { viewModel.expandPriceEntry() }, modifier = Modifier.fillMaxWidth()) {
               Text(stringResource(R.string.price_entry_write_price))
             }
           }
         }
+      }
+    }
+  }
+}
+
+/** Načtené zboží: fotka, název, aktuální ceny po obchodech a cesta k hledání jeho cen. */
+@Composable
+private fun ProductHeader(product: Product, onSearchPrices: () -> Unit) {
+  // Vizuální potvrzení, že sken trefil správné zboží — vlastní fotka, jinak obrázek
+  // z Open Food Facts; bez obojího se nevykreslí nic (ProductImagePreview).
+  ProductImagePreview(
+    name = product.name,
+    photos = product.photos,
+    externalImage = product.externalImage,
+    modifier = Modifier.fillMaxWidth(),
+  )
+  // Atribuce zdroje/licence MUSÍ být vidět — ODbL (docs/datovy-model.md).
+  if (usesExternalImage(product.photos, product.externalImage)) {
+    Text(
+      product.externalImage!!.attribution,
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+  }
+  if (productImageUrl(product.photos, product.externalImage, full = true) != null) Gap()
+
+  Text(product.name, style = MaterialTheme.typography.headlineSmall)
+  val subtitle = listOfNotNull(
+    product.brand?.name,
+    product.category.name,
+    netContentLabel(product.netContentValue, product.netContentUom, product.isVariableWeight),
+  ).joinToString(" · ")
+  Text(subtitle, style = MaterialTheme.typography.bodyMedium)
+  Gap()
+
+  Text(stringResource(R.string.price_entry_current_prices), style = MaterialTheme.typography.titleMedium)
+  if (product.prices.isEmpty()) {
+    Text(stringResource(R.string.product_no_price_be_first), style = MaterialTheme.typography.bodyMedium)
+  } else {
+    Column(modifier = Modifier.padding(top = Spacing.sm)) {
+      product.prices.forEach { price ->
+        Column(modifier = Modifier.padding(vertical = Spacing.xs)) {
+          Text("${price.store.name} — ${priceKindLabel(price.priceKind)}")
+          val moneyFormatter = rememberMoneyFormatter(price.currency)
+          Text(
+            stringResource(
+              R.string.price_entry_price_summary,
+              price.priceAmount?.let { moneyFormatter.format(it) }.orEmpty(),
+              price.unitPrice?.let { moneyFormatter.format(it) }.orEmpty(),
+              price.nObs,
+            ),
+            style = MaterialTheme.typography.bodySmall,
+          )
+          price.promoValidTo?.let { validTo ->
+            Text(
+              stringResource(R.string.product_promo_valid_until, formatShortDate(validTo)),
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+          }
+        }
+        HorizontalDivider()
+      }
+    }
+  }
+  Gap()
+
+  // Výpis výš není zeměpisně omezený (jen zemí) — tlačítko přehodí do záložky Hledat
+  // s naskenovaným kódem (nebo názvem, viz searchQueryForPrices), kde jde omezit na
+  // město (NavigationResults.searchQuery, viz MainActivity).
+  OutlinedButton(onClick = onSearchPrices, modifier = Modifier.fillMaxWidth()) {
+    Text(stringResource(R.string.price_entry_search_this_code))
+  }
+}
+
+/**
+ * Sken bez signálu: zboží se nenačetlo kvůli SÍTI, ne proto, že by ho katalog neznal
+ * (PriceEntryViewModel.productPendingLookup). Cena jde zapsat i tak — uloží se s čárovým kódem
+ * do fronty a zboží dohledá `PriceUploadWorker` po připojení. Barvy `secondaryContainer` jako
+ * pruh offline ([cz.kvalitacena.ui.common.OfflineBanner]): nejde o chybu.
+ */
+@Composable
+private fun PendingLookupNotice(barcode: String, online: Boolean, onRetry: () -> Unit) {
+  Surface(
+    color = MaterialTheme.colorScheme.secondaryContainer,
+    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    shape = MaterialTheme.shapes.medium,
+    modifier = Modifier.fillMaxWidth(),
+  ) {
+    Column(modifier = Modifier.padding(Spacing.lg), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+      Text(stringResource(R.string.price_entry_pending_lookup_title), style = MaterialTheme.typography.titleMedium)
+      Text(stringResource(R.string.pending_price_barcode, barcode), style = MaterialTheme.typography.bodyMedium)
+      // Signál se mezitím vrátil — appka zboží sama nenačítá (formulář by uživateli pod rukama
+      // přeskočil na jinou obrazovku), jen to řekne a nechá ho klepnout.
+      Text(
+        stringResource(if (online) R.string.price_entry_pending_lookup_online else R.string.price_entry_pending_lookup_text),
+        style = MaterialTheme.typography.bodySmall,
+      )
+      TextButton(onClick = onRetry) {
+        Text(stringResource(R.string.price_entry_pending_lookup_retry))
       }
     }
   }
@@ -503,7 +583,7 @@ private fun QuantityBasisDropdown(selected: String, options: List<String>, onSel
 
   ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
     SingleLineTextField(
-      value = QUANTITY_BASIS_LABEL_RES[selected]?.let { stringResource(it) } ?: selected,
+      value = quantityBasisLabel(selected),
       onValueChange = {},
       readOnly = true,
       label = stringResource(R.string.quantity_basis_field_label),
@@ -513,7 +593,7 @@ private fun QuantityBasisDropdown(selected: String, options: List<String>, onSel
     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
       options.forEach { value ->
         DropdownMenuItem(
-          text = { Text(QUANTITY_BASIS_LABEL_RES[value]?.let { stringResource(it) } ?: value) },
+          text = { Text(quantityBasisLabel(value)) },
           onClick = {
             onSelect(value)
             expanded = false
@@ -587,7 +667,7 @@ private fun PriceRowFields(
 
     if (row.priceKind == "PROMO") {
       Gap()
-      Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         PromoDateField(
           value = row.promoValidFrom,
           label = stringResource(R.string.price_entry_promo_valid_from_label),
@@ -655,7 +735,7 @@ private fun PromoDateField(
 
 @Composable
 private fun Gap() {
-  androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(12.dp))
+  androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(Spacing.md))
 }
 
 /**

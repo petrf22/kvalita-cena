@@ -143,13 +143,17 @@ z funkčního zadání systematicky vypadává, a přesně na ní se pozná odby
 1. **Načítání** — mobil to už umí (`CircularProgressIndicator` v 15 z 19 obrazovek), web přes
    `nz-spin`. Nikdy prázdná bílá plocha bez signálu.
 2. **Prázdný stav** — text, který říká, *proč* je prázdno a *co s tím*, ne jen „žádná data".
-   Dnes se řeší ad-hoc na každé obrazovce jinak.
+   Dnes se řeší ad-hoc na každé obrazovce jinak. Na mobilu je pro celou obrazovku společná
+   komponenta `StateMessage` (`ui/common/StateMessage.kt`, nadpis + vysvětlení + akce) —
+   nová obrazovka ji použije, místo aby si skládala vlastní.
 3. **Chyba** — text z kontraktu chyb (`docs/lokalizace.md`, `extensions.code`/`params`), ne
    syrová zpráva ze serveru, a **možnost akci zopakovat**.
 4. **Offline** — u téhle appky věcný požadavek, ne formalita: ceny se zapisují v obchodě, kde
    signál často není, a datový model s tím počítá (`observed_at` ≠ `created_at`,
    `docs/datovy-model.md`). Obrazovka musí říct, že se zápis odešle později, ne tvářit se
-   jako chyba.
+   jako chyba. Mobil na to má pruh `OfflineBanner` (tamtéž, `secondaryContainer`, ne
+   `errorContainer`) a frontu cen zapsaných bez signálu s obrazovkou „Čekající ceny"
+   (`ui/pending/`).
 
 Pozor na past popsanou v kořenovém `CLAUDE.md`: **prošlý access token není chyba** — request
 doběhne jako anonymní s HTTP 200. Obrazovka, která z anonymní odpovědi udělá prázdný stav,

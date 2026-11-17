@@ -54,6 +54,8 @@ import cz.kvalitacena.scanner.BarcodeAnalyzer
 import cz.kvalitacena.scanner.ZxingBarcodeScanner
 import cz.kvalitacena.ui.navigation.LocalNavigationExitGuard
 import cz.kvalitacena.ui.navigation.ReportUnsavedChanges
+import cz.kvalitacena.ui.pending.PendingPricesBadge
+import cz.kvalitacena.ui.pending.rememberPendingPriceSummary
 import cz.kvalitacena.ui.theme.Spacing
 
 /**
@@ -61,9 +63,15 @@ import cz.kvalitacena.ui.theme.Spacing
  *
  * [onScanReceipt] přidá tlačítko „Naskenovat účtenku" (jen záložka, ne režim „vrátit kód"
  * z formuláře zboží, ROUTE_SCAN_CODE — tam by odvádělo pryč od rozepsaného formuláře).
+ * [onOpenPendingPrices] stejně tak odznak cen čekajících na odeslání: sken je místo, kam se
+ * uživatel z obchodu bez signálu vrací, a tady má vidět, že mu něco čeká nebo potřebuje zásah.
  */
 @Composable
-fun ScanScreen(onBarcodeDetected: (String) -> Unit, onScanReceipt: (() -> Unit)? = null) {
+fun ScanScreen(
+  onBarcodeDetected: (String) -> Unit,
+  onScanReceipt: (() -> Unit)? = null,
+  onOpenPendingPrices: (() -> Unit)? = null,
+) {
   val context = LocalContext.current
   var hasCameraPermission by remember {
     mutableStateOf(
@@ -95,6 +103,9 @@ fun ScanScreen(onBarcodeDetected: (String) -> Unit, onScanReceipt: (() -> Unit)?
     if (!hasCameraPermission) permissionLauncher.launch(Manifest.permission.CAMERA)
   }
 
+  // Prázdná fronta = žádný odznak (PendingPricesBadge se sám nevykreslí).
+  val pendingSummary = if (onOpenPendingPrices != null) rememberPendingPriceSummary() else null
+
   if (hasCameraPermission) {
     Box(modifier = Modifier.fillMaxSize()) {
       CameraPreview(
@@ -125,6 +136,9 @@ fun ScanScreen(onBarcodeDetected: (String) -> Unit, onScanReceipt: (() -> Unit)?
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
       ) {
+        if (pendingSummary != null && onOpenPendingPrices != null) {
+          PendingPricesBadge(summary = pendingSummary, onClick = onOpenPendingPrices)
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md, Alignment.CenterHorizontally)) {
           if (torchAvailable) {
             Button(onClick = { torchEnabled = !torchEnabled }) {
@@ -162,6 +176,13 @@ fun ScanScreen(onBarcodeDetected: (String) -> Unit, onScanReceipt: (() -> Unit)?
         OutlinedButton(onClick = onScanReceipt, modifier = Modifier.padding(top = Spacing.sm)) {
           Text(stringResource(R.string.scan_receipt))
         }
+      }
+      if (pendingSummary != null && onOpenPendingPrices != null) {
+        PendingPricesBadge(
+          summary = pendingSummary,
+          onClick = onOpenPendingPrices,
+          modifier = Modifier.padding(top = Spacing.xl),
+        )
       }
     }
   }

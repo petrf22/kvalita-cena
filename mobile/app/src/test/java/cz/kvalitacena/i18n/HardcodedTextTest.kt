@@ -14,7 +14,8 @@ import org.junit.Test
  * na obecný fallback přes `Throwable.toUiText()`, viz `ui/common/ErrorMessages.kt`).
  * Totéž platí pro účtenky mimo obrazovky — úložiště a workery (`receipt/`) a zpracování obrazu
  * (`ui/receipt/capture/` bez obrazovky a ViewModelu): jen logy a `require`/`check` zprávy,
- * uživatel z nich nic neuvidí (chyby pro něj jdou přes `UiText.Res`).
+ * uživatel z nich nic neuvidí (chyby pro něj jdou přes `UiText.Res`). A stejně fronta cen
+ * zapsaných bez signálu (`price/`).
  */
 class HardcodedTextTest {
 
@@ -28,6 +29,9 @@ class HardcodedTextTest {
     "ReceiptDraftStore.kt",
     "PendingReceiptStore.kt",
     "ReceiptWork.kt",
+    // Fronta cen (price/) — stejný případ jako u účtenek: log workeru a zpráva `require`.
+    "PriceWork.kt",
+    "PendingPriceLogic.kt",
     "QuadGeometry.kt",
     "Sharpness.kt",
     "ReceiptImageProcessor.kt",

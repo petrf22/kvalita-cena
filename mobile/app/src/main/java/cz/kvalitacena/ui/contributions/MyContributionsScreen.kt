@@ -51,6 +51,8 @@ import cz.kvalitacena.ui.common.isReceiptItem
 import cz.kvalitacena.ui.common.netContentLabel
 import cz.kvalitacena.ui.common.priceKindLabel
 import cz.kvalitacena.ui.common.rememberMoneyFormatter
+import cz.kvalitacena.ui.pending.PendingPricesBadge
+import cz.kvalitacena.ui.pending.rememberPendingPriceSummary
 import cz.kvalitacena.ui.theme.Spacing
 import kotlin.math.ceil
 import kotlin.math.max
@@ -94,9 +96,16 @@ private val FIELD_LABELS: Map<String, Int> = mapOf(
  * Navigation, žádný vlastní "zpět" mechanismus navíc netřeba (na rozdíl od webu, kde SPA routing
  * stav při navigaci pryč zahazuje — `NavigationHistoryService`). Webový protějšek:
  * frontend features/my-contributions/my-contributions-page.ts.
+ *
+ * Nad záložkami odznak cen, které ještě čekají v telefonu (zapsané bez signálu,
+ * `ui/pending/`) — server o nich neví, takže by v seznamu cen jinak chyběly beze stopy.
  */
 @Composable
-fun MyContributionsScreen(onProductClick: (String) -> Unit, onStoreClick: (String) -> Unit) {
+fun MyContributionsScreen(
+  onProductClick: (String) -> Unit,
+  onStoreClick: (String) -> Unit,
+  onOpenPendingPrices: () -> Unit,
+) {
   val viewModel: MyContributionsViewModel = viewModel(
     factory = viewModelFactory { initializer { MyContributionsViewModel(AppContainer.graphQlClient) } },
   )
@@ -106,7 +115,13 @@ fun MyContributionsScreen(onProductClick: (String) -> Unit, onStoreClick: (Strin
     Text(
       stringResource(R.string.my_contributions_title),
       style = MaterialTheme.typography.headlineSmall,
-      modifier = Modifier.padding(16.dp),
+      modifier = Modifier.padding(Spacing.lg),
+    )
+    // Prázdná fronta = žádný odznak (PendingPricesBadge se sám nevykreslí).
+    PendingPricesBadge(
+      summary = rememberPendingPriceSummary(),
+      onClick = onOpenPendingPrices,
+      modifier = Modifier.fillMaxWidth().padding(start = Spacing.lg, end = Spacing.lg, bottom = Spacing.md),
     )
 
     TabRow(selectedTabIndex = selectedTab) {
@@ -146,7 +161,7 @@ private fun ProductsTab(viewModel: MyContributionsViewModel, onProductClick: (St
     Column(
       modifier = Modifier.fillMaxWidth()
         .clickable { onProductClick(item.product.id) }
-        .padding(vertical = 8.dp),
+        .padding(vertical = Spacing.sm),
     ) {
       Text(productLabel(item.product), style = MaterialTheme.typography.titleSmall)
       // Zboží z účtenky (ui/common/ReceiptItem.kt) se tu ukáže se štítkem jako ve hledání a na
@@ -181,7 +196,7 @@ private fun StoresTab(viewModel: MyContributionsViewModel, onStoreClick: (String
     Column(
       modifier = Modifier.fillMaxWidth()
         .clickable { onStoreClick(item.store.id) }
-        .padding(vertical = 8.dp),
+        .padding(vertical = Spacing.sm),
     ) {
       Text("${item.store.name} — ${item.store.city}", style = MaterialTheme.typography.titleSmall)
       Text(
@@ -208,7 +223,7 @@ private fun ObservationsTab(viewModel: MyContributionsViewModel, onProductClick:
     onPageChange = { viewModel.changeObservationsPage(it) },
     onPageSizeChange = { viewModel.changeObservationsPageSize(it) },
   ) { item: MyObservationItem ->
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.sm)) {
       LabelValueRow(
         label = {
           // Jen produkt je proklik (stejně jako na webu) — cena patří k dvojici produkt+obchod,
@@ -254,7 +269,7 @@ private fun EditsTab(
     onPageChange = { viewModel.changeEditsPage(it) },
     onPageSizeChange = { viewModel.changeEditsPageSize(it) },
   ) { item: MyEditItem ->
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.sm)) {
       val recordLabelRes = if (item.recordType == "PRODUCT") {
         R.string.my_contributions_record_type_product
       } else {
@@ -305,16 +320,16 @@ private fun ReviewsTab(viewModel: MyContributionsViewModel, onProductClick: (Str
     Column(
       modifier = Modifier.fillMaxWidth()
         .clickable { onProductClick(item.product.id) }
-        .padding(vertical = 8.dp),
+        .padding(vertical = Spacing.sm),
     ) {
       Text(productLabel(item.product), style = MaterialTheme.typography.titleSmall)
-      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         StarRatingDisplay(average = item.stars.toDouble(), starSize = 14.dp)
         if (item.hidden) {
           AssistChip(onClick = {}, label = { Text(stringResource(R.string.my_contributions_review_hidden)) })
         }
       }
-      Text(item.text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+      Text(item.text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = Spacing.xs))
       Text(
         "${stringResource(R.string.my_contributions_created_at_label)} ${formatRelativeDate(item.createdAt)}",
         style = MaterialTheme.typography.bodySmall,
@@ -326,14 +341,14 @@ private fun ReviewsTab(viewModel: MyContributionsViewModel, onProductClick: (Str
 
 @Composable
 private fun PublicationStatusRow(status: PublicationStatus, kind: PublicationRecordKind, generic: Boolean = false) {
-  Row(modifier = Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+  Row(modifier = Modifier.padding(top = Spacing.xs), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
     AssistChip(onClick = {}, label = { Text(stringResource(publicationStateLabel(status.state))) })
   }
   Text(
     publicationStatusText(status, kind, generic).asString(),
     style = MaterialTheme.typography.bodySmall,
     color = MaterialTheme.colorScheme.onSurfaceVariant,
-    modifier = Modifier.padding(top = 2.dp),
+    modifier = Modifier.padding(top = Spacing.xs),
   )
 }
 
@@ -356,11 +371,11 @@ private fun <T> ContributionList(
         it.asString(),
         color = MaterialTheme.colorScheme.error,
         style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(16.dp),
+        modifier = Modifier.padding(Spacing.lg),
       )
     }
     if (loading && items.isEmpty()) {
-      Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
+      Column(modifier = Modifier.fillMaxWidth().padding(Spacing.xl)) {
         CircularProgressIndicator()
       }
     } else if (items.isEmpty()) {
@@ -368,10 +383,10 @@ private fun <T> ContributionList(
         stringResource(emptyTextRes),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(16.dp),
+        modifier = Modifier.padding(Spacing.lg),
       )
     } else {
-      LazyColumn(modifier = Modifier.weight(1f, fill = false).fillMaxWidth().padding(horizontal = 16.dp)) {
+      LazyColumn(modifier = Modifier.weight(1f, fill = false).fillMaxWidth().padding(horizontal = Spacing.lg)) {
         items(items) { item ->
           itemContent(item)
           HorizontalDivider()
@@ -405,7 +420,7 @@ private fun PaginationBar(
 ) {
   val pageCount = max(1, ceil(totalCount / pageSize.toFloat()).toInt())
 
-  Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+  Column(modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.lg, vertical = Spacing.sm)) {
     Row(
       modifier = Modifier.fillMaxWidth(),
       horizontalArrangement = Arrangement.Center,
@@ -417,7 +432,7 @@ private fun PaginationBar(
       Text(
         stringResource(R.string.my_contributions_page_indicator, pageIndex, pageCount),
         style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(horizontal = 8.dp),
+        modifier = Modifier.padding(horizontal = Spacing.sm),
       )
       TextButton(onClick = { onPageChange(pageIndex + 1) }, enabled = pageIndex < pageCount) {
         Text(stringResource(R.string.my_contributions_next_page))

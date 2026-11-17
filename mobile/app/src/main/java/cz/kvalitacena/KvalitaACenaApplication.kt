@@ -2,6 +2,7 @@ package cz.kvalitacena
 
 import android.app.Application
 import cz.kvalitacena.crash.CrashReporter
+import cz.kvalitacena.price.PriceWork
 import cz.kvalitacena.receipt.ReceiptNotifications
 import cz.kvalitacena.receipt.ReceiptWork
 import org.osmdroid.config.Configuration
@@ -20,6 +21,10 @@ class KvalitaACenaApplication : Application() {
       ReceiptNotifications.ensureChannel(this)
       ReceiptWork.schedulePeriodicStatus(this)
     }
+
+    // Ceny zapsané bez signálu (price/PendingPriceStore): odeslání plánuje už zápis, tohle je
+    // pojistka pro případ, že systém naplánovanou práci zahodil (vynucené zastavení appky).
+    PriceWork.enqueueIfPending(this)
 
     // Cache dlaždic do appce vlastního (scoped) adresáře — bez tohle by osmdroid defaultně
     // sáhl na veřejné externí úložiště a vyžadoval WRITE_EXTERNAL_STORAGE, které appka nemá
