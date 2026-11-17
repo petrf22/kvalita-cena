@@ -529,6 +529,12 @@ ne shodí dávku), `ProductStoreLabelService`, `ReceiptImageRetentionService` (d
 Testy `ReceiptFlowIntegrationTest` (Testcontainers), `ReceiptPriceRowsTest`,
 `ReceiptQueueNotifierTest`.
 
+**Seznam účtenek:** `myReceipts(filter: ReceiptListFilter)` vrací jednu skupinu stavu (K vyřízení
+= zpracovaná a nespárovaná, Zpracovává se, Hotové, Nezpracováno) a `filterCounts` s počty všech
+skupin; podmínky skupin jsou jen v `ReceiptRepository` (`TO_REVIEW_SQL` ad.). Web i mobil
+otevřou seznam na „K vyřízení", když nějaké jsou, jinak na „Vše"; čekající účtenky z telefonu
+mobil ukazuje ve všech filtrech.
+
 **Zakrytí a karta obchodu:** výchozí pás zakrytí je šrafovaný návrh, ne černá plocha (mobil
 `MaskedPartImage`, web `.mask` v `receipt-mask-editor.css`). Mobilní editor (`MaskEditorDialog`)
 umí jako webový posun i změnu velikosti za roh (`hitTest`/`movedBy`/`resizedTo`
