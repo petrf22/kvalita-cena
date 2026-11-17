@@ -877,6 +877,69 @@ class WinShopProfileTest(unittest.TestCase):
         self.assertTrue(any("nesedí s částkou u 'A Select Kimchi 490g'" in warning for warning in document["warnings"]))
 
 
+
+class PocetCenaProfileTest(unittest.TestCase):
+    """Pokladna se sloupci „Polozka DPH Pocet Cena/ks Celkem": částky bez haléřů, název NAD cenou,
+    desetinné množství bez jednotky, zaokrouhlení POD „Celkem" a čas před datem."""
+
+    def setUp(self):
+        self.text = _text("pocet-cena")
+        self.document = parse.build_document(self.text)
+        self.lines = self.document["lines"]
+
+    def test_polozky_s_castkami_bez_haleru(self):
+        self.assertEqual(self.document["profile"], "pocet-cena")
+        self.assertEqual(self.document["warnings"], [])
+        self.assertEqual([(line["rawLabel"], line["lineTotal"]) for line in self.lines], [
+            ("Párky KURECí", "256.75"), ("llonganissa", "181.20"), ("panenka z udírny", "180.90"),
+        ])
+
+    def test_desetinne_mnozstvi_je_cena_za_kg(self):
+        parky = self.lines[0]
+        self.assertEqual((parky["quantity"], parky["quantityBasis"], parky["unitPrice"], parky["vatCode"]),
+                         ("0.65", "PER_KG", "395.00", "12"))
+        self.assertEqual(parky["note"], "jednotka na účtence chybí, bráno jako kg")
+
+    def test_zaokrouhleni_pod_celkem_patri_do_souctu(self):
+        self.assertEqual(self.document["printedTotal"], "619.00")
+        self.assertEqual(self.document["computedTotal"], "619.00")
+        self.assertTrue(self.document["totalMatches"])
+
+    def test_cas_pred_datem_a_adresa_s_psc_na_konci(self):
+        self.assertEqual(self.document["purchasedAt"], "2026-10-17T16:03:00+02:00")
+        self.assertEqual(self.document["merchant"], {
+            "rawName": "OBCHOD VZOR s.r.o.", "country": "CZ", "street": "Nádražní 1", "postalCode": "11111",
+            "city": "Vzorov", "ico": "12345678",
+        })
+        # Patička (platba kartou, číslo dokladu) na server nejde.
+        self.assertTrue(parse.server_text(self.text).endswith("CELKEM 619"))
+
+    def test_cele_mnozstvi_je_baleni(self):
+        document = parse.build_document(self.text.replace("12% 0,65x 395 256,75", "12% 2x 128,5 257")
+                                        .replace("CELKEM 619", "CELKEM 619,25"))
+        parky = document["lines"][0]
+        self.assertEqual((parky["quantity"], parky["quantityBasis"], parky["unitPrice"]), ("2", "PACKAGE", "128.50"))
+        self.assertNotIn("note", parky)
+        self.assertTrue(document["totalMatches"])
+
+    def test_mnozstvi_ktere_nesedi_s_cenou_se_ohlasi(self):
+        document = parse.build_document(self.text.replace("0,65x 395", "0,65x 359"))
+        parky = document["lines"][0]
+        self.assertEqual((parky["quantity"], parky["quantityBasis"], parky["unitPrice"]), ("1", "PACKAGE", "256.75"))
+        self.assertTrue(any("nesedí s částkou u 'Párky KURECí'" in warning for warning in document["warnings"]))
+
+    def test_nazev_bez_ceny_se_neztrati(self):
+        document = parse.build_document(self.text.replace("12% 0,27x 670 180,9\n", ""))
+        self.assertEqual(document["lines"][-1]["kind"], "UNKNOWN")
+        self.assertIn("nerozpoznaný tvar řádku: 'panenka z udírny'", document["warnings"])
+
+    def test_obecny_profil_cte_cas_pred_datem(self):
+        stamp = generic.parse_datetime("000001 16:03:58 17.10.2026")
+        self.assertEqual(stamp.isoformat(), "2026-10-17T16:03:00+02:00")
+        # Datum před časem má dál přednost.
+        self.assertEqual(generic.parse_datetime("30.09.2026 07:42 1.10.2026").isoformat(),
+                         "2026-09-30T07:42:00+02:00")
+
 class ReplayTest(unittest.TestCase):
     """Offline přehrání (replay.py) — stejný rozbor jako worker, jen nad lokálními soubory."""
 

@@ -1,0 +1,53 @@
+{
+  "profile": "pocet-cena",
+  "merchant": {
+    "rawName": "OBCHOD VZOR s.r.o.",
+    "country": "CZ",
+    "street": "Nádražní 1",
+    "postalCode": "11111",
+    "city": "Vzorov",
+    "ico": "12345678"
+  },
+  "purchasedAt": "2026-10-17T16:03:00+02:00",
+  "currency": "CZK",
+  "printedTotal": "619.00",
+  "computedTotal": "619.00",
+  "totalMatches": true,
+  "hasAmounts": true,
+  "lines": [
+    {
+      "lineNo": 1,
+      "kind": "ITEM",
+      "rawLabel": "Párky KURECí",
+      "quantity": "0.65",
+      "quantityBasis": "PER_KG",
+      "unitPrice": "395.00",
+      "lineTotal": "256.75",
+      "vatCode": "12",
+      "note": "jednotka na účtence chybí, bráno jako kg"
+    },
+    {
+      "lineNo": 2,
+      "kind": "ITEM",
+      "rawLabel": "llonganissa",
+      "quantity": "0.24",
+      "quantityBasis": "PER_KG",
+      "unitPrice": "755.00",
+      "lineTotal": "181.20",
+      "vatCode": "12",
+      "note": "jednotka na účtence chybí, bráno jako kg"
+    },
+    {
+      "lineNo": 3,
+      "kind": "ITEM",
+      "rawLabel": "panenka z udírny",
+      "quantity": "0.27",
+      "quantityBasis": "PER_KG",
+      "unitPrice": "670.00",
+      "lineTotal": "180.90",
+      "vatCode": "12",
+      "note": "jednotka na účtence chybí, bráno jako kg"
+    }
+  ],
+  "warnings": []
+}
