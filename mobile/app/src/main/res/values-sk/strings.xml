@@ -664,7 +664,7 @@
     <string name="receipts_filter_processing">Spracúva sa (%1$d)</string>
     <string name="receipts_filter_done">Hotové (%1$d)</string>
     <string name="receipts_filter_failed">Nespracované (%1$d)</string>
-    <string name="receipts_filter_empty">V tomto stave nemáte žiadnu účtenku.</string>
+    <string name="receipts_filter_empty">V tomto stave nemáš žiadnu účtenku.</string>
     <string name="receipts_filter_show_all">Zobraziť všetky</string>
     <string name="receipt_pending_parts">Dielov: %1$d</string>
     <string name="receipt_pending_queued">Pripravená na odoslanie</string>
