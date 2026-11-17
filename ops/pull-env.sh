@@ -52,7 +52,7 @@ if [[ -z "$env_content" ]]; then
   exit 1
 fi
 
-echo "Šifruji (gpg se dvakrát zeptá na heslo)..."
+echo "Šifruji — zadej heslo..."
 # --pinentry-mode loopback + GPG_TTY: heslo se zadá přímo v terminálu, i bez grafického
 # pinentry (ssh relace, čistá konzole), kde gpg jinak padá na „Inappropriate ioctl for device".
 # --no-symkey-cache: gpg-agent si heslo nepamatuje, další spuštění se zeptá znovu.
@@ -61,14 +61,18 @@ export GPG_TTY
 printf '%s\n' "$env_content" \
   | gpg --symmetric --cipher-algo AES256 --no-symkey-cache --pinentry-mode loopback --yes \
         --output "$tmp" -
-unset env_content
 
-# Prázdný .env by gpg zašifroval bez chyby — ověřit, že uvnitř něco je, by znamenalo ptát se na
-# heslo potřetí; stačí velikost (hlavička gpg + prázdný vstup má pod 100 bajtů).
-if (( $(stat -c %s "$tmp") < 200 )); then
-  echo "Zašifrovaný soubor je podezřele malý — .env na serveru je prázdný nebo se nestáhl." >&2
+# V režimu loopback se gpg na zopakování hesla NEPTÁ, překlep by tedy nikdo nechytil a záloha
+# by šla rozšifrovat jen překlepnutým heslem. Místo zopakování proto soubor rovnou rozšifrovat
+# a porovnat se staženým obsahem — chytí to překlep i poškozený zápis. Porovnává se v paměti.
+echo "Ověřuji zálohu — zadej heslo ještě jednou..."
+if ! decrypted="$(gpg --quiet --decrypt --no-symkey-cache --pinentry-mode loopback "$tmp")" \
+   || [[ "$decrypted" != "$env_content" ]]; then
+  unset env_content decrypted
+  echo "Zálohu nejde rozšifrovat zadaným heslem (překlep?) — nic neukládám, zkus to znovu." >&2
   exit 1
 fi
+unset env_content decrypted
 
 chmod 600 "$tmp"
 mv "$tmp" "$TARGET"

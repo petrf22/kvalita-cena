@@ -333,14 +333,16 @@ produkční `.env` přes `ssh` a uloží ho na lokální stroj **zašifrovaný**
 nezapíše vůbec — drží ho jen proměnná v paměti skriptu, dokud ho nepřevezme `gpg`. Stahování
 a šifrování jdou záměrně po sobě, ne rourou: dotaz `ssh` na otisk serveru a dotaz `gpg` na
 heslo by se jinak přetahovaly o terminál. Heslo se zadává přímo v terminálu
-(`--pinentry-mode loopback`), funguje tedy i bez grafického prostředí.
+(`--pinentry-mode loopback`), funguje tedy i bez grafického prostředí. V tomhle režimu se gpg na
+zopakování hesla neptá — skript proto hotovou zálohu hned rozšifruje a porovná se staženým
+obsahem. Druhé zadání hesla je tahle kontrola; překlep zastaví uložení.
 
 V `.env` je `EMAIL_ENC_KEY`, `JWT_SECRET` a heslo k databázi. Záloha databáze leží ve stejné
 složce a obojí spolu putuje na externí disk a NAS, takže s nešifrovaným `.env` by nálezce disku
 přečetl e-maily všech uživatelů; samotný dump je bez klíče nečitelný.
 
 ```bash
-./ops/pull-env.sh                                  # gpg se dvakrát zeptá na heslo
+./ops/pull-env.sh                                  # heslo se zadává dvakrát (šifrování + ověření)
 gpg --decrypt backup/kvalitacena-prod.env.gpg      # obnova — čistý text jen na výstup
 ```
 
