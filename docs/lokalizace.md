@@ -47,6 +47,13 @@ kategorií byl prázdný (`docs/datovy-model.md`), nebylo co překládat. Dopln�
 Slovensku fungoval stejně dobře, ale pro zapomenutý klíč u českého uživatele by byl matoucí
 skok do cizího jazyka uprostřed jinak české appky.
 
+**Oslovení: tykání ve všech jazycích a na všech klientech** (cs „zkus", sk „skús", pl „spróbuj",
+de „du") — web, mobil i serverové chybové hlášky (`errors*.properties`, mobil je ukazuje přímo).
+Do 2026-11 se rozjelo: web tykal, mobil v účtenkách vykal (německy „Sie"). Kde by tykání
+vynutilo rod, volí se neutrální vazba („Chybí připojení" místo „Nejsi připojený"), jinak
+lomítko jako jinde v appce („zapsal(a)"). Výjimkou jsou ustálené názvy (licence „Uveďte původ –
+Zachovejte licenci"). Angličtina oslovení nerozlišuje.
+
 ## Kontrakt chyby: `extensions.code` je závazný, `message` je jen fallback
 
 Každá doménová výjimka (`AppException` a potomci) nese `ErrorCode` — strojově čitelný enum,
