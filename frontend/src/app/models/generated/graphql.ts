@@ -318,6 +318,18 @@ export type ReceiptLineStatus =
   | 'SUGGESTED'
   | 'UNMATCHED';
 
+/** Skupina seznamu vlastních účtenek (myReceipts). Skupiny se nepřekrývají a dohromady dávají ALL. */
+export type ReceiptListFilter =
+  | 'ALL'
+  /** Zpracovaná a spárovaná (PROCESSED + DONE). */
+  | 'DONE'
+  /** Stroj skončil bez řádků (NOT_A_RECEIPT, UNREADABLE, FAILED) — nafotit znovu nebo smazat. */
+  | 'FAILED'
+  /** Ve frontě nebo ji právě čte stroj (QUEUED, PROCESSING). */
+  | 'PROCESSING'
+  /** Zpracovaná, ale párování není hotové (processingStatus PROCESSED, reviewStatus ≠ DONE) — čeká na uživatele. */
+  | 'TO_REVIEW';
+
 export type ReceiptMatchSource =
   | 'CODE'
   /** Jednoznačná podobnost názvu — jen odhad, klient ho ukáže označený a nezaškrtne předem. */
@@ -836,10 +848,11 @@ export type ReceiptSummaryQuery = { receiptSummary: { unseenCount: number, conse
 export type MyReceiptsQueryVariables = Exact<{
   first?: number | null | undefined;
   offset?: number | null | undefined;
+  filter?: ReceiptListFilter | null | undefined;
 }>;
 
 
-export type MyReceiptsQuery = { myReceipts: { totalCount: number, hasMore: boolean, items: Array<{ id: string, processingStatus: ReceiptProcessingStatus, reviewStatus: ReceiptReviewStatus, createdAt: string, processedAt: string | null, purchasedAt: string | null, storeNameRaw: string | null, totalAmount: number | null, currency: string | null, unseen: boolean, imagesDeletedAt: string | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lineCounts: { total: number, unmatched: number, suggested: number, matched: number, ignored: number } }> } };
+export type MyReceiptsQuery = { myReceipts: { totalCount: number, hasMore: boolean, items: Array<{ id: string, processingStatus: ReceiptProcessingStatus, reviewStatus: ReceiptReviewStatus, createdAt: string, processedAt: string | null, purchasedAt: string | null, storeNameRaw: string | null, totalAmount: number | null, currency: string | null, unseen: boolean, imagesDeletedAt: string | null, store: { id: string, name: string, street: string | null, city: string, postalCode: string | null, country: string, lat: number | null, lon: number | null, geoSource: GeoSource, ico: string | null, url: string | null, verified: boolean, editedByMe: boolean, pendingConfirmation: boolean, chain: { id: string, name: string, chainType: ChainType } | null } | null, lineCounts: { total: number, unmatched: number, suggested: number, matched: number, ignored: number } }>, filterCounts: { all: number, toReview: number, processing: number, done: number, failed: number } } };
 
 export type ReceiptQueryVariables = Exact<{
   id: string;
@@ -4186,13 +4199,20 @@ export const ReceiptSummaryDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<ReceiptSummaryQuery, ReceiptSummaryQueryVariables>;
 export const MyReceiptsDocument = new TypedDocumentString(`
-    query MyReceipts($first: Int, $offset: Int) {
-  myReceipts(first: $first, offset: $offset) {
+    query MyReceipts($first: Int, $offset: Int, $filter: ReceiptListFilter) {
+  myReceipts(first: $first, offset: $offset, filter: $filter) {
     items {
       ...ReceiptListFields
     }
     totalCount
     hasMore
+    filterCounts {
+      all
+      toReview
+      processing
+      done
+      failed
+    }
   }
 }
     fragment StoreFields on Store {

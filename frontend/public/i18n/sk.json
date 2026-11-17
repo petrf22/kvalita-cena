@@ -231,6 +231,13 @@
       "IN_PROGRESS": "Rozpracované",
       "DONE": "Hotovo"
     },
+    "receiptListFilter": {
+      "ALL": "Všetky",
+      "TO_REVIEW": "Na vybavenie",
+      "PROCESSING": "Spracováva sa",
+      "DONE": "Hotové",
+      "FAILED": "Nespracované"
+    },
     "receiptLineStatus": {
       "UNMATCHED": "Nespárované",
       "SUGGESTED": "Návrh",

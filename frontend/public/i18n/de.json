@@ -231,6 +231,13 @@
       "IN_PROGRESS": "In Arbeit",
       "DONE": "Erledigt"
     },
+    "receiptListFilter": {
+      "ALL": "Alle",
+      "TO_REVIEW": "Zu erledigen",
+      "PROCESSING": "Wird verarbeitet",
+      "DONE": "Erledigt",
+      "FAILED": "Nicht verarbeitet"
+    },
     "receiptLineStatus": {
       "UNMATCHED": "Nicht zugeordnet",
       "SUGGESTED": "Vorschlag",

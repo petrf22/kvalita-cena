@@ -2,6 +2,7 @@ import { HttpClient, HttpEvent } from '@angular/common/http';
 import { DestroyRef, Injectable, effect, inject, signal } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 import { graphql } from '../models/generated';
+import type { ReceiptListFilter } from '../models/generated/enums';
 import { AuthService } from './auth-service';
 import { GraphQlService } from './graphql-service';
 
@@ -178,19 +179,33 @@ export class ReceiptService {
     );
   }
 
-  myReceipts(first: number, offset: number) {
+  /**
+   * Stránka vlastních účtenek v jedné skupině stavu. `totalCount` platí pro zvolený filtr,
+   * `filterCounts` nese počty všech skupin — štítky filtru i výchozí volbu
+   * (`initialReceiptFilter` v receipt-status.ts) tak obslouží jeden dotaz.
+   */
+  myReceipts(first: number, offset: number, filter: ReceiptListFilter) {
     const document = graphql(`
-      query MyReceipts($first: Int, $offset: Int) {
-        myReceipts(first: $first, offset: $offset) {
+      query MyReceipts($first: Int, $offset: Int, $filter: ReceiptListFilter) {
+        myReceipts(first: $first, offset: $offset, filter: $filter) {
           items {
             ...ReceiptListFields
           }
           totalCount
           hasMore
+          filterCounts {
+            all
+            toReview
+            processing
+            done
+            failed
+          }
         }
       }
     `);
-    return this.graphQl.execute(document, { first, offset }).pipe(map((data) => data.myReceipts));
+    return this.graphQl
+      .execute(document, { first, offset, filter })
+      .pipe(map((data) => data.myReceipts));
   }
 
   /** Cizí i neexistující účtenka je `null` (server existenci neprozrazuje). */

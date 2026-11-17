@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -65,6 +66,7 @@ import {
   purchasedAtToDate,
   receiptStatusColor,
   receiptStatusKey,
+  receiptListReturnParams,
   receiptStoreName,
   replaceLine,
   samePurchaseTime,
@@ -136,6 +138,13 @@ export class ReceiptDetailPage {
   protected readonly format = inject(FormatService);
 
   private readonly receiptId = inject(ActivatedRoute).snapshot.paramMap.get('id') ?? '';
+  /**
+   * Filtr seznamu, ze kterého se na detail přišlo (stav navigace) — „Zpět na seznam" i návrat
+   * po smazání ho zachovají. Po obnovení stránky už navigace stav nenese, zůstává v historii.
+   */
+  protected readonly listQueryParams = receiptListReturnParams(
+    this.router.currentNavigation()?.extras.state ?? inject(Location).getState(),
+  );
 
   protected readonly lineStatusKeys = RECEIPT_LINE_STATUS_KEYS;
   protected readonly matchSourceKey = matchSourceKey;
@@ -690,7 +699,7 @@ export class ReceiptDetailPage {
     this.deleting.set(true);
     this.deleteError.set(null);
     this.receiptService.delete(receipt.id).subscribe({
-      next: () => void this.router.navigate(['/receipts']),
+      next: () => void this.router.navigate(['/receipts'], { queryParams: this.listQueryParams }),
       error: (err: unknown) => {
         this.deleting.set(false);
         this.deleteError.set(this.actionErrorMessage(err));

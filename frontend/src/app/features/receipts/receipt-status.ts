@@ -2,6 +2,7 @@ import { isReceiptItem } from '../../shared/receipt-item-tag';
 import type {
   ConfirmReceiptLinesResult,
   ReceiptDetail,
+  ReceiptFilterCounts,
   ReceiptLine,
   ReceiptListItem,
 } from '../../models/catalog';
@@ -9,6 +10,7 @@ import {
   ErrorCode,
   QuantityUnit,
   ReceiptLineStatus,
+  ReceiptListFilter,
   ReceiptMatchSource,
   ReceiptProcessingStatus,
   ReceiptReviewStatus,
@@ -67,6 +69,109 @@ export function isProcessingDeadEnd(receipt: Pick<ReceiptListItem, 'processingSt
     receipt.processingStatus === ReceiptProcessingStatus.Unreadable ||
     receipt.processingStatus === ReceiptProcessingStatus.Failed
   );
+}
+
+// --- filtr seznamu
+
+/**
+ * Pořadí voleb v liště filtru: všechno, pak to, co čeká na uživatele, a nakonec konečné stavy.
+ * Volby s nulou v liště zůstávají, ať se při změně počtů nepřeskupuje.
+ */
+export const RECEIPT_LIST_FILTERS: readonly ReceiptListFilter[] = [
+  ReceiptListFilter.All,
+  ReceiptListFilter.ToReview,
+  ReceiptListFilter.Processing,
+  ReceiptListFilter.Done,
+  ReceiptListFilter.Failed,
+];
+
+/** Hodnota query parametru `?filter=` — kebab-case, ať je odkaz čitelný a dá se sdílet. */
+const RECEIPT_LIST_FILTER_PARAMS: Record<ReceiptListFilter, string> = {
+  [ReceiptListFilter.All]: 'all',
+  [ReceiptListFilter.ToReview]: 'to-review',
+  [ReceiptListFilter.Processing]: 'processing',
+  [ReceiptListFilter.Done]: 'done',
+  [ReceiptListFilter.Failed]: 'failed',
+};
+
+const RECEIPT_LIST_FILTER_COUNTS: Record<ReceiptListFilter, keyof ReceiptFilterCounts> = {
+  [ReceiptListFilter.All]: 'all',
+  [ReceiptListFilter.ToReview]: 'toReview',
+  [ReceiptListFilter.Processing]: 'processing',
+  [ReceiptListFilter.Done]: 'done',
+  [ReceiptListFilter.Failed]: 'failed',
+};
+
+export function receiptFilterParam(filter: ReceiptListFilter): string {
+  return RECEIPT_LIST_FILTER_PARAMS[filter];
+}
+
+/** Neznámá nebo chybějící hodnota je `null` — seznam pak použije výchozí volbu. */
+export function receiptFilterFromParam(param: string | null | undefined): ReceiptListFilter | null {
+  const normalized = param?.trim().toLowerCase();
+  if (!normalized) return null;
+  return (
+    RECEIPT_LIST_FILTERS.find((filter) => RECEIPT_LIST_FILTER_PARAMS[filter] === normalized) ?? null
+  );
+}
+
+export function receiptFilterCount(counts: ReceiptFilterCounts, filter: ReceiptListFilter): number {
+  return counts[RECEIPT_LIST_FILTER_COUNTS[filter]];
+}
+
+/**
+ * Výchozí volba seznamu bez filtru v URL: „K vyřízení", když na uživatele nějaká účtenka čeká —
+ * jinak by rozpracovaná mohla skončit na další stránce a zapadnout —, jinak „Vše".
+ */
+export function initialReceiptFilter(
+  counts: Pick<ReceiptFilterCounts, 'toReview'>,
+): ReceiptListFilter {
+  return counts.toReview > 0 ? ReceiptListFilter.ToReview : ReceiptListFilter.All;
+}
+
+/**
+ * Skupina filtru, do které účtenka patří — stejné pravidlo jako server (`ReceiptListFilter`
+ * ve schema.graphqls). Klient ho potřebuje jen k okamžité úpravě počtů po smazání; zdroj pravdy
+ * jsou `filterCounts` ze serveru.
+ */
+export function receiptListFilterOf(receipt: ReceiptStatusSource): ReceiptListFilter {
+  if (isAwaitingProcessing(receipt)) return ReceiptListFilter.Processing;
+  if (receipt.processingStatus !== ReceiptProcessingStatus.Processed) {
+    return ReceiptListFilter.Failed;
+  }
+  return receipt.reviewStatus === ReceiptReviewStatus.Done
+    ? ReceiptListFilter.Done
+    : ReceiptListFilter.ToReview;
+}
+
+/** Počty po smazání účtenky — ubude z „Vše" i z její skupiny, ať lišta nečeká na server. */
+export function filterCountsWithout(
+  counts: ReceiptFilterCounts,
+  receipt: ReceiptStatusSource,
+): ReceiptFilterCounts {
+  const group = RECEIPT_LIST_FILTER_COUNTS[receiptListFilterOf(receipt)];
+  return {
+    ...counts,
+    all: Math.max(0, counts.all - 1),
+    [group]: Math.max(0, counts[group] - 1),
+  };
+}
+
+/** Klíč stavu navigace (`history.state`), ve kterém seznam předá detailu svůj filtr. */
+export const RECEIPT_LIST_FILTER_STATE = 'receiptListFilter';
+
+/**
+ * Query parametry odkazu „Zpět na seznam" podle stavu navigace, se kterým se na detail přišlo.
+ * Bez platného filtru prázdné — seznam pak znovu použije výchozí volbu. Stav navigace přežije
+ * i obnovení stránky detailu, odkaz sdílený jinam ho nenese.
+ */
+export function receiptListReturnParams(state: unknown): Record<string, string> {
+  const value =
+    typeof state === 'object' && state !== null
+      ? (state as Record<string, unknown>)[RECEIPT_LIST_FILTER_STATE]
+      : null;
+  const filter = typeof value === 'string' ? receiptFilterFromParam(value) : null;
+  return filter ? { filter: receiptFilterParam(filter) } : {};
 }
 
 /** Nejlepší název obchodu, jaký appka má: potvrzený obchod, jinak text z hlavičky. */

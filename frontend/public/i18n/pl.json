@@ -231,6 +231,13 @@
       "IN_PROGRESS": "W toku",
       "DONE": "Gotowe"
     },
+    "receiptListFilter": {
+      "ALL": "Wszystkie",
+      "TO_REVIEW": "Do załatwienia",
+      "PROCESSING": "Przetwarzanie",
+      "DONE": "Gotowe",
+      "FAILED": "Nieprzetworzone"
+    },
     "receiptLineStatus": {
       "UNMATCHED": "Niepowiązane",
       "SUGGESTED": "Propozycja",

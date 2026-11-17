@@ -14,6 +14,11 @@
   "offlineAction": "Nie masz połączenia z internetem — akcja nie została zapisana. Spróbuj ponownie po połączeniu.",
   "emptyTitle": "Nie masz jeszcze żadnego paragonu",
   "emptyText": "Prześlij zdjęcie paragonu z zakupów. Aplikacja odczyta z niego sklep, datę i pozycje, a ty tylko potwierdzisz, które ceny zapisać.",
+  "filter": {
+    "label": "Filtr według stanu",
+    "emptyTitle": "Nie masz żadnego paragonu w tym stanie",
+    "showAll": "Pokaż wszystkie"
+  },
   "uploadedTitle": "Paragon został wysłany",
   "uploadedText": "Czeka w kolejce na przetworzenie na komputerze operatora, może to chwilę potrwać. Gdy będzie gotowy, znajdziesz go tutaj do powiązania, a w menu przy Paragonach pojawi się znaczek.",
   "unknownStore": "Nieznany sklep",

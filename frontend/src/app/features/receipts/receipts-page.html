@@ -48,6 +48,24 @@
     />
   }
 
+  @if (hasAnyReceipt()) {
+    <nz-radio-group
+      class="filter-bar"
+      role="radiogroup"
+      [attr.aria-label]="t('receipts.filter.label')"
+      [ngModel]="filter()"
+      (ngModelChange)="selectFilter($event)"
+      nzButtonStyle="solid"
+      name="receiptListFilter"
+    >
+      @for (option of filters; track option) {
+        <label nz-radio-button [nzValue]="option" class="filter-option">
+          {{ filterKeys[option] | transloco }} ({{ format.number(filterCount(option), 0) }})
+        </label>
+      }
+    </nz-radio-group>
+  }
+
   @switch (state()) {
     @case ('loading') {
       <div class="state-block">
@@ -75,7 +93,7 @@
       />
     }
     @default {
-      @if (items().length === 0) {
+      @if (!hasAnyReceipt()) {
         <div class="empty">
           <span nz-icon nzType="file-text" class="empty-icon"></span>
           <h2 class="empty-title">{{ t('receipts.emptyTitle') }}</h2>
@@ -87,11 +105,22 @@
             </button>
           }
         </div>
+      } @else if (items().length === 0) {
+        <div class="empty empty-filter">
+          <p class="empty-filter-title">{{ t('receipts.filter.emptyTitle') }}</p>
+          <button nz-button type="button" (click)="showAll()">
+            {{ t('receipts.filter.showAll') }}
+          </button>
+        </div>
       } @else {
         <ul class="receipt-list">
           @for (receipt of items(); track receipt.id) {
             <li class="receipt" [class.receipt-unseen]="receipt.unseen">
-              <a [routerLink]="['/receipts', receipt.id]" class="receipt-link">
+              <a
+                [routerLink]="['/receipts', receipt.id]"
+                [state]="detailLinkState()"
+                class="receipt-link"
+              >
                 <span class="receipt-head">
                   <span class="receipt-store">{{
                     storeName(receipt) ?? t('receipts.unknownStore')

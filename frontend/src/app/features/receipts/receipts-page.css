@@ -58,6 +58,38 @@
   color: var(--kc-text-secondary);
 }
 
+/* Prázdný jen zvolený filtr — krátká zpráva, ne úvodní obrazovka s nahráním. */
+.empty-filter {
+  padding: var(--kc-space-5) var(--kc-space-4);
+}
+
+.empty-filter-title {
+  margin: 0;
+  color: var(--kc-text-secondary);
+}
+
+/*
+ * Lišta filtru stavu. Volby jsou samostatné dlaždice s mezerou, ne spojený přepínač: lišta se
+ * při nedostatku místa zalomí (úzký displej, delší překlad) a spojený přepínač by ve druhé řadě
+ * ztratil levý okraj. Stránka tak do strany nescrolluje nikdy.
+ */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kc-space-2);
+  margin-bottom: var(--kc-space-4);
+}
+
+.filter-option {
+  border-inline-start-width: 1px;
+  border-radius: var(--kc-space-1);
+}
+
+/* Dělicí čára mezi segmenty spojeného přepínače — u samostatných dlaždic by byla navíc. */
+.filter-option::before {
+  display: none;
+}
+
 .receipt-list {
   margin: 0;
   padding: 0;
@@ -134,6 +166,17 @@
 
 /* Na úzkém displeji se štítek a mazání přesunou pod text, ať název obchodu nemá 3 znaky. */
 @media (max-width: 600px) {
+  /*
+   * Minimální dotykový cíl 44 px (docs/design.md) — zvětšuje se výška, ne písmo. Užší boční
+   * odsazení než výchozích 15 px ng-zorro: česká lišta se tak na 360 px vejde do dvou řad místo tří.
+   */
+  .filter-option {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-inline: var(--kc-space-2);
+  }
+
   .receipt {
     flex-wrap: wrap;
   }

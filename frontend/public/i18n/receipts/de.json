@@ -14,6 +14,11 @@
   "offlineAction": "Du bist nicht mit dem Internet verbunden — die Aktion wurde nicht gespeichert. Versuch es nach dem Verbinden erneut.",
   "emptyTitle": "Du hast noch keine Kassenbons",
   "emptyText": "Lade ein Foto eines Kassenbons hoch. Die App liest Geschäft, Datum und Positionen aus, und du bestätigst nur, welche Preise erfasst werden.",
+  "filter": {
+    "label": "Nach Status filtern",
+    "emptyTitle": "Du hast keine Kassenbons in diesem Status",
+    "showAll": "Alle anzeigen"
+  },
   "uploadedTitle": "Der Kassenbon wurde gesendet",
   "uploadedText": "Er wartet auf die Verarbeitung auf dem Rechner des Betreibers, das kann eine Weile dauern. Sobald er fertig ist, findest du ihn hier zum Zuordnen, und im Menü erscheint ein Hinweis bei Kassenbons.",
   "unknownStore": "Unbekanntes Geschäft",

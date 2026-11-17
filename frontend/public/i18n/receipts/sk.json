@@ -14,6 +14,11 @@
   "offlineAction": "Nie si pripojený/á k internetu — akcia sa neuložila. Skús to po pripojení znova.",
   "emptyTitle": "Zatiaľ tu nemáš žiadny bloček",
   "emptyText": "Nahraj fotku bločku z nákupu. Appka z neho prečíta obchod, dátum a položky a ty len potvrdíš, ktoré ceny zapísať.",
+  "filter": {
+    "label": "Filter podľa stavu",
+    "emptyTitle": "V tomto stave nemáš žiadny bloček",
+    "showAll": "Zobraziť všetky"
+  },
   "uploadedTitle": "Bloček je odoslaný",
   "uploadedText": "Čaká vo fronte na spracovanie na počítači prevádzkovateľa, môže to chvíľu trvať. Keď bude hotový, nájdeš ho tu na párovanie a v menu sa pri Bločkoch objaví odznak.",
   "unknownStore": "Neznámy obchod",

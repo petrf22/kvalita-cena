@@ -1,5 +1,5 @@
 <ng-container *transloco="let t; scope: 'receipts'">
-  <a routerLink="/receipts" class="back-link">
+  <a routerLink="/receipts" [queryParams]="listQueryParams" class="back-link">
     <span nz-icon nzType="arrow-left"></span>
     {{ t('receipts.backToList') }}
   </a>

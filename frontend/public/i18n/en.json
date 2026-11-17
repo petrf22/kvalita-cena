@@ -231,6 +231,13 @@
       "IN_PROGRESS": "In progress",
       "DONE": "Done"
     },
+    "receiptListFilter": {
+      "ALL": "All",
+      "TO_REVIEW": "To review",
+      "PROCESSING": "Processing",
+      "DONE": "Done",
+      "FAILED": "Not processed"
+    },
     "receiptLineStatus": {
       "UNMATCHED": "Unmatched",
       "SUGGESTED": "Suggestion",

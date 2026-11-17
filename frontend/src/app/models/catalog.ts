@@ -23,6 +23,7 @@ import type {
   MyEditsQuery,
   MyObservationsQuery,
   MyProductsQuery,
+  MyReceiptsQuery,
   MyReviewsQuery,
   MyStoresQuery,
   PhotoFieldsFragment,
@@ -198,6 +199,8 @@ export type ReceiptListItem = ReceiptListFieldsFragment;
 export type ReceiptDetail = ReceiptDetailFieldsFragment;
 export type ReceiptLine = ReceiptLineFieldsFragment;
 export type ReceiptLineCounts = ReceiptListFieldsFragment['lineCounts'];
+/** Počty vlastních účtenek ve skupinách filtru seznamu (`ReceiptListFilter`) — nepřekrývají se. */
+export type ReceiptFilterCounts = MyReceiptsQuery['myReceipts']['filterCounts'];
 export type ConfirmReceiptLinesResult = ConfirmReceiptLinesMutation['confirmReceiptLines'];
 
 /**
