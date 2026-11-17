@@ -31,10 +31,44 @@ public interface ReceiptRepository extends JpaRepository<Receipt, Long> {
   @Query("SELECT r FROM Receipt r WHERE r.id = :id AND r.ownerUserId = :ownerUserId")
   Optional<Receipt> findForUpdateByIdAndOwnerUserId(@Param("id") Long id, @Param("ownerUserId") Long ownerUserId);
 
-  @Query(value = "SELECT * FROM core.receipt WHERE owner_user_id = :ownerId "
-      + "ORDER BY created_at DESC, id DESC LIMIT :limit OFFSET :offset", nativeQuery = true)
-  List<Receipt> findPageByOwner(@Param("ownerId") Long ownerId, @Param("limit") int limit,
-      @Param("offset") int offset);
+  // Skupiny filtru seznamu (ReceiptListFilter) — jediné místo, kde jsou podmínky zapsané; stránka
+  // i počty skládají SQL z týchž konstant, takže se nerozejdou.
+  String TO_REVIEW_SQL = "(processing_status = 'PROCESSED' AND review_status <> 'DONE')";
+  String PROCESSING_SQL = "(processing_status IN ('QUEUED', 'PROCESSING'))";
+  String DONE_SQL = "(processing_status = 'PROCESSED' AND review_status = 'DONE')";
+  String FAILED_SQL = "(processing_status IN ('NOT_A_RECEIPT', 'UNREADABLE', 'FAILED'))";
+  String FILTER_SQL = "(:filter = 'ALL'"
+      + " OR (:filter = 'TO_REVIEW' AND " + TO_REVIEW_SQL + ")"
+      + " OR (:filter = 'PROCESSING' AND " + PROCESSING_SQL + ")"
+      + " OR (:filter = 'DONE' AND " + DONE_SQL + ")"
+      + " OR (:filter = 'FAILED' AND " + FAILED_SQL + "))";
+
+  /** Stránka vlastních účtenek ve skupině {@code filter} (název {@link cz.kvalitacena.db.entity.ReceiptListFilter}). */
+  @Query(value = "SELECT * FROM core.receipt WHERE owner_user_id = :ownerId AND " + FILTER_SQL
+      + " ORDER BY created_at DESC, id DESC LIMIT :limit OFFSET :offset", nativeQuery = true)
+  List<Receipt> findPageByOwner(@Param("ownerId") Long ownerId, @Param("filter") String filter,
+      @Param("limit") int limit, @Param("offset") int offset);
+
+  /** Počet účtenek v každé skupině filtru jedním dotazem — štítky filtru a výchozí volba klienta. */
+  @Query(value = "SELECT count(*) AS allCount,"
+      + " count(*) FILTER (WHERE " + TO_REVIEW_SQL + ") AS toReview,"
+      + " count(*) FILTER (WHERE " + PROCESSING_SQL + ") AS processing,"
+      + " count(*) FILTER (WHERE " + DONE_SQL + ") AS done,"
+      + " count(*) FILTER (WHERE " + FAILED_SQL + ") AS failed"
+      + " FROM core.receipt WHERE owner_user_id = :ownerId", nativeQuery = true)
+  FilterCounts countByFilter(@Param("ownerId") Long ownerId);
+
+  interface FilterCounts {
+    long getAllCount();
+
+    long getToReview();
+
+    long getProcessing();
+
+    long getDone();
+
+    long getFailed();
+  }
 
   List<Receipt> findByOwnerUserIdOrderByCreatedAtDesc(Long ownerUserId);
 

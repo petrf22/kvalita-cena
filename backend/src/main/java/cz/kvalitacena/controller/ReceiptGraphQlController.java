@@ -6,6 +6,7 @@ import cz.kvalitacena.db.entity.Product;
 import cz.kvalitacena.db.entity.ProductAliasStatus;
 import cz.kvalitacena.db.entity.ProductStoreLabel;
 import cz.kvalitacena.db.entity.Receipt;
+import cz.kvalitacena.db.entity.ReceiptListFilter;
 import cz.kvalitacena.db.entity.ReceiptLine;
 import cz.kvalitacena.db.entity.ReceiptMatchSource;
 import cz.kvalitacena.db.entity.ReceiptLineStatus;
@@ -79,8 +80,8 @@ public class ReceiptGraphQlController {
 
   @QueryMapping
   public ReceiptService.ReceiptPage myReceipts(@Argument Integer first, @Argument Integer offset,
-      Authentication authentication) {
-    return receiptService.myReceipts(viewer(authentication).publicUid(), first, offset);
+      @Argument ReceiptListFilter filter, Authentication authentication) {
+    return receiptService.myReceipts(viewer(authentication).publicUid(), first, offset, filter);
   }
 
   @QueryMapping

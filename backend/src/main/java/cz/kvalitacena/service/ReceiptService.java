@@ -5,6 +5,7 @@ import cz.kvalitacena.db.entity.AppUser;
 import cz.kvalitacena.db.entity.Receipt;
 import cz.kvalitacena.db.entity.ReceiptImage;
 import cz.kvalitacena.db.entity.ReceiptJob;
+import cz.kvalitacena.db.entity.ReceiptListFilter;
 import cz.kvalitacena.db.repo.AppUserRepository;
 import cz.kvalitacena.db.repo.ReceiptImageRepository;
 import cz.kvalitacena.db.repo.ReceiptJobRepository;
@@ -48,7 +49,21 @@ public class ReceiptService {
   private final ReceiptProperties receiptProperties;
   private final ReceiptQueueNotifier queueNotifier;
 
-  public record ReceiptPage(List<Receipt> items, int totalCount, boolean hasMore) {
+  /** {@code totalCount} platí pro zvolený filtr; {@code filterCounts} pro všechny skupiny. */
+  public record ReceiptPage(List<Receipt> items, int totalCount, boolean hasMore, ReceiptFilterCounts filterCounts) {
+  }
+
+  public record ReceiptFilterCounts(int all, int toReview, int processing, int done, int failed) {
+
+    int of(ReceiptListFilter filter) {
+      return switch (filter) {
+        case ALL -> all;
+        case TO_REVIEW -> toReview;
+        case PROCESSING -> processing;
+        case DONE -> done;
+        case FAILED -> failed;
+      };
+    }
   }
 
   public record ReceiptSummary(int unseenCount, int consentVersion) {
@@ -122,13 +137,17 @@ public class ReceiptService {
   }
 
   @Transactional(readOnly = true)
-  public ReceiptPage myReceipts(UUID ownerPublicUid, Integer first, Integer offset) {
+  public ReceiptPage myReceipts(UUID ownerPublicUid, Integer first, Integer offset, ReceiptListFilter filter) {
     AppUser owner = requireUser(ownerPublicUid);
+    ReceiptListFilter effective = filter == null ? ReceiptListFilter.ALL : filter;
     int limit = Math.max(1, Math.min(first == null ? 20 : first, 100));
     int skip = Math.max(0, offset == null ? 0 : offset);
-    List<Receipt> items = receiptRepository.findPageByOwner(owner.getId(), limit, skip);
-    int total = (int) receiptRepository.countByOwnerUserId(owner.getId());
-    return new ReceiptPage(items, total, skip + items.size() < total);
+    List<Receipt> items = receiptRepository.findPageByOwner(owner.getId(), effective.name(), limit, skip);
+    ReceiptRepository.FilterCounts raw = receiptRepository.countByFilter(owner.getId());
+    ReceiptFilterCounts counts = new ReceiptFilterCounts((int) raw.getAllCount(), (int) raw.getToReview(),
+        (int) raw.getProcessing(), (int) raw.getDone(), (int) raw.getFailed());
+    int total = counts.of(effective);
+    return new ReceiptPage(items, total, skip + items.size() < total, counts);
   }
 
   @Transactional(readOnly = true)

@@ -252,8 +252,10 @@ type Query {
   """
   Vlastní naskenované účtenky, nejnovější první (docs/soukromi.md, „Účtenky" — vidí je jen
   vlastník). Vyžaduje přihlášení. Nahrání účtenky je REST POST /api/receipts (multipart).
+  filter zúží seznam na jednu skupinu stavu; totalCount platí pro zvolený filtr, filterCounts
+  nese počty všech skupin (štítky filtru a výchozí volba klienta).
   """
-  myReceipts(first: Int = 20, offset: Int = 0): ReceiptPage!
+  myReceipts(first: Int = 20, offset: Int = 0, filter: ReceiptListFilter = ALL): ReceiptPage!
 
   "Jedna vlastní účtenka i s řádky; cizí nebo neexistující = null."
   receipt(id: ID!): Receipt
@@ -1899,6 +1901,21 @@ enum ReceiptProcessingStatus {
   FAILED
 }
 
+"""
+Skupina seznamu vlastních účtenek (myReceipts). Skupiny se nepřekrývají a dohromady dávají ALL.
+"""
+enum ReceiptListFilter {
+  ALL
+  "Zpracovaná, ale párování není hotové (processingStatus PROCESSED, reviewStatus ≠ DONE) — čeká na uživatele."
+  TO_REVIEW
+  "Ve frontě nebo ji právě čte stroj (QUEUED, PROCESSING)."
+  PROCESSING
+  "Zpracovaná a spárovaná (PROCESSED + DONE)."
+  DONE
+  "Stroj skončil bez řádků (NOT_A_RECEIPT, UNREADABLE, FAILED) — nafotit znovu nebo smazat."
+  FAILED
+}
+
 "Kam došel uživatel s párováním."
 enum ReceiptReviewStatus {
   PENDING
@@ -2066,8 +2083,19 @@ type ReceiptLineProductDefaults {
 
 type ReceiptPage {
   items: [Receipt!]!
+  "Počet ve zvoleném filtru."
   totalCount: Int!
   hasMore: Boolean!
+  filterCounts: ReceiptFilterCounts!
+}
+
+"Počet vlastních účtenek v každé skupině ReceiptListFilter."
+type ReceiptFilterCounts {
+  all: Int!
+  toReview: Int!
+  processing: Int!
+  done: Int!
+  failed: Int!
 }
 
 type ReceiptSummary {
