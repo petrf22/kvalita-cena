@@ -104,7 +104,7 @@ export type PriceCurrent = PriceCurrentFieldsFragment;
 /** Plný detail produktu (karta produktu) — vždy z fragmentu ProductDetailFields. */
 export type Product = ProductDetailFieldsFragment;
 
-/** "Vaše cena" — poslední vlastní zápis přihlášeného uživatele, i dřív než ho zpracuje agregace. */
+/** "Tvoje cena" — poslední vlastní zápis přihlášeného uživatele, i dřív než ho zpracuje agregace. */
 export type MyPrice = ProductDetailFieldsFragment['myPrices'][number];
 
 /** Lehčí varianta Product pro řádek seznamu hledání — bez cen a agregátů (ty jsou na ProductSearchItem). */

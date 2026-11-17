@@ -48,7 +48,7 @@
     "PUBLIC": "Zveřejněno",
     "AWAITING_CONFIRMATIONS": "Čeká na potvrzení",
     "HIDDEN_AFTER_FLAGS": "Skryto po nahlášení",
-    "PENDING_MERGE": "Vaše úprava",
+    "PENDING_MERGE": "Tvoje úprava",
     "MERGED": "Sloučeno"
   },
   "status": {
@@ -58,18 +58,18 @@
       "observation": "Započítává se do komunitního průměru (přepočet do pár sekund)."
     },
     "awaitingConfirmations": {
-      "product": "V hledání ho zatím vidíte jen vy. Ostatní ho najdou naskenováním kódu. Zveřejní se všem, až u něj zapíše cenu {{required}} dalších lidí — zatím {{received}}.",
-      "genericProduct": "V hledání ho zatím vidíte jen vy. Ostatní ho najdou v nabídce obchodu při zápisu ceny. Zveřejní se všem, až u něj zapíše cenu {{required}} dalších lidí — zatím {{received}}.",
-      "store": "Zatím ho vidíte jen vy. Zveřejní se, až v něm zapíše cenu {{required}} dalších lidí — zatím {{received}}.",
+      "product": "V hledání ho zatím vidíš jen ty. Ostatní ho najdou naskenováním kódu. Zveřejní se všem, až u něj zapíše cenu {{required}} dalších lidí — zatím {{received}}.",
+      "genericProduct": "V hledání ho zatím vidíš jen ty. Ostatní ho najdou v nabídce obchodu při zápisu ceny. Zveřejní se všem, až u něj zapíše cenu {{required}} dalších lidí — zatím {{received}}.",
+      "store": "Zatím ho vidíš jen ty. Zveřejní se, až v něm zapíše cenu {{required}} dalších lidí — zatím {{received}}.",
       "observation": "Ostatním se cena ukáže, až se zveřejní podkladové zboží nebo obchod — zatím {{received}} z {{required}} potřebných potvrzení."
     },
     "hiddenAfterFlags": {
-      "product": "Skryto po nahlášení, čeká na přezkum. Zatím ho vidíte jen vy.",
-      "store": "Skryto po nahlášení, čeká na přezkum. Zatím ho vidíte jen vy.",
+      "product": "Skryto po nahlášení, čeká na přezkum. Zatím ho vidíš jen ty.",
+      "store": "Skryto po nahlášení, čeká na přezkum. Zatím ho vidíš jen ty.",
       "observation": "Podkladové zboží nebo obchod bylo skryto po nahlášení — cena zatím není vidět nikomu jinému."
     },
     "pendingMerge": {
-      "edit": "Vaši úpravu zatím vidíte jen vy — sloučení s veřejným záznamem se teprve připravuje."
+      "edit": "Tvoji úpravu zatím vidíš jen ty — sloučení s veřejným záznamem se teprve připravuje."
     },
     "merged": {
       "product": "Sloučeno s jiným zbožím — ceny a recenze jsou teď u něj a proklik vede rovnou tam.",
