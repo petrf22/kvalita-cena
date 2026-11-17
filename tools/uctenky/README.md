@@ -225,6 +225,11 @@ a o nic nepřijde: řádky, které potvrdil, ručně spároval nebo ignoroval, z
 nahradí nová verze. Když nová verze účtenku nepřečte, platí ta stará. Podrobně
 [`docs/ai.md`](../../docs/ai.md), „Nové rozpoznání".
 
+Když worker hlásí `přeskočeno 123: already queued`, účtenka už ve frontě je. Přidané
+`leased until …` znamená, že ji drží pronájem dřívějšího běhu workeru — typicky přerušeného
+Ctrl+C. Ten vyprší nejpozději za 15 minut, pak ji `run-worker.sh` vyzvedne. Prázdnou frontu
+hlásí `--once` větou `fronta je prázdná`.
+
 Dokud má server obrázky (30 dní po zpracování), dělá se nové OCR i rozbor. Potom už jen
 nový rozbor uloženého textu, bez OCR. Ten končí řádkem s celkovou částkou, takže oprava
 čtení patičky se na něm neprojeví: datum nákupu ani adresa prodejny COOP z bloku terminálu

@@ -893,7 +893,7 @@ class ReceiptFlowIntegrationTest {
     assertThat(first.requeued()).containsExactly(receipt.getId());
     assertThat(first.skipped()).extracting(ReceiptWorkerService.RequeueResult.Skipped::reason).containsExactly("not found");
     assertThat(second.skipped()).extracting(ReceiptWorkerService.RequeueResult.Skipped::reason)
-        .containsExactly("already queued");
+        .containsExactly("already queued (attempts 0/3)");
     assertThat(receiptRepository.findById(receipt.getId()).orElseThrow().getProcessingStatus())
         .isEqualTo(ReceiptProcessingStatus.QUEUED);
 
@@ -909,6 +909,30 @@ class ReceiptFlowIntegrationTest {
     assertThat(lines(receipt.getId())).hasSize(1);
     assertThat(jobRepository.findFinishedReceiptIdsSince(OffsetDateTime.now().minusMinutes(5), 500))
         .contains(receipt.getId());
+  }
+
+  @Test
+  void requeueOfLeasedReceiptReportsLeaseAndResetsAttempts() {
+    AppUser owner = persistUser();
+    Receipt receipt = receiptService.upload(owner.getPublicUid(), List.of(jpeg()), 1, false, null, null);
+    // Worker účtenku vyzvedl a byl přerušen bez /fail — lease visí, pokusy jsou vyčerpané.
+    assertThat(workerService.lease(10)).anySatisfy(j -> assertThat(j.receiptId()).isEqualTo(receipt.getId()));
+    jdbcTemplate.update("UPDATE ai.receipt_job SET attempts = 3 WHERE receipt_id = ?", receipt.getId());
+
+    var held = workerService.requeue(List.of(receipt.getId()), null);
+
+    assertThat(held.requeued()).isEmpty();
+    assertThat(held.skipped()).extracting(ReceiptWorkerService.RequeueResult.Skipped::reason)
+        .singleElement().asString().startsWith("already queued, leased until ").endsWith("(attempts 3/3)");
+    // Dokud lease platí, worker účtenku nedostane.
+    assertThat(workerService.lease(10)).noneSatisfy(j -> assertThat(j.receiptId()).isEqualTo(receipt.getId()));
+
+    // Po vypršení lease ji worker vyzvedne — bez nového rozpoznání by ji lease() tiše ukončil
+    // jako „lease expired after 3 attempts".
+    jdbcTemplate.update("UPDATE ai.receipt_job SET lease_until = now() - interval '1 minute' WHERE receipt_id = ?",
+        receipt.getId());
+    assertThat(workerService.lease(10)).anySatisfy(j -> assertThat(j.receiptId()).isEqualTo(receipt.getId()));
+    assertThat(jobRepository.findByReceiptId(receipt.getId()).orElseThrow().getAttempts()).isEqualTo((short) 1);
   }
 
   private ReceiptReviewService.ConfirmResult confirmSingle(AppUser owner, Fixture f, Long receiptId, Product product) {

@@ -547,11 +547,20 @@ class ReprocessTest(unittest.TestCase):
         self.assertIsNone(api.results[7]["model"])
         self.assertTrue(api.results[7]["lines"])
 
+    def test_prazdna_davka_se_v_jednorazovem_behu_ohlasi(self):
+        logged = []
+        self.assertEqual(worker.run_batch(FakeApi([]), FakeOcr(), 5, log=logged.append, announce_empty=True), 0)
+        self.assertTrue(any("fronta je prázdná" in line for line in logged))
+        quiet = []
+        worker.run_batch(FakeApi([]), FakeOcr(), 5, log=quiet.append)
+        self.assertEqual(quiet, [])
+
     def test_requeue_vypise_vracene_i_preskocene(self):
         class RequeueApi:
             def requeue(self, receipt_ids, processed_since=None):
                 self.args = (receipt_ids, processed_since)
-                return {"requeued": [1], "skipped": [{"receiptId": 2, "reason": "already queued"}]}
+                return {"requeued": [1], "skipped": [{"receiptId": 2,
+                                                       "reason": "already queued (attempts 0/3)"}]}
 
         api, logged = RequeueApi(), []
         self.assertEqual(worker.requeue(api, [1, 2], date(2026, 10, 1), log=logged.append), 1)
