@@ -1,0 +1,60 @@
+{
+  "profile": "winshop",
+  "merchant": {
+    "rawName": "OBCHOD VZOR",
+    "country": "CZ",
+    "street": "Nádražní 1",
+    "postalCode": "11111",
+    "city": "Vzorov",
+    "ico": "12345678"
+  },
+  "purchasedAt": "2026-09-07T10:15:00+02:00",
+  "currency": "CZK",
+  "printedTotal": "925.00",
+  "computedTotal": "925.00",
+  "totalMatches": true,
+  "hasAmounts": true,
+  "lines": [
+    {
+      "lineNo": 1,
+      "kind": "ITEM",
+      "rawLabel": "FLYING GOOSE Chilli Omáčka Sriracha Hot 100ml",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "55.00",
+      "lineTotal": "55.00",
+      "vatCode": "12"
+    },
+    {
+      "lineNo": 2,
+      "kind": "ITEM",
+      "rawLabel": "A Select Kimchi 490g",
+      "quantity": "2",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "165.00",
+      "lineTotal": "330.00",
+      "vatCode": "12"
+    },
+    {
+      "lineNo": 3,
+      "kind": "ITEM",
+      "rawLabel": "CHOYA SAKE vino 14,5 % 750 ml",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "339.90",
+      "lineTotal": "339.90",
+      "vatCode": "21"
+    },
+    {
+      "lineNo": 4,
+      "kind": "ITEM",
+      "rawLabel": "BIBIGO Gyoza Dumpling S Krevety A Zeleninou 400g",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "199.90",
+      "lineTotal": "199.90",
+      "vatCode": "12"
+    }
+  ],
+  "warnings": []
+}

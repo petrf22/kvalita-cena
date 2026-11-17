@@ -1,0 +1,104 @@
+{
+  "profile": "tesco",
+  "merchant": {
+    "rawName": "Tesco Hypermarket Vzorov",
+    "chainSlug": "tesco",
+    "country": "CZ",
+    "ico": "45308314"
+  },
+  "purchasedAt": null,
+  "currency": "CZK",
+  "printedTotal": "536.92",
+  "computedTotal": "536.92",
+  "totalMatches": true,
+  "hasAmounts": true,
+  "lines": [
+    {
+      "lineNo": 1,
+      "kind": "ITEM",
+      "rawLabel": "RODO.PRSNI RIZKY",
+      "quantity": "0.874",
+      "quantityBasis": "PER_KG",
+      "unitPrice": "259.90",
+      "lineTotal": "227.15",
+      "vatCode": "B"
+    },
+    {
+      "lineNo": 2,
+      "kind": "ITEM",
+      "rawLabel": "CARPACCIO 100 g",
+      "quantity": "2",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "65.90",
+      "lineTotal": "131.80",
+      "vatCode": "B"
+    },
+    {
+      "lineNo": 3,
+      "kind": "ITEM",
+      "rawLabel": "OLMA MLEKO 3,9% 1 L",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "39.90",
+      "lineTotal": "39.90",
+      "vatCode": "B"
+    },
+    {
+      "lineNo": 4,
+      "kind": "ITEM",
+      "rawLabel": "OR.STP MLECNA 170g",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "99.90",
+      "lineTotal": "99.90",
+      "vatCode": "B"
+    },
+    {
+      "lineNo": 5,
+      "kind": "ITEM",
+      "rawLabel": "JABLKA GOL. DELI. Kg",
+      "quantity": "0.514",
+      "quantityBasis": "PER_KG",
+      "unitPrice": "29.90",
+      "lineTotal": "15.37",
+      "vatCode": "B"
+    },
+    {
+      "lineNo": 6,
+      "kind": "ITEM",
+      "rawLabel": "LEE MIN.CUB.SYR 110g",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "52.90",
+      "lineTotal": "52.90",
+      "vatCode": "B"
+    },
+    {
+      "lineNo": 7,
+      "kind": "ITEM",
+      "rawLabel": "DREVORUB. CHLEB 405g",
+      "quantity": "1",
+      "quantityBasis": "PACKAGE",
+      "unitPrice": "34.90",
+      "lineTotal": "34.90",
+      "vatCode": "B"
+    },
+    {
+      "lineNo": 8,
+      "kind": "DISCOUNT",
+      "rawLabel": "CC LEE MIN.CUB.SYR 1",
+      "lineTotal": "-20.00",
+      "appliesToLineNo": 6
+    },
+    {
+      "lineNo": 9,
+      "kind": "DISCOUNT",
+      "rawLabel": "CC OR.STP MLECNA 170",
+      "lineTotal": "-45.00",
+      "appliesToLineNo": 4
+    }
+  ],
+  "warnings": [
+    "na účtence se nenašlo datum nákupu"
+  ]
+}
