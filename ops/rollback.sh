@@ -141,7 +141,17 @@ if [ "$RESTORE_DB" -eq 1 ]; then
   wait_for "databázi" 60 _postgres_ready
 
   echo "Zálohuji stav před obnovou (kdyby bylo potřeba dohledat zápisy z mezidobí)..."
-  "$REPO_DIR/ops/backup.sh"
+  # Bez úklidu starých záloh: retence by mohla smazat právě zálohu, ze které se obnovuje.
+  SKIP_RETENTION=1 "$REPO_DIR/ops/backup.sh"
+  # Druhá pojistka těsně před DROP — cokoli mezi první kontrolou a teď (souběžný cron backup.sh
+  # s retencí) mohlo soubor odnést. Databáze je zatím netknutá, stačí vrátit backend.
+  for file in "$DB_FILE" "$MEDIA_FILE"; do
+    if [ ! -s "$file" ]; then
+      echo "Záloha k obnově mezitím zmizela: '$file' — nic neobnovuji, databáze zůstala beze změny." >&2
+      compose up -d backend
+      exit 1
+    fi
+  done
 
   echo "Obnovuji databázi z $DB_FILE..."
   # WITH (FORCE) odpojí i cizí spojení (DBeaver přes tunel), jinak by DROP čekal donekonečna.

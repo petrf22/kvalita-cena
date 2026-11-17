@@ -103,15 +103,23 @@ docker run --rm \
   alpine \
   tar czf "/backup/media-$TIMESTAMP.tar.gz" -C /data .
 
-echo "[$TIMESTAMP] Mažu lokální zálohy starší než $RETENTION_DAYS dní..."
-find "$BACKUP_ROOT" -maxdepth 1 -type f \( -name 'db-*.sql.gz' -o -name 'media-*.tar.gz' \) \
-  -mtime "+$RETENTION_DAYS" -delete
+# SKIP_RETENTION=1 nechá všechny dosavadní zálohy být. Používá ho ops/rollback.sh u pojistné
+# zálohy těsně před obnovou: úklid by jinak mohl smazat právě tu zálohu, ze které se vzápětí
+# obnovuje (nejstarší kopie při plném stropu RETENTION_COPIES, nebo výslovně zvolená starší
+# než RETENTION_DAYS) — a rollback by na chybějící soubor narazil až po DROP DATABASE.
+if [[ "${SKIP_RETENTION:-0}" == "1" ]]; then
+  echo "[$TIMESTAMP] SKIP_RETENTION=1 — staré zálohy nemažu."
+else
+  echo "[$TIMESTAMP] Mažu lokální zálohy starší než $RETENTION_DAYS dní..."
+  find "$BACKUP_ROOT" -maxdepth 1 -type f \( -name 'db-*.sql.gz' -o -name 'media-*.tar.gz' \) \
+    -mtime "+$RETENTION_DAYS" -delete
 
-# Strop i na POČET kopií (vedle stáří výš) — skript se dá spustit ručně i vícekrát za den, kdy
-# by časová retence žádnou z nich zatím nesmazala.
-echo "[$TIMESTAMP] Ořezávám na max. $RETENTION_COPIES kopií..."
-prune_count "$BACKUP_ROOT" 'db-*.sql.gz' "$RETENTION_COPIES"
-prune_count "$BACKUP_ROOT" 'media-*.tar.gz' "$RETENTION_COPIES"
+  # Strop i na POČET kopií (vedle stáří výš) — skript se dá spustit ručně i vícekrát za den, kdy
+  # by časová retence žádnou z nich zatím nesmazala.
+  echo "[$TIMESTAMP] Ořezávám na max. $RETENTION_COPIES kopií..."
+  prune_count "$BACKUP_ROOT" 'db-*.sql.gz' "$RETENTION_COPIES"
+  prune_count "$BACKUP_ROOT" 'media-*.tar.gz' "$RETENTION_COPIES"
+fi
 
 echo "[$TIMESTAMP] Hotovo: $BACKUP_ROOT/db-$TIMESTAMP.sql.gz, $BACKUP_ROOT/media-$TIMESTAMP.tar.gz"
 
