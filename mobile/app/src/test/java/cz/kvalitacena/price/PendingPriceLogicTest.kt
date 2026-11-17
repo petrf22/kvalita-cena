@@ -117,7 +117,7 @@ class PendingPriceLogicTest {
   @Test
   fun zapisBezNactenehoZboziUkladaKodAZakladOdklada() {
     val draft = pendingPriceDraft(
-      ownerUid = "u1", productId = null, barcode = "8594001234585", productName = null,
+      submissionId = "", ownerUid = "u1", productId = null, barcode = "8594001234585", productName = null,
       storeId = "s1", storeLabel = "Albert, Vzorov", currency = "CZK", productAlias = null,
       quantityBasis = "PER_KG", observedAt = null, prices = prices, now = now,
     )
@@ -131,7 +131,7 @@ class PendingPriceLogicTest {
   @Test
   fun zapisSNactenymZbozimDrziZvolenyZaklad() {
     val draft = pendingPriceDraft(
-      ownerUid = null, productId = "p1", barcode = "8594001234585", productName = "Rajčata",
+      submissionId = "", ownerUid = null, productId = "p1", barcode = "8594001234585", productName = "Rajčata",
       storeId = "s1", storeLabel = "Albert, Vzorov", currency = "EUR", productAlias = "rajče",
       quantityBasis = "PER_KG", observedAt = null, prices = prices, now = now,
     )
@@ -160,7 +160,7 @@ class PendingPriceLogicTest {
   @Test(expected = IllegalArgumentException::class)
   fun cenaBezZboziIBezKoduSeNezaradi() {
     pendingPriceDraft(
-      ownerUid = null, productId = null, barcode = null, productName = null,
+      submissionId = "", ownerUid = null, productId = null, barcode = null, productName = null,
       storeId = "s1", storeLabel = "x", currency = null, productAlias = null,
       quantityBasis = "PACKAGE", observedAt = null, prices = prices, now = now,
     )

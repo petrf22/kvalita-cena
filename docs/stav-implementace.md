@@ -330,10 +330,12 @@ cena uloží do fronty v zařízení a odejde sama po připojení:
   **nikdy nezakládá samo** — položka přejde do stavu „Doplnit zboží" a uživatel ho založí
   běžným formulářem (ODbL, `createProductFromOff`). U zboží na váhu se appka po dohledání
   zeptá, jestli byla cena za kg, litr, nebo kus — naslepo se zapisuje „za balení".
-- **Opakované odeslání cenu nezdvojí**: server drží jeden záznam na uživatele, zboží, obchod,
-  druh ceny a den pozorování, a odpověď „už zapsáno" bere fronta jako úspěch
-  (`submitFailureAction`). U anonymního zápisu tahle pojistka na serveru není — ztracená
-  odpověď tam zdvojení způsobit může; vážený medián jeden anonymní záznam navíc unese.
+- **Opakované odeslání cenu nezdvojí** — ani anonymní: formulář vygeneruje id odeslání PŘED
+  prvním pokusem a stejné id nese i položka fronty, do které cena spadne po výpadku sítě
+  (`pendingPriceDraft(submissionId)`). Worker ho posílá jako `clientSubmissionId` a server
+  opakování téže dávky pozná a vrátí už zapsané řádky (`PriceObservationService.submit`,
+  `docs/datovy-model.md`). Odpověď „už zapsáno dnes" bere fronta jako úspěch
+  (`submitFailureAction`).
 - **Výběr obchodu bez signálu**: obchody, které zařízení už vidělo (`price/StoreCache`, nejvýš
   200, 90 dní), se nabídnou seřazené podle vzdálenosti — GPS funguje i bez sítě. Zapamatovaný
   obchod se předvybere, jen když je v okruhu (`storeToPreselectOffline`).

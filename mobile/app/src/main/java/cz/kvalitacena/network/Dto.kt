@@ -510,6 +510,9 @@ data class SubmitObservationsInput(
   // price-rows.ts toObservedAtIso().
   val observedAt: String? = null,
   val prices: List<ObservationPriceInput>,
+  // Náhodné UUID tohoto odeslání — při opakování (ztracená odpověď, fronta) jde znovu stejné
+  // a server dávku nezapíše podruhé (schema.graphqls, SubmitObservationsInput.clientSubmissionId).
+  val clientSubmissionId: String? = null,
 )
 
 @Serializable

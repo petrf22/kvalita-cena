@@ -124,8 +124,14 @@ fun revivesAfterLogin(price: PendingPrice, loggedIn: Boolean, currentUid: String
  */
 fun observedAtForQueue(chosen: String?, now: OffsetDateTime = OffsetDateTime.now()): String = chosen ?: now.toString()
 
-/** Podklady pro zařazení — jedno místo, kde z formuláře vzniká [PendingPrice]. */
+/**
+ * Podklady pro zařazení — jedno místo, kde z formuláře vzniká [PendingPrice]. [submissionId] je
+ * id odeslání, se kterým formulář cenu už jednou zkusil poslat; stane se z něj id položky fronty
+ * a worker ho pošle jako `clientSubmissionId`. Když první pokus na serveru prošel a ztratila se
+ * jen odpověď, server opakování pozná a cenu nezapíše podruhé.
+ */
 fun pendingPriceDraft(
+  submissionId: String,
   ownerUid: String?,
   productId: String?,
   barcode: String?,
@@ -141,7 +147,7 @@ fun pendingPriceDraft(
 ): PendingPrice {
   require(productId != null || barcode != null) { "Cena ve frontě musí mít zboží nebo aspoň kód" }
   return PendingPrice(
-    id = "",
+    id = submissionId,
     ownerUid = ownerUid,
     productId = productId,
     barcode = barcode,
