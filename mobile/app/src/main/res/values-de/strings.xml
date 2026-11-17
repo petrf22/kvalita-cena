@@ -666,7 +666,7 @@
     <string name="receipts_filter_processing">Wird verarbeitet (%1$d)</string>
     <string name="receipts_filter_done">Erledigt (%1$d)</string>
     <string name="receipts_filter_failed">Nicht verarbeitet (%1$d)</string>
-    <string name="receipts_filter_empty">Sie haben keine Kassenbons in diesem Status.</string>
+    <string name="receipts_filter_empty">Du hast keine Kassenbons in diesem Status.</string>
     <string name="receipts_filter_show_all">Alle anzeigen</string>
     <string name="receipt_pending_parts">Teile: %1$d</string>
     <string name="receipt_pending_queued">Bereit zum Senden</string>
