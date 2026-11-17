@@ -892,8 +892,18 @@ data class Receipt(
   val lines: List<ReceiptLine> = emptyList(),
 )
 
+/** [totalCount] platí pro zvolený filtr `myReceipts(filter:)`, [filterCounts] nese počty všech skupin. */
 @Serializable
-data class ReceiptPage(val items: List<Receipt>, val totalCount: Int, val hasMore: Boolean)
+data class ReceiptPage(
+  val items: List<Receipt>,
+  val totalCount: Int,
+  val hasMore: Boolean,
+  val filterCounts: ReceiptFilterCounts,
+)
+
+/** Počet vlastních účtenek v každé skupině `ReceiptListFilter` (štítky filtru, výchozí volba). */
+@Serializable
+data class ReceiptFilterCounts(val all: Int, val toReview: Int, val processing: Int, val done: Int, val failed: Int)
 
 @Serializable
 data class ReceiptSummary(val unseenCount: Int, val consentVersion: Int)

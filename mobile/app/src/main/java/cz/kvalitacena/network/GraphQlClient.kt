@@ -905,13 +905,21 @@ class GraphQlClient(private val authRepository: AuthRepository, private val clie
 
   // --- Účtenky (docs/soukromi.md, „Účtenky") — vidí je jen vlastník, všechno vyžaduje přihlášení.
 
-  suspend fun myReceipts(first: Int = 20, offset: Int = 0): ReceiptPage {
+  /**
+   * [filter] je hodnota `enum ReceiptListFilter` ze schématu (ALL/TO_REVIEW/PROCESSING/DONE/FAILED);
+   * `totalCount` pak platí pro zvolenou skupinu, `filterCounts` nese počty všech.
+   */
+  suspend fun myReceipts(first: Int = 20, offset: Int = 0, filter: String = "ALL"): ReceiptPage {
     val gql = """
-      query(${'$'}first: Int, ${'$'}offset: Int) {
-        myReceipts(first: ${'$'}first, offset: ${'$'}offset) { totalCount hasMore items { $RECEIPT_FIELDS } }
+      query(${'$'}first: Int, ${'$'}offset: Int, ${'$'}filter: ReceiptListFilter) {
+        myReceipts(first: ${'$'}first, offset: ${'$'}offset, filter: ${'$'}filter) {
+          totalCount hasMore
+          filterCounts { all toReview processing done failed }
+          items { $RECEIPT_FIELDS }
+        }
       }
     """
-    val variables = buildJsonObject { put("first", first); put("offset", offset) }
+    val variables = buildJsonObject { put("first", first); put("offset", offset); put("filter", filter) }
     return execute(gql, variables, GraphQlResponse.serializer(MyReceiptsData.serializer())).myReceipts
   }
 

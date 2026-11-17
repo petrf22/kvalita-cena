@@ -659,6 +659,13 @@
     <string name="receipts_pending_title">Czeka na wysłanie</string>
     <string name="receipts_server_title">Twoje paragony</string>
     <string name="receipts_load_more">Wczytaj więcej</string>
+    <string name="receipts_filter_all">Wszystkie (%1$d)</string>
+    <string name="receipts_filter_to_review">Do załatwienia (%1$d)</string>
+    <string name="receipts_filter_processing">Przetwarzanie (%1$d)</string>
+    <string name="receipts_filter_done">Gotowe (%1$d)</string>
+    <string name="receipts_filter_failed">Nieprzetworzone (%1$d)</string>
+    <string name="receipts_filter_empty">Nie masz żadnego paragonu w tym stanie.</string>
+    <string name="receipts_filter_show_all">Pokaż wszystkie</string>
     <string name="receipt_pending_parts">Części: %1$d</string>
     <string name="receipt_pending_queued">Gotowy do wysłania</string>
     <string name="receipt_pending_uploading">Wysyłanie…</string>

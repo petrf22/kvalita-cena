@@ -13,6 +13,7 @@ import cz.kvalitacena.R
 import cz.kvalitacena.auth.AuthRepository
 import cz.kvalitacena.network.GraphQlClient
 import cz.kvalitacena.network.Receipt
+import cz.kvalitacena.network.ReceiptFilterCounts
 import cz.kvalitacena.receipt.PendingReceipt
 import cz.kvalitacena.receipt.PendingReceiptStore
 import cz.kvalitacena.receipt.RECEIPT_CONSENT_VERSION
@@ -21,6 +22,7 @@ import cz.kvalitacena.receipt.ReceiptWork
 import cz.kvalitacena.ui.common.UiText
 import cz.kvalitacena.ui.common.toUiText
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,9 +34,19 @@ import kotlinx.coroutines.launch
 private const val PAGE_SIZE = 20
 
 /**
+ * Strop `first` v `ReceiptService.myReceipts` — víc server v jedné stránce nevrátí. Obnovení
+ * načítá tolik, kolik už je v seznamu dočteno, ať smazání ani návrat z detailu nezkrátí seznam
+ * zpátky na první stránku.
+ */
+private const val MAX_RELOAD_SIZE = 100
+
+/**
  * Seznam účtenek: čekající v telefonu (fronta, stav z WorkManageru) nad účtenkami ze serveru.
  * Když některá čekající doběhne, seznam se sám obnoví — nová účtenka se objeví jako „čeká na
  * zpracování" místo „odesílá se".
+ *
+ * Účtenky ze serveru se filtrují podle stavu ([filter]); čekající v telefonu filtr nemají — jsou
+ * to stav telefonu, ne serveru, a můžou čekat na akci (souhlas, nové přihlášení).
  */
 class ReceiptListViewModel(
   private val appContext: Context,
@@ -56,10 +68,34 @@ class ReceiptListViewModel(
     private set
   var error by mutableStateOf<UiText?>(null)
     private set
-  var loadedOnce by mutableStateOf(false)
-    private set
   var actionError by mutableStateOf<UiText?>(null)
     private set
+
+  /** Zvolená skupina; dokud výchozí volba není rozhodnutá, je to filtr prvního dotazu. */
+  var filter by mutableStateOf(FIRST_RECEIPT_FILTER)
+    private set
+
+  /** Počty všech skupin z poslední odpovědi; `null`, dokud se seznam ani jednou nenačetl. */
+  var filterCounts by mutableStateOf<ReceiptFilterCounts?>(null)
+    private set
+
+  val loadedOnce: Boolean get() = filterCounts != null
+
+  /**
+   * Výchozí volbu ([initialReceiptFilter]) rozhoduje jen první odpověď — návrat z detailu ani
+   * tiché obnovení ji nemění, jinak by uživateli „K vyřízení" po vyřízení poslední účtenky
+   * samo přeskočilo na „Vše" a nevěděl by proč.
+   */
+  private var filterDecided = false
+
+  /**
+   * Pořadí načtení: odpověď, která mezitím zastarala (rychlé přepnutí filtru, tiché obnovení
+   * přes rozjeté „Načíst další"), se zahodí, ať do seznamu jednoho filtru nedorazí položky
+   * jiného. Rušení jobu samo nestačí — zrušený job dobíhá `finally` až po startu nového.
+   */
+  private var generation = 0
+  private var loadJob: Job? = null
+  private var loadMoreJob: Job? = null
 
   private val currentUserUid = MutableStateFlow<String?>(null)
 
@@ -108,38 +144,74 @@ class ReceiptListViewModel(
   }
 
   fun refresh(silent: Boolean = false) {
-    if (!silent) loading = true
+    // Tiché obnovení, které přebije rozjeté viditelné načítání (změna filtru, „Zkusit znovu"),
+    // převezme i jeho spinner a hlášení chyby — jinak by zrušené načítání skončilo bez obojího.
+    val visible = !silent || loading
+    if (visible) loading = true
     error = null
-    viewModelScope.launch {
+    val requestGeneration = ++generation
+    loadJob?.cancel()
+    loadMoreJob?.cancel()
+    loadingMore = false
+    val size = items.size.coerceIn(PAGE_SIZE, MAX_RELOAD_SIZE)
+    loadJob = viewModelScope.launch {
       try {
-        val page = graphQlClient.myReceipts(first = PAGE_SIZE, offset = 0)
+        var requested = filter
+        var page = graphQlClient.myReceipts(first = size, offset = 0, filter = requested.name)
+        if (!filterDecided) {
+          val initial = initialReceiptFilter(page.filterCounts)
+          if (initial != requested) {
+            requested = initial
+            page = graphQlClient.myReceipts(first = size, offset = 0, filter = requested.name)
+          }
+        }
+        if (requestGeneration != generation) return@launch
+        filter = requested
+        filterDecided = true
         items = page.items
         totalCount = page.totalCount
         hasMore = page.hasMore
-        loadedOnce = true
+        filterCounts = page.filterCounts
         // Verze souhlasu pro čekající účtenky, které server odmítl kvůli starší verzi.
         runCatching { graphQlClient.receiptSummary() }.onSuccess { prefs.serverConsentVersion = it.consentVersion }
       } catch (e: Exception) {
-        if (!silent || !loadedOnce) error = e.toUiText()
+        if (requestGeneration == generation && (visible || !loadedOnce)) error = e.toUiText()
       } finally {
-        loading = false
+        if (requestGeneration == generation) loading = false
       }
     }
   }
 
+  /** Volba filtru uživatelem — seznam se načte od začátku, stará skupina nesmí probleskout. */
+  fun selectFilter(value: ReceiptListFilter) {
+    filterDecided = true
+    if (value == filter) return
+    filter = value
+    items = emptyList()
+    hasMore = false
+    totalCount = filterCounts?.countFor(value) ?: 0
+    actionError = null
+    refresh()
+  }
+
   fun loadMore() {
-    if (loadingMore || !hasMore) return
+    if (loadingMore || loading || !hasMore) return
     loadingMore = true
-    viewModelScope.launch {
+    val requestGeneration = generation
+    val requested = filter
+    val offset = items.size
+    loadMoreJob = viewModelScope.launch {
       try {
-        val page = graphQlClient.myReceipts(first = PAGE_SIZE, offset = items.size)
+        val page = graphQlClient.myReceipts(first = PAGE_SIZE, offset = offset, filter = requested.name)
+        if (requestGeneration != generation) return@launch
         items = items + page.items.filter { new -> items.none { it.id == new.id } }
         totalCount = page.totalCount
         hasMore = page.hasMore
+        filterCounts = page.filterCounts
       } catch (e: Exception) {
-        actionError = e.toUiText()
+        if (requestGeneration == generation) actionError = e.toUiText()
       } finally {
-        loadingMore = false
+        if (requestGeneration == generation) loadingMore = false
       }
     }
   }
@@ -151,6 +223,9 @@ class ReceiptListViewModel(
         graphQlClient.deleteReceipt(id)
         items = items.filterNot { it.id == id }
         totalCount = (totalCount - 1).coerceAtLeast(0)
+        // Počty na štítcích filtru (a doplnění stránky) zná jen server — do které skupiny
+        // smazaná účtenka patřila, klient sám nezařazuje.
+        refresh(silent = true)
       } catch (e: Exception) {
         actionError = e.toUiText()
       }

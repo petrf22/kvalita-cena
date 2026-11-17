@@ -659,6 +659,13 @@
     <string name="receipts_pending_title">Waiting to be sent</string>
     <string name="receipts_server_title">Your receipts</string>
     <string name="receipts_load_more">Load more</string>
+    <string name="receipts_filter_all">All (%1$d)</string>
+    <string name="receipts_filter_to_review">To review (%1$d)</string>
+    <string name="receipts_filter_processing">Processing (%1$d)</string>
+    <string name="receipts_filter_done">Done (%1$d)</string>
+    <string name="receipts_filter_failed">Not processed (%1$d)</string>
+    <string name="receipts_filter_empty">You have no receipts in this state.</string>
+    <string name="receipts_filter_show_all">Show all</string>
     <string name="receipt_pending_parts">Parts: %1$d</string>
     <string name="receipt_pending_queued">Ready to send</string>
     <string name="receipt_pending_uploading">Sending…</string>

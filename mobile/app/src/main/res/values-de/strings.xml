@@ -661,6 +661,13 @@
     <string name="receipts_pending_title">Wartet auf Versand</string>
     <string name="receipts_server_title">Ihre Kassenbons</string>
     <string name="receipts_load_more">Mehr laden</string>
+    <string name="receipts_filter_all">Alle (%1$d)</string>
+    <string name="receipts_filter_to_review">Zu erledigen (%1$d)</string>
+    <string name="receipts_filter_processing">Wird verarbeitet (%1$d)</string>
+    <string name="receipts_filter_done">Erledigt (%1$d)</string>
+    <string name="receipts_filter_failed">Nicht verarbeitet (%1$d)</string>
+    <string name="receipts_filter_empty">Sie haben keine Kassenbons in diesem Status.</string>
+    <string name="receipts_filter_show_all">Alle anzeigen</string>
     <string name="receipt_pending_parts">Teile: %1$d</string>
     <string name="receipt_pending_queued">Bereit zum Senden</string>
     <string name="receipt_pending_uploading">Wird gesendet…</string>

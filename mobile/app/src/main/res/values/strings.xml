@@ -744,6 +744,13 @@
     <string name="receipts_pending_title">Čeká na odeslání</string>
     <string name="receipts_server_title">Vaše účtenky</string>
     <string name="receipts_load_more">Načíst další</string>
+    <string name="receipts_filter_all">Vše (%1$d)</string>
+    <string name="receipts_filter_to_review">K vyřízení (%1$d)</string>
+    <string name="receipts_filter_processing">Zpracovává se (%1$d)</string>
+    <string name="receipts_filter_done">Hotové (%1$d)</string>
+    <string name="receipts_filter_failed">Nezpracováno (%1$d)</string>
+    <string name="receipts_filter_empty">V tomhle stavu nemáte žádnou účtenku.</string>
+    <string name="receipts_filter_show_all">Zobrazit vše</string>
     <string name="receipt_pending_parts">Dílů: %1$d</string>
     <string name="receipt_pending_queued">Připravena k odeslání</string>
     <string name="receipt_pending_uploading">Odesílá se…</string>
