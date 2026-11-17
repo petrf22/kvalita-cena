@@ -55,6 +55,19 @@ class PendingPriceStoreTest {
   }
 
   @Test
+  fun vyrazenyDruhCenyZmiziZDiskuAZbytekZustane() {
+    val store = PendingPriceStore(tmp.root)
+    val id = store.enqueue(draft()).id
+
+    val updated = store.dropPriceKind(id, "MULTIBUY")
+
+    assertEquals(listOf("REGULAR"), updated!!.prices.map { it.priceKind })
+    assertEquals(listOf("REGULAR"), PendingPriceStore(tmp.root).get(id)!!.prices.map { it.priceKind })
+    // Id odeslání se nemění — odmítnutá dávka na serveru nic nezapsala.
+    assertEquals(id, updated.id)
+  }
+
+  @Test
   fun frontaDrziPoradiZapisuAKazdaPolozkaMaVlastniId() {
     val store = PendingPriceStore(tmp.root)
     val second = store.enqueue(draft("222", minute = 5))
