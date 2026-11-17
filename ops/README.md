@@ -64,7 +64,10 @@ Před čímkoli se zeptá na potvrzení opsáním čísla verze (`--yes` ho pře
   smazaném sloupci) nebo by psal špatně: `--restore-db`. Databáze se smaže a obnoví ze zálohy,
   kterou `deploy.sh` udělal před migrací, média stejně. **Všechno zapsané od nasazení zmizí** —
   skript proto před obnovou udělá ještě jednu zálohu aktuálního stavu, ze které jde zápisy
-  z mezidobí ručně dohledat.
+  z mezidobí ručně dohledat. Ta běží se `SKIP_RETENTION=1` (bez úklidu starých záloh) — retence
+  by jinak mohla smazat právě zálohu, ze které se obnovuje (nejstarší kopii při plném stropu
+  `RETENTION_COPIES`). Před `DROP DATABASE` skript existenci obnovované zálohy ověří ještě
+  jednou.
 
 Bez `--backup` vezme `--restore-db` jen zálohu z posledního nasazení, a jen pokud patří k verzi,
 na kterou se vrací; jinou (starší denní) je potřeba jmenovat výslovně časovou značkou z názvu
@@ -175,6 +178,8 @@ běžel:
   disk, který shodí i běžící appku.
 - Při jakémkoli selhání běhu (pád `pg_dump`/`tar`) skript smaže rozdělané soubory tohohle běhu
   (`trap ... ERR`) — jinak by po restartu zůstal useknutý `.gz`, který vypadá jako platná záloha.
+- `SKIP_RETENTION=1` vynechá oba úklidové kroky (stáří i počet) — jen pro pojistnou zálohu
+  z `rollback.sh`, cron ho nenastavuje.
 - `backup.log` se rotuje in-place (`rotate_log`, limit 512 kB / 2000 řádků) — bez toho by byl
   jediná věc v `BACKUP_ROOT`, která roste bez stropu.
 
