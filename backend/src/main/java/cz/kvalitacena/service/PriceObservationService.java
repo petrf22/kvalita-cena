@@ -114,6 +114,19 @@ public class PriceObservationService {
       case PACKAGE, PER_PIECE -> effectiveProduct.getNetContentBase();
     };
 
+    // Souběžné zápisy, které by se srazily, jdou za sebou — druhý pak vidí zapsaný první a dostane
+    // odpověď opakování nebo kolizi s konkrétním druhem ceny, ne pád na unikátním indexu (ten
+    // abortuje transakci, takže by šlo vrátit jen OBSERVATION_ALREADY_SUBMITTED_TODAY bez druhu
+    // a klient by nevěděl, co dál). Pořadí zámků je pevné (id odeslání, pak uživatel), aby se
+    // dvě transakce nemohly zablokovat navzájem.
+    if (input.clientSubmissionId() != null) {
+      priceObservationRepository.lockForSubmit("obs-submission:" + input.clientSubmissionId());
+    }
+    if (submitter != null) {
+      priceObservationRepository.lockForSubmit(
+          "obs-submitter:" + submitter.getId() + ":" + product.getId() + ":" + store.getId());
+    }
+
     // Opakované odeslání téže dávky (mobilní fronta po ztracené odpovědi) — PŘED kontrolou
     // kolize, jinak by přihlášenému opakování spadlo na „už zapsáno dnes" a anonymní by se
     // zapsalo podruhé (anonym unikátní index nemá).
@@ -173,8 +186,8 @@ public class PriceObservationService {
     // uq_price_observation_submitter_kind_per_day (1 záznam/uživatel/produkt/obchod/druh ceny/
     // den — hrubá síla na spamování nefunguje, docs/reputace.md) by jinak spadla jako nepřeloženou
     // DataIntegrityViolationException až do GraphQL/REST vrstvy (INTERNAL_ERROR bez detailu).
-    // Tohle je fallback pro závod dvou souběžných requestů — předem zjistitelnou kolizi odchytí
-    // už pre-kontrola výš, s konkrétním druhem ceny v hlášce.
+    // Tohle je jen pojistka — souběžné zápisy téhož uživatele i téhož odeslání řadí zámky výš,
+    // takže kolizi odchytí pre-kontrola s konkrétním druhem ceny v hlášce.
     List<PriceObservation> saved;
     try {
       saved = priceObservationRepository.saveAllAndFlush(toSave);
@@ -215,16 +228,19 @@ public class PriceObservationService {
 
   /**
    * Odpověď na opakované odeslání: už zapsané řádky, bez nového zápisu, bez +1 čítače
-   * a bez přepočtu. Cizí odesílatel se stejným id je chyba — id se nikde nezveřejňuje, takže
-   * k tomu dojde jen chybou klienta. Řádek bez odesílatele (anonymní, nebo po 180 dnech
-   * pseudonymizovaný, docs/soukromi.md) za cizí nepovažujeme: nic se tím nezapíše ani neodhalí.
+   * a bez přepočtu. Cizí odesílatel se stejným id je chyba s vlastním kódem
+   * ({@link ErrorCode#OBSERVATION_SUBMISSION_ID_CONFLICT}) — id se nikde nezveřejňuje a mobil cenu
+   * jednoho účtu pod jiným neodešle, takže k tomu dojde jen chybou klienta a opakování nepomůže.
+   * Řádek bez odesílatele za cizí nepovažujeme: cena zapsaná bez přihlášení smí z fronty odejít
+   * i pod účtem, který se mezitím přihlásil (mobil {@code ownerCheck}), a pseudonymizovaný řádek
+   * (po 180 dnech, docs/soukromi.md) vlastníka už nezná. Nic se tím nezapíše ani neodhalí.
    */
   private static List<PriceObservation> replayed(List<PriceObservation> earlier, AppUser submitter) {
     Long submitterId = submitter == null ? null : submitter.getId();
     boolean foreign = earlier.stream().anyMatch(o -> o.getSubmitter() != null
         && !o.getSubmitter().getId().equals(submitterId));
     if (foreign) {
-      throw new ValidationException(ErrorCode.OBSERVATION_ALREADY_SUBMITTED_TODAY);
+      throw new ValidationException(ErrorCode.OBSERVATION_SUBMISSION_ID_CONFLICT);
     }
     return earlier;
   }

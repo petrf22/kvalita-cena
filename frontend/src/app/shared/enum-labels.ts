@@ -257,6 +257,7 @@ export const ERROR_CODE_KEYS: Record<ErrorCode, string> = {
   [ErrorCode.ValidationFailed]: 'errors.VALIDATION_FAILED',
   [ErrorCode.ClientVersionTooOld]: 'errors.CLIENT_VERSION_TOO_OLD',
   [ErrorCode.ObservationAlreadySubmittedToday]: 'errors.OBSERVATION_ALREADY_SUBMITTED_TODAY',
+  [ErrorCode.ObservationSubmissionIdConflict]: 'errors.OBSERVATION_SUBMISSION_ID_CONFLICT',
   [ErrorCode.ObservationPricesRequired]: 'errors.OBSERVATION_PRICES_REQUIRED',
   [ErrorCode.ObservationDuplicatePriceKind]: 'errors.OBSERVATION_DUPLICATE_PRICE_KIND',
   [ErrorCode.ObservationPriceKindAlreadySubmittedToday]:

@@ -694,7 +694,10 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   už zapsané řádky místo nových — anonymní zápis jinak žádnou pojistku proti zdvojení nemá
   (`uq_price_observation_submitter_kind_per_day` je parciální na `submitter_id IS NOT NULL`).
   `uq_price_observation_client_submission (client_submission_id, price_kind)`, protože jedna
-  dávka nese víc druhů ceny se stejným id. Web ani účtenka ho neposílají.
+  dávka nese víc druhů ceny se stejným id. Web ani účtenka ho neposílají. Index je jen
+  pojistka: souběžná opakování téže dávky řadí za sebe transakční advisory zámek nad id
+  (`PriceObservationRepository.lockForSubmit`), takže druhé vidí zapsané první a dostane ho
+  zpátky, místo aby spadlo na indexu.
 - **`ai.receipt_job`** — fronta pro pull worker (`docs/ai.md`) s leasem (`lease_until`,
   `attempts`, `FOR UPDATE SKIP LOCKED`), a syrový výstup modelu (`raw_text` bez patičky,
   `extraction` jsonb, `model`). Do `core.receipt_line` jde až normalizovaný návrh. Úloha

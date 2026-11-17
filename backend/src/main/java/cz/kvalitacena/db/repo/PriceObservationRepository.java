@@ -29,6 +29,17 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
   List<PriceObservation> findByClientSubmissionIdOrderByIdAsc(UUID clientSubmissionId);
 
   /**
+   * Transakční advisory zámek Postgresu nad textovým klíčem — drží se do commitu/rollbacku.
+   * {@code PriceObservationService.submit} jím řadí za sebe souběžné zápisy, které by jinak
+   * narazily až na unikátní index: tam už transakce spadne a druh ceny ani předchozí zápis
+   * zjistit nejde. Kolize hashe klíčů jen zbytečně serializuje, nic nerozbije. Vrací vždy 1
+   * ({@code count(*)} nutí funkci opravdu zavolat, sama vrací {@code void}).
+   */
+  @Query(value = "SELECT count(*) FROM (SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))) AS l",
+      nativeQuery = true)
+  long lockForSubmit(@Param("key") String key);
+
+  /**
    * Které druhy ceny už tenhle uživatel dnes u téhle dvojice (produkt, obchod) zapsal —
    * pojmenovaná pre-kontrola PŘED unikátním indexem {@code uq_price_observation_submitter_kind_
    * per_day}. Index zůstává autoritou (závod dvou souběžných requestů), tenhle dotaz existuje

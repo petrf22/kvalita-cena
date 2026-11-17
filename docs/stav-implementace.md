@@ -334,7 +334,12 @@ cena uloží do fronty v zařízení a odejde sama po připojení:
   prvním pokusem a stejné id nese i položka fronty, do které cena spadne po výpadku sítě
   (`pendingPriceDraft(submissionId)`). Worker ho posílá jako `clientSubmissionId` a server
   opakování téže dávky pozná a vrátí už zapsané řádky (`PriceObservationService.submit`,
-  `docs/datovy-model.md`).
+  `docs/datovy-model.md`). Souběžné zápisy téhož odeslání nebo téhož uživatele u jednoho zboží
+  a obchodu server řadí za sebe advisory zámkem (`PriceObservationRepository.lockForSubmit`),
+  takže se nesrazí až na unikátním indexu, kde by šlo vrátit jen kolizi bez druhu ceny. Stejné
+  id od jiného účtu je chyba klienta s vlastním kódem `OBSERVATION_SUBMISSION_ID_CONFLICT`.
+  Fronta automaticky opakuje jen výpadek sítě; každou chybu serveru ukáže uživateli, aby se
+  nemohla zacyklit.
 - **Kolize jednoho druhu ceny neshodí zbytek dávky**: server odmítne celou dávku, když už má od
   uživatele cenu jednoho z druhů z téhož dne (`OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY`
   s druhem v `params`). Fronta ten druh vyřadí a zbytek pošle znovu
