@@ -154,7 +154,7 @@ public class ReceiptWorkerService {
         continue;
       }
       if (job.get().getProcessedAt() == null) {
-        skipped.add(new RequeueResult.Skipped(receiptId, "already queued"));
+        skipped.add(new RequeueResult.Skipped(receiptId, alreadyQueued(job.get(), now)));
         continue;
       }
       if (receipt.get().getImagesDeletedAt() != null && job.get().getRawText() == null) {
@@ -177,6 +177,23 @@ public class ReceiptWorkerService {
     // co právě udělal.
     log.info("Nové rozpoznání — vráceno do fronty: {}, přeskočeno: {}", requeued.size(), skipped.size());
     return new RequeueResult(requeued, skipped);
+  }
+
+  /**
+   * Účtenka už ve frontě je — důvod pro výpis workeru říká, proč ji worker možná přesto
+   * nevyzvedne: drží ji nevypršelý pronájem (běh workeru přerušený bez /fail ji blokuje až
+   * {@code lease-minutes}). Lease se neruší, mohl by na ní pracovat skutečný druhý worker.
+   * Pokusy se vynulují: výslovné nové rozpoznání nesmí po vypršení lease tiše propadnout
+   * limitem pokusů v {@link #lease}.
+   */
+  private String alreadyQueued(ReceiptJob job, OffsetDateTime now) {
+    String tried = job.getAttempts() + "/" + receiptProperties.getMaxAttempts();
+    job.setAttempts((short) 0);
+    job.setLastError(null);
+    if (job.getLeaseUntil() != null && job.getLeaseUntil().isAfter(now)) {
+      return "already queued, leased until " + job.getLeaseUntil() + " (attempts " + tried + ")";
+    }
+    return "already queued (attempts " + tried + ")";
   }
 
   @Transactional

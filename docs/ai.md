@@ -283,6 +283,12 @@ nepřijde:
   vlastníka (`updateHeader`, párování řádků, potvrzení) berou účtenku se zámkem řádku
   (`ReceiptRepository.findForUpdateById`) a entita má `@DynamicUpdate` — jinak by worker
   souběžnou opravu obchodu nebo data přepsal hodnotou z dřív načteného snapshotu.
+- **Účtenka, která už ve frontě je** (`processed_at IS NULL`), se přeskočí s důvodem
+  `already queued (attempts n/max)`, a když ji drží nevypršelý pronájem, i s `leased until …`.
+  Běh workeru přerušený bez `/fail` (Ctrl+C) ji tak blokuje až `app.receipt.lease-minutes`.
+  Nové rozpoznání pronájem neruší, mohl by na ní pracovat skutečný druhý worker, pokusy ale
+  vynuluje — jinak by ji `lease()` po vypršení pronájmu tiše ukončil jako „lease expired after
+  N attempts" a worker by nevyzvedl nic.
 - **Bez obrázků** (po retenci) dostane worker místo nich uložený `raw_text` a rozebere ho
   znovu bez OCR. Ten končí řádkem „Celkem", takže co profil čte z patičky (datum nákupu,
   adresa prodejny COOP z bloku terminálu), opravit nejde a zůstane původní.

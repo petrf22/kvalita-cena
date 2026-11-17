@@ -70,7 +70,8 @@ def finish_job(api: api_mod.WorkerApi, job: dict, texts: list[str], model: str |
 
 
 def run_batch(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, limit: int, log=print,
-              dictionary: pretty.Dictionary | None = None, prettifier=None, classifier=None) -> int:
+              dictionary: pretty.Dictionary | None = None, prettifier=None, classifier=None,
+              announce_empty: bool = False) -> int:
     """Dávka po fázích: nejdřív OCR všech účtenek, pak textový model nad všemi.
 
     OCR model a textový model se do 8 GB VRAM nevejdou najednou a každé přepnutí znamená
@@ -78,6 +79,11 @@ def run_batch(api: api_mod.WorkerApi, extractor: ocr_mod.Extractor, limit: int, 
     u každé z nich, po fázích jen dvakrát za dávku. Lease (15 min) na pět účtenek stačí.
     """
     jobs = api.lease(limit)
+    if not jobs and announce_empty:
+        # Bez hlášky vypadá „nic ve frontě" stejně jako „worker nic neudělal". Účtenku, kterou
+        # --requeue hlásí jako „already queued", přitom může držet pronájem přerušeného běhu.
+        log("fronta je prázdná, nic k rozpoznání (účtenku může až 15 min držet pronájem "
+            "přerušeného běhu workeru)")
     # Číselník je potřeba i bez modelu — slovník kategorií (slovnik/kategorie.tsv) se ověřuje proti němu.
     wants_categories = classifier is not None or bool(dictionary and dictionary.categories)
     categories = _categories(api, log) if jobs and wants_categories else []
@@ -177,7 +183,7 @@ def main() -> int:
         dictionary = pretty.load_dictionary()
         try:
             processed = run_batch(api, extractor, args.batch, dictionary=dictionary, prettifier=prettifier,
-                                  classifier=classifier)
+                                  classifier=classifier, announce_empty=args.once)
             if args.archive_dir:
                 archive(api, args.archive_dir)
         except (api_mod.ApiError, OSError) as error:
