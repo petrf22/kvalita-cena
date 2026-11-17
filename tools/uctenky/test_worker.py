@@ -781,6 +781,24 @@ class TescoProfileTest(unittest.TestCase):
         syr = next(line for line in payload["lines"] if line["label"] == "LEE MIN.CUB.SYR 110g")
         self.assertEqual((syr["discountAmount"], syr["priceKind"]), ("20.00", "CLUB_CARD"))
 
+    def test_slevy_stejneho_zbozi_na_vice_radcich_se_rozdeli(self):
+        # Dva nákupy stejného chleba na dvou řádcích a dvě slevy po 10 Kč: každá patří jednomu
+        # řádku. Obě na prvním by daly klubovou cenu 14,90 a druhému žádnou (místo 24,90 u obou).
+        dil2 = (_text("tesco-dil2")
+                .replace("DREVORUB. CHLEB 405g 34,90B", "DREVORUB. CHLEB 405g 34,90B\nDREVORUB. CHLEB 405g 34,90B")
+                .replace("MEZISOUČET 601,92", "MEZISOUČET 636,82")
+                .replace("CC OR.STP MLECNA 170 -45,00",
+                         "CC OR.STP MLECNA 170 -45,00\nCC DREVORUB. CHLEB 4 -10,00\nCC DREVORUB. CHLEB 4 -10,00")
+                .replace("celková úspora -65,00", "celková úspora -85,00")
+                .replace("CELKEM 536,92", "CELKEM 551,82"))
+        document = parse.build_document([_text("tesco-dil1"), dil2])
+        self.assertTrue(document["totalMatches"])
+        self.assertNotIn("součet", " ".join(document["warnings"]))
+        payload = result_mod.to_payload(document, None, "test")
+        chleby = [line for line in payload["lines"] if line["label"] == "DREVORUB. CHLEB 405g"]
+        self.assertEqual([(line["discountAmount"], line["priceKind"]) for line in chleby],
+                         [("10.00", "CLUB_CARD"), ("10.00", "CLUB_CARD")])
+
     def test_sleva_bez_polozky_se_ohlasi(self):
         document = parse.build_document([_text("tesco-dil1"),
                                          _text("tesco-dil2").replace("CC LEE MIN", "CC XYZ ABC")])

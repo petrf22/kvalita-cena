@@ -29,6 +29,7 @@ bloku terminálu. Prodejnu pak vybere uživatel; název prodejny jde na server v
 from __future__ import annotations
 
 import re
+from collections import Counter
 from decimal import Decimal
 from difflib import SequenceMatcher
 
@@ -115,15 +116,20 @@ def _to_common_shape(line: str) -> str | None:
     return _GLUED_VAT_RE.sub(r"\1 \2", line)
 
 
-def _discount_target(ref: str, items: list[lines_mod.ParsedLine]) -> lines_mod.ParsedLine | None:
+def _discount_target(ref: str, items: list[lines_mod.ParsedLine],
+                     assigned: Counter[int]) -> lines_mod.ParsedLine | None:
     """Položka, jejíž začátek názvu odpovídá useknutému názvu ve slevě; při nejasnosti None."""
     scored = [(SequenceMatcher(None, ref, item.raw_label[:len(ref)]).ratio(), item) for item in items]
     best = max((score for score, _ in scored), default=0)
     if best < DISCOUNT_NAME_SIMILARITY:
         return None
     winners = [item for score, item in scored if score == best]
-    # Tatáž položka na dvou řádcích (dva nákupy stejného zboží) — sleva patří kterékoli z nich.
-    return winners[0] if len({item.raw_label for item in winners}) == 1 else None
+    if len({item.raw_label for item in winners}) != 1:
+        return None
+    # Tatáž položka na víc řádcích (víc nákupů stejného zboží) — každý řádek dostane svou slevu.
+    # Všechny na první by mu daly dvojnásobnou slevu a ostatním žádnou, přestože součet sedí.
+    # min() při shodě vrací první, takže pořadí slev odpovídá pořadí řádků.
+    return min(winners, key=lambda item: assigned[item.line_no])
 
 
 def parse_items(body: list[str]) -> lines_mod.ParseResult:
@@ -139,6 +145,7 @@ def parse_items(body: list[str]) -> lines_mod.ParseResult:
             result.warnings.append(f"součet položek {computed} neodpovídá mezisoučtu {parse_amount(subtotal)}")
 
     discounts = Decimal(0)
+    assigned: Counter[int] = Counter()
     for raw in body[subtotal_index + 1:]:
         savings = _SAVINGS_RE.match(raw)
         if savings:
@@ -154,9 +161,11 @@ def parse_items(body: list[str]) -> lines_mod.ParseResult:
             continue
         total = parse_amount(discount["total"])
         discounts += total
-        target = _discount_target(discount["ref"], items)
+        target = _discount_target(discount["ref"], items, assigned)
         if target is None:
             result.warnings.append(f"sleva {raw!r} nenašla položku, které se týká")
+        else:
+            assigned[target.line_no] += 1
         result.lines.append(lines_mod.ParsedLine(
             len(result.lines) + 1, lines_mod.DISCOUNT, discount["label"], line_total=total,
             applies_to_line_no=target.line_no if target else None,
