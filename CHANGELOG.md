@@ -7,7 +7,7 @@ i v mobilu vznikají z něj přes `tools/version/sync.mjs`, needituj je ručně.
 být na jednom řádku** — parser víceřádkové položky neumí, dlouhý řádek je tu žádoucí kompromis
 za jednoduchost skriptu.
 
-## [Nezveřejněno]
+## [0.13.7] – 2026-11-17
 
 ### Přidáno
 - Cenu jde zapsat i v obchodě bez signálu: stačí naskenovat kód, vybrat obchod z těch, které telefon už zná, a cena se uloží v telefonu a odešle sama po připojení; co čeká a co potřebuje doplnit, ukazuje nová obrazovka Čekající ceny (mobil)
