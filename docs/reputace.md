@@ -76,10 +76,14 @@ průměr má bod zvratu 0 % — jediný extrém posune výsledek libovolně dale
 bod zvratu 50 %, takže menšina útočníků výsledek neovlivní vůbec, ne jen málo.
 
 ```
-Seřaď záznamy podle unit_price. W = Σ wᵢ.
+Seřaď záznamy s wᵢ > 0 podle unit_price. W = Σ wᵢ.
 Vážený medián = nejmenší p_k, pro které Σ_{i≤k} wᵢ ≥ W/2
 (při přesné rovnosti lineárně interpoluj mezi p_k a p_{k+1})
 ```
+
+Záznam s nulovou vahou do výběru nevstupuje — jinak by při přesné rovnosti posloužil jako
+soused k interpolaci. Váhy se proto drží v relativní přesnosti (`MathContext.DECIMAL64`), ne na
+pevný počet desetinných míst: `f_recency` stokrát starého záznamu je malé, ale nenulové číslo.
 
 Doprovodně **Kishova efektivní velikost vzorku** `n_eff = (Σw)² / Σw²`, uložená v
 `agg.price_current.n_eff` a zobrazovaná uživateli. Je to zároveň nejlepší veřejná obrana

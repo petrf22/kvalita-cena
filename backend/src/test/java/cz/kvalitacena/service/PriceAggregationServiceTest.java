@@ -163,6 +163,49 @@ class PriceAggregationServiceTest {
   }
 
   @Test
+  void oldObservationKeepsTinyWeightInsteadOfRoundingToZero() {
+    givenQueuedCell();
+    OffsetDateTime now = OffsetDateTime.parse("2026-10-01T10:00:00Z");
+
+    // 300 dní = ~21 poločasů, váha ~3,6e-7. Kdyby se zaokrouhlila na nulu, byl by součet vah
+    // dnešních záznamů přesně polovina a medián by se interpoloval mezi 10 a 15 (12,50);
+    // s nenulovou vahou leží polovina vah až na 15 Kč.
+    List<PriceObservation> observations = List.of(
+        observation(new BigDecimal("10"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now),
+        observation(new BigDecimal("15"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(300)),
+        observation(new BigDecimal("20"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(observations);
+
+    service.processQueue();
+
+    verify(priceCurrentRepository).save(priceCurrentCaptor.capture());
+    assertThat(priceCurrentCaptor.getValue().getUnitPrice()).isEqualByComparingTo("15");
+  }
+
+  @Test
+  void zeroWeightObservationIsNeverInterpolationNeighbour() {
+    givenQueuedCell();
+    OffsetDateTime now = OffsetDateTime.parse("2026-10-01T10:00:00Z");
+
+    // ~1100 poločasů — 0,5^1100 podteče double na nulu. Polovina vah padne přesně za 10 Kč,
+    // sousedem pro interpolaci musí být 20 Kč s kladnou vahou, ne 16 Kč s nulovou (13).
+    List<PriceObservation> observations = List.of(
+        observation(new BigDecimal("10"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now),
+        observation(new BigDecimal("16"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now.minusDays(15_400)),
+        observation(new BigDecimal("20"), SubmitterKind.REGISTERED, PriceKind.REGULAR, now));
+    when(priceObservationRepository.findByProductIdAndStoreIdAndStatus(PRODUCT_ID, STORE_ID, ObservationStatus.ACTIVE))
+        .thenReturn(observations);
+
+    service.processQueue();
+
+    verify(priceCurrentRepository).save(priceCurrentCaptor.capture());
+    PriceCurrent saved = priceCurrentCaptor.getValue();
+    assertThat(saved.getUnitPrice()).isEqualByComparingTo("15");
+    assertThat(saved.getNObs()).isEqualTo(3);
+  }
+
+  @Test
   void recencyDoesNotApplyToDailyHistory() {
     givenQueuedCell();
     OffsetDateTime now = OffsetDateTime.parse("2026-10-01T10:00:00Z");
