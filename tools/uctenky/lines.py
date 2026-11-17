@@ -7,8 +7,8 @@ co je jednotková cena.
 POZOR na nejpravděpodobnější tichou chybu celé funkce (docs/rozvoj.md): u váhového
 zboží je jednotková cena 289,00 Kč/kg, NIKDY zaplacených 87,30 Kč za 0,302 kg.
 
-Tištěné poznámky bez údaje o zboží (cena po slevě v závorce, „Věkový limit") se přeskakují
-záměrně a JEN podle pevného výčtu tvarů — každý jiný řádek bez ceny se dál hlásí jako
+Tištěné poznámky bez údaje o zboží (cena po slevě v závorce, „Věkový limit", tára pod
+váženým zbožím) se přeskakují záměrně a JEN podle pevného výčtu tvarů — každý jiný řádek bez ceny se dál hlásí jako
 nerozpoznaný, aby se položka nemohla ztratit potichu.
 """
 
@@ -60,9 +60,10 @@ SIMPLE_RE = re.compile(rf"^(?P<name>.*?)\s+(?:(?P<vatpre>[A-Z])\s+)?(?P<total>{A
 # 3.000 ks x 36.90 Kč /ks   — množství na SAMOSTATNÉM řádku NAD názvem (Penny). Bez něj by
 # zůstalo jen zaplacených 110,70 za tři kusy místo ceny 36,90 za kus (normalize.py).
 # 0.526 kg (E) x 109.90 Kč /kg — u váženého zboží Penny za jednotkou tiskne, jak byla
-# hmotnost zadána: (V) z pokladní váhy, (E) jinak (legenda v patičce účtenky).
+# hmotnost zadána: (V) z pokladní váhy, (E) jinak (legenda v patičce účtenky). Značek může
+# být víc za sebou: 0.800 kg (N)(V) x 69.90 Kč /kg je netto hmotnost z váhy po odečtení táry.
 PRE_QTY_RE = re.compile(
-    rf"^(?P<qty>[0-9]+(?:[.,][0-9]+)?)\s*(?P<uom>ks|kg|g|l|ml)(?:\s*\([A-Z]\))?\s*x\s*(?P<unit>{UNIT_AMOUNT})\s*"
+    rf"^(?P<qty>[0-9]+(?:[.,][0-9]+)?)\s*(?P<uom>ks|kg|g|l|ml)(?:\s*\([A-Z]{{1,2}}\))*\s*x\s*(?P<unit>{UNIT_AMOUNT})\s*"
     rf"(?:Kč|Kc|CZK)?\s*/\s*(?P<peruom>ks|kg|g|l|ml)\s*$",
     re.IGNORECASE,
 )
@@ -74,6 +75,11 @@ AFTER_DISCOUNT_RE = re.compile(rf"^\((?P<name>.*?)\s*(?P<total>{AMOUNT})\)$")
 # Poznámky pokladny bez údaje o zboží. Věkový limit tiskne Albert pod alkoholem; OCR občas
 # ztratí diakritiku.
 _INFO_LINE_RE = re.compile(r"^v[eě]kov[yý]\s+limit$", re.IGNORECASE)
+
+# 0.002 kg (PT) — tára (hmotnost obalu), kterou Penny tiskne pod množství váženého zboží.
+# Netto hmotnost na řádku nad ní ji už má odečtenou, takže řádek nenese nic nového; nesmí ale
+# zrušit rozpracované množství, jinak by zboží pod ním skončilo jako balení za zaplacenou částku.
+_TARE_LINE_RE = re.compile(r"^[0-9]+[.,][0-9]+\s*(?:kg|g)\s*\(PT\)$", re.IGNORECASE)
 
 # Osamocené velké písmeno na konci řádku s názvem (E, P) je značka váhového zboží,
 # ne součást názvu — na účtence stojí v cenovém sloupci.
@@ -172,8 +178,8 @@ def parse_item_lines(raw_lines: list[str]) -> ParseResult:
         return name
 
     for raw in raw_lines:
-        if _INFO_LINE_RE.match(raw):
-            # Rozpracovaný název nad poznámkou zůstává čekat na svou cenu.
+        if _INFO_LINE_RE.match(raw) or _TARE_LINE_RE.match(raw):
+            # Rozpracovaný název i množství nad poznámkou zůstávají čekat na svou cenu.
             continue
 
         after_discount = AFTER_DISCOUNT_RE.match(raw)
