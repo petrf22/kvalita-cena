@@ -14,6 +14,7 @@ import {
   ErrorCode,
   QuantityUnit,
   ReceiptLineStatus,
+  ReceiptListFilter,
   ReceiptMatchSource,
   ReceiptProcessingStatus,
   ReceiptReviewStatus,
@@ -112,6 +113,19 @@ export const RECEIPT_REVIEW_STATUS_KEYS: Record<ReceiptReviewStatus, string> = {
   [ReceiptReviewStatus.Pending]: 'enum.receiptReviewStatus.PENDING',
   [ReceiptReviewStatus.InProgress]: 'enum.receiptReviewStatus.IN_PROGRESS',
   [ReceiptReviewStatus.Done]: 'enum.receiptReviewStatus.DONE',
+};
+
+/**
+ * Skupiny filtru v seznamu účtenek — souhrn obou os stavu z pohledu „co s tím mám udělat",
+ * proto vlastní popisky, ne popisky `processingStatus`/`reviewStatus`. Pořadí v liště:
+ * `RECEIPT_LIST_FILTERS` ve `features/receipts/receipt-status.ts`.
+ */
+export const RECEIPT_LIST_FILTER_KEYS: Record<ReceiptListFilter, string> = {
+  [ReceiptListFilter.All]: 'enum.receiptListFilter.ALL',
+  [ReceiptListFilter.ToReview]: 'enum.receiptListFilter.TO_REVIEW',
+  [ReceiptListFilter.Processing]: 'enum.receiptListFilter.PROCESSING',
+  [ReceiptListFilter.Done]: 'enum.receiptListFilter.DONE',
+  [ReceiptListFilter.Failed]: 'enum.receiptListFilter.FAILED',
 };
 
 export const RECEIPT_LINE_STATUS_KEYS: Record<ReceiptLineStatus, string> = {

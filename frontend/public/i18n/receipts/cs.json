@@ -14,6 +14,11 @@
   "offlineAction": "Nejsi připojený/á k internetu — akce se neuložila. Zkus to po připojení znovu.",
   "emptyTitle": "Zatím tu nemáš žádnou účtenku",
   "emptyText": "Nahraj fotku účtenky z nákupu. Appka z ní přečte obchod, datum a položky a ty jen potvrdíš, které ceny zapsat.",
+  "filter": {
+    "label": "Filtr podle stavu",
+    "emptyTitle": "V tomhle stavu nemáš žádnou účtenku",
+    "showAll": "Zobrazit vše"
+  },
   "uploadedTitle": "Účtenka je odeslaná",
   "uploadedText": "Čeká ve frontě na zpracování na počítači provozovatele, může to chvíli trvat. Jakmile bude hotová, najdeš ji tady k párování a v menu se u Účtenek objeví odznak.",
   "unknownStore": "Neznámý obchod",

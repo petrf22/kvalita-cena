@@ -393,6 +393,20 @@ export const ReceiptLineStatus = {
 } as const;
 
 export type ReceiptLineStatus = typeof ReceiptLineStatus[keyof typeof ReceiptLineStatus];
+/** Skupina seznamu vlastních účtenek (myReceipts). Skupiny se nepřekrývají a dohromady dávají ALL. */
+export const ReceiptListFilter = {
+  All: 'ALL',
+  /** Zpracovaná a spárovaná (PROCESSED + DONE). */
+  Done: 'DONE',
+  /** Stroj skončil bez řádků (NOT_A_RECEIPT, UNREADABLE, FAILED) — nafotit znovu nebo smazat. */
+  Failed: 'FAILED',
+  /** Ve frontě nebo ji právě čte stroj (QUEUED, PROCESSING). */
+  Processing: 'PROCESSING',
+  /** Zpracovaná, ale párování není hotové (processingStatus PROCESSED, reviewStatus ≠ DONE) — čeká na uživatele. */
+  ToReview: 'TO_REVIEW'
+} as const;
+
+export type ReceiptListFilter = typeof ReceiptListFilter[keyof typeof ReceiptListFilter];
 export const ReceiptMatchSource = {
   Code: 'CODE',
   /** Jednoznačná podobnost názvu — jen odhad, klient ho ukáže označený a nezaškrtne předem. */

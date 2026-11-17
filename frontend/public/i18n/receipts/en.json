@@ -14,6 +14,11 @@
   "offlineAction": "You are not connected to the internet — the action was not saved. Please try again once you are online.",
   "emptyTitle": "You have no receipts yet",
   "emptyText": "Upload a photo of a shopping receipt. The app reads the store, date and items from it, and you just confirm which prices to record.",
+  "filter": {
+    "label": "Filter by status",
+    "emptyTitle": "You have no receipts in this state",
+    "showAll": "Show all"
+  },
   "uploadedTitle": "The receipt has been sent",
   "uploadedText": "It is queued for processing on the operator's computer, which may take a while. Once it is done you will find it here ready for matching, and a badge will appear next to Receipts in the menu.",
   "unknownStore": "Unknown store",

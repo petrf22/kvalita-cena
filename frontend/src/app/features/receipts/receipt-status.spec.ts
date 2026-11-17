@@ -1,10 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import type { ConfirmReceiptLinesResult, ReceiptDetail, ReceiptLine } from '../../models/catalog';
+import type {
+  ConfirmReceiptLinesResult,
+  ReceiptDetail,
+  ReceiptFilterCounts,
+  ReceiptLine,
+} from '../../models/catalog';
+import { RECEIPT_LIST_FILTER_KEYS } from '../../shared/enum-labels';
 import {
   RECEIPT_CONSENT_VERSION,
+  RECEIPT_LIST_FILTERS,
+  RECEIPT_LIST_FILTER_STATE,
   confirmBlocker,
   consentOutdated,
   defaultSelectedLineIds,
+  filterCountsWithout,
+  initialReceiptFilter,
+  receiptFilterCount,
+  receiptFilterFromParam,
+  receiptFilterParam,
+  receiptListFilterOf,
+  receiptListReturnParams,
   isLinePriceMissing,
   groupedLines,
   guideQueue,
@@ -89,6 +104,93 @@ describe('stav účtenky', () => {
     expect(receiptStoreName({ store, storeNameRaw: 'BILLA' })).toBe('Billa');
     expect(receiptStoreName({ store: null, storeNameRaw: ' albert ' })).toBe('albert');
     expect(receiptStoreName({ store: null, storeNameRaw: '  ' })).toBeNull();
+  });
+});
+
+describe('filtr seznamu účtenek', () => {
+  const counts = (overrides: Partial<ReceiptFilterCounts> = {}): ReceiptFilterCounts => ({
+    all: 10,
+    toReview: 3,
+    processing: 1,
+    done: 5,
+    failed: 1,
+    ...overrides,
+  });
+
+  it('výchozí volba: K vyřízení, když na uživatele něco čeká, jinak Vše', () => {
+    expect(initialReceiptFilter(counts())).toBe('TO_REVIEW');
+    expect(initialReceiptFilter(counts({ toReview: 0 }))).toBe('ALL');
+    // Jen zpracovávané účtenky nejsou důvod začínat jinde než na „Vše" — uživatel na ně nic neudělá.
+    expect(initialReceiptFilter(counts({ all: 2, toReview: 0, processing: 2, done: 0 }))).toBe(
+      'ALL',
+    );
+  });
+
+  it('lišta má pevné pořadí a pokrývá každou hodnotu enumu jednou', () => {
+    expect(RECEIPT_LIST_FILTERS).toEqual(['ALL', 'TO_REVIEW', 'PROCESSING', 'DONE', 'FAILED']);
+    expect(new Set(RECEIPT_LIST_FILTERS).size).toBe(Object.keys(RECEIPT_LIST_FILTER_KEYS).length);
+  });
+
+  it('query parametr: kebab-case tam i zpět, neznámá hodnota je jako žádná', () => {
+    for (const filter of RECEIPT_LIST_FILTERS) {
+      expect(receiptFilterFromParam(receiptFilterParam(filter))).toBe(filter);
+    }
+    expect(receiptFilterParam('TO_REVIEW')).toBe('to-review');
+    expect(receiptFilterFromParam(' Done ')).toBe('DONE');
+    expect(receiptFilterFromParam('TO_REVIEW')).toBeNull();
+    expect(receiptFilterFromParam('nesmysl')).toBeNull();
+    expect(receiptFilterFromParam('')).toBeNull();
+    expect(receiptFilterFromParam(null)).toBeNull();
+  });
+
+  it('počet u volby bere správné pole', () => {
+    const c = counts();
+    expect(RECEIPT_LIST_FILTERS.map((filter) => receiptFilterCount(c, filter))).toEqual([
+      10, 3, 1, 5, 1,
+    ]);
+  });
+
+  it('skupina účtenky odpovídá pravidlu serveru', () => {
+    expect(receiptListFilterOf({ processingStatus: 'QUEUED', reviewStatus: 'PENDING' })).toBe(
+      'PROCESSING',
+    );
+    expect(receiptListFilterOf({ processingStatus: 'PROCESSING', reviewStatus: 'PENDING' })).toBe(
+      'PROCESSING',
+    );
+    expect(receiptListFilterOf({ processingStatus: 'PROCESSED', reviewStatus: 'PENDING' })).toBe(
+      'TO_REVIEW',
+    );
+    expect(
+      receiptListFilterOf({ processingStatus: 'PROCESSED', reviewStatus: 'IN_PROGRESS' }),
+    ).toBe('TO_REVIEW');
+    expect(receiptListFilterOf({ processingStatus: 'PROCESSED', reviewStatus: 'DONE' })).toBe(
+      'DONE',
+    );
+    for (const processingStatus of ['NOT_A_RECEIPT', 'UNREADABLE', 'FAILED'] as const) {
+      expect(receiptListFilterOf({ processingStatus, reviewStatus: 'PENDING' })).toBe('FAILED');
+    }
+  });
+
+  it('po smazání ubude z Vše i ze skupiny účtenky, nikdy pod nulu', () => {
+    expect(
+      filterCountsWithout(counts(), { processingStatus: 'PROCESSED', reviewStatus: 'PENDING' }),
+    ).toEqual(counts({ all: 9, toReview: 2 }));
+    expect(
+      filterCountsWithout(counts({ all: 0, failed: 0 }), {
+        processingStatus: 'FAILED',
+        reviewStatus: 'PENDING',
+      }),
+    ).toEqual(counts({ all: 0, failed: 0 }));
+  });
+
+  it('návrat z detailu nese jen platný filtr ze stavu navigace', () => {
+    expect(receiptListReturnParams({ [RECEIPT_LIST_FILTER_STATE]: 'done' })).toEqual({
+      filter: 'done',
+    });
+    expect(receiptListReturnParams({ [RECEIPT_LIST_FILTER_STATE]: 'xyz' })).toEqual({});
+    expect(receiptListReturnParams({ navigationId: 3 })).toEqual({});
+    expect(receiptListReturnParams(null)).toEqual({});
+    expect(receiptListReturnParams(undefined)).toEqual({});
   });
 });
 
