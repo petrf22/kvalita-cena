@@ -26,6 +26,7 @@ import cz.kvalitacena.ui.settings.NearbyRadius
 import cz.kvalitacena.ui.settings.NearbyRadiusStore
 import cz.kvalitacena.ui.settings.PriceEntryVisibilityStore
 import cz.kvalitacena.ui.settings.widerNearbyRadius
+import java.util.UUID
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -536,9 +537,12 @@ class PriceEntryViewModel(
     val store = selectedStore ?: return
     if (!arePriceRowsValid(priceRows)) return
     val currentProduct = product
+    // Id odeslání vzniká PŘED prvním pokusem: když přímé odeslání na serveru projde, ale odpověď
+    // se ztratí, jde cena do fronty se stejným id a server ji podruhé nezapíše.
+    val submissionId = UUID.randomUUID().toString()
     // Zboží se nenačetlo kvůli síti: cena jde do fronty jen s čárovým kódem.
     if (currentProduct == null) {
-      if (productPendingLookup) queue(store, null)
+      if (productPendingLookup) queue(store, null, submissionId)
       return
     }
 
@@ -547,7 +551,7 @@ class PriceEntryViewModel(
     submitQueued = false
     // Telefon o sobě ví, že je offline — nečekat na timeout spojení, zařadit rovnou.
     if (!isOnline()) {
-      queue(store, currentProduct)
+      queue(store, currentProduct, submissionId)
       return
     }
     submitting = true
@@ -561,6 +565,7 @@ class PriceEntryViewModel(
             quantityBasis = effectiveQuantityBasis(currentProduct),
             observedAt = toObservedAtIso(observedAt),
             prices = toObservationPriceInputs(priceRows),
+            clientSubmissionId = submissionId,
           ),
         )
         // Obrazovka po úspěchu mizí (návrat na sken), takže není potřeba dohánět stav
@@ -571,7 +576,7 @@ class PriceEntryViewModel(
       } catch (e: Exception) {
         // Síť spadla až při odeslání (signál u regálu přichází a odchází) — zápis se neztratí.
         // Odpověď serveru s chybou do fronty nepatří, tu musí uživatel vidět a opravit.
-        if (shouldQueueAfterFailure(e)) queue(store, currentProduct) else submitError = e.toUiText()
+        if (shouldQueueAfterFailure(e)) queue(store, currentProduct, submissionId) else submitError = e.toUiText()
       } finally {
         submitting = false
       }
@@ -585,10 +590,11 @@ class PriceEntryViewModel(
    * Uloží cenu do fronty a naplánuje odeslání. [currentProduct] `null` = sken bez signálu, zboží
    * určuje jen čárový kód. Čas pozorování se zapisuje vždy (i „teď") — viz `PendingPrice`.
    */
-  private fun queue(store: Store, currentProduct: Product?) {
+  private fun queue(store: Store, currentProduct: Product?, submissionId: String) {
     try {
       pendingPrices.enqueue(
         pendingPriceDraft(
+          submissionId = submissionId,
           ownerUid = currentUserUid(),
           productId = currentProduct?.id,
           barcode = barcodeForNewProduct(),

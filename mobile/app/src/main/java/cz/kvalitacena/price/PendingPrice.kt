@@ -83,10 +83,13 @@ class PendingPriceStore(filesDir: File) {
 
   fun get(id: String): PendingPrice? = _pending.value.firstOrNull { it.id == id }
 
-  /** Zařadí cenu; `id` přidělí tady. */
+  /**
+   * Zařadí cenu. `id` je zároveň id odeslání (`clientSubmissionId`) — převezme se z draftu, pokud
+   * ho formulář už použil při přímém pokusu, jinak vznikne tady.
+   */
   @Synchronized
   fun enqueue(draft: PendingPrice): PendingPrice {
-    val price = draft.copy(id = UUID.randomUUID().toString())
+    val price = draft.copy(id = draft.id.ifBlank { UUID.randomUUID().toString() })
     write(price)
     refresh()
     return price

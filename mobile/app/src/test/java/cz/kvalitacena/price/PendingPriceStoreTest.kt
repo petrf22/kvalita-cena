@@ -19,8 +19,13 @@ class PendingPriceStoreTest {
 
   private val start = OffsetDateTime.parse("2026-11-16T10:00:00+01:00")
 
-  private fun draft(barcode: String = "8594001234585", minute: Long = 0, productId: String? = null) = pendingPriceDraft(
-    ownerUid = "u1", productId = productId, barcode = barcode, productName = null,
+  private fun draft(
+    barcode: String = "8594001234585",
+    minute: Long = 0,
+    productId: String? = null,
+    submissionId: String = "",
+  ) = pendingPriceDraft(
+    submissionId = submissionId, ownerUid = "u1", productId = productId, barcode = barcode, productName = null,
     storeId = "s1", storeLabel = "Albert, Vzorov", currency = "CZK", productAlias = null,
     quantityBasis = "PACKAGE", observedAt = null,
     prices = listOf(
@@ -39,6 +44,14 @@ class PendingPriceStoreTest {
     assertEquals(listOf(saved), reloaded)
     assertEquals(2, reloaded.single().prices.size)
     assertEquals(3, reloaded.single().prices[1].multibuyQty)
+  }
+
+  @Test
+  fun idOdeslaniZFormulareSeStaneIdemPolozky() {
+    // Přímé odeslání, které selhalo na síti, mohlo na serveru projít — fronta musí poslat
+    // stejné id (clientSubmissionId), jinak by server cenu zapsal podruhé.
+    val saved = PendingPriceStore(tmp.root).enqueue(draft(submissionId = "6f1c2b7e-3a4d-4e5f-9a0b-1c2d3e4f5a6b"))
+    assertEquals("6f1c2b7e-3a4d-4e5f-9a0b-1c2d3e4f5a6b", saved.id)
   }
 
   @Test

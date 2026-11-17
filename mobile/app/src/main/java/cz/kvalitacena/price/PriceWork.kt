@@ -136,6 +136,8 @@ class PriceUploadWorker(context: Context, params: WorkerParameters) : CoroutineW
           quantityBasis = price.quantityBasis,
           observedAt = price.observedAt,
           prices = price.prices,
+          // Id položky je id odeslání — opakování po ztracené odpovědi server pozná.
+          clientSubmissionId = price.id,
         ),
       )
       store.delete(price.id)
