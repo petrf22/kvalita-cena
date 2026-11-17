@@ -6,6 +6,8 @@ import cz.kvalitacena.network.ObservationPriceInput
 import cz.kvalitacena.network.TransportException
 import java.io.IOException
 import java.time.OffsetDateTime
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 
 /** Zboží s tímhle kódem katalog nezná (ani po připojení) — uživatel ho musí založit nebo vybrat. */
 const val REASON_PRODUCT_UNKNOWN = "PRODUCT_UNKNOWN"
@@ -61,9 +63,6 @@ fun lookupDecision(
 }
 
 enum class SubmitFailureAction {
-  /** Server tuhle cenu už má — položka je vyřízená. */
-  DONE,
-
   /** Síť nebo server zakolísaly; WorkManager to zkusí znovu. */
   RETRY,
 
@@ -71,23 +70,39 @@ enum class SubmitFailureAction {
   FAILED,
 }
 
+/** Server už má od tohoto uživatele cenu druhu `params[0]` z téhož dne — odmítl CELOU dávku. */
+const val CODE_PRICE_KIND_ALREADY_SUBMITTED_TODAY = "OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY"
+
 /**
- * Chyba při odesílání z fronty. „Už zapsáno dnes" znamená úspěch: buď předchozí pokus prošel
- * a ztratila se jen odpověď, nebo uživatel mezitím tutéž cenu zapsal ručně — v obou případech
- * server záznam pro ten den má a fronta by ho jen zdvojovala.
+ * Chyba při odesílání z fronty, kterou nevyřešilo [pricesAfterKindCollision].
+ * `OBSERVATION_ALREADY_SUBMITTED_TODAY` hlásí server jen při závodu dvou souběžných zápisů
+ * (unikátní index bez jména druhu) — příští pokus už kolizi pojmenuje, proto [RETRY].
+ * Opakování téže dávky po ztracené odpovědi sem nepatří: to server pozná podle id odeslání
+ * a vrátí úspěch.
  */
 fun submitFailureAction(error: Throwable): SubmitFailureAction = when {
-  error is GraphQlAppException && error.code in ALREADY_SUBMITTED_CODES -> SubmitFailureAction.DONE
+  error is GraphQlAppException && error.code == "OBSERVATION_ALREADY_SUBMITTED_TODAY" -> SubmitFailureAction.RETRY
   error is GraphQlAppException -> SubmitFailureAction.FAILED
   error is ClientUpdateRequiredException -> SubmitFailureAction.FAILED
   shouldQueueAfterFailure(error) -> SubmitFailureAction.RETRY
   else -> SubmitFailureAction.FAILED
 }
 
-private val ALREADY_SUBMITTED_CODES = setOf(
-  "OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY",
-  "OBSERVATION_ALREADY_SUBMITTED_TODAY",
-)
+/**
+ * Server odmítl celou dávku, protože cenu jednoho druhu z téhož dne už má (typicky ji uživatel
+ * mezitím zapsal znovu ručně). Vrací ceny, které se mají poslat znovu — bez kolizního druhu;
+ * prázdný seznam = nic dalšího k odeslání, položka je vyřízená. `null`, když chyba kolizí není,
+ * nebo ji vyřazením řádku vyřešit nejde (druh v dávce není) — pak rozhoduje [submitFailureAction].
+ *
+ * Dřív se taková odpověď brala jako úspěch celé položky, takže REGULAR se tiše ztratila, když
+ * server měl CLUB_CARD.
+ */
+fun pricesAfterKindCollision(error: Throwable, prices: List<ObservationPriceInput>): List<ObservationPriceInput>? {
+  if (error !is GraphQlAppException || error.code != CODE_PRICE_KIND_ALREADY_SUBMITTED_TODAY) return null
+  val kind = (error.params.firstOrNull() as? JsonPrimitive)?.contentOrNull ?: return null
+  val remaining = prices.filterNot { it.priceKind == kind }
+  return remaining.takeIf { it.size < prices.size }
+}
 
 enum class OwnerCheck {
   OK,

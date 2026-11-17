@@ -7,8 +7,10 @@ import cz.kvalitacena.network.TransportException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.time.OffsetDateTime
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -73,10 +75,38 @@ class PendingPriceLogicTest {
     )
   }
 
+  private val regular = ObservationPriceInput(priceKind = "REGULAR", priceAmount = 29.9)
+  private val clubCard = ObservationPriceInput(priceKind = "CLUB_CARD", priceAmount = 24.9)
+
+  private fun kindCollision(kind: String) =
+    GraphQlAppException(CODE_PRICE_KIND_ALREADY_SUBMITTED_TODAY, listOf(JsonPrimitive(kind)), "už zapsáno")
+
   @Test
-  fun uzZapsanaCenaJeVyrizenaNeChyba() {
-    assertEquals(SubmitFailureAction.DONE, submitFailureAction(serverError("OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY")))
-    assertEquals(SubmitFailureAction.DONE, submitFailureAction(serverError("OBSERVATION_ALREADY_SUBMITTED_TODAY")))
+  fun kolizeJednohoDruhuVyradiJenTenDruhZbytekOdejde() {
+    // Server už má klubovou cenu a odmítl celou dávku — běžná cena se nesmí ztratit.
+    assertEquals(listOf(regular), pricesAfterKindCollision(kindCollision("CLUB_CARD"), listOf(regular, clubCard)))
+  }
+
+  @Test
+  fun kolizeJedinehoDruhuZnamenaVyrizenouPolozku() {
+    assertEquals(emptyList<ObservationPriceInput>(), pricesAfterKindCollision(kindCollision("REGULAR"), listOf(regular)))
+  }
+
+  @Test
+  fun kolizeKterouVyrazenimVyresitNejdeJdeDoBezneChyby() {
+    // Druh, který dávka nemá — vyřazení by nic nezměnilo a worker by se zacyklil.
+    assertNull(pricesAfterKindCollision(kindCollision("PROMO"), listOf(regular)))
+    // Bez jména druhu (nebo úplně jiná chyba) není co vyřadit.
+    assertNull(pricesAfterKindCollision(serverError(CODE_PRICE_KIND_ALREADY_SUBMITTED_TODAY), listOf(regular)))
+    assertNull(pricesAfterKindCollision(serverError("STORE_NOT_FOUND"), listOf(regular)))
+    assertNull(pricesAfterKindCollision(UnknownHostException("api"), listOf(regular)))
+    assertEquals(SubmitFailureAction.FAILED, submitFailureAction(kindCollision("PROMO")))
+  }
+
+  @Test
+  fun zavodDvouSoubeznychZapisuSeZkusiZnovu() {
+    // Unikátní index bez jména druhu — příští pokus už kolizi pojmenuje.
+    assertEquals(SubmitFailureAction.RETRY, submitFailureAction(serverError("OBSERVATION_ALREADY_SUBMITTED_TODAY")))
   }
 
   @Test

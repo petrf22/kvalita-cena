@@ -105,55 +105,67 @@ class PriceUploadWorker(context: Context, params: WorkerParameters) : CoroutineW
   /** Vrací `false`, když má smysl zkusit položku později (síť); jinak je vyřízená nebo označená. */
   private suspend fun upload(store: PendingPriceStore, price: PendingPrice): Boolean {
     val client = AppContainer.graphQlClient
-    return try {
-      val productId = price.productId ?: run {
-        val lookup = client.productLookupByCode(price.barcode.orEmpty())
+    var current = price
+    try {
+      val productId = current.productId ?: run {
+        val lookup = client.productLookupByCode(current.barcode.orEmpty())
         when (
           val decision = lookupDecision(
             status = lookup.status,
             productId = lookup.product?.id,
             isVariableWeight = lookup.product?.isVariableWeight == true,
-            basisChosenByUser = price.basisChosenByUser,
+            basisChosenByUser = current.basisChosenByUser,
           )
         ) {
           is LookupDecision.Submit -> {
             // Uložit hned: spadne-li odeslání, příští pokus už zboží nehledá.
-            store.resolveProduct(price.id, decision.productId, lookup.product?.name)
+            store.resolveProduct(current.id, decision.productId, lookup.product?.name)
             decision.productId
           }
           is LookupDecision.NeedsProduct -> {
-            store.markNeedsProduct(price.id, decision.reason, decision.productId, lookup.product?.name)
+            store.markNeedsProduct(current.id, decision.reason, decision.productId, lookup.product?.name)
             return true
           }
           LookupDecision.Retry -> return false
         }
       }
-      client.submitObservations(
-        SubmitObservationsInput(
-          productId = productId,
-          storeId = price.storeId,
-          productAlias = price.productAlias,
-          quantityBasis = price.quantityBasis,
-          observedAt = price.observedAt,
-          prices = price.prices,
-          // Id položky je id odeslání — opakování po ztracené odpovědi server pozná.
-          clientSubmissionId = price.id,
-        ),
-      )
-      store.delete(price.id)
-      true
-    } catch (e: Exception) {
-      when (submitFailureAction(e)) {
-        SubmitFailureAction.DONE -> {
-          store.delete(price.id)
-          true
+      // Kolize jednoho druhu ceny shodí celou dávku — vyřadí se jen ten druh a zbytek jde znovu.
+      // Každé kolo dávku zmenší, takže smyčka skončí nejpozději po počtu řádků.
+      while (true) {
+        try {
+          client.submitObservations(
+            SubmitObservationsInput(
+              productId = productId,
+              storeId = current.storeId,
+              productAlias = current.productAlias,
+              quantityBasis = current.quantityBasis,
+              observedAt = current.observedAt,
+              prices = current.prices,
+              // Id položky je id odeslání — opakování po ztracené odpovědi server pozná.
+              clientSubmissionId = current.id,
+            ),
+          )
+          store.delete(current.id)
+          return true
+        } catch (e: GraphQlAppException) {
+          val remaining = pricesAfterKindCollision(e, current.prices) ?: throw e
+          if (remaining.isEmpty()) {
+            // Všechny druhy z dávky už server pro ten den má — není co poslat.
+            store.delete(current.id)
+            return true
+          }
+          val kind = current.prices.first { it !in remaining }.priceKind
+          current = store.dropPriceKind(current.id, kind) ?: return true
         }
+      }
+    } catch (e: Exception) {
+      return when (submitFailureAction(e)) {
         SubmitFailureAction.RETRY -> false
         SubmitFailureAction.FAILED -> {
           val code = (e as? GraphQlAppException)?.code
             ?: CODE_CLIENT_UPDATE_REQUIRED.takeIf { e is cz.kvalitacena.network.ClientUpdateRequiredException }
           AppLog.e("Cenu z fronty se nepodařilo odeslat: ${code ?: e::class.simpleName}", e)
-          store.markFailed(price.id, code, (e as? GraphQlAppException)?.serverMessage)
+          store.markFailed(current.id, code, (e as? GraphQlAppException)?.serverMessage)
           true
         }
       }

@@ -334,8 +334,12 @@ cena uloží do fronty v zařízení a odejde sama po připojení:
   prvním pokusem a stejné id nese i položka fronty, do které cena spadne po výpadku sítě
   (`pendingPriceDraft(submissionId)`). Worker ho posílá jako `clientSubmissionId` a server
   opakování téže dávky pozná a vrátí už zapsané řádky (`PriceObservationService.submit`,
-  `docs/datovy-model.md`). Odpověď „už zapsáno dnes" bere fronta jako úspěch
-  (`submitFailureAction`).
+  `docs/datovy-model.md`).
+- **Kolize jednoho druhu ceny neshodí zbytek dávky**: server odmítne celou dávku, když už má od
+  uživatele cenu jednoho z druhů z téhož dne (`OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY`
+  s druhem v `params`). Fronta ten druh vyřadí a zbytek pošle znovu
+  (`pricesAfterKindCollision`, `PendingPriceStore.dropPriceKind`); dřív brala odpověď jako
+  úspěch celé položky a běžná cena se ztratila, když server měl klubovou.
 - **Výběr obchodu bez signálu**: obchody, které zařízení už vidělo (`price/StoreCache`, nejvýš
   200, 90 dní), se nabídnou seřazené podle vzdálenosti — GPS funguje i bez sítě. Zapamatovaný
   obchod se předvybere, jen když je v okruhu (`storeToPreselectOffline`).

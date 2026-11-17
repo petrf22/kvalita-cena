@@ -31,9 +31,10 @@ enum class PendingPriceState {
  *
  * [observedAt] je VŽDY vyplněný čas, kdy uživatel cenu viděl — u běžného zápisu ho appka
  * neposílá a server dosadí „teď", jenže z fronty by „teď" znamenalo až okamžik odeslání
- * (docs/datovy-model.md, `observed_at` ≠ `created_at`). Zároveň je to klíč idempotence: server
- * drží jeden záznam na uživatele, zboží, obchod, druh ceny a DEN pozorování, takže opakované
- * odeslání po ztracené odpovědi cenu nezdvojí ([submitFailureAction]).
+ * (docs/datovy-model.md, `observed_at` ≠ `created_at`).
+ *
+ * [id] je zároveň id odeslání (`clientSubmissionId`) — podle něj server pozná opakování téže
+ * dávky po ztracené odpovědi a cenu nezapíše podruhé, i u anonymního zápisu ([pendingPriceDraft]).
  *
  * [basisChosenByUser] = uživatel vybíral [quantityBasis] se znalostí zboží. U skenu bez signálu
  * appka neví, jestli jde o váhové zboží, a uloží `PACKAGE`; ukáže-li se po dohledání váhové,
@@ -151,6 +152,16 @@ class PendingPriceStore(filesDir: File) {
       if (it.errorCode == REASON_VARIABLE_WEIGHT) it
       else it.copy(state = PendingPriceState.WAITING, errorCode = null, errorMessage = null)
     }
+  }
+
+  /**
+   * Vyřadí z dávky druh ceny, který server pro ten den už má ([pricesAfterKindCollision]).
+   * Vrací položku po úpravě, `null`, když ji uživatel mezitím smazal.
+   */
+  @Synchronized
+  fun dropPriceKind(id: String, priceKind: String): PendingPrice? {
+    update(id) { price -> price.copy(prices = price.prices.filterNot { it.priceKind == priceKind }) }
+    return get(id)
   }
 
   @Synchronized
