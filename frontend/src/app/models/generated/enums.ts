@@ -106,6 +106,7 @@ export const ErrorCode = {
   ObservationPromoValidityNotAllowed: 'OBSERVATION_PROMO_VALIDITY_NOT_ALLOWED',
   ObservationPromoValidityRangeInvalid: 'OBSERVATION_PROMO_VALIDITY_RANGE_INVALID',
   ObservationPromoValidFromInFuture: 'OBSERVATION_PROMO_VALID_FROM_IN_FUTURE',
+  ObservationSubmissionIdConflict: 'OBSERVATION_SUBMISSION_ID_CONFLICT',
   OffProductNotFound: 'OFF_PRODUCT_NOT_FOUND',
   OffUnavailable: 'OFF_UNAVAILABLE',
   PhotoActionRequiresLogin: 'PHOTO_ACTION_REQUIRES_LOGIN',

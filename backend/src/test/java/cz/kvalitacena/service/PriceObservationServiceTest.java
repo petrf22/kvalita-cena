@@ -444,8 +444,28 @@ class PriceObservationServiceTest {
     AppException error = catchAppException(
         () -> service.submit(replayInput(clientSubmissionId), PUBLIC_UID, ObservationSource.MOBILE));
 
-    assertThat(error.getCode()).isEqualTo(ErrorCode.OBSERVATION_ALREADY_SUBMITTED_TODAY);
+    // Vlastní kód, ne „už zapsáno dnes": mobil ho nesmí brát jako kolizi, kterou by vyřešilo čekání.
+    assertThat(error.getCode()).isEqualTo(ErrorCode.OBSERVATION_SUBMISSION_ID_CONFLICT);
     verify(priceObservationRepository, never()).saveAllAndFlush(anyList());
+  }
+
+  @Test
+  void concurrentSubmissionsAreSerializedBeforeAnyCheck() {
+    // Zámky musí padnout PŘED dohledáním opakování i pre-kontrolou kolize — jinak by souběžný
+    // zápis prošel oběma a spadl až na unikátním indexu, kde druh ceny ani předchozí zápis
+    // zjistit nejde. Pořadí zámků je pevné, aby se dvě transakce nezablokovaly navzájem.
+    UUID clientSubmissionId = UUID.randomUUID();
+    when(priceObservationRepository.findByClientSubmissionIdOrderByIdAsc(clientSubmissionId)).thenReturn(List.of());
+
+    service.submit(replayInput(clientSubmissionId), PUBLIC_UID, ObservationSource.MOBILE);
+
+    var order = inOrder(priceObservationRepository);
+    order.verify(priceObservationRepository).lockForSubmit("obs-submission:" + clientSubmissionId);
+    order.verify(priceObservationRepository)
+        .lockForSubmit("obs-submitter:" + SUBMITTER_ID + ":" + PRODUCT_ID + ":" + STORE_ID);
+    order.verify(priceObservationRepository).findByClientSubmissionIdOrderByIdAsc(clientSubmissionId);
+    order.verify(priceObservationRepository).findPriceKindsBySubmitterOnDay(any(), any(), any(), any());
+    order.verify(priceObservationRepository).saveAllAndFlush(anyList());
   }
 
   private static <T> List<T> anyList() {

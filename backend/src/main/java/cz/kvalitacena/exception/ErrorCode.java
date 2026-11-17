@@ -111,10 +111,12 @@ public enum ErrorCode {
   // --- cenové observace
   // uq_price_observation_submitter_kind_per_day — 1 záznam/uživatel/produkt/obchod/druh ceny/den
   // (hrubá síla na spamování nefunguje, docs/reputace.md), viz PriceObservationService.submit().
-  // Používá se výhradně jako fallback ze závodu dvou souběžných requestů (DataIntegrityViolation-
-  // Exception) — druh ceny tam už nejde zjistit, transakce je abortovaná. Předem zjistitelnou
-  // kolizi hlásí OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY, s druhem ceny v {0}.
+  // Jen pojistka pro pád na unikátním indexu (DataIntegrityViolationException) — druh ceny tam
+  // už nejde zjistit, transakce je abortovaná. Souběžné zápisy řadí za sebe advisory zámky, takže
+  // kolizi běžně hlásí OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY, s druhem ceny v {0}.
   OBSERVATION_ALREADY_SUBMITTED_TODAY("error.observation.alreadySubmittedToday"),
+  // clientSubmissionId už nese zápis jiného účtu — chyba klienta, opakování nepomůže.
+  OBSERVATION_SUBMISSION_ID_CONFLICT("error.observation.submissionIdConflict"),
   OBSERVATION_PRICES_REQUIRED("error.observation.pricesRequired"),
   // {0} = PriceKind — duplicita uvnitř jedné dávky, uživatel má opravit formulář hned.
   OBSERVATION_DUPLICATE_PRICE_KIND("error.observation.duplicatePriceKind"),
