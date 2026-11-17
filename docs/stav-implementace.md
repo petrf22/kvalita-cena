@@ -117,9 +117,9 @@ hlasů — hlasuje se o záznamu, nikdy o autorovi; přezkum viz „Moderace" n�
 (`ProductOverlayService`/`StoreOverlayService`, `ViewerContext`/`ViewerContextResolver`) vrací
 vždy DETACHED kopii entity (`toBuilder()`), nikdy nepřepisuje spravovanou entitu uvnitř
 transakce — Product/Store mají proto GraphQL pole `verified`/`editedByMe` (Store navíc
-`pendingConfirmation`), Product `myPrices` („Vaše cena" vedle komunitního agregátu, i dřív než
+`pendingConfirmation`), Product `myPrices` („Tvoje cena" vedle komunitního agregátu, i dřív než
 ji zpracuje agregace). Angular i Android odráží čtecí stranu stejným rozsahem (badge
-„neověřeno"/„vaše úprava", „Vaše cena", tlačítko „Nahlásit", gating zakládání pro anonyma —
+„neověřeno"/„tvoje úprava", „Tvoje cena", tlačítko „Nahlásit", gating zakládání pro anonyma —
 web `store-picker`/`price-entry-page`, mobil `ui/common/StorePicker.kt`/
 `ui/price/PriceEntryScreen.kt`) — **inline úprava existujícího obchodu v UI je hotová** (web
 `features/store-detail`, mobil `ui/store/StoreDetailScreen.kt` + `StoreFormScreen.kt` v režimu
