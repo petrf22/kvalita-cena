@@ -1,0 +1,25 @@
+# 01-observation-client-submission.yaml — idempotentní opakování zápisu ceny.
+#
+# Mobilní fronta (offline zápis) posílá dávku znovu, když se ztratí odpověď. U přihlášeného
+# zachytí opakování uq_price_observation_submitter_kind_per_day, anonymní zápis ale žádný
+# unikátní index nemá — vznikla by duplicitní observace a zkreslila vážený medián.
+# client_submission_id je náhodné UUID JEDNOHO odeslání (ne zařízení, ne uživatele), které klient
+# při opakování pošle znovu; PriceObservationService pak vrátí už zapsané řádky místo nových.
+# Index je per druh ceny, protože jedna dávka nese až 5 řádků různých druhů se stejným id.
+databaseChangeLog:
+  - changeSet:
+      id: 2026-11-17-01-observation-client-submission
+      author: Petr F.
+      changes:
+        - sql:
+            sql: |
+              ALTER TABLE core.price_observation ADD COLUMN client_submission_id UUID;
+
+              CREATE UNIQUE INDEX uq_price_observation_client_submission
+                ON core.price_observation (client_submission_id, price_kind)
+                WHERE client_submission_id IS NOT NULL;
+      rollback:
+        - sql:
+            sql: |
+              DROP INDEX IF EXISTS core.uq_price_observation_client_submission;
+              ALTER TABLE core.price_observation DROP COLUMN IF EXISTS client_submission_id;

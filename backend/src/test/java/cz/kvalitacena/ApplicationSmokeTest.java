@@ -78,6 +78,26 @@ class ApplicationSmokeTest {
         .jsonPath("$.errors").doesNotExist();
   }
 
+  /**
+   * {@code clientSubmissionId: ID} se z JSONu naváže na {@code UUID} v recordu — kdyby vazba
+   * selhala, skončil by request chybou vazby argumentu dřív, než služba hledá zboží.
+   */
+  @Test
+  void clientSubmissionIdBindsToUuid() {
+    String mutation = "mutation($input: SubmitObservationsInput!) { submitObservations(input: $input) { id } }";
+    Map<String, Object> input = Map.of("productId", "999999", "storeId", "999999",
+        "clientSubmissionId", "6f1c2b7e-3a4d-4e5f-9a0b-1c2d3e4f5a6b",
+        "prices", java.util.List.of(Map.of("priceKind", "REGULAR", "priceAmount", "29.90")));
+
+    client.post().uri("/graphql")
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Map.of("query", mutation, "variables", Map.of("input", input)))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.errors[0].extensions.code").isEqualTo("PRODUCT_NOT_FOUND");
+  }
+
   /** Dotaz hlubší než app.graphql.max-query-depth skončí chybou a nic nespustí (GraphQlConfig). */
   @Test
   void tooDeepGraphQlQueryIsRejected() {

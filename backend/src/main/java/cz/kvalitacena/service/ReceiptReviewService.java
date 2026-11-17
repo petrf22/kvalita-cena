@@ -346,7 +346,7 @@ public class ReceiptReviewService {
     // whitelistem a přebila zemi obchodu — 1,29 € ze slovenské účtenky by se zapsalo jako Kč.
     List<PriceObservation> saved = priceObservationService.submit(new SubmitObservationsInput(
             product.getId(), receipt.getStoreId(), rows.basis(), receipt.getPurchasedAt(), null,
-            null, prices),
+            null, prices, null),
         ownerPublicUid, source, EvidenceKind.RECEIPT_OCR, line.getId());
     line.setObservationId(saved.getFirst().getId());
     line.setStatus(ReceiptLineStatus.MATCHED);

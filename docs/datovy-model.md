@@ -688,6 +688,13 @@ zboží na katalogovou položku"; soukromí: `docs/soukromi.md`, „Účtenky"; 
   osa vedle `source` (`docs/rozvoj.md`, „Zdroj ceny"). Nastavuje výhradně server podle
   skutečně připojeného artefaktu (`receipt_line_id` → řádek zpracované účtenky), nikdy klient
   v inputu. Do `weightFor()` zatím nevstupuje (`f_evid` je cílový stav, `docs/reputace.md`).
+- **`core.price_observation.client_submission_id`** (UUID, nullable) — náhodné id JEDNOHO
+  odeslání `submitObservations`, které klient vygeneruje před prvním pokusem a při opakování
+  pošle znovu (mobilní fronta po ztracené odpovědi). `PriceObservationService.submit` pak vrátí
+  už zapsané řádky místo nových — anonymní zápis jinak žádnou pojistku proti zdvojení nemá
+  (`uq_price_observation_submitter_kind_per_day` je parciální na `submitter_id IS NOT NULL`).
+  `uq_price_observation_client_submission (client_submission_id, price_kind)`, protože jedna
+  dávka nese víc druhů ceny se stejným id. Web ani účtenka ho neposílají.
 - **`ai.receipt_job`** — fronta pro pull worker (`docs/ai.md`) s leasem (`lease_until`,
   `attempts`, `FOR UPDATE SKIP LOCKED`), a syrový výstup modelu (`raw_text` bez patičky,
   `extraction` jsonb, `model`). Do `core.receipt_line` jde až normalizovaný návrh. Úloha

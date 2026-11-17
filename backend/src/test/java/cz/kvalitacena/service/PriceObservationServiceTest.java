@@ -109,11 +109,11 @@ class PriceObservationServiceTest {
   }
 
   private static SubmitObservationsInput input(List<ObservationPriceInput> prices) {
-    return new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, null, null, null, prices);
+    return new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, null, null, null, prices, null);
   }
 
   private static SubmitObservationsInput inputWithBasis(QuantityBasis basis, List<ObservationPriceInput> prices) {
-    return new SubmitObservationsInput(PRODUCT_ID, STORE_ID, basis, null, null, null, prices);
+    return new SubmitObservationsInput(PRODUCT_ID, STORE_ID, basis, null, null, null, prices, null);
   }
 
   private AppException submitAndCaptureError(SubmitObservationsInput submitInput) {
@@ -352,7 +352,7 @@ class PriceObservationServiceTest {
     when(currencyResolver.isSupported("XYZ")).thenReturn(false);
     SubmitObservationsInput unsupportedCurrencyInput =
         new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, null, "XYZ", null,
-            List.of(price(PriceKind.REGULAR, "29.90"), price(PriceKind.CLUB_CARD, "24.90")));
+            List.of(price(PriceKind.REGULAR, "29.90"), price(PriceKind.CLUB_CARD, "24.90")), null);
 
     service.submit(unsupportedCurrencyInput, PUBLIC_UID, ObservationSource.WEB);
 
@@ -364,7 +364,7 @@ class PriceObservationServiceTest {
   @Test
   void aliasIsLearnedOnlyAfterSuccessfulRegisteredSubmission() {
     SubmitObservationsInput withAlias = new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, null, null,
-        "třicátník", List.of(price(PriceKind.REGULAR, "29.90")));
+        "třicátník", List.of(price(PriceKind.REGULAR, "29.90")), null);
 
     service.submit(withAlias, PUBLIC_UID, ObservationSource.WEB);
 
@@ -375,13 +375,77 @@ class PriceObservationServiceTest {
   void observedAtIsResolvedOnceForWholeBatch() {
     OffsetDateTime observedAt = OffsetDateTime.parse("2026-08-01T09:00:00Z");
     SubmitObservationsInput submitInput = new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, observedAt, null, null,
-        List.of(price(PriceKind.REGULAR, "29.90"), price(PriceKind.CLUB_CARD, "24.90")));
+        List.of(price(PriceKind.REGULAR, "29.90"), price(PriceKind.CLUB_CARD, "24.90")), null);
 
     service.submit(submitInput, PUBLIC_UID, ObservationSource.WEB);
 
     verify(priceObservationRepository).saveAllAndFlush(savedCaptor.capture());
     assertThat(savedCaptor.getValue()).extracting(PriceObservation::getObservedAt)
         .containsOnly(observedAt);
+  }
+
+  private static SubmitObservationsInput replayInput(UUID clientSubmissionId) {
+    return new SubmitObservationsInput(PRODUCT_ID, STORE_ID, null, null, null, null,
+        List.of(price(PriceKind.REGULAR, "29.90"), price(PriceKind.CLUB_CARD, "24.90")), clientSubmissionId);
+  }
+
+  @Test
+  void firstSubmissionStoresClientSubmissionIdOnEveryRow() {
+    UUID clientSubmissionId = UUID.randomUUID();
+    when(priceObservationRepository.findByClientSubmissionIdOrderByIdAsc(clientSubmissionId)).thenReturn(List.of());
+
+    service.submit(replayInput(clientSubmissionId), null, ObservationSource.MOBILE);
+
+    verify(priceObservationRepository).saveAllAndFlush(savedCaptor.capture());
+    assertThat(savedCaptor.getValue()).extracting(PriceObservation::getClientSubmissionId)
+        .containsOnly(clientSubmissionId);
+  }
+
+  @Test
+  void anonymousReplayReturnsEarlierRowsWithoutSecondWrite() {
+    // Anonym nemá unikátní index na den — bez id odeslání by opakování po ztracené odpovědi
+    // zapsalo druhou observaci a zkreslilo medián.
+    UUID clientSubmissionId = UUID.randomUUID();
+    List<PriceObservation> earlier = List.of(
+        PriceObservation.builder().id(10L).priceKind(PriceKind.REGULAR).clientSubmissionId(clientSubmissionId).build(),
+        PriceObservation.builder().id(11L).priceKind(PriceKind.CLUB_CARD).clientSubmissionId(clientSubmissionId).build());
+    when(priceObservationRepository.findByClientSubmissionIdOrderByIdAsc(clientSubmissionId)).thenReturn(earlier);
+
+    List<PriceObservation> result = service.submit(replayInput(clientSubmissionId), null, ObservationSource.MOBILE);
+
+    assertThat(result).isEqualTo(earlier);
+    verify(priceObservationRepository, never()).saveAllAndFlush(anyList());
+    verifyNoInteractions(priceAggregationService);
+  }
+
+  @Test
+  void registeredReplayIsNotRejectedAsAlreadySubmittedToday() {
+    UUID clientSubmissionId = UUID.randomUUID();
+    List<PriceObservation> earlier = List.of(PriceObservation.builder().id(10L).priceKind(PriceKind.REGULAR)
+        .submitter(submitter).clientSubmissionId(clientSubmissionId).build());
+    when(priceObservationRepository.findByClientSubmissionIdOrderByIdAsc(clientSubmissionId)).thenReturn(earlier);
+
+    List<PriceObservation> result = service.submit(replayInput(clientSubmissionId), PUBLIC_UID, ObservationSource.MOBILE);
+
+    assertThat(result).isEqualTo(earlier);
+    verify(priceObservationRepository, never()).findPriceKindsBySubmitterOnDay(any(), any(), any(), any());
+    verify(priceObservationRepository, never()).saveAllAndFlush(anyList());
+    verify(appUserRepository, never()).save(any());
+    assertThat(submitter.getObservationCount()).isZero();
+  }
+
+  @Test
+  void sameSubmissionIdFromAnotherUserIsRejected() {
+    UUID clientSubmissionId = UUID.randomUUID();
+    AppUser someoneElse = AppUser.builder().id(99L).build();
+    when(priceObservationRepository.findByClientSubmissionIdOrderByIdAsc(clientSubmissionId)).thenReturn(List.of(
+        PriceObservation.builder().id(10L).submitter(someoneElse).clientSubmissionId(clientSubmissionId).build()));
+
+    AppException error = catchAppException(
+        () -> service.submit(replayInput(clientSubmissionId), PUBLIC_UID, ObservationSource.MOBILE));
+
+    assertThat(error.getCode()).isEqualTo(ErrorCode.OBSERVATION_ALREADY_SUBMITTED_TODAY);
+    verify(priceObservationRepository, never()).saveAllAndFlush(anyList());
   }
 
   private static <T> List<T> anyList() {

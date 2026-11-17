@@ -114,6 +114,17 @@ public class PriceObservationService {
       case PACKAGE, PER_PIECE -> effectiveProduct.getNetContentBase();
     };
 
+    // Opakované odeslání téže dávky (mobilní fronta po ztracené odpovědi) — PŘED kontrolou
+    // kolize, jinak by přihlášenému opakování spadlo na „už zapsáno dnes" a anonymní by se
+    // zapsalo podruhé (anonym unikátní index nemá).
+    if (input.clientSubmissionId() != null) {
+      List<PriceObservation> earlier = priceObservationRepository
+          .findByClientSubmissionIdOrderByIdAsc(input.clientSubmissionId());
+      if (!earlier.isEmpty()) {
+        return replayed(earlier, submitter);
+      }
+    }
+
     // Pre-kontrola kolize s DB — jen pro registrované (index je parciální, WHERE submitter_id
     // IS NOT NULL). Nic zatím není zapsáno, takže "celá dávka selže" vychází zadarmo.
     if (submitter != null) {
@@ -155,6 +166,7 @@ public class PriceObservationService {
           .source(source)
           .evidenceKind(evidenceKind)
           .receiptLineId(receiptLineId)
+          .clientSubmissionId(input.clientSubmissionId())
           .build());
     }
 
@@ -199,6 +211,22 @@ public class PriceObservationService {
     }
 
     return saved;
+  }
+
+  /**
+   * Odpověď na opakované odeslání: už zapsané řádky, bez nového zápisu, bez +1 čítače
+   * a bez přepočtu. Cizí odesílatel se stejným id je chyba — id se nikde nezveřejňuje, takže
+   * k tomu dojde jen chybou klienta. Řádek bez odesílatele (anonymní, nebo po 180 dnech
+   * pseudonymizovaný, docs/soukromi.md) za cizí nepovažujeme: nic se tím nezapíše ani neodhalí.
+   */
+  private static List<PriceObservation> replayed(List<PriceObservation> earlier, AppUser submitter) {
+    Long submitterId = submitter == null ? null : submitter.getId();
+    boolean foreign = earlier.stream().anyMatch(o -> o.getSubmitter() != null
+        && !o.getSubmitter().getId().equals(submitterId));
+    if (foreign) {
+      throw new ValidationException(ErrorCode.OBSERVATION_ALREADY_SUBMITTED_TODAY);
+    }
+    return earlier;
   }
 
   private static void validateShape(PriceKind kind, ObservationPriceInput price) {

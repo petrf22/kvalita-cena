@@ -373,6 +373,12 @@ export type RecordType =
  */
 export type SubmitObservationsInput = {
   /**
+   * Náhodné UUID tohoto odeslání (ne zařízení ani uživatele), vygenerované klientem před prvním
+   * pokusem. Při opakování téže dávky (ztracená odpověď, offline fronta) ho klient pošle znovu
+   * a server místo nového zápisu vrátí už zapsané řádky. Bez něj se každé odeslání zapisuje.
+   */
+  clientSubmissionId?: string | null | undefined;
+  /**
    * ISO-4217 kód měny — chybí-li, dosadí se podle země obchodu (docs/lokalizace.md). Volitelný
    * jen kvůli příhraničním prodejnám, které občas cení v jiné měně, než je země provozovny;
    * server hodnotu validuje proti podporovaným měnám, neplatnou tiše ignoruje a dosadí zemi obchodu.

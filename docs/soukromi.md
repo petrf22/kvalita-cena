@@ -310,7 +310,9 @@ nese čas, místo a celý obsah jednoho nákupu konkrétního člověka. Pravidl
 - **Čekající cena zůstává v zařízení a patří účtu, který ji zapsal.** Fronta cen zapsaných bez
   signálu (`price/PendingPriceStore`) drží čárový kód nebo id zboží, obchod, ceny, čas zápisu
   a `publicUid` účtu — **žádnou polohu**. Po odeslání se položka smaže; pod jiným účtem ani
-  anonymně neodejde. Vedle ní si zařízení pamatuje obchody, které už vidělo (`price/StoreCache`)
+  anonymně neodejde. Na server jde s ní náhodné id odeslání (`client_submission_id`, kvůli
+  opakování bez zdvojení) — nové pro každou zapsanou cenovku, ne pro zařízení ani účet, takže
+  dva zápisy téhož člověka nespojí; v API se nikde nevrací. Vedle ní si zařízení pamatuje obchody, které už vidělo (`price/StoreCache`)
   — jen to, co server o obchodech veřejně vrací, ne polohu, se kterou se na ně ptalo. Vzdálenost
   k nim se bez signálu počítá v zařízení z aktuální polohy a nikam se neposílá.
 - **Čekající účtenka patří účtu, který ji zařadil.** Mobilní fronta (offline odeslání) si
