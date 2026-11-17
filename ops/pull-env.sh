@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Stáhne produkční `.env` ze serveru a uloží ho na lokální stroj ZAŠIFROVANÝ
-# (backup/kvalitacena-prod.env.gpg, gitignored). Čistý text se na lokální disk vůbec nezapíše —
-# jde rourou ze ssh rovnou do gpg.
+# Spouští se na PC provozovatele, NE na serveru. Stáhne produkční `.env` ze serveru přes ssh
+# a uloží ho na lokální stroj ZAŠIFROVANÝ (backup/kvalitacena-prod.env.gpg, gitignored). Čistý
+# text se na lokální disk vůbec nezapíše — drží ho jen proměnná v paměti, než ho převezme gpg.
 #
 # Proč šifrovat: v `.env` je EMAIL_ENC_KEY, JWT_SECRET a heslo k databázi. Kdo má tenhle soubor
 # a zálohu DB (leží ve stejné složce a putují spolu na externí disk a NAS), přečte e-maily všech
@@ -26,6 +26,14 @@ TARGET="$LOCAL_DIR/kvalitacena-prod.env.gpg"
 PLAINTEXT="$LOCAL_DIR/kvalitacena-prod.env"
 
 command -v gpg >/dev/null || { echo "Chybí gpg (sudo apt install gnupg)." >&2; exit 1; }
+
+# Skript patří na PC provozovatele, ne na server — tam by se ssh připojovalo samo k sobě
+# a šifrovaná kopie by ležela vedle originálu, kde je k ničemu (2026-11-17 se to stalo).
+if hostname -I 2>/dev/null | tr ' ' '\n' | grep -qxF "$SERVER_HOST"; then
+  echo "Tohle je server $SERVER_HOST — pull-env.sh se spouští na tvém PC, ne na serveru." >&2
+  exit 1
+fi
+
 mkdir -p "$LOCAL_DIR"
 
 # Do dočasného souboru a přejmenovat až po úspěchu — přerušené stahování nebo překlep v hesle
@@ -33,13 +41,27 @@ mkdir -p "$LOCAL_DIR"
 tmp="$(mktemp "$LOCAL_DIR/.kvalitacena-prod.env.gpg.XXXXXX")"
 trap 'rm -f "$tmp"' EXIT
 
-echo "Stahuji $SERVER_HOST:$REMOTE_ENV a šifruji (gpg se dvakrát zeptá na heslo)..."
-# `pipefail` výš: selže-li ssh, selže celá roura a prázdný vstup se jako záloha neuloží.
-# --no-symkey-cache: gpg-agent si heslo nepamatuje, další spuštění se zeptá znovu.
+echo "Stahuji $SERVER_HOST:$REMOTE_ENV..."
+# Nejdřív celé stáhnout, až potom šifrovat — v rouře ssh | gpg se oba ptaly na terminál
+# zároveň (ssh na otisk neznámého serveru, gpg na heslo) a gpg skončil s „Operation
+# cancelled". Obsah drží jen proměnná v paměti tohohle procesu, na disk se nezapíše.
 # shellcheck disable=SC2029  # REMOTE_ENV se má rozvinout tady, ne na serveru
-ssh "$SERVER_HOST" "cat '$REMOTE_ENV'" \
-  | gpg --symmetric --cipher-algo AES256 --no-symkey-cache --yes \
+env_content="$(ssh "$SERVER_HOST" "cat '$REMOTE_ENV'")"
+if [[ -z "$env_content" ]]; then
+  echo "Ze serveru přišel prázdný .env — nic neukládám." >&2
+  exit 1
+fi
+
+echo "Šifruji (gpg se dvakrát zeptá na heslo)..."
+# --pinentry-mode loopback + GPG_TTY: heslo se zadá přímo v terminálu, i bez grafického
+# pinentry (ssh relace, čistá konzole), kde gpg jinak padá na „Inappropriate ioctl for device".
+# --no-symkey-cache: gpg-agent si heslo nepamatuje, další spuštění se zeptá znovu.
+GPG_TTY="$(tty)"
+export GPG_TTY
+printf '%s\n' "$env_content" \
+  | gpg --symmetric --cipher-algo AES256 --no-symkey-cache --pinentry-mode loopback --yes \
         --output "$tmp" -
+unset env_content
 
 # Prázdný .env by gpg zašifroval bez chyby — ověřit, že uvnitř něco je, by znamenalo ptát se na
 # heslo potřetí; stačí velikost (hlavička gpg + prázdný vstup má pod 100 bajtů).

@@ -327,9 +327,13 @@ e-mail nevyvolá. Při selhání pošle GitHub e-mail tomu, kdo plán workflow n
 
 ## `pull-env.sh`
 
-Stáhne produkční `.env` a uloží ho na lokální stroj **zašifrovaný** do
+Spouští se na **PC provozovatele**, ne na serveru (tam skript sám odmítne běžet). Stáhne
+produkční `.env` přes `ssh` a uloží ho na lokální stroj **zašifrovaný** do
 `backup/kvalitacena-prod.env.gpg` (`gpg --symmetric`, AES-256). Čistý text se na lokální disk
-nezapíše vůbec — jde rourou ze `ssh` rovnou do `gpg`.
+nezapíše vůbec — drží ho jen proměnná v paměti skriptu, dokud ho nepřevezme `gpg`. Stahování
+a šifrování jdou záměrně po sobě, ne rourou: dotaz `ssh` na otisk serveru a dotaz `gpg` na
+heslo by se jinak přetahovaly o terminál. Heslo se zadává přímo v terminálu
+(`--pinentry-mode loopback`), funguje tedy i bez grafického prostředí.
 
 V `.env` je `EMAIL_ENC_KEY`, `JWT_SECRET` a heslo k databázi. Záloha databáze leží ve stejné
 složce a obojí spolu putuje na externí disk a NAS, takže s nešifrovaným `.env` by nálezce disku
