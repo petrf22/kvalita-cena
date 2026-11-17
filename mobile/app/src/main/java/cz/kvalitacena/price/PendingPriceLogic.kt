@@ -74,14 +74,14 @@ enum class SubmitFailureAction {
 const val CODE_PRICE_KIND_ALREADY_SUBMITTED_TODAY = "OBSERVATION_PRICE_KIND_ALREADY_SUBMITTED_TODAY"
 
 /**
- * Chyba při odesílání z fronty, kterou nevyřešilo [pricesAfterKindCollision].
- * `OBSERVATION_ALREADY_SUBMITTED_TODAY` hlásí server jen při závodu dvou souběžných zápisů
- * (unikátní index bez jména druhu) — příští pokus už kolizi pojmenuje, proto [RETRY].
- * Opakování téže dávky po ztracené odpovědi sem nepatří: to server pozná podle id odeslání
- * a vrátí úspěch.
+ * Chyba při odesílání z fronty, kterou nevyřešilo [pricesAfterKindCollision]. Každá odpověď
+ * serveru s chybou je [FAILED] — uživatel ji uvidí a rozhodne sám („Zkusit znovu"/smazat).
+ * Automatické opakování patří jen síti: chyba, kterou server vrací pořád stejně, by frontu
+ * zacyklila. Souběžné zápisy server řadí za sebe sám (opakování téže dávky pozná podle id
+ * odeslání, kolizi pojmenuje druhem ceny), takže ani `OBSERVATION_ALREADY_SUBMITTED_TODAY`
+ * není důvod čekat.
  */
 fun submitFailureAction(error: Throwable): SubmitFailureAction = when {
-  error is GraphQlAppException && error.code == "OBSERVATION_ALREADY_SUBMITTED_TODAY" -> SubmitFailureAction.RETRY
   error is GraphQlAppException -> SubmitFailureAction.FAILED
   error is ClientUpdateRequiredException -> SubmitFailureAction.FAILED
   shouldQueueAfterFailure(error) -> SubmitFailureAction.RETRY
