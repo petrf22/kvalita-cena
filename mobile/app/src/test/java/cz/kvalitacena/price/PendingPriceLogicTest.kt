@@ -104,9 +104,10 @@ class PendingPriceLogicTest {
   }
 
   @Test
-  fun zavodDvouSoubeznychZapisuSeZkusiZnovu() {
-    // Unikátní index bez jména druhu — příští pokus už kolizi pojmenuje.
-    assertEquals(SubmitFailureAction.RETRY, submitFailureAction(serverError("OBSERVATION_ALREADY_SUBMITTED_TODAY")))
+  fun chybaServeruSeVeFronteNeopakujeDokola() {
+    // Server ji vrací pořád stejně — automatické opakování by frontu zacyklilo, uživatel ji musí vidět.
+    assertEquals(SubmitFailureAction.FAILED, submitFailureAction(serverError("OBSERVATION_ALREADY_SUBMITTED_TODAY")))
+    assertEquals(SubmitFailureAction.FAILED, submitFailureAction(serverError("OBSERVATION_SUBMISSION_ID_CONFLICT")))
   }
 
   @Test
