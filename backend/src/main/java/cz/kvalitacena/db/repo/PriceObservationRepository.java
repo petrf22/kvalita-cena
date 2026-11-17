@@ -25,6 +25,9 @@ public interface PriceObservationRepository extends JpaRepository<PriceObservati
   @Query("SELECT MIN(o.observedAt) FROM PriceObservation o")
   Optional<OffsetDateTime> findEarliestObservedAt();
 
+  /** Řádky jedné dávky podle id odeslání od klienta — idempotentní opakování zápisu. */
+  List<PriceObservation> findByClientSubmissionIdOrderByIdAsc(UUID clientSubmissionId);
+
   /**
    * Které druhy ceny už tenhle uživatel dnes u téhle dvojice (produkt, obchod) zapsal —
    * pojmenovaná pre-kontrola PŘED unikátním indexem {@code uq_price_observation_submitter_kind_

@@ -7,6 +7,7 @@ import org.springframework.data.domain.Persistable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 /**
  * Jádro celé aplikace — viz docs/datovy-model.md. {@code unitPrice} je v databázi
@@ -117,6 +118,11 @@ public class PriceObservation implements Persistable<Long> {
 
   @Column(name = "receipt_line_id")
   private Long receiptLineId;
+
+  // Náhodné UUID jednoho odeslání od klienta — opakované odeslání téže dávky (ztracená odpověď
+  // v mobilní frontě) vrátí už zapsané řádky místo nových (PriceObservationService.submit).
+  @Column(name = "client_submission_id")
+  private UUID clientSubmissionId;
 
   @PrePersist
   protected void onCreate() {

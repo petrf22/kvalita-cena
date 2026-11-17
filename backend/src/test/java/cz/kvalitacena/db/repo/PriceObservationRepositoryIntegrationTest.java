@@ -85,6 +85,11 @@ class PriceObservationRepositoryIntegrationTest {
   }
 
   private void persistObservation(Product product, Store store, AppUser submitter, PriceKind kind, OffsetDateTime observedAt) {
+    persistObservation(product, store, submitter, kind, observedAt, null);
+  }
+
+  private void persistObservation(Product product, Store store, AppUser submitter, PriceKind kind,
+      OffsetDateTime observedAt, UUID clientSubmissionId) {
     priceObservationRepository.saveAndFlush(PriceObservation.builder()
         .product(product)
         .store(store)
@@ -97,7 +102,33 @@ class PriceObservationRepositoryIntegrationTest {
         .submitter(submitter)
         .submitterKind(submitter == null ? SubmitterKind.ANONYMOUS : SubmitterKind.REGISTERED)
         .source(ObservationSource.WEB)
+        .clientSubmissionId(clientSubmissionId)
         .build());
+  }
+
+  @Test
+  void clientSubmissionIdIsUniquePerPriceKindAndFindsWholeBatch() {
+    Category category = categoryRepository.saveAndFlush(
+        Category.builder().name("Test kategorie " + UUID.randomUUID()).slug("test-" + UUID.randomUUID()).path("test").build());
+    Product product = persistProduct(category);
+    Store store = persistStore();
+    UUID clientSubmissionId = UUID.randomUUID();
+    OffsetDateTime observedAt = OffsetDateTime.parse("2026-11-17T10:00:00Z");
+
+    // Jedna anonymní dávka se dvěma druhy ceny nese stejné id — to index musí pustit.
+    persistObservation(product, store, null, PriceKind.REGULAR, observedAt, clientSubmissionId);
+    persistObservation(product, store, null, PriceKind.CLUB_CARD, observedAt, clientSubmissionId);
+    // Bez id (web, účtenka) index neomezuje vůbec.
+    persistObservation(product, store, null, PriceKind.REGULAR, observedAt, null);
+    persistObservation(product, store, null, PriceKind.REGULAR, observedAt, null);
+
+    assertThat(priceObservationRepository.findByClientSubmissionIdOrderByIdAsc(clientSubmissionId))
+        .extracting(PriceObservation::getPriceKind)
+        .containsExactly(PriceKind.REGULAR, PriceKind.CLUB_CARD);
+    // Souběžné opakování téže dávky — anonym jiný unikátní index nemá.
+    org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+            persistObservation(product, store, null, PriceKind.REGULAR, observedAt, clientSubmissionId))
+        .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
   }
 
   @Test

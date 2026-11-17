@@ -1727,6 +1727,12 @@ input SubmitObservationsInput {
   s OBSERVATION_DUPLICATE_PRICE_KIND.
   """
   prices: [ObservationPriceInput!]!
+  """
+  Náhodné UUID tohoto odeslání (ne zařízení ani uživatele), vygenerované klientem před prvním
+  pokusem. Při opakování téže dávky (ztracená odpověď, offline fronta) ho klient pošle znovu
+  a server místo nového zápisu vrátí už zapsané řádky. Bez něj se každé odeslání zapisuje.
+  """
+  clientSubmissionId: ID
 }
 
 "Jeden řádek formuláře: druh ceny + částka. MULTIBUY má místo priceAmount dvojici qty/total."
