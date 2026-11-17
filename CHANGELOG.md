@@ -13,6 +13,7 @@ za jednoduchost skriptu.
 - Cenu jde zapsat i v obchodě bez signálu: stačí naskenovat kód, vybrat obchod z těch, které telefon už zná, a cena se uloží v telefonu a odešle sama po připojení; co čeká a co potřebuje doplnit, ukazuje nová obrazovka Čekající ceny (mobil)
 
 ### Opraveno
+- Účtenky z pokladen, které tisknou ceny bez haléřů (např. farmářské prodejny se sloupci „Polozka DPH Pocet Cena/ks Celkem“), se přečtou správně — vážené maso jako cena za kg, se zaokrouhlením pod částkou Celkem a datem, kde čas stojí před datem (server)
 - Aktuální cena v obchodě se po zdražení nebo zlevnění přizpůsobí hned — starší zápisy v ní váží méně (poločas 14 dní), dřív rozhodovala celá historie (server)
 - Chyba při přepočtu ceny jednoho zboží už nezastaví přepočet cen ostatním a fronta přepočtu se průběžně uklízí (server)
 - Když je na účtence Tesco stejné zboží na více řádcích, slevy Clubcard se rozdělí mezi ně — dřív dostal celou slevu první řádek a ostatní žádnou (server)

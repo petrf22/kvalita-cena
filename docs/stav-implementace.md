@@ -581,7 +581,7 @@ oběh (2x, 02, 04, kupóny 05/98/99; u GTIN-14 prefix za indikátorem balení).
 rozdělená na 5 dílů s překryvem): OCR → řádky se součtem na haléř → párování → cena s
 `RECEIPT_OCR` → naučené označení v „Názvech na účtenkách".
 
-**Profily řetězců** (`tools/uctenky/profiles/`): Albert, TAMDA FOODS, COOP, Tesco, pokladna WinShop a obecný profil.
+**Profily řetězců** (`tools/uctenky/profiles/`): Albert, TAMDA FOODS, COOP, Tesco, pokladny WinShop a „pocet-cena" a obecný profil.
 COOP ověřen 2026-11-03 na reálné účtence (COOP Hořovice, formát TIP, 2 díly). Sazba DPH
 stojí před názvem a jde do `vatCode`, množství a `váhový kód:` stojí pod názvem. Váhový kód
 se neposílá: není to globální GTIN a mění se s hmotností. Adresa prodejny se bere z bloku
@@ -606,6 +606,13 @@ ne podle obchodu, a řetězec neurčuje. Sazba DPH, kód zboží, množství a c
 NAD názvem; zaokrouhlení `ZAOK` není položka, do součtu se připočte. Kód zboží je číslo
 v pokladně, ne EAN, a neposílá se. Desetinné množství netiskne jednotku, bere se proto jako
 balení s varováním.
+Profil `pocet-cena` (pokladna se sloupci „Polozka DPH Pocet Cena/ks Celkem") ověřen 2026-11-17
+na reálné účtence farmářské prodejny (3 vážené položky masa, součet sedí na haléř). Stejně jako
+WinShop se pozná podle hlavičky sloupců a řetězec neurčuje. Částky tiskne bez koncových nul
+(`395`, `181,2`, `619`), proto má vlastní rozbor položek. Desetinné množství bez jednotky se
+bere jako cena za kg s poznámkou na řádku (u váženého masa je to kg a cena za balení by nešla
+porovnat). Zaokrouhlení stojí pod „Celkem" a do součtu se připočte. Datum v patičce má čas
+před datem (`16:03:58 17.10.2026`), ten tvar od té doby čte i obecný profil.
 
 **Čitelné názvy, odhad a kurátorství (2026-11-02):**
 

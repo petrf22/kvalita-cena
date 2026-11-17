@@ -419,6 +419,11 @@ společného skládání a nechá je složit tam.
 Čtvrtý je [`profiles/winshop.py`](profiles/winshop.py) pro pokladní software WinShop:
 název stojí POD řádkem s cenou, společné skládání ho čeká nad ním. Profil není řetězec,
 pozná se podle tvaru účtenky, a proto se zkouší až za profily řetězců.
+Pátý je [`profiles/pocet_cena.py`](profiles/pocet_cena.py) pro pokladnu se sloupci
+„Polozka DPH Pocet Cena/ks Celkem" (farmářská prodejna). Tiskne částky bez koncových nul
+(`395`, `181,2`), které obecná `normalize.AMOUNT` nebere, a volnější částku smí brát jen řádek
+ukotvený sazbou DPH a „x". Desetinné množství bez jednotky je cena za kg, zaokrouhlení stojí
+pod „Celkem".
 
 **EAN z účtenky** jde na server jako `internalCode` a server podle něj spáruje zboží
 (`ReceiptMatchingService.byCode`). Server kontroluje jen formát, proto worker posílá jen
