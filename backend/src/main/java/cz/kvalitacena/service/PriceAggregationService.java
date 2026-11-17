@@ -17,7 +17,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
-import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -278,22 +277,28 @@ public class PriceAggregationService {
         ? BigDecimal.ZERO
         : totalWeight.multiply(totalWeight).divide(sumSquares, MC);
 
+    // Medián vybírá jen z hodnot s kladnou vahou. Nulová váha (f_recency podteče u záznamu
+    // starého stovky poločasů) by jinak při přesné rovnosti na hranici posloužila jako soused
+    // k interpolaci: 10 a 20 Kč dnes + 15 Kč s váhou 0 by dalo 12,50 místo 15.
+    List<WeightedValue> weighted = values.stream().filter(v -> v.weight().signum() > 0).toList();
+    if (weighted.isEmpty()) weighted = values;
+
     BigDecimal half = totalWeight.divide(BigDecimal.valueOf(2), MC);
     BigDecimal cumulative = BigDecimal.ZERO;
-    BigDecimal weightedMedian = values.get(values.size() - 1).unitPrice();
-    BigDecimal medianAmount = values.get(values.size() - 1).priceAmount();
-    for (int i = 0; i < values.size(); i++) {
-      cumulative = cumulative.add(values.get(i).weight());
+    BigDecimal weightedMedian = weighted.get(weighted.size() - 1).unitPrice();
+    BigDecimal medianAmount = weighted.get(weighted.size() - 1).priceAmount();
+    for (int i = 0; i < weighted.size(); i++) {
+      cumulative = cumulative.add(weighted.get(i).weight());
       if (cumulative.compareTo(half) >= 0) {
-        if (cumulative.compareTo(half) == 0 && i + 1 < values.size()) {
+        if (cumulative.compareTo(half) == 0 && i + 1 < weighted.size()) {
           // Přesná rovnost na hranici — lineárně interpolujeme mezi p_k a p_{k+1}.
-          weightedMedian = values.get(i).unitPrice().add(values.get(i + 1).unitPrice())
+          weightedMedian = weighted.get(i).unitPrice().add(weighted.get(i + 1).unitPrice())
               .divide(BigDecimal.valueOf(2), MC);
-          medianAmount = values.get(i).priceAmount().add(values.get(i + 1).priceAmount())
+          medianAmount = weighted.get(i).priceAmount().add(weighted.get(i + 1).priceAmount())
               .divide(BigDecimal.valueOf(2), MC);
         } else {
-          weightedMedian = values.get(i).unitPrice();
-          medianAmount = values.get(i).priceAmount();
+          weightedMedian = weighted.get(i).unitPrice();
+          medianAmount = weighted.get(i).priceAmount();
         }
         break;
       }
@@ -326,7 +331,9 @@ public class PriceAggregationService {
     if (halfLifeDays <= 0 || observedAt == null || newest == null) return BigDecimal.ONE;
     double ageDays = Duration.between(observedAt, newest).toSeconds() / 86_400.0;
     if (ageDays <= 0) return BigDecimal.ONE;
-    return BigDecimal.valueOf(Math.pow(0.5, ageDays / halfLifeDays)).setScale(6, RoundingMode.HALF_UP);
+    // Relativní přesnost (MC), ne pevný počet desetinných míst: setScale(6) zaokrouhlil váhu
+    // záznamu starého ~20 poločasů (s výchozími 14 dny ~294 dní) na nulu.
+    return new BigDecimal(Math.pow(0.5, ageDays / halfLifeDays), MC);
   }
 
   private BigDecimal weightFor(PriceObservation observation) {
