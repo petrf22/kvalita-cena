@@ -353,6 +353,44 @@ Vážená položka byla zadána:
                           ("6", "PACKAGE", "2.90")])
         self.assertEqual(document["purchasedAt"], "2026-09-07T10:15:00+02:00")
 
+    # Účtenka 47 (2026-11-17): hotovost, takže v patičce chybí řádek s datem a čas je jen
+    # v hlavičce na stejném řádku jako datum; vážené zboží se dvěma značkami a tárou pod nimi.
+    WEIGHED_TARE = """PENNY.
+PENNY MARKET S.R.O.
+Nádražní 1, 10000 Vzorov
+IČO: 12345678
+DIČ: CZ12345678
+MĚST. SOUD PRAHA C/00000
+Datum: 05.09.2026 Čas: 11:29:08
+1.000 ks x 18.90 Kč /ks
+Salát rybí s jogurt.135g C 18.90
+0.800 kg (N)(V) x 69.90 Kč /kg
+0.002 kg (PT)
+Citrony C 55.92
+SLEVA -28.00
+(Citrony 27.92)
+Mezisoučet Kč 46.82
+Zaokrouhlení Kč 0.18
+Celkem Kč 47.00
+PRIJATO v hotovosti 100.00
+VRÁCENO Kč 53.00
+Vážená položka byla zadána:
+(V) = z pokladní váhy
+"""
+
+    def test_vazene_zbozi_s_tarou_a_datum_s_casem_na_jednom_radku(self):
+        document = parse.build_document(self.WEIGHED_TARE)
+        self.assertEqual(document["warnings"], [])
+        self.assertTrue(document["totalMatches"])
+        self.assertEqual([line["kind"] for line in document["lines"]],
+                         [lines_mod.ITEM, lines_mod.ITEM, lines_mod.DISCOUNT])
+        citrony = document["lines"][1]
+        # Cena za kg, ne zaplacených 55,92 za „balení".
+        self.assertEqual((citrony["rawLabel"], citrony["quantity"], citrony["quantityBasis"],
+                          citrony["unitPrice"], citrony["lineTotal"]),
+                         ("Citrony", "0.8", "PER_KG", "69.90", "55.92"))
+        self.assertEqual(document["purchasedAt"], "2026-09-05T11:29:00+02:00")
+
 
     def test_dvojtecka_misto_desetinne_tecky_v_cene_za_jednotku(self):
         # Účtenka 24 (2026-11-08): OCR přečetlo „49.90" jako „49:90" a řádek se ztratil.
@@ -948,6 +986,13 @@ class PocetCenaProfileTest(unittest.TestCase):
         # Datum před časem má dál přednost.
         self.assertEqual(generic.parse_datetime("30.09.2026 07:42 1.10.2026").isoformat(),
                          "2026-09-30T07:42:00+02:00")
+
+    def test_popisek_casu_mezi_datem_a_casem(self):
+        # Penny při platbě hotově: datum s časem jen v hlavičce, na jednom řádku.
+        self.assertEqual(generic.parse_datetime("Datum: 05.09.2026 Čas: 11:29:08").isoformat(),
+                         "2026-09-05T11:29:00+02:00")
+        self.assertEqual(generic.parse_datetime("Datum: 05.09.2026 Cas 11:29").isoformat(),
+                         "2026-09-05T11:29:00+02:00")
 
 class ReplayTest(unittest.TestCase):
     """Offline přehrání (replay.py) — stejný rozbor jako worker, jen nad lokálními soubory."""

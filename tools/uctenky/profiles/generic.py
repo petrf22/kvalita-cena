@@ -67,10 +67,12 @@ _ROUNDING_RE = re.compile(rf"^zaokrouhlen[ií]\b\D*?(?P<amount>{AMOUNT})\s*(?:K�
 _DATE_ONLY_RE = re.compile(r"\b(?P<day>\d{1,2})[./](?P<month>\d{1,2})[./](?P<year>\d{4}|\d{2})\b")
 _TIME_ONLY_RE = re.compile(r"^(?:[čc]as\b\s*:?\s*)?(?P<hour>\d{1,2}):(?P<minute>\d{2})(?::\d{2})?\b", re.IGNORECASE)
 # 30.09.2026 18:42(:05) | 30.09.26 18:42 | 30/09/26 18:42 | 2026-09-30 18:42 | 16:03:58 17.10.2026
-# (čas před datem tiskne pokladna farmářské prodejny, profil pocet-cena). Vzory se zkouší
-# v tomhle pořadí, takže poslední jen doplní shodu tam, kde dřív žádná nebyla.
+# (čas před datem tiskne pokladna farmářské prodejny, profil pocet-cena)
+# | Datum: 05.09.2026 Čas: 11:29:08 (Penny v hlavičce; u platby hotově je to jediné datum).
+# Vzory se zkouší v tomhle pořadí, takže poslední jen doplní shodu tam, kde dřív žádná nebyla.
 _DATETIME_RES = (
-    re.compile(r"\b(?P<day>\d{1,2})[./](?P<month>\d{1,2})[./](?P<year>\d{2}|\d{4})\s+(?P<hour>\d{1,2}):(?P<minute>\d{2})"),
+    re.compile(r"\b(?P<day>\d{1,2})[./](?P<month>\d{1,2})[./](?P<year>\d{2}|\d{4})\s+(?:[čČcC]as\s*:?\s*)?"
+               r"(?P<hour>\d{1,2}):(?P<minute>\d{2})"),
     re.compile(r"\b(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})[ T](?P<hour>\d{2}):(?P<minute>\d{2})"),
     re.compile(r"\b(?P<hour>\d{1,2}):(?P<minute>\d{2})(?::\d{2})?\s+"
                r"(?P<day>\d{1,2})[./](?P<month>\d{1,2})[./](?P<year>\d{4}|\d{2})\b"),

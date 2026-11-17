@@ -83,8 +83,9 @@ Změna se projeví do 60 s.
    a [`profiles/`](profiles/). Vzniká deterministicky, regexy. Každý řetězec má vlastní profil
    (hlavička, patička, vymezení bloku položek); co profil nemá, jde přes obecný profil.
    Známé tištěné poznámky se přeskakují: cena po slevě v závorce (Billa) se jen porovná
-   s položkou a slevou nad ní, „Věkový limit" (Albert) se zahodí. Každý jiný řádek bez ceny
-   zůstane vidět jako nerozpoznaný a vyvolá varování. V ceně za jednotku řádku s množstvím
+   s položkou a slevou nad ní, „Věkový limit" (Albert) a tára pod váženým zbožím
+   (`0.002 kg (PT)`, Penny) se zahodí. Každý jiný řádek bez ceny zůstane vidět jako
+   nerozpoznaný a vyvolá varování. V ceně za jednotku řádku s množstvím
    (`1.000 ks x 49:90 Kč /ks`) se připouští i dvojtečka, kterou OCR čte místo desetinné tečky
    (`normalize.UNIT_AMOUNT`); obecná částka ji nebere, jinak by byl částkou i čas z hlavičky.
    Když množství × cena za jednotku nedá zaplacenou částku, worker to hlásí jako varování —
