@@ -97,7 +97,11 @@ Odstín textu se **vždy** zapisuje tokenem, nikdy číselně — `rgba(0, 0, 0,
 `rgb(0 0 0 / 45%)` jsou dnes v repu obojí a znamenají totéž. Barva chyby je `#ff4d4f`; dnešní
 jediný výskyt `#f5222d` se narovná.
 
-Na mobilu je zdroj barev `MaterialTheme.colorScheme`, ne vlastní konstanty. Jediná dnešní
+Na mobilu je zdroj barev `MaterialTheme.colorScheme` (`ui/theme/Theme.kt`), ne vlastní
+konstanty. Schéma přepisuje jen `primary` = `#1677FF` v obou režimech a v tmavém i `onPrimary` =
+bílá: výchozí tmavé `onPrimary` z Material 3 (`#381E72`) počítá s pastelovou primární barvou
+a na syté modré by text plného tlačítka měl kontrast jen ~3,2 : 1 (bílá ~4,1 : 1, stejně jako
+ve světlém režimu). Jediná dnešní
 výjimka je `StarRating.kt` (`Color(0xFFFAAD14)`) — je vědomá: žlutá hvězdička není role
 z Material schématu a v tmavém režimu má vypadat stejně. Webový protějšek token nemá,
 protože hvězdičky vykresluje `nz-rate` a upozornění `nzType="warning"` — obojí si barvu
