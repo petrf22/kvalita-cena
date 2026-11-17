@@ -280,6 +280,18 @@ class WeightUnitTest(unittest.TestCase):
         line = self._item("Syr 200 g x 0,25 Kč/g 50,00 A")
         self.assertEqual(line.quantity * line.unit_price, line.line_total)
 
+    def test_znacka_vahoveho_zbozi_na_vlastnim_radku_patri_k_nazvu(self):
+        # OCR zalomilo značku „E" z konce názvu na samostatný řádek (Albert).
+        parsed = lines_mod.parse_item_lines(
+            ["KURECI PRSNI RIZKY", "E", "0,929 kg x 229,00 Kč/kg 212,70 A"])
+        self.assertEqual(parsed.warnings, [])
+        self.assertEqual([(line.kind, line.raw_label, line.quantity) for line in parsed.lines],
+                         [(lines_mod.ITEM, "KURECI PRSNI RIZKY", Decimal("0.929"))])
+
+    def test_osamocena_znacka_bez_nazvu_se_dal_hlasi(self):
+        parsed = lines_mod.parse_item_lines(["BOROVKY 250G 69,90 A", "E"])
+        self.assertEqual(parsed.warnings, ["nerozpoznaný tvar řádku: 'E'"])
+
 
 class PreQuantityTest(unittest.TestCase):
     """Penny tiskne množství NAD název a sazbu DPH PŘED částku (anonymizovaný tvar)."""

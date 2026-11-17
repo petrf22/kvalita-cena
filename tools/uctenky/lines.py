@@ -8,7 +8,7 @@ POZOR na nejpravděpodobnější tichou chybu celé funkce (docs/rozvoj.md): u v
 zboží je jednotková cena 289,00 Kč/kg, NIKDY zaplacených 87,30 Kč za 0,302 kg.
 
 Tištěné poznámky bez údaje o zboží (cena po slevě v závorce, „Věkový limit", tára pod
-váženým zbožím) se přeskakují záměrně a JEN podle pevného výčtu tvarů — každý jiný řádek bez ceny se dál hlásí jako
+váženým zbožím, značka váhového zboží zalomená na vlastní řádek) se přeskakují záměrně a JEN podle pevného výčtu tvarů — každý jiný řádek bez ceny se dál hlásí jako
 nerozpoznaný, aby se položka nemohla ztratit potichu.
 """
 
@@ -84,6 +84,10 @@ _TARE_LINE_RE = re.compile(r"^[0-9]+[.,][0-9]+\s*(?:kg|g)\s*\(PT\)$", re.IGNOREC
 # Osamocené velké písmeno na konci řádku s názvem (E, P) je značka váhového zboží,
 # ne součást názvu — na účtence stojí v cenovém sloupci.
 _WEIGHT_MARKER_RE = re.compile(r"\s+([A-Z])$")
+# Tatáž značka, kterou OCR zalomilo na samostatný řádek pod název (Albert: „KURECI PRSNI
+# RIZKY" / „E" / „0,929 kg x 229,00 Kč/kg 212,70 A"). Bez rozpracovaného názvu nad sebou
+# nic neznamená a hlásí se dál jako nerozpoznaný řádek.
+_WEIGHT_MARKER_LINE_RE = re.compile(r"^[A-Z]$")
 
 
 @dataclass
@@ -279,6 +283,10 @@ def parse_item_lines(raw_lines: list[str]) -> ParseResult:
                     note=note,
                 )
             ).line_no
+            continue
+
+        if pending_name is not None and _WEIGHT_MARKER_LINE_RE.match(raw):
+            # Značka patří k názvu nad ní; ten dál čeká na řádek s množstvím a cenou.
             continue
 
         # Řádek bez částky = název, jehož množství přijde na dalším řádku.
