@@ -18,6 +18,7 @@ import cz.kvalitacena.db.entity.QuantityUnit;
 import cz.kvalitacena.db.entity.Receipt;
 import cz.kvalitacena.db.entity.ReceiptLine;
 import cz.kvalitacena.db.entity.ReceiptLineStatus;
+import cz.kvalitacena.db.entity.ReceiptListFilter;
 import cz.kvalitacena.db.entity.ReceiptReviewStatus;
 import cz.kvalitacena.db.entity.ReceiptMatchSource;
 import cz.kvalitacena.db.entity.ReceiptProcessingStatus;
@@ -617,6 +618,62 @@ class ReceiptFlowIntegrationTest {
         .isInstanceOf(ValidationException.class);
     assertThat(reviewService.confirmLines(owner.getPublicUid(), receiptId, List.of(line.getId()),
         ObservationSource.WEB).confirmed()).isZero();
+  }
+
+  @Test
+  void myReceiptsFiltersByStatusGroupAndCountsEveryGroup() {
+    AppUser owner = persistUser();
+    Long queued = uploadWithStatus(owner, "QUEUED", "PENDING", 60);
+    Long processing = uploadWithStatus(owner, "PROCESSING", "PENDING", 50);
+    Long fresh = uploadWithStatus(owner, "PROCESSED", "PENDING", 40);
+    Long started = uploadWithStatus(owner, "PROCESSED", "IN_PROGRESS", 30);
+    Long done = uploadWithStatus(owner, "PROCESSED", "DONE", 20);
+    Long unreadable = uploadWithStatus(owner, "UNREADABLE", "PENDING", 10);
+    // Cizí účtenka se nesmí započítat do žádné skupiny.
+    uploadWithStatus(persistUser(), "PROCESSED", "PENDING", 5);
+
+    ReceiptService.ReceiptPage all = receiptService.myReceipts(owner.getPublicUid(), 20, 0, null);
+    assertThat(all.filterCounts()).isEqualTo(new ReceiptService.ReceiptFilterCounts(6, 2, 2, 1, 1));
+    assertThat(all.totalCount()).isEqualTo(6);
+    assertThat(ids(all)).containsExactly(unreadable, done, started, fresh, processing, queued);
+
+    assertThat(ids(receiptService.myReceipts(owner.getPublicUid(), 20, 0, ReceiptListFilter.TO_REVIEW)))
+        .containsExactly(started, fresh);
+    assertThat(ids(receiptService.myReceipts(owner.getPublicUid(), 20, 0, ReceiptListFilter.PROCESSING)))
+        .containsExactly(processing, queued);
+    assertThat(ids(receiptService.myReceipts(owner.getPublicUid(), 20, 0, ReceiptListFilter.DONE)))
+        .containsExactly(done);
+    assertThat(ids(receiptService.myReceipts(owner.getPublicUid(), 20, 0, ReceiptListFilter.FAILED)))
+        .containsExactly(unreadable);
+
+    // Stránkování uvnitř filtru: totalCount a hasMore platí pro filtr, ne pro všechny účtenky.
+    ReceiptService.ReceiptPage firstPage =
+        receiptService.myReceipts(owner.getPublicUid(), 1, 0, ReceiptListFilter.TO_REVIEW);
+    assertThat(ids(firstPage)).containsExactly(started);
+    assertThat(firstPage.totalCount()).isEqualTo(2);
+    assertThat(firstPage.hasMore()).isTrue();
+    ReceiptService.ReceiptPage lastPage =
+        receiptService.myReceipts(owner.getPublicUid(), 1, 1, ReceiptListFilter.TO_REVIEW);
+    assertThat(ids(lastPage)).containsExactly(fresh);
+    assertThat(lastPage.hasMore()).isFalse();
+  }
+
+  /**
+   * Účtenka v daném stavu bez workeru. Job se maže, ať ji nevezme {@code lease} jiného testu;
+   * {@code minutesAgo} dává jednoznačné pořadí podle created_at.
+   */
+  private Long uploadWithStatus(AppUser owner, String processingStatus, String reviewStatus, int minutesAgo) {
+    Long id = receiptService.upload(owner.getPublicUid(), List.of(jpeg()), 1, false, null, null).getId();
+    jdbcTemplate.update("DELETE FROM ai.receipt_job WHERE receipt_id = ?", id);
+    jdbcTemplate.update("UPDATE core.receipt SET processing_status = ?, review_status = ?, "
+        + "processed_at = CASE WHEN ? = 'PROCESSED' THEN now() END, "
+        + "created_at = now() - make_interval(mins => ?) WHERE id = ?",
+        processingStatus, reviewStatus, processingStatus, minutesAgo, id);
+    return id;
+  }
+
+  private static List<Long> ids(ReceiptService.ReceiptPage page) {
+    return page.items().stream().map(Receipt::getId).toList();
   }
 
   @Test
