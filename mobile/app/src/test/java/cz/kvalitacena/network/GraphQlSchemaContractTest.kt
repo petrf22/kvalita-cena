@@ -3,6 +3,7 @@ package cz.kvalitacena.network
 import cz.kvalitacena.ui.common.SELECTABLE_PRICE_KINDS
 import cz.kvalitacena.ui.product.NET_CONTENT_UOM_CHOICES
 import cz.kvalitacena.ui.product.unitBaseForUom
+import cz.kvalitacena.ui.receipt.list.ReceiptListFilter
 import cz.kvalitacena.ui.search.SortOption
 import graphql.language.EnumTypeDefinition
 import graphql.parser.Parser
@@ -188,6 +189,7 @@ class GraphQlSchemaContractTest {
     assertKnown("Výběr druhu ceny", "PriceKind", SELECTABLE_PRICE_KINDS)
     assertKnown("Řazení hledání", "ProductSort", SortOption.entries.map { it.value })
     assertKnown("Výběr jednotky gramáže", "NetContentUom", NET_CONTENT_UOM_CHOICES)
+    assertKnown("Filtr seznamu účtenek", "ReceiptListFilter", ReceiptListFilter.entries.map { it.name })
     assertKnown(
       "unitBaseForUom",
       "UnitBase",

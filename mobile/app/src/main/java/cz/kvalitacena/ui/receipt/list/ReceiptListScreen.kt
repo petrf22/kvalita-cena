@@ -1,6 +1,8 @@
 package cz.kvalitacena.ui.receipt.list
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
@@ -19,6 +22,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -46,6 +51,7 @@ import cz.kvalitacena.AppContainer
 import cz.kvalitacena.BuildConfig
 import cz.kvalitacena.R
 import cz.kvalitacena.network.Receipt
+import cz.kvalitacena.network.ReceiptFilterCounts
 import cz.kvalitacena.receipt.CODE_CONSENT_REQUIRED
 import cz.kvalitacena.receipt.CODE_REQUIRES_LOGIN
 import cz.kvalitacena.receipt.PendingReceipt
@@ -63,6 +69,10 @@ import cz.kvalitacena.ui.theme.Spacing
  * Seznam účtenek (ze záložky Účet a z notifikace): čekající na odeslání z telefonu, pak účtenky
  * na serveru s tím, kam došlo zpracování a párování. Vidí je jen vlastník (docs/soukromi.md,
  * „Účtenky").
+ *
+ * Účtenky ze serveru jdou filtrovat podle stavu s počty; výchozí je „K vyřízení", když nějaké
+ * čekají na párování — v plném seznamu by mohly skončit za „Načíst další". Čekající v telefonu
+ * zůstávají vidět ve všech filtrech.
  */
 @Composable
 fun ReceiptListScreen(
@@ -102,6 +112,8 @@ fun ReceiptListScreen(
   var confirmDelete by remember { mutableStateOf<Receipt?>(null) }
   var confirmDeletePending by remember { mutableStateOf<PendingReceipt?>(null) }
   var consentFor by remember { mutableStateOf<PendingReceipt?>(null) }
+  // Mimo položku LazyColumn, ať řada filtrů po odrolování a návratu nezačíná znovu od kraje.
+  val filterScroll = rememberScrollState()
 
   LaunchedEffect(Unit) { viewModel.onShown() }
   // Po návratu signálu načíst, co offline nešlo.
@@ -111,11 +123,17 @@ fun ReceiptListScreen(
 
   Column(Modifier.fillMaxSize()) {
     if (!online) OfflineBanner(stringResource(R.string.receipts_offline))
+    // Počty skupin z poslední odpovědi; `null` = seznam se ještě ani jednou nenačetl. Po prvním
+    // načtení se chyba i načítání (změna filtru) ukazují v seznamu, ať filtry nezmizí.
+    val counts = viewModel.filterCounts
     when {
-      viewModel.loading && pending.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+      counts == null && pending.isEmpty() && viewModel.error == null -> Box(
+        Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+      ) {
         CircularProgressIndicator()
       }
-      viewModel.error != null && pending.isEmpty() && viewModel.items.isEmpty() -> StateMessage(
+      counts == null && pending.isEmpty() -> StateMessage(
         title = stringResource(if (online) R.string.receipts_error_title else R.string.receipts_offline_title),
         text = if (online) viewModel.error?.asString() else stringResource(R.string.receipts_offline_text),
         actionLabel = stringResource(R.string.common_retry),
@@ -123,7 +141,8 @@ fun ReceiptListScreen(
         secondaryLabel = stringResource(R.string.receipts_capture),
         onSecondary = onCapture,
       )
-      !viewModel.loading && viewModel.items.isEmpty() && pending.isEmpty() -> StateMessage(
+      // Celý účet je prázdný — ne jen zvolený filtr (to řeší krátká zpráva v seznamu níž).
+      counts?.all == 0 && pending.isEmpty() && viewModel.error == null -> StateMessage(
         title = stringResource(R.string.receipts_empty_title),
         text = stringResource(R.string.receipts_empty_text),
         actionLabel = stringResource(R.string.receipts_capture),
@@ -137,6 +156,16 @@ fun ReceiptListScreen(
         item {
           Button(onClick = onCapture, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.receipts_capture))
+          }
+        }
+        if (counts != null && counts.all > 0) {
+          item {
+            ReceiptFilterRow(
+              selected = viewModel.filter,
+              counts = counts,
+              scrollState = filterScroll,
+              onSelect = viewModel::selectFilter,
+            )
           }
         }
         viewModel.actionError?.let { message ->
@@ -157,8 +186,15 @@ fun ReceiptListScreen(
             )
           }
         }
-        if (viewModel.items.isNotEmpty() || viewModel.error != null) {
+        if (viewModel.loading || viewModel.error != null || (counts?.all ?: 0) > 0) {
           item { SectionTitle(stringResource(R.string.receipts_server_title)) }
+        }
+        if (viewModel.loading) {
+          item {
+            Box(Modifier.fillMaxWidth().padding(Spacing.lg), contentAlignment = Alignment.Center) {
+              CircularProgressIndicator()
+            }
+          }
         }
         viewModel.error?.let { message ->
           item {
@@ -174,6 +210,20 @@ fun ReceiptListScreen(
         }
         items(viewModel.items, key = { it.id }) { receipt ->
           ReceiptRow(receipt, onClick = { onOpenReceipt(receipt.id) }, onDelete = { confirmDelete = receipt })
+        }
+        if (
+          counts != null && counts.all > 0 && viewModel.items.isEmpty() &&
+          !viewModel.loading && viewModel.error == null
+        ) {
+          item {
+            FilterEmpty(
+              showAll = if (viewModel.filter != ReceiptListFilter.ALL) {
+                { viewModel.selectFilter(ReceiptListFilter.ALL) }
+              } else {
+                null
+              },
+            )
+          }
         }
         if (BuildConfig.DEBUG) {
           item {
@@ -239,6 +289,61 @@ fun ReceiptListScreen(
 @Composable
 private fun SectionTitle(text: String) {
   Text(text, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.sm))
+}
+
+/**
+ * Filtr podle stavu s počty. Chip s nulou zůstává vidět — nula je informace („nic nečeká"),
+ * a mizející chipy by řadou při každém návratu z detailu poskakovaly.
+ */
+@Composable
+private fun ReceiptFilterRow(
+  selected: ReceiptListFilter,
+  counts: ReceiptFilterCounts,
+  scrollState: ScrollState,
+  onSelect: (ReceiptListFilter) -> Unit,
+) {
+  Row(
+    Modifier.fillMaxWidth().horizontalScroll(scrollState),
+    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+  ) {
+    ReceiptListFilter.entries.forEach { filter ->
+      FilterChip(
+        selected = filter == selected,
+        onClick = { onSelect(filter) },
+        label = { Text(receiptFilterLabel(filter, counts.countFor(filter))) },
+      )
+    }
+  }
+}
+
+@Composable
+private fun receiptFilterLabel(filter: ReceiptListFilter, count: Int): String = stringResource(
+  when (filter) {
+    ReceiptListFilter.ALL -> R.string.receipts_filter_all
+    ReceiptListFilter.TO_REVIEW -> R.string.receipts_filter_to_review
+    ReceiptListFilter.PROCESSING -> R.string.receipts_filter_processing
+    ReceiptListFilter.DONE -> R.string.receipts_filter_done
+    ReceiptListFilter.FAILED -> R.string.receipts_filter_failed
+  },
+  count,
+)
+
+/** Prázdný jen zvolený filtr — účtenky jinde jsou, takže stačí krátká zpráva a cesta k nim. */
+@Composable
+private fun FilterEmpty(showAll: (() -> Unit)?) {
+  Column(
+    Modifier.fillMaxWidth().padding(vertical = Spacing.lg),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+  ) {
+    Text(
+      stringResource(R.string.receipts_filter_empty),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      textAlign = TextAlign.Center,
+    )
+    showAll?.let { TextButton(onClick = it) { Text(stringResource(R.string.receipts_filter_show_all)) } }
+  }
 }
 
 @Composable
