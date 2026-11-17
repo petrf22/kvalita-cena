@@ -1,0 +1,31 @@
+OBCHOD VZOR s.r.o.
+Vzorova Farma
+Nádražní 1 Vzorov 11111
+IČO: 12345678
+
+Misto: Prodej
+Polozka DPH Pocet Cena/ks Celkem
+Párky KURECí
+12% 0,65x 395 256,75
+llonganissa
+12% 0,24x 755 181,2
+panenka z udírny
+12% 0,27x 670 180,9
+
+CELKEM 619
+KARTOU 619
+ZAOKROUHLENO(sazba 12%) 0,15
+VRACENO 0
+
+sazba DPH Celkem
+12% 66,32 619
+
+CELKEM 66,32 619 CZK
+
+Obsluhoval: Obsluha
+Děkujeme za návštevu.
+Zakoupené zboží spotřebujte do 24 hodin od data
+nákupu.
+Uchovávaje v ledniči při teplotě 1-5 st.
+
+000001 16:03:58 17.10.2026

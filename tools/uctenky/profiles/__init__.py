@@ -7,11 +7,13 @@ jen detekci a tři metody, ne vlastní parser.
 
 from __future__ import annotations
 
-from profiles import albert, coop, generic, tamda, tesco, winshop
+from profiles import albert, coop, generic, pocet_cena, tamda, tesco, winshop
 from profiles.base import Profile, ReceiptHeader
 
-# WinShop je pokladní software, ne řetězec — až za profily řetězců, které by ho mohly používat.
-_PROFILES: tuple[Profile, ...] = (albert.PROFILE, tamda.PROFILE, coop.PROFILE, tesco.PROFILE, winshop.PROFILE)
+# WinShop a pocet-cena jsou pokladny poznané podle tvaru účtenky, ne řetězce — až za profily
+# řetězců, které by je mohly používat.
+_PROFILES: tuple[Profile, ...] = (albert.PROFILE, tamda.PROFILE, coop.PROFILE, tesco.PROFILE, winshop.PROFILE,
+                                 pocet_cena.PROFILE)
 
 
 def detect(raw_lines: list[str]) -> Profile:
