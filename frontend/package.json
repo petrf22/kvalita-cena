@@ -28,7 +28,7 @@
     "ng-zorro-antd": "^22.2.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.9.1",
-    "zxing-wasm": "^3.1.6"
+    "zxing-wasm": "^3.1.7"
   },
   "devDependencies": {
     "@angular/build": "^22.2.7",
@@ -43,7 +43,7 @@
     "jsdom": "^31.0.1",
     "prettier": "^3.10.1",
     "typescript": "~6.0.2",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   },
   "overrides": {
     "@hono/node-server": "^2.0.5",
