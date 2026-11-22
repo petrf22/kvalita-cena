@@ -127,7 +127,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    implementation(platform("androidx.compose:compose-bom:2026.11.01"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -149,10 +149,10 @@ dependencies {
     // Services, což jde proti pravidlu jen svobodných knihoven (CLAUDE.md, "Konvence"). Skener
     // je schovaný za scanner/BarcodeScanner.kt, aby šla implementace vyměnit, kdyby čtení
     // poškozených kódů dělalo problémy.
-    implementation("androidx.camera:camera-core:1.6.1")
-    implementation("androidx.camera:camera-camera2:1.6.1")
-    implementation("androidx.camera:camera-lifecycle:1.6.1")
-    implementation("androidx.camera:camera-view:1.6.1")
+    implementation("androidx.camera:camera-core:1.7.0")
+    implementation("androidx.camera:camera-camera2:1.7.0")
+    implementation("androidx.camera:camera-lifecycle:1.7.0")
+    implementation("androidx.camera:camera-view:1.7.0")
     implementation("io.github.zxing-cpp:android:3.1.1")
 
     // Snímání účtenky (ui/receipt/capture/, docs/rozvoj.md „Sběr snímků na klientovi") —
